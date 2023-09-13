@@ -1,6 +1,6 @@
 # Enabling updating in-place of data objects in kernels
 
-This document outlines the steps necessary for Daphne/Kernel developers to enable updating objects in-place in operation.
+This document outlines the steps necessary for DAPHNE/Kernel developers to enable updating objects in-place in operations.
 
 In-place updating refers to reusing and overwriting an input data object for the output. This eliminates the need to allocate a new data object for each operation, potentially reducing peak memory consumption and execution times.
 
@@ -13,7 +13,7 @@ Y = readMatrix("Y.csv");
 Z = sqrt(X + Y);
 ```
 
-Here, for adding two matrices elementwise, it results in the allocation of a new matrix with size of X and the same for calculating element-wise the square root of the intermediate result of X + Y. If X or Y is not used later in the Daphne application's execution, we could think about using either of them for storing the result. Thus avoiding the need for additional memory allocation.
+Here, for adding two matrices elementwise, it results in the allocation of a new matrix with size of X and the same for calculating element-wise the square root of the intermediate result of X + Y. If X or Y is not used later in the DAPHNE application's execution, we could think about using either of them for storing the result. Thus avoiding the need for additional memory allocation.
 
 **Using update in-place in DAPHNE:**
 
@@ -47,7 +47,7 @@ Values can only be overridden if they are not used later in the application's ex
 
 **Compile-time analysis**
 
-While compiling the DAPHNE application to LLVM instruction, in the Pass [FlagUpdateInPlacePass.cpp](/src/compiler/lowering/FlagUpdateInPlacePass.cpp) we check whether an operand can be used for in-place updates. The operand is typically the result of an another operation. The operand is usually the result of another operation. If this result is not used as an operand in subsequent operations, we can potentially overwrite its values to avoid memory allocation (refer to the example at the beginning).
+While compiling the DAPHNE application to LLVM instruction, in the Pass [FlagUpdateInPlacePass.cpp](/src/compiler/lowering/FlagUpdateInPlacePass.cpp) we check whether an operand can be used for in-place updates. The operand is typically the result of an another operation. If this result is not used as an operand in subsequent operations, we can potentially overwrite its values to avoid memory allocation (refer to the example at the beginning).
 
 Furthermore, we need to propagate this information to the kernel call. We accomplish this by adding an additional attribute (e.g., `inPlaceFutureUse = [false, true]`) to the MLIR operation object. Subsequently, in the [RewriteToCallKernelOpPass.cpp](/src/compiler/lowering/RewriteToCallKernelOpPass.cpp), we append a true/false value for each operand at the end of the operand list of an operation. This allows the information to be available at runtime. We still expect to initialize the result operand with a nullptr.
 
@@ -182,11 +182,11 @@ Currently, only DenseMatrices are supported. The function returns true if there 
 
 **isValidType**
 
-Checks if the Data Type (int or float) and the dimensions of two matrices is identical. This is necessary in some cases for guranteeing, that the underlying data buffer has enough memory allocated. Allows for direct reuse of the data object (matrix).
+Checks if the data type (e.g. int or float) and the dimensions of two matrices is identical. This is necessary in some cases for guranteeing, that the underlying data buffer has enough memory allocated. Allows for direct reuse of the data object (matrix).
 
 **isValidTypeWeak**
 
-Checks if the data type (int or float) is identical and the allocated memory is identical. This is necessary in some cases for guranteeing, that the underlying data buffer has enough memory allocated. Allows for reuse of the underlying data buffer (shared_ptr). Typically a new data object (matrix) needs to be created.
+Checks if the data type (e.g. int or float) is identical and the allocated memory is identical. This is necessary in some cases for guranteeing, that the underlying data buffer has enough memory allocated. Allows for reuse of the underlying data buffer (shared_ptr). Typically a new data object (matrix) needs to be created.
 
 #### Example
 
@@ -221,7 +221,7 @@ if(res == nullptr) {
 }
 ```
 
-This is just an example. The decision on how to use one of the operands depends heavily on the nature of the kernel and its functionality. You need to consider the employed algorithm, as it must also support the in-place semantic.
+This is just an example. The decision on how to use one of the operands depends heavily on the nature of the kernel and its functionality. You also need to consider the employed algorithm, as it must also support the in-place semantic.
 
 ## Special Notes
 

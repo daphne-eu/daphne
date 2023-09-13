@@ -60,15 +60,9 @@ bool hasAnyUseAfterCurrentOp(mlir::Operation *op, int operand_index) {
         if (arg.getDefiningOp() == nullptr)
             return true;
 
-        // If there is a loop, we assume that the argument is used in the next iteration.
-        // Therefore, it is not safe to use it in-place.
-        if (isa<scf::WhileOp, scf::ForOp>(op->getParentOp()) &&
-            arg.getDefiningOp()->getParentOp() != op->getParentOp()) {
-            return true;
-        }
-
-        // as there is the posiblity that the op->getParentOp is scf.if, and the parentOp of that a scf.for,
-        // we need to check whether somewhere the parentOp is a scf.for
+        // If there is a loop, we assume that an argument outside the loop is used in the next iteration. 
+        // Therefore, it is not safe to use it in-place. We need to check if the parent operation is an scf.for, 
+        // as there is a possibility that op->getParentOp is scf.if and its parentOp is scf.for.
         mlir::Operation *parentOp = op->getParentOp();
         while (parentOp != nullptr) {
             if (isa<scf::ForOp, scf::WhileOp>(parentOp) &&
