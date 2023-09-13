@@ -8,7 +8,7 @@ X = dctx.fill(param, 5, 5)
 
 @dctx.function
 def use_condition(x):
-    return dctx.cond([x], lambda: X.sum() < 10.0, lambda node: node - 1, lambda node: node + 1)
+    return dctx.cond([x], lambda: x.sum() < 10.0, lambda node: node - 1, lambda node: node + 1)
 
 output = use_condition(X)
 daphne_output = output[0].print().compute()
