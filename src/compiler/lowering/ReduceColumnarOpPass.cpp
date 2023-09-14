@@ -81,11 +81,9 @@ namespace
             } else if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
                 Operation * posListOp = op->getOperand(1).getDefiningOp()               // Get the cast op
                                             ->getOperand(0).getDefiningOp()             // Get the bitmappositionlistconverter op
-                                            ->getOperand(0).getDefiningOp()             // Get the cast op or the positionlistbitmapconverter op
-                                            ->getOperand(0).getDefiningOp();            // Get the position list source op or the cast op
-                if (mlir::dyn_cast<mlir::daphne::CastOp>(posListOp)) {
-                    posListOp = posListOp->getOperand(0).getDefiningOp();               // Get the position list source op if we have a cast op
-                }
+                                            ->getOperand(0).getDefiningOp()             // Get the positionlistbitmapconverter op
+                                            ->getOperand(0).getDefiningOp()             // Get the cast op
+                                            ->getOperand(0).getDefiningOp();            // Get the position list source op
 
                 rewriter.startRootUpdate(op);
                 op->replaceUsesOfWith(op->getOperand(1), posListOp->getResult(0));
@@ -166,14 +164,9 @@ void ReduceColumnarOpPass::runOnOperation() {
         if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp)) {
             auto bitmapOp = castOp->getOperand(0).getDefiningOp();
             if (mlir::dyn_cast<mlir::daphne::BitmapPositionListConverterOp>(bitmapOp)) {
-                auto castOrPosOp = bitmapOp->getOperand(0).getDefiningOp();
-                if (mlir::dyn_cast<mlir::daphne::CastOp>(castOrPosOp)) {
-                    if (castOrPosOp->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
-                        return false;
-                    }
-                }
-                if (mlir::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(castOrPosOp)) {
-                    auto castOp2 = castOrPosOp->getOperand(0).getDefiningOp();
+                auto posOp = bitmapOp->getOperand(0).getDefiningOp();
+                if (mlir::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(posOp)) {
+                    auto castOp2 = posOp->getOperand(0).getDefiningOp();
                     if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
                         if (castOp2->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
                             return false;
@@ -185,7 +178,7 @@ void ReduceColumnarOpPass::runOnOperation() {
         return true;
     });
 
-    target.addDynamicallyLegalOp<mlir::daphne::ColumnIntersectOp, mlir::daphne::ColumnAndOp>([&](Operation *op) {
+    target.addDynamicallyLegalOp<mlir::daphne::ColumnAndOp>([&](Operation *op) {
         Operation * firstOp = nullptr;
         Operation * secondOp = nullptr;
         auto op1 = op->getOperand(0).getDefiningOp();
