@@ -62,7 +62,7 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
             writer = csv.writer(csvfile)
             writer.writerows(batch_results)
 
-    warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations)
+    #warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations)
     current_datetime = datetime.datetime.now()
     formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -90,7 +90,7 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
                         command = generate_command(op, impl, dtype, size, min_value_for_command.get(dtype), max_value_for_command.get(dtype))
                         print(f"Test run: {run} \nCommand:\n {command}")
                         try:
-                            elapsed_time, max_memory, avg_cpu_load = measure_performance(command)
+                            elapsed_time, max_memory, avg_cpu_load = measure_performance_improved(command)
                             print(f"SUCCESS: elapsed_time: {elapsed_time}, max_memory: {max_memory}, avg_cpu_load: {avg_cpu_load}")
                             batch_results.extend([
                                 (run, op, impl, dtype, size, "Execution Time", elapsed_time),
@@ -261,6 +261,42 @@ def measure_performance(command, max_timeout=None):
     max_memory = max(mem_usage)
     avg_cpu_load = sum(cpu_loads)/len(cpu_loads) if cpu_loads else 0
     
+    return elapsed_time, max_memory, avg_cpu_load
+
+def measure_performance_improved(command_args):
+    '''
+    Measure the execution time, memory consumption, and CPU load for an executed command.
+    '''
+    # Measure initial CPU time
+    start_time = time.time()
+    
+    # Capture CPU load periodically and store samples in cpu_loads list.
+    cpu_loads = []
+    stop_signal = threading.Event()
+
+    def sample_cpu_load():
+        while not stop_signal.is_set():
+            cpu_loads.append(psutil.cpu_percent(interval=1))
+            time.sleep(0.5)
+
+    t = threading.Thread(target=sample_cpu_load)
+    t.start()
+    
+    try:
+        mem_usage = memory_usage((subprocess.run, (command_args,)), 
+                                 interval=0.1, include_children=True)
+    except Exception as e:
+        print(f"An error occurred while executing the command: {e}")
+        return None, None, None
+    finally:
+        # Ensure to always stop the CPU sampling thread, regardless of whether the command completes or errors out
+        stop_signal.set()
+        t.join()
+
+    elapsed_time = time.time() - start_time
+    max_memory = max(mem_usage)
+    avg_cpu_load = sum(cpu_loads)/len(cpu_loads) if cpu_loads else 0
+
     return elapsed_time, max_memory, avg_cpu_load
 
 def generate_command(operation, implementation, datatype, matrix_size, min_value, max_value):
@@ -473,7 +509,7 @@ if __name__ == "__main__":
                    datatypes=['f64', 'int64'], 
                    implementations=implementations, 
                    operations=[1, 4, 5, 9, 10])
-
+    time.sleep(20)
     '''
     Second Benchmark: See Influence on value type in 2 matrix sizes, all datatypes, all implementations, 3 operations.
     '''
@@ -481,8 +517,8 @@ if __name__ == "__main__":
                    datatypes=datatypes, 
                    implementations=implementations, 
                    operations=[1, 10, 4])
-
+    time.sleep(20)
     '''
     Big Benchmark
-    run_benchmarks(matrix_sizes_250mb_500mb, datatypes, implementations, operations)
     '''
+    run_benchmarks(matrix_sizes_500mb_1gb, datatypes, implementations, operations)
