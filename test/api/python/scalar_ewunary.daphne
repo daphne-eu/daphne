@@ -1,0 +1,29 @@
+# TODO The commented out functions below are not supported yet (see #614).
+
+print(abs(1));
+print(abs(0));
+print(abs(-3.3));
+
+print(sign(1));
+print(sign(0));
+print(sign(-3.3));
+
+s = 1.23;
+
+print(exp(s));
+# print(ln(s));
+print(sqrt(s));
+
+print(round(s));
+print(floor(s));
+print(ceil(s));
+
+# print(sin(s));
+# print(cos(s));
+# print(tan(s));
+# print(sinh(s));
+# print(cosh(s));
+# print(tanh(s));
+# print(asin(s));
+# print(acos(s));
+# print(atan(s));
