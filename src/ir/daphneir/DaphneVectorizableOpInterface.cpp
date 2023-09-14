@@ -14,9 +14,10 @@
  *  limitations under the License.
  */
 
+#include "llvm/Support/raw_ostream.h"
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
-
+#include <utility>
 #include <vector>
 
 namespace mlir::daphne
@@ -356,4 +357,42 @@ std::vector<std::pair<Value, Value>> daphne::GemvOp::createOpsOutputSizes(OpBuil
     auto one = builder.create<daphne::ConstantOp>(loc, builder.getIndexType(), builder.getIndexAttr(1));
     return {{cols, one}};
 }
+// -----------------------------------------------------------------------------
+
 // ----------------------------------------------------------------------------
+// Second Order Functions
+// Map Operation
+std::vector<daphne::VectorSplit> daphne::MapOp::getVectorSplits()
+{
+    return {daphne::VectorSplit::ROWS};
+}
+std::vector<daphne::VectorCombine> daphne::MapOp::getVectorCombines()
+{
+    return {daphne::VectorCombine::ROWS};
+}
+std::vector<std::pair<Value, Value>> daphne::MapOp::createOpsOutputSizes(OpBuilder &builder)
+{
+    auto loc = getLoc();
+    auto sizeTy = builder.getIndexType();
+    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, getArg()).getResult();
+    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getArg()).getResult();
+    return {{rows, cols}};
+}
+
+// Map External Operation
+std::vector<daphne::VectorSplit> daphne::MapOpExternalPL::getVectorSplits()
+{
+    return {daphne::VectorSplit::ROWS};
+}
+std::vector<daphne::VectorCombine> daphne::MapOpExternalPL::getVectorCombines()
+{
+    return {daphne::VectorCombine::ROWS};
+}
+std::vector<std::pair<Value, Value>> daphne::MapOpExternalPL::createOpsOutputSizes(OpBuilder &builder)
+{
+    auto loc = getLoc();
+    auto sizeTy = builder.getIndexType();
+    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, getArg()).getResult();
+    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getArg()).getResult();
+    return {{rows, cols}};
+}
