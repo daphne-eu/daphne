@@ -587,8 +587,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#daphnecontext" class="md-nav__link">
-    DaphneContext
+  <a href="#daphnecontext-api-reference" class="md-nav__link">
+    DaphneContext API Reference
   </a>
   
 </li>
@@ -1022,8 +1022,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#daphnecontext" class="md-nav__link">
-    DaphneContext
+  <a href="#daphnecontext-api-reference" class="md-nav__link">
+    DaphneContext API Reference
   </a>
   
 </li>
@@ -1090,13 +1090,13 @@
 <h1 id="api-reference">API Reference</h1>
 <p>This document is a hand-crafted reference of the DaphneLib API.
 A general introduction to <a href="/daphne/DaphneLib/Overview">DaphneLib (DAPHNE's Python API)</a> can be found in a separate document.
-DaphneLib will offer numerous methods for <em>obtaining DAPHNE matrices and frames</em> as well as for <em>building complex computations</em> based on them.
+DaphneLib offers numerous methods for <em>obtaining DAPHNE matrices and frames</em> as well as for <em>building complex computations</em> based on them.
 Ultimately, DaphneLib will support all <a href="/daphne/DaphneDSL/Builtins">DaphneDSL built-in functions</a> on matrices and frames.
 Futhermore, <strong>we also plan to create a library of higher-level primitives</strong> allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.</p>
 <p>At the moment, the documentation is still rather incomplete.
 However, as the methods largely map to DaphneDSL built-in functions, you can find some more information in the <a href="/daphne/DaphneDSL/Builtins">List of DaphneDSL built-in functions</a>, for the time being.</p>
 <h2 id="obtaining-daphne-matrices-and-frames">Obtaining DAPHNE Matrices and Frames</h2>
-<h3 id="daphnecontext"><code>DaphneContext</code></h3>
+<h3 id="daphnecontext-api-reference"><code>DaphneContext</code> API Reference</h3>
 <p><strong>Importing data from other Python libraries:</strong></p>
 <ul>
 <li><strong><code>from_numpy</code></strong><code>(mat: np.array, shared_memory=True) -&gt; Matrix</code></li>
@@ -1107,6 +1107,9 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 <li><strong><code>fill</code></strong><code>(arg, rows:int, cols:int) -&gt; Matrix</code></li>
 <li><strong><code>seq</code></strong><code>(start, end, inc) -&gt; Matrix</code></li>
 <li><strong><code>rand</code></strong><code>(rows: int, cols: int, min: Union[float, int] = None, max: Union[float, int] = None, sparsity: Union[float, int] = 0, seed: Union[float, int] = 0) -&gt; Matrix</code></li>
+<li><strong><code>createFrame</code></strong><code>(columns: List[Matrix], labels: List[str] = None) -&gt; 'Frame'</code></li>
+<li><strong><code>diagMatrix</code></strong><code>(self, arg: Matrix) -&gt; 'Matrix'</code></li>
+<li><strong><code>sample</code></strong><code>(range, size, withReplacement: bool, seed = -1) -&gt; 'Matrix'</code></li>
 </ul>
 <p><strong>Reading files using DAPHNE's readers:</strong></p>
 <ul>
@@ -1117,23 +1120,61 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 <p>Complex computations can be built using Python operators (see <a href="/daphne/DaphneLib/Overview">DaphneLib</a>) and using DAPHNE matrix/frame/scalar methods.
 In the following, we describe only the latter.</p>
 <h3 id="matrix-api-reference"><code>Matrix</code> API Reference</h3>
-<p><strong>Data Generation:</strong></p>
-<ul>
-<li><strong><code>diagMatrix</code></strong><code>()</code></li>
-</ul>
 <p><strong>Matrix dimensions:</strong></p>
 <ul>
 <li><strong><code>ncol</code></strong><code>()</code></li>
 <li><strong><code>nrow</code></strong><code>()</code></li>
+<li><strong><code>ncell</code></strong><code>()</code></li>
 </ul>
 <p><strong>Elementwise unary:</strong></p>
 <ul>
+<li><strong><code>abs</code></strong><code>()</code></li>
+<li><strong><code>sign</code></strong><code>()</code></li>
+<li><strong><code>exp</code></strong><code>()</code></li>
+<li><strong><code>ln</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
 <li><strong><code>sqrt</code></strong><code>()</code></li>
+<li><strong><code>round</code></strong><code>()</code></li>
+<li><strong><code>floor</code></strong><code>()</code></li>
+<li><strong><code>ceil</code></strong><code>()</code></li>
+<li><strong><code>sin</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>cos</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>tan</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>sinh</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>cosh</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>tanh</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>asin</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>acos</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>atan</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
 </ul>
 <p><strong>Elementwise binary:</strong></p>
 <ul>
+<li><strong><code>pow</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>log</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>mod</code></strong><code>(other: 'Matrix')</code></li>
 <li><strong><code>max</code></strong><code>(other: 'Matrix')</code></li>
 <li><strong><code>min</code></strong><code>(other: 'Matrix')</code></li>
+</ul>
+<p><strong>Outer binary:</strong></p>
+<ul>
+<li><strong><code>outerAdd</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerSub</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerMul</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerDiv</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerPow</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerLog</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerMod</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerMin</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerMax</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerAnd</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerOr</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerXor</code></strong><code>(other: 'Matrix')</code> <em>(not supported yet)</em></li>
+<li><strong><code>outerConcat</code></strong><code>(other: 'Matrix')</code> <em>(not supported yet)</em></li>
+<li><strong><code>outerEq</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerNeq</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerLt</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerLe</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerGt</code></strong><code>(other: 'Matrix')</code></li>
+<li><strong><code>outerGe</code></strong><code>(other: 'Matrix')</code></li>
 </ul>
 <p><strong>Aggregation:</strong></p>
 <ul>
@@ -1141,14 +1182,33 @@ In the following, we describe only the latter.</p>
 <li><strong><code>aggMin</code></strong><code>(axis: int = None)</code></li>
 <li><strong><code>aggMax</code></strong><code>(axis: int = None)</code></li>
 <li><strong><code>mean</code></strong><code>(axis: int = None)</code></li>
+<li><strong><code>var</code></strong><code>(axis: int = None)</code></li>
 <li><strong><code>stddev</code></strong><code>(axis: int = None)</code></li>
+<li><strong><code>idxMin</code></strong><code>(axis: int)</code></li>
+<li><strong><code>idxMax</code></strong><code>(axis: int)</code></li>
+</ul>
+<p><strong>Cumulative aggregation</strong></p>
+<ul>
+<li><strong><code>cumSum</code></strong><code>()</code></li>
+<li><strong><code>cumProd</code></strong><code>()</code></li>
+<li><strong><code>cumMin</code></strong><code>()</code></li>
+<li><strong><code>cumMax</code></strong><code>()</code></li>
 </ul>
 <p><strong>Reorganization:</strong></p>
 <ul>
 <li><strong><code>t</code></strong><code>()</code></li>
+<li><strong><code>reshape</code></strong><code>(numRows: int, numCols: int)</code></li>
+<li><strong><code>cbind</code></strong><code>(other: Matrix)</code></li>
+<li><strong><code>rbind</code></strong><code>(other: Matrix)</code></li>
+<li><strong><code>reverse</code></strong><code>()</code></li>
+<li><strong><code>lowerTri</code></strong><code>(diag: bool, values: bool)</code></li>
+<li><strong><code>upperTri</code></strong><code>(diag: bool, values: bool)</code></li>
+<li><strong><code>replace</code></strong><code>(pattern, replacement)</code></li>
+<li><strong><code>order</code></strong><code>(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)</code></li>
 </ul>
 <p><strong>Other matrix operations:</strong></p>
 <ul>
+<li><strong><code>diagVector</code></strong><code>()</code></li>
 <li><strong><code>solve</code></strong><code>(other: 'Matrix')</code></li>
 </ul>
 <p><strong>Input/output:</strong></p>
@@ -1161,11 +1221,13 @@ In the following, we describe only the latter.</p>
 <ul>
 <li><strong><code>nrow</code></strong><code>()</code></li>
 <li><strong><code>ncol</code></strong><code>()</code></li>
+<li><strong><code>ncell</code></strong><code>()</code></li>
 </ul>
 <p><strong>Reorganization:</strong></p>
 <ul>
 <li><strong><code>cbind</code></strong><code>(other)</code></li>
 <li><strong><code>rbind</code></strong><code>(other)</code></li>
+<li><strong><code>order</code></strong><code>(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)</code></li>
 </ul>
 <p><strong>Extended relational algebra:</strong></p>
 <ul>
@@ -1177,9 +1239,33 @@ In the following, we describe only the latter.</p>
 <li><strong><code>write</code></strong><code>(file: str)</code></li>
 </ul>
 <h3 id="scalar-api-reference"><code>Scalar</code> API Reference</h3>
-<p><strong>Unary operations:</strong></p>
+<p><strong>Elementwise unary:</strong></p>
 <ul>
+<li><strong><code>abs</code></strong><code>()</code></li>
+<li><strong><code>sign</code></strong><code>()</code></li>
+<li><strong><code>exp</code></strong><code>()</code></li>
+<li><strong><code>ln</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
 <li><strong><code>sqrt</code></strong><code>()</code></li>
+<li><strong><code>round</code></strong><code>()</code></li>
+<li><strong><code>floor</code></strong><code>()</code></li>
+<li><strong><code>ceil</code></strong><code>()</code></li>
+<li><strong><code>sin</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>cos</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>tan</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>sinh</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>cosh</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>tanh</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>asin</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>acos</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+<li><strong><code>atan</code></strong><code>()</code> <em>(not supported yet, see #614)</em></li>
+</ul>
+<p><strong>Elementwise binary:</strong></p>
+<ul>
+<li><strong><code>pow</code></strong><code>(other)</code></li>
+<li><strong><code>log</code></strong><code>(other)</code></li>
+<li><strong><code>mod</code></strong><code>(other)</code></li>
+<li><strong><code>min</code></strong><code>(other)</code></li>
+<li><strong><code>max</code></strong><code>(other)</code></li>
 </ul>
 <p><strong>Input/output:</strong></p>
 <ul>

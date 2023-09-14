@@ -1643,7 +1643,7 @@ This is the product of the number of rows and the number of columns.</p>
 </tr>
 <tr>
 <td><strong><code>ln</code></strong></td>
-<td>natural logarithm (logarithm of <code>arg</code> to the base of <em>e</em>)</td>
+<td>natural logarithm (logarithm of <code>arg</code> to the base of <em>e</em>) <em>(not supported yet, see #614)</em></td>
 </tr>
 <tr>
 <td><strong><code>sqrt</code></strong></td>
@@ -1676,7 +1676,7 @@ This is the product of the number of rows and the number of columns.</p>
 </table>
 <h3 id="trigonometric">Trigonometric</h3>
 <p>The typical trigonometric functions:
-<strong><code>sin</code></strong>, <strong><code>cos</code></strong>, <strong><code>tan</code></strong>, <strong><code>sinh</code></strong>, <strong><code>cosh</code></strong>, <strong><code>tanh</code></strong>, <strong><code>asin</code></strong>, <strong><code>acos</code></strong>, <strong><code>atan</code></strong></p>
+<strong><code>sin</code></strong>, <strong><code>cos</code></strong>, <strong><code>tan</code></strong>, <strong><code>sinh</code></strong>, <strong><code>cosh</code></strong>, <strong><code>tanh</code></strong>, <strong><code>asin</code></strong>, <strong><code>acos</code></strong>, <strong><code>atan</code></strong> <em>(not supported yet, see #614)</em></p>
 <h2 id="elementwise-binary">Elementwise binary</h2>
 <p>DaphneDSL supports various elementwise binary operations.
 Some of those can be used through <em>operators in infix notation</em>, e.g., <code>+</code>; and some through <em>built-in functions</em>.
@@ -1931,7 +1931,7 @@ Regarding the combinations of scalars and matrices, the same broadcasting semant
 </tr>
 <tr>
 <td><strong><code>outerXor</code></strong></td>
-<td>logical exclusive disjunction</td>
+<td>logical exclusive disjunction <em>(not supported yet)</em></td>
 </tr>
 </tbody>
 </table>
@@ -1946,7 +1946,7 @@ Regarding the combinations of scalars and matrices, the same broadcasting semant
 <tbody>
 <tr>
 <td><strong><code>outerConcat</code></strong></td>
-<td>string concatenation</td>
+<td>string concatenation <em>(not supported yet)</em></td>
 </tr>
 </tbody>
 </table>
@@ -1996,9 +1996,11 @@ Returns a scalar.</p>
 </li>
 <li>
 <p><strong><code>agg</code></strong><code>(arg:matrix, axis:si64)</code></p>
-<p>Row or column aggregation over a <em>(n x m)</em> matrix <code>arg</code> using aggregation function <code>agg</code> (see table below).
-- <code>axis</code> == 0: calculate one aggregate per row; the result is a <em>(n x 1)</em> (column) matrix
-- <code>axis</code> == 1: calculate one aggregate per column; the result is a <em>(1 x m)</em> (row) matrix</p>
+<p>Row or column aggregation over a <em>(n x m)</em> matrix <code>arg</code> using aggregation function <code>agg</code> (see table below).</p>
+<ul>
+<li><code>axis</code> == 0: calculate one aggregate per row; the result is a <em>(n x 1)</em> (column) matrix</li>
+<li><code>axis</code> == 1: calculate one aggregate per column; the result is a <em>(1 x m)</em> (row) matrix</li>
+</ul>
 </li>
 </ul>
 <table>
