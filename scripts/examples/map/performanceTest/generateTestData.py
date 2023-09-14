@@ -227,7 +227,7 @@ def run_benchmarks_task_parallelized(matrix_sizes, datatypes, implementations, o
     print(f"Finished Benchmark in: {hours} hours, {minutes} minutes, {secs} seconds")
 
 '''Utility methods'''
-def measure_performance(command, max_timeout=600):
+def measure_performance(command, max_timeout=None):
     '''
     Measure the execution time, memory consumption, and CPU load for an executed command (the execution of a DAPHNE script)
     '''
@@ -484,5 +484,5 @@ if __name__ == "__main__":
 
     '''
     Big Benchmark
-    '''
     run_benchmarks(matrix_sizes_250mb_500mb, datatypes, implementations, operations)
+    '''
