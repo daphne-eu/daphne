@@ -938,6 +938,43 @@
     },
     {
         "kernelTemplate": {
+            "header": "DiagVector.h",
+            "opName": "diagVector",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
+            [["DenseMatrix", "float"], ["CSRMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"], ["CSRMatrix", "int32_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "EwBinaryMat.h",
             "opName": "ewBinaryMat",
             "returnType": "void",
