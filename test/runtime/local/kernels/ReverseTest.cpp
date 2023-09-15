@@ -91,7 +91,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Reverse", TAG_KERNELS, (DenseMatrix), (double, uint3
     }
 
     DT *res = nullptr;
-    reverse<DT, DT>(res, arg, nullptr);
+    reverse<DT, DT>(res, arg, true, nullptr);
     CHECK(*res == *exp);
     
     DataObjectFactory::destroy(arg, exp, res);

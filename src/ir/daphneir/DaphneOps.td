@@ -690,7 +690,8 @@ def Daphne_RowBindOp : Daphne_BindOp<"rowBind", [
 ]>;
 
 def Daphne_ReverseOp : Daphne_Op<"reverse", [
-    TypeFromFirstArg, ShapeFromArg
+    TypeFromFirstArg, ShapeFromArg,
+    DeclareOpInterfaceMethods<InPlaceOpInterface>
 ]> {
     let arguments = (ins MatrixOrU:$arg);
     let results = (outs MatrixOrU:$res);

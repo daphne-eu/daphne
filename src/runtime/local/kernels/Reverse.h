@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_REVERSE_H
 #define SRC_RUNTIME_LOCAL_KERNELS_REVERSE_H
 
+#include "runtime/local/kernels/InPlaceUtils.h"
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -33,7 +34,7 @@
 
 template<class DTRes, typename DTArg>
 struct Reverse {
-    static void apply(DTRes *& res, const DTArg *arg, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, DTArg *arg, bool hasFutureUseArg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,8 +42,8 @@ struct Reverse {
 // ****************************************************************************
 
 template<class DTRes, typename DTArg>
-void reverse(DTRes *& res, const DTArg *arg, DCTX(ctx)) {
-    Reverse<DTRes, DTArg>::apply(res, arg, ctx);
+void reverse(DTRes *& res, DTArg *arg, bool hasFutureUseArg, DCTX(ctx)) {
+    Reverse<DTRes, DTArg>::apply(res, arg, hasFutureUseArg, ctx);
 }
 
 // ****************************************************************************
@@ -55,26 +56,60 @@ void reverse(DTRes *& res, const DTArg *arg, DCTX(ctx)) {
 
 template<typename VT>
 struct Reverse<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *& res, DenseMatrix<VT> *arg, bool hasFutureUseArg, DCTX(ctx)) {
         size_t numRows = arg->getNumRows();
         size_t numCols = arg->getNumCols();
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         
-        const VT *valuesArg = arg->getValues();
+        bool inPlaceUpdate = false;
+        if(res == nullptr) {
+            if(InPlaceUtils::isInPlaceable(arg, hasFutureUseArg)) {
+                res = arg;
+                res->increaseRefCounter();
+                inPlaceUpdate = true;
+            }
+            else {
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+            }
+        }
+        
+        VT *valuesArg = arg->getValues();
         VT * valuesRes = res->getValues();
         
-        // This operation will often be applied to column (n x 1) matrices,
-        // so this case could optionally be treated more efficiently.
-        if (arg->getRowSkip() == 1){ // We need to check RowSkip in case of sub Matrix (see DenseMatrix.h)
-            std::reverse_copy(valuesArg, valuesArg + numRows, valuesRes);
+        if(inPlaceUpdate) {
+            if (arg->getRowSkip() == 1) {
+                //std::reverse(valuesRes, valuesRes + numRows);
+                std::reverse(valuesArg, valuesArg + numRows);
+            }
+            else {
+                VT *valuesArgLastRow = valuesArg + ((numRows - 1) * arg->getRowSkip());
+                VT *temp = new VT[numCols];
+
+                for (size_t r = 0; r < numRows / 2; r++) {
+                    // Swap rows
+                    memcpy(temp, valuesArg, numCols * sizeof(VT));
+                    memcpy(valuesArg, valuesArgLastRow, numCols * sizeof(VT));
+                    memcpy(valuesArgLastRow, temp, numCols * sizeof(VT));
+
+                    valuesArg += arg->getRowSkip();
+                    valuesArgLastRow -= arg->getRowSkip();
+                }
+
+                delete[] temp;
+            }
         }
         else {
-            const VT *valuesArgLastRow = valuesArg + ((numRows - 1) * arg->getRowSkip());            
-            for (size_t r = 0; r < numRows; r++) {                                
-                memcpy(valuesRes, valuesArgLastRow, numCols * sizeof(VT));
-                valuesRes += res->getRowSkip();
-                valuesArgLastRow -= arg->getRowSkip();
+            // This operation will often be applied to column (n x 1) matrices,
+            // so this case could optionally be treated more efficiently.
+            if (arg->getRowSkip() == 1){ // We need to check RowSkip in case of sub Matrix (see DenseMatrix.h)
+                std::reverse_copy(valuesArg, valuesArg + numRows, valuesRes);
+            }
+            else {
+                const VT *valuesArgLastRow = valuesArg + ((numRows - 1) * arg->getRowSkip());            
+                for (size_t r = 0; r < numRows; r++) {                                
+                    memcpy(valuesRes, valuesArgLastRow, numCols * sizeof(VT));
+                    valuesRes += res->getRowSkip();
+                    valuesArgLastRow -= arg->getRowSkip();
+                }
             }
         }
     }

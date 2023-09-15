@@ -2191,8 +2191,12 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "DTArg *",
                     "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "hasFutureUseArg"
                 }
             ]
         },

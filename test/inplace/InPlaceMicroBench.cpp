@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-#include "runtime/local/datastructures/DataObjectFactory.h"
-#include "runtime/local/kernels/UnaryOpCode.h"
-#include <new>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -25,6 +24,7 @@
 #include <runtime/local/kernels/EwBinaryObjSca.h>
 #include <runtime/local/kernels/EwUnaryMat.h>
 #include <runtime/local/kernels/Transpose.h>
+#include <runtime/local/kernels/Reverse.h>
 #include <runtime/local/kernels/Fill.h>
 
 #include <tags.h>
@@ -32,7 +32,6 @@
 #include <catch.hpp>
 
 #include <vector>
-#include <cstdint>
 
 
 // TODO: use Fill kernel
@@ -59,7 +58,7 @@ void generateBinaryMatrices(DT *& m1, DT *& m2, size_t numRows, size_t numCols, 
     fillMatrix<DT, VT>(m2, numRows, numCols, val2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ewBinaryMat - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, int)) {
+TEMPLATE_PRODUCT_TEST_CASE("ewBinaryMat - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -99,7 +98,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ewBinaryMat - In-Place - Bench", TAG_INPLACE_BENCH, 
 // ewBinaryObjSca
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE("ewBinaryObjSca - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, int)) {
+TEMPLATE_PRODUCT_TEST_CASE("ewBinaryObjSca - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -135,7 +134,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ewBinaryObjSca - In-Place - Bench", TAG_INPLACE_BENC
 // ewUnaryMat
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE("ewUnaryMat - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, int)) {
+TEMPLATE_PRODUCT_TEST_CASE("ewUnaryMat - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -170,7 +169,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ewUnaryMat - In-Place - Bench", TAG_INPLACE_BENCH, (
 // transpose
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE("transpose - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, int)) {
+TEMPLATE_PRODUCT_TEST_CASE("transpose - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -194,6 +193,41 @@ TEMPLATE_PRODUCT_TEST_CASE("transpose - In-Place - Bench", TAG_INPLACE_BENCH, (D
 
         meter.measure([&m1, &res]() {
             return transpose<DT, DT>(res, m1, true, nullptr);
+        });
+
+        DataObjectFactory::destroy(m1);
+        DataObjectFactory::destroy(res);
+    };
+}
+
+// ****************************************************************************
+// reverse
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE("reverse - In-Place - Bench", TAG_INPLACE_BENCH, (DenseMatrix), (double, uint32_t)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    BENCHMARK_ADVANCED("hasFutureUseArg == false") (Catch::Benchmark::Chronometer meter) {
+        DT* m1 = nullptr;
+        fillMatrix(m1, 5000, 5000, VT(1.0));
+        DT* res = nullptr;
+
+        meter.measure([&m1, &res]() {
+            return reverse<DT, DT>(res, m1, false, nullptr);
+        });
+
+        DataObjectFactory::destroy(m1);
+        DataObjectFactory::destroy(res);
+    };
+
+    BENCHMARK_ADVANCED("hasFutureUseArg == true") (Catch::Benchmark::Chronometer meter) {
+        DT* m1 = nullptr;
+        fillMatrix(m1, 5000, 5000, VT(1.0));
+        DT* res = nullptr;
+
+        meter.measure([&m1, &res]() {
+            return reverse<DT, DT>(res, m1, true, nullptr);
         });
 
         DataObjectFactory::destroy(m1);

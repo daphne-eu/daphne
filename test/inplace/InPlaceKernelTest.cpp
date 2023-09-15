@@ -17,6 +17,7 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/Reverse.h>
 
 #include <runtime/local/kernels/EwBinaryMat.h>
 #include <runtime/local/kernels/EwBinaryObjSca.h>
@@ -41,7 +42,7 @@ void checkEwBinaryMat(BinaryOpCode opCode, DT * lhs, DT * rhs, const DT * exp, b
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ewBinaryMat - In-Place", TAG_INPLACE, (DenseMatrix), (uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ewBinaryMat - In-Place", TAG_INPLACE, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(4, {
@@ -90,7 +91,7 @@ void checkEwBinaryMatSca(BinaryOpCode opCode, DT * lhs, typename DT::VT rhs, con
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ewBinaryObjSca - In-Place", TAG_INPLACE, (DenseMatrix), (uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ewBinaryObjSca - In-Place", TAG_INPLACE, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     //using VT = typename DT::VT;
     
@@ -125,7 +126,7 @@ void checkEwUnaryMat(UnaryOpCode opCode, DT * arg, const DT * exp) {
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ewUnaryMat - In-Place", TAG_INPLACE, (DenseMatrix), (float)) {
+TEMPLATE_PRODUCT_TEST_CASE("ewUnaryMat - In-Place", TAG_INPLACE, (DenseMatrix), (double)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(4, {
@@ -159,7 +160,7 @@ void checkTranspose(DT * arg, const DT * exp) {
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Transpose - In-Place", TAG_INPLACE, (DenseMatrix), (uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Transpose - In-Place", TAG_INPLACE, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(3, {
@@ -178,4 +179,85 @@ TEMPLATE_PRODUCT_TEST_CASE("Transpose - In-Place", TAG_INPLACE, (DenseMatrix), (
 
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
+}
+
+// ****************************************************************************
+// reverse
+// ****************************************************************************
+
+template<class DT>
+void checkReverse(DT * arg, const DT * exp) {
+    DT * res = nullptr;
+    reverse<DT, DT>(res, arg, false, nullptr);
+
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("Reverse - In-Place", TAG_INPLACE, (DenseMatrix), (double, uint32_t)) {
+    using DT = TestType;
+    
+    DT * arg = nullptr;
+    DT * exp = nullptr;
+
+    SECTION("general matrix 1") {
+        arg = genGivenVals<DT>(3, {
+            1, 2,
+            3, 4,
+            5, 6,
+        });
+        exp = genGivenVals<DT>(3, {
+            5, 6,
+            3, 4,
+            1, 2,
+        });
+    }
+    SECTION("general matrix 2") {
+        arg = genGivenVals<DT>(3, {
+           1, 2, 3,
+           4, 5, 6,
+           7, 8, 9,
+        });
+        exp = genGivenVals<DT>(3, {
+           7, 8, 9,
+           4, 5, 6,
+           1, 2, 3,
+        });
+    }
+    SECTION("column matrix") {
+        arg = genGivenVals<DT>(9, {
+           1,
+           2,
+           3,
+           4,
+           5,
+           6,
+           7,
+           8,
+           9,
+        });
+        exp = genGivenVals<DT>(9, {
+           9,
+           8,
+           7,
+           6,
+           5,
+           4,
+           3,
+           2,
+           1,
+        });
+    }
+    SECTION("row matrix") {
+        arg = genGivenVals<DT>(1, {
+           1, 2, 3, 4, 5, 6, 7, 8, 9,
+        });
+        exp = genGivenVals<DT>(1, {
+           1, 2, 3, 4, 5, 6, 7, 8, 9,
+        });
+    }
+
+    checkReverse(arg, exp);
+
+    DataObjectFactory::destroy(arg, exp);
 }
