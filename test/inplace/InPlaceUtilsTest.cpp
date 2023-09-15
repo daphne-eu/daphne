@@ -77,14 +77,14 @@ TEMPLATE_PRODUCT_TEST_CASE("InPlaceUtils::selectInPlaceableOperand", TAG_INPLACE
                         std::make_tuple(false, false, lhs)};
 
     //hasFutureUse
-    for (const auto var : variations) {
+    for (const auto &var : variations) {
         DYNAMIC_SECTION("hasFutureUse: " << std::get<0>(var) << " " << std::get<1>(var)) {
             checkSelectInPlaceableOperand(std::get<2>(var), lhs, std::get<0>(var), rhs, std::get<1>(var));
         }
     }
 
     //getRefCounter
-    for (const auto var : variations) {
+    for (const auto &var : variations) {
         DYNAMIC_SECTION("getRefCounter: " << std::get<0>(var) << " " << std::get<1>(var)) {
 
             if (std::get<0>(var)) {
@@ -99,7 +99,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InPlaceUtils::selectInPlaceableOperand", TAG_INPLACE
     }
 
     //getValuesUseCount
-    for (const auto var : variations) {
+    for (const auto &var : variations) {
         DYNAMIC_SECTION("getValuesUseCount: " << std::get<0>(var) << " " << std::get<1>(var)) {
 
             DT* view_lhs = nullptr;

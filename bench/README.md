@@ -16,7 +16,7 @@ There are currently following cases with different matrix sizes benchmarked:
 
 * *timings* from DAPHNE by using `--timing` as an argument
 * *Peak memory* *consumption*
-* (*perf*)
+* (optional) from perf: cycles,instructions,cache-references,cache-misses
 
 To execute the benchmark, run `﻿$ python3 bench.py.` Prior to that, it is necessary to run [create_matrix_files.daph](create_matrix_files.daph) in order to generate static matrix files that will be stored on disk. The resulting matrices have a total size of 2.3GB and are used in *addition_readMatrix.daph*.
 
@@ -54,3 +54,5 @@ Virtualization type:  full
 **Disk Storage**: SSD 80GB
 
 **OS**: Ubuntu 22.04.2 LTS (GNU/Linux 5.15.0-75-generic x86_64)
+
+**perf:** perf version 5.15.116
