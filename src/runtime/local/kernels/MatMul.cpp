@@ -253,12 +253,11 @@ void MatMul<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>>::apply(DenseMatri
     const auto nc1 = static_cast<int>(transa ? lhs->getNumRows() : lhs->getNumCols());
     const auto nr2 = static_cast<int>(transb ? rhs->getNumCols() : rhs->getNumRows());
     const auto nc2 = static_cast<int>(transb ? rhs->getNumRows() : rhs->getNumCols());
-//    assert((nc1 == static_cast<int>(transb ? rhs->getNumCols() : rhs->getNumRows())) &&
     assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
     const VT alpha = 1.0f;
     const VT beta = 0.0f;
     if(res == nullptr)
-        res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, true);
+        res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false);
 
     // adding BLAS nomenclature - should be optimized away by the compiler ;-)
     auto m = nr1;
@@ -272,21 +271,15 @@ void MatMul<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>>::apply(DenseMatri
     const auto B = rhs->getValues();
     auto C = res->getValues();
 
-    auto incy = static_cast<int>(res->getRowSkip());
-//    dctx->logger->debug("m {}, n {} k {}", m, n, k);
-//    dctx->logger->debug("incy: {}", incy);
-
     if(nr1 == 1 && nc2 == 1) {// Vector-Vector
-        dctx->logger->debug("launch_dot<{}>(a[{}], b[{}])", typeid(alpha).name(), m, n);
-        res->set(0, 0, launch_dot(nc1, A, 1, B, static_cast<int>(rhs->getRowSkip())));
+        dctx->logger->debug("launch_dot<{}>(a[{}x{}], b[{}x{}])", typeid(alpha).name(), m, k, k, n);
+        res->set(0, 0, launch_dot(nc1, A, 1, B, rhs->isView() ? (transb ? 1 : rhs->getRowSkip()) : 1));
     }
     else if(nc2 == 1) {      // Matrix-Vector
-//        dctx->logger->debug("lda {}, ldb {} ldc {}", lda, ldb, ldc);
         dctx->logger->debug("launch_gemv<{}>(A[{},{}], x[{}])", typeid(alpha).name(), m, k, k);
-        launch_gemv<VT>(transa, transb, lhs->getNumRows(), lhs->getNumCols(), alpha, A, lda, B, 1, beta, C, incy);
+        launch_gemv<VT>(transa, transb, lhs->getNumRows(), lhs->getNumCols(), alpha, A, lda, B, 1, beta, C, 1);
     }
     else { // Matrix-Matrix
-//        dctx->logger->debug("lda {}, ldb {} ldc {}", lda, ldb, ldc);
         dctx->logger->debug("launch_gemm<{}>(C[{}x{}], A[{},{}], B[{}x{}], transA:{}, transB:{})",
                 typeid(alpha).name(), m, n, m, k, k, n, transa, transb);
         launch_gemm<VT>(transa, transb, nr1, nc2, nc1, alpha, A, lda, B, ldb, beta, C, ldc);
