@@ -1,0 +1,9 @@
+n = $n - 1;
+
+X = rand(n, $n, 0.0, 5.0, 1, -1); 
+Y = t(X);
+
+// Is needed as compiler optimizates the transpose op away if not used somewhere
+// Y = Y[0, 0] is in case of enable_update_in_place=True/False identical
+// Be careful with this, as slicing could implement in-place updating
+Y = Y[0, 0];

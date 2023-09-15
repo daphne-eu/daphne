@@ -20,6 +20,8 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/InPlaceUtils.h>
+#include <spdlog/spdlog.h>
 
 #include <cstddef>
 
@@ -29,7 +31,7 @@
 
 template<class DTRes, class DTArg>
 struct Transpose {
-    static void apply(DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, DTArg * arg, bool hasFutureUseArg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -37,8 +39,8 @@ struct Transpose {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void transpose(DTRes *& res, const DTArg * arg, DCTX(ctx)) {
-    Transpose<DTRes, DTArg>::apply(res, arg, ctx);
+void transpose(DTRes *& res, DTArg * arg, bool hasFutureUseArg, DCTX(ctx)) {
+    Transpose<DTRes, DTArg>::apply(res, arg, hasFutureUseArg, ctx);
 }
 
 // ****************************************************************************
@@ -51,21 +53,77 @@ void transpose(DTRes *& res, const DTArg * arg, DCTX(ctx)) {
 
 template<typename VT>
 struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *& res, DenseMatrix<VT> * arg, bool hasFutureUseArg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
         // skip data movement for vectors
         // FIXME: The check (numCols == arg->getRowSkip()) is a hack to check if the input arg is only a "view"
         //        on a larger matrix.
+
         if ((numRows == 1 || numCols == 1) && (numCols == arg->getRowSkip())) {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg);
         }
         else
         {
-            if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
 
+            if (res == nullptr) {
+                if(InPlaceUtils::isInPlaceable(arg, hasFutureUseArg)) {
+                    // In case of square matrix, we can transpose in-place on the data object
+                    if(numRows == numCols) {
+                        spdlog::debug("Transpose(Dense) - arg is in-placeable");
+                        res = arg;
+                        res->increaseRefCounter();
+                    }
+                    // In case of non-square matrix, we need to allocate a new object
+                    // but we can still transpose in-place on the data buffer.
+                    else {
+                        spdlog::debug("Transpose(Dense) - data buffer of arg is in-placeable");
+                        res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg);
+                    }
+
+                    // We need to apply a different algorithm for updating in-place matrices
+                    // Based on https://en.wikipedia.org/wiki/In-place_matrix_transposition#Non-square_matrices%3a_Following_the_cycles
+                    // and https://www.geeksforgeeks.org/inplace-m-x-n-size-matrix-transpose/
+                    // Here we initialize a boolean array to keep track of the visited elements.
+                    // Trade-off between allocating n*m bytes (boolean) vs worst case n*m*8 bytes (double)
+                    // TODO: Implement trivial algorithm for square matrices
+
+                    VT *valuesArg = arg->getValues();
+                    int size = numRows * numCols;
+                    bool* visited = new bool[size]{false};
+
+                    for (int start = 0; start < size; ++start) {
+
+                        if (visited[start])
+                            continue;
+
+                        VT temp = valuesArg[start];
+                        int current = start;
+
+                        do {
+                            int next = (current % numCols) * numRows + current / numCols;
+                            VT nextValue = valuesArg[next];
+                            valuesArg[next] = temp;
+                            visited[current] = true;
+                            current = next;
+                            temp = nextValue;
+                        } while (current != start);
+                    }
+
+                    delete[] visited;
+
+                    //early return
+                    return;
+
+                }
+                else {
+                    spdlog::debug("Transpose(Dense) - create new matrix for result");
+                    res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
+                }
+            }
+
+            // Default case
             const VT *valuesArg = arg->getValues();
             const size_t rowSkipArg = arg->getRowSkip();
             const size_t rowSkipRes = res->getRowSkip();
@@ -87,9 +145,13 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
 
 template<typename VT>
 struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
+    static void apply(CSRMatrix<VT> *& res, CSRMatrix<VT> * arg, bool hasFutureUseArg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
+
+        if(hasFutureUseArg == false) {
+            spdlog::debug("Transpose(CSR) - in-place transpose of CSRMatrix is not supported");
+        }
         
         if(res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numCols, numRows, arg->getNumNonZeros(), false);

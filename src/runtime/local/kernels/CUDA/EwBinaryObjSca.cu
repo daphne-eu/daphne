@@ -15,6 +15,7 @@
  */
 
 #include "EwBinaryObjSca.h"
+#include <spdlog/spdlog.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
@@ -30,12 +31,16 @@ __global__ void ewBinMatSca(VT* res, const VT* lhs, const VT rhs, size_t N, OP o
 namespace CUDA {
     template<typename VT>
     void EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>::apply(BinaryOpCode opCode, DenseMatrix<VT> *&res,
-            const DenseMatrix<VT> *lhs, VT rhs, DCTX(dctx)) {
+            DenseMatrix<VT> *lhs, VT rhs, bool hasFutureUseLhs, DCTX(dctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
     
         const size_t deviceID = 0; //ToDo: multi device support
         AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+
+        if (hasFutureUseLhs == false) {
+            spdlog::debug("EwBinaryObjSca(Dense)[CUDA] - currently not implemented.");
+        }
         
         int blockSize;
         int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch

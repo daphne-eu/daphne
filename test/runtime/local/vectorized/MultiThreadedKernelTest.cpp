@@ -33,6 +33,8 @@ void funAdd(DT*** outputs, Structure** inputs, DCTX(ctx)) {
         *outputs[0],
         reinterpret_cast<DT*>(inputs[0]),
         reinterpret_cast<DT*>(inputs[1]),
+        true,
+        true,
         ctx);
 }
 
@@ -42,6 +44,7 @@ void funMul(DT*** outputs, Structure** inputs, DCTX(ctx)) {
         *outputs[0],
         reinterpret_cast<DT*>(inputs[0]),
         reinterpret_cast<DT*>(inputs[1]),
+        true, true,
         ctx);
 }
 
@@ -59,7 +62,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     randMatrix<DT, VT>(m2, 1234, 10, 0.0, 1.0, 1.0, 3, nullptr);
 
     DT *r1 = nullptr, *r2 = nullptr;
-    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, nullptr); //single-threaded
+    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, true, true, nullptr); //single-threaded
 
     auto wrapper = std::make_unique<MTWrapper<DT>>(1, ctx.get());
 
@@ -96,7 +99,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     randMatrix<DT, VT>(m2, 1234, 10, 0.0, 1.0, 1.0, 3, nullptr);
 
     DT *r1 = nullptr, *r2 = nullptr;
-    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, nullptr); //single-threaded
+    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, true, true, nullptr); //single-threaded
 
     auto wrapper = std::make_unique<MTWrapper<DT>>(1, ctx.get());
 
@@ -133,7 +136,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     randMatrix<DT, VT>(m2, 1234, 10, 0.0, 1.0, 1.0, 3, nullptr);
 
     DT *r1 = nullptr, *r2 = nullptr;
-    ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2, nullptr); //single-threaded
+    ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2, true, true, nullptr); //single-threaded
 
     auto wrapper = std::make_unique<MTWrapper<DT>>(1, ctx.get());    DT **outputs[] = {&r2};
 

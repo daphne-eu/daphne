@@ -37,7 +37,7 @@ namespace CUDA {
 
     template<class DTRes, class DTLhs, typename VTRhs>
     struct EwBinaryObjSca {
-        static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) = delete;
+        static void apply(BinaryOpCode opCode, DTRes *& res, DTLhs * lhs, VTRhs rhs, bool hasFutureUseLhs, DCTX(ctx)) = delete;
     };
 
 // ****************************************************************************
@@ -45,8 +45,8 @@ namespace CUDA {
 // ****************************************************************************
 
     template<class DTRes, class DTLhs, typename VTRhs>
-    void ewBinaryObjSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
-        EwBinaryObjSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
+    void ewBinaryObjSca(BinaryOpCode opCode, DTRes *& res, DTLhs * lhs, VTRhs rhs, bool hasFutureUseLhs, DCTX(ctx)) {
+        EwBinaryObjSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, hasFutureUseLhs, ctx);
     }
 
 // ****************************************************************************
@@ -59,6 +59,6 @@ namespace CUDA {
 
     template<typename VT>
     struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
-        static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, VT rhs, DCTX(ctx));
+        static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, DenseMatrix<VT> * lhs, VT rhs, bool hasFutureUseLhs, DCTX(ctx));
     };
 }

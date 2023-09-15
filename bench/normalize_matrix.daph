@@ -1,0 +1,6 @@
+X = rand($n, $n, 0.0, 5.0, 1, -1);
+
+//normalize matrix
+max = aggMax(X, 0);
+min = aggMin(X, 0);
+Y = (X - min) / (max - min);

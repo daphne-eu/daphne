@@ -245,6 +245,12 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "fpgaopencl", cat(daphneOptions),
             desc("Use FPGAOPENCL")
     );
+
+    static opt<bool> updateInPlace(
+            "update-in-place", cat(daphneOptions),
+            desc("Enable update in-place optimization")
+    );
+
     static opt<string> libDir(
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
@@ -261,7 +267,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       phy_op_selection,
       type_adaptation,
       vectorized,
-      obj_ref_mgnt
+      obj_ref_mgnt,
+      update_in_place
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -279,7 +286,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
+            clEnumVal(update_in_place, "Show DaphneIR after flagging for in-place updating")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
@@ -356,6 +364,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         logger = std::make_unique<DaphneLogger>(user_config);
 
     user_config.use_vectorized_exec = useVectorizedPipelines;
+    user_config.enable_update_in_place = updateInPlace;
     user_config.use_distributed = useDistributedRuntime; 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;
@@ -412,6 +421,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
             case obj_ref_mgnt:
                 user_config.explain_obj_ref_mgnt = true;
+                break;
+            case update_in_place:
+                user_config.explain_update_in_place = true;
                 break;
         }
     }

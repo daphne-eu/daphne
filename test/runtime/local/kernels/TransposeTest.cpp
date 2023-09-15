@@ -27,9 +27,9 @@
 #include <cstdint>
 
 template<class DT>
-void checkTranspose(const DT * arg, const DT * exp) {
+void checkTranspose(DT * arg, const DT * exp) {
     DT * res = nullptr;
-    transpose<DT, DT>(res, arg, nullptr);
+    transpose<DT, DT>(res, arg, true, nullptr);
     CHECK(*res == *exp);
 }
 
@@ -38,6 +38,21 @@ TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (
     
     DT * m = nullptr;
     DT * mt = nullptr;
+
+     SECTION("square") {
+        m = genGivenVals<DT>(4, {
+            1,  2,  3,  4,
+            5,  6,  7,  8,
+            9, 10, 11, 12,
+            9, 10, 11, 12,
+        });
+        mt = genGivenVals<DT>(4, {
+            1, 5,  9, 9,
+            2, 6, 10, 10,
+            3, 7, 11, 11,
+            4, 8, 12, 12
+        });
+    }
     
     SECTION("fully populated matrix") {
         m = genGivenVals<DT>(3, {

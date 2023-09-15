@@ -18,6 +18,7 @@
 #include "HostUtils.h"
 #include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #include "runtime/local/kernels/CUDA/bin_ops.cuh"
+#include #include <spdlog/spdlog.h>
 
 namespace CUDA {
     template<class VT, class OP>
@@ -96,10 +97,14 @@ namespace CUDA {
 // ----------------------------------------------------------------------------
     template<typename VTres, typename VTlhs, typename VTrhs>
     void EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>>::apply(BinaryOpCode opCode,
-            DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs, const DenseMatrix<VTrhs> *rhs, DCTX(dctx)) {
+            DenseMatrix<VTres> *&res, DenseMatrix<VTlhs> *lhs, DenseMatrix<VTrhs> *rhs, bool hasFutureUseLhs, bool hasFutureUseRhs, DCTX(dctx)) {
         const size_t deviceID = 0; //ToDo: multi device support
         auto ctx = CUDAContext::get(dctx, deviceID);
         AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+
+        if (hasFutureUseLhs == false || hasFutureUseRhs == false) {
+            spdlog::debug("EwBinaryMat(Dense)[CUDA] - currently not implemented.");
+        }
 
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();

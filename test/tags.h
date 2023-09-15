@@ -48,4 +48,7 @@
 #define TAG_VECTORIZED "[vectorized]"
 #define TAG_DAPHNELIB "[daphnelib]"
 
+#define TAG_INPLACE "[inplace]"
+#define TAG_INPLACE_BENCH "[.inplace-bench]" //<-- only run when explicity requested
+
 #endif //TEST_TAGS_H

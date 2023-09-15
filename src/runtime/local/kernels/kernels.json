@@ -1002,12 +1002,20 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTLhs *",
+                    "type": "DTLhs *",
                     "name": "lhs"
                 },
                 {
-                    "type": "const DTRhs *",
+                    "type": "DTRhs *",
                     "name": "rhs"
+                }, 
+                {
+                    "type": "bool",
+                    "name": "hasFutureUseLhs"
+                },
+                {
+                    "type": "bool",
+                    "name": "hasFutureUseRhs"   
                 }
             ]
         },
@@ -1069,12 +1077,16 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTLhs *",
+                    "type": "DTLhs *",
                     "name": "lhs"
                 },
                 {
                     "type": "VTRhs",
                     "name": "rhs"
+                },
+                {
+                    "type": "bool",
+                    "name": "hasFutureUseLhs"
                 }
             ]
         },
@@ -2582,8 +2594,12 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "DTArg *",
                     "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "hasFutureUseArg"
                 }
             ]
         },
@@ -2628,8 +2644,12 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "DTArg *",
                     "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "hasFutureUseArg"
                 }
             ]
         },

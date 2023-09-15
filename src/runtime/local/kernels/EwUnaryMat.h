@@ -17,11 +17,13 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_EWUNARYMAT_H
 #define SRC_RUNTIME_LOCAL_KERNELS_EWUNARYMAT_H
 
+#include <runtime/local/kernels/InPlaceUtils.h>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/kernels/EwUnarySca.h>
+#include <spdlog/spdlog.h>
 
 #include <cassert>
 #include <cstddef>
@@ -32,7 +34,7 @@
 
 template<class DTRes, class DTArg>
 struct EwUnaryMat {
-    static void apply(UnaryOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
+    static void apply(UnaryOpCode opCode, DTRes *& res, DTArg * arg, bool hasFutureUseArg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -40,8 +42,8 @@ struct EwUnaryMat {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void ewUnaryMat(UnaryOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) {
-    EwUnaryMat<DTRes, DTArg>::apply(opCode, res, arg, ctx);
+void ewUnaryMat(UnaryOpCode opCode, DTRes *& res, DTArg * arg, bool hasFutureUseArg, DCTX(ctx)) {
+    EwUnaryMat<DTRes, DTArg>::apply(opCode, res, arg, hasFutureUseArg, ctx);
 }
 
 // ****************************************************************************
@@ -54,12 +56,21 @@ void ewUnaryMat(UnaryOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) 
 
 template<typename VT>
 struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(UnaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
+    static void apply(UnaryOpCode opCode, DenseMatrix<VT> *& res, DenseMatrix<VT> * arg, bool hasFutureUseArg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+        if(res == nullptr) {
+            if(InPlaceUtils::isInPlaceable(arg, hasFutureUseArg)) {
+                spdlog::debug("EwUnaryMat(Dense) - arg is in-placeable");
+                res = arg;
+                res->increaseRefCounter();
+            }
+            else {
+                spdlog::debug("EwUnaryMat(Dense) - create new matrix for result");
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+            }
+        }
         
         const VT * valuesArg = arg->getValues();
         VT * valuesRes = res->getValues();

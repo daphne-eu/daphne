@@ -60,7 +60,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix), (float, double))
 
     DT *y = nullptr, *tX = nullptr, *A = nullptr, *b = nullptr;
     matMul(y, X, w, false, false, dctx.get());
-    transpose<DT, DT>(tX, X, dctx.get());
+    transpose<DT, DT>(tX, X, true, dctx.get());
     matMul(A, tX, X, false, false, dctx.get());
     matMul(b, tX, y, false, false, dctx.get());
 

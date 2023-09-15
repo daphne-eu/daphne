@@ -68,6 +68,7 @@
 #include <ir/daphneir/DaphneInferShapeOpInterface.h>
 #include <ir/daphneir/DaphneInferTypesOpInterface.h>
 #include <ir/daphneir/DaphneVectorizableOpInterface.h>
+#include <ir/daphneir/DaphneUpdateInPlaceOpInterface.h>
 
 #include <string>
 #include <utility>

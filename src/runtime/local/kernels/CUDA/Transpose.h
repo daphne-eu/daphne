@@ -33,12 +33,12 @@ namespace CUDA {
 
     template<class DTRes, class DTArg>
     struct Transpose {
-        static void apply(DTRes *&res, const DTArg *arg, DCTX(ctx)) = delete;
+        static void apply(DTRes *&res, DTArg *arg, bool hasFutureUseArg, DCTX(ctx)) = delete;
     };
 
     template<typename VT>
     struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
-        static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx));
+        static void apply(DenseMatrix<VT> *&res, DenseMatrix<VT> *arg, bool hasFutureUseArg, DCTX(ctx));
     };
 
 // ****************************************************************************
@@ -46,7 +46,7 @@ namespace CUDA {
 // ****************************************************************************
 
     template<class DTRes, class DTArg>
-    void transpose(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
-        Transpose<DTRes, DTArg>::apply(res, arg, ctx);
+    void transpose(DTRes *&res, DTArg *arg, bool hasFutureUseArg, DCTX(ctx)) {
+        Transpose<DTRes, DTArg>::apply(res, arg, hasFutureUseArg, ctx);
     }
 }

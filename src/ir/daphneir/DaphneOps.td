@@ -28,6 +28,7 @@ include "ir/daphneir/DaphneInferSparsityOpInterface.td"
 include "ir/daphneir/DaphneInferSparsityTraits.td"
 include "ir/daphneir/DaphneInferTypesOpInterface.td"
 include "ir/daphneir/DaphneVectorizableOpInterface.td"
+include "ir/daphneir/DaphneUpdateInPlaceOpInterface.td"
 include "ir/daphneir/DaphneShapeInferenceTraits.td"
 include "ir/daphneir/DaphneTypeAdaptationTraits.td"
 include "ir/daphneir/DaphneTypeInferenceTraits.td"
@@ -173,7 +174,9 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
 class Daphne_EwUnaryOp<string name, Type scalarType, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeFromFirstArg,
     ShapeFromArg,
-    CastArgsToResType
+    CastArgsToResType,
+    DeclareOpInterfaceMethods<InPlaceOpInterface>
+
 ])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$arg);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
@@ -228,8 +231,10 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
     DeclareOpInterfaceMethods<DistributableOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     ShapeEwBinary,
-    CastArgsToResType
+    CastArgsToResType,
+    DeclareOpInterfaceMethods<InPlaceOpInterface>
 ])> {
+
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
 
@@ -241,6 +246,8 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
         }]>
     ];
     let hasFolder = 1;
+
+
 }
 
 // ----------------------------------------------------------------------------
@@ -647,6 +654,7 @@ def Daphne_ReshapeOp : Daphne_Op<"reshape", [
 def Daphne_TransposeOp : Daphne_Op<"transpose", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
+    DeclareOpInterfaceMethods<InPlaceOpInterface>,
     NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg, CUDASupport,
     Pure
 ]> {
