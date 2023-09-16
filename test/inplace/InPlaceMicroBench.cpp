@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/datagen/GenGivenVals.h>
@@ -178,8 +179,10 @@ TEMPLATE_PRODUCT_TEST_CASE("transpose - In-Place - Bench", TAG_INPLACE_BENCH, (D
         fillMatrix(m1, 5000, 5000, VT(1.0));
         DT* res = nullptr;
 
-        meter.measure([&m1, &res]() {
-            return transpose<DT, DT>(res, m1, false, nullptr);
+        auto dctx = setupContextAndLogger();
+
+        meter.measure([&m1, &res, &dctx]() {
+            return transpose<DT, DT>(res, m1, false, dctx.get());
         });
 
         DataObjectFactory::destroy(m1);
@@ -191,8 +194,10 @@ TEMPLATE_PRODUCT_TEST_CASE("transpose - In-Place - Bench", TAG_INPLACE_BENCH, (D
         fillMatrix(m1, 5000, 5000, VT(1.0));
         DT* res = nullptr;
 
-        meter.measure([&m1, &res]() {
-            return transpose<DT, DT>(res, m1, true, nullptr);
+        auto dctx = setupContextAndLogger();
+
+        meter.measure([&m1, &res, &dctx]() {
+            return transpose<DT, DT>(res, m1, true, dctx.get());
         });
 
         DataObjectFactory::destroy(m1);

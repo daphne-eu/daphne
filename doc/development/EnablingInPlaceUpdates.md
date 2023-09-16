@@ -235,6 +235,7 @@ It is advisable to adapt the tests accordingly as well and implement new test ca
 | EwBinaryObjMat | ✅    | ❌  | ✅    |
 | EwUnaryMat     | ✅    | ❌  |       |
 | Transpose      | ✅    | ❌  |       |
+| Reverse        | ✅    | ❌  |       |
 
 None of these kernels currently support in-place updates when using CUDA or FPGA.
 
@@ -242,5 +243,4 @@ Additional kernels/operations that could support in-place updates:
 
 * InsertColOp, InsertRowOp
 * SliceColOp, SliceRowOp
-* ReverseOp
 * VectorizedPipelineOp
