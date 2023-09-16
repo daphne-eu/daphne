@@ -1,0 +1,9 @@
+n = $n - 1;
+A = rand($n, n, 0.0, 5.0, 1, -1);
+B = rand($n, n, 0.0, 5.0, 1, -1); 
+
+C = A + B;    // Kernel EwBinaryMat (add)
+C = sqrt(C);  // Kernel EwUnaryMat (sqrt)
+
+B = B[0,0];
+C = C[0,0];

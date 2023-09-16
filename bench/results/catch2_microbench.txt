@@ -7,192 +7,192 @@ Run with -? for options
 -------------------------------------------------------------------------------
 ewBinaryMat - In-Place - Bench - DenseMatrix<double>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:61
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:62
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseLhs == false                       100             1     6.45083 s 
-                                        64.6988 ms    64.2352 ms    65.3668 ms 
-                                        2.81866 ms    2.12544 ms    3.75139 ms 
-                                                                               
-hasFutureUseLhs == true                        100             1     20.6176 s 
-                                        191.593 ms    190.462 ms     193.11 ms 
-                                        6.66436 ms    5.34705 ms    8.69588 ms 
-                                                                               
+hasFutureUseLhs == false                       100             1     3.42384 s
+                                        34.3745 ms    34.3527 ms    34.3997 ms
+                                        119.465 us     103.01 us    142.035 us
+
+hasFutureUseLhs == true                        100             1     6.35415 s
+                                        93.2589 ms    93.1386 ms    93.4476 ms
+                                        757.624 us    533.151 us    1.17155 ms
+
 
 -------------------------------------------------------------------------------
 ewBinaryMat - In-Place - Bench - DenseMatrix<uint32_t>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:61
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:62
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseLhs == false                       100             1     5.82955 s 
-                                        58.6247 ms    58.2472 ms     59.251 ms 
-                                         2.4213 ms      1.685 ms    3.67005 ms 
-                                                                               
-hasFutureUseLhs == true                        100             1     13.3628 s 
-                                        124.864 ms    124.086 ms    125.891 ms 
-                                        4.54975 ms    3.63669 ms    5.63368 ms 
-                                                                               
+hasFutureUseLhs == false                       100             1     4.10302 s
+                                        41.1027 ms    41.0809 ms    41.1257 ms
+                                         114.16 us    102.401 us    130.108 us
+
+hasFutureUseLhs == true                        100             1       5.455 s
+                                        68.3203 ms    68.2408 ms    68.4671 ms
+                                        532.397 us    311.582 us    875.271 us
+
 
 -------------------------------------------------------------------------------
 ewBinaryObjSca - In-Place - Bench - DenseMatrix<double>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:101
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:102
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseLhs == false                       100             1     6.14235 s 
-                                        62.3712 ms    61.2936 ms    64.0612 ms 
-                                         6.7821 ms    4.91287 ms    9.59336 ms 
-                                                                               
-hasFutureUseLhs == true                        100             1     19.6363 s 
-                                        186.703 ms    185.737 ms    187.958 ms 
-                                        5.56839 ms    4.49399 ms    7.07245 ms 
-                                                                               
+hasFutureUseLhs == false                       100             1     4.12941 s
+                                        41.3381 ms    41.3092 ms     41.373 ms
+                                        161.355 us    136.587 us    199.755 us
+
+hasFutureUseLhs == true                        100             1     6.83667 s
+                                        95.5483 ms    95.4486 ms    95.7167 ms
+                                        644.743 us    404.745 us    1.00922 ms
+
 
 -------------------------------------------------------------------------------
 ewBinaryObjSca - In-Place - Bench - DenseMatrix<uint32_t>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:101
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:102
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseLhs == false                       100             1     3.73831 s 
-                                        38.9411 ms    38.4683 ms    39.7902 ms 
-                                        3.13992 ms    1.98985 ms    4.91697 ms 
-                                                                               
-hasFutureUseLhs == true                        100             1     11.6408 s 
-                                        113.288 ms    112.219 ms    114.817 ms 
-                                        6.41138 ms    4.86168 ms    8.60344 ms 
-                                                                               
+hasFutureUseLhs == false                       100             1     4.16458 s
+                                        41.6259 ms    41.6131 ms    41.6421 ms
+                                        73.1256 us    60.1765 us    91.4677 us
+
+hasFutureUseLhs == true                        100             1     5.49212 s
+                                         68.278 ms    68.2123 ms    68.3553 ms
+                                        362.234 us    307.805 us    494.375 us
+
 
 -------------------------------------------------------------------------------
 ewUnaryMat - In-Place - Bench - DenseMatrix<double>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:137
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:138
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseArg == false                       100             1     7.42775 s 
-                                        76.2202 ms    75.6463 ms    77.1262 ms 
-                                        3.60406 ms    2.60845 ms    5.18705 ms 
-                                                                               
-hasFutureUseArg == true                        100             1     25.5445 s 
-                                        228.249 ms    227.315 ms    229.464 ms 
-                                          5.395 ms    4.32557 ms    7.01377 ms 
-                                                                               
+hasFutureUseArg == false                       100             1     4.78539 s
+                                        47.9552 ms    47.8898 ms    48.2072 ms
+                                        582.656 us    119.798 us    1.36518 ms
+
+hasFutureUseArg == true                        100             1     10.2977 s
+                                        103.165 ms    103.052 ms    103.304 ms
+                                        635.321 us    537.202 us    787.782 us
+
 
 -------------------------------------------------------------------------------
 ewUnaryMat - In-Place - Bench - DenseMatrix<uint32_t>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:137
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:138
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseArg == false                       100             1     4.67272 s 
-                                        47.3804 ms    46.9622 ms    48.0565 ms 
-                                        2.67156 ms    1.93327 ms    4.31003 ms 
-                                                                               
-hasFutureUseArg == true                        100             1     12.8403 s 
-                                        105.476 ms    104.167 ms    107.452 ms 
-                                        8.09662 ms    5.89413 ms    10.8057 ms 
-                                                                               
+hasFutureUseArg == false                       100             1     4.20593 s
+                                        41.9172 ms    41.8817 ms    42.0416 ms
+                                        302.862 us    91.6534 us     692.86 us
+
+hasFutureUseArg == true                        100             1     5.51831 s
+                                        68.1094 ms    68.0627 ms    68.1686 ms
+                                        265.265 us    213.113 us    358.991 us
+
 
 -------------------------------------------------------------------------------
 transpose - In-Place - Bench - DenseMatrix<double>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:172
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:173
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseArg == false                       100             1     1.01073 m 
-                                        584.167 ms    580.343 ms    589.336 ms 
-                                        22.3959 ms    17.3386 ms    29.6337 ms 
-                                                                               
-hasFutureUseArg == true                        100             1     48.2084 s 
-                                        454.664 ms    452.308 ms    457.562 ms 
-                                        13.2365 ms    11.1075 ms    17.1462 ms 
-                                                                               
+hasFutureUseArg == false                       100             1     19.3922 s
+                                        183.634 ms    183.505 ms    183.985 ms
+                                        1.00309 ms    464.457 us    2.12944 ms
+
+hasFutureUseArg == true                        100             1     16.0702 s
+                                        160.651 ms    160.367 ms    161.031 ms
+                                        1.65269 ms    1.27988 ms     2.2958 ms
+
 
 -------------------------------------------------------------------------------
 transpose - In-Place - Bench - DenseMatrix<uint32_t>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:172
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:173
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseArg == false                       100             1     56.9027 s 
-                                        533.768 ms    531.296 ms    536.952 ms 
-                                        14.2402 ms    11.6911 ms    20.0264 ms 
-                                                                               
-hasFutureUseArg == true                        100             1     35.0377 s 
-                                        356.809 ms    353.897 ms    360.622 ms 
-                                        16.8881 ms    13.7264 ms    22.0485 ms 
-                                                                               
+hasFutureUseArg == false                       100             1     18.6501 s
+                                        187.147 ms    186.906 ms    187.973 ms
+                                        2.01778 ms    654.676 us    4.53456 ms
+
+hasFutureUseArg == true                        100             1     11.5829 s
+                                        116.614 ms     116.52 ms    116.716 ms
+                                        498.779 us     429.33 us    592.574 us
+
 
 -------------------------------------------------------------------------------
 reverse - In-Place - Bench - DenseMatrix<double>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:207
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:212
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseArg == false                       100             1     3.60201 s 
-                                        24.3777 ms    24.1839 ms    24.6621 ms 
-                                        1.18252 ms    875.766 us    1.70534 ms 
-                                                                               
-hasFutureUseArg == true                        100             1     18.7258 s 
-                                        169.287 ms    167.132 ms    172.048 ms 
-                                         12.371 ms    10.1482 ms    17.5517 ms 
-                                                                               
+hasFutureUseArg == false                       100             1     1.29623 s
+                                        13.0989 ms    13.0623 ms     13.164 ms
+                                        242.243 us    155.975 us    369.416 us
+
+hasFutureUseArg == true                        100             1     2.98561 s
+                                        79.0713 ms    78.9856 ms    79.1876 ms
+                                        506.625 us      398.9 us    682.547 us
+
 
 -------------------------------------------------------------------------------
 reverse - In-Place - Bench - DenseMatrix<uint32_t>
 -------------------------------------------------------------------------------
-/home/niklas/daphne/test/inplace/InPlaceMicroBench.cpp:207
+/root/daphne/test/inplace/InPlaceMicroBench.cpp:212
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-hasFutureUseArg == false                       100             1     2.01266 s 
-                                        12.4363 ms    12.2838 ms    12.6902 ms 
-                                        989.697 us    677.012 us     1.4443 ms 
-                                                                               
-hasFutureUseArg == true                        100             1     5.19345 s 
-                                        80.7068 ms    80.1937 ms    81.4244 ms 
-                                        3.07982 ms    2.35977 ms    4.15952 ms 
-                                                                               
+hasFutureUseArg == false                       100             1    656.864 ms
+                                        6.56703 ms    6.54753 ms    6.59091 ms
+                                        109.896 us    90.2811 us    132.695 us
+
+hasFutureUseArg == true                        100             1    959.053 ms
+                                        39.2158 ms    39.1543 ms     39.293 ms
+                                        350.737 us     289.59 us    426.468 us
+
 
 ===============================================================================
 test cases: 10 | 10 passed

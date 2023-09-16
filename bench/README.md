@@ -36,22 +36,25 @@ The result of the run on the bench VM can be found in file: [catch2_microbench.t
 
 ## System Information
 
-The benchmark was done inside a VM (CX41, scaled up) on hetzner.cloud
+The benchmark was done inside a VM (CCX23, Dedicated vCPUs) on hetzner.cloud
 
 **CPU:**
 
 Architecture: x86_64
-CPUs: 4x @ 2.1 Ghz
-Model name: Intel Xeon Processor (Skylake, IBRS)
-L1 cache: 128 KiB
-L2 cache: 16 MiB
-L3 cache: 16 MiB
+CPUs: 4x @ 2.4 Ghz
+Model name: AMD EPYC-Milan Processor
+
+Caches (sum of all):
+L1d: 64 KiB (2 instances)
+L1i: 64 KiB (2 instances)
+L2: 1 MiB (2 instances)
+L3: 32 MiB (1 instance)
 
 Hypervisor vendor: KVM
 Virtualization type:  full
 
 **RAM**: 16GB
-**Disk Storage**: SSD 80GB
+**Disk Storage**: SSD 160GB
 
 **OS**: Ubuntu 22.04.2 LTS (GNU/Linux 5.15.0-75-generic x86_64)
 

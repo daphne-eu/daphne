@@ -145,6 +145,12 @@ benchit(file_path="./normalize_matrix.daph", prefix="large", n=5, update_in_plac
 
 #benchit(file_path="./normalize_matrix.daph", prefix="out-of-memory", n=1, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "n=36500"]) # <-- if update_in_place=False, will crash
 
+### PRESENTATION EXAMPLE ###
+
+benchit(file_path="./presentation_example.daph", prefix="small", n=100, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "n=50"])
+benchit(file_path="./presentation_example.daph", prefix="medium", n=30, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "n=5000"])
+benchit(file_path="./presentation_example.daph", prefix="large", n=5, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "n=15000"])
+
 ### TRANSPOSE ###
 
 benchit(file_path="./transpose.daph", prefix="small", n=100, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "n=50"])
@@ -167,9 +173,9 @@ benchit(file_path="./addition_readMatrix.daph", prefix="medium", n=30, update_in
 
 ### KMEANS (NEW TRANSPOSE) ###
 
-benchit(file_path="./kmeans.daphne", prefix="small", n=100, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "r=50,c=5,f=10,i=100", "--force-old-transpose"], suffix="new-transpose")
-benchit(file_path="./kmeans.daphne", prefix="medium", n=30, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "r=5000,c=250,f=25,i=100", "--force-old-transpose"], suffix="new-transpose")
-benchit(file_path="./kmeans.daphne", prefix="large", n=5, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "r=10000,c=5000,f=100,i=10", "--force-old-transpose"], suffix="new-transpose")
+benchit(file_path="./kmeans.daphne", prefix="small", n=100, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "r=50,c=5,f=10,i=100"], suffix="new-transpose")
+benchit(file_path="./kmeans.daphne", prefix="medium", n=30, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "r=5000,c=250,f=25,i=100"], suffix="new-transpose")
+benchit(file_path="./kmeans.daphne", prefix="large", n=5, update_in_place=update_in_place, use_perf=use_perf, args=["--args", "r=10000,c=5000,f=100,i=10"], suffix="new-transpose")
 
 ### KMEANS (OLD TRANSPOSE) ###
 
