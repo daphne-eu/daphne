@@ -33,6 +33,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
     inline static const std::string UPDATE_IN_PLACE = "enable_update_in_place";
+    inline static const std::string FORCE_OLD_TRANSPOSE = "force_old_transpose";
 
     inline static const std::string DEBUG_LLVM = "debug_llvm";
     inline static const std::string EXPLAIN_KERNELS = "explain_kernels";

@@ -248,7 +248,12 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     static opt<bool> updateInPlace(
             "update-in-place", cat(daphneOptions),
-            desc("Enable update in-place optimization")
+            desc("Enable update-in-place optimization")
+    );
+
+    static opt<bool> forceOldTranspose(
+            "force-old-transpose", cat(daphneOptions),
+            desc("Force the kernel to use the old transpose implementation, even though an update-in-place is possible.")
     );
 
     static opt<string> libDir(
@@ -382,6 +387,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.debugMultiThreading = debugMultiThreading;
     user_config.prePartitionRows = prePartitionRows;
     user_config.distributedBackEndSetup = distributedBackEndSetup;
+    user_config.force_old_transpose = forceOldTranspose;
     if(user_config.use_distributed)
     {
         if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_SYNC &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_ASYNC)

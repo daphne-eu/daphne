@@ -52,7 +52,9 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
     if (keyExists(jf, DaphneConfigJsonParams::USE_PHY_OP_SELECTION))
         config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::USE_PHY_OP_SELECTION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::UPDATE_IN_PLACE))
-        config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::UPDATE_IN_PLACE).get<bool>(); 
+        config.enable_update_in_place = jf.at(DaphneConfigJsonParams::UPDATE_IN_PLACE).get<bool>(); 
+    if (keyExists(jf, DaphneConfigJsonParams::FORCE_OLD_TRANSPOSE))
+        config.force_old_transpose = jf.at(DaphneConfigJsonParams::FORCE_OLD_TRANSPOSE).get<bool>(); 
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
         config.cuda_fuse_any = jf.at(DaphneConfigJsonParams::CUDA_FUSE_ANY).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE))

@@ -68,7 +68,10 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
         {
 
             if (res == nullptr) {
-                if(InPlaceUtils::isInPlaceable(arg, hasFutureUseArg)) {
+                if(InPlaceUtils::isInPlaceable(arg, hasFutureUseArg) && !ctx->config.force_old_transpose) {
+
+                    std::cout << "test" << std::endl;
+
                     // In case of square matrix, we can transpose in-place on the data object
                     if(numRows == numCols) {
                         spdlog::debug("Transpose(Dense) - arg is in-placeable");

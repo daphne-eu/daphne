@@ -50,6 +50,7 @@ struct DaphneUserConfig {
     bool use_fpgaopencl = false;
     bool enable_profiling = false;
     bool enable_update_in_place = false;
+    bool force_old_transpose = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;
