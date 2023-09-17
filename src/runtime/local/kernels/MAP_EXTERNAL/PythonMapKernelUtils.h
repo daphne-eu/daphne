@@ -76,14 +76,6 @@ PyObject* to_python_object(const uint8_t& value)
     return PyLong_FromUnsignedLong(value);
 }
 
-/*
-template <>
-PyObject* to_python_object(const unsigned int& value)
-{
-    return PyLong_FromUnsignedLong(value);
-}
-*/
-
 template <typename VTRes>
 VTRes from_python_object(PyObject* pValue);
 
@@ -134,14 +126,6 @@ uint8_t from_python_object<uint8_t>(PyObject* pValue)
 {
     return static_cast<uint8_t>(PyLong_AsUnsignedLong(pValue));
 }
-
-/*
-template <>
-unsigned int from_python_object<unsigned int>(PyObject* pValue)
-{
-    return static_cast<unsigned int>(PyLong_AsUnsignedLong(pValue));
-}
-*/
 
 template <typename VTRes>
 VTRes from_python_object_cutted(PyObject* value);
