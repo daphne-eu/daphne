@@ -234,21 +234,21 @@ def modify_matrix_sizes_in_csv(csv_file_name):
 
 if __name__ == "__main__":
     'For local benchmark results'
-    'Create Boxpot 2: Comparison 2 Operations on all Implementations with one logic data size '
+    'Create Barpot 2: Comparison 2 Operations on all Implementations with one logic data size '
     createBarplotsWithSeaborn("scripts/examples/map/performanceTest/testdata/csv_files/local/performance_results_2023-09-17 02:12:17.csv",
                               selected_runs=[2,3,4,5,6,7,8,9], implementations=['daphneInternal', 'daphneMap', 'Python_Numpy_Approach', 'Python_Shared_Mem', 'Python_SysArg','Python_Copy', 'Python_BinaryFile'])
 
-    'Create Boxplot 1: Comparison 4 Operations on all Implementations with one physical datasize in f64'
+    'Create Barplot 1: Comparison 4 Operations on all Implementations with one physical datasize in f64'
     modify_matrix_sizes_in_csv("scripts/examples/map/performanceTest/testdata/csv_files/local/performance_results_2023-09-14 23:45:06.csv")
     createBarplotsWithSeaborn("scripts/examples/map/performanceTest/testdata/csv_files/local/performance_results_2023-09-14 23:45:06_mapped_to_logical_datasizes.csv", 
                               selected_runs=[2,3,4,5,6,7,8,9,10], implementations=['daphneInternal', 'daphneMap', 'Python_Numpy_Approach', 'Python_Shared_Mem', 'Python_SysArg','Python_Copy', 'Python_BinaryFile', 'Python_CsvFile'])
 
     'For VM Benchmark results'
-    'Create Boxpot 2: Comparison 2 Operations on all Implementations with one logic data size '
+    'Create Barpot 2: Comparison 2 Operations on all Implementations with one logic data size '
     createBarplotsWithSeaborn("scripts/examples/map/performanceTest/testdata/csv_files/vm1/performance_results_2023-09-16 16:17:29.csv",
                               selected_runs=[2,3,4,5,6,7,8,9], implementations=['daphneInternal', 'daphneMap', 'Python_Numpy_Approach', 'Python_Shared_Mem', 'Python_SysArg','Python_Copy', 'Python_BinaryFile', 'Python_CsvFile'])
 
-    'Create Boxplot 1: Comparison 4 Operations on all Implementations with one physical datasize in f64'
+    'Create Barplot 1: Comparison 4 Operations on all Implementations with one physical datasize in f64'
     modify_matrix_sizes_in_csv("scripts/examples/map/performanceTest/testdata/csv_files/vm1/performance_results_2023-09-16 20:53:11.csv")
     
     createBarplotsWithSeaborn("scripts/examples/map/performanceTest/testdata/csv_files/vm1/performance_results_2023-09-16 20:53:11_mapped_to_logical_datasizes.csv", 
