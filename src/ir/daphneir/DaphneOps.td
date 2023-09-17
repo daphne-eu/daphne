@@ -1465,13 +1465,13 @@ def Daphne_DistributedPipelineOp : Daphne_Op<"distributedPipeline", [AttrSizedOp
 // ****************************************************************************
 // Higher-order operations
 // ****************************************************************************
-def Daphne_MapOp : Daphne_Op<"map", [ShapeFromArg, DeclareOpInterfaceMethods<VectorizableOpInterface>]> {
+def Daphne_MapOp : Daphne_Op<"map", [ShapeFromArg]> {
     let summary = "Applies a user defined function to elements of a matrix.";
     let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func);
     let results = (outs MatrixOrU:$res);
 }
 
-def Daphne_MapOpExternalPL : Daphne_Op<"mapExternalPL", [ShapeFromArg, DeclareOpInterfaceMethods<VectorizableOpInterface>]> {
+def Daphne_MapOpExternalPL : Daphne_Op<"mapExternalPL", [ShapeFromArg]> {
     let summary = "Applies a user defined function to elements of a matrix in another programming language.";
     let arguments = (ins MatrixOrU:$arg, StrScalar:$func, StrScalar:$varName, StrScalar:$pl);
     let results = (outs MatrixOrU:$res);

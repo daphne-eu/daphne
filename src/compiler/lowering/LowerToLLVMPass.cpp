@@ -505,15 +505,6 @@ public:
         Type itemType = item.getType();
         if (itemType != elementType) {
             if (elementType.isa<LLVM::LLVMPointerType>()) {
-                /*
-                // Check if elementType is a LLVMPointer Type
-                if(itemType.isa<LLVM::LLVMPointerType>() && itemType.cast<LLVM::LLVMPointerType>().getElementType().isa<IntegerType>()) {
-                    auto intType = itemType.cast<LLVM::LLVMPointerType>().getElementType().dyn_cast<IntegerType>();
-                    if (intType && intType.getWidth() == 8) {
-                        item = rewriter.create<LLVM::BitcastOp>(loc, elementType, item);
-                    }
-                }
-                */
                 if(itemType.isSignedInteger())
                     item = rewriter.create<LLVM::SExtOp>(loc, rewriter.getI64Type(), item);
                 else if(itemType.isUnsignedInteger() || itemType.isSignlessInteger())
@@ -656,16 +647,6 @@ public:
                         val = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getF64Type(), val);
                         val = rewriter.create<LLVM::FPTruncOp>(loc, expTy, val);
                     }
-                    /*
-                    // Handle the case when expTy is a pointer to i8 (which might represent a string)
-                    else if (expTy.isa<LLVM::LLVMPointerType>() && expTy.cast<LLVM::LLVMPointerType>().getElementType().isa<IntegerType>()) 
-                    {
-                        auto intType = expTy.cast<LLVM::LLVMPointerType>().getElementType().dyn_cast<IntegerType>();
-                        if (intType && intType.getWidth() == 8) {
-                            val = rewriter.create<LLVM::BitcastOp>(loc, expTy, val);
-                        }
-                    }
-                    */
                     else
                         throw std::runtime_error("expTy is an unsupported type");
                 }
