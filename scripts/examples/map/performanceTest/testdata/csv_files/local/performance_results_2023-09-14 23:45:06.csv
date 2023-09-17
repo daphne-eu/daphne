@@ -143,18 +143,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 0,5,daphneInternal,int64,5792,Execution Time,7.512097597122192
 0,5,daphneInternal,int64,5792,Memory Consumption,1178.7109375
 0,5,daphneInternal,int64,5792,Average CPU Load,14.620000000000001
-0,9,daphneInternal,int64,100,Execution Time,1.5039465427398682
-0,9,daphneInternal,int64,100,Memory Consumption,162.2265625
-0,9,daphneInternal,int64,100,Average CPU Load,25.2
-0,9,daphneInternal,int64,1000,Execution Time,1.5067603588104248
-0,9,daphneInternal,int64,1000,Memory Consumption,178.62109375
-0,9,daphneInternal,int64,1000,Average CPU Load,21.7
-0,9,daphneInternal,int64,2896,Execution Time,4.506460189819336
-0,9,daphneInternal,int64,2896,Memory Consumption,298.4609375
-0,9,daphneInternal,int64,2896,Average CPU Load,17.066666666666666
-0,9,daphneInternal,int64,5792,Execution Time,16.52499556541443
-0,9,daphneInternal,int64,5792,Memory Consumption,671.35546875
-0,9,daphneInternal,int64,5792,Average CPU Load,14.80909090909091
 0,10,daphneInternal,int64,100,Execution Time,1.5044691562652588
 0,10,daphneInternal,int64,100,Memory Consumption,157.40234375
 0,10,daphneInternal,int64,100,Average CPU Load,24.2
@@ -887,18 +875,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 1,5,daphneInternal,int64,5792,Execution Time,7.512254238128662
 1,5,daphneInternal,int64,5792,Memory Consumption,1168.984375
 1,5,daphneInternal,int64,5792,Average CPU Load,14.4
-1,9,daphneInternal,int64,100,Execution Time,1.5066561698913574
-1,9,daphneInternal,int64,100,Memory Consumption,166.6640625
-1,9,daphneInternal,int64,100,Average CPU Load,27.9
-1,9,daphneInternal,int64,1000,Execution Time,1.5066802501678467
-1,9,daphneInternal,int64,1000,Memory Consumption,179.7890625
-1,9,daphneInternal,int64,1000,Average CPU Load,20.6
-1,9,daphneInternal,int64,2896,Execution Time,4.510197162628174
-1,9,daphneInternal,int64,2896,Memory Consumption,290.9140625
-1,9,daphneInternal,int64,2896,Average CPU Load,18.03333333333333
-1,9,daphneInternal,int64,5792,Execution Time,16.52429723739624
-1,9,daphneInternal,int64,5792,Memory Consumption,674.51953125
-1,9,daphneInternal,int64,5792,Average CPU Load,14.818181818181818
 1,10,daphneInternal,int64,100,Execution Time,1.5031318664550781
 1,10,daphneInternal,int64,100,Memory Consumption,168.8671875
 1,10,daphneInternal,int64,100,Average CPU Load,22.1
@@ -1631,18 +1607,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 2,5,daphneInternal,int64,5792,Execution Time,7.5169501304626465
 2,5,daphneInternal,int64,5792,Memory Consumption,1136.53125
 2,5,daphneInternal,int64,5792,Average CPU Load,14.440000000000003
-2,9,daphneInternal,int64,100,Execution Time,1.5027754306793213
-2,9,daphneInternal,int64,100,Memory Consumption,162.125
-2,9,daphneInternal,int64,100,Average CPU Load,27.5
-2,9,daphneInternal,int64,1000,Execution Time,1.5035324096679688
-2,9,daphneInternal,int64,1000,Memory Consumption,184.35546875
-2,9,daphneInternal,int64,1000,Average CPU Load,19.6
-2,9,daphneInternal,int64,2896,Execution Time,4.5095014572143555
-2,9,daphneInternal,int64,2896,Memory Consumption,290.3984375
-2,9,daphneInternal,int64,2896,Average CPU Load,17.033333333333335
-2,9,daphneInternal,int64,5792,Execution Time,16.52437734603882
-2,9,daphneInternal,int64,5792,Memory Consumption,682.23046875
-2,9,daphneInternal,int64,5792,Average CPU Load,15.045454545454549
 2,10,daphneInternal,int64,100,Execution Time,1.5027661323547363
 2,10,daphneInternal,int64,100,Memory Consumption,159.453125
 2,10,daphneInternal,int64,100,Average CPU Load,21.5
@@ -2375,18 +2339,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 3,5,daphneInternal,int64,5792,Execution Time,7.51034951210022
 3,5,daphneInternal,int64,5792,Memory Consumption,1151.65625
 3,5,daphneInternal,int64,5792,Average CPU Load,14.040000000000001
-3,9,daphneInternal,int64,100,Execution Time,1.5029139518737793
-3,9,daphneInternal,int64,100,Memory Consumption,169.0625
-3,9,daphneInternal,int64,100,Average CPU Load,26.4
-3,9,daphneInternal,int64,1000,Execution Time,1.5041723251342773
-3,9,daphneInternal,int64,1000,Memory Consumption,176.484375
-3,9,daphneInternal,int64,1000,Average CPU Load,23.2
-3,9,daphneInternal,int64,2896,Execution Time,4.507542848587036
-3,9,daphneInternal,int64,2896,Memory Consumption,294.26171875
-3,9,daphneInternal,int64,2896,Average CPU Load,17.466666666666665
-3,9,daphneInternal,int64,5792,Execution Time,16.52264642715454
-3,9,daphneInternal,int64,5792,Memory Consumption,679.34765625
-3,9,daphneInternal,int64,5792,Average CPU Load,14.727272727272727
 3,10,daphneInternal,int64,100,Execution Time,1.5042729377746582
 3,10,daphneInternal,int64,100,Memory Consumption,160.7578125
 3,10,daphneInternal,int64,100,Average CPU Load,25.1
@@ -3119,18 +3071,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 4,5,daphneInternal,int64,5792,Execution Time,7.51327109336853
 4,5,daphneInternal,int64,5792,Memory Consumption,1172.1171875
 4,5,daphneInternal,int64,5792,Average CPU Load,14.179999999999998
-4,9,daphneInternal,int64,100,Execution Time,1.5035080909729004
-4,9,daphneInternal,int64,100,Memory Consumption,164.61328125
-4,9,daphneInternal,int64,100,Average CPU Load,28.2
-4,9,daphneInternal,int64,1000,Execution Time,1.506507396697998
-4,9,daphneInternal,int64,1000,Memory Consumption,175.93359375
-4,9,daphneInternal,int64,1000,Average CPU Load,22.7
-4,9,daphneInternal,int64,2896,Execution Time,4.50630259513855
-4,9,daphneInternal,int64,2896,Memory Consumption,290.890625
-4,9,daphneInternal,int64,2896,Average CPU Load,17.2
-4,9,daphneInternal,int64,5792,Execution Time,16.524996519088745
-4,9,daphneInternal,int64,5792,Memory Consumption,680.81640625
-4,9,daphneInternal,int64,5792,Average CPU Load,14.854545454545457
 4,10,daphneInternal,int64,100,Execution Time,1.5033433437347412
 4,10,daphneInternal,int64,100,Memory Consumption,158.96484375
 4,10,daphneInternal,int64,100,Average CPU Load,21.2
@@ -3863,18 +3803,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 5,5,daphneInternal,int64,5792,Execution Time,6.010133981704712
 5,5,daphneInternal,int64,5792,Memory Consumption,1166.9453125
 5,5,daphneInternal,int64,5792,Average CPU Load,16.775
-5,9,daphneInternal,int64,100,Execution Time,1.502925157546997
-5,9,daphneInternal,int64,100,Memory Consumption,170.69140625
-5,9,daphneInternal,int64,100,Average CPU Load,15.3
-5,9,daphneInternal,int64,1000,Execution Time,1.505422830581665
-5,9,daphneInternal,int64,1000,Memory Consumption,177.84765625
-5,9,daphneInternal,int64,1000,Average CPU Load,21.3
-5,9,daphneInternal,int64,2896,Execution Time,4.508614540100098
-5,9,daphneInternal,int64,2896,Memory Consumption,292.1953125
-5,9,daphneInternal,int64,2896,Average CPU Load,17.03333333333333
-5,9,daphneInternal,int64,5792,Execution Time,16.522791862487793
-5,9,daphneInternal,int64,5792,Memory Consumption,680.796875
-5,9,daphneInternal,int64,5792,Average CPU Load,14.390909090909089
 5,10,daphneInternal,int64,100,Execution Time,1.5059492588043213
 5,10,daphneInternal,int64,100,Memory Consumption,165.73828125
 5,10,daphneInternal,int64,100,Average CPU Load,23.9
@@ -4607,18 +4535,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 6,5,daphneInternal,int64,5792,Execution Time,7.5113441944122314
 6,5,daphneInternal,int64,5792,Memory Consumption,1166.22265625
 6,5,daphneInternal,int64,5792,Average CPU Load,14.180000000000001
-6,9,daphneInternal,int64,100,Execution Time,1.5033068656921387
-6,9,daphneInternal,int64,100,Memory Consumption,161.07421875
-6,9,daphneInternal,int64,100,Average CPU Load,25.3
-6,9,daphneInternal,int64,1000,Execution Time,1.5052342414855957
-6,9,daphneInternal,int64,1000,Memory Consumption,182.09375
-6,9,daphneInternal,int64,1000,Average CPU Load,21.0
-6,9,daphneInternal,int64,2896,Execution Time,4.508478164672852
-6,9,daphneInternal,int64,2896,Memory Consumption,289.81640625
-6,9,daphneInternal,int64,2896,Average CPU Load,17.3
-6,9,daphneInternal,int64,5792,Execution Time,16.5240638256073
-6,9,daphneInternal,int64,5792,Memory Consumption,683.2109375
-6,9,daphneInternal,int64,5792,Average CPU Load,14.463636363636363
 6,10,daphneInternal,int64,100,Execution Time,1.5039150714874268
 6,10,daphneInternal,int64,100,Memory Consumption,162.734375
 6,10,daphneInternal,int64,100,Average CPU Load,17.1
@@ -5351,18 +5267,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 7,5,daphneInternal,int64,5792,Execution Time,6.012495279312134
 7,5,daphneInternal,int64,5792,Memory Consumption,1115.8515625
 7,5,daphneInternal,int64,5792,Average CPU Load,17.225
-7,9,daphneInternal,int64,100,Execution Time,1.502568244934082
-7,9,daphneInternal,int64,100,Memory Consumption,164.89453125
-7,9,daphneInternal,int64,100,Average CPU Load,24.0
-7,9,daphneInternal,int64,1000,Execution Time,1.5034892559051514
-7,9,daphneInternal,int64,1000,Memory Consumption,181.390625
-7,9,daphneInternal,int64,1000,Average CPU Load,21.0
-7,9,daphneInternal,int64,2896,Execution Time,4.508361339569092
-7,9,daphneInternal,int64,2896,Memory Consumption,292.09765625
-7,9,daphneInternal,int64,2896,Average CPU Load,17.866666666666664
-7,9,daphneInternal,int64,5792,Execution Time,16.524137496948242
-7,9,daphneInternal,int64,5792,Memory Consumption,672.875
-7,9,daphneInternal,int64,5792,Average CPU Load,14.609090909090908
 7,10,daphneInternal,int64,100,Execution Time,1.505584716796875
 7,10,daphneInternal,int64,100,Memory Consumption,168.1953125
 7,10,daphneInternal,int64,100,Average CPU Load,22.1
@@ -6095,18 +5999,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 8,5,daphneInternal,int64,5792,Execution Time,7.5135815143585205
 8,5,daphneInternal,int64,5792,Memory Consumption,1151.30078125
 8,5,daphneInternal,int64,5792,Average CPU Load,13.940000000000001
-8,9,daphneInternal,int64,100,Execution Time,1.502866506576538
-8,9,daphneInternal,int64,100,Memory Consumption,161.36328125
-8,9,daphneInternal,int64,100,Average CPU Load,28.3
-8,9,daphneInternal,int64,1000,Execution Time,1.5052523612976074
-8,9,daphneInternal,int64,1000,Memory Consumption,177.74609375
-8,9,daphneInternal,int64,1000,Average CPU Load,22.0
-8,9,daphneInternal,int64,2896,Execution Time,4.507672071456909
-8,9,daphneInternal,int64,2896,Memory Consumption,290.8125
-8,9,daphneInternal,int64,2896,Average CPU Load,17.6
-8,9,daphneInternal,int64,5792,Execution Time,16.522186040878296
-8,9,daphneInternal,int64,5792,Memory Consumption,674.3828125
-8,9,daphneInternal,int64,5792,Average CPU Load,15.036363636363637
 8,10,daphneInternal,int64,100,Execution Time,1.5031423568725586
 8,10,daphneInternal,int64,100,Memory Consumption,169.2109375
 8,10,daphneInternal,int64,100,Average CPU Load,23.3
@@ -6839,18 +6731,6 @@ Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
 9,5,daphneInternal,int64,5792,Execution Time,7.513442754745483
 9,5,daphneInternal,int64,5792,Memory Consumption,1137.09375
 9,5,daphneInternal,int64,5792,Average CPU Load,14.36
-9,9,daphneInternal,int64,100,Execution Time,1.5057930946350098
-9,9,daphneInternal,int64,100,Memory Consumption,162.8515625
-9,9,daphneInternal,int64,100,Average CPU Load,24.6
-9,9,daphneInternal,int64,1000,Execution Time,1.5036704540252686
-9,9,daphneInternal,int64,1000,Memory Consumption,176.3046875
-9,9,daphneInternal,int64,1000,Average CPU Load,21.4
-9,9,daphneInternal,int64,2896,Execution Time,4.5068886280059814
-9,9,daphneInternal,int64,2896,Memory Consumption,294.4140625
-9,9,daphneInternal,int64,2896,Average CPU Load,18.366666666666667
-9,9,daphneInternal,int64,5792,Execution Time,16.52590584754944
-9,9,daphneInternal,int64,5792,Memory Consumption,674.828125
-9,9,daphneInternal,int64,5792,Average CPU Load,14.318181818181818
 9,10,daphneInternal,int64,100,Execution Time,1.5041110515594482
 9,10,daphneInternal,int64,100,Memory Consumption,166.875
 9,10,daphneInternal,int64,100,Average CPU Load,25.2

@@ -1,0 +1,2113 @@
+Run,Operation,Implementation,Datatype,Matrix Size,MetricType,Value
+0,1,daphneMap,f64,250mb,Execution Time,6.010051012039185
+0,1,daphneMap,f64,250mb,Memory Consumption,239.421875
+0,1,daphneMap,f64,250mb,Average CPU Load,14.55
+0,1,daphneMap,f64,500mb,Execution Time,21.029289484024048
+0,1,daphneMap,f64,500mb,Memory Consumption,624.41015625
+0,1,daphneMap,f64,500mb,Average CPU Load,14.05
+0,3,daphneMap,f64,250mb,Execution Time,6.009416103363037
+0,3,daphneMap,f64,250mb,Memory Consumption,241.14453125
+0,3,daphneMap,f64,250mb,Average CPU Load,15.425
+0,3,daphneMap,f64,500mb,Execution Time,21.030883312225345
+0,3,daphneMap,f64,500mb,Memory Consumption,623.65234375
+0,3,daphneMap,f64,500mb,Average CPU Load,14.928571428571429
+0,5,daphneMap,f64,250mb,Execution Time,9.016794443130491
+0,5,daphneMap,f64,250mb,Memory Consumption,241.1015625
+0,5,daphneMap,f64,250mb,Average CPU Load,13.233333333333334
+0,5,daphneMap,f64,500mb,Execution Time,31.545037746429443
+0,5,daphneMap,f64,500mb,Memory Consumption,625.4609375
+0,5,daphneMap,f64,500mb,Average CPU Load,13.29047619047619
+0,10,daphneMap,f64,250mb,Execution Time,7.512112140655518
+0,10,daphneMap,f64,250mb,Memory Consumption,239.64453125
+0,10,daphneMap,f64,250mb,Average CPU Load,15.02
+0,10,daphneMap,f64,500mb,Execution Time,27.04013061523437
+0,10,daphneMap,f64,500mb,Memory Consumption,624.3359375
+0,10,daphneMap,f64,500mb,Average CPU Load,14.011111111111113
+0,1,daphneInternal,f64,250mb,Execution Time,1.5034406185150146
+0,1,daphneInternal,f64,250mb,Memory Consumption,234.33203125
+0,1,daphneInternal,f64,250mb,Average CPU Load,17.4
+0,1,daphneInternal,f64,500mb,Execution Time,1.5033879280090332
+0,1,daphneInternal,f64,500mb,Memory Consumption,584.80859375
+0,1,daphneInternal,f64,500mb,Average CPU Load,23.8
+0,3,daphneInternal,f64,250mb,Execution Time,1.5034325122833252
+0,3,daphneInternal,f64,250mb,Memory Consumption,233.1953125
+0,3,daphneInternal,f64,250mb,Average CPU Load,18.7
+0,3,daphneInternal,f64,500mb,Execution Time,3.005840301513672
+0,3,daphneInternal,f64,500mb,Memory Consumption,591.55078125
+0,3,daphneInternal,f64,500mb,Average CPU Load,14.55
+0,5,daphneInternal,f64,250mb,Execution Time,3.005903005599976
+0,5,daphneInternal,f64,250mb,Memory Consumption,348.4609375
+0,5,daphneInternal,f64,250mb,Average CPU Load,18.5
+0,5,daphneInternal,f64,500mb,Execution Time,10.516090154647827
+0,5,daphneInternal,f64,500mb,Memory Consumption,1133.9296875
+0,5,daphneInternal,f64,500mb,Average CPU Load,14.5
+0,10,daphneInternal,f64,250mb,Execution Time,3.0057413578033447
+0,10,daphneInternal,f64,250mb,Memory Consumption,365.35546875
+0,10,daphneInternal,f64,250mb,Average CPU Load,13.45
+0,10,daphneInternal,f64,500mb,Execution Time,7.512372970581055
+0,10,daphneInternal,f64,500mb,Memory Consumption,1074.93359375
+0,10,daphneInternal,f64,500mb,Average CPU Load,13.18
+0,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.5028772354125977
+0,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,150.45703125
+0,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,16.8
+0,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5038599967956543
+0,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,509.60546875
+0,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,23.8
+0,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.503570795059204
+0,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,178.4140625
+0,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,16.9
+0,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.5033519268035889
+0,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,530.296875
+0,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,24.8
+0,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5035595893859863
+0,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,253.3671875
+0,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,24.0
+0,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.010024309158325
+0,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.30859375
+0,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,15.075
+0,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.5041823387145996
+0,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,237.2109375
+0,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.3
+0,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.0058422088623047
+0,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.37109375
+0,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,19.05
+0,1,Python_DirectExec,f64,250mb,Execution Time,3.0056264400482178
+0,1,Python_DirectExec,f64,250mb,Memory Consumption,500.5703125
+0,1,Python_DirectExec,f64,250mb,Average CPU Load,16.25
+0,1,Python_DirectExec,f64,500mb,Execution Time,9.013275146484377
+0,1,Python_DirectExec,f64,500mb,Memory Consumption,1654.68359375
+0,1,Python_DirectExec,f64,500mb,Average CPU Load,15.05
+0,3,Python_DirectExec,f64,250mb,Execution Time,6.011700630187988
+0,3,Python_DirectExec,f64,250mb,Memory Consumption,504.15625
+0,3,Python_DirectExec,f64,250mb,Average CPU Load,14.8
+0,3,Python_DirectExec,f64,500mb,Execution Time,21.031874179840088
+0,3,Python_DirectExec,f64,500mb,Memory Consumption,1664.515625
+0,3,Python_DirectExec,f64,500mb,Average CPU Load,13.535714285714285
+0,5,Python_DirectExec,f64,250mb,Execution Time,7.512507915496826
+0,5,Python_DirectExec,f64,250mb,Memory Consumption,503.0390625
+0,5,Python_DirectExec,f64,250mb,Average CPU Load,15.32
+0,5,Python_DirectExec,f64,500mb,Execution Time,27.040762662887573
+0,5,Python_DirectExec,f64,500mb,Memory Consumption,1669.39453125
+0,5,Python_DirectExec,f64,500mb,Average CPU Load,13.98333333333333
+0,10,Python_DirectExec,f64,250mb,Execution Time,4.5076985359191895
+0,10,Python_DirectExec,f64,250mb,Memory Consumption,503.87890625
+0,10,Python_DirectExec,f64,250mb,Average CPU Load,16.633333333333333
+0,10,Python_DirectExec,f64,500mb,Execution Time,18.027002334594727
+0,10,Python_DirectExec,f64,500mb,Memory Consumption,1667.9375
+0,10,Python_DirectExec,f64,500mb,Average CPU Load,13.975
+0,1,Python_Shared_Mem,f64,250mb,Execution Time,4.507381916046143
+0,1,Python_Shared_Mem,f64,250mb,Memory Consumption,927.2421875
+0,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.366666666666667
+0,1,Python_Shared_Mem,f64,500mb,Execution Time,13.52047324180603
+0,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3260.12890625
+0,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.266666666666664
+0,3,Python_Shared_Mem,f64,250mb,Execution Time,7.512065649032593
+0,3,Python_Shared_Mem,f64,250mb,Memory Consumption,934.42578125
+0,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.04
+0,3,Python_Shared_Mem,f64,500mb,Execution Time,24.033698797225952
+0,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3261.609375
+0,3,Python_Shared_Mem,f64,500mb,Average CPU Load,14.006249999999998
+0,5,Python_Shared_Mem,f64,250mb,Execution Time,9.015697717666626
+0,5,Python_Shared_Mem,f64,250mb,Memory Consumption,936.76171875
+0,5,Python_Shared_Mem,f64,250mb,Average CPU Load,16.316666666666663
+0,5,Python_Shared_Mem,f64,500mb,Execution Time,31.545886278152462
+0,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3263.609375
+0,5,Python_Shared_Mem,f64,500mb,Average CPU Load,13.623809523809522
+0,10,Python_Shared_Mem,f64,250mb,Execution Time,6.009892225265503
+0,10,Python_Shared_Mem,f64,250mb,Memory Consumption,932.4375
+0,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.475
+0,10,Python_Shared_Mem,f64,500mb,Execution Time,22.533741235733032
+0,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3265.0859375
+0,10,Python_Shared_Mem,f64,500mb,Average CPU Load,13.319999999999997
+0,1,Python_CopyInMemory,f64,250mb,Execution Time,6.009498834609985
+0,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1312.90234375
+0,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.5
+0,1,Python_CopyInMemory,f64,500mb,Execution Time,21.03060841560364
+0,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4811.92578125
+0,1,Python_CopyInMemory,f64,500mb,Average CPU Load,14.028571428571428
+0,3,Python_CopyInMemory,f64,250mb,Execution Time,9.014323949813845
+0,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1327.43359375
+0,3,Python_CopyInMemory,f64,250mb,Average CPU Load,17.03333333333333
+0,3,Python_CopyInMemory,f64,500mb,Execution Time,31.548864364624023
+0,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4804.76171875
+0,3,Python_CopyInMemory,f64,500mb,Average CPU Load,13.81904761904762
+0,5,Python_CopyInMemory,f64,250mb,Execution Time,10.516735315322876
+0,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1312.47265625
+0,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.7
+0,5,Python_CopyInMemory,f64,500mb,Execution Time,39.058220863342285
+0,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4813.51953125
+0,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.596153846153848
+0,10,Python_CopyInMemory,f64,250mb,Execution Time,9.01334547996521
+0,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1321.84375
+0,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.55
+0,10,Python_CopyInMemory,f64,500mb,Execution Time,28.53962779045105
+0,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4798.79296875
+0,10,Python_CopyInMemory,f64,500mb,Average CPU Load,13.942105263157892
+0,1,Python_BinaryFile,f64,250mb,Execution Time,4.508085012435913
+0,1,Python_BinaryFile,f64,250mb,Memory Consumption,991.03125
+0,1,Python_BinaryFile,f64,250mb,Average CPU Load,19.133333333333336
+0,1,Python_BinaryFile,f64,500mb,Execution Time,13.520823240280151
+0,1,Python_BinaryFile,f64,500mb,Memory Consumption,3514.796875
+0,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.377777777777778
+0,3,Python_BinaryFile,f64,250mb,Execution Time,7.512307643890381
+0,3,Python_BinaryFile,f64,250mb,Memory Consumption,991.46484375
+0,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.560000000000002
+0,3,Python_BinaryFile,f64,500mb,Execution Time,25.53776454925537
+0,3,Python_BinaryFile,f64,500mb,Memory Consumption,3507.3671875
+0,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.258823529411764
+0,5,Python_BinaryFile,f64,250mb,Execution Time,9.014352560043337
+0,5,Python_BinaryFile,f64,250mb,Memory Consumption,1002.03515625
+0,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.716666666666665
+0,5,Python_BinaryFile,f64,500mb,Execution Time,31.545199871063232
+0,5,Python_BinaryFile,f64,500mb,Memory Consumption,3515.484375
+0,5,Python_BinaryFile,f64,500mb,Average CPU Load,13.890476190476187
+0,10,Python_BinaryFile,f64,250mb,Execution Time,7.5120203495025635
+0,10,Python_BinaryFile,f64,250mb,Memory Consumption,1004.46875
+0,10,Python_BinaryFile,f64,250mb,Average CPU Load,15.04
+0,10,Python_BinaryFile,f64,500mb,Execution Time,22.53559875488281
+0,10,Python_BinaryFile,f64,500mb,Memory Consumption,3524.046875
+0,10,Python_BinaryFile,f64,500mb,Average CPU Load,14.226666666666668
+0,1,Python_CsvFile,f64,250mb,Execution Time,24.034616470336918
+0,1,Python_CsvFile,f64,250mb,Memory Consumption,1080.20703125
+0,1,Python_CsvFile,f64,250mb,Average CPU Load,14.6875
+0,1,Python_CsvFile,f64,500mb,Execution Time,93.13298296928406
+0,1,Python_CsvFile,f64,500mb,Memory Consumption,3828.4296875
+0,1,Python_CsvFile,f64,500mb,Average CPU Load,13.470967741935487
+0,3,Python_CsvFile,f64,250mb,Execution Time,33.04641675949097
+0,3,Python_CsvFile,f64,250mb,Memory Consumption,1075.09765625
+0,3,Python_CsvFile,f64,250mb,Average CPU Load,14.140909090909089
+0,3,Python_CsvFile,f64,500mb,Execution Time,126.18310856819151
+0,3,Python_CsvFile,f64,500mb,Memory Consumption,3815.42578125
+0,3,Python_CsvFile,f64,500mb,Average CPU Load,13.300000000000002
+0,5,Python_CsvFile,f64,250mb,Execution Time,36.0500373840332
+0,5,Python_CsvFile,f64,250mb,Memory Consumption,1076.6640625
+0,5,Python_CsvFile,f64,250mb,Average CPU Load,14.46666666666667
+0,5,Python_CsvFile,f64,500mb,Execution Time,141.19517469406128
+0,5,Python_CsvFile,f64,500mb,Memory Consumption,3811.84765625
+0,5,Python_CsvFile,f64,500mb,Average CPU Load,13.639361702127658
+0,10,Python_CsvFile,f64,250mb,Execution Time,33.04806709289551
+0,10,Python_CsvFile,f64,250mb,Memory Consumption,1087.01171875
+0,10,Python_CsvFile,f64,250mb,Average CPU Load,14.07727272727273
+0,10,Python_CsvFile,f64,500mb,Execution Time,130.69213390350342
+0,10,Python_CsvFile,f64,500mb,Memory Consumption,3817.47265625
+0,10,Python_CsvFile,f64,500mb,Average CPU Load,13.493103448275868
+1,1,daphneMap,f64,250mb,Execution Time,6.009379625320435
+1,1,daphneMap,f64,250mb,Memory Consumption,239.66796875
+1,1,daphneMap,f64,250mb,Average CPU Load,15.175
+1,1,daphneMap,f64,500mb,Execution Time,21.03265118598938
+1,1,daphneMap,f64,500mb,Memory Consumption,623.2890625
+1,1,daphneMap,f64,500mb,Average CPU Load,13.407142857142858
+1,3,daphneMap,f64,250mb,Execution Time,6.011202812194824
+1,3,daphneMap,f64,250mb,Memory Consumption,240.1953125
+1,3,daphneMap,f64,250mb,Average CPU Load,15.35
+1,3,daphneMap,f64,500mb,Execution Time,21.03241801261902
+1,3,daphneMap,f64,500mb,Memory Consumption,624.85546875
+1,3,daphneMap,f64,500mb,Average CPU Load,13.907142857142857
+1,5,daphneMap,f64,250mb,Execution Time,9.01457953453064
+1,5,daphneMap,f64,250mb,Memory Consumption,240.6640625
+1,5,daphneMap,f64,250mb,Average CPU Load,13.83333333333333
+1,5,daphneMap,f64,500mb,Execution Time,31.546669721603397
+1,5,daphneMap,f64,500mb,Memory Consumption,624.12109375
+1,5,daphneMap,f64,500mb,Average CPU Load,13.019047619047615
+1,10,daphneMap,f64,250mb,Execution Time,7.512188911437988
+1,10,daphneMap,f64,250mb,Memory Consumption,240.24609375
+1,10,daphneMap,f64,250mb,Average CPU Load,14.88
+1,10,daphneMap,f64,500mb,Execution Time,27.04079341888428
+1,10,daphneMap,f64,500mb,Memory Consumption,624.5390625
+1,10,daphneMap,f64,500mb,Average CPU Load,13.533333333333331
+1,1,daphneInternal,f64,250mb,Execution Time,1.5034666061401367
+1,1,daphneInternal,f64,250mb,Memory Consumption,230.46875
+1,1,daphneInternal,f64,250mb,Average CPU Load,17.2
+1,1,daphneInternal,f64,500mb,Execution Time,1.503570556640625
+1,1,daphneInternal,f64,500mb,Memory Consumption,577.59375
+1,1,daphneInternal,f64,500mb,Average CPU Load,23.7
+1,3,daphneInternal,f64,250mb,Execution Time,1.5033273696899414
+1,3,daphneInternal,f64,250mb,Memory Consumption,231.21875
+1,3,daphneInternal,f64,250mb,Average CPU Load,18.4
+1,3,daphneInternal,f64,500mb,Execution Time,3.0056347846984863
+1,3,daphneInternal,f64,500mb,Memory Consumption,589.30078125
+1,3,daphneInternal,f64,500mb,Average CPU Load,14.25
+1,5,daphneInternal,f64,250mb,Execution Time,4.5102057456970215
+1,5,daphneInternal,f64,250mb,Memory Consumption,360.359375
+1,5,daphneInternal,f64,250mb,Average CPU Load,14.6
+1,5,daphneInternal,f64,500mb,Execution Time,10.5164053440094
+1,5,daphneInternal,f64,500mb,Memory Consumption,1126.02734375
+1,5,daphneInternal,f64,500mb,Average CPU Load,14.014285714285714
+1,10,daphneInternal,f64,250mb,Execution Time,3.005617380142212
+1,10,daphneInternal,f64,250mb,Memory Consumption,362.9140625
+1,10,daphneInternal,f64,250mb,Average CPU Load,12.9
+1,10,daphneInternal,f64,500mb,Execution Time,6.009701728820801
+1,10,daphneInternal,f64,500mb,Memory Consumption,1105.9453125
+1,10,daphneInternal,f64,500mb,Average CPU Load,16.175
+1,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.503357172012329
+1,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,147.94140625
+1,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,16.0
+1,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5032730102539062
+1,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,453.546875
+1,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,21.8
+1,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.5032317638397217
+1,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,183.12890625
+1,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.4
+1,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.5033822059631348
+1,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,547.39453125
+1,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,24.3
+1,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5048792362213137
+1,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,250.0
+1,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.9
+1,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.009741544723511
+1,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.46875
+1,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.5
+1,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.503082513809204
+1,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,238.89453125
+1,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.0
+1,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.0076451301574707
+1,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.21875
+1,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.7
+1,1,Python_DirectExec,f64,250mb,Execution Time,3.0055649280548096
+1,1,Python_DirectExec,f64,250mb,Memory Consumption,496.50390625
+1,1,Python_DirectExec,f64,250mb,Average CPU Load,16.55
+1,1,Python_DirectExec,f64,500mb,Execution Time,9.014095306396484
+1,1,Python_DirectExec,f64,500mb,Memory Consumption,1653.11328125
+1,1,Python_DirectExec,f64,500mb,Average CPU Load,13.516666666666667
+1,3,Python_DirectExec,f64,250mb,Execution Time,6.008885383605957
+1,3,Python_DirectExec,f64,250mb,Memory Consumption,501.44921875
+1,3,Python_DirectExec,f64,250mb,Average CPU Load,13.925
+1,3,Python_DirectExec,f64,500mb,Execution Time,19.529178380966187
+1,3,Python_DirectExec,f64,500mb,Memory Consumption,1670.21875
+1,3,Python_DirectExec,f64,500mb,Average CPU Load,14.815384615384612
+1,5,Python_DirectExec,f64,250mb,Execution Time,9.014678239822388
+1,5,Python_DirectExec,f64,250mb,Memory Consumption,504.140625
+1,5,Python_DirectExec,f64,250mb,Average CPU Load,13.933333333333335
+1,5,Python_DirectExec,f64,500mb,Execution Time,27.038314819335938
+1,5,Python_DirectExec,f64,500mb,Memory Consumption,1666.41015625
+1,5,Python_DirectExec,f64,500mb,Average CPU Load,13.73333333333333
+1,10,Python_DirectExec,f64,250mb,Execution Time,6.009793996810913
+1,10,Python_DirectExec,f64,250mb,Memory Consumption,500.01953125
+1,10,Python_DirectExec,f64,250mb,Average CPU Load,14.125
+1,10,Python_DirectExec,f64,500mb,Execution Time,18.02706527709961
+1,10,Python_DirectExec,f64,500mb,Memory Consumption,1670.15625
+1,10,Python_DirectExec,f64,500mb,Average CPU Load,14.008333333333333
+1,1,Python_Shared_Mem,f64,250mb,Execution Time,4.507664918899536
+1,1,Python_Shared_Mem,f64,250mb,Memory Consumption,928.1875
+1,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.83333333333333
+1,1,Python_Shared_Mem,f64,500mb,Execution Time,12.01889991760254
+1,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3268.453125
+1,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.712500000000002
+1,3,Python_Shared_Mem,f64,250mb,Execution Time,7.513386487960815
+1,3,Python_Shared_Mem,f64,250mb,Memory Consumption,938.9453125
+1,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.52
+1,3,Python_Shared_Mem,f64,500mb,Execution Time,24.035802602767944
+1,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3248.23828125
+1,3,Python_Shared_Mem,f64,500mb,Average CPU Load,13.7125
+1,5,Python_Shared_Mem,f64,250mb,Execution Time,9.01743507385254
+1,5,Python_Shared_Mem,f64,250mb,Memory Consumption,938.6875
+1,5,Python_Shared_Mem,f64,250mb,Average CPU Load,17.166666666666668
+1,5,Python_Shared_Mem,f64,500mb,Execution Time,31.54355549812317
+1,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3247.8359375
+1,5,Python_Shared_Mem,f64,500mb,Average CPU Load,13.523809523809522
+1,10,Python_Shared_Mem,f64,250mb,Execution Time,6.010056257247925
+1,10,Python_Shared_Mem,f64,250mb,Memory Consumption,924.109375
+1,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.75
+1,10,Python_Shared_Mem,f64,500mb,Execution Time,21.03109884262085
+1,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3248.25
+1,10,Python_Shared_Mem,f64,500mb,Average CPU Load,13.821428571428571
+1,1,Python_CopyInMemory,f64,250mb,Execution Time,6.012056589126587
+1,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1311.625
+1,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.2
+1,1,Python_CopyInMemory,f64,500mb,Execution Time,19.527175426483154
+1,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4819.03515625
+1,1,Python_CopyInMemory,f64,500mb,Average CPU Load,14.346153846153848
+1,3,Python_CopyInMemory,f64,250mb,Execution Time,9.015695571899414
+1,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1321.1015625
+1,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.783333333333335
+1,3,Python_CopyInMemory,f64,500mb,Execution Time,31.54621958732605
+1,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4802.56640625
+1,3,Python_CopyInMemory,f64,500mb,Average CPU Load,13.9
+1,5,Python_CopyInMemory,f64,250mb,Execution Time,10.517000198364258
+1,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1319.04296875
+1,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.128571428571426
+1,5,Python_CopyInMemory,f64,500mb,Execution Time,39.05697154998779
+1,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4798.76171875
+1,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.453846153846154
+1,10,Python_CopyInMemory,f64,250mb,Execution Time,9.014931201934814
+1,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1307.29296875
+1,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.216666666666669
+1,10,Python_CopyInMemory,f64,500mb,Execution Time,28.54149031639099
+1,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4801.67578125
+1,10,Python_CopyInMemory,f64,500mb,Average CPU Load,13.752631578947366
+1,1,Python_BinaryFile,f64,250mb,Execution Time,4.508331298828125
+1,1,Python_BinaryFile,f64,250mb,Memory Consumption,1000.7890625
+1,1,Python_BinaryFile,f64,250mb,Average CPU Load,19.000000000000004
+1,1,Python_BinaryFile,f64,500mb,Execution Time,13.520484685897827
+1,1,Python_BinaryFile,f64,500mb,Memory Consumption,3514.625
+1,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.177777777777775
+1,3,Python_BinaryFile,f64,250mb,Execution Time,7.511918783187866
+1,3,Python_BinaryFile,f64,250mb,Memory Consumption,1000.125
+1,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.58
+1,3,Python_BinaryFile,f64,500mb,Execution Time,25.537501096725464
+1,3,Python_BinaryFile,f64,500mb,Memory Consumption,3503.3359375
+1,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.735294117647058
+1,5,Python_BinaryFile,f64,250mb,Execution Time,9.014184713363647
+1,5,Python_BinaryFile,f64,250mb,Memory Consumption,989.4140625
+1,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.683333333333334
+1,5,Python_BinaryFile,f64,500mb,Execution Time,31.5484631061554
+1,5,Python_BinaryFile,f64,500mb,Memory Consumption,3514.1640625
+1,5,Python_BinaryFile,f64,500mb,Average CPU Load,13.733333333333327
+1,10,Python_BinaryFile,f64,250mb,Execution Time,7.511940240859985
+1,10,Python_BinaryFile,f64,250mb,Memory Consumption,990.671875
+1,10,Python_BinaryFile,f64,250mb,Average CPU Load,15.66
+1,10,Python_BinaryFile,f64,500mb,Execution Time,22.53241729736328
+1,10,Python_BinaryFile,f64,500mb,Memory Consumption,3503.66796875
+1,10,Python_BinaryFile,f64,500mb,Average CPU Load,13.713333333333331
+1,1,Python_CsvFile,f64,250mb,Execution Time,24.03494930267334
+1,1,Python_CsvFile,f64,250mb,Memory Consumption,1077.296875
+1,1,Python_CsvFile,f64,250mb,Average CPU Load,14.98125
+1,1,Python_CsvFile,f64,500mb,Execution Time,93.1343264579773
+1,1,Python_CsvFile,f64,500mb,Memory Consumption,3823.76171875
+1,1,Python_CsvFile,f64,500mb,Average CPU Load,13.493548387096778
+1,3,Python_CsvFile,f64,250mb,Execution Time,33.04937410354614
+1,3,Python_CsvFile,f64,250mb,Memory Consumption,1091.20703125
+1,3,Python_CsvFile,f64,250mb,Average CPU Load,13.799999999999995
+1,3,Python_CsvFile,f64,500mb,Execution Time,126.17656016349792
+1,3,Python_CsvFile,f64,500mb,Memory Consumption,3814.8671875
+1,3,Python_CsvFile,f64,500mb,Average CPU Load,13.41785714285715
+1,5,Python_CsvFile,f64,250mb,Execution Time,36.04859375953674
+1,5,Python_CsvFile,f64,250mb,Memory Consumption,1097.23828125
+1,5,Python_CsvFile,f64,250mb,Average CPU Load,13.887500000000005
+1,5,Python_CsvFile,f64,500mb,Execution Time,138.195237159729
+1,5,Python_CsvFile,f64,500mb,Memory Consumption,3812.8515625
+1,5,Python_CsvFile,f64,500mb,Average CPU Load,13.63152173913043
+1,10,Python_CsvFile,f64,250mb,Execution Time,33.0481858253479
+1,10,Python_CsvFile,f64,250mb,Memory Consumption,1083.76953125
+1,10,Python_CsvFile,f64,250mb,Average CPU Load,14.599999999999996
+1,10,Python_CsvFile,f64,500mb,Execution Time,130.68767881393433
+1,10,Python_CsvFile,f64,500mb,Memory Consumption,3833.3671875
+1,10,Python_CsvFile,f64,500mb,Average CPU Load,13.29310344827586
+2,1,daphneMap,f64,250mb,Execution Time,6.009675979614258
+2,1,daphneMap,f64,250mb,Memory Consumption,239.7421875
+2,1,daphneMap,f64,250mb,Average CPU Load,14.6
+2,1,daphneMap,f64,500mb,Execution Time,21.03114938735962
+2,1,daphneMap,f64,500mb,Memory Consumption,624.4765625
+2,1,daphneMap,f64,500mb,Average CPU Load,13.235714285714284
+2,3,daphneMap,f64,250mb,Execution Time,6.009964227676392
+2,3,daphneMap,f64,250mb,Memory Consumption,239.8046875
+2,3,daphneMap,f64,250mb,Average CPU Load,15.775
+2,3,daphneMap,f64,500mb,Execution Time,21.031110048294067
+2,3,daphneMap,f64,500mb,Memory Consumption,625.19921875
+2,3,daphneMap,f64,500mb,Average CPU Load,14.107142857142856
+2,5,daphneMap,f64,250mb,Execution Time,9.01418924331665
+2,5,daphneMap,f64,250mb,Memory Consumption,240.0390625
+2,5,daphneMap,f64,250mb,Average CPU Load,13.933333333333332
+2,5,daphneMap,f64,500mb,Execution Time,31.545118808746334
+2,5,daphneMap,f64,500mb,Memory Consumption,624.64453125
+2,5,daphneMap,f64,500mb,Average CPU Load,13.580952380952382
+2,10,daphneMap,f64,250mb,Execution Time,7.511048078536987
+2,10,daphneMap,f64,250mb,Memory Consumption,240.2421875
+2,10,daphneMap,f64,250mb,Average CPU Load,14.8
+2,10,daphneMap,f64,500mb,Execution Time,27.03783488273621
+2,10,daphneMap,f64,500mb,Memory Consumption,625.12890625
+2,10,daphneMap,f64,500mb,Average CPU Load,13.37222222222222
+2,1,daphneInternal,f64,250mb,Execution Time,1.503377914428711
+2,1,daphneInternal,f64,250mb,Memory Consumption,235.97265625
+2,1,daphneInternal,f64,250mb,Average CPU Load,17.3
+2,1,daphneInternal,f64,500mb,Execution Time,1.5033109188079834
+2,1,daphneInternal,f64,500mb,Memory Consumption,592.8046875
+2,1,daphneInternal,f64,500mb,Average CPU Load,23.8
+2,3,daphneInternal,f64,250mb,Execution Time,1.50429368019104
+2,3,daphneInternal,f64,250mb,Memory Consumption,227.87109375
+2,3,daphneInternal,f64,250mb,Average CPU Load,25.1
+2,3,daphneInternal,f64,500mb,Execution Time,3.00777268409729
+2,3,daphneInternal,f64,500mb,Memory Consumption,618.3359375
+2,3,daphneInternal,f64,500mb,Average CPU Load,14.75
+2,5,daphneInternal,f64,250mb,Execution Time,3.005995035171509
+2,5,daphneInternal,f64,250mb,Memory Consumption,349.59765625
+2,5,daphneInternal,f64,250mb,Average CPU Load,19.200000000000003
+2,5,daphneInternal,f64,500mb,Execution Time,10.51908040046692
+2,5,daphneInternal,f64,500mb,Memory Consumption,1132.51953125
+2,5,daphneInternal,f64,500mb,Average CPU Load,13.8
+2,10,daphneInternal,f64,250mb,Execution Time,3.0055923461914062
+2,10,daphneInternal,f64,250mb,Memory Consumption,351.94921875
+2,10,daphneInternal,f64,250mb,Average CPU Load,12.75
+2,10,daphneInternal,f64,500mb,Execution Time,6.010035514831543
+2,10,daphneInternal,f64,500mb,Memory Consumption,1109.85546875
+2,10,daphneInternal,f64,500mb,Average CPU Load,16.225
+2,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.5036060810089111
+2,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,158.96484375
+2,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,15.6
+2,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5053958892822266
+2,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,465.60546875
+2,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,21.5
+2,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.503338098526001
+2,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,183.75390625
+2,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.0
+2,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.503178596496582
+2,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,549.20703125
+2,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,24.2
+2,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.503772497177124
+2,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,250.140625
+2,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,24.1
+2,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.010005474090576
+2,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.80859375
+2,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.25
+2,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.5031211376190186
+2,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,238.08203125
+2,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.7
+2,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.005471706390381
+2,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.5625
+2,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.55
+2,1,Python_DirectExec,f64,250mb,Execution Time,3.00532603263855
+2,1,Python_DirectExec,f64,250mb,Memory Consumption,501.5546875
+2,1,Python_DirectExec,f64,250mb,Average CPU Load,16.05
+2,1,Python_DirectExec,f64,500mb,Execution Time,9.013984441757202
+2,1,Python_DirectExec,f64,500mb,Memory Consumption,1664.03125
+2,1,Python_DirectExec,f64,500mb,Average CPU Load,13.383333333333336
+2,3,Python_DirectExec,f64,250mb,Execution Time,6.009775400161743
+2,3,Python_DirectExec,f64,250mb,Memory Consumption,500.83984375
+2,3,Python_DirectExec,f64,250mb,Average CPU Load,14.999999999999998
+2,3,Python_DirectExec,f64,500mb,Execution Time,19.52841281890869
+2,3,Python_DirectExec,f64,500mb,Memory Consumption,1668.5234375
+2,3,Python_DirectExec,f64,500mb,Average CPU Load,14.546153846153848
+2,5,Python_DirectExec,f64,250mb,Execution Time,7.511988639831543
+2,5,Python_DirectExec,f64,250mb,Memory Consumption,506.53515625
+2,5,Python_DirectExec,f64,250mb,Average CPU Load,15.88
+2,5,Python_DirectExec,f64,500mb,Execution Time,27.040143251419067
+2,5,Python_DirectExec,f64,500mb,Memory Consumption,1669.84765625
+2,5,Python_DirectExec,f64,500mb,Average CPU Load,13.805555555555552
+2,10,Python_DirectExec,f64,250mb,Execution Time,4.508763551712036
+2,10,Python_DirectExec,f64,250mb,Memory Consumption,505.49609375
+2,10,Python_DirectExec,f64,250mb,Average CPU Load,16.933333333333334
+2,10,Python_DirectExec,f64,500mb,Execution Time,18.027483463287357
+2,10,Python_DirectExec,f64,500mb,Memory Consumption,1665.41015625
+2,10,Python_DirectExec,f64,500mb,Average CPU Load,13.591666666666663
+2,1,Python_Shared_Mem,f64,250mb,Execution Time,4.507923603057861
+2,1,Python_Shared_Mem,f64,250mb,Memory Consumption,927.41015625
+2,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.53333333333333
+2,1,Python_Shared_Mem,f64,500mb,Execution Time,12.018295288085938
+2,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3267.62890625
+2,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.475
+2,3,Python_Shared_Mem,f64,250mb,Execution Time,7.512038230895996
+2,3,Python_Shared_Mem,f64,250mb,Memory Consumption,935.5234375
+2,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.759999999999998
+2,3,Python_Shared_Mem,f64,500mb,Execution Time,24.0346896648407
+2,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3259.7265625
+2,3,Python_Shared_Mem,f64,500mb,Average CPU Load,14.037499999999998
+2,5,Python_Shared_Mem,f64,250mb,Execution Time,9.01506280899048
+2,5,Python_Shared_Mem,f64,250mb,Memory Consumption,926.52734375
+2,5,Python_Shared_Mem,f64,250mb,Average CPU Load,16.8
+2,5,Python_Shared_Mem,f64,500mb,Execution Time,31.54752802848816
+2,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3249.58984375
+2,5,Python_Shared_Mem,f64,500mb,Average CPU Load,14.152380952380955
+2,10,Python_Shared_Mem,f64,250mb,Execution Time,6.009875535964966
+2,10,Python_Shared_Mem,f64,250mb,Memory Consumption,927.1171875
+2,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.475
+2,10,Python_Shared_Mem,f64,500mb,Execution Time,21.03410506248474
+2,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3268.77734375
+2,10,Python_Shared_Mem,f64,500mb,Average CPU Load,14.042857142857144
+2,1,Python_CopyInMemory,f64,250mb,Execution Time,6.009991407394409
+2,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1319.60546875
+2,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.85
+2,1,Python_CopyInMemory,f64,500mb,Execution Time,19.531203269958496
+2,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4798.8515625
+2,1,Python_CopyInMemory,f64,500mb,Average CPU Load,14.069230769230767
+2,3,Python_CopyInMemory,f64,250mb,Execution Time,9.01358199119568
+2,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1328.33203125
+2,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.516666666666666
+2,3,Python_CopyInMemory,f64,500mb,Execution Time,31.546990394592285
+2,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4803.234375
+2,3,Python_CopyInMemory,f64,500mb,Average CPU Load,13.54285714285714
+2,5,Python_CopyInMemory,f64,250mb,Execution Time,10.516364574432371
+2,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1315.515625
+2,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.428571428571427
+2,5,Python_CopyInMemory,f64,500mb,Execution Time,39.059431314468384
+2,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4799.19140625
+2,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.392307692307694
+2,10,Python_CopyInMemory,f64,250mb,Execution Time,9.01416015625
+2,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1309.19140625
+2,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.483333333333334
+2,10,Python_CopyInMemory,f64,500mb,Execution Time,28.542061805725098
+2,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4805.79296875
+2,10,Python_CopyInMemory,f64,500mb,Average CPU Load,13.71578947368421
+2,1,Python_BinaryFile,f64,250mb,Execution Time,4.507527828216553
+2,1,Python_BinaryFile,f64,250mb,Memory Consumption,1003.171875
+2,1,Python_BinaryFile,f64,250mb,Average CPU Load,19.23333333333333
+2,1,Python_BinaryFile,f64,500mb,Execution Time,13.521807670593262
+2,1,Python_BinaryFile,f64,500mb,Memory Consumption,3510.6640625
+2,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.244444444444444
+2,3,Python_BinaryFile,f64,250mb,Execution Time,7.512064218521118
+2,3,Python_BinaryFile,f64,250mb,Memory Consumption,996.2734375
+2,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.86
+2,3,Python_BinaryFile,f64,500mb,Execution Time,24.035627841949463
+2,3,Python_BinaryFile,f64,500mb,Memory Consumption,3516.71875
+2,3,Python_BinaryFile,f64,500mb,Average CPU Load,14.0625
+2,5,Python_BinaryFile,f64,250mb,Execution Time,9.013721704483032
+2,5,Python_BinaryFile,f64,250mb,Memory Consumption,998.16015625
+2,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.8
+2,5,Python_BinaryFile,f64,500mb,Execution Time,31.549041509628296
+2,5,Python_BinaryFile,f64,500mb,Memory Consumption,3504.6484375
+2,5,Python_BinaryFile,f64,500mb,Average CPU Load,14.228571428571426
+2,10,Python_BinaryFile,f64,250mb,Execution Time,7.512263774871826
+2,10,Python_BinaryFile,f64,250mb,Memory Consumption,986.4296875
+2,10,Python_BinaryFile,f64,250mb,Average CPU Load,15.18
+2,10,Python_BinaryFile,f64,500mb,Execution Time,22.53358769416809
+2,10,Python_BinaryFile,f64,500mb,Memory Consumption,3508.51171875
+2,10,Python_BinaryFile,f64,500mb,Average CPU Load,13.506666666666666
+2,1,Python_CsvFile,f64,250mb,Execution Time,24.035765886306763
+2,1,Python_CsvFile,f64,250mb,Memory Consumption,1090.91015625
+2,1,Python_CsvFile,f64,250mb,Average CPU Load,14.487499999999995
+2,1,Python_CsvFile,f64,500mb,Execution Time,93.1361711025238
+2,1,Python_CsvFile,f64,500mb,Memory Consumption,3813.60546875
+2,1,Python_CsvFile,f64,500mb,Average CPU Load,13.162903225806458
+2,3,Python_CsvFile,f64,250mb,Execution Time,33.048723220825195
+2,3,Python_CsvFile,f64,250mb,Memory Consumption,1095.375
+2,3,Python_CsvFile,f64,250mb,Average CPU Load,14.181818181818182
+2,3,Python_CsvFile,f64,500mb,Execution Time,129.185049533844
+2,3,Python_CsvFile,f64,500mb,Memory Consumption,3825.0078125
+2,3,Python_CsvFile,f64,500mb,Average CPU Load,13.17093023255814
+2,5,Python_CsvFile,f64,250mb,Execution Time,36.05225491523743
+2,5,Python_CsvFile,f64,250mb,Memory Consumption,1098.13671875
+2,5,Python_CsvFile,f64,250mb,Average CPU Load,13.916666666666671
+2,5,Python_CsvFile,f64,500mb,Execution Time,138.1932394504547
+2,5,Python_CsvFile,f64,500mb,Memory Consumption,3832.96484375
+2,5,Python_CsvFile,f64,500mb,Average CPU Load,13.296739130434782
+2,10,Python_CsvFile,f64,250mb,Execution Time,33.04591083526611
+2,10,Python_CsvFile,f64,250mb,Memory Consumption,1094.16796875
+2,10,Python_CsvFile,f64,250mb,Average CPU Load,14.436363636363636
+2,10,Python_CsvFile,f64,500mb,Execution Time,129.18336129188538
+2,10,Python_CsvFile,f64,500mb,Memory Consumption,3823.3671875
+2,10,Python_CsvFile,f64,500mb,Average CPU Load,13.294186046511632
+3,1,daphneMap,f64,250mb,Execution Time,6.010116100311279
+3,1,daphneMap,f64,250mb,Memory Consumption,239.734375
+3,1,daphneMap,f64,250mb,Average CPU Load,14.975
+3,1,daphneMap,f64,500mb,Execution Time,21.029974699020386
+3,1,daphneMap,f64,500mb,Memory Consumption,624.4453125
+3,1,daphneMap,f64,500mb,Average CPU Load,13.164285714285713
+3,3,daphneMap,f64,250mb,Execution Time,6.010143995285034
+3,3,daphneMap,f64,250mb,Memory Consumption,241.19921875
+3,3,daphneMap,f64,250mb,Average CPU Load,15.7
+3,3,daphneMap,f64,500mb,Execution Time,21.029773712158203
+3,3,daphneMap,f64,500mb,Memory Consumption,624.37109375
+3,3,daphneMap,f64,500mb,Average CPU Load,14.492857142857142
+3,5,daphneMap,f64,250mb,Execution Time,9.016075134277344
+3,5,daphneMap,f64,250mb,Memory Consumption,240.37109375
+3,5,daphneMap,f64,250mb,Average CPU Load,13.1
+3,5,daphneMap,f64,500mb,Execution Time,30.043771505355835
+3,5,daphneMap,f64,500mb,Memory Consumption,625.3359375
+3,5,daphneMap,f64,500mb,Average CPU Load,14.475000000000003
+3,10,daphneMap,f64,250mb,Execution Time,7.511744499206543
+3,10,daphneMap,f64,250mb,Memory Consumption,240.08984375
+3,10,daphneMap,f64,250mb,Average CPU Load,14.16
+3,10,daphneMap,f64,500mb,Execution Time,27.04043459892273
+3,10,daphneMap,f64,500mb,Memory Consumption,624.9609375
+3,10,daphneMap,f64,500mb,Average CPU Load,13.799999999999995
+3,1,daphneInternal,f64,250mb,Execution Time,1.5032951831817627
+3,1,daphneInternal,f64,250mb,Memory Consumption,235.40625
+3,1,daphneInternal,f64,250mb,Average CPU Load,17.2
+3,1,daphneInternal,f64,500mb,Execution Time,1.5034234523773191
+3,1,daphneInternal,f64,500mb,Memory Consumption,591.3984375
+3,1,daphneInternal,f64,500mb,Average CPU Load,24.3
+3,3,daphneInternal,f64,250mb,Execution Time,1.5034079551696775
+3,3,daphneInternal,f64,250mb,Memory Consumption,234.0625
+3,3,daphneInternal,f64,250mb,Average CPU Load,18.8
+3,3,daphneInternal,f64,500mb,Execution Time,3.0056426525115967
+3,3,daphneInternal,f64,500mb,Memory Consumption,619.625
+3,3,daphneInternal,f64,500mb,Average CPU Load,14.5
+3,5,daphneInternal,f64,250mb,Execution Time,3.0054733753204346
+3,5,daphneInternal,f64,250mb,Memory Consumption,361.51953125
+3,5,daphneInternal,f64,250mb,Average CPU Load,19.3
+3,5,daphneInternal,f64,500mb,Execution Time,10.516762018203735
+3,5,daphneInternal,f64,500mb,Memory Consumption,1126.4765625
+3,5,daphneInternal,f64,500mb,Average CPU Load,13.814285714285717
+3,10,daphneInternal,f64,250mb,Execution Time,3.005875587463379
+3,10,daphneInternal,f64,250mb,Memory Consumption,367.38671875
+3,10,daphneInternal,f64,250mb,Average CPU Load,12.9
+3,10,daphneInternal,f64,500mb,Execution Time,7.515257835388184
+3,10,daphneInternal,f64,500mb,Memory Consumption,1081.1328125
+3,10,daphneInternal,f64,500mb,Average CPU Load,12.82
+3,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.5032689571380615
+3,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,151.13671875
+3,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,15.5
+3,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.506188154220581
+3,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,454.8984375
+3,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,21.4
+3,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.5036394596099854
+3,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,181.0546875
+3,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.3
+3,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.503706455230713
+3,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,568.421875
+3,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,24.6
+3,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5036890506744385
+3,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,253.94140625
+3,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.8
+3,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.009966135025024
+3,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.6875
+3,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.275
+3,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.5031449794769287
+3,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,235.25390625
+3,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.3
+3,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.00559139251709
+3,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.86328125
+3,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.6
+3,1,Python_DirectExec,f64,250mb,Execution Time,3.005826473236084
+3,1,Python_DirectExec,f64,250mb,Memory Consumption,500.33984375
+3,1,Python_DirectExec,f64,250mb,Average CPU Load,16.05
+3,1,Python_DirectExec,f64,500mb,Execution Time,9.014359474182127
+3,1,Python_DirectExec,f64,500mb,Memory Consumption,1659.5234375
+3,1,Python_DirectExec,f64,500mb,Average CPU Load,13.816666666666665
+3,3,Python_DirectExec,f64,250mb,Execution Time,6.010054349899292
+3,3,Python_DirectExec,f64,250mb,Memory Consumption,504.29296875
+3,3,Python_DirectExec,f64,250mb,Average CPU Load,14.475
+3,3,Python_DirectExec,f64,500mb,Execution Time,22.538594007492065
+3,3,Python_DirectExec,f64,500mb,Memory Consumption,1667.9765625
+3,3,Python_DirectExec,f64,500mb,Average CPU Load,14.580000000000004
+3,5,Python_DirectExec,f64,250mb,Execution Time,7.512488126754761
+3,5,Python_DirectExec,f64,250mb,Memory Consumption,506.1796875
+3,5,Python_DirectExec,f64,250mb,Average CPU Load,14.94
+3,5,Python_DirectExec,f64,500mb,Execution Time,28.54507327079773
+3,5,Python_DirectExec,f64,500mb,Memory Consumption,1668.1796875
+3,5,Python_DirectExec,f64,500mb,Average CPU Load,13.799999999999995
+3,10,Python_DirectExec,f64,250mb,Execution Time,4.507120132446289
+3,10,Python_DirectExec,f64,250mb,Memory Consumption,502.07421875
+3,10,Python_DirectExec,f64,250mb,Average CPU Load,16.533333333333335
+3,10,Python_DirectExec,f64,500mb,Execution Time,18.02882742881775
+3,10,Python_DirectExec,f64,500mb,Memory Consumption,1665.109375
+3,10,Python_DirectExec,f64,500mb,Average CPU Load,13.758333333333333
+3,1,Python_Shared_Mem,f64,250mb,Execution Time,4.507838249206543
+3,1,Python_Shared_Mem,f64,250mb,Memory Consumption,935.30859375
+3,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.1
+3,1,Python_Shared_Mem,f64,500mb,Execution Time,12.021322965621948
+3,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3256.875
+3,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.75
+3,3,Python_Shared_Mem,f64,250mb,Execution Time,7.512665510177612
+3,3,Python_Shared_Mem,f64,250mb,Memory Consumption,922.89453125
+3,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.4
+3,3,Python_Shared_Mem,f64,500mb,Execution Time,24.038774251937863
+3,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3262.984375
+3,3,Python_Shared_Mem,f64,500mb,Average CPU Load,13.59375
+3,5,Python_Shared_Mem,f64,250mb,Execution Time,9.014129638671877
+3,5,Python_Shared_Mem,f64,250mb,Memory Consumption,918.37890625
+3,5,Python_Shared_Mem,f64,250mb,Average CPU Load,17.383333333333336
+3,5,Python_Shared_Mem,f64,500mb,Execution Time,31.54438734054565
+3,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3257.83203125
+3,5,Python_Shared_Mem,f64,500mb,Average CPU Load,14.033333333333331
+3,10,Python_Shared_Mem,f64,250mb,Execution Time,6.009589195251465
+3,10,Python_Shared_Mem,f64,250mb,Memory Consumption,921.72265625
+3,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.525
+3,10,Python_Shared_Mem,f64,500mb,Execution Time,21.031663179397583
+3,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3246.046875
+3,10,Python_Shared_Mem,f64,500mb,Average CPU Load,13.892857142857142
+3,1,Python_CopyInMemory,f64,250mb,Execution Time,6.010574817657471
+3,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1321.33203125
+3,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.125
+3,1,Python_CopyInMemory,f64,500mb,Execution Time,21.03004503250122
+3,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4816.6171875
+3,1,Python_CopyInMemory,f64,500mb,Average CPU Load,13.157142857142857
+3,3,Python_CopyInMemory,f64,250mb,Execution Time,9.014055490493774
+3,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1323.62890625
+3,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.6
+3,3,Python_CopyInMemory,f64,500mb,Execution Time,31.544875144958496
+3,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4802.6953125
+3,3,Python_CopyInMemory,f64,500mb,Average CPU Load,13.5
+3,5,Python_CopyInMemory,f64,250mb,Execution Time,10.516836643218994
+3,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1305.91015625
+3,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.128571428571426
+3,5,Python_CopyInMemory,f64,500mb,Execution Time,39.05656361579895
+3,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4807.01171875
+3,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.23846153846154
+3,10,Python_CopyInMemory,f64,250mb,Execution Time,9.01428508758545
+3,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1313.1640625
+3,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.166666666666664
+3,10,Python_CopyInMemory,f64,500mb,Execution Time,28.542437076568604
+3,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4820.53515625
+3,10,Python_CopyInMemory,f64,500mb,Average CPU Load,13.736842105263158
+3,1,Python_BinaryFile,f64,250mb,Execution Time,4.507750988006592
+3,1,Python_BinaryFile,f64,250mb,Memory Consumption,1003.56640625
+3,1,Python_BinaryFile,f64,250mb,Average CPU Load,18.8
+3,1,Python_BinaryFile,f64,500mb,Execution Time,13.520768404006958
+3,1,Python_BinaryFile,f64,500mb,Memory Consumption,3517.4453125
+3,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.22222222222222
+3,3,Python_BinaryFile,f64,250mb,Execution Time,7.510857820510864
+3,3,Python_BinaryFile,f64,250mb,Memory Consumption,994.6328125
+3,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.78
+3,3,Python_BinaryFile,f64,500mb,Execution Time,25.536288022994995
+3,3,Python_BinaryFile,f64,500mb,Memory Consumption,3515.33984375
+3,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.576470588235292
+3,5,Python_BinaryFile,f64,250mb,Execution Time,9.012753248214722
+3,5,Python_BinaryFile,f64,250mb,Memory Consumption,986.44140625
+3,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.666666666666668
+3,5,Python_BinaryFile,f64,500mb,Execution Time,33.05059027671814
+3,5,Python_BinaryFile,f64,500mb,Memory Consumption,3522.6171875
+3,5,Python_BinaryFile,f64,500mb,Average CPU Load,13.12272727272727
+3,10,Python_BinaryFile,f64,250mb,Execution Time,7.511887788772583
+3,10,Python_BinaryFile,f64,250mb,Memory Consumption,992.4375
+3,10,Python_BinaryFile,f64,250mb,Average CPU Load,14.98
+3,10,Python_BinaryFile,f64,500mb,Execution Time,22.53413438796997
+3,10,Python_BinaryFile,f64,500mb,Memory Consumption,3518.37109375
+3,10,Python_BinaryFile,f64,500mb,Average CPU Load,13.646666666666668
+3,1,Python_CsvFile,f64,250mb,Execution Time,24.034271717071533
+3,1,Python_CsvFile,f64,250mb,Memory Consumption,1091.078125
+3,1,Python_CsvFile,f64,250mb,Average CPU Load,14.35625
+3,1,Python_CsvFile,f64,500mb,Execution Time,93.1287717819214
+3,1,Python_CsvFile,f64,500mb,Memory Consumption,3829.375
+3,1,Python_CsvFile,f64,500mb,Average CPU Load,13.36935483870968
+3,3,Python_CsvFile,f64,250mb,Execution Time,33.04790997505188
+3,3,Python_CsvFile,f64,250mb,Memory Consumption,1077.87890625
+3,3,Python_CsvFile,f64,250mb,Average CPU Load,13.795454545454543
+3,3,Python_CsvFile,f64,500mb,Execution Time,126.1777093410492
+3,3,Python_CsvFile,f64,500mb,Memory Consumption,3817.53125
+3,3,Python_CsvFile,f64,500mb,Average CPU Load,13.538095238095243
+3,5,Python_CsvFile,f64,250mb,Execution Time,36.05211567878723
+3,5,Python_CsvFile,f64,250mb,Memory Consumption,1077.50390625
+3,5,Python_CsvFile,f64,250mb,Average CPU Load,14.054166666666662
+3,5,Python_CsvFile,f64,500mb,Execution Time,138.19854998588562
+3,5,Python_CsvFile,f64,500mb,Memory Consumption,3813.21484375
+3,5,Python_CsvFile,f64,500mb,Average CPU Load,13.401086956521745
+3,10,Python_CsvFile,f64,250mb,Execution Time,33.04951882362366
+3,10,Python_CsvFile,f64,250mb,Memory Consumption,1085.95703125
+3,10,Python_CsvFile,f64,250mb,Average CPU Load,13.91818181818182
+3,10,Python_CsvFile,f64,500mb,Execution Time,132.1899929046631
+3,10,Python_CsvFile,f64,500mb,Memory Consumption,3816.7421875
+3,10,Python_CsvFile,f64,500mb,Average CPU Load,13.449999999999996
+4,1,daphneMap,f64,250mb,Execution Time,6.009451627731323
+4,1,daphneMap,f64,250mb,Memory Consumption,240.02734375
+4,1,daphneMap,f64,250mb,Average CPU Load,14.675
+4,1,daphneMap,f64,500mb,Execution Time,21.03061842918396
+4,1,daphneMap,f64,500mb,Memory Consumption,624.37109375
+4,1,daphneMap,f64,500mb,Average CPU Load,13.185714285714282
+4,3,daphneMap,f64,250mb,Execution Time,6.010060787200928
+4,3,daphneMap,f64,250mb,Memory Consumption,239.80859375
+4,3,daphneMap,f64,250mb,Average CPU Load,15.75
+4,3,daphneMap,f64,500mb,Execution Time,21.03039312362671
+4,3,daphneMap,f64,500mb,Memory Consumption,624.8984375
+4,3,daphneMap,f64,500mb,Average CPU Load,14.7
+4,5,daphneMap,f64,250mb,Execution Time,9.0139639377594
+4,5,daphneMap,f64,250mb,Memory Consumption,240.671875
+4,5,daphneMap,f64,250mb,Average CPU Load,13.466666666666669
+4,5,daphneMap,f64,500mb,Execution Time,31.545300245285038
+4,5,daphneMap,f64,500mb,Memory Consumption,624.84765625
+4,5,daphneMap,f64,500mb,Average CPU Load,13.571428571428577
+4,10,daphneMap,f64,250mb,Execution Time,7.512655258178711
+4,10,daphneMap,f64,250mb,Memory Consumption,240.71875
+4,10,daphneMap,f64,250mb,Average CPU Load,14.68
+4,10,daphneMap,f64,500mb,Execution Time,27.038230419158936
+4,10,daphneMap,f64,500mb,Memory Consumption,624.53125
+4,10,daphneMap,f64,500mb,Average CPU Load,14.038888888888886
+4,1,daphneInternal,f64,250mb,Execution Time,1.50358247756958
+4,1,daphneInternal,f64,250mb,Memory Consumption,230.4765625
+4,1,daphneInternal,f64,250mb,Average CPU Load,17.8
+4,1,daphneInternal,f64,500mb,Execution Time,1.5034291744232178
+4,1,daphneInternal,f64,500mb,Memory Consumption,565.80078125
+4,1,daphneInternal,f64,500mb,Average CPU Load,24.3
+4,3,daphneInternal,f64,250mb,Execution Time,1.5033671855926514
+4,3,daphneInternal,f64,250mb,Memory Consumption,233.4921875
+4,3,daphneInternal,f64,250mb,Average CPU Load,19.2
+4,3,daphneInternal,f64,500mb,Execution Time,3.0058655738830566
+4,3,daphneInternal,f64,500mb,Memory Consumption,589.5546875
+4,3,daphneInternal,f64,500mb,Average CPU Load,15.1
+4,5,daphneInternal,f64,250mb,Execution Time,3.007194995880127
+4,5,daphneInternal,f64,250mb,Memory Consumption,364.66796875
+4,5,daphneInternal,f64,250mb,Average CPU Load,18.4
+4,5,daphneInternal,f64,500mb,Execution Time,10.516043663024902
+4,5,daphneInternal,f64,500mb,Memory Consumption,1120.75
+4,5,daphneInternal,f64,500mb,Average CPU Load,14.457142857142856
+4,10,daphneInternal,f64,250mb,Execution Time,3.006948709487915
+4,10,daphneInternal,f64,250mb,Memory Consumption,345.69140625
+4,10,daphneInternal,f64,250mb,Average CPU Load,13.3
+4,10,daphneInternal,f64,500mb,Execution Time,7.511777639389038
+4,10,daphneInternal,f64,500mb,Memory Consumption,1060.6875
+4,10,daphneInternal,f64,500mb,Average CPU Load,12.98
+4,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.5032689571380615
+4,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,129.14453125
+4,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,16.0
+4,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5033833980560305
+4,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,441.171875
+4,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,21.6
+4,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.5045921802520752
+4,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,182.6796875
+4,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.0
+4,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.503464698791504
+4,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,542.59765625
+4,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,23.9
+4,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5033862590789795
+4,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,251.80078125
+4,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.6
+4,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.010277271270752
+4,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.921875
+4,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.25
+4,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.5033848285675049
+4,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,236.5703125
+4,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.4
+4,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.005873918533325
+4,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.8515625
+4,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.45
+4,1,Python_DirectExec,f64,250mb,Execution Time,3.00581955909729
+4,1,Python_DirectExec,f64,250mb,Memory Consumption,505.6484375
+4,1,Python_DirectExec,f64,250mb,Average CPU Load,15.7
+4,1,Python_DirectExec,f64,500mb,Execution Time,9.01481795310974
+4,1,Python_DirectExec,f64,500mb,Memory Consumption,1667.57421875
+4,1,Python_DirectExec,f64,500mb,Average CPU Load,13.616666666666667
+4,3,Python_DirectExec,f64,250mb,Execution Time,6.010048389434815
+4,3,Python_DirectExec,f64,250mb,Memory Consumption,500.9375
+4,3,Python_DirectExec,f64,250mb,Average CPU Load,14.925
+4,3,Python_DirectExec,f64,500mb,Execution Time,21.030782461166385
+4,3,Python_DirectExec,f64,500mb,Memory Consumption,1668.9140625
+4,3,Python_DirectExec,f64,500mb,Average CPU Load,14.371428571428568
+4,5,Python_DirectExec,f64,250mb,Execution Time,7.511625289916992
+4,5,Python_DirectExec,f64,250mb,Memory Consumption,502.3828125
+4,5,Python_DirectExec,f64,250mb,Average CPU Load,16.080000000000002
+4,5,Python_DirectExec,f64,500mb,Execution Time,27.03957939147949
+4,5,Python_DirectExec,f64,500mb,Memory Consumption,1670.08203125
+4,5,Python_DirectExec,f64,500mb,Average CPU Load,13.916666666666664
+4,10,Python_DirectExec,f64,250mb,Execution Time,4.507810831069946
+4,10,Python_DirectExec,f64,250mb,Memory Consumption,500.14453125
+4,10,Python_DirectExec,f64,250mb,Average CPU Load,16.766666666666666
+4,10,Python_DirectExec,f64,500mb,Execution Time,18.028472185134888
+4,10,Python_DirectExec,f64,500mb,Memory Consumption,1665.359375
+4,10,Python_DirectExec,f64,500mb,Average CPU Load,14.050000000000002
+4,1,Python_Shared_Mem,f64,250mb,Execution Time,4.507827281951904
+4,1,Python_Shared_Mem,f64,250mb,Memory Consumption,930.09375
+4,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.6
+4,1,Python_Shared_Mem,f64,500mb,Execution Time,13.520667791366575
+4,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3255.93359375
+4,1,Python_Shared_Mem,f64,500mb,Average CPU Load,13.6
+4,3,Python_Shared_Mem,f64,250mb,Execution Time,7.51296329498291
+4,3,Python_Shared_Mem,f64,250mb,Memory Consumption,934.578125
+4,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.08
+4,3,Python_Shared_Mem,f64,500mb,Execution Time,24.035993576049805
+4,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3252.296875
+4,3,Python_Shared_Mem,f64,500mb,Average CPU Load,14.18125
+4,5,Python_Shared_Mem,f64,250mb,Execution Time,9.01408553123474
+4,5,Python_Shared_Mem,f64,250mb,Memory Consumption,923.8203125
+4,5,Python_Shared_Mem,f64,250mb,Average CPU Load,16.866666666666664
+4,5,Python_Shared_Mem,f64,500mb,Execution Time,31.54634690284729
+4,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3259.859375
+4,5,Python_Shared_Mem,f64,500mb,Average CPU Load,13.72857142857143
+4,10,Python_Shared_Mem,f64,250mb,Execution Time,6.012407541275024
+4,10,Python_Shared_Mem,f64,250mb,Memory Consumption,939.1953125
+4,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.65
+4,10,Python_Shared_Mem,f64,500mb,Execution Time,22.533503532409668
+4,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3253.0
+4,10,Python_Shared_Mem,f64,500mb,Average CPU Load,13.493333333333334
+4,1,Python_CopyInMemory,f64,250mb,Execution Time,6.009284257888794
+4,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1306.46875
+4,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.875
+4,1,Python_CopyInMemory,f64,500mb,Execution Time,19.529324769973755
+4,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4820.69140625
+4,1,Python_CopyInMemory,f64,500mb,Average CPU Load,14.084615384615384
+4,3,Python_CopyInMemory,f64,250mb,Execution Time,9.01434063911438
+4,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1327.20703125
+4,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.55
+4,3,Python_CopyInMemory,f64,500mb,Execution Time,31.547189235687256
+4,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4804.85546875
+4,3,Python_CopyInMemory,f64,500mb,Average CPU Load,13.523809523809522
+4,5,Python_CopyInMemory,f64,250mb,Execution Time,10.51660943031311
+4,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1323.7890625
+4,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.3
+4,5,Python_CopyInMemory,f64,500mb,Execution Time,39.05778622627258
+4,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4799.66796875
+4,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.41923076923077
+4,10,Python_CopyInMemory,f64,250mb,Execution Time,9.014763832092283
+4,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1306.53125
+4,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.116666666666664
+4,10,Python_CopyInMemory,f64,500mb,Execution Time,28.544069528579712
+4,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4799.29296875
+4,10,Python_CopyInMemory,f64,500mb,Average CPU Load,13.86315789473684
+4,1,Python_BinaryFile,f64,250mb,Execution Time,4.50724196434021
+4,1,Python_BinaryFile,f64,250mb,Memory Consumption,982.640625
+4,1,Python_BinaryFile,f64,250mb,Average CPU Load,19.700000000000003
+4,1,Python_BinaryFile,f64,500mb,Execution Time,13.5208101272583
+4,1,Python_BinaryFile,f64,500mb,Memory Consumption,3519.16796875
+4,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.588888888888889
+4,3,Python_BinaryFile,f64,250mb,Execution Time,7.512232780456543
+4,3,Python_BinaryFile,f64,250mb,Memory Consumption,997.08203125
+4,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.44
+4,3,Python_BinaryFile,f64,500mb,Execution Time,24.03581047058105
+4,3,Python_BinaryFile,f64,500mb,Memory Consumption,3523.359375
+4,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.79375
+4,5,Python_BinaryFile,f64,250mb,Execution Time,9.014176845550535
+4,5,Python_BinaryFile,f64,250mb,Memory Consumption,991.28515625
+4,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.833333333333332
+4,5,Python_BinaryFile,f64,500mb,Execution Time,31.546534538269043
+4,5,Python_BinaryFile,f64,500mb,Memory Consumption,3509.265625
+4,5,Python_BinaryFile,f64,500mb,Average CPU Load,13.714285714285714
+4,10,Python_BinaryFile,f64,250mb,Execution Time,7.512326955795288
+4,10,Python_BinaryFile,f64,250mb,Memory Consumption,994.59375
+4,10,Python_BinaryFile,f64,250mb,Average CPU Load,14.9
+4,10,Python_BinaryFile,f64,500mb,Execution Time,22.533867359161377
+4,10,Python_BinaryFile,f64,500mb,Memory Consumption,3511.42578125
+4,10,Python_BinaryFile,f64,500mb,Average CPU Load,13.533333333333331
+4,1,Python_CsvFile,f64,250mb,Execution Time,24.034996032714844
+4,1,Python_CsvFile,f64,250mb,Memory Consumption,1093.65234375
+4,1,Python_CsvFile,f64,250mb,Average CPU Load,15.15
+4,1,Python_CsvFile,f64,500mb,Execution Time,94.63569617271423
+4,1,Python_CsvFile,f64,500mb,Memory Consumption,3824.62109375
+4,1,Python_CsvFile,f64,500mb,Average CPU Load,13.4936507936508
+4,3,Python_CsvFile,f64,250mb,Execution Time,33.04664731025696
+4,3,Python_CsvFile,f64,250mb,Memory Consumption,1099.0859375
+4,3,Python_CsvFile,f64,250mb,Average CPU Load,14.704545454545457
+4,3,Python_CsvFile,f64,500mb,Execution Time,126.18112850189208
+4,3,Python_CsvFile,f64,500mb,Memory Consumption,3816.6171875
+4,3,Python_CsvFile,f64,500mb,Average CPU Load,13.403571428571428
+4,5,Python_CsvFile,f64,250mb,Execution Time,36.05354905128479
+4,5,Python_CsvFile,f64,250mb,Memory Consumption,1098.484375
+4,5,Python_CsvFile,f64,250mb,Average CPU Load,13.825
+4,5,Python_CsvFile,f64,500mb,Execution Time,141.20395231246948
+4,5,Python_CsvFile,f64,500mb,Memory Consumption,3832.32421875
+4,5,Python_CsvFile,f64,500mb,Average CPU Load,13.234042553191488
+4,10,Python_CsvFile,f64,250mb,Execution Time,34.54897499084473
+4,10,Python_CsvFile,f64,250mb,Memory Consumption,1084.3984375
+4,10,Python_CsvFile,f64,250mb,Average CPU Load,13.54347826086956
+4,10,Python_CsvFile,f64,500mb,Execution Time,130.68872570991516
+4,10,Python_CsvFile,f64,500mb,Memory Consumption,3818.71484375
+4,10,Python_CsvFile,f64,500mb,Average CPU Load,13.30689655172414
+5,1,daphneMap,f64,250mb,Execution Time,6.010101556777954
+5,1,daphneMap,f64,250mb,Memory Consumption,240.0703125
+5,1,daphneMap,f64,250mb,Average CPU Load,14.5
+5,1,daphneMap,f64,500mb,Execution Time,21.034549951553345
+5,1,daphneMap,f64,500mb,Memory Consumption,623.03515625
+5,1,daphneMap,f64,500mb,Average CPU Load,13.2
+5,3,daphneMap,f64,250mb,Execution Time,6.009400129318237
+5,3,daphneMap,f64,250mb,Memory Consumption,241.22265625
+5,3,daphneMap,f64,250mb,Average CPU Load,15.825
+5,3,daphneMap,f64,500mb,Execution Time,21.03255295753479
+5,3,daphneMap,f64,500mb,Memory Consumption,625.07421875
+5,3,daphneMap,f64,500mb,Average CPU Load,13.921428571428567
+5,5,daphneMap,f64,250mb,Execution Time,9.012824296951294
+5,5,daphneMap,f64,250mb,Memory Consumption,240.6328125
+5,5,daphneMap,f64,250mb,Average CPU Load,13.066666666666665
+5,5,daphneMap,f64,500mb,Execution Time,30.047173500061035
+5,5,daphneMap,f64,500mb,Memory Consumption,624.69140625
+5,5,daphneMap,f64,500mb,Average CPU Load,13.685
+5,10,daphneMap,f64,250mb,Execution Time,7.511950492858887
+5,10,daphneMap,f64,250mb,Memory Consumption,240.38671875
+5,10,daphneMap,f64,250mb,Average CPU Load,14.960000000000004
+5,10,daphneMap,f64,500mb,Execution Time,27.03982710838318
+5,10,daphneMap,f64,500mb,Memory Consumption,624.19140625
+5,10,daphneMap,f64,500mb,Average CPU Load,14.088888888888889
+5,1,daphneInternal,f64,250mb,Execution Time,1.503323316574097
+5,1,daphneInternal,f64,250mb,Memory Consumption,230.90625
+5,1,daphneInternal,f64,250mb,Average CPU Load,17.4
+5,1,daphneInternal,f64,500mb,Execution Time,1.5035858154296875
+5,1,daphneInternal,f64,500mb,Memory Consumption,590.91015625
+5,1,daphneInternal,f64,500mb,Average CPU Load,24.2
+5,3,daphneInternal,f64,250mb,Execution Time,1.5033087730407717
+5,3,daphneInternal,f64,250mb,Memory Consumption,232.58984375
+5,3,daphneInternal,f64,250mb,Average CPU Load,18.8
+5,3,daphneInternal,f64,500mb,Execution Time,3.007761716842652
+5,3,daphneInternal,f64,500mb,Memory Consumption,624.35546875
+5,3,daphneInternal,f64,500mb,Average CPU Load,14.4
+5,5,daphneInternal,f64,250mb,Execution Time,3.005596876144409
+5,5,daphneInternal,f64,250mb,Memory Consumption,364.24609375
+5,5,daphneInternal,f64,250mb,Average CPU Load,18.8
+5,5,daphneInternal,f64,500mb,Execution Time,10.515539646148682
+5,5,daphneInternal,f64,500mb,Memory Consumption,1135.609375
+5,5,daphneInternal,f64,500mb,Average CPU Load,13.600000000000003
+5,10,daphneInternal,f64,250mb,Execution Time,3.0058178901672363
+5,10,daphneInternal,f64,250mb,Memory Consumption,363.4296875
+5,10,daphneInternal,f64,250mb,Average CPU Load,13.55
+5,10,daphneInternal,f64,500mb,Execution Time,6.01090407371521
+5,10,daphneInternal,f64,500mb,Memory Consumption,1095.5859375
+5,10,daphneInternal,f64,500mb,Average CPU Load,16.525
+5,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.5033960342407229
+5,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,131.52734375
+5,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,16.3
+5,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5033082962036133
+5,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,445.4375
+5,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,22.4
+5,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.503326177597046
+5,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,183.19921875
+5,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.0
+5,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.5034098625183103
+5,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,544.30859375
+5,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,23.8
+5,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5035333633422852
+5,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,252.41796875
+5,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,24.3
+5,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.009378433227539
+5,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.66796875
+5,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.65
+5,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.50341534614563
+5,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,236.921875
+5,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.8
+5,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.005815029144287
+5,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.42578125
+5,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.65
+5,1,Python_DirectExec,f64,250mb,Execution Time,3.0064969062805176
+5,1,Python_DirectExec,f64,250mb,Memory Consumption,500.92578125
+5,1,Python_DirectExec,f64,250mb,Average CPU Load,15.9
+5,1,Python_DirectExec,f64,500mb,Execution Time,9.013889074325562
+5,1,Python_DirectExec,f64,500mb,Memory Consumption,1658.953125
+5,1,Python_DirectExec,f64,500mb,Average CPU Load,15.916666666666666
+5,3,Python_DirectExec,f64,250mb,Execution Time,6.010192632675171
+5,3,Python_DirectExec,f64,250mb,Memory Consumption,507.2265625
+5,3,Python_DirectExec,f64,250mb,Average CPU Load,14.4
+5,3,Python_DirectExec,f64,500mb,Execution Time,19.5283465385437
+5,3,Python_DirectExec,f64,500mb,Memory Consumption,1671.45703125
+5,3,Python_DirectExec,f64,500mb,Average CPU Load,14.607692307692306
+5,5,Python_DirectExec,f64,250mb,Execution Time,7.512003421783447
+5,5,Python_DirectExec,f64,250mb,Memory Consumption,505.609375
+5,5,Python_DirectExec,f64,250mb,Average CPU Load,15.24
+5,5,Python_DirectExec,f64,500mb,Execution Time,27.03653049468994
+5,5,Python_DirectExec,f64,500mb,Memory Consumption,1666.66015625
+5,5,Python_DirectExec,f64,500mb,Average CPU Load,14.238888888888887
+5,10,Python_DirectExec,f64,250mb,Execution Time,4.507821083068848
+5,10,Python_DirectExec,f64,250mb,Memory Consumption,503.61328125
+5,10,Python_DirectExec,f64,250mb,Average CPU Load,17.133333333333333
+5,10,Python_DirectExec,f64,500mb,Execution Time,18.02761650085449
+5,10,Python_DirectExec,f64,500mb,Memory Consumption,1668.15234375
+5,10,Python_DirectExec,f64,500mb,Average CPU Load,13.533333333333331
+5,1,Python_Shared_Mem,f64,250mb,Execution Time,4.507963418960571
+5,1,Python_Shared_Mem,f64,250mb,Memory Consumption,936.2890625
+5,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.33333333333333
+5,1,Python_Shared_Mem,f64,500mb,Execution Time,12.01836371421814
+5,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3267.8828125
+5,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.5125
+5,3,Python_Shared_Mem,f64,250mb,Execution Time,10.520750284194946
+5,3,Python_Shared_Mem,f64,250mb,Memory Consumption,940.09375
+5,3,Python_Shared_Mem,f64,250mb,Average CPU Load,15.271428571428572
+5,3,Python_Shared_Mem,f64,500mb,Execution Time,25.53552484512329
+5,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3251.08984375
+5,3,Python_Shared_Mem,f64,500mb,Average CPU Load,13.223529411764703
+5,5,Python_Shared_Mem,f64,250mb,Execution Time,9.014052629470823
+5,5,Python_Shared_Mem,f64,250mb,Memory Consumption,938.4375
+5,5,Python_Shared_Mem,f64,250mb,Average CPU Load,16.4
+5,5,Python_Shared_Mem,f64,500mb,Execution Time,31.545448303222656
+5,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3253.80078125
+5,5,Python_Shared_Mem,f64,500mb,Average CPU Load,13.547619047619047
+5,10,Python_Shared_Mem,f64,250mb,Execution Time,6.010477781295776
+5,10,Python_Shared_Mem,f64,250mb,Memory Consumption,941.0
+5,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.8
+5,10,Python_Shared_Mem,f64,500mb,Execution Time,21.03156566619873
+5,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3249.78125
+5,10,Python_Shared_Mem,f64,500mb,Average CPU Load,14.3
+5,1,Python_CopyInMemory,f64,250mb,Execution Time,6.009915113449097
+5,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1320.66796875
+5,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.9
+5,1,Python_CopyInMemory,f64,500mb,Execution Time,19.52977442741394
+5,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4805.48046875
+5,1,Python_CopyInMemory,f64,500mb,Average CPU Load,14.3
+5,3,Python_CopyInMemory,f64,250mb,Execution Time,9.014272212982178
+5,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1313.96875
+5,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.45
+5,3,Python_CopyInMemory,f64,500mb,Execution Time,31.545678853988647
+5,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4806.1484375
+5,3,Python_CopyInMemory,f64,500mb,Average CPU Load,14.33809523809524
+5,5,Python_CopyInMemory,f64,250mb,Execution Time,10.516213178634644
+5,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1313.42578125
+5,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.38571428571429
+5,5,Python_CopyInMemory,f64,500mb,Execution Time,39.05590867996216
+5,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4821.26171875
+5,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.534615384615384
+5,10,Python_CopyInMemory,f64,250mb,Execution Time,9.013940811157228
+5,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1318.3515625
+5,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.35
+5,10,Python_CopyInMemory,f64,500mb,Execution Time,28.539626598358154
+5,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4799.18359375
+5,10,Python_CopyInMemory,f64,500mb,Average CPU Load,14.4
+5,1,Python_BinaryFile,f64,250mb,Execution Time,4.507826566696167
+5,1,Python_BinaryFile,f64,250mb,Memory Consumption,998.6328125
+5,1,Python_BinaryFile,f64,250mb,Average CPU Load,19.0
+5,1,Python_BinaryFile,f64,500mb,Execution Time,13.52060317993164
+5,1,Python_BinaryFile,f64,500mb,Memory Consumption,3522.1328125
+5,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.344444444444443
+5,3,Python_BinaryFile,f64,250mb,Execution Time,7.511966943740845
+5,3,Python_BinaryFile,f64,250mb,Memory Consumption,987.88671875
+5,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.98
+5,3,Python_BinaryFile,f64,500mb,Execution Time,24.03586983680725
+5,3,Python_BinaryFile,f64,500mb,Memory Consumption,3515.19921875
+5,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.812499999999996
+5,5,Python_BinaryFile,f64,250mb,Execution Time,9.013556003570557
+5,5,Python_BinaryFile,f64,250mb,Memory Consumption,1000.8046875
+5,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.8
+5,5,Python_BinaryFile,f64,500mb,Execution Time,31.545490264892575
+5,5,Python_BinaryFile,f64,500mb,Memory Consumption,3509.4140625
+5,5,Python_BinaryFile,f64,500mb,Average CPU Load,14.461904761904758
+5,10,Python_BinaryFile,f64,250mb,Execution Time,7.512179374694824
+5,10,Python_BinaryFile,f64,250mb,Memory Consumption,985.79296875
+5,10,Python_BinaryFile,f64,250mb,Average CPU Load,15.66
+5,10,Python_BinaryFile,f64,500mb,Execution Time,22.532454013824463
+5,10,Python_BinaryFile,f64,500mb,Memory Consumption,3523.37890625
+5,10,Python_BinaryFile,f64,500mb,Average CPU Load,14.98
+5,1,Python_CsvFile,f64,250mb,Execution Time,24.035449981689453
+5,1,Python_CsvFile,f64,250mb,Memory Consumption,1080.23046875
+5,1,Python_CsvFile,f64,250mb,Average CPU Load,14.63125
+5,1,Python_CsvFile,f64,500mb,Execution Time,94.6364107131958
+5,1,Python_CsvFile,f64,500mb,Memory Consumption,3829.94140625
+5,1,Python_CsvFile,f64,500mb,Average CPU Load,13.371428571428575
+5,3,Python_CsvFile,f64,250mb,Execution Time,33.047611236572266
+5,3,Python_CsvFile,f64,250mb,Memory Consumption,1085.19921875
+5,3,Python_CsvFile,f64,250mb,Average CPU Load,13.8
+5,3,Python_CsvFile,f64,500mb,Execution Time,127.6774799823761
+5,3,Python_CsvFile,f64,500mb,Memory Consumption,3819.0546875
+5,3,Python_CsvFile,f64,500mb,Average CPU Load,13.341176470588236
+5,5,Python_CsvFile,f64,250mb,Execution Time,36.052781105041504
+5,5,Python_CsvFile,f64,250mb,Memory Consumption,1088.12890625
+5,5,Python_CsvFile,f64,250mb,Average CPU Load,13.704166666666667
+5,5,Python_CsvFile,f64,500mb,Execution Time,141.20235466957092
+5,5,Python_CsvFile,f64,500mb,Memory Consumption,3829.96875
+5,5,Python_CsvFile,f64,500mb,Average CPU Load,13.347872340425532
+5,10,Python_CsvFile,f64,250mb,Execution Time,33.04629445075989
+5,10,Python_CsvFile,f64,250mb,Memory Consumption,1083.671875
+5,10,Python_CsvFile,f64,250mb,Average CPU Load,14.331818181818182
+5,10,Python_CsvFile,f64,500mb,Execution Time,129.19003009796145
+5,10,Python_CsvFile,f64,500mb,Memory Consumption,3831.4453125
+5,10,Python_CsvFile,f64,500mb,Average CPU Load,13.454651162790697
+6,1,daphneMap,f64,250mb,Execution Time,6.01041054725647
+6,1,daphneMap,f64,250mb,Memory Consumption,239.484375
+6,1,daphneMap,f64,250mb,Average CPU Load,14.35
+6,1,daphneMap,f64,500mb,Execution Time,21.03173851966858
+6,1,daphneMap,f64,500mb,Memory Consumption,624.62890625
+6,1,daphneMap,f64,500mb,Average CPU Load,13.7
+6,3,daphneMap,f64,250mb,Execution Time,6.010263204574585
+6,3,daphneMap,f64,250mb,Memory Consumption,240.85546875
+6,3,daphneMap,f64,250mb,Average CPU Load,15.375
+6,3,daphneMap,f64,500mb,Execution Time,21.03173851966858
+6,3,daphneMap,f64,500mb,Memory Consumption,624.2734375
+6,3,daphneMap,f64,500mb,Average CPU Load,13.964285714285714
+6,5,daphneMap,f64,250mb,Execution Time,9.014646530151367
+6,5,daphneMap,f64,250mb,Memory Consumption,240.62109375
+6,5,daphneMap,f64,250mb,Average CPU Load,14.15
+6,5,daphneMap,f64,500mb,Execution Time,31.545694828033447
+6,5,daphneMap,f64,500mb,Memory Consumption,625.3828125
+6,5,daphneMap,f64,500mb,Average CPU Load,14.071428571428571
+6,10,daphneMap,f64,250mb,Execution Time,7.511915445327759
+6,10,daphneMap,f64,250mb,Memory Consumption,241.37109375
+6,10,daphneMap,f64,250mb,Average CPU Load,14.54
+6,10,daphneMap,f64,500mb,Execution Time,27.040135860443115
+6,10,daphneMap,f64,500mb,Memory Consumption,624.85546875
+6,10,daphneMap,f64,500mb,Average CPU Load,13.761111111111113
+6,1,daphneInternal,f64,250mb,Execution Time,1.503258466720581
+6,1,daphneInternal,f64,250mb,Memory Consumption,234.23828125
+6,1,daphneInternal,f64,250mb,Average CPU Load,16.9
+6,1,daphneInternal,f64,500mb,Execution Time,1.503279685974121
+6,1,daphneInternal,f64,500mb,Memory Consumption,587.1953125
+6,1,daphneInternal,f64,500mb,Average CPU Load,23.7
+6,3,daphneInternal,f64,250mb,Execution Time,1.5033626556396484
+6,3,daphneInternal,f64,250mb,Memory Consumption,233.453125
+6,3,daphneInternal,f64,250mb,Average CPU Load,18.5
+6,3,daphneInternal,f64,500mb,Execution Time,3.0056345462799072
+6,3,daphneInternal,f64,500mb,Memory Consumption,622.33984375
+6,3,daphneInternal,f64,500mb,Average CPU Load,14.85
+6,5,daphneInternal,f64,250mb,Execution Time,3.005707263946533
+6,5,daphneInternal,f64,250mb,Memory Consumption,368.87109375
+6,5,daphneInternal,f64,250mb,Average CPU Load,18.35
+6,5,daphneInternal,f64,500mb,Execution Time,10.51631999015808
+6,5,daphneInternal,f64,500mb,Memory Consumption,1130.34375
+6,5,daphneInternal,f64,500mb,Average CPU Load,13.457142857142856
+6,10,daphneInternal,f64,250mb,Execution Time,3.00655198097229
+6,10,daphneInternal,f64,250mb,Memory Consumption,362.3671875
+6,10,daphneInternal,f64,250mb,Average CPU Load,13.2
+6,10,daphneInternal,f64,500mb,Execution Time,6.0097527503967285
+6,10,daphneInternal,f64,500mb,Memory Consumption,1103.52734375
+6,10,daphneInternal,f64,500mb,Average CPU Load,16.35
+6,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.50347900390625
+6,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,132.796875
+6,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,16.0
+6,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5065338611602783
+6,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,459.19921875
+6,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,21.5
+6,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.5034112930297852
+6,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,185.6640625
+6,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.3
+6,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.503556489944458
+6,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,539.07421875
+6,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,24.3
+6,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5033020973205566
+6,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,249.81640625
+6,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.8
+6,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.009961843490601
+6,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,830.1796875
+6,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.375
+6,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.5045506954193115
+6,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,238.37109375
+6,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.3
+6,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.0055506229400635
+6,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.625
+6,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.4
+6,1,Python_DirectExec,f64,250mb,Execution Time,3.0055320262908936
+6,1,Python_DirectExec,f64,250mb,Memory Consumption,504.11328125
+6,1,Python_DirectExec,f64,250mb,Average CPU Load,16.450000000000003
+6,1,Python_DirectExec,f64,500mb,Execution Time,9.014312267303469
+6,1,Python_DirectExec,f64,500mb,Memory Consumption,1667.46484375
+6,1,Python_DirectExec,f64,500mb,Average CPU Load,13.466666666666669
+6,3,Python_DirectExec,f64,250mb,Execution Time,6.010080099105835
+6,3,Python_DirectExec,f64,250mb,Memory Consumption,502.0625
+6,3,Python_DirectExec,f64,250mb,Average CPU Load,14.55
+6,3,Python_DirectExec,f64,500mb,Execution Time,21.0319139957428
+6,3,Python_DirectExec,f64,500mb,Memory Consumption,1667.5390625
+6,3,Python_DirectExec,f64,500mb,Average CPU Load,13.328571428571433
+6,5,Python_DirectExec,f64,250mb,Execution Time,7.513078689575195
+6,5,Python_DirectExec,f64,250mb,Memory Consumption,505.109375
+6,5,Python_DirectExec,f64,250mb,Average CPU Load,14.88
+6,5,Python_DirectExec,f64,500mb,Execution Time,27.03978061676025
+6,5,Python_DirectExec,f64,500mb,Memory Consumption,1669.12890625
+6,5,Python_DirectExec,f64,500mb,Average CPU Load,14.6
+6,10,Python_DirectExec,f64,250mb,Execution Time,4.510596036911011
+6,10,Python_DirectExec,f64,250mb,Memory Consumption,500.90625
+6,10,Python_DirectExec,f64,250mb,Average CPU Load,17.0
+6,10,Python_DirectExec,f64,500mb,Execution Time,18.026276111602783
+6,10,Python_DirectExec,f64,500mb,Memory Consumption,1667.85546875
+6,10,Python_DirectExec,f64,500mb,Average CPU Load,13.566666666666665
+6,1,Python_Shared_Mem,f64,250mb,Execution Time,4.507915496826172
+6,1,Python_Shared_Mem,f64,250mb,Memory Consumption,926.125
+6,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.33333333333333
+6,1,Python_Shared_Mem,f64,500mb,Execution Time,12.018044471740724
+6,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3263.87109375
+6,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.8875
+6,3,Python_Shared_Mem,f64,250mb,Execution Time,7.512831211090088
+6,3,Python_Shared_Mem,f64,250mb,Memory Consumption,934.74609375
+6,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.020000000000003
+6,3,Python_Shared_Mem,f64,500mb,Execution Time,25.53653311729431
+6,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3258.859375
+6,3,Python_Shared_Mem,f64,500mb,Average CPU Load,14.117647058823527
+6,5,Python_Shared_Mem,f64,250mb,Execution Time,9.014215469360352
+6,5,Python_Shared_Mem,f64,250mb,Memory Consumption,929.7890625
+6,5,Python_Shared_Mem,f64,250mb,Average CPU Load,16.3
+6,5,Python_Shared_Mem,f64,500mb,Execution Time,31.546327352523804
+6,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3264.12890625
+6,5,Python_Shared_Mem,f64,500mb,Average CPU Load,14.104761904761906
+6,10,Python_Shared_Mem,f64,250mb,Execution Time,6.009701013565064
+6,10,Python_Shared_Mem,f64,250mb,Memory Consumption,922.7421875
+6,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.4
+6,10,Python_Shared_Mem,f64,500mb,Execution Time,21.03143119812012
+6,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3259.65234375
+6,10,Python_Shared_Mem,f64,500mb,Average CPU Load,14.099999999999998
+6,1,Python_CopyInMemory,f64,250mb,Execution Time,6.009429693222046
+6,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1318.640625
+6,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.25
+6,1,Python_CopyInMemory,f64,500mb,Execution Time,21.030651807785038
+6,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4808.2890625
+6,1,Python_CopyInMemory,f64,500mb,Average CPU Load,13.335714285714284
+6,3,Python_CopyInMemory,f64,250mb,Execution Time,9.013865947723389
+6,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1324.73828125
+6,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.95
+6,3,Python_CopyInMemory,f64,500mb,Execution Time,31.545750856399536
+6,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4802.13671875
+6,3,Python_CopyInMemory,f64,500mb,Average CPU Load,13.685714285714283
+6,5,Python_CopyInMemory,f64,250mb,Execution Time,10.515674829483032
+6,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1316.8828125
+6,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.585714285714285
+6,5,Python_CopyInMemory,f64,500mb,Execution Time,39.05990552902222
+6,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4817.0546875
+6,5,Python_CopyInMemory,f64,500mb,Average CPU Load,14.153846153846157
+6,10,Python_CopyInMemory,f64,250mb,Execution Time,9.014213800430298
+6,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1327.8515625
+6,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.183333333333335
+6,10,Python_CopyInMemory,f64,500mb,Execution Time,28.541825771331787
+6,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4810.0
+6,10,Python_CopyInMemory,f64,500mb,Average CPU Load,13.931578947368417
+6,1,Python_BinaryFile,f64,250mb,Execution Time,4.507657527923584
+6,1,Python_BinaryFile,f64,250mb,Memory Consumption,991.40625
+6,1,Python_BinaryFile,f64,250mb,Average CPU Load,19.3
+6,1,Python_BinaryFile,f64,500mb,Execution Time,13.52077317237854
+6,1,Python_BinaryFile,f64,500mb,Memory Consumption,3523.38671875
+6,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.2
+6,3,Python_BinaryFile,f64,250mb,Execution Time,7.511972427368164
+6,3,Python_BinaryFile,f64,250mb,Memory Consumption,1000.484375
+6,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.779999999999998
+6,3,Python_BinaryFile,f64,500mb,Execution Time,24.03399896621704
+6,3,Python_BinaryFile,f64,500mb,Memory Consumption,3509.78125
+6,3,Python_BinaryFile,f64,500mb,Average CPU Load,14.34375
+6,5,Python_BinaryFile,f64,250mb,Execution Time,9.014177560806274
+6,5,Python_BinaryFile,f64,250mb,Memory Consumption,987.58984375
+6,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.883333333333333
+6,5,Python_BinaryFile,f64,500mb,Execution Time,31.54575514793396
+6,5,Python_BinaryFile,f64,500mb,Memory Consumption,3514.87109375
+6,5,Python_BinaryFile,f64,500mb,Average CPU Load,14.5
+6,10,Python_BinaryFile,f64,250mb,Execution Time,7.511870384216309
+6,10,Python_BinaryFile,f64,250mb,Memory Consumption,983.55859375
+6,10,Python_BinaryFile,f64,250mb,Average CPU Load,15.36
+6,10,Python_BinaryFile,f64,500mb,Execution Time,22.533637285232544
+6,10,Python_BinaryFile,f64,500mb,Memory Consumption,3526.4375
+6,10,Python_BinaryFile,f64,500mb,Average CPU Load,13.826666666666666
+6,1,Python_CsvFile,f64,250mb,Execution Time,24.0345242023468
+6,1,Python_CsvFile,f64,250mb,Memory Consumption,1078.0859375
+6,1,Python_CsvFile,f64,250mb,Average CPU Load,15.274999999999997
+6,1,Python_CsvFile,f64,500mb,Execution Time,93.12689232826231
+6,1,Python_CsvFile,f64,500mb,Memory Consumption,3818.328125
+6,1,Python_CsvFile,f64,500mb,Average CPU Load,13.570967741935489
+6,3,Python_CsvFile,f64,250mb,Execution Time,33.04751491546631
+6,3,Python_CsvFile,f64,250mb,Memory Consumption,1084.12890625
+6,3,Python_CsvFile,f64,250mb,Average CPU Load,14.404545454545454
+6,3,Python_CsvFile,f64,500mb,Execution Time,126.16952443122864
+6,3,Python_CsvFile,f64,500mb,Memory Consumption,3826.86328125
+6,3,Python_CsvFile,f64,500mb,Average CPU Load,13.735714285714288
+6,5,Python_CsvFile,f64,250mb,Execution Time,36.05303883552551
+6,5,Python_CsvFile,f64,250mb,Memory Consumption,1085.2421875
+6,5,Python_CsvFile,f64,250mb,Average CPU Load,13.941666666666668
+6,5,Python_CsvFile,f64,500mb,Execution Time,136.69146513938904
+6,5,Python_CsvFile,f64,500mb,Memory Consumption,3832.67578125
+6,5,Python_CsvFile,f64,500mb,Average CPU Load,13.998901098901088
+6,10,Python_CsvFile,f64,250mb,Execution Time,34.54895877838135
+6,10,Python_CsvFile,f64,250mb,Memory Consumption,1081.203125
+6,10,Python_CsvFile,f64,250mb,Average CPU Load,14.173913043478258
+6,10,Python_CsvFile,f64,500mb,Execution Time,127.68046069145204
+6,10,Python_CsvFile,f64,500mb,Memory Consumption,3832.2734375
+6,10,Python_CsvFile,f64,500mb,Average CPU Load,14.07411764705882
+7,1,daphneMap,f64,250mb,Execution Time,6.012738466262817
+7,1,daphneMap,f64,250mb,Memory Consumption,240.86328125
+7,1,daphneMap,f64,250mb,Average CPU Load,14.425
+7,1,daphneMap,f64,500mb,Execution Time,21.03004240989685
+7,1,daphneMap,f64,500mb,Memory Consumption,624.55078125
+7,1,daphneMap,f64,500mb,Average CPU Load,13.57142857142857
+7,3,daphneMap,f64,250mb,Execution Time,6.0101377964019775
+7,3,daphneMap,f64,250mb,Memory Consumption,239.9765625
+7,3,daphneMap,f64,250mb,Average CPU Load,15.275
+7,3,daphneMap,f64,500mb,Execution Time,22.532861471176147
+7,3,daphneMap,f64,500mb,Memory Consumption,624.75
+7,3,daphneMap,f64,500mb,Average CPU Load,14.000000000000002
+7,5,daphneMap,f64,250mb,Execution Time,9.016927003860474
+7,5,daphneMap,f64,250mb,Memory Consumption,241.76953125
+7,5,daphneMap,f64,250mb,Average CPU Load,12.966666666666669
+7,5,daphneMap,f64,500mb,Execution Time,30.041984796524048
+7,5,daphneMap,f64,500mb,Memory Consumption,626.0078125
+7,5,daphneMap,f64,500mb,Average CPU Load,14.15
+7,10,daphneMap,f64,250mb,Execution Time,7.514530181884766
+7,10,daphneMap,f64,250mb,Memory Consumption,240.71875
+7,10,daphneMap,f64,250mb,Average CPU Load,14.96
+7,10,daphneMap,f64,500mb,Execution Time,27.03719210624695
+7,10,daphneMap,f64,500mb,Memory Consumption,624.9296875
+7,10,daphneMap,f64,500mb,Average CPU Load,13.433333333333332
+7,1,daphneInternal,f64,250mb,Execution Time,1.5032780170440674
+7,1,daphneInternal,f64,250mb,Memory Consumption,232.4921875
+7,1,daphneInternal,f64,250mb,Average CPU Load,17.1
+7,1,daphneInternal,f64,500mb,Execution Time,1.5037126541137695
+7,1,daphneInternal,f64,500mb,Memory Consumption,584.7265625
+7,1,daphneInternal,f64,500mb,Average CPU Load,24.2
+7,3,daphneInternal,f64,250mb,Execution Time,1.5032415390014648
+7,3,daphneInternal,f64,250mb,Memory Consumption,233.828125
+7,3,daphneInternal,f64,250mb,Average CPU Load,18.6
+7,3,daphneInternal,f64,500mb,Execution Time,3.005704164505005
+7,3,daphneInternal,f64,500mb,Memory Consumption,622.234375
+7,3,daphneInternal,f64,500mb,Average CPU Load,14.4
+7,5,daphneInternal,f64,250mb,Execution Time,3.00545072555542
+7,5,daphneInternal,f64,250mb,Memory Consumption,359.11328125
+7,5,daphneInternal,f64,250mb,Average CPU Load,18.4
+7,5,daphneInternal,f64,500mb,Execution Time,10.514930486679075
+7,5,daphneInternal,f64,500mb,Memory Consumption,1135.453125
+7,5,daphneInternal,f64,500mb,Average CPU Load,14.07142857142857
+7,10,daphneInternal,f64,250mb,Execution Time,3.005629777908325
+7,10,daphneInternal,f64,250mb,Memory Consumption,365.08203125
+7,10,daphneInternal,f64,250mb,Average CPU Load,13.1
+7,10,daphneInternal,f64,500mb,Execution Time,6.009922742843628
+7,10,daphneInternal,f64,500mb,Memory Consumption,1110.828125
+7,10,daphneInternal,f64,500mb,Average CPU Load,15.875
+7,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.5039565563201904
+7,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,147.3359375
+7,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,15.9
+7,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5032858848571775
+7,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,466.62890625
+7,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,23.2
+7,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.5029067993164062
+7,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,183.2421875
+7,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.3
+7,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.5035955905914309
+7,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,545.4296875
+7,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,23.7
+7,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5033774375915527
+7,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,249.07421875
+7,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.8
+7,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.0099778175354
+7,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.62890625
+7,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.625
+7,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.5033421516418457
+7,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,236.55078125
+7,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.4
+7,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.005676507949829
+7,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.7109375
+7,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.45
+7,1,Python_DirectExec,f64,250mb,Execution Time,3.005741596221924
+7,1,Python_DirectExec,f64,250mb,Memory Consumption,500.1640625
+7,1,Python_DirectExec,f64,250mb,Average CPU Load,16.0
+7,1,Python_DirectExec,f64,500mb,Execution Time,9.013269186019896
+7,1,Python_DirectExec,f64,500mb,Memory Consumption,1662.48046875
+7,1,Python_DirectExec,f64,500mb,Average CPU Load,13.866666666666667
+7,3,Python_DirectExec,f64,250mb,Execution Time,9.017986297607422
+7,3,Python_DirectExec,f64,250mb,Memory Consumption,502.53125
+7,3,Python_DirectExec,f64,250mb,Average CPU Load,14.133333333333333
+7,3,Python_DirectExec,f64,500mb,Execution Time,21.03088140487671
+7,3,Python_DirectExec,f64,500mb,Memory Consumption,1669.3359375
+7,3,Python_DirectExec,f64,500mb,Average CPU Load,13.871428571428572
+7,5,Python_DirectExec,f64,250mb,Execution Time,7.512052297592163
+7,5,Python_DirectExec,f64,250mb,Memory Consumption,505.5546875
+7,5,Python_DirectExec,f64,250mb,Average CPU Load,15.68
+7,5,Python_DirectExec,f64,500mb,Execution Time,27.03861927986145
+7,5,Python_DirectExec,f64,500mb,Memory Consumption,1669.98046875
+7,5,Python_DirectExec,f64,500mb,Average CPU Load,14.57777777777778
+7,10,Python_DirectExec,f64,250mb,Execution Time,4.507668733596802
+7,10,Python_DirectExec,f64,250mb,Memory Consumption,501.54296875
+7,10,Python_DirectExec,f64,250mb,Average CPU Load,16.76666666666667
+7,10,Python_DirectExec,f64,500mb,Execution Time,18.027061700820923
+7,10,Python_DirectExec,f64,500mb,Memory Consumption,1667.515625
+7,10,Python_DirectExec,f64,500mb,Average CPU Load,14.475
+7,1,Python_Shared_Mem,f64,250mb,Execution Time,4.5077197551727295
+7,1,Python_Shared_Mem,f64,250mb,Memory Consumption,936.515625
+7,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.133333333333333
+7,1,Python_Shared_Mem,f64,500mb,Execution Time,12.01865291595459
+7,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3256.90234375
+7,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.55
+7,3,Python_Shared_Mem,f64,250mb,Execution Time,7.513176918029785
+7,3,Python_Shared_Mem,f64,250mb,Memory Consumption,929.55078125
+7,3,Python_Shared_Mem,f64,250mb,Average CPU Load,15.999999999999996
+7,3,Python_Shared_Mem,f64,500mb,Execution Time,24.034810304641724
+7,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3259.8125
+7,3,Python_Shared_Mem,f64,500mb,Average CPU Load,13.575
+7,5,Python_Shared_Mem,f64,250mb,Execution Time,9.01415753364563
+7,5,Python_Shared_Mem,f64,250mb,Memory Consumption,934.1484375
+7,5,Python_Shared_Mem,f64,250mb,Average CPU Load,17.25
+7,5,Python_Shared_Mem,f64,500mb,Execution Time,31.546449899673465
+7,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3263.6953125
+7,5,Python_Shared_Mem,f64,500mb,Average CPU Load,13.55714285714286
+7,10,Python_Shared_Mem,f64,250mb,Execution Time,6.009949445724487
+7,10,Python_Shared_Mem,f64,250mb,Memory Consumption,922.08984375
+7,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.55
+7,10,Python_Shared_Mem,f64,500mb,Execution Time,21.03088116645813
+7,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3253.54296875
+7,10,Python_Shared_Mem,f64,500mb,Average CPU Load,13.878571428571428
+7,1,Python_CopyInMemory,f64,250mb,Execution Time,6.00975775718689
+7,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1326.234375
+7,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.1
+7,1,Python_CopyInMemory,f64,500mb,Execution Time,21.032036542892456
+7,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4816.93359375
+7,1,Python_CopyInMemory,f64,500mb,Average CPU Load,13.185714285714283
+7,3,Python_CopyInMemory,f64,250mb,Execution Time,9.014400720596312
+7,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1323.48046875
+7,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.166666666666668
+7,3,Python_CopyInMemory,f64,500mb,Execution Time,31.54445958137512
+7,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4808.375
+7,3,Python_CopyInMemory,f64,500mb,Average CPU Load,13.557142857142855
+7,5,Python_CopyInMemory,f64,250mb,Execution Time,10.515836000442505
+7,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1312.33203125
+7,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.5
+7,5,Python_CopyInMemory,f64,500mb,Execution Time,39.0548722743988
+7,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4818.75390625
+7,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.91153846153846
+7,10,Python_CopyInMemory,f64,250mb,Execution Time,9.01407766342163
+7,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1310.5390625
+7,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.966666666666663
+7,10,Python_CopyInMemory,f64,500mb,Execution Time,28.53944706916809
+7,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4806.75390625
+7,10,Python_CopyInMemory,f64,500mb,Average CPU Load,14.1
+7,1,Python_BinaryFile,f64,250mb,Execution Time,4.5074381828308105
+7,1,Python_BinaryFile,f64,250mb,Memory Consumption,997.51953125
+7,1,Python_BinaryFile,f64,250mb,Average CPU Load,19.133333333333336
+7,1,Python_BinaryFile,f64,500mb,Execution Time,13.52034592628479
+7,1,Python_BinaryFile,f64,500mb,Memory Consumption,3506.359375
+7,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.5
+7,3,Python_BinaryFile,f64,250mb,Execution Time,7.511932849884033
+7,3,Python_BinaryFile,f64,250mb,Memory Consumption,1003.1171875
+7,3,Python_BinaryFile,f64,250mb,Average CPU Load,17.220000000000002
+7,3,Python_BinaryFile,f64,500mb,Execution Time,25.53769898414612
+7,3,Python_BinaryFile,f64,500mb,Memory Consumption,3523.87890625
+7,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.570588235294116
+7,5,Python_BinaryFile,f64,250mb,Execution Time,9.014474868774414
+7,5,Python_BinaryFile,f64,250mb,Memory Consumption,981.66015625
+7,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.666666666666668
+7,5,Python_BinaryFile,f64,500mb,Execution Time,31.547021865844727
+7,5,Python_BinaryFile,f64,500mb,Memory Consumption,3515.265625
+7,5,Python_BinaryFile,f64,500mb,Average CPU Load,13.723809523809528
+7,10,Python_BinaryFile,f64,250mb,Execution Time,7.51151704788208
+7,10,Python_BinaryFile,f64,250mb,Memory Consumption,993.15234375
+7,10,Python_BinaryFile,f64,250mb,Average CPU Load,14.78
+7,10,Python_BinaryFile,f64,500mb,Execution Time,22.53375744819641
+7,10,Python_BinaryFile,f64,500mb,Memory Consumption,3506.375
+7,10,Python_BinaryFile,f64,500mb,Average CPU Load,13.546666666666663
+7,1,Python_CsvFile,f64,250mb,Execution Time,24.035940885543823
+7,1,Python_CsvFile,f64,250mb,Memory Consumption,1080.0234375
+7,1,Python_CsvFile,f64,250mb,Average CPU Load,14.65
+7,1,Python_CsvFile,f64,500mb,Execution Time,93.1332802772522
+7,1,Python_CsvFile,f64,500mb,Memory Consumption,3830.85546875
+7,1,Python_CsvFile,f64,500mb,Average CPU Load,13.566129032258068
+7,3,Python_CsvFile,f64,250mb,Execution Time,33.04993414878845
+7,3,Python_CsvFile,f64,250mb,Memory Consumption,1098.80078125
+7,3,Python_CsvFile,f64,250mb,Average CPU Load,14.181818181818182
+7,3,Python_CsvFile,f64,500mb,Execution Time,126.17682576179504
+7,3,Python_CsvFile,f64,500mb,Memory Consumption,3831.703125
+7,3,Python_CsvFile,f64,500mb,Average CPU Load,13.813095238095237
+7,5,Python_CsvFile,f64,250mb,Execution Time,36.051405906677246
+7,5,Python_CsvFile,f64,250mb,Memory Consumption,1093.9140625
+7,5,Python_CsvFile,f64,250mb,Average CPU Load,13.7125
+7,5,Python_CsvFile,f64,500mb,Execution Time,138.1975736618042
+7,5,Python_CsvFile,f64,500mb,Memory Consumption,3829.51953125
+7,5,Python_CsvFile,f64,500mb,Average CPU Load,13.26304347826087
+7,10,Python_CsvFile,f64,250mb,Execution Time,33.051347732543945
+7,10,Python_CsvFile,f64,250mb,Memory Consumption,1081.8515625
+7,10,Python_CsvFile,f64,250mb,Average CPU Load,14.186363636363636
+7,10,Python_CsvFile,f64,500mb,Execution Time,129.1837601661682
+7,10,Python_CsvFile,f64,500mb,Memory Consumption,3821.09375
+7,10,Python_CsvFile,f64,500mb,Average CPU Load,13.404651162790698
+8,1,daphneMap,f64,250mb,Execution Time,6.010025024414063
+8,1,daphneMap,f64,250mb,Memory Consumption,240.52734375
+8,1,daphneMap,f64,250mb,Average CPU Load,14.95
+8,1,daphneMap,f64,500mb,Execution Time,21.032483100891117
+8,1,daphneMap,f64,500mb,Memory Consumption,624.58203125
+8,1,daphneMap,f64,500mb,Average CPU Load,13.528571428571428
+8,3,daphneMap,f64,250mb,Execution Time,6.0099687576293945
+8,3,daphneMap,f64,250mb,Memory Consumption,241.62109375
+8,3,daphneMap,f64,250mb,Average CPU Load,15.849999999999998
+8,3,daphneMap,f64,500mb,Execution Time,21.030792713165283
+8,3,daphneMap,f64,500mb,Memory Consumption,624.95703125
+8,3,daphneMap,f64,500mb,Average CPU Load,14.921428571428573
+8,5,daphneMap,f64,250mb,Execution Time,9.015207290649414
+8,5,daphneMap,f64,250mb,Memory Consumption,240.6875
+8,5,daphneMap,f64,250mb,Average CPU Load,13.383333333333333
+8,5,daphneMap,f64,500mb,Execution Time,31.543965816497803
+8,5,daphneMap,f64,500mb,Memory Consumption,625.6015625
+8,5,daphneMap,f64,500mb,Average CPU Load,13.238095238095235
+8,10,daphneMap,f64,250mb,Execution Time,7.512263536453247
+8,10,daphneMap,f64,250mb,Memory Consumption,240.99609375
+8,10,daphneMap,f64,250mb,Average CPU Load,14.48
+8,10,daphneMap,f64,500mb,Execution Time,27.039822578430176
+8,10,daphneMap,f64,500mb,Memory Consumption,624.82421875
+8,10,daphneMap,f64,500mb,Average CPU Load,14.211111111111114
+8,1,daphneInternal,f64,250mb,Execution Time,1.5034706592559814
+8,1,daphneInternal,f64,250mb,Memory Consumption,235.1875
+8,1,daphneInternal,f64,250mb,Average CPU Load,17.0
+8,1,daphneInternal,f64,500mb,Execution Time,1.506030559539795
+8,1,daphneInternal,f64,500mb,Memory Consumption,575.87890625
+8,1,daphneInternal,f64,500mb,Average CPU Load,24.3
+8,3,daphneInternal,f64,250mb,Execution Time,1.503345966339111
+8,3,daphneInternal,f64,250mb,Memory Consumption,234.1875
+8,3,daphneInternal,f64,250mb,Average CPU Load,18.2
+8,3,daphneInternal,f64,500mb,Execution Time,3.005687713623047
+8,3,daphneInternal,f64,500mb,Memory Consumption,591.11328125
+8,3,daphneInternal,f64,500mb,Average CPU Load,14.7
+8,5,daphneInternal,f64,250mb,Execution Time,3.0057244300842285
+8,5,daphneInternal,f64,250mb,Memory Consumption,355.51953125
+8,5,daphneInternal,f64,250mb,Average CPU Load,18.45
+8,5,daphneInternal,f64,500mb,Execution Time,10.51552963256836
+8,5,daphneInternal,f64,500mb,Memory Consumption,1121.25
+8,5,daphneInternal,f64,500mb,Average CPU Load,13.742857142857142
+8,10,daphneInternal,f64,250mb,Execution Time,3.005571126937866
+8,10,daphneInternal,f64,250mb,Memory Consumption,368.40625
+8,10,daphneInternal,f64,250mb,Average CPU Load,12.9
+8,10,daphneInternal,f64,500mb,Execution Time,7.511218547821045
+8,10,daphneInternal,f64,500mb,Memory Consumption,1077.48046875
+8,10,daphneInternal,f64,500mb,Average CPU Load,13.12
+8,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.5032134056091309
+8,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,141.21484375
+8,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,15.8
+8,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.503211259841919
+8,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,456.44140625
+8,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,22.0
+8,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.5032615661621094
+8,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,183.35546875
+8,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.0
+8,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.503427028656006
+8,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,528.35546875
+8,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,23.8
+8,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5035922527313232
+8,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,250.3515625
+8,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.9
+8,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.010008335113525
+8,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,830.12890625
+8,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.2
+8,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.506059646606445
+8,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,239.58984375
+8,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,21.9
+8,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.00545072555542
+8,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.87109375
+8,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.85
+8,1,Python_DirectExec,f64,250mb,Execution Time,3.005569696426392
+8,1,Python_DirectExec,f64,250mb,Memory Consumption,501.8203125
+8,1,Python_DirectExec,f64,250mb,Average CPU Load,15.9
+8,1,Python_DirectExec,f64,500mb,Execution Time,9.014354467391968
+8,1,Python_DirectExec,f64,500mb,Memory Consumption,1657.890625
+8,1,Python_DirectExec,f64,500mb,Average CPU Load,13.283333333333331
+8,3,Python_DirectExec,f64,250mb,Execution Time,6.009999990463257
+8,3,Python_DirectExec,f64,250mb,Memory Consumption,505.828125
+8,3,Python_DirectExec,f64,250mb,Average CPU Load,14.625
+8,3,Python_DirectExec,f64,500mb,Execution Time,21.03135347366333
+8,3,Python_DirectExec,f64,500mb,Memory Consumption,1667.81640625
+8,3,Python_DirectExec,f64,500mb,Average CPU Load,13.12142857142857
+8,5,Python_DirectExec,f64,250mb,Execution Time,7.514193058013916
+8,5,Python_DirectExec,f64,250mb,Memory Consumption,502.56640625
+8,5,Python_DirectExec,f64,250mb,Average CPU Load,15.56
+8,5,Python_DirectExec,f64,500mb,Execution Time,27.038978815078732
+8,5,Python_DirectExec,f64,500mb,Memory Consumption,1670.359375
+8,5,Python_DirectExec,f64,500mb,Average CPU Load,14.605555555555554
+8,10,Python_DirectExec,f64,250mb,Execution Time,4.5077855587005615
+8,10,Python_DirectExec,f64,250mb,Memory Consumption,500.43359375
+8,10,Python_DirectExec,f64,250mb,Average CPU Load,17.433333333333334
+8,10,Python_DirectExec,f64,500mb,Execution Time,18.027284145355225
+8,10,Python_DirectExec,f64,500mb,Memory Consumption,1670.95703125
+8,10,Python_DirectExec,f64,500mb,Average CPU Load,14.058333333333332
+8,1,Python_Shared_Mem,f64,250mb,Execution Time,4.508280038833618
+8,1,Python_Shared_Mem,f64,250mb,Memory Consumption,921.38671875
+8,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.633333333333333
+8,1,Python_Shared_Mem,f64,500mb,Execution Time,12.01857328414917
+8,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3269.76171875
+8,1,Python_Shared_Mem,f64,500mb,Average CPU Load,15.0125
+8,3,Python_Shared_Mem,f64,250mb,Execution Time,10.518550157546995
+8,3,Python_Shared_Mem,f64,250mb,Memory Consumption,935.17578125
+8,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.22857142857143
+8,3,Python_Shared_Mem,f64,500mb,Execution Time,24.03649044036865
+8,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3259.03515625
+8,3,Python_Shared_Mem,f64,500mb,Average CPU Load,14.031249999999998
+8,5,Python_Shared_Mem,f64,250mb,Execution Time,9.014771461486816
+8,5,Python_Shared_Mem,f64,250mb,Memory Consumption,939.515625
+8,5,Python_Shared_Mem,f64,250mb,Average CPU Load,16.583333333333332
+8,5,Python_Shared_Mem,f64,500mb,Execution Time,31.545998334884644
+8,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3259.66796875
+8,5,Python_Shared_Mem,f64,500mb,Average CPU Load,14.319047619047618
+8,10,Python_Shared_Mem,f64,250mb,Execution Time,6.008953332901001
+8,10,Python_Shared_Mem,f64,250mb,Memory Consumption,939.375
+8,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.55
+8,10,Python_Shared_Mem,f64,500mb,Execution Time,22.532514333724976
+8,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3251.94921875
+8,10,Python_Shared_Mem,f64,500mb,Average CPU Load,13.680000000000003
+8,1,Python_CopyInMemory,f64,250mb,Execution Time,6.00976300239563
+8,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1313.83984375
+8,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.275
+8,1,Python_CopyInMemory,f64,500mb,Execution Time,19.52918815612793
+8,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4821.2421875
+8,1,Python_CopyInMemory,f64,500mb,Average CPU Load,14.592307692307694
+8,3,Python_CopyInMemory,f64,250mb,Execution Time,9.014453887939451
+8,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1328.1171875
+8,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.716666666666665
+8,3,Python_CopyInMemory,f64,500mb,Execution Time,31.54879832267761
+8,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4801.609375
+8,3,Python_CopyInMemory,f64,500mb,Average CPU Load,14.066666666666666
+8,5,Python_CopyInMemory,f64,250mb,Execution Time,12.017836809158323
+8,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1314.8046875
+8,5,Python_CopyInMemory,f64,250mb,Average CPU Load,15.887499999999998
+8,5,Python_CopyInMemory,f64,500mb,Execution Time,39.059226512908936
+8,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4803.875
+8,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.376923076923076
+8,10,Python_CopyInMemory,f64,250mb,Execution Time,9.014755487442017
+8,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1309.01171875
+8,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.65
+8,10,Python_CopyInMemory,f64,500mb,Execution Time,28.542023420333862
+8,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4798.05078125
+8,10,Python_CopyInMemory,f64,500mb,Average CPU Load,13.93157894736842
+8,1,Python_BinaryFile,f64,250mb,Execution Time,4.507858276367188
+8,1,Python_BinaryFile,f64,250mb,Memory Consumption,1005.87109375
+8,1,Python_BinaryFile,f64,250mb,Average CPU Load,18.766666666666666
+8,1,Python_BinaryFile,f64,500mb,Execution Time,13.520264863967896
+8,1,Python_BinaryFile,f64,500mb,Memory Consumption,3520.87109375
+8,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.488888888888887
+8,3,Python_BinaryFile,f64,250mb,Execution Time,7.51188063621521
+8,3,Python_BinaryFile,f64,250mb,Memory Consumption,984.0234375
+8,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.64
+8,3,Python_BinaryFile,f64,500mb,Execution Time,24.035585403442383
+8,3,Python_BinaryFile,f64,500mb,Memory Consumption,3514.0859375
+8,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.91875
+8,5,Python_BinaryFile,f64,250mb,Execution Time,9.014244556427002
+8,5,Python_BinaryFile,f64,250mb,Memory Consumption,983.78515625
+8,5,Python_BinaryFile,f64,250mb,Average CPU Load,16.683333333333334
+8,5,Python_BinaryFile,f64,500mb,Execution Time,33.04971122741699
+8,5,Python_BinaryFile,f64,500mb,Memory Consumption,3511.0625
+8,5,Python_BinaryFile,f64,500mb,Average CPU Load,13.363636363636363
+8,10,Python_BinaryFile,f64,250mb,Execution Time,7.511766195297241
+8,10,Python_BinaryFile,f64,250mb,Memory Consumption,999.09765625
+8,10,Python_BinaryFile,f64,250mb,Average CPU Load,15.439999999999998
+8,10,Python_BinaryFile,f64,500mb,Execution Time,22.531198978424072
+8,10,Python_BinaryFile,f64,500mb,Memory Consumption,3507.20703125
+8,10,Python_BinaryFile,f64,500mb,Average CPU Load,13.946666666666664
+8,1,Python_CsvFile,f64,250mb,Execution Time,24.03283214569092
+8,1,Python_CsvFile,f64,250mb,Memory Consumption,1094.1015625
+8,1,Python_CsvFile,f64,250mb,Average CPU Load,15.187500000000004
+8,1,Python_CsvFile,f64,500mb,Execution Time,94.6287841796875
+8,1,Python_CsvFile,f64,500mb,Memory Consumption,3819.765625
+8,1,Python_CsvFile,f64,500mb,Average CPU Load,13.744444444444444
+8,3,Python_CsvFile,f64,250mb,Execution Time,33.05052089691162
+8,3,Python_CsvFile,f64,250mb,Memory Consumption,1090.01171875
+8,3,Python_CsvFile,f64,250mb,Average CPU Load,13.799999999999995
+8,3,Python_CsvFile,f64,500mb,Execution Time,127.6765763759613
+8,3,Python_CsvFile,f64,500mb,Memory Consumption,3833.49609375
+8,3,Python_CsvFile,f64,500mb,Average CPU Load,13.339999999999998
+8,5,Python_CsvFile,f64,250mb,Execution Time,36.05007123947144
+8,5,Python_CsvFile,f64,250mb,Memory Consumption,1099.14453125
+8,5,Python_CsvFile,f64,250mb,Average CPU Load,14.4125
+8,5,Python_CsvFile,f64,500mb,Execution Time,138.1891906261444
+8,5,Python_CsvFile,f64,500mb,Memory Consumption,3825.30859375
+8,5,Python_CsvFile,f64,500mb,Average CPU Load,13.460869565217392
+8,10,Python_CsvFile,f64,250mb,Execution Time,33.04487919807434
+8,10,Python_CsvFile,f64,250mb,Memory Consumption,1084.95703125
+8,10,Python_CsvFile,f64,250mb,Average CPU Load,14.19090909090909
+8,10,Python_CsvFile,f64,500mb,Execution Time,130.67565417289734
+8,10,Python_CsvFile,f64,500mb,Memory Consumption,3816.3984375
+8,10,Python_CsvFile,f64,500mb,Average CPU Load,13.58045977011495
+9,1,daphneMap,f64,250mb,Execution Time,6.013093948364258
+9,1,daphneMap,f64,250mb,Memory Consumption,240.38671875
+9,1,daphneMap,f64,250mb,Average CPU Load,14.825
+9,1,daphneMap,f64,500mb,Execution Time,21.03070497512817
+9,1,daphneMap,f64,500mb,Memory Consumption,623.92578125
+9,1,daphneMap,f64,500mb,Average CPU Load,13.835714285714287
+9,3,daphneMap,f64,250mb,Execution Time,6.011907815933228
+9,3,daphneMap,f64,250mb,Memory Consumption,240.484375
+9,3,daphneMap,f64,250mb,Average CPU Load,15.45
+9,3,daphneMap,f64,500mb,Execution Time,21.02918672561645
+9,3,daphneMap,f64,500mb,Memory Consumption,624.73828125
+9,3,daphneMap,f64,500mb,Average CPU Load,14.314285714285711
+9,5,daphneMap,f64,250mb,Execution Time,9.014508247375488
+9,5,daphneMap,f64,250mb,Memory Consumption,240.87109375
+9,5,daphneMap,f64,250mb,Average CPU Load,13.35
+9,5,daphneMap,f64,500mb,Execution Time,31.54721617698669
+9,5,daphneMap,f64,500mb,Memory Consumption,625.015625
+9,5,daphneMap,f64,500mb,Average CPU Load,13.533333333333331
+9,10,daphneMap,f64,250mb,Execution Time,7.511719942092895
+9,10,daphneMap,f64,250mb,Memory Consumption,240.80859375
+9,10,daphneMap,f64,250mb,Average CPU Load,14.360000000000005
+9,10,daphneMap,f64,500mb,Execution Time,27.03843307495117
+9,10,daphneMap,f64,500mb,Memory Consumption,624.859375
+9,10,daphneMap,f64,500mb,Average CPU Load,14.283333333333331
+9,1,daphneInternal,f64,250mb,Execution Time,1.503410577774048
+9,1,daphneInternal,f64,250mb,Memory Consumption,227.484375
+9,1,daphneInternal,f64,250mb,Average CPU Load,17.4
+9,1,daphneInternal,f64,500mb,Execution Time,1.503201961517334
+9,1,daphneInternal,f64,500mb,Memory Consumption,579.05078125
+9,1,daphneInternal,f64,500mb,Average CPU Load,23.8
+9,3,daphneInternal,f64,250mb,Execution Time,1.503314733505249
+9,3,daphneInternal,f64,250mb,Memory Consumption,233.28515625
+9,3,daphneInternal,f64,250mb,Average CPU Load,18.4
+9,3,daphneInternal,f64,500mb,Execution Time,3.0055339336395264
+9,3,daphneInternal,f64,500mb,Memory Consumption,589.6484375
+9,3,daphneInternal,f64,500mb,Average CPU Load,14.4
+9,5,daphneInternal,f64,250mb,Execution Time,3.0055348873138428
+9,5,daphneInternal,f64,250mb,Memory Consumption,349.8515625
+9,5,daphneInternal,f64,250mb,Average CPU Load,18.85
+9,5,daphneInternal,f64,500mb,Execution Time,10.51640009880066
+9,5,daphneInternal,f64,500mb,Memory Consumption,1120.640625
+9,5,daphneInternal,f64,500mb,Average CPU Load,13.571428571428571
+9,10,daphneInternal,f64,250mb,Execution Time,3.0054616928100586
+9,10,daphneInternal,f64,250mb,Memory Consumption,350.3125
+9,10,daphneInternal,f64,250mb,Average CPU Load,12.8
+9,10,daphneInternal,f64,500mb,Execution Time,6.009889602661133
+9,10,daphneInternal,f64,500mb,Memory Consumption,1093.4609375
+9,10,daphneInternal,f64,500mb,Average CPU Load,15.825
+9,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.5030527114868164
+9,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,139.74609375
+9,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,15.4
+9,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5032706260681152
+9,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,458.359375
+9,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,21.5
+9,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.5033066272735596
+9,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,181.21875
+9,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,16.8
+9,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.5030813217163086
+9,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,547.05078125
+9,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,24.3
+9,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5033676624298096
+9,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,249.79296875
+9,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.9
+9,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.010058403015137
+9,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.9453125
+9,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,13.975
+9,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.503156661987305
+9,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,238.3515625
+9,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.8
+9,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.005800724029541
+9,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,830.15234375
+9,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.4
+9,1,Python_DirectExec,f64,250mb,Execution Time,3.0053999423980717
+9,1,Python_DirectExec,f64,250mb,Memory Consumption,499.80078125
+9,1,Python_DirectExec,f64,250mb,Average CPU Load,15.9
+9,1,Python_DirectExec,f64,500mb,Execution Time,9.013823509216309
+9,1,Python_DirectExec,f64,500mb,Memory Consumption,1654.34375
+9,1,Python_DirectExec,f64,500mb,Average CPU Load,13.516666666666666
+9,3,Python_DirectExec,f64,250mb,Execution Time,6.009615659713745
+9,3,Python_DirectExec,f64,250mb,Memory Consumption,499.65625
+9,3,Python_DirectExec,f64,250mb,Average CPU Load,14.75
+9,3,Python_DirectExec,f64,500mb,Execution Time,19.52988862991333
+9,3,Python_DirectExec,f64,500mb,Memory Consumption,1670.3828125
+9,3,Python_DirectExec,f64,500mb,Average CPU Load,14.292307692307691
+9,5,Python_DirectExec,f64,250mb,Execution Time,7.511926651000977
+9,5,Python_DirectExec,f64,250mb,Memory Consumption,506.01953125
+9,5,Python_DirectExec,f64,250mb,Average CPU Load,15.3
+9,5,Python_DirectExec,f64,500mb,Execution Time,27.03997826576233
+9,5,Python_DirectExec,f64,500mb,Memory Consumption,1667.6796875
+9,5,Python_DirectExec,f64,500mb,Average CPU Load,13.783333333333331
+9,10,Python_DirectExec,f64,250mb,Execution Time,4.508203506469727
+9,10,Python_DirectExec,f64,250mb,Memory Consumption,504.078125
+9,10,Python_DirectExec,f64,250mb,Average CPU Load,16.566666666666666
+9,10,Python_DirectExec,f64,500mb,Execution Time,18.026124715805054
+9,10,Python_DirectExec,f64,500mb,Memory Consumption,1666.140625
+9,10,Python_DirectExec,f64,500mb,Average CPU Load,13.508333333333333
+9,1,Python_Shared_Mem,f64,250mb,Execution Time,4.507805824279785
+9,1,Python_Shared_Mem,f64,250mb,Memory Consumption,936.859375
+9,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.666666666666668
+9,1,Python_Shared_Mem,f64,500mb,Execution Time,12.0187029838562
+9,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3265.1953125
+9,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.837500000000002
+9,3,Python_Shared_Mem,f64,250mb,Execution Time,7.512286424636841
+9,3,Python_Shared_Mem,f64,250mb,Memory Consumption,934.84765625
+9,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.259999999999998
+9,3,Python_Shared_Mem,f64,500mb,Execution Time,24.03444743156433
+9,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3267.6953125
+9,3,Python_Shared_Mem,f64,500mb,Average CPU Load,14.44375
+9,5,Python_Shared_Mem,f64,250mb,Execution Time,9.01411199569702
+9,5,Python_Shared_Mem,f64,250mb,Memory Consumption,925.0390625
+9,5,Python_Shared_Mem,f64,250mb,Average CPU Load,16.55
+9,5,Python_Shared_Mem,f64,500mb,Execution Time,31.546361923217773
+9,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3252.59375
+9,5,Python_Shared_Mem,f64,500mb,Average CPU Load,13.676190476190476
+9,10,Python_Shared_Mem,f64,250mb,Execution Time,6.009984016418457
+9,10,Python_Shared_Mem,f64,250mb,Memory Consumption,937.6015625
+9,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.525
+9,10,Python_Shared_Mem,f64,500mb,Execution Time,21.030922889709476
+9,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3252.96875
+9,10,Python_Shared_Mem,f64,500mb,Average CPU Load,14.671428571428567
+9,1,Python_CopyInMemory,f64,250mb,Execution Time,6.009084701538086
+9,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1317.11328125
+9,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.475
+9,1,Python_CopyInMemory,f64,500mb,Execution Time,21.03183341026306
+9,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4811.46875
+9,1,Python_CopyInMemory,f64,500mb,Average CPU Load,13.650000000000002
+9,3,Python_CopyInMemory,f64,250mb,Execution Time,9.014270305633543
+9,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1325.70703125
+9,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.26666666666667
+9,3,Python_CopyInMemory,f64,500mb,Execution Time,31.546546697616577
+9,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4805.14453125
+9,3,Python_CopyInMemory,f64,500mb,Average CPU Load,13.609523809523807
+9,5,Python_CopyInMemory,f64,250mb,Execution Time,10.51628589630127
+9,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1325.328125
+9,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.47142857142857
+9,5,Python_CopyInMemory,f64,500mb,Execution Time,39.05684971809387
+9,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4811.765625
+9,5,Python_CopyInMemory,f64,500mb,Average CPU Load,14.046153846153846
+9,10,Python_CopyInMemory,f64,250mb,Execution Time,9.01422357559204
+9,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1313.6171875
+9,10,Python_CopyInMemory,f64,250mb,Average CPU Load,15.016666666666666
+9,10,Python_CopyInMemory,f64,500mb,Execution Time,28.5422203540802
+9,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4805.734375
+9,10,Python_CopyInMemory,f64,500mb,Average CPU Load,14.163157894736845
+9,1,Python_BinaryFile,f64,250mb,Execution Time,4.507695198059082
+9,1,Python_BinaryFile,f64,250mb,Memory Consumption,1000.984375
+9,1,Python_BinaryFile,f64,250mb,Average CPU Load,18.96666666666667
+9,1,Python_BinaryFile,f64,500mb,Execution Time,13.520511865615845
+9,1,Python_BinaryFile,f64,500mb,Memory Consumption,3503.80078125
+9,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.32222222222222
+9,3,Python_BinaryFile,f64,250mb,Execution Time,7.511969089508057
+9,3,Python_BinaryFile,f64,250mb,Memory Consumption,999.671875
+9,3,Python_BinaryFile,f64,250mb,Average CPU Load,16.32
+9,3,Python_BinaryFile,f64,500mb,Execution Time,25.53908395767212
+9,3,Python_BinaryFile,f64,500mb,Memory Consumption,3509.984375
+9,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.923529411764704
+9,5,Python_BinaryFile,f64,250mb,Execution Time,9.01402735710144
+9,5,Python_BinaryFile,f64,250mb,Memory Consumption,988.34375
+9,5,Python_BinaryFile,f64,250mb,Average CPU Load,17.233333333333334
+9,5,Python_BinaryFile,f64,500mb,Execution Time,31.545276403427124
+9,5,Python_BinaryFile,f64,500mb,Memory Consumption,3524.98046875
+9,5,Python_BinaryFile,f64,500mb,Average CPU Load,14.180952380952382
+9,10,Python_BinaryFile,f64,250mb,Execution Time,7.511457681655884
+9,10,Python_BinaryFile,f64,250mb,Memory Consumption,987.4453125
+9,10,Python_BinaryFile,f64,250mb,Average CPU Load,14.960000000000004
+9,10,Python_BinaryFile,f64,500mb,Execution Time,22.53299760818481
+9,10,Python_BinaryFile,f64,500mb,Memory Consumption,3506.953125
+9,10,Python_BinaryFile,f64,500mb,Average CPU Load,14.52
+9,1,Python_CsvFile,f64,250mb,Execution Time,24.033620357513428
+9,1,Python_CsvFile,f64,250mb,Memory Consumption,1098.7734375
+9,1,Python_CsvFile,f64,250mb,Average CPU Load,14.775
+9,1,Python_CsvFile,f64,500mb,Execution Time,93.13230395317078
+9,1,Python_CsvFile,f64,500mb,Memory Consumption,3821.6953125
+9,1,Python_CsvFile,f64,500mb,Average CPU Load,13.35645161290323
+9,3,Python_CsvFile,f64,250mb,Execution Time,33.04747533798218
+9,3,Python_CsvFile,f64,250mb,Memory Consumption,1097.38671875
+9,3,Python_CsvFile,f64,250mb,Average CPU Load,13.977272727272728
+9,3,Python_CsvFile,f64,500mb,Execution Time,126.17853999137878
+9,3,Python_CsvFile,f64,500mb,Memory Consumption,3833.41015625
+9,3,Python_CsvFile,f64,500mb,Average CPU Load,13.875000000000004
+9,5,Python_CsvFile,f64,250mb,Execution Time,36.05213308334351
+9,5,Python_CsvFile,f64,250mb,Memory Consumption,1088.43359375
+9,5,Python_CsvFile,f64,250mb,Average CPU Load,13.9125
+9,5,Python_CsvFile,f64,500mb,Execution Time,138.19322896003723
+9,5,Python_CsvFile,f64,500mb,Memory Consumption,3816.44921875
+9,5,Python_CsvFile,f64,500mb,Average CPU Load,13.36413043478261
+9,10,Python_CsvFile,f64,250mb,Execution Time,33.04602384567261
+9,10,Python_CsvFile,f64,250mb,Memory Consumption,1090.06640625
+9,10,Python_CsvFile,f64,250mb,Average CPU Load,14.313636363636364
+9,10,Python_CsvFile,f64,500mb,Execution Time,127.67983841896056
+9,10,Python_CsvFile,f64,500mb,Memory Consumption,3832.6640625
+9,10,Python_CsvFile,f64,500mb,Average CPU Load,13.316470588235298
+10,1,daphneMap,f64,250mb,Execution Time,6.010025024414063
+10,1,daphneMap,f64,250mb,Memory Consumption,240.48046875
+10,1,daphneMap,f64,250mb,Average CPU Load,14.55
+10,1,daphneMap,f64,500mb,Execution Time,21.030197143554688
+10,1,daphneMap,f64,500mb,Memory Consumption,622.62109375
+10,1,daphneMap,f64,500mb,Average CPU Load,13.04285714285714
+10,3,daphneMap,f64,250mb,Execution Time,6.009827613830566
+10,3,daphneMap,f64,250mb,Memory Consumption,240.6015625
+10,3,daphneMap,f64,250mb,Average CPU Load,15.525
+10,3,daphneMap,f64,500mb,Execution Time,21.030536651611328
+10,3,daphneMap,f64,500mb,Memory Consumption,624.59375
+10,3,daphneMap,f64,500mb,Average CPU Load,13.864285714285712
+10,5,daphneMap,f64,250mb,Execution Time,9.015334844589232
+10,5,daphneMap,f64,250mb,Memory Consumption,241.4609375
+10,5,daphneMap,f64,250mb,Average CPU Load,13.383333333333336
+10,5,daphneMap,f64,500mb,Execution Time,31.546332597732544
+10,5,daphneMap,f64,500mb,Memory Consumption,625.40234375
+10,5,daphneMap,f64,500mb,Average CPU Load,13.109523809523807
+10,10,daphneMap,f64,250mb,Execution Time,7.512363195419311
+10,10,daphneMap,f64,250mb,Memory Consumption,240.43359375
+10,10,daphneMap,f64,250mb,Average CPU Load,14.56
+10,10,daphneMap,f64,500mb,Execution Time,27.037435054779053
+10,10,daphneMap,f64,500mb,Memory Consumption,624.9453125
+10,10,daphneMap,f64,500mb,Average CPU Load,13.57222222222222
+10,1,daphneInternal,f64,250mb,Execution Time,1.5031654834747314
+10,1,daphneInternal,f64,250mb,Memory Consumption,234.05859375
+10,1,daphneInternal,f64,250mb,Average CPU Load,17.1
+10,1,daphneInternal,f64,500mb,Execution Time,1.5034480094909668
+10,1,daphneInternal,f64,500mb,Memory Consumption,582.4609375
+10,1,daphneInternal,f64,500mb,Average CPU Load,23.9
+10,3,daphneInternal,f64,250mb,Execution Time,1.503216028213501
+10,3,daphneInternal,f64,250mb,Memory Consumption,231.0234375
+10,3,daphneInternal,f64,250mb,Average CPU Load,18.9
+10,3,daphneInternal,f64,500mb,Execution Time,3.0056087970733643
+10,3,daphneInternal,f64,500mb,Memory Consumption,591.64453125
+10,3,daphneInternal,f64,500mb,Average CPU Load,14.35
+10,5,daphneInternal,f64,250mb,Execution Time,3.0057547092437744
+10,5,daphneInternal,f64,250mb,Memory Consumption,361.51171875
+10,5,daphneInternal,f64,250mb,Average CPU Load,19.15
+10,5,daphneInternal,f64,500mb,Execution Time,10.519116163253784
+10,5,daphneInternal,f64,500mb,Memory Consumption,1132.296875
+10,5,daphneInternal,f64,500mb,Average CPU Load,13.685714285714283
+10,10,daphneInternal,f64,250mb,Execution Time,3.0087897777557373
+10,10,daphneInternal,f64,250mb,Memory Consumption,353.8828125
+10,10,daphneInternal,f64,250mb,Average CPU Load,13.0
+10,10,daphneInternal,f64,500mb,Execution Time,6.0094873905181885
+10,10,daphneInternal,f64,500mb,Memory Consumption,1118.6640625
+10,10,daphneInternal,f64,500mb,Average CPU Load,15.825
+10,1,Python_Numpy_Approach,f64,250mb,Execution Time,1.503070831298828
+10,1,Python_Numpy_Approach,f64,250mb,Memory Consumption,152.3125
+10,1,Python_Numpy_Approach,f64,250mb,Average CPU Load,16.1
+10,1,Python_Numpy_Approach,f64,500mb,Execution Time,1.5027079582214355
+10,1,Python_Numpy_Approach,f64,500mb,Memory Consumption,468.9296875
+10,1,Python_Numpy_Approach,f64,500mb,Average CPU Load,21.7
+10,3,Python_Numpy_Approach,f64,250mb,Execution Time,1.5031249523162842
+10,3,Python_Numpy_Approach,f64,250mb,Memory Consumption,184.7109375
+10,3,Python_Numpy_Approach,f64,250mb,Average CPU Load,17.5
+10,3,Python_Numpy_Approach,f64,500mb,Execution Time,1.5033082962036133
+10,3,Python_Numpy_Approach,f64,500mb,Memory Consumption,545.69140625
+10,3,Python_Numpy_Approach,f64,500mb,Average CPU Load,23.9
+10,5,Python_Numpy_Approach,f64,250mb,Execution Time,1.5032968521118164
+10,5,Python_Numpy_Approach,f64,250mb,Memory Consumption,251.19921875
+10,5,Python_Numpy_Approach,f64,250mb,Average CPU Load,23.9
+10,5,Python_Numpy_Approach,f64,500mb,Execution Time,6.009762763977051
+10,5,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.9375
+10,5,Python_Numpy_Approach,f64,500mb,Average CPU Load,14.25
+10,10,Python_Numpy_Approach,f64,250mb,Execution Time,1.5057225227355957
+10,10,Python_Numpy_Approach,f64,250mb,Memory Consumption,238.9765625
+10,10,Python_Numpy_Approach,f64,250mb,Average CPU Load,22.4
+10,10,Python_Numpy_Approach,f64,500mb,Execution Time,3.005692720413208
+10,10,Python_Numpy_Approach,f64,500mb,Memory Consumption,829.8828125
+10,10,Python_Numpy_Approach,f64,500mb,Average CPU Load,18.4
+10,1,Python_DirectExec,f64,250mb,Execution Time,3.0076112747192383
+10,1,Python_DirectExec,f64,250mb,Memory Consumption,504.359375
+10,1,Python_DirectExec,f64,250mb,Average CPU Load,16.1
+10,1,Python_DirectExec,f64,500mb,Execution Time,9.016049146652222
+10,1,Python_DirectExec,f64,500mb,Memory Consumption,1660.109375
+10,1,Python_DirectExec,f64,500mb,Average CPU Load,13.683333333333335
+10,3,Python_DirectExec,f64,250mb,Execution Time,6.010080099105835
+10,3,Python_DirectExec,f64,250mb,Memory Consumption,500.61328125
+10,3,Python_DirectExec,f64,250mb,Average CPU Load,14.3
+10,3,Python_DirectExec,f64,500mb,Execution Time,21.03186821937561
+10,3,Python_DirectExec,f64,500mb,Memory Consumption,1669.4921875
+10,3,Python_DirectExec,f64,500mb,Average CPU Load,13.42857142857143
+10,5,Python_DirectExec,f64,250mb,Execution Time,9.014908075332642
+10,5,Python_DirectExec,f64,250mb,Memory Consumption,504.59765625
+10,5,Python_DirectExec,f64,250mb,Average CPU Load,15.5
+10,5,Python_DirectExec,f64,500mb,Execution Time,28.54214310646057
+10,5,Python_DirectExec,f64,500mb,Memory Consumption,1671.48828125
+10,5,Python_DirectExec,f64,500mb,Average CPU Load,13.078947368421051
+10,10,Python_DirectExec,f64,250mb,Execution Time,4.507894992828369
+10,10,Python_DirectExec,f64,250mb,Memory Consumption,504.22265625
+10,10,Python_DirectExec,f64,250mb,Average CPU Load,16.566666666666666
+10,10,Python_DirectExec,f64,500mb,Execution Time,18.02660584449768
+10,10,Python_DirectExec,f64,500mb,Memory Consumption,1664.4765625
+10,10,Python_DirectExec,f64,500mb,Average CPU Load,14.591666666666669
+10,1,Python_Shared_Mem,f64,250mb,Execution Time,4.5105719566345215
+10,1,Python_Shared_Mem,f64,250mb,Memory Consumption,939.15625
+10,1,Python_Shared_Mem,f64,250mb,Average CPU Load,18.5
+10,1,Python_Shared_Mem,f64,500mb,Execution Time,12.017819881439207
+10,1,Python_Shared_Mem,f64,500mb,Memory Consumption,3260.17578125
+10,1,Python_Shared_Mem,f64,500mb,Average CPU Load,14.6625
+10,3,Python_Shared_Mem,f64,250mb,Execution Time,7.511196136474609
+10,3,Python_Shared_Mem,f64,250mb,Memory Consumption,927.515625
+10,3,Python_Shared_Mem,f64,250mb,Average CPU Load,16.5
+10,3,Python_Shared_Mem,f64,500mb,Execution Time,24.034167528152462
+10,3,Python_Shared_Mem,f64,500mb,Memory Consumption,3267.0703125
+10,3,Python_Shared_Mem,f64,500mb,Average CPU Load,14.46875
+10,5,Python_Shared_Mem,f64,250mb,Execution Time,9.016706466674805
+10,5,Python_Shared_Mem,f64,250mb,Memory Consumption,920.53125
+10,5,Python_Shared_Mem,f64,250mb,Average CPU Load,16.133333333333333
+10,5,Python_Shared_Mem,f64,500mb,Execution Time,31.547119140625
+10,5,Python_Shared_Mem,f64,500mb,Memory Consumption,3269.12890625
+10,5,Python_Shared_Mem,f64,500mb,Average CPU Load,14.476190476190473
+10,10,Python_Shared_Mem,f64,250mb,Execution Time,6.011251926422119
+10,10,Python_Shared_Mem,f64,250mb,Memory Consumption,934.5546875
+10,10,Python_Shared_Mem,f64,250mb,Average CPU Load,18.425
+10,10,Python_Shared_Mem,f64,500mb,Execution Time,21.02934956550598
+10,10,Python_Shared_Mem,f64,500mb,Memory Consumption,3267.78125
+10,10,Python_Shared_Mem,f64,500mb,Average CPU Load,14.05714285714286
+10,1,Python_CopyInMemory,f64,250mb,Execution Time,6.009379386901856
+10,1,Python_CopyInMemory,f64,250mb,Memory Consumption,1321.89453125
+10,1,Python_CopyInMemory,f64,250mb,Average CPU Load,18.15
+10,1,Python_CopyInMemory,f64,500mb,Execution Time,19.53123450279236
+10,1,Python_CopyInMemory,f64,500mb,Memory Consumption,4801.3828125
+10,1,Python_CopyInMemory,f64,500mb,Average CPU Load,13.923076923076922
+10,3,Python_CopyInMemory,f64,250mb,Execution Time,9.01337742805481
+10,3,Python_CopyInMemory,f64,250mb,Memory Consumption,1310.57421875
+10,3,Python_CopyInMemory,f64,250mb,Average CPU Load,16.833333333333332
+10,3,Python_CopyInMemory,f64,500mb,Execution Time,31.545703649520878
+10,3,Python_CopyInMemory,f64,500mb,Memory Consumption,4804.8828125
+10,3,Python_CopyInMemory,f64,500mb,Average CPU Load,14.147619047619049
+10,5,Python_CopyInMemory,f64,250mb,Execution Time,10.517358541488647
+10,5,Python_CopyInMemory,f64,250mb,Memory Consumption,1324.19921875
+10,5,Python_CopyInMemory,f64,250mb,Average CPU Load,16.357142857142858
+10,5,Python_CopyInMemory,f64,500mb,Execution Time,39.05657839775085
+10,5,Python_CopyInMemory,f64,500mb,Memory Consumption,4815.6171875
+10,5,Python_CopyInMemory,f64,500mb,Average CPU Load,13.484615384615388
+10,10,Python_CopyInMemory,f64,250mb,Execution Time,9.016239404678345
+10,10,Python_CopyInMemory,f64,250mb,Memory Consumption,1310.09765625
+10,10,Python_CopyInMemory,f64,250mb,Average CPU Load,14.9
+10,10,Python_CopyInMemory,f64,500mb,Execution Time,28.539341926574707
+10,10,Python_CopyInMemory,f64,500mb,Memory Consumption,4813.85546875
+10,10,Python_CopyInMemory,f64,500mb,Average CPU Load,13.847368421052632
+10,1,Python_BinaryFile,f64,250mb,Execution Time,4.507810592651367
+10,1,Python_BinaryFile,f64,250mb,Memory Consumption,997.23828125
+10,1,Python_BinaryFile,f64,250mb,Average CPU Load,19.23333333333333
+10,1,Python_BinaryFile,f64,500mb,Execution Time,13.520345449447632
+10,1,Python_BinaryFile,f64,500mb,Memory Consumption,3503.859375
+10,1,Python_BinaryFile,f64,500mb,Average CPU Load,13.177777777777775
+10,3,Python_BinaryFile,f64,250mb,Execution Time,7.512115716934204
+10,3,Python_BinaryFile,f64,250mb,Memory Consumption,994.62109375
+10,3,Python_BinaryFile,f64,250mb,Average CPU Load,17.240000000000002
+10,3,Python_BinaryFile,f64,500mb,Execution Time,25.5380539894104
+10,3,Python_BinaryFile,f64,500mb,Memory Consumption,3511.9140625
+10,3,Python_BinaryFile,f64,500mb,Average CPU Load,13.352941176470589
+10,5,Python_BinaryFile,f64,250mb,Execution Time,9.01408076286316
+10,5,Python_BinaryFile,f64,250mb,Memory Consumption,1002.6875
+10,5,Python_BinaryFile,f64,250mb,Average CPU Load,17.28333333333333
+10,5,Python_BinaryFile,f64,500mb,Execution Time,31.54601502418518
+10,5,Python_BinaryFile,f64,500mb,Memory Consumption,3507.36328125
+10,5,Python_BinaryFile,f64,500mb,Average CPU Load,13.861904761904755
+10,10,Python_BinaryFile,f64,250mb,Execution Time,7.51239013671875
+10,10,Python_BinaryFile,f64,250mb,Memory Consumption,990.23828125
+10,10,Python_BinaryFile,f64,250mb,Average CPU Load,14.9
+10,10,Python_BinaryFile,f64,500mb,Execution Time,22.5333948135376
+10,10,Python_BinaryFile,f64,500mb,Memory Consumption,3513.015625
+10,10,Python_BinaryFile,f64,500mb,Average CPU Load,13.393333333333333
+10,1,Python_CsvFile,f64,250mb,Execution Time,24.03406286239624
+10,1,Python_CsvFile,f64,250mb,Memory Consumption,1084.1328125
+10,1,Python_CsvFile,f64,250mb,Average CPU Load,14.9
+10,1,Python_CsvFile,f64,500mb,Execution Time,93.13271641731262
+10,1,Python_CsvFile,f64,500mb,Memory Consumption,3829.890625
+10,1,Python_CsvFile,f64,500mb,Average CPU Load,13.500000000000004
+10,3,Python_CsvFile,f64,250mb,Execution Time,33.04880690574646
+10,3,Python_CsvFile,f64,250mb,Memory Consumption,1091.77734375
+10,3,Python_CsvFile,f64,250mb,Average CPU Load,14.195454545454544
+10,3,Python_CsvFile,f64,500mb,Execution Time,126.17670822143556
+10,3,Python_CsvFile,f64,500mb,Memory Consumption,3822.66015625
+10,3,Python_CsvFile,f64,500mb,Average CPU Load,13.407142857142857
+10,5,Python_CsvFile,f64,250mb,Execution Time,36.05174517631531
+10,5,Python_CsvFile,f64,250mb,Memory Consumption,1079.9140625
+10,5,Python_CsvFile,f64,250mb,Average CPU Load,13.754166666666665
+10,5,Python_CsvFile,f64,500mb,Execution Time,136.69417667388916
+10,5,Python_CsvFile,f64,500mb,Memory Consumption,3833.3046875
+10,5,Python_CsvFile,f64,500mb,Average CPU Load,13.38241758241758
+10,10,Python_CsvFile,f64,250mb,Execution Time,33.048482179641724
+10,10,Python_CsvFile,f64,250mb,Memory Consumption,1087.046875
+10,10,Python_CsvFile,f64,250mb,Average CPU Load,14.163636363636362
+10,10,Python_CsvFile,f64,500mb,Execution Time,127.68088388442992
+10,10,Python_CsvFile,f64,500mb,Memory Consumption,3817.9375
+10,10,Python_CsvFile,f64,500mb,Average CPU Load,14.02117647058824
