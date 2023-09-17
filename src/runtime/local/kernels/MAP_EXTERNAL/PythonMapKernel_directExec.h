@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_SYSARG_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_SYSARG_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_DIRECTEXEC_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_DIRECTEXEC_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
@@ -28,7 +28,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 template<typename DTRes, typename DTArg>
-struct PythonMapKernel_SysArg {
+struct PythonMapKernel_directExec {
     static void apply(DTRes *& res, const DTArg * arg, const char* func, const char* varName) = delete;
 };
 
@@ -36,15 +36,15 @@ struct PythonMapKernel_SysArg {
 // Convenience function
 // ****************************************************************************
 template<class DTRes, class DTArg>
-void pythonMapKernel_SysArg(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
-    PythonMapKernel_SysArg<DTRes,DTArg>::apply(res, arg, func, varName);
+void pythonMapKernel_directExec(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
+    PythonMapKernel_directExec<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
 template<typename VTRes, typename VTArg>
-struct PythonMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+struct PythonMapKernel_directExec<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
     
     PythonInterpreter::getInstance();
@@ -130,4 +130,4 @@ struct PythonMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     PyGILState_Release(gstate);
     }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_SYSARG_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_DIRECTEXEC_H

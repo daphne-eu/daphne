@@ -23,8 +23,8 @@
 #include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_shared_mem.h>
 #include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_csv.h>
 #include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_binaryData.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_copy.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_SysArg.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_copyInMemory.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_directExec.h>
 #include <memory>
 #include <algorithm>
 #include <cassert>
@@ -70,9 +70,9 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             {
                 applyPythonKernel_Shared_Mem(res, arg, func, varName);
             }
-            else if(strcmp(plName, "Python_Copy") == 0)
+            else if(strcmp(plName, "Python_CopyInMemory") == 0)
             {
-                applyPythonMapKernel_copy(res, arg, func, varName);
+                applyPythonMapKernel_copyInMemory(res, arg, func, varName);
             }
             else if(strcmp(plName, "Python_CsvFile") == 0)
             {
@@ -82,9 +82,9 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             {
                 applyPythonMapKernel_binaryData(res, arg, func, varName);
             }
-            else if(strcmp(plName, "Python_SysArg") == 0)
+            else if(strcmp(plName, "Python_DirectExec") == 0)
             {
-                applyPythonMapKernel_SysArg(res, arg, func, varName);
+                applyPythonMapKernel_directExec(res, arg, func, varName);
             }
             else
             {
@@ -112,12 +112,12 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         pythonMapKernel_binaryData(res, arg, func, varName);
     }
 
-    static void applyPythonMapKernel_copy(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        pythonMapKernel_copy(res, arg, func, varName);
+    static void applyPythonMapKernel_copyInMemory(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        pythonMapKernel_copyInMemory(res, arg, func, varName);
     }
 
-    static void applyPythonMapKernel_SysArg(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        pythonMapKernel_SysArg(res, arg, func, varName);
+    static void applyPythonMapKernel_directExec(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        pythonMapKernel_directExec(res, arg, func, varName);
     }
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAPEXTERNALPL_H

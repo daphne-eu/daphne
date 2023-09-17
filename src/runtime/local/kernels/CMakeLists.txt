@@ -89,8 +89,8 @@ set(HEADERS_cpp_kernels
     ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_shared_mem.h
     ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_csv.h
     ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_binaryData.h
-    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_copy.h
-    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_SysArg.h
+    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_copyInMemory.h
+    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_directExec.h
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp

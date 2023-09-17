@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPY_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPY_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPYINMEMORY_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPYINMEMORY_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
@@ -23,18 +23,18 @@
 #include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernelUtils.h>
 
 template<typename DTRes, typename DTArg>
-struct PythonMapKernel_copy
+struct PythonMapKernel_copyInMemory
 {
     static void apply(DTRes *& res, const DTArg * arg, const char* func, const char* varName) = delete;
 };
 
 template<class DTRes, class DTArg>
-void pythonMapKernel_copy(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
-    PythonMapKernel_copy<DTRes,DTArg>::apply(res, arg, func, varName);
+void pythonMapKernel_copyInMemory(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
+    PythonMapKernel_copyInMemory<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
 template<typename VTRes, typename VTArg>
-struct PythonMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+struct PythonMapKernel_copyInMemory<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName)
     {
@@ -43,7 +43,7 @@ struct PythonMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
 
-        PyObject* pName = PyUnicode_DecodeFSDefault("PythonMapKernel_copy");
+        PyObject* pName = PyUnicode_DecodeFSDefault("PythonMapKernel_copyInMemory");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
 
@@ -119,4 +119,4 @@ struct PythonMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_Release(gstate);
     }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPY_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPYINMEMORY_H
