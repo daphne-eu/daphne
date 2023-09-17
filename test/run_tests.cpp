@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#define CATCH_CONFIG_MAIN // make catch2 generate a main-function
+#define CATCH_CONFIG_RUNNER  // Use Catch2's custom main runner
 #include <catch.hpp>
-
 #include <api/cli/DaphneUserConfig.h>
 #include "runtime/local/kernels/CreateDaphneContext.h"
+#include <util/PythonInterpreter.h>
 #ifdef USE_CUDA
     #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 #endif
@@ -39,4 +38,13 @@ std::unique_ptr<DaphneContext> setupContextAndLogger() {
     return std::unique_ptr<DaphneContext>(dctx_);
 }
 
-// Nothing to do here, the individual test cases are in separate cpp-files.
+int main(int argc, char* argv[]) {
+
+    PythonInterpreter::initializeInterpreter();
+
+    int result = Catch::Session().run(argc, argv);
+
+    PythonInterpreter::finalizeInterpreter();
+
+    return result;
+}

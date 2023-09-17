@@ -550,3 +550,56 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 - **`now`**`()`
 
     Returns the current time since the epoch in nano seconds.
+
+## Second-order Functions
+
+DaphneDSL offers a map function, which can be invoked in several ways. 
+
+- **`map`**`(arg:matrix, udf:func)`
+
+The built-in map function takes a matrix and a user-defined function (UDF) as arguments.
+The given UDF must have a single scalar argument and return a single scalar value.
+`map()` applies the given UDF to each value in the given matrix.
+
+- **`map`**`(arg:matrix, func:str, varName:str, plName:str)`
+
+To use a map-kernel of an external porgramming language, `map()` can be invoked with a matrix, a user-defined function, the variable of the user-defined function and the name of an external programming language as arguments. Currently only Python is supported as external programming language. In Python defined functions and Lambda Expressions are allowed, with exactly one input and one output value.
+
+### Available Python Map Kernels
+|Name|Description|
+|---|---|
+|`Python_Shared_Mem`| Uses shared memory for the data transfer (works directly on the memory)|
+|`Python_CopyInMemory`| transfers a copy of the matrix to Python, gets back the result matrix from Python|
+|`Python_CsvFile`| Data Transfer per temporary csv file|
+|`Python_BinaryFile`| Data Transfer per temporary binary file|
+|`Python_DirectExec`| For every element in the matrix the UDF will be invoked directly on the element |
+
+### Python Environment Interaction with DAPHNE's map() Function:
+
+`Native Python Environment`: If you're using DAPHNE with the system-wide Python installation, any Python code passed to `map()` will utilize the system's default Python version and its installed libraries.
+
+`Virtual Environments (venv)`: If you want to use the `map()` function within a virtual environment, you firstly have to run the `build.sh` script after starting the venv, as the Python Header files must be compiled with the Daphne application before you can use them.
+
+### Processing of Integers in Python UDFs for DAPHNE:
+
+Although Python natively handles integers of arbitrary size, DAPHNE limits representation to specific bit-widths based on the datatype. The following guidelines should help users choose the right approach for their purpose.
+
+**Implementation Guidelines**:
+
+- **Native Python Processing**:  
+  The `Python_DirectExec` uses element-wise calculation with Python Integers and employs the Python C-API functionality for type conversion after executing the UDF on the matrix element.Since Python can natively manage integers of arbitrary size, it's imperative to ensure that the result returned to DAPHNE is constrained to the least significant bits of the datatype. This limitation is achieved by applying the bitwise AND operation as `result & (2^<bits of datatype>−1)` before returning the result to DAPHNE. Adjustments have been made for signed integers or narrower integer types accordingly. 
+
+- **NumPy Processing**:  
+  The `Python_Shared_Mem`, `Python_CopyInMemory`, `Python_CsvFile`, and `Python_BinaryFile` approaches use NumPy throughout for all calculations. When using NumPy, integer calculations are automatically bound by the datatype's bit-width. The result doesn't need further adjustment before returning it to DAPHNE. 
+
+> **Note**: Some calculations might yield different results between native Python and NumPy.  
+Example: For the expression `(x+bigNumber)<0` where x=1, native Python might evaluate it as false while NumPy could evaluate it as true, depending on the magnitude of "bigNumber".
+
+**Recommendation**:
+
+Developers have two primary options for integer calculations in Python:
+
+| Method                               | Approach                                                           | Description                                                                        | Pros & Cons                                                                   |
+|--------------------------------------|--------------------------------------------------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| Element-wise with Python integers    | `Python_DirectExec`                                               | Individual calculations using native Python integers.                              | Might be slower, but allows arbitrary precision for intermediate results.     |
+| Batch-wise with NumPy                | `Python_Shared_Mem`, `Python_CopyInMemory`, `Python_CsvFile`, `Python_BinaryFile` | Process arrays of numbers simultaneously.                                         | Likely faster, but restricts calculations to the specified integer datatype.  |

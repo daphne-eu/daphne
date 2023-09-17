@@ -57,6 +57,22 @@ include(HandleLLVMOptions)
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
 
+find_package(Python 3.8 COMPONENTS Interpreter Development REQUIRED)
+find_package(Python 3.8 COMPONENTS Interpreter Development NumPy REQUIRED)
+
+include_directories(${Python_INCLUDE_DIRS})
+include_directories(${Python_NumPy_INCLUDE_DIRS})
+
+message(STATUS "Python_INCLUDE_DIRS: ${Python_INCLUDE_DIRS}")
+message(STATUS "Python_NumPy_INCLUDE_DIRS: ${Python_NumPy_INCLUDE_DIRS}")
+
+find_package(PythonLibs 3.8 REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
+message(STATUS "Python_LIBRARIES: ${Python_LIBRARIES}")
+message(STATUS "Python interpreter: ${Python_EXECUTABLE}")
+
+add_compile_definitions(PROJECT_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\")
+
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
@@ -173,6 +189,7 @@ add_subdirectory(src/runtime/distributed/worker)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/io)
 add_subdirectory(src/runtime/local/kernels)
+add_subdirectory(src/runtime/local/kernels/MAP_EXTERNAL)
 if(USE_FPGAOPENCL)
     add_subdirectory(src/runtime/local/kernels/FPGAOPENCL)
 endif() 

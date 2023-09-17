@@ -554,7 +554,7 @@ public:
         // Pointer to UDF 
         callee << "__void";
 
-        
+
         // get pointer to UDF 
         LLVM::LLVMFuncOp udfFuncOp = module.lookupSymbol<LLVM::LLVMFuncOp>(op.getFunc());
         auto udfFnPtr = rewriter.create<LLVM::AddressOfOp>(loc, udfFuncOp);
@@ -1008,10 +1008,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
             MapOpLowering
     >(&getContext());
 
-    // We want to completely lower to LLVM, so we use a `FullConversion`. This
-    // ensures that only legal operations will remain after the conversion.
     if (failed(applyFullConversion(module, target, std::move(patterns))))
-        signalPassFailure();
+        signalPassFailure();  
 }
 
 std::unique_ptr<Pass> daphne::createLowerToLLVMPass(const DaphneUserConfig& cfg)

@@ -54,8 +54,9 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 | ninja                                | 1.10.0                    |                                                                                                                                         |
 | pkg-config                           | 0.29.1                    |                                                                                                                                         |
 | python3                              | 3.8.5                     |                                                                                                                                         |
-| numpy                                | 1.19.5                    |                                                                                                                                         |
-| pandas                               | 0.25.3                    |                                                                                                                                         |
+| numpy                                | 1.24.4                    |                                                                                                                                         |
+| pandas                               | 2.0.2                    |
+| numexpr                               | 2.8.5                    |                                                                                                                                          |
 | java (e.g. openjdk)                  | 11 (1.7 should be fine)   |                                                                                                                                         |
 | gfortran                             | 9.3.0                     |                                                                                                                                         |
 | uuid-dev                             |                           |                                                                                                                                         |

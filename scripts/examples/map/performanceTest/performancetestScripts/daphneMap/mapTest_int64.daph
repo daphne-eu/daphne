@@ -1,0 +1,96 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+ /*
+Generate random Matrix
+ */
+X = as.matrix<si64>(rand($matrix_size, $matrix_size, as.si64($minValue), as.si64($maxValue), 1.0, 42));
+
+/*
+Function Definitions
+*/
+//Single Arithmetic
+def multiplication(x: si64) -> si64 {return as.si64(x*2);}
+def power(x: si64) -> si64 {return as.si64(x^3);}
+
+//logarithmic
+def logarithm_base_10(x: si64) -> si64 {return as.si64(log(x,10));}
+def exponential(x: si64) -> si64 {return as.si64(exp(x^2));}
+
+//polynomial
+def polynomial(x: si64) -> si64 {return as.si64(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
+def polynomial3(x: si64) -> si64 {return as.si64(3*x^3 + 2*x^2 + 1*x^1);}
+
+//Activation Functions
+def relu(x: si64) -> si64 {return as.si64(max(0,x));}
+def sigmoid(x: si64) -> si64 {return as.si64(1/(1+exp(-1*x)));}
+
+//Image processing options
+def thresholding(x) {return as.si64((x > 42) ? 10 : 0);}
+
+//Algorithms
+def fibonacci(x: si64) -> si64 {
+    x = as.si64(x);
+    a = as.si64(0);
+    b = as.si64(1);
+    for( _ in 1:x)
+    {
+        next = a + b;
+        a = b;
+        b = next;
+    }
+    return as.si64(x<=1?x:a);
+}
+
+/*
+Execute the function
+*/
+
+if($operation == 1) {
+    map(X, multiplication);
+}
+else if($operation == 2) {
+    map(X, power);
+}
+else if($operation == 3) {
+    map(X, logarithm_base_10);
+}
+else if($operation == 4) {
+    map(X, exponential);
+}
+else if($operation == 5) {
+    map(X, polynomial);
+}
+else if($operation == 6) {
+    map(X, relu);
+}
+else if($operation == 7) {
+    map(X, sigmoid);
+}
+else if($operation == 8) {
+    map(X, thresholding);
+}
+else if ($operation == 9)
+{
+    map(X,fibonacci);
+}
+else if ($operation == 10)
+{
+    map(X,polynomial3);
+}
+else {
+    print("Invalid operation selected.");
+}

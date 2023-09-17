@@ -27,6 +27,7 @@
 #include <runtime/local/vectorized/LoadPartitioning.h>
 #include <parser/config/ConfigParser.h>
 #include <util/DaphneLogger.h>
+#include <util/PythonInterpreter.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"

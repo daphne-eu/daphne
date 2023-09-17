@@ -35,6 +35,9 @@ if(USE_FPGAOPENCL)
     list(APPEND LIBS FPGAOPENCLKernels)
 endif()
 
+# Find Python libraries and include directories
+find_package(PythonLibs REQUIRED)
+
 # ************************************************************************
 # DaphneInternal static library
 # ************************************************************************
@@ -43,7 +46,8 @@ endif()
 
 add_library(DaphneInternal STATIC daphne_internal.cpp) # DaphneUserConfig.h
 set_target_properties(DaphneInternal PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-target_link_libraries(DaphneInternal PRIVATE ${LIBS} ${MPI_LIBRARIES})
+target_include_directories(DaphneInternal PUBLIC ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(DaphneInternal PRIVATE ${LIBS} ${MPI_LIBRARIES} ${PYTHON_LIBRARIES})
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     #    list(APPEND LIBS CUDAKernels)

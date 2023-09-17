@@ -356,9 +356,9 @@ namespace {
                     if(specializedFunc.getFunctionType().getNumResults() != 1) 
                         throw std::runtime_error(
                             "map expects a function with exactly one return value." 
-                            "The provided function returns" + 
+                            "The provided function returns " + 
                             std::to_string(specializedFunc.getFunctionType().getNumResults()) +
-                            "values instead."
+                            " values instead."
                         );
 
                     // Get current mapOp result matrix type and fix it if needed.

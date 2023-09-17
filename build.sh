@@ -682,6 +682,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     # Download catch2 release zip (if necessary), and unpack the single header file
     # (if necessary).
+    catch2Version=2.13.8
     catch2Name="catch2"
     catch2ZipName="v$catch2Version.zip"
     catch2SingleHeaderInstalledPath=$installPrefix/include/catch.hpp

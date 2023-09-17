@@ -181,6 +181,28 @@ For instance, the following kernels represent some interesting cases:
 - [ewBinaryObjSca](/src/runtime/local/kernels/EwBinaryObjSca.h) combines matrix/frame and scalar inputs.
 - [matMul](/src/runtime/local/kernels/MatMul.h) delegates to an external library (OpenBLAS).
 
+
+### Extending the Map Kernel with a new programming language
+
+The built-in map function leverages two core kernels:
+
+1. ([Map Kernel](/src/runtime/local/kernels/Map.h)): This kernel is used to invoke DAPHNE's native `map` function.
+2. ([External Programming Language Map Kernel](/src/runtime/local/kernels/MapExternalPL.h)): This kernel is designed to invoke the map function from an external programming language. As of now, only Python is supported.
+
+Both of these can be called using the map() command. For a comprehensive list of built-in commands see [Builtins](/doc/DaphneDSL/Builtins.md).
+
+If you're looking to extend the functionality of the ([MapExternalPL](/src/runtime/local/kernels/MapExternalPL.h)) kernel to support other programming languages, follow these steps:
+
+1. Create a New Kernel: Develop your new kernel in the desired programming language. Ensure that it can be invoked from ([MapExternalPL](/src/runtime/local/kernels/MapExternalPL.h)).
+2. Function Signature: Your kernel's apply function should conform to the following signature:
+
+    ```cpp
+    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName)
+    ```
+
+3. Modify MapExternalPL Kernel: Incorporate your programming language as an option within the apply method found in ([MapExternalPL](/src/runtime/local/kernels/MapExternalPL.h)).
+4. Location for External Kernels: Currently, all external kernels are housed in [test/runtime/local/kernels](/test/runtime/local/kernels). Add your kernel files here for consistency.
+
 ### Test Cases
 
 Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.

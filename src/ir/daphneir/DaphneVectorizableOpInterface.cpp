@@ -14,9 +14,10 @@
  *  limitations under the License.
  */
 
+#include "llvm/Support/raw_ostream.h"
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
-
+#include <utility>
 #include <vector>
 
 namespace mlir::daphne
@@ -356,4 +357,4 @@ std::vector<std::pair<Value, Value>> daphne::GemvOp::createOpsOutputSizes(OpBuil
     auto one = builder.create<daphne::ConstantOp>(loc, builder.getIndexType(), builder.getIndexAttr(1));
     return {{cols, one}};
 }
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------

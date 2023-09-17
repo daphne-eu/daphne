@@ -505,8 +505,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::StoreVariadicPackOp,
             daphne::VectorizedPipelineOp,
             daphne::GenericCallOp,
-            daphne::MapOp
-    >();
+            daphne::MapOp>();
     target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
         return op.isTrivialCast() || op.isRemovePropertyCast();
     });

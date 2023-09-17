@@ -86,6 +86,11 @@ list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
 set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels
     ${PREFIX}/MatMul.h
+    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_shared_mem.h
+    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_csv.h
+    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_binaryData.h
+    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_copyInMemory.h
+    ${PREFIX}/MAP_EXTERNAL/PythonMapKernel_directExec.h
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp
@@ -116,4 +121,4 @@ list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared)
 
 find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB})
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${PYTHON_LIBRARIES})

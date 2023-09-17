@@ -1,0 +1,87 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
+This script contains 3 examples to showcase the utility of the extended daphne map function,
+which is able to use python map kernels and has access to the general-purpose functionality of python.
+*/
+
+//ISBN example
+X = reshape([
+    9781491912058,  // "Python Data Science Handbook" by Jake VanderPlas
+    9781119092940,  // "The Data Science Handbook" by Field Cady and Carl Shan
+    9781449361327,  // "Data Science for Business" by Foster Provost and Tom Fawcett
+    9781491952962,  // "Practical Statistics for Data Scientists" by Peter Bruce and Andrew Bruce
+    9780387310732,  // "Pattern Recognition and Machine Learning" by Christopher M. Bishop
+    9781365061460,  // "The Art of Data Science" by Roger D. Peng and Elizabeth Matsui
+    9780262035613,  // "Deep Learning" by Ian Goodfellow, Yoshua Bengio, and Aaron Courville
+    9781608453429,  // "Data-Intensive Text Processing with MapReduce" by Jimmy Lin and Chris Dyer
+    9781491901427   // "Data Science from Scratch" by Joel Grus
+],3,3);
+
+print("\nMatrix with ISBNs\n");
+print(X);
+
+isbn_validator_udf="
+def is_valid_isbn(x):
+    import requests
+    API_ENDPOINT = \"https://openlibrary.org/api/books\"
+    
+    response = requests.get(f\"{API_ENDPOINT}?bibkeys=ISBN:{x}&format=json\")
+    
+    if response.status_code == 200 and response.json():
+        return 1
+    else:
+        return 0
+";
+print("\nMatrix ISBN Validation Matrix\n");
+print(map(X, isbn_validator_udf ,"x" , "Python_Shared_Mem"));
+
+//Date Example
+unix_timestamp_converter_udf = "
+def timestamp_to_ddmmyyyy(x):
+    from datetime import datetime
+    dt = datetime.utcfromtimestamp(x)
+    return int(dt.strftime('%d%m%Y'))
+";
+
+Y = reshape([1370841550, 1403689208, 1322621584, 
+            1448215123, 1483414975, 1391970093, 
+            1668984105, 995967107, 1012045067],3,3);
+
+print("\nRandom UNIX Timestamps as Matrix\n");
+print(Y);
+print("\nConverted UNIX Timestamps to Dates as Matrix\n");
+print(map(Y, unix_timestamp_converter_udf ,"x" , "Python_Shared_Mem"));
+
+
+//Server Example (USE CAREFULLY AS TO EXCESSIVE PINGING IS NOT GOOD)
+Z = reshape([8888,1111,9999,8844],2,2);
+print("\nIP Addresses saved as Integers in a Matrix\n");
+
+ip_ping_udf ="
+def ping_server(x):
+    import os
+    s = str(x)
+    response = os.system(\"ping -c 1 \" + '.'.join(s))
+    # If response is 0, then the ping was successful
+    if response == 0:
+        return 1
+    else:
+        return 0
+";
+
+print("\nResponse Matrix after Pinging IP Adresses\n");
+print(map(Z, ip_ping_udf ,"x" , "Python_Shared_Mem"));

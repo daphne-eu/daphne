@@ -1,0 +1,55 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+  /*
+Generate random Matrix
+ */
+X = as.matrix<si32>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
+
+/*
+Execute the function
+*/
+if($operation == 1) {
+    X*2;
+}
+else if($operation == 2) {
+    X^2;
+}
+else if($operation == 3) {
+    log(X, 10);
+}
+else if($operation == 4) {
+    exp(X^2);
+}
+else if($operation == 5) {
+    (5*X^5 + 4*X^4 + 3*X^3 + 2*X^2 + 1*X^1);
+}
+else if($operation == 6) {
+    max(0,X);
+}
+else if($operation == 7) {
+    1/(1+exp(-1*X));
+}
+else if($operation == 8) {
+    (X > 42 ? 10 : 0);
+}
+else if($operation == 10)
+{
+    (3*X^3 + 2*X^2 + 1*X^1);
+}
+else {
+    print("Invalid operation selected.");
+}
