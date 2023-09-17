@@ -364,7 +364,7 @@ std::vector<std::pair<Value, Value>> daphne::GemvOp::createOpsOutputSizes(OpBuil
 // Map Operation
 std::vector<daphne::VectorSplit> daphne::MapOp::getVectorSplits()
 {
-    return {daphne::VectorSplit::ROWS};
+    return {daphne::VectorSplit::ROWS, daphne::VectorSplit::NONE};
 }
 std::vector<daphne::VectorCombine> daphne::MapOp::getVectorCombines()
 {
@@ -382,7 +382,7 @@ std::vector<std::pair<Value, Value>> daphne::MapOp::createOpsOutputSizes(OpBuild
 // Map External Operation
 std::vector<daphne::VectorSplit> daphne::MapOpExternalPL::getVectorSplits()
 {
-    return {daphne::VectorSplit::ROWS};
+    return {daphne::VectorSplit::ROWS, daphne::VectorSplit::NONE, daphne::VectorSplit::NONE, daphne::VectorSplit::NONE};
 }
 std::vector<daphne::VectorCombine> daphne::MapOpExternalPL::getVectorCombines()
 {
@@ -392,7 +392,8 @@ std::vector<std::pair<Value, Value>> daphne::MapOpExternalPL::createOpsOutputSiz
 {
     auto loc = getLoc();
     auto sizeTy = builder.getIndexType();
-    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, getArg()).getResult();
-    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getArg()).getResult();
-    return {{rows, cols}};
+    //auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, getArg()).getResult();
+    //auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getArg()).getResult();
+    auto three = builder.create<daphne::ConstantOp>(loc, sizeTy, builder.getIndexAttr(3));
+    return {{three, three}};
 }
