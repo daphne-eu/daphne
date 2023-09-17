@@ -24,16 +24,16 @@ print(map(X, timesTwo));
 
 // Python Lambda Expression
 choosen_function = "x*2";
-print(map(X, choosen_function, "x", "Python_SysArg"));
+print(map(X, choosen_function, "x", "Python_DirectExec"));
 print(map(X, choosen_function, "x", "Python_Shared_Mem"));
-print(map(X, choosen_function, "x", "Python_Copy"));
+print(map(X, choosen_function, "x", "Python_CopyInMemory"));
 print(map(X, choosen_function, "x", "Python_BinaryFile"));
 print(map(X, choosen_function, "x", "Python_CsvFile"));
 
 //Python Function
 choosen_function = "def double(x): return x*2";
-print(map(X, choosen_function, "x", "Python_SysArg"));
+print(map(X, choosen_function, "x", "Python_DirectExec"));
 print(map(X, choosen_function, "x", "Python_Shared_Mem"));
-print(map(X, choosen_function, "x", "Python_Copy"));
+print(map(X, choosen_function, "x", "Python_CopyInMemory"));
 print(map(X, choosen_function, "x", "Python_BinaryFile"));
 print(map(X, choosen_function, "x", "Python_CsvFile"));
