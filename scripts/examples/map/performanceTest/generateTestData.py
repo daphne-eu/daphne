@@ -27,8 +27,7 @@ import psutil
 import csv
 import datetime
 import threading
-import os
-from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Manager
 
 '''Sequential Approach'''
 def warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations):
@@ -62,7 +61,7 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
             writer = csv.writer(csvfile)
             writer.writerows(batch_results)
 
-    #warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations)
+    warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations)
     current_datetime = datetime.datetime.now()
     formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -115,117 +114,6 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
     hours, minutes, secs = seconds_to_hms(end_time)
     print(f"Finished Benchmark in: {hours} hours, {minutes} minutes, {secs} seconds")
 
-'''
-Task-parallelized Benchmark
-ATTENTION: experimental feature, still in development, maybe not useful at all
-'''
-def warmup_command(impl, dtype, op, size):
-    min_for_op, max_for_op = getMinMaxValueRangeForOp(op)
-    command = generate_command(op, impl, dtype, size, min_for_op.get(dtype), max_for_op.get(dtype))
-    print(f"Warm-Up\n: {command}")
-    try:
-        subprocess.run(command, timeout=600)
-    except subprocess.TimeoutExpired:
-        print(f"Warning: Warm-up command '{command}' exceeded the timeout.")
-
-def warmup_system_for_benchmarks_parallelized(matrix_sizes, datatypes, implementations, operations, num_workers=os.cpu_count()):
-    '''
-    Warm-up logic to prepare the system for benchmarking.
-    '''
-    print("Warm Up System for Benchmarks")
-
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        futures = []
-        for _ in range(2):
-            for impl in implementations:
-                for dtype in datatypes:
-                    for op in operations:
-                        if(op == 9 and dtype.startswith("f")): # Fibonacci function is not possible with floats
-                            break
-                        if((op == 8 or op == 4) and impl == "daphneInternal" and dtype.startswith("f")): # no cond and exp operations on float matrices
-                            break
-                        matrix_sizes_for_dtype = matrix_sizes.get(dtype)
-                        for size in matrix_sizes_for_dtype:
-                            # asynchronously submit jobs for warm-up
-                            futures.append(executor.submit(warmup_command, impl, dtype, op, size))
-                            
-        # Wait for all warm-up tasks to finish
-        for future in futures:
-            future.result()
-
-    print("System Warm Up finish")
-
-def parallel_benchmark(run, impl, dtype, op, size):
-    min_value_for_command, max_value_for_command = getMinMaxValueRangeForOp(op)
-    command = generate_command(op, impl, dtype, size, min_value_for_command.get(dtype), max_value_for_command.get(dtype))
-    print(f"Test run: {run} \nCommand:\n {command}")
-    try:
-        elapsed_time, max_memory, avg_cpu_load = measure_performance(command)
-        print(f"SUCCESS: elapsed_time: {elapsed_time}, max_memory: {max_memory}, avg_cpu_load: {avg_cpu_load}")
-        return [
-            (run, op, impl, dtype, size, "Execution Time", elapsed_time),
-            (run, op, impl, dtype, size, "Memory Consumption", max_memory),
-            (run, op, impl, dtype, size, "Average CPU Load", avg_cpu_load)
-        ]
-    except subprocess.TimeoutExpired:
-        print(f"Warning: Benchmark command '{command}' exceeded the timeout.")
-        return None
-
-def run_benchmarks_task_parallelized(matrix_sizes, datatypes, implementations, operations, runs=12, batch_size=0, num_workers=os.cpu_count()):
-    def write_to_csv(batch_results):
-        with open(f"scripts/examples/map/performanceTest/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerows(batch_results)
-    
-    warmup_system_for_benchmarks_parallelized(matrix_sizes, datatypes, implementations, operations)
-    current_datetime = datetime.datetime.now()
-    formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
-
-    # Open the file initially to write headers
-    with open(f"scripts/examples/map/performanceTest/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["Run", "Operation", "Implementation", "Datatype", "Matrix Size", "MetricType", "Value"])
-
-    batch_results = []
-    print("Start Test runs")
-    timestamp_starting_benchmarks = time.time()
-
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        futures = []
-        
-        for run in range(runs):
-            for impl in implementations:
-                for dtype in datatypes:
-                    for op in operations:
-                        # Fibonacci function is not possible with floats
-                        if(op == 9 and dtype.startswith("f")): 
-                            break
-                        # no conditional and exp operations on float matrices possible in daphne Internals
-                        if((op == 8 or op == 4) and impl == "daphneInternal" and dtype.startswith("f")): 
-                            break
-                        matrix_sizes_for_dtype = matrix_sizes.get(dtype)
-                        for size in matrix_sizes_for_dtype:
-                            # asynchronously submit jobs
-                            futures.append(executor.submit(parallel_benchmark, run, impl, dtype, op, size))
-        
-        # Collect results
-        for future in futures:
-            result = future.result()
-            if result:
-                batch_results.extend(result)
-                if len(batch_results) >= batch_size:
-                    print("Write Results to csv after Benchmark finish")
-                    write_to_csv(batch_results)
-
-    # After all loops, write any remaining results to the CSV
-    if batch_results:
-        print("Write Results to csv after Benchmark finish")
-        write_to_csv(batch_results)
-    timestamp_finish_benchmarks = time.time()
-    end_time = timestamp_finish_benchmarks - timestamp_starting_benchmarks
-    hours, minutes, secs = seconds_to_hms(end_time)
-    print(f"Finished Benchmark in: {hours} hours, {minutes} minutes, {secs} seconds")
-
 '''Utility methods'''
 def measure_performance(command, max_timeout=None):
     '''
@@ -247,7 +135,7 @@ def measure_performance(command, max_timeout=None):
     t.start()
     
     try:
-        mem_usage = memory_usage((subprocess.run, (command,)), interval=0.1, timeout=max_timeout, include_children=True) 
+        mem_usage = memory_usage((subprocess.run, (command,)), interval=0.05, timeout=max_timeout, include_children=True) 
     except subprocess.TimeoutExpired:
         print(f"Command '{command}' exceeded the {max_timeout//60} minutes timeout.")
         return "Timeout", "Timeout", "Timeout"
@@ -281,10 +169,28 @@ def measure_performance_improved(command_args):
 
     t = threading.Thread(target=sample_cpu_load)
     t.start()
-    
+
+    manager = Manager()
+    result_proxy = manager.dict()
+
+    def run_command():
+        res = subprocess.run(command_args, capture_output=True, text=True)
+        result_proxy['result'] = res
+        return res
+
     try:
-        mem_usage = memory_usage((subprocess.run, (command_args,)), 
-                                 interval=0.1, include_children=True)
+        mem_usage = memory_usage((run_command,), interval=0.1, include_children=True)
+        
+        result = result_proxy.get('result', None)
+        if result is None:
+            raise ValueError("Failed to get subprocess result")
+    
+        # Check the return code
+        if result.returncode != 0:
+            print(f"Command '{' '.join(command_args)}' failed with return code {result.returncode}.")
+            print("STDOUT:", result.stdout)
+            print("STDERR:", result.stderr)
+            return None, None, None
     except Exception as e:
         print(f"An error occurred while executing the command: {e}")
         return None, None, None
@@ -329,7 +235,6 @@ Different value ranges are defined for the different operations to prevent Integ
 and other problems in the calculations. The getMinMaxValueRangeForOp() method returns the
 appropiate value ranges for the given op.
 '''
-
 def getMinMaxValueRangeForOp(op):
     '''
     op1: multiplication
@@ -484,41 +389,54 @@ if __name__ == "__main__":
     }
 
     matrix_sizes_250mb_500mb = {
-    'f32': [100,1000,4096, 8192],
-    'f64': [100,1000,2896, 5792],
-    'int32': [100,1000,4096, 8192],
-    'int64': [100,1000,2896, 5792],
-    'int8': [100,1000,8192, 16384],
-    'uint64': [100,1000,2896, 5792],
-    'uint8': [100,1000,8192, 16384]
+    'f32': [4096, 8192],
+    'f64': [2896, 5792],
+    'int32': [4096, 8192],
+    'int64': [2896, 5792],
+    'int8': [8192, 16384],
+    'uint64': [2896, 5792],
+    'uint8': [8192, 16384]
     }
-    
+
+    matrix_sizes_logic_size_5000 = {
+    'f32': [5000],
+    'f64': [5000],
+    'int32': [5000],
+    'int64': [5000],
+    'int8': [5000],
+    'uint64': [5000],
+    'uint8': [5000]
+    }
+
     datatypes = ['f64', 'f32', 'int64', 'int32', 'int8', 'uint64', 'uint8']
     datatypes_small_test = ['f64', 'f32', 'int64']
 
     implementations = ["daphneMap", "daphneInternal", "Python_Numpy_Approach", 
-                       "Python_SysArg","Python_Shared_Mem", "Python_Copy", 
+                       "Python_DirectExec","Python_Shared_Mem", "Python_CopyInMemory", 
                        "Python_BinaryFile", "Python_CsvFile"]
 
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     '''
-    First Benchmark: See which Implementation works best in 2 Datatypes, 2 matrix sizes, all implementations and 5 Operations.
-    '''
-    run_benchmarks(matrix_sizes=matrix_sizes_250mb_500mb,
-                   datatypes=['f64', 'int64'], 
-                   implementations=implementations, 
-                   operations=[1, 4, 5, 9, 10])
-    time.sleep(20)
-    '''
-    Second Benchmark: See Influence on value type in 2 matrix sizes, all datatypes, all implementations, 3 operations.
+    First Benchmark: Comparison 4 Operations on all Implementations with one physical datasize in f64.
     '''
     run_benchmarks(matrix_sizes=matrix_sizes_250mb_500mb,
                    datatypes=datatypes, 
                    implementations=implementations, 
-                   operations=[1, 10, 4])
+                   operations=[1, 3, 5, 10])
+    
     time.sleep(20)
+
+    implementations_without_Csv = [impl for impl in implementations if impl != "Python_CsvFile"]
+    '''
+    Second Benchmark: Comparison 2 Operations on all Implementations with one logic data size.
+    '''
+    run_benchmarks(matrix_sizes=matrix_sizes_logic_size_5000,
+                   datatypes=datatypes, 
+                   implementations=implementations_without_Csv, 
+                   operations=[5, 10])
+
     '''
     Big Benchmark
+    run_benchmarks(matrix_sizes_250mb_500mb, datatypes, implementations, operations) 
     '''
-    run_benchmarks(matrix_sizes_500mb_1gb, datatypes, implementations, operations)
