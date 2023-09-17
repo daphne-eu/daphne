@@ -47,7 +47,7 @@ Metrics:
 
 Arithmetic operations of different complexity as UDFs are invoked on random generated matrices with no sparsity, a seed of 42 and different sizes.
 
-The performance test consists of 2 python scripts: The [generateTestData.py](/scripts/examples/map/performanceTest/generateTestData.py) scripts generates the data for the different metrics and saves them in .csv-file with the headers `Run,Operation,Implementation,Datatype,MatrixSize,MetricType,Value`. The [visualizeTestData.py](/scripts/examples/map/performanceTest/visualizeTestData.py) script visualizes the data in different boxplots. You have the options of visualizing it in different .png images or generate an interactive .html file, where you can more easily display the boxplots in a browser.
+The performance test consists of 2 python scripts: The [generateTestData.py](/scripts/examples/map/performanceTest/generateTestData.py) scripts generates the data for the different metrics and saves them in .csv-file with the headers `Run,Operation,Implementation,Datatype,MatrixSize,MetricType,Value`. The [visualizeTestData.py](/scripts/examples/map/performanceTest/visualizeTestData.py) script visualizes the data in different barplots.
 
 Note that testcases for the general functionality are incorporated in the C++ kernel tests in the test file [AlternativeMapTest.cpp](/test/runtime/local/kernels/AlternativeMapTest.cpp).
 
