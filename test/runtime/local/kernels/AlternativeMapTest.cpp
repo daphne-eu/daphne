@@ -72,10 +72,10 @@ template<class DTRes, class DTArg>
 void checkMapForAllPL(const DTArg * arg, const DTRes * exp, const char * func)
 {
     checkMap(arg, exp, func, "Python_Shared_Mem");
-    checkMap(arg, exp, func, "Python_Copy");
+    checkMap(arg, exp, func, "Python_CopyInMemory");
     checkMap(arg, exp, func, "Python_BinaryFile");
     checkMap(arg, exp, func, "Python_CsvFile");
-    checkMap(arg, exp, func, "Python_SysArg");
+    checkMap(arg, exp, func, "Python_DirectExec");
 }
 
 template<template<typename VT> class DT, class VTArg, class VTRes>
