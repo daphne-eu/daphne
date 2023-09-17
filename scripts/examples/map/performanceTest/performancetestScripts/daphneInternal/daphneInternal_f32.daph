@@ -19,19 +19,6 @@ Generate random Matrix
  */
 X = as.matrix<f32>(rand($matrix_size, $matrix_size, as.f32($minValue), as.f32($maxValue), 1.0, 42));
 
-def fibonacci(x: f32) -> f32 {
-    x = as.f32(x);
-    a = as.f32(0);
-    b = as.f32(1);
-    for( _ in 1:x)
-    {
-        next = a + b;
-        a = b;
-        b = next;
-    }
-    return as.f32(x<=1?x:a);
-}
-
 /*
 Execute the function
 */
@@ -58,10 +45,6 @@ else if($operation == 7) {
 }
 else if($operation == 8) {
     (X > 42 ? 10 : 0);
-}
-else if($operation == 9)
-{
-    map(X, fibonacci);
 }
 else if($operation == 10)
 {

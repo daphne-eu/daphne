@@ -19,19 +19,6 @@ Generate random Matrix
  */
 X = as.matrix<si8>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
 
-def fibonacci(x: si8) -> si8 {
-    x = as.si8(x);
-    a = as.si8(0);
-    b = as.si8(1);
-    for( _ in 1:x)
-    {
-        next = a + b;
-        a = b;
-        b = next;
-    }
-    return as.si8(x<=1?x:a);
-}
-
 /*
 Execute the function
 */
@@ -58,10 +45,6 @@ else if($operation == 7) {
 }
 else if($operation == 8) {
     (X > 42 ? 10 : 0);
-}
-else if($operation == 9)
-{
-    map(X, fibonacci);
 }
 else if($operation == 10)
 {
