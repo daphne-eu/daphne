@@ -38,10 +38,12 @@
 #include <memory>
 #include <utility>
 
-DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations,
-                                   DaphneUserConfig cfg)
-    : selectMatrixRepresentations_(selectMatrixRepresentations),
-    userConfig_(std::move(cfg)) {
+DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserConfig cfg) : userConfig_(std::move(cfg)),
+        selectMatrixRepresentations_(selectMatrixRepresentations) {
+    // register loggers
+    if(userConfig_.log_ptr != nullptr)
+        userConfig_.log_ptr->registerLoggers();
+
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::arith::ArithDialect>();
     context_.getOrLoadDialect<mlir::func::FuncDialect>();

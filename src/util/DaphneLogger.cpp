@@ -65,7 +65,7 @@ void DaphneLogger::createLoggers(const LogConfig& config) {
         // special treatment for the default logger
         if (config.name == "default") {
             // make sure errors will always be displayed
-            if (logger->level() < spdlog::level::err)
+            if (logger->level() > spdlog::level::err)
                 logger->set_level(spdlog::level::err);
 
             default_logger = logger;

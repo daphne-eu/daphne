@@ -96,6 +96,15 @@ class DenseMatrix : public Matrix<ValueType>
     DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
             size_t colUpperExcl);
 
+    /**
+     * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
+     *
+     * @param numRows The exact number of rows.
+     * @param numCols The exact number of columns.
+     * @param values A `std::shared_ptr` to an existing array of values.
+     */
+    DenseMatrix(size_t numRows, size_t numCols, const DenseMatrix<ValueType>* src);
+
     ~DenseMatrix() override = default;
 
     [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx, bool rowSkipOverride = false) const {
