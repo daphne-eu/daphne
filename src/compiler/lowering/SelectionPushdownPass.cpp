@@ -179,7 +179,28 @@ void SelectionPushdownPass::runOnOperation() {
     target.addDynamicallyLegalOp<mlir::daphne::FilterRowOp>([&](Operation * op) {
         Operation * dataSource = op->getOperand(0).getDefiningOp();
         if (llvm::dyn_cast<mlir::daphne::InnerJoinOp>(dataSource)) {
-            //Currently not checking whether all comparisons beforehand are possible on the available frames without join
+            // Check if all operations beforehand are ConstantOps (Pushdown of Comparisons between Columns not supported yet)
+            std::vector<Operation *> comparisons;
+
+            Operation * currentBitmap = op->getOperand(1).getDefiningOp();       
+            while (llvm::dyn_cast<mlir::daphne::EwAndOp>(currentBitmap)) {
+                Operation * comparison = currentBitmap->getOperand(1).getDefiningOp()       // CastOp
+                                        ->getOperand(0).getDefiningOp()                     // CreateFrameOp
+                                        ->getOperand(0).getDefiningOp();                    // BitmapOp;
+                if (!llvm::dyn_cast<mlir::daphne::ConstantOp>(comparison->getOperand(1).getDefiningOp())) {
+                    return true;
+                }
+                comparisons.push_back(comparison);
+                currentBitmap = currentBitmap->getOperand(0).getDefiningOp();
+            }
+            // Pushdown of OR not supported yet
+            if (llvm::dyn_cast<mlir::daphne::EwOrOp>(currentBitmap)) {
+                return true;
+            }
+            if (!llvm::dyn_cast<mlir::daphne::ConstantOp>(currentBitmap->getOperand(0).getDefiningOp()->getOperand(0).getDefiningOp()->getOperand(1).getDefiningOp())) {
+                return true;
+            }
+            comparisons.push_back(currentBitmap); 
             return false;
         }
         
