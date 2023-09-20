@@ -90,38 +90,24 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             auto rank = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getRank();
             
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
-            {
-                //std::cout<<"data is already placed at rank "<<rank<<std::endl;
-                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-                MPIHelper::sendObjectIdentifier(data.identifier, rank);
-               // std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
                 continue;
-            }
             targetGroup.push_back(rank);  
         }
         if((int)targetGroup.size()==MPIHelper::getCommSize() - 1){ // exclude coordinator
             MPIHelper::sendData(messageLength, dataToSend.data());
-           // std::cout<<"data has been send to all "<<std::endl;
         }
         else{
             for(int i=0;i<(int)targetGroup.size();i++){
                     MPIHelper::distributeData(messageLength, dataToSend.data(), targetGroup.at(i));
-                    //std::cout<<"data has been send to rank "<<targetGroup.at(i)<<std::endl;
                 } 
         }
         for(int i=0;i<(int)targetGroup.size();i++)
-        { 
-            //std::cout<<"From broadcast waiting for ack " << std::endl;
-           
+        {            
             int rank = targetGroup.at(i);
             if (rank == COORDINATOR)
-            {
-
-               // std::cout<<"coordinator doe not need ack from itself" << std::endl;
                 continue;
-            }
+
             WorkerImpl::StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
-            //std::cout<<"received ack form worker " << rank<<std::endl;
             std::string address=std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();

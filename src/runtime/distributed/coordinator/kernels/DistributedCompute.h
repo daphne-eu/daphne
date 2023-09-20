@@ -75,15 +75,15 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                       VectorCombine *vectorCombine,                      
                       DCTX(dctx))
     {
-        int worldSize = MPIHelper::getCommSize() - 1; // exclude coordinator
+        size_t worldSize = MPIHelper::getCommSize(); // exclude coordinator
 
         LoadPartitioningDistributed<DTRes, AllocationDescriptorMPI>::SetOutputsMetadata(res, numOutputs, vectorCombine, dctx);
         
         std::vector<char> taskBuffer;
-        for (int rank=0;rank<worldSize;rank++) // we currently exclude the coordinator
+        for (size_t rank = 1; rank < worldSize; rank++) // we currently exclude the coordinator
         {
             MPIHelper::Task task;
-            std::string addr= std::to_string(rank+1);
+            std::string addr= std::to_string(rank);
             for (size_t i = 0; i < numInputs; i++)
             {
                 auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
@@ -95,9 +95,25 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             task.mlir_code = mlirCode;
             task.serialize(taskBuffer);
             auto len = task.sizeInBytes();
-            MPIHelper::distributeTask(len, taskBuffer.data(),rank+1);            
+            MPIHelper::distributeTask(len, taskBuffer.data(),rank);            
         }
 
+        for (size_t rank = 1; rank < worldSize; rank++){
+            auto buffer = MPIHelper::getComputeResults(rank);
+            std::vector<WorkerImpl::StoredInfo> infoVec = MPIHelper::constructStoredInfoVector(std::string(buffer.data()));
+            size_t idx = 0;
+            for (auto info : infoVec){            
+                auto resMat = *res[idx++];
+                auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(std::to_string(rank));
+
+                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                data.identifier = info.identifier;
+                data.numRows = info.numRows;
+                data.numCols = info.numCols;
+                data.isPlacedAtWorker = true;
+                dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);                                                
+            }
+        }
     }
 };
 #endif

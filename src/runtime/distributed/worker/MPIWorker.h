@@ -53,7 +53,7 @@ class MPIWorker : WorkerImpl {
         int id;
         int myState=LISTENING;
         int temp=0;
-        StoredInfo updateInputs (const std::vector<char> &buffer, int messageLength)
+        StoredInfo storeInputs (const std::vector<char> &buffer, int messageLength)
         {
             StoredInfo info;
             if (DF_Dtype(buffer) == DF_data_t::Value_t) {
@@ -69,23 +69,28 @@ class MPIWorker : WorkerImpl {
             return info; 
         }
         
-        void sendResult(std::vector<StoredInfo> outputs)
+        void sendComputeResult(std::vector<StoredInfo> outputs)
         {
-            for(size_t i=0;i<outputs.size();i++)
-            {
+            std::string computeResult = ""; 
+            StoredInfo tempInfo=outputs.at(0);
+            computeResult += tempInfo.toString();
+            for (size_t i = 1; i < outputs.size(); i++)
+            {   
                 StoredInfo tempInfo=outputs.at(i);
-                Structure *res = Transfer(tempInfo);
-                std::vector<char> dataToSend;
-                size_t messageLength = DaphneSerializer<Structure>::serialize(res, dataToSend);
-                
-                int len = messageLength;
-                MPI_Send(dataToSend.data(), len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT, MPI_COMM_WORLD);
-              //  std::string message = "result from ("+ std::to_string(id) +") is:\n";
-               // displayDataStructure(res, message);
+                computeResult += ":" + tempInfo.toString();
             }
-
+            MPI_Send(computeResult.c_str(), sizeof(computeResult), MPI_CHAR, COORDINATOR, COMPUTERESULT, MPI_COMM_WORLD);
         }
-       
+        void sendMatrix(StoredInfo info)
+        {
+            auto mat = this->Transfer(info);
+            std::vector<char> dataToSend;
+            size_t messageLength = DaphneSerializer<Structure>::serialize(mat, dataToSend);
+            
+            int len = messageLength;
+            MPI_Send(dataToSend.data(), len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT, MPI_COMM_WORLD);            
+        }
+        
         void prepareBufferForMessage(std::vector<char> &buffer, int * messageLength, MPI_Datatype type, int source, int tag)
         {
             MPI_Status messageStatus;
@@ -136,39 +141,32 @@ class MPIWorker : WorkerImpl {
                 case BROADCAST:
                     prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, BROADCAST);
                     MPI_Bcast(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
-                    info = updateInputs(buffer, messageLength);
+                    info = storeInputs(buffer, messageLength);
                     //MPIHelper::displayData(protoMsgData, id);
                     sendDataACK(info);
                 break;
-                case OBJECTIDENTIFIERSIZE:
-                   // std::cout<<"Identifier Message "<<std::endl;
-                    prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, OBJECTIDENTIFIERSIZE);
-                    MPI_Recv(buffer.data(), messageLength, MPI_CHAR, COORDINATOR, OBJECTIDENTIFIER,MPI_COMM_WORLD, &messageStatus);
-                    identifier = std::string(buffer.data());
-                   // std::cout<<"identifier "<<identifier <<" received at "<< id<<std::endl;
-                break;
+                
                 case DATASIZE:
                     prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, DATASIZE);
                     MPI_Recv(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DATA,MPI_COMM_WORLD, &messageStatus);
-                    info = updateInputs(buffer, messageLength);
-                    //std::cout<<"rank " << id <<"will send ack" <<std::endl;
-                    //MPIHelper::displayData(protoMsgData,id);                    
+                    info = storeInputs(buffer, messageLength);
                     sendDataACK(info);
-                    //std::cout<<"rank " << id <<" sent ack" <<std::endl;
                 break;
 
                 case MLIRSIZE:
                     prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, MLIRSIZE);
                     MPI_Recv(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MLIR,MPI_COMM_WORLD, &messageStatus);
-                    //printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
                     MsgTask.deserialize(buffer);
                     
                     exStatus = this->Compute(&outputs, MsgTask.inputs, MsgTask.mlir_code);
-                    //std::cout<<printData<<std::endl;
-                    //if(!(exStatus.ok()))
-                    //    std::cout<<"error!";    
-                    // std::cout<<"computation is done"<<std::endl;
-                    sendResult(outputs);                    
+                    sendComputeResult(outputs);                    
+                break;
+
+                case TRANSFERSIZE:
+                    prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, TRANSFERSIZE);
+                    MPI_Recv(buffer.data(), messageLength, MPI_CHAR, COORDINATOR, TRANSFER, MPI_COMM_WORLD, &messageStatus);
+                    info = MPIHelper::constructStoredInfo(std::string(buffer.data()));
+                    sendMatrix(info);
                 break;
 
                 case DETACH:

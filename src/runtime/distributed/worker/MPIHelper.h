@@ -16,7 +16,7 @@
 #define COORDINATOR 0
 
 enum TypesOfMessages{
-    BROADCAST=0, DATASIZE, DATA, DATAACK, MLIRSIZE, MLIR, INPUTKEYS, OUTPUT, OUTPUTKEY,  DETACH, OBJECTIDENTIFIERSIZE, OBJECTIDENTIFIER
+    BROADCAST=0, DATASIZE, DATA, DATAACK, MLIRSIZE, TRANSFER, TRANSFERSIZE, MLIR, INPUTKEYS, COMPUTERESULT, OUTPUT, OUTPUTKEY,  DETACH
 };
 enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
@@ -121,13 +121,32 @@ public:
         sscanf(results.at(2).c_str(), "%zu", &info.numCols);
         return info;
     }
+    static std::vector<WorkerImpl::StoredInfo> constructStoredInfoVector(std::string input)
+    {
+        std::vector<WorkerImpl::StoredInfo> vecInfo;
+        std::stringstream s_stream(input);
+        std::vector<std::string> results;
+        while (s_stream.good())
+        {
+            std::string substr;
+            getline(s_stream, substr, ':');
+            vecInfo.push_back(constructStoredInfo(substr));
+        }
+        return vecInfo;
+    }
 
     static std::vector<char> getResults(int rank)
     {
         size_t resultsLen = 0;
         std::vector<char> buffer;
         getMessageFrom(rank, OUTPUT, MPI_UNSIGNED_CHAR, buffer, &resultsLen);
-        // std::cout<<"got results from "<<*rank<<std::endl;        
+        return buffer;
+    }
+    static std::vector<char> getComputeResults(int rank)
+    {
+        size_t resultsLen = 0;
+        std::vector<char> buffer;
+        getMessageFrom(rank, COMPUTERESULT, MPI_UNSIGNED_CHAR, buffer, &resultsLen);
         return buffer;
     }
 
@@ -140,16 +159,7 @@ public:
         StoredInfo info = constructStoredInfo(incomeAck);        
         return info;
     }
-    static void sendObjectIdentifier(std::string identifier, int rank)
-    {
-        int len = identifier.length();
-        len++;
-        MPI_Send(&len, 1, MPI_INT, rank, OBJECTIDENTIFIERSIZE, MPI_COMM_WORLD);
-        char message[len];
-        std::strcpy(message, identifier.c_str());
-        message[len - 1] = '\0';
-        MPI_Send(message, len, MPI_CHAR, rank, OBJECTIDENTIFIER, MPI_COMM_WORLD);
-    }
+
     static void sendData(size_t messageLength, void *data)
     {
         int worldSize = getCommSize();
@@ -187,6 +197,17 @@ public:
             allValues += res->getRowSkip();
         }
         // std::cout<<dataToDisplay<<std::endl;
+    }
+
+    static void requestData(const int& rank, const StoredInfo& info)
+    {
+        int len = info.toString().length();
+        len++;
+        MPI_Send(&len, 1, MPI_INT, rank, TRANSFERSIZE, MPI_COMM_WORLD);
+        char message[len];
+        std::strcpy(message, info.toString().c_str());
+        message[len - 1] = '\0';
+        MPI_Send(message, len, MPI_CHAR, rank, TRANSFER, MPI_COMM_WORLD);
     }
 
 
