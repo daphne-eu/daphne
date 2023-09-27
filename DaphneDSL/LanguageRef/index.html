@@ -1983,9 +1983,11 @@ Note that the <a href="/daphne/DaphneDSL/Builtins">built-in function</a> <code>r
 <p>Script arguments are named <em>literals</em> that can be passed to a DaphneDSL script.
 They are referenced by a dollar sign <code>$</code> followed by the argument's name.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="o">$</span><span class="n">x</span>
+<p><code>bin/daphne my_script.daphne a=12 b=-2 c=false d=true e=2.0 f=-1.1 g=\"string\" h="\"white spaces\""</code></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nf">print</span><span class="p">(</span><span class="o">$</span><span class="n">g</span><span class="p">);</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">myVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">$</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="n">b</span><span class="p">;</span>
 </code></pre></div>
-<p>Note that matrix literals are not supported as script arguments yet.</p>
+<p>Note that matrix literals are not supported as script arguments yet. Check out <a href="/daphne/RunningDaphneLocally">Running DAPHNE Locally</a> for more information.</p>
 <h3 id="complex-expressions">Complex Expressions</h3>
 <p>DaphneDSL offers several ways to build more complex expressions.</p>
 <h4 id="operators">Operators</h4>

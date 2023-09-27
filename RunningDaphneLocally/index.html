@@ -1358,7 +1358,7 @@ These can the accessed as <code>$key</code> in the DaphneDSL script.</p>
 </code></pre></div>
 <p><em>This example executes a simplified variant of the k-means clustering algorithm on random data with 1000 rows and 20 features using 5 centroids and a fixed number of 10 iterations.</em></p>
 <p><code>value</code> must be a valid DaphneDSL literal, e.g., <code>key=123</code> (signed 64-bit integer), <code>key=-12.3</code> (double-precision floating-point), or <code>key="hello"</code> (string).
-Note that the quotation marks <code>"</code> are part of the string literal, so they must be escaped on a terminal, e.g., by <code>key=\"hello\"</code>.</p>
+Note that the quotation marks <code>"</code> are part of the string literal, so they must be escaped on a terminal, e.g., by <code>key=\"hello\"</code>. If there are whitespaces in the string, it is necessary to surround the literal with additional quotation marks, like <code>key="\"hello world\""</code></p>
 <h2 id="command-line-arguments">Command-Line Arguments</h2>
 <p>The behavior of <code>daphne</code> can be influenced by numerous command-line arguments (the <code>options</code> mentioned above).
 To see the full list of available options, invoke <code>bin/daphne --help</code>.</p>
