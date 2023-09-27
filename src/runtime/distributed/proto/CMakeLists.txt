@@ -22,6 +22,8 @@ set(PROTO_FILES
         )
 
 add_library(Proto SHARED ${PROTO_FILES})
+set_target_properties(Proto PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+
 target_link_libraries(Proto
         PUBLIC
         protobuf::libprotobuf
