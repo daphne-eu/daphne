@@ -22,15 +22,15 @@ using namespace mlir;
 namespace
 {
     Operation * getCmpWOBitmap(Operation * op) {
-        if (mlir::dyn_cast<mlir::daphne::CastOp>(op)) {
+        if (llvm::dyn_cast<mlir::daphne::CastOp>(op)) {
             if (op->getOperand(0).getType().isa<mlir::daphne::FrameType>() && op->getResult(0).getType().isa<mlir::daphne::ColumnType>()) {
                 auto frameOp = op->getOperand(0).getDefiningOp();
-                if (mlir::dyn_cast<mlir::daphne::CreateFrameOp>(frameOp)) {
+                if (llvm::dyn_cast<mlir::daphne::CreateFrameOp>(frameOp)) {
                     // We only check one of the operands because we know that the other ones should also be columns
                     auto bitmapOp = frameOp->getOperand(0).getDefiningOp();
-                    if (mlir::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(bitmapOp)) {
+                    if (llvm::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(bitmapOp)) {
                         auto castOp2 = bitmapOp->getOperand(0).getDefiningOp();
-                        if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
+                        if (llvm::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
                             if (castOp2->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
                                 return castOp2->getOperand(0).getDefiningOp();
                             }
@@ -38,7 +38,7 @@ namespace
                     }
                 }
             }
-        } else if (mlir::dyn_cast<mlir::daphne::ColumnIntersectOp>(op)) {
+        } else if (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(op)) {
             return op;
         }
         return nullptr;
@@ -102,7 +102,7 @@ namespace
                 op->getResult(0).replaceAllUsesWith(intersect->getResult(0));
                 // To keep compatibility with the rest of the pipeline we need to convert the result of the intersect op back to a position list if we convert it to a matrix
                 for (mlir::Operation * followOp : intersect->getResult(0).getUsers()) {
-                    if (mlir::dyn_cast<mlir::daphne::CastOp>(followOp) && followOp->getResult(0).getType().isa<mlir::daphne::MatrixType>()) {
+                    if (llvm::dyn_cast<mlir::daphne::CastOp>(followOp) && followOp->getResult(0).getType().isa<mlir::daphne::MatrixType>()) {
                         rewriter.setInsertionPointAfter(followOp);
                         auto numRows = rewriter.create<mlir::daphne::ColumnNumRowsOp>(followOp->getLoc(), rewriter.getIndexType(), intersect->getOperand(1).getDefiningOp()->getOperand(0));
                         auto users = followOp->getResult(0).getUsers();
@@ -161,13 +161,13 @@ void ReduceColumnarOpPass::runOnOperation() {
 
     target.addDynamicallyLegalOp<mlir::daphne::ColumnProjectOp>([&](Operation *op) {
         Operation * castOp = op->getOperand(1).getDefiningOp();
-        if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp)) {
+        if (llvm::dyn_cast<mlir::daphne::CastOp>(castOp)) {
             auto bitmapOp = castOp->getOperand(0).getDefiningOp();
-            if (mlir::dyn_cast<mlir::daphne::BitmapPositionListConverterOp>(bitmapOp)) {
+            if (llvm::dyn_cast<mlir::daphne::BitmapPositionListConverterOp>(bitmapOp)) {
                 auto posOp = bitmapOp->getOperand(0).getDefiningOp();
-                if (mlir::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(posOp)) {
+                if (llvm::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(posOp)) {
                     auto castOp2 = posOp->getOperand(0).getDefiningOp();
-                    if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
+                    if (llvm::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
                         if (castOp2->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
                             return false;
                         }
