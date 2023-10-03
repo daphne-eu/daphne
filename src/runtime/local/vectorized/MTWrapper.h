@@ -33,6 +33,8 @@
 #include <queue>
 #include <set>
 
+#include <hwloc.h>
+
 //TODO use the wrapper to cache threads
 //TODO generalize for arbitrary inputs (not just binary)
 
@@ -47,7 +49,6 @@ protected:
     std::vector<int> topologyPhysicalIds;
     std::vector<int> topologyUniqueThreads;
     std::vector<int> topologyResponsibleThreads;
-    std::string _cpuinfoPath = "/proc/cpuinfo";
     size_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
@@ -83,47 +84,17 @@ protected:
         return false;
     }
 
-    // FIXME: This method is not working on ARM - see GitHub issue [DAPHNE-#554]
     void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
-        std::ifstream cpuinfoFile(_cpuinfoPath);
-        std::vector<int> utilizedThreads;
-        std::vector<int> core_ids;
-        int index = 0;
-        if( cpuinfoFile.is_open() ) {
-            std::string line;
-            int value;
-            while ( std::getline(cpuinfoFile, line) ) {
-                if( _parseStringLine(line, "processor", &value ) ) {
-                    utilizedThreads.push_back(value);
-                } else if( _parseStringLine(line, "physical id", &value) ) {
-                    if ( _ctx->getUserConfig().queueSetupScheme == PERGROUP ) {
-                        if (std::find(physicalIds.begin(), physicalIds.end(), value) == physicalIds.end()) {
-                            responsibleThreads.push_back(utilizedThreads[index]);
-                        }
-                    }
-                    physicalIds.push_back(value);
-                } else if( _parseStringLine(line, "core id", &value) ) {
-                    int found = 0;
-                    for (int i=0; i<index; i++) {
-                        if (core_ids[i] == value && physicalIds[i] == physicalIds[index]) {
-                                found++;
-                        }
-                    }
-                    core_ids.push_back(value);
-                    if( _ctx->config.hyperthreadingEnabled || found == 0 ) {
-                        uniqueThreads.push_back(utilizedThreads[index]);
-                        if ( _ctx->getUserConfig().queueSetupScheme == PERCPU ) {
-                            responsibleThreads.push_back(value);
-                        } else if ( _ctx->getUserConfig().queueSetupScheme == CENTRALIZED ) {
-                            responsibleThreads.push_back(0);
-                        }
-                    }
-                    index++;
-                }
-            }
-            cpuinfoFile.close();
-        }
+	hwloc_topology_t topology;
+
+	hwloc_topology_init(&topology);
+	hwloc_topology_load(topology);
+
+	physicalIds.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PACKAGE));
+	uniqueThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE));
+	responsibleThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU));
     }
+
     void initCPPWorkers(std::vector<TaskQueue *> &qvector, uint32_t batchSize, const bool verbose = false,
             int numQueues = 0, int queueMode = 0, bool pinWorkers = false) {
         cpp_workers.resize(_numCPPThreads);
@@ -187,19 +158,9 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
-        // ToDo: this is a workaround until getTopology() is properly fixed via hwloc library calls (see issue [DAPHNE-#554])
-#ifdef __x86_64__
-        _ctx->logger->debug("Querying x86-64 cpu topology");
+        _ctx->logger->debug("Querying cpu topology");
         get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
-#else
-        _ctx->logger->debug("Querying arm cpu topology");
-        _numCPPThreads = std::thread::hardware_concurrency();
-        for (auto i = 0; i < static_cast<int>(_numCPPThreads); i++) {
-            topologyPhysicalIds.push_back(i);
-            topologyUniqueThreads.push_back(i);
-            topologyResponsibleThreads.push_back(i);
-        }
-#endif
+
         if(ctx->config.numberOfThreads > 0)
             _numCPPThreads = ctx->config.numberOfThreads;
         else

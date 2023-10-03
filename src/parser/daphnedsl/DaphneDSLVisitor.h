@@ -140,6 +140,8 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      */
     antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx);
 
+    std::shared_ptr<spdlog::logger> logger;
+
 public:
     DaphneDSLVisitor(
             mlir::ModuleOp & module,
@@ -150,6 +152,7 @@ public:
     ) : module(module), builder(builder), utils(builder), builtins(builder), args(std::move(args)) {
         scriptPaths.push(rootScriptPath);
         userConf = std::move(userConf_);
+        logger = spdlog::get("parser");
     };
     
     antlrcpp::Any visitScript(DaphneDSLGrammarParser::ScriptContext * ctx) override;

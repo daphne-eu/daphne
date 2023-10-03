@@ -32,7 +32,7 @@ import pandas as pd
 
 import json
 import os
-from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
+from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence, List
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -133,6 +133,14 @@ class Frame(OperationNode):
         :return: Scalar containing number of columns of frame
         """
         return Scalar(self.daphne_context, 'ncol',[self])
+
+    def ncell(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'ncell', [self])
+    
+    def order(self, colIdxs: List[int], ascs: List[bool], returnIndexes: bool) -> 'Frame':
+        if len(colIdxs) != len(ascs):
+            raise RuntimeError("order: the lists given for parameters colIdxs and ascs must have the same length")
+        return Frame(self.daphne_context, 'order', [self, *colIdxs, *ascs, returnIndexes])
 
     def write(self, file: str) -> 'OperationNode':
         return OperationNode(self.daphne_context, 'writeFrame', [self,'\"'+file+'\"'], output_type=OutputType.NONE)

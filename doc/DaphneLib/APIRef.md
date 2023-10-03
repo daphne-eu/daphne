@@ -18,7 +18,7 @@ limitations under the License.
 
 This document is a hand-crafted reference of the DaphneLib API.
 A general introduction to [DaphneLib (DAPHNE's Python API)](/doc/DaphneLib/Overview.md) can be found in a separate document.
-DaphneLib will offer numerous methods for *obtaining DAPHNE matrices and frames* as well as for *building complex computations* based on them.
+DaphneLib offers numerous methods for *obtaining DAPHNE matrices and frames* as well as for *building complex computations* based on them.
 Ultimately, DaphneLib will support all [DaphneDSL built-in functions](/doc/DaphneDSL/Builtins.md) on matrices and frames.
 Futhermore, **we also plan to create a library of higher-level primitives** allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.
 
@@ -27,7 +27,7 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 
 ## Obtaining DAPHNE Matrices and Frames
 
-### `DaphneContext`
+### `DaphneContext` API Reference
 
 **Importing data from other Python libraries:**
 
@@ -39,6 +39,9 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 - **`fill`**`(arg, rows:int, cols:int) -> Matrix`
 - **`seq`**`(start, end, inc) -> Matrix`
 - **`rand`**`(rows: int, cols: int, min: Union[float, int] = None, max: Union[float, int] = None, sparsity: Union[float, int] = 0, seed: Union[float, int] = 0) -> Matrix`
+- **`createFrame`**`(columns: List[Matrix], labels: List[str] = None) -> 'Frame'`
+- **`diagMatrix`**`(self, arg: Matrix) -> 'Matrix'`
+- **`sample`**`(range, size, withReplacement: bool, seed = -1) -> 'Matrix'`
 
 **Reading files using DAPHNE's readers:**
 
@@ -52,23 +55,61 @@ In the following, we describe only the latter.
 
 ### `Matrix` API Reference
 
-**Data Generation:**
-
-- **`diagMatrix`**`()`
-
 **Matrix dimensions:**
 
 - **`ncol`**`()`
 - **`nrow`**`()`
+- **`ncell`**`()`
 
 **Elementwise unary:**
 
+- **`abs`**`()`
+- **`sign`**`()`
+- **`exp`**`()`
+- **`ln`**`()` *(not supported yet, see #614)*
 - **`sqrt`**`()`
+- **`round`**`()`
+- **`floor`**`()`
+- **`ceil`**`()`
+- **`sin`**`()` *(not supported yet, see #614)*
+- **`cos`**`()` *(not supported yet, see #614)*
+- **`tan`**`()` *(not supported yet, see #614)*
+- **`sinh`**`()` *(not supported yet, see #614)*
+- **`cosh`**`()` *(not supported yet, see #614)*
+- **`tanh`**`()` *(not supported yet, see #614)*
+- **`asin`**`()` *(not supported yet, see #614)*
+- **`acos`**`()` *(not supported yet, see #614)*
+- **`atan`**`()` *(not supported yet, see #614)*
 
 **Elementwise binary:**
 
+- **`pow`**`(other: 'Matrix')`
+- **`log`**`(other: 'Matrix')`
+- **`mod`**`(other: 'Matrix')`
 - **`max`**`(other: 'Matrix')`
 - **`min`**`(other: 'Matrix')`
+
+**Outer binary:**
+
+- **`outerAdd`**`(other: 'Matrix')`
+- **`outerSub`**`(other: 'Matrix')`
+- **`outerMul`**`(other: 'Matrix')`
+- **`outerDiv`**`(other: 'Matrix')`
+- **`outerPow`**`(other: 'Matrix')`
+- **`outerLog`**`(other: 'Matrix')`
+- **`outerMod`**`(other: 'Matrix')`
+- **`outerMin`**`(other: 'Matrix')`
+- **`outerMax`**`(other: 'Matrix')`
+- **`outerAnd`**`(other: 'Matrix')`
+- **`outerOr`**`(other: 'Matrix')`
+- **`outerXor`**`(other: 'Matrix')` *(not supported yet)*
+- **`outerConcat`**`(other: 'Matrix')` *(not supported yet)*
+- **`outerEq`**`(other: 'Matrix')`
+- **`outerNeq`**`(other: 'Matrix')`
+- **`outerLt`**`(other: 'Matrix')`
+- **`outerLe`**`(other: 'Matrix')`
+- **`outerGt`**`(other: 'Matrix')`
+- **`outerGe`**`(other: 'Matrix')`
 
 **Aggregation:**
 
@@ -76,14 +117,33 @@ In the following, we describe only the latter.
 - **`aggMin`**`(axis: int = None)`
 - **`aggMax`**`(axis: int = None)`
 - **`mean`**`(axis: int = None)`
+- **`var`**`(axis: int = None)`
 - **`stddev`**`(axis: int = None)`
+- **`idxMin`**`(axis: int)`
+- **`idxMax`**`(axis: int)`
+
+**Cumulative aggregation**
+
+- **`cumSum`**`()`
+- **`cumProd`**`()`
+- **`cumMin`**`()`
+- **`cumMax`**`()`
 
 **Reorganization:**
 
 - **`t`**`()`
+- **`reshape`**`(numRows: int, numCols: int)`
+- **`cbind`**`(other: Matrix)`
+- **`rbind`**`(other: Matrix)`
+- **`reverse`**`()`
+- **`lowerTri`**`(diag: bool, values: bool)`
+- **`upperTri`**`(diag: bool, values: bool)`
+- **`replace`**`(pattern, replacement)`
+- **`order`**`(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)`
 
 **Other matrix operations:**
 
+- **`diagVector`**`()`
 - **`solve`**`(other: 'Matrix')`
 
 **Input/output:**
@@ -97,11 +157,13 @@ In the following, we describe only the latter.
 
 - **`nrow`**`()`
 - **`ncol`**`()`
+- **`ncell`**`()`
 
 **Reorganization:**
 
 - **`cbind`**`(other)`
 - **`rbind`**`(other)`
+- **`order`**`(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)`
 
 **Extended relational algebra:**
 
@@ -114,9 +176,33 @@ In the following, we describe only the latter.
 
 ### `Scalar` API Reference
 
-**Unary operations:**
+**Elementwise unary:**
 
+- **`abs`**`()`
+- **`sign`**`()`
+- **`exp`**`()`
+- **`ln`**`()` *(not supported yet, see #614)*
 - **`sqrt`**`()`
+- **`round`**`()`
+- **`floor`**`()`
+- **`ceil`**`()`
+- **`sin`**`()` *(not supported yet, see #614)*
+- **`cos`**`()` *(not supported yet, see #614)*
+- **`tan`**`()` *(not supported yet, see #614)*
+- **`sinh`**`()` *(not supported yet, see #614)*
+- **`cosh`**`()` *(not supported yet, see #614)*
+- **`tanh`**`()` *(not supported yet, see #614)*
+- **`asin`**`()` *(not supported yet, see #614)*
+- **`acos`**`()` *(not supported yet, see #614)*
+- **`atan`**`()` *(not supported yet, see #614)*
+
+**Elementwise binary:**
+
+- **`pow`**`(other)`
+- **`log`**`(other)`
+- **`mod`**`(other)`
+- **`min`**`(other)`
+- **`max`**`(other)`
 
 **Input/output:**
 

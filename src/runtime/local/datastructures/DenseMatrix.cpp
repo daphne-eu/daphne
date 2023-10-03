@@ -75,18 +75,16 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
         alloc_shared_values(src->values, offset());
         bufferSize = numRows*rowSkip*sizeof(ValueType);
     }
-    
-    // FIXME: This clones the meta data to avoid locking (thread synchronization for data copy)
-    for(int i = 0; i < static_cast<int>(ALLOCATION_TYPE::NUM_ALLOC_TYPES); i++) {
-        auto placements = src->mdo->getDataPlacementByType(static_cast<ALLOCATION_TYPE>(i));
-        for(auto it = placements->begin(); it != placements->end(); it++) {
-            auto src_alloc = it->get()->allocation.get();
-            auto src_range = it->get()->range.get();
-            auto new_data_placement = this->mdo->addDataPlacement(src_alloc, src_range);
-            if(src->mdo->isLatestVersion(it->get()->dp_id))
-                this->mdo->addLatest(new_data_placement->dp_id);
-        }
-    }
+    this->clone_mdo(src);
+}
+
+template<typename ValueType>
+DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, const DenseMatrix<ValueType> *src) :
+        Matrix<ValueType>(numRows, numCols), is_view(false), rowSkip(numCols),
+        bufferSize(numRows*numCols*sizeof(ValueType)), lastAppendedRowIdx(0), lastAppendedColIdx(0) {
+    if(src->values)
+        values = src->values;
+    this->clone_mdo(src);
 }
 
 template<typename ValueType>

@@ -188,11 +188,15 @@ namespace {
         std::multimap<std::string, func::FuncOp> specializedVersions;
         std::set<func::FuncOp> visited;
         std::set<func::FuncOp> called;
+        std::set<func::FuncOp> templateFunctions;
 
         const DaphneUserConfig& userConfig;
+        std::shared_ptr<spdlog::logger> logger;
 
     public:
-        explicit SpecializeGenericFunctionsPass(const DaphneUserConfig& cfg) : userConfig(cfg) {}
+        explicit SpecializeGenericFunctionsPass(const DaphneUserConfig& cfg) : userConfig(cfg) {
+            logger = spdlog::get("compiler");
+        }
 
     private:
         /**
@@ -295,6 +299,13 @@ namespace {
                     getSpecializedFuncArgTypes(calledFunction.getFunctionType(), operandTypes);
                 specializedFunc = createSpecializedFunction(calledFunction, specializedTypes, operands);
             }
+            if(logger->should_log(spdlog::level::debug)) {
+                std::string s;
+                llvm::raw_string_ostream stream(s);
+                calledFunction->getLoc().print(stream);
+                logger->debug("calledFunction\n\tname: {}\n\tlocation: {}", calledFunction.getSymName().str(), s);
+            }
+            templateFunctions.insert(calledFunction);
             return specializedFunc;
         }
 
@@ -313,7 +324,7 @@ namespace {
                 bool hasConstantInput = llvm::any_of(
                         callOp.getOperands(),
                         [&](Value v) {
-                            return CompilerUtils::constantOfAnyType != nullptr;
+                            return CompilerUtils::constantOfAnyType(v) != nullptr;
                         }
                 );
                 if(isFunctionTemplate(calledFunction) || hasConstantInput) {
@@ -408,7 +419,7 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
         entryFunctions.push_back(entry.second);
     }
     for(const auto &function : entryFunctions) {
-        if(isFunctionTemplate(function) || visited.count(function))
+        if(isFunctionTemplate(function) || visited.count(function) || templateFunctions.count(function))
             continue;
         if(!inferTypesInFunction(function)) {
             return signalPassFailure();
@@ -422,7 +433,7 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
             continue;
         // Remove a function that was present before creating specializations,
         // if it is never called.
-        if(!called.count(f.second))
+        if(!called.count(f.second) || templateFunctions.count(f.second))
             f.second.erase();
     }
 }

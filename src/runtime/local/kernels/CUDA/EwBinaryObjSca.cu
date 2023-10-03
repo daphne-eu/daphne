@@ -53,6 +53,12 @@ namespace CUDA {
             gridSize = (N + blockSize - 1) / blockSize;
             ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
+        else if (opCode == BinaryOpCode::MUL) {
+            ProductOp<VT> op;
+            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));
+            gridSize = (N + blockSize - 1) / blockSize;
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
+        }
         else if (opCode == BinaryOpCode::DIV) {
             DivOp<VT> op;
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));

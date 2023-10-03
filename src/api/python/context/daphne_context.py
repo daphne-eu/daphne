@@ -31,13 +31,12 @@ from api.python.operator.nodes.cond import Cond
 from api.python.operator.nodes.while_loop import WhileLoop
 from api.python.operator.nodes.do_while_loop import DoWhileLoop
 from api.python.operator.nodes.multi_return import MultiReturn
-from api.python.utils.consts import VALID_CUMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
-from api.python.operator.nodes.matrix import Matrix
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_CUMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd
 
-from typing import Union, Callable, Tuple, Optional, Iterable
+from typing import Sequence, Dict, Union, List, Callable, Tuple, Optional, Iterable
 
 class DaphneContext(object):
     _functions: dict
@@ -117,6 +116,21 @@ class DaphneContext(object):
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
         return Matrix(self, 'fill', [], named_input_nodes=named_input_nodes)
     
+    def createFrame(self, columns: List[Matrix], labels:List[str] = None) -> 'Frame':
+        if labels is None:
+            labels = []
+        if len(labels) != 0 and len(columns) != len(labels):
+            raise RuntimeError(
+                "createFrame: specifying labels is optional, but if labels are given, "
+                "then their number must match that of the given columns"
+            )
+        
+        # If a label is a Python string, then wrap it into quotation marks, such that
+        # is becomes a string literal in DaphneDSL.
+        labels = list(map(lambda l: f'"{l}"' if isinstance(l, str) else l, labels))
+
+        return Frame(self, 'createFrame', [*columns, *labels])
+    
     def seq(self, start, end, inc) -> Matrix:
         named_input_nodes = {'start':start, 'end':end, 'inc':inc}
         return Matrix(self, 'seq', [], named_input_nodes=named_input_nodes)
@@ -147,6 +161,12 @@ class DaphneContext(object):
             'rows': rows, 'cols': cols, 'min': min, 'max':max, 'sparsity':sparsity, 'seed':seed}
 
         return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
+    
+    def sample(self, range, size, withReplacement: bool, seed = -1) -> 'Matrix':
+        return Matrix(self, 'sample', [range, size, withReplacement, seed])
+
+    def diagMatrix(self, arg: Matrix) -> 'Matrix':
+        return Matrix(self, 'diagMatrix', [arg])
 
     def for_loop(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], callback: Callable, start: int, end: int, step: Optional[int] = None) -> Tuple[VALID_CUMPUTED_TYPES]:
         """

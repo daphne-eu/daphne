@@ -1,0 +1,6 @@
+# Test reading from a file when the file path is not trivially constant (i.e., a parameter to a UDF)
+def readFrameFromCSV(path: str) {
+    print(readFrame(path));
+}
+
+readFrameFromCSV("test/api/cli/io/ReadCsv1.csv");

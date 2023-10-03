@@ -60,9 +60,12 @@ private:
     };
     int callCounter = 0;
     grpc::CompletionQueue cq_;
+    DistributedContext *ctx;
 
 public:
-    DistributedGRPCCaller() {};
+    DistributedGRPCCaller(DCTX(dctx)) {
+        ctx = DistributedContext::get(dctx);
+    };
     ~DistributedGRPCCaller() {};
     
     /**
@@ -73,7 +76,7 @@ public:
     * @param  arg Argument passed to the asynchronous call
     */
     void asyncStoreCall(
-        const std::shared_ptr<grpc::Channel> &channel,
+        const std::string &workerAddr,
         const StoredInfo &storedInfo,
         const Argument &arg
         )
@@ -81,20 +84,11 @@ public:
         AsyncClientCall *call = new AsyncClientCall;
         call->storedInfo = storedInfo;
 
-        auto stub = distributed::Worker::NewStub(channel);
+        auto stub = ctx->stubs[workerAddr].get();
         auto response_reader = stub->AsyncStore(&call->context_, arg, &cq_);
         
         response_reader->Finish(&call->result, &call->status, (void*)call);
         callCounter++;
-    }
-    void asyncStoreCall(
-        const std::string &workerAddr,
-        const StoredInfo &storedInfo,
-        const distributed::Data &arg
-        )
-    {
-        auto channel = GetOrCreateChannel(workerAddr);
-        asyncStoreCall(channel, storedInfo, arg);
     }
     /**
     * @brief Enqueues an asynchronous Compute call to be executed.     
@@ -104,7 +98,7 @@ public:
     * @param  arg Argument passed to the asynchronous call
     */
     void asyncComputeCall(
-        const std::shared_ptr<grpc::Channel> &channel,
+        const std::string &workerAddr,
         const StoredInfo &storedInfo,
         const Argument &arg
         )
@@ -112,20 +106,11 @@ public:
         AsyncClientCall *call = new AsyncClientCall;
         call->storedInfo = storedInfo;
 
-        auto stub = distributed::Worker::NewStub(channel);
+        auto stub = ctx->stubs[workerAddr].get();
         auto response_reader = stub->AsyncCompute(&call->context_, arg, &cq_);
         
         response_reader->Finish(&call->result, &call->status, (void*)call);
         callCounter++;
-    }
-    void asyncComputeCall(
-        const std::string &workerAddr,
-        const StoredInfo &storedInfo,
-        const Argument &arg
-        )
-    {
-        auto channel = GetOrCreateChannel(workerAddr);
-        asyncComputeCall(channel, storedInfo, arg);
     }
     /**
     * @brief Enqueues an asynchronous Transfer call to be executed.     
@@ -135,7 +120,7 @@ public:
     * @param  arg Argument passed to the asynchronous call
     */
     void asyncTransferCall(
-        const std::shared_ptr<grpc::Channel> &channel,
+        const std::string &workerAddr,
         const StoredInfo &storedInfo,
         const Argument &arg
         )
@@ -143,22 +128,12 @@ public:
         AsyncClientCall *call = new AsyncClientCall;
         call->storedInfo = storedInfo;
 
-        auto stub = distributed::Worker::NewStub(channel);
+        auto stub = ctx->stubs[workerAddr].get();
         auto response_reader = stub->AsyncTransfer(&call->context_, arg, &cq_);
         
         response_reader->Finish(&call->result, &call->status, (void*)call);
         callCounter++;
     }
-    void asyncTransferCall(
-        const std::string &workerAddr,
-        const StoredInfo &storedInfo,
-        const Argument &arg
-        )
-    {
-        auto channel = GetOrCreateChannel(workerAddr);
-        asyncTransferCall(channel, storedInfo, arg);
-    }
-    
     /**
     * @brief Enqueues an asynchronous FreeMem call to be executed.     
     * 
@@ -167,7 +142,7 @@ public:
     * @param  arg Argument passed to the asynchronous call
     */
     void asyncFreeMemCall(
-        const std::shared_ptr<grpc::Channel> &channel,
+        const std::string &workerAddr,
         const StoredInfo &storedInfo,
         const Argument &arg
         )
@@ -175,20 +150,11 @@ public:
         AsyncClientCall *call = new AsyncClientCall;
         call->storedInfo = storedInfo;
 
-        auto stub = distributed::Worker::NewStub(channel);
+        auto stub = ctx->stubs[workerAddr].get();
         auto response_reader = stub->AsyncFreeMem(&call->context_, arg, &cq_);
         
         response_reader->Finish(&call->result, &call->status, (void*)call);
         callCounter++;
-    }
-    void asyncFreeMemCall(
-        const std::string &workerAddr,
-        const StoredInfo &storedInfo,
-        const Argument &arg
-        )
-    {
-        auto channel = GetOrCreateChannel(workerAddr);
-        asyncFreeMemCall(channels, storedInfo, arg);
     }
     /**
     * @brief    Get the next available result from the queue of asynchronous calls
@@ -217,27 +183,6 @@ public:
     bool isQueueEmpty() {
         return (callCounter == 0);
     };
-
-    /**
-    * @brief Get or Create a new channel for an address
-    * 
-    * @param workerAddr The address to get the channel for
-    */
-    std::shared_ptr<grpc::Channel> GetOrCreateChannel(const std::string &workerAddr) {
-        if (channels.count(workerAddr))
-            return channels.at(workerAddr);
-        else { 
-            // Create and store channel
-            grpc::ChannelArguments ch_args;
-            ch_args.SetMaxSendMessageSize(-1);
-            ch_args.SetMaxReceiveMessageSize(-1);
-            auto channel = grpc::CreateCustomChannel(workerAddr, grpc::InsecureChannelCredentials(), ch_args);
-            channels.insert({workerAddr, channel});
-            return channel;
-        }
-    };
-
-    
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCALLER_H

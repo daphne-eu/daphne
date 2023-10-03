@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
+#pragma once
 
 enum class BinaryOpCode {
     // Arithmetic.
@@ -41,8 +40,7 @@ enum class BinaryOpCode {
     // Logical.
     AND,
     OR,
-
-    ISSYM,
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
+static std::string_view binary_op_codes[] = {"ADD", "SUB", "MUL", "DIV", "POW", "MOD", "LOG", "EQ", "NEQ", "LT", "LE",
+        "GT", "GE", "MIN", "MAX", "AND", "OR"};

@@ -91,6 +91,13 @@ class Scalar(OperationNode):
     def __rfloordiv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
         return Scalar(self.daphne_context, '//', [other, self])
 
+    def __pow__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        # "**" in Python, "^" in DaphneDSL.
+        return Scalar(self.daphne_context, '^', [other, self])
+
+    def __mod__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar(self.daphne_context, '%', [other, self])
+
     def __lt__(self, other) -> 'Scalar':
         return Scalar(self.daphne_context, '<', [self, other])
 
@@ -127,8 +134,71 @@ class Scalar(OperationNode):
     def __rne__(self, other) -> 'Scalar':
         return Scalar(self.daphne_context, '!=', [other, self])
     
+    def abs(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'abs', [self])
+    
+    def sign(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'sign', [self])
+    
+    def exp(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'exp', [self])
+    
+    def ln(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'ln', [self])
+    
     def sqrt(self) -> 'Scalar':
         return Scalar(self.daphne_context,'sqrt',[self])
+    
+    def round(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'round', [self])
+    
+    def floor(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'floor', [self])
+    
+    def ceil(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'ceil', [self])
+    
+    def sin(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'sin', [self])
+    
+    def cos(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'cos', [self])
+    
+    def tan(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'tan', [self])
+    
+    def sinh(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'sinh', [self])
+    
+    def cosh(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'cosh', [self])
+    
+    def tanh(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'tanh', [self])
+    
+    def asin(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'asin', [self])
+    
+    def acos(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'acos', [self])
+    
+    def atan(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'atan', [self])
+    
+    def pow(self, other) -> 'Scalar':
+        return Scalar(self.daphne_context, 'pow', [self, other])
+    
+    def log(self, other) -> 'Scalar':
+        return Scalar(self.daphne_context, 'log', [self, other])
+    
+    def mod(self, other) -> 'Scalar':
+        return Scalar(self.daphne_context, 'mod', [self, other])
+    
+    def min(self, other) -> 'Scalar':
+        return Scalar(self.daphne_context, 'min', [self, other])
+    
+    def max(self, other) -> 'Scalar':
+        return Scalar(self.daphne_context, 'max', [self, other])
     
     def print(self):
         return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)
