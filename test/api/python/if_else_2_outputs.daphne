@@ -1,0 +1,10 @@
+X = fill($param, 5, 5);
+Y = 25; // equivalent to sum of fill(1.0, 5, 5);
+if (sum(X) < 10) {
+    X = X - 1;
+    Y = Y + 1;
+} else {
+    X = X + 1;
+    Y = Y + 1;
+}
+print(X+Y);

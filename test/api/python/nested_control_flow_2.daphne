@@ -1,0 +1,11 @@
+X = fill($param, 5, 5);
+
+for (i in 1:10) {
+    if (sum(X) < 10) {
+        X = X - 1;
+    } else {
+        X = X + 1;
+    }
+}
+
+print(X);

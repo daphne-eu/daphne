@@ -1,0 +1,18 @@
+def increment(x) {
+    return x + 2;
+}
+
+def decrement(x) {
+    return x - 1;
+}
+
+def add(x, y) {
+    return x + y;
+}
+
+X = fill(3.8, 5, 5);
+X1 = increment(X);
+X2 = decrement(X1);
+X3 = add(X, X2);
+
+print(X3);

@@ -1,0 +1,11 @@
+def use_while_loop(x) {
+    while (sum(x) > 0.0) {
+        x = x - 1;
+    }
+    return x;
+}
+
+X = fill(3.8, 5, 5);
+new_X = use_while_loop(X);
+
+print(new_X);

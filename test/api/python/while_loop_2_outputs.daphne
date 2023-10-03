@@ -1,0 +1,13 @@
+X = fill(3.8, 5, 5);
+Y = 25;
+
+while (sum(X) > 0) {
+    X = X - 1;
+    Y = Y + 1;
+}
+
+if ($param == 0) {
+    print(X);
+} else {
+    print(Y);
+}
