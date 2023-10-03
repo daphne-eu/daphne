@@ -242,8 +242,10 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes, const Structur
 
                 distributed::ComputeResult computeResult;
                 grpc::ClientContext grpc_ctx;
-                stub->Compute(&grpc_ctx, task, &computeResult);
+                auto status = stub->Compute(&grpc_ctx, task, &computeResult);
                 
+                if (!status.ok())
+                    throw std::runtime_error("Distributed error: " + status.error_message());
                 for (int o = 0; o < computeResult.outputs_size(); o++){            
                     auto resMat = *res[o];
                     auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(addr);
