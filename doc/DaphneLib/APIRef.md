@@ -18,7 +18,7 @@ limitations under the License.
 
 This document is a hand-crafted reference of the DaphneLib API.
 A general introduction to [DaphneLib (DAPHNE's Python API)](/doc/DaphneLib/Overview.md) can be found in a separate document.
-DaphneLib offers numerous methods for *obtaining DAPHNE matrices and frames* as well as for *building complex computations* based on them.
+DaphneLib offers numerous methods for *obtaining DAPHNE matrices and frames* as well as for *building complex computations* based on them, including complex control flow with if-then-else, loops, and user-defined functions.
 Ultimately, DaphneLib will support all [DaphneDSL built-in functions](/doc/DaphneDSL/Builtins.md) on matrices and frames.
 Futhermore, **we also plan to create a library of higher-level primitives** allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.
 
@@ -208,76 +208,59 @@ In the following, we describe only the latter.
 
 - **`print`**`()`
 
+### `DaphneContext` API Reference
+
+**Logical operators**
+
+Logical *and* (`&&`) and *or* (`||`) operators can be used for the conditions for while-loops and do-while-loops as well as for the predicates for if-then-else statements.
+*Note that these logical operators may be provided in another way than via the `DaphneContext` in the future.*
+
+- **`logical_and`**`(left_operand: Scalar, right_operand: Scalar) -> Scalar`
+- **`logical_or`**`(left_operand: Scalar, right_operand: Scalar) -> Scalar`
 
 ## Building Complex Control Structures
-Complex control structures like `if-then-else`, `for-loops`, `while-loops` and `do-while-loops` can be built using DAPHNE context methods. These can be used to manipulate matrices only (DAPHNE matrix) and are lazy evaluated. Futhermore, user-defined functions can created to build more complex code snippets which can then be again lazy evaluated. The user-defined functions can manipulate all DAPHNE data objects (matrix/frame/scalar).
 
-The following references assume that the required DAPHNE context object is initialized as:
-```python
-dctx = DaphneContext()
-```
-\* `VALID_CUMPUTED_TYPES=Union['Matrix', 'Frame', 'Scalar']`
+Complex control structures like if-then-else, for-loops, while-loops and do-while-loops can be built using methods of the `DaphneContext`.
+These control structures can be used to manipulate matrices, frames, and scalars, and are lazily evaluated. Futhermore, user-defined functions can be created to build reusable code which can then be again lazily evaluated.
+User-defined functions can manipulate matrices, frames, and scalars, too.
 
-### **if-then-else**
-**`dctx.cond(input_nodes, pred, true_fn, false_fn)`**
+### `DaphneContext` API Reference
 
-* input_nodes: Iterable[VALID_CUMPUTED_TYPES]
-* pred: Callable  *(0 arguments, 1 return value)*
-* true_fn: Callable  *(n arguments, n return values, n=[1, ...])*
-* false_fn: Callable  *(n arguments, n return values, n=[1, ...])*
-* returns: Tuple[VALID_CUMPUTED_TYPES]  *(length n)*
+**If-then-else**
 
-### **for-loops**
-**`dctx.for_loop(input_nodes, callback, start, end, step)`**
+- **`cond`**`(input_nodes, pred, then_fn, else_fn)`
+    * input_nodes: Iterable[VALID_COMPUTED_TYPES]
+    * pred: Callable *(0 arguments, 1 return value)*
+    * then_fn: Callable *(n arguments, n return values, n=[1, ...])*
+    * else_fn: Callable *(n arguments, n return values, n=[1, ...])*
+    * returns: Tuple[VALID_COMPUTED_TYPES] *(length n)*
 
-* input_nodes: Iterable[VALID_CUMPUTED_TYPES]
-* callback: Callable  *(n+1 arguments, n return values, n=[1, ...])*
-* start: int
-* end: int
-* step: Union[int, None]
-* returns: Tuple[VALID_CUMPUTED_TYPES]  *(length n)*
+**Loops**
 
-\* *callback* expects as last argument the interation variable and this is suppose to be used as a scalar.
+- **`for_loop`**`(input_nodes, callback, start, end, step)`
+    * input_nodes: Iterable[VALID_COMPUTED_TYPES]
+    * callback: Callable  *(n+1 arguments, n return values, n=[1, ...]; the last argument is the iteration variable)*
+    * start: int
+    * end: int
+    * step: Union[int, None]
+    * returns: Tuple[VALID_COMPUTED_TYPES]  *(length n)*
+- **`while_loop`**`(input_nodes, cond, callback)`
+    * input_nodes: Iterable[VALID_COMPUTED_TYPES]
+    * cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
+    * callback: Callable  *(n arguments, n return values)*
+    * returns: Tuple[VALID_COMPUTED_TYPES]  *(length n)*
+- **`do_while_loop`**`(input_nodes, cond, callback)`
+    * input_nodes: Iterable[VALID_COMPUTED_TYPES]
+    * cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
+    * callback: Callable  *(n arguments, n return values)*
+    * returns: Tuple[VALID_COMPUTED_TYPES]  *(length n)*
 
-### **while-loops**
-**`dctx.while_loop(input_nodes, cond, callback)`**
+**User-defined functions**
 
-* input_nodes: Iterable[VALID_CUMPUTED_TYPES]
-* cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
-* callback: Callable  *(n arguments, n return values)*
-* returns: Tuple[VALID_CUMPUTED_TYPES]  *(length n)*
-
-### **do-while-loops**
-**`dctx.d0_while_loop(input_nodes, cond, callback)`**
-
-* input_nodes: Iterable[VALID_CUMPUTED_TYPES]
-* cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
-* callback: Callable  *(n arguments, n return values)*
-* returns: Tuple[VALID_CUMPUTED_TYPES]  *(length n)*
-
-### **user-defined functions**
-**`@dctx.function`** <-> **`dctx.function(callback)`**
-
-* callback: Callable
-    - This function requires adding typing hints in case the arguments are suppossed 
-    to be handled as `Scalar` or `Frame`, all arguments without hints are handled as
-    `Matrix` objects. Hinting `Matrix` is optional. Wrong or missing typing hints can 
-    trigger errors before and during computing (lazy evaluation).
-* returns: Tuple[VALID_CUMPUTED_TYPE]  *(length equals the return values of callback)*
-
-\* if the decorator is used the *callback* is defined right below it like regular Python method
-
-### logical operators
-Logical *and* (`&&`) and *or* (`||`) operators can be used for the conditions for `while-loops` and `do-while-loops` as well as for the predicates for `if-then-else` statements.
-
-**`dctx.logical_and(left_operand, right_operand)`**
-
-* left_operand: 'Scalar'
-* right_operand: 'Scalar'
-* returns: 'Scalar'
-
-**`dctx.logical_or(left_operand, right_operand)`**
-
-* left_operand: 'Scalar'
-* right_operand: 'Scalar'
-* returns: 'Scalar'
+- **`@function`**, **`function`**`(callback)`
+    * callback: Callable
+        - This function requires adding typing hints in case the arguments are supposed to be handled as `Scalar` or `Frame`, all arguments without hints are handled as `Matrix` objects.
+          Hinting `Matrix` is optional.
+          Wrong or missing typing hints can trigger errors before and during computing (lazy evaluation).
+    * returns: Tuple[VALID_COMPUTED_TYPES]  *(length equals the return values of callback)*
+    * if the decorator `@function` is used the *callback* is defined right below it like regular Python method

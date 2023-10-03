@@ -73,7 +73,8 @@ MAKE_TEST_CASE("matrix_reorg")
 MAKE_TEST_CASE("matrix_other")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
-// Test for DaphneLib complex control flow and lazy evaluated functions
+
+// Tests for DaphneLib complex control flow.
 MAKE_TEST_CASE_PARAMETRIZED("if_else_simple", "param=3.8")
 MAKE_TEST_CASE_PARAMETRIZED("if_else_simple", "param=0.1")
 MAKE_TEST_CASE_PARAMETRIZED("if_only_simple", "param=3.8")
@@ -90,9 +91,9 @@ MAKE_TEST_CASE_PARAMETRIZED("for_loop_use_iterable", "param=1")
 MAKE_TEST_CASE_PARAMETRIZED("for_loop_use_iterable", "param=10")
 MAKE_TEST_CASE_PARAMETRIZED("for_loop_2_outputs", "param=0")
 MAKE_TEST_CASE_PARAMETRIZED("for_loop_2_outputs", "param=1")
-// skipping the next test for now as it is not supported by Daphne
+// skipping the next test for now as it is not supported by Daphne yet
 // (manipulating frame read from a file inside loop)
-//MAKE_TEST_CASE("for_loop_with_frame")
+// MAKE_TEST_CASE("for_loop_with_frame")
 MAKE_TEST_CASE("while_loop_simple")
 MAKE_TEST_CASE("while_loop_complex_cond")
 MAKE_TEST_CASE_PARAMETRIZED("while_loop_2_outputs", "param=0")
@@ -114,10 +115,9 @@ MAKE_TEST_CASE("user_def_func_multiple_functions")
 MAKE_TEST_CASE("user_def_func_multiple_calls")
 MAKE_TEST_CASE("user_def_func_with_scalar")
 MAKE_TEST_CASE("user_def_func_3_inputs")
-// skipping the next test for now as it is not supported by Daphne
-// (manupulating variables in a nested block inside a function)
+// skipping the next test for now as it is not supported by Daphne yet
+// (manipulating variables in a nested block inside a function)
 // MAKE_TEST_CASE_PARAMETRIZED("user_def_func_with_condition", "param=0.1")
 // MAKE_TEST_CASE_PARAMETRIZED("user_def_func_with_condition", "param=3.8")
 // MAKE_TEST_CASE("user_def_func_with_for_loop")
 // MAKE_TEST_CASE("user_def_func_with_while_loop")
-

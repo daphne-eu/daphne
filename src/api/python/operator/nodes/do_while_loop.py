@@ -51,7 +51,7 @@ class DoWhileLoop(OperationNode):
         :param unnamed_input_nodes: operation nodes that are up for manipulation
         """
         self.nested_level = 0  # default value
-        # cast the iterable to list for consistensy and to avoid addiotnal coping
+        # cast the iterable to list for consistency and to avoid addiotnal copying
         _unnamed_input_nodes = list(unnamed_input_nodes)
         # analyze if the passed functions fulfill the requirements
         if analyzer.get_number_argument(cond) != analyzer.get_number_argument(callback):
@@ -65,8 +65,8 @@ class DoWhileLoop(OperationNode):
         # get the variables in outer scope to the according functions
         outer_vars_cond = analyzer.get_outer_scope_variables(cond)
         outer_vars_callback = analyzer.get_outer_scope_variables(callback)
-        # append the outer scope variables to inout nodes so these
-        # can be defined upfront by the Deep-First-Search pass
+        # append the outer scope variables to input nodes so these
+        # can be defined upfront by the depth-first-search pass
         for node in outer_vars_cond.values():
             if node:
                 _unnamed_input_nodes.update(node)
@@ -74,7 +74,7 @@ class DoWhileLoop(OperationNode):
             if node:
                 _unnamed_input_nodes.append(node)
 
-        # ToDo: decide if here is the best place for this piece of code: maybe just after the fist analysis
+        # TODO: decide if here is the best place for this piece of code: maybe just after the first analysis
         # initiate the output operation nodes
         self._outputs = list()
         for node in unnamed_input_nodes:
@@ -113,7 +113,7 @@ class DoWhileLoop(OperationNode):
         callback_outputs = self.callback()
         if not isinstance(callback_outputs, tuple):
             callback_outputs = (callback_outputs, )
-        # ToDo: check why here is used sef.nested_level without +1
+        # TODO: check why here is used sef.nested_level without +1
         callback_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level)
         callback_names = callback_script.build_code(callback_outputs)
         callback_body = callback_script.daphnedsl_script

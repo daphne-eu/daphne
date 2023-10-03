@@ -1,5 +1,5 @@
 X = fill(3.8, 5, 5);
-Y = 25; // equivalent to sum of fill(1.0, 5, 5);
+Y = 25;
 
 while (sum(X) > 0) {
     X = X - 1;

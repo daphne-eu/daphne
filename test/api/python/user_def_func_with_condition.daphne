@@ -8,6 +8,6 @@ def use_condition(x) {
 }
 
 X = fill($param, 5, 5);
-new_X = use_for_loop(X);
+new_X = use_condition(X);
 
 print(new_X);

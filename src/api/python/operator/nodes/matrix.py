@@ -109,7 +109,7 @@ class Matrix(OperationNode):
         return Matrix(self.daphne_context, '+', [self, other])
 
     def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
-        return Matrix(self.daphne_context,' - ', [self, other])
+        return Matrix(self.daphne_context, '-', [self, other])
 
     def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '*', [self, other])

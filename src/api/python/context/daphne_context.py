@@ -31,7 +31,7 @@ from api.python.operator.nodes.cond import Cond
 from api.python.operator.nodes.while_loop import WhileLoop
 from api.python.operator.nodes.do_while_loop import DoWhileLoop
 from api.python.operator.nodes.multi_return import MultiReturn
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_CUMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd
@@ -168,7 +168,7 @@ class DaphneContext(object):
     def diagMatrix(self, arg: Matrix) -> 'Matrix':
         return Matrix(self, 'diagMatrix', [arg])
 
-    def for_loop(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], callback: Callable, start: int, end: int, step: Optional[int] = None) -> Tuple[VALID_CUMPUTED_TYPES]:
+    def for_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], callback: Callable, start: int, end: int, step: Optional[int] = None) -> Tuple[VALID_COMPUTED_TYPES]:
         """
         Generates a for-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -187,20 +187,20 @@ class DaphneContext(object):
         }
         return tuple(ForLoop(self, callback, input_nodes, named_input_nodes))
 
-    def cond(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], pred: Callable, true_fn: Callable, false_fn: Callable = None) -> Tuple[VALID_CUMPUTED_TYPES]:
+    def cond(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], pred: Callable, then_fn: Callable, else_fn: Callable = None) -> Tuple[VALID_COMPUTED_TYPES]:
         """
-        Generates a if-else statement block for lazy evaluation.
+        Generates an if-then-else statement block for lazy evaluation.
         The generated block/operation cannot be directly computed
         but any of the outputs can.
         :param input_nodes: matrices for manipulation
         :param pred: the predicate (0 arguments, 1 return value)
-        :param true_fn: callable to be performed if pred evaluates to true (n arguments, n return values, n=[1, ...])
-        :param false_fn: callable to be performed if pred evaluates to false (n arguments, n return values)
+        :param then_fn: callable to be performed if pred evaluates to true (n arguments, n return values, n=[1, ...])
+        :param else_fn: callable to be performed if pred evaluates to false (n arguments, n return values)
         :return: manipulated matrices (length n)
         """
-        return tuple(Cond(self, pred, true_fn, false_fn, input_nodes))
+        return tuple(Cond(self, pred, then_fn, else_fn, input_nodes))
     
-    def while_loop(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[VALID_CUMPUTED_TYPES]:
+    def while_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[VALID_COMPUTED_TYPES]:
         """
         Generates a while-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -212,7 +212,7 @@ class DaphneContext(object):
         """
         return tuple(WhileLoop(self, cond, callback, input_nodes))
     
-    def do_while_loop(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[VALID_CUMPUTED_TYPES]:
+    def do_while_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[VALID_COMPUTED_TYPES]:
         """
         Generates a do-while-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -244,7 +244,7 @@ class DaphneContext(object):
     
     def function(self, callback: Callable):
         """
-        Generated user-defined function for lazy evaluation. 
+        Generates a user-defined function for lazy evaluation. 
         The generated function cannot be directly computed
         but any of the outputs can by using indexing.
 

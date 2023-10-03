@@ -116,9 +116,6 @@ class DaphneDSLScript:
         if dag_node.named_input_nodes:
             for name, input_node in dag_node.named_input_nodes.items():
                 named_input_vars[name] = self._dfs_dag_nodes(input_node)
-                # if isinstance(input_node, DAGNode) and input_node._output_type == OutputType.LIST:
-                #     dag_node.daphnedsl_name = named_input_vars[name] + name
-                #     return dag_node.daphnedsl_name
                 
         # Check if the node gets a name after multi-returns.
         # If it has, return that name.

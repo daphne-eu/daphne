@@ -1,5 +1,5 @@
 X = fill(3.8, 5, 5);
-Y = 25; // equvalent to sum of fill(1.0, 5, 5);
+Y = 25;
 
 for (i in 0:10) {
     X = X + 1;

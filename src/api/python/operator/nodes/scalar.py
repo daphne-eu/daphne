@@ -67,11 +67,11 @@ class Scalar(OperationNode):
         return Scalar(self.daphne_context, '+', [other, self])
 
     def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, ' - ', [self, other])
+        return Scalar(self.daphne_context, '-', [self, other])
 
     # Left hand side
     def __rsub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, ' - ', [other, self])
+        return Scalar(self.daphne_context, '-', [other, self])
 
     def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
         return Scalar( self.daphne_context,'*', [self, other])

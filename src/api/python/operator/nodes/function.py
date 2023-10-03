@@ -21,7 +21,7 @@
 #
 # -------------------------------------------------------------
 
-__all__ = ["Matrix"]
+__all__ = ["Function"]
 
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.matrix import Matrix
@@ -58,7 +58,6 @@ class Function(OperationNode):
         self._output = list()
         print(unnamed_input_nodes)
         for node in unnamed_input_nodes:
-            #print(node)
             new_matrix_node = Matrix(self, None, [node], copy=True)
             new_matrix_node._source_node = self
             self._output.append(new_matrix_node)
@@ -87,7 +86,7 @@ class Function(OperationNode):
         callback_outputs = self.callback()
         if not isinstance(callback_outputs, tuple):
             callback_outputs = (callback_outputs, )
-        # ToDo: check why here is used sef.nested_level without +1
+        # TODO: check why here is used sef.nested_level without +1
         callback_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level)
         callback_names = callback_script.build_code(callback_outputs)
         callback_body = callback_script.daphnedsl_script

@@ -53,9 +53,9 @@ class ForLoop(OperationNode):
         :param named_input_nodes:
         """
         self.nested_level = 0  # default value
-        # cast to dict to ensure it is a dict and to avoid additional coping
+        # cast to dict to ensure it is a dict and to avoid additional copying
         _named_input_nodes = dict(named_input_nodes)
-        # cast the iterable to list for consistensy and to avoid addiotnal coping
+        # cast the iterable to list for consistency and to avoid addiotnal copying
         _unnamed_input_nodes = list(unnamed_input_nodes)
         # analyze if the passed functions fulfill the requirements
         if analyzer.get_number_argument(callback) != (len(unnamed_input_nodes) + 1):
@@ -68,13 +68,13 @@ class ForLoop(OperationNode):
         self.callback = lambda: callback(*unnamed_input_nodes, _named_input_nodes['iter'])
         # get the variables in outer scope to the callback function
         outer_vars = analyzer.get_outer_scope_variables(callback)
-        # append the outer scope variables to inout nodes so these
-        # can be defined upfront by the Deep-First-Search pass
+        # append the outer scope variables to input nodes so these
+        # can be defined upfront by the depth-first-search pass
         for node in outer_vars.values():
             if node:
                 _unnamed_input_nodes.append(node)
 
-        # ToDo: decide if here is the best place for this piece of code: maybe just after the fist analysis
+        # TODO: decide if here is the best place for this piece of code: maybe just after the first analysis
         # initiate the output operation nodes
         self._outputs = list()
         for node in unnamed_input_nodes:
@@ -121,11 +121,7 @@ class ForLoop(OperationNode):
         
         body = script.daphnedsl_script
         for i, name in enumerate(names):
-            if isinstance(callback_outputs[i], Frame):
-                body += f'writeFrame({name},"src/api/python/tmp/{name}.csv");\n'
-                body += f'{unnamed_input_vars[i]}=readFrame("src/api/python/tmp/{name}.csv");\n'
-            else:
-                body += f"{unnamed_input_vars[i]}={name};\n"
+            body += f"{unnamed_input_vars[i]}={name};\n"
 
         # pack all code lines in the while-loop structure
         multiline_str = str()

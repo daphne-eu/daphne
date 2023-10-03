@@ -32,9 +32,9 @@ if TYPE_CHECKING:
 
 VALID_INPUT_TYPES = Union['DAGNode', str, int, float, bool]
 # These are the operator symbols used in DaphneDSL (not in Python).
-BINARY_OPERATIONS = ['+', ' - ', '/', '*', '^', '%', '<', '<=', '>', '>=', '==', '!=', '@', '&&', '||']
+BINARY_OPERATIONS = ['+', '-', '/', '*', '^', '%', '<', '<=', '>', '>=', '==', '!=', '@', '&&', '||']
 VALID_ARITHMETIC_TYPES = Union['DAGNode', int, float]
-VALID_CUMPUTED_TYPES = Union['Matrix', 'Frame', 'Scalar']
+VALID_COMPUTED_TYPES = Union['Matrix', 'Frame', 'Scalar']
 
 PYTHON_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 

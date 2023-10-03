@@ -323,7 +323,7 @@ void compareDaphneToDaphneLib(const std::string & pythonScriptFilePath, const st
     std::stringstream outDaphneLib;
     std::stringstream errDaphneLib;
     int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
-    int statusDaphne = runDaphne(outDaphne, errDaphne,  daphneDSLScriptFilePath.c_str(), args...);
+    int statusDaphne = runDaphne(outDaphne, errDaphne, daphneDSLScriptFilePath.c_str(), args...);
     
     // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
     // checks of out and err still run and provide useful messages. For err,
