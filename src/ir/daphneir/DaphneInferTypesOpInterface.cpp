@@ -18,6 +18,8 @@
 #include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
 
+#include <mlir/Dialect/SCF/IR/SCF.h>
+
 #include <spdlog/spdlog.h>
 
 #include <string>
@@ -465,6 +467,14 @@ std::vector<Type> daphne::tryInferType(Operation* op) {
         // has exactly one result (which is the case for most DaphneIR ops).
         return {resTy};
     }
+    else if (llvm::dyn_cast<scf::WhileOp>(op)) {
+        // resolve whileOp's region arguments that might have been set to unknown
+        // and are not updated anymore during type inference
+        op->getRegion(0).getArgument(1).setType(op->getOperand(1).getType());
+        op->getRegion(0).getArgument(2).setType(op->getOperand(2).getType());
+        op->getRegion(1).getArgument(1).setType(op->getOperand(2).getType());
+        return {op->getOperand(0).getType(), op->getOperand(2).getType()};
+    }
     else {
         // If the operation does not implement the type inference interface
         // and has zero or more than one results, we return unknowns.
@@ -499,14 +509,12 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
         );
     // Set the inferred types on all results of this operation.
     for(size_t i = 0; i < numRes; i++) {
-        if (types[i].isa<daphne::UnknownType>() && !partialInferenceAllowed)
+        if (types[i].isa<daphne::UnknownType>() && !partialInferenceAllowed) {
             // TODO As soon as the run-time can handle unknown
             // data/value types, we do not need to throw here anymore.
-            throw std::runtime_error(
-                    "type inference returned an unknown result type "
-                    "for some op, but partial inference is not allowed "
-                    "at this point: " + op->getName().getStringRef().str()
-        );
+            throw std::runtime_error("type inference returned an unknown result type for some op, but partial inference"
+                    " is not allowed at this point: " + op->getName().getStringRef().str());
+        }
         op->getResult(i).setType(types[i]);
     }
 }
