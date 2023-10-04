@@ -40,9 +40,8 @@ using namespace mlir::OpTrait;
 // ****************************************************************************
 
 Type getFrameColumnTypeByLabel(daphne::FrameType ft, Value labelVal) {
-    std::string labelStr = CompilerUtils::constantOrThrow<std::string>(
-            labelVal, "the specified label must be a constant of string type"
-    );
+    auto labelStr = CompilerUtils::constantOrThrow<std::string>(labelVal,
+            "the specified label must be a constant of string type");
 
     std::vector<std::string> * labels = ft.getLabels();
     if(labels) {
@@ -200,8 +199,8 @@ std::vector<Type> daphne::EigenOp::inferTypes() {
 }
 
 std::vector<Type> daphne::GroupJoinOp::inferTypes() {
-    daphne::FrameType lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
-    daphne::FrameType rhsFt = getRhs().getType().dyn_cast<daphne::FrameType>();
+    auto lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
+    auto rhsFt = getRhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, getLhsOn());
     Type rhsAggType = getFrameColumnTypeByLabel(rhsFt, getRhsAgg());
 
@@ -214,7 +213,7 @@ std::vector<Type> daphne::GroupJoinOp::inferTypes() {
 }
 
 std::vector<Type> daphne::SemiJoinOp::inferTypes() {
-    daphne::FrameType lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
+    auto lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, getLhsOn());
 
     MLIRContext * ctx = getContext();
@@ -229,7 +228,7 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
 
-    daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+    auto arg = getFrame().getType().dyn_cast<daphne::FrameType>();
 
     std::vector<Type> newColumnTypes;
     std::vector<Value> aggColValues;
@@ -240,11 +239,11 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
         newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
     }
 
-    // Values get collected in a easier to use Datastructure
+    // Values get collected in an easier to use data structure
     for(Value t : getAggCol()){
         aggColValues.push_back(t);
     }
-    // Function names get collected in a easier to use Datastructure
+    // Function names get collected in an easier to use data structure
     for(Attribute t: getAggFuncs()){
         GroupEnum aggFuncValue = t.dyn_cast<GroupEnumAttr>().getValue();
         aggFuncNames.push_back(stringifyGroupEnum(aggFuncValue).str());
@@ -302,7 +301,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
 
     auto p = CompilerUtils::isConstant<std::string>(getFileName());
     Builder builder(getContext());
-    if (auto resType = getRes().getType().dyn_cast<daphne::MatrixType>()) {
+    if (getRes().getType().dyn_cast<daphne::MatrixType>()) {
         // If an individual value type was specified per column
         // (fmd.isSingleValueType == false), then this silently uses the
         // type of the first column.
@@ -316,7 +315,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
             return {mlir::daphne::MatrixType::get(getContext(), daphne::UnknownType::get(getContext()))};
         }
     }
-    else if (auto resType = getRes().getType().dyn_cast<daphne::FrameType>()) {
+    else if (getRes().getType().dyn_cast<daphne::FrameType>()) {
         if (p.first) {
             FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
             std::vector<mlir::Type> cts;
@@ -355,7 +354,9 @@ std::vector<Type> daphne::SliceColOp::inferTypes() {
             ssize_t upExPos = upEx.second;
             std::vector<Type> srcColTys = srcFrmTy.getColumnTypes();
             std::vector<Type> resColTys;
-            const ssize_t srcNumCols = srcColTys.size();
+
+            // ToDo: remove this when dealing with the next ToDo below (just getting rid of a linter warning here)
+            auto srcNumCols = static_cast<const ssize_t>(srcColTys.size());
 
             // TODO Don't duplicate these checks from shape inference.
             if(loInPos < 0 || loInPos >= srcNumCols)
