@@ -224,6 +224,10 @@ std::vector<Type> daphne::SemiJoinOp::inferTypes() {
     };
 }
 
+std::vector<Type> daphne::SeqOp::inferTypes() {
+    return {daphne::MatrixType::get(getContext(), getInc().getType())};
+}
+
 std::vector<Type> daphne::GroupOp::inferTypes() {
     MLIRContext * ctx = getContext();
     Builder builder(ctx);

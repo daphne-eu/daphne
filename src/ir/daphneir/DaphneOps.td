@@ -125,6 +125,7 @@ def Daphne_SampleOp : Daphne_Op<"sample", [
 
 def Daphne_SeqOp : Daphne_Op<"seq", [
     DataTypeMat, ValueTypeFromArgs,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
     OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>,
     CompletelyDense,
     CastArgsToResType
