@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_CONFIG_JSONPARAMS_H
-#define SRC_PARSER_CONFIG_JSONPARAMS_H
+#pragma once
 
 #include <string>
 #include <unordered_map>
@@ -53,7 +52,8 @@ struct DaphneConfigJsonParams {
     inline static const std::string LIBRARY_PATHS = "library_paths";
     inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
     inline static const std::string LOGGING = "logging";
-    
+    inline static const std::string SPARSITY_THRESHOLD = "sparsity_threshold";
+
     inline static const std::string JSON_PARAMS[] = {
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
@@ -81,8 +81,7 @@ struct DaphneConfigJsonParams {
             LIB_DIR,
             LIBRARY_PATHS,
             DAPHNEDSL_IMPORT_PATHS,
-            LOGGING
+            LOGGING,
+            SPARSITY_THRESHOLD
     };
 };
-
-#endif

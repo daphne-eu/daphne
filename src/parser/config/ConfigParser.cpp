@@ -122,6 +122,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 
         }
     }
+    if (keyExists(jf, DaphneConfigJsonParams::SPARSITY_THRESHOLD))
+        config.sparsity_threshold = jf.at(DaphneConfigJsonParams::SPARSITY_THRESHOLD).get<float>();
 }
 
 bool ConfigParser::keyExists(const nlohmann::json& j, const std::string& key) {
