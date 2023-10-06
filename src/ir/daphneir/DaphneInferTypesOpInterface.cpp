@@ -360,7 +360,7 @@ std::vector<Type> daphne::SliceColOp::inferTypes() {
             std::vector<Type> resColTys;
 
             // ToDo: remove this when dealing with the next ToDo below (just getting rid of a linter warning here)
-            auto srcNumCols = static_cast<const ssize_t>(srcColTys.size());
+            const auto srcNumCols = static_cast<ssize_t>(srcColTys.size());
 
             // TODO Don't duplicate these checks from shape inference.
             if(loInPos < 0 || loInPos >= srcNumCols)
