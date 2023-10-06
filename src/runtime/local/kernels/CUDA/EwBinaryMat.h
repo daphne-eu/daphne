@@ -20,7 +20,6 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 

@@ -72,6 +72,9 @@ double __device__ __forceinline__ MaxNeutralElement<double>::get() { return -CUD
 template<>
 int64_t __device__ __forceinline__ MaxNeutralElement<int64_t>::get() { return -0x7ff0000000000000LL; }
 
+template<>
+uint64_t __device__ __forceinline__ MaxNeutralElement<uint64_t>::get() { return 0; }
+
 /**
  * Functor op for assignment op. This is a dummy/identity op.
  */
@@ -221,6 +224,21 @@ struct MaxOp<int64_t> {
 
     __device__  __forceinline__ static int64_t init() {
         return MaxNeutralElement<int64_t>::get();
+    }
+};
+
+template<>
+struct MaxOp<uint64_t> {
+    __device__ __forceinline__ uint64_t operator()(uint64_t a, uint64_t b) const {
+        return max(a, b);
+    }
+
+    __device__  __forceinline__ static uint64_t exec(const uint64_t& a, volatile const uint64_t& b) {
+        return max(a, b);
+    }
+
+    __device__  __forceinline__ static uint64_t init() {
+        return MaxNeutralElement<uint64_t>::get();
     }
 };
 
