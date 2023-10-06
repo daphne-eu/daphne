@@ -268,10 +268,6 @@ namespace CUDA {
     void EwBinaryMat<CSRMatrix<VTres>, CSRMatrix<VTlhs>, CSRMatrix<VTrhs>>::apply(BinaryOpCode opCode,
             CSRMatrix<VTres> *&res, const CSRMatrix<VTlhs> *lhs, const CSRMatrix<VTrhs> *rhs, DCTX(dctx)) {
 
-        // only multiplication for now
-        if(opCode != BinaryOpCode::MUL)
-            throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
-
         if((lhs->getNumRows() != rhs->getNumRows() &&  rhs->getNumRows() != 1)
                 || (lhs->getNumCols() != rhs->getNumCols() && rhs->getNumCols() != 1 ))
             throw std::runtime_error("CUDA::EwBinaryMat(CSR) - lhs and rhs must have the same dimensions (or broadcast)");
@@ -312,10 +308,15 @@ namespace CUDA {
 //        }
 
     }
-    template struct EwBinaryMat<DenseMatrix<long>, DenseMatrix<long>, DenseMatrix<long>>;
+    template struct EwBinaryMat<DenseMatrix<int64_t>, DenseMatrix<int64_t>, DenseMatrix<int64_t>>;
+    template struct EwBinaryMat<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, DenseMatrix<uint64_t>>;
     template struct EwBinaryMat<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>;
     template struct EwBinaryMat<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>;
 
     template struct EwBinaryMat<CSRMatrix<double>, CSRMatrix<double>, DenseMatrix<double>>;
     template struct EwBinaryMat<CSRMatrix<float>, CSRMatrix<float>, DenseMatrix<float>>;
+//    template struct EwBinaryMat<CSRMatrix<int64_t>, CSRMatrix<int64_t>, DenseMatrix<int64_t>>;
+
+    template struct EwBinaryMat<CSRMatrix<double>, CSRMatrix<double>, CSRMatrix<double>>;
+    template struct EwBinaryMat<CSRMatrix<float>, CSRMatrix<float>, CSRMatrix<float>>;
 }
