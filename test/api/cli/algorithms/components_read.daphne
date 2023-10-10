@@ -3,45 +3,55 @@
 // Arguments:
 // - f ... filename of the adjacency matrix (provide as `--args f=\"foo.csv\"`)
 
-t0 = now();
+#verbose = true;
+
+#t0 = now();
 
 // Read adjacency matrix.
 G = readMatrix($f);
 
 // Initialization.
-// TODO Don't forget to set this back to something high (e.g. 1000) later.
-maxi = 5;
-c = seq(1.0, as.f64(nrow(G)), 1.0); // init w/ vertex IDs
+maxi = 1000;
+c = seq(1, nrow(G), 1l); // init w/ vertex IDs
+//c = seq(1, nrow(G), 1.0); // init w/ vertex IDs
 diff = inf;
 iter = 1;
 
-t1 = now();
+#t1 = now();
 
 // Iterative computation of connected components (decisive part).
 while(as.si64(diff > 0.0) && iter <= maxi) {
-    ti0 = now();
+#    ti0 = now();
 
     u = max(aggMax(G * t(c), 0), c);
     diff = sum(u != c);
     c = u;
 
-    ti1 = now();
-    print("iteration ", 0, 1);
-    print(iter, 0, 1);
-    print(" took [ns]: ", 0, 1);
-    print(ti1 - ti0, 1, 1);
+ #   ti1 = now();
+
+#    if( verbose ) {
+#        print("iteration ", 0, 1);
+#        print(iter, 0, 1);
+#        print(" took [ns]: ", 0, 1);
+#        print(ti1 - ti0, 1, 1);
+
+#        print("Connected components: iter = ",0,0); print(iter+", #diff = "+diff);
+#    }
+
 
     iter = iter + 1;
 }
 
-t2 = now();
+#t2 = now();
 
 // Print elapsed times in nano seconds.
-print("\nInitialization [ns]: ", 0, 1); print(t1 - t0, 1, 1); // initialization
-print("Core algorithm [ns]: ", 0, 1); print(t2 - t1, 1, 1); // core algorithm
-print("");
-// Note that, for distributed execution, (t2 - t1) includes reading the input
-// files due to some reordering done by the compiler.
+#if( verbose ) {
+#    print("\nInitialization [ns]: ", 0, 1); print(t1 - t0, 1, 1); // initialization
+#    print("Core algorithm [ns]: ", 0, 1); print(t2 - t1, 1, 1); // core algorithm
+#    print("");
+#    // Note that, for distributed execution, (t2 - t1) includes reading the input
+#    // files due to some reordering done by the compiler.
+#}
 
 // Result output.
 print(c);
