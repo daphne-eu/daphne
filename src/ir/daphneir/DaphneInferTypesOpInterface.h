@@ -14,9 +14,9 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_IR_DAPHNEIR_DAPHNEINFERTYPESOPINTERFACE_H
-#define SRC_IR_DAPHNEIR_DAPHNEINFERTYPESOPINTERFACE_H
+#pragma once
 
+#include <spdlog/spdlog.h>
 #include <vector>
 
 // ****************************************************************************
@@ -249,7 +249,7 @@ namespace mlir::daphne {
  * type of the i-th result of the given operation. A value of
  * `mlir::daphne::UnknownType` indicates that this type is not known (yet).
  */
-std::vector<mlir::Type> tryInferType(mlir::Operation* op);
+std::vector<mlir::Type> tryInferType(mlir::Operation* op, spdlog::logger* logger);
 
 /**
  * @brief Infers and sets the types of all results of the given operation.
@@ -258,7 +258,5 @@ std::vector<mlir::Type> tryInferType(mlir::Operation* op);
  * @param partialInferenceAllowed If `true`, unknown will be allowed as an
  * infered type; if `false`, infering unknown will throw an exception.
 */
-void setInferedTypes(mlir::Operation* op, bool partialInferenceAllowed = true);
+void setInferedTypes(mlir::Operation* op, bool partialInferenceAllowed = true, spdlog::logger* logger = nullptr);
 }
-
-#endif // SRC_IR_DAPHNEIR_DAPHNEINFERTYPESOPINTERFACE_H
