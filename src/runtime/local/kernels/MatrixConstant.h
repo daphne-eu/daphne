@@ -77,49 +77,4 @@ struct MatrixConstant<DenseMatrix<VT>> {
         memcpy(valuesRes, valuesOrig, numRows * numCols * sizeof(VT));
     }
 };
-
-// ----------------------------------------------------------------------------
-// CSRMatrix
-// ----------------------------------------------------------------------------
-
-template<typename VT>
-struct MatrixConstant<CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *& res, uint64_t matrixAddr, DCTX(ctx)) {
-        // We create a copy of the CSRMatrix backing the matrix literal.
-        // This is important since the matrix literal may be used inside a loop
-        // with multiple iterations or inside a function with multiple invocations.
-        // If we handed out the original CSRMatrix, it would be freed by DAPHNE's
-        // garbage collection by the end of the loop's/function's body.
-
-        // TODO Currently, the original CSRMatrix objects created by the parser
-        // are never freed, which is a memory leak. However, since matrix literals
-        // should be used only for tiny matrices, the problem is not significant.
-        // They will be freed automatically at the end of the DAPHNE process.
-        // However, in long-running distributed workers these matrix objects might
-        // pile up over time.
-
-        CSRMatrix<VT> * orig = reinterpret_cast<CSRMatrix<VT>*>(matrixAddr);
-        const size_t numRows = orig->getNumRows();
-        const size_t numCols = orig->getNumCols();
-        const size_t maxNumNonZeros = orig->getMaxNumNonZeros();
-
-        if(res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNumNonZeros, false);
-        
-        const VT * valuesOrig = orig->getValues();
-        VT * valuesRes = res->getValues();
-
-        memcpy(valuesRes, valuesOrig, maxNumNonZeros * sizeof(VT));
-
-        const size_t * colIdxsOrig = orig->getColIdxs();
-        size_t * colIdxsRes = res->getColIdxs();
-
-        memcpy(colIdxsRes, colIdxsOrig, maxNumNonZeros * sizeof(size_t));
-
-        const size_t * rowOffsetsOrig = orig->getRowOffsets();
-        size_t * rowOffsetsRes = res->getRowOffsets();
-
-        memcpy(rowOffsetsRes, rowOffsetsOrig, (numRows + 1) * sizeof(size_t));
-    }
-};
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MATRIXCONSTANT_H

@@ -19,10 +19,7 @@
 
 #include <map>
 
-#include <ir/daphneir/Daphne.h>
 #include <mlir/IR/BuiltinTypes.h>
-#include "mlir/IR/Operation.h"
-#include <mlir/IR/MLIRContext.h>
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -96,13 +93,13 @@ private:
      * @param outputs Reference to the vector that will hold the outputs of the invoked function
      * @return packed pointers to inputs and outputs
      */
-    std::vector<void *> createPackedInterfaceOutputs(mlir::FunctionType functionType,
+    std::vector<void *> createPackedCInterfaceInputsOutputs(mlir::FunctionType functionType,
+                                                            std::vector<WorkerImpl::StoredInfo> workInputs,
+                                                            std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
     
     Structure *readOrGetMatrix(const std::string &identifier, size_t numRows, size_t numCols, bool isSparse = false, bool isFloat = false, bool isScalar = false);
-    void *loadWorkInputData(mlir::Type mlirType, const StoredInfo& workInput);    
-    void mergeInputsToIR(mlir::func::FuncOp &distFunc, const std::vector<StoredInfo> &inputs, mlir::MLIRContext *ctx);
-    mlir::daphne::ConstantOp createConstantOp(mlir::OpBuilder &builder, mlir::Type type, void *input);
+    void *loadWorkInputData(mlir::Type mlirType, StoredInfo& workInput);    
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPL_H

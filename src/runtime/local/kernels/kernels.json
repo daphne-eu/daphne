@@ -1525,12 +1525,7 @@
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint8_t"]],
-            [["DenseMatrix", "bool"]],
-            [["CSRMatrix", "float"]],
-            [["CSRMatrix", "double"]],
-            [["CSRMatrix", "int64_t"]],
-            [["CSRMatrix", "uint64_t"]],
-            [["CSRMatrix", "uint8_t"]]
+            [["DenseMatrix", "bool"]]
         ]
     },
     {

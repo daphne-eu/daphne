@@ -15,12 +15,14 @@
  */
 
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/IR/MLIRContext.h>
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/IR/AsmState.h>
 #include <mlir/Parser/Parser.h>
 #include <llvm/Support/SourceMgr.h>
 
+#include <ir/daphneir/Daphne.h>
 
 #include "WorkerImpl.h"
 
@@ -31,7 +33,6 @@
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
-#include <compiler/utils/CompilerUtils.h>
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
@@ -90,6 +91,13 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     }
     auto distFuncTy = distFunc.getFunctionType();
 
+    std::vector<void *> inputsObj;
+    std::vector<void *> outputsObj;
+    auto packedInputsOutputs = createPackedCInterfaceInputsOutputs(distFuncTy,
+        inputs,
+        outputsObj,
+        inputsObj);
+    
     // Increase the reference counters of all inputs to the `dist` function.
     // (But only consider data objects, not scalars.)
     // This is necessary to avoid them from being destroyed within the
@@ -97,17 +105,11 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     // local function calls, where we also increase the inputs' reference
     // counters before the call, for the same reason. See ManageObjsRefsPass
     // for details.
-    for(size_t i = 0; i < inputs.size(); i++)
-        if(CompilerUtils::isObjType(distFuncTy.getInput(i)))
-            reinterpret_cast<Structure*>(loadWorkInputData(distFuncTy.getInput(i), inputs[i]))->increaseRefCounter();
-
-    // We remove the arguments from dist func and insert operations in the IR.
-    mergeInputsToIR(distFunc, inputs, executor.getContext());
-    // Get Types again
-    distFuncTy = distFunc.getFunctionType();
-
-    std::vector<void *> outputsObj;
-    auto packedOutputs = createPackedInterfaceOutputs(distFuncTy, outputsObj);
+    for(size_t i = 0; i < inputsObj.size(); i++)
+        // TODO Use CompilerUtils::isObjType() once this branch has been rebased.
+        // if(CompilerUtils::isObjType(distFuncTy.getInput(i)))
+        if(distFuncTy.getInput(i).isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>())
+            reinterpret_cast<Structure*>(inputsObj[i])->increaseRefCounter();
 
     // Execution
     // TODO Before we run the passes, we should insert information on shape
@@ -130,7 +132,7 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
         return WorkerImpl::Status(false, std::string("Failed to create JIT-Execution engine"));
     }
     auto error = engine->invokePacked(DISTRIBUTED_FUNCTION_NAME,
-        llvm::MutableArrayRef<void *>{&packedOutputs[0], (size_t)0});
+        llvm::MutableArrayRef<void *>{&packedInputsOutputs[0], (size_t)0});
 
     if (error) {
         std::stringstream ss("JIT-Engine invocation failed.");
@@ -152,6 +154,19 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     return WorkerImpl::Status(true);
 }
 
+// distributed::WorkData::DataCase WorkerImpl::dataCaseForType(mlir::Type type)
+// {
+//     distributed::WorkData::DataCase dataCase;
+//     if (type.isa<mlir::daphne::MatrixType>()) {
+//         dataCase = distributed::WorkData::kStored;
+//     }
+//     else {
+//         // TODO: further types data cases
+//         assert(false && "TODO");
+//     }
+//     return dataCase;
+// }
+
 
 Structure * WorkerImpl::Transfer(StoredInfo info)
 {
@@ -160,51 +175,28 @@ Structure * WorkerImpl::Transfer(StoredInfo info)
 }
 
 
-mlir::daphne::ConstantOp WorkerImpl::createConstantOp(mlir::OpBuilder &builder, mlir::Type type, void *input)
+std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::FunctionType functionType,
+                                                                    std::vector<WorkerImpl::StoredInfo> workInputs,
+                                                                    std::vector<void *> &outputs,
+                                                                    std::vector<void *> &inputs)
 {
-    if (type.isInteger(1))
-        return builder.create<mlir::daphne::ConstantOp>(builder.getUnknownLoc(), reinterpret_cast<bool*>(input));
-    else if (type.isInteger(64))
-        return builder.create<mlir::daphne::ConstantOp>(builder.getUnknownLoc(), type, builder.getI64IntegerAttr(*(reinterpret_cast<int64_t*>(&input))));
-    else if (type.isF64())
-        return builder.create<mlir::daphne::ConstantOp>(builder.getUnknownLoc(), type, builder.getF64FloatAttr(*(reinterpret_cast<double*>(&input))));
-    else {
-        spdlog::error("Unsupported constant type");
-        throw std::runtime_error("Unsupported constant type");
-    }
-}
-
-void WorkerImpl::mergeInputsToIR(mlir::func::FuncOp &distFunc, const std::vector<StoredInfo> &inputs, mlir::MLIRContext *ctx = nullptr)
-{
-    assert(ctx != nullptr && "ctx is null");
-    mlir::OpBuilder builder(ctx);
-
-    auto distFuncTy = distFunc.getFunctionType();
-
-    builder.setInsertionPointToStart(&distFunc.getBody().front());
-    for(size_t i = 0; i < inputs.size(); i++){
-        auto obj = this->loadWorkInputData(distFuncTy.getInput(i), inputs[i]);
-        mlir::Value constArg;
-        if(CompilerUtils::isObjType(distFuncTy.getInput(i))) {
-            constArg = builder.create<mlir::daphne::MatrixConstantOp>(builder.getUnknownLoc(), distFunc.getArgument(i).getType(),
-                        builder.create<mlir::daphne::ConstantOp>(builder.getUnknownLoc(), reinterpret_cast<uint64_t>(obj))
-                );
-        } else {
-            constArg = this->createConstantOp(builder, distFuncTy.getInput(i), obj);
-        }
-        distFunc.getArgument(i).replaceAllUsesWith(constArg);        
-    }
-    // erase args
-    distFunc.eraseArguments(llvm::BitVector(distFunc.getNumArguments(), true));
-}
-
-std::vector<void *> WorkerImpl::createPackedInterfaceOutputs(mlir::FunctionType functionType, std::vector<void *> &outputs)
-{
+    assert(static_cast<size_t>(functionType.getNumInputs()) == workInputs.size()
+        && "Number of inputs received have to match number of MLIR fragment inputs");
     std::vector<void *> inputsAndOutputs;
 
     // No realloc is allowed to happen, otherwise the pointers are invalid
+    inputs.reserve(workInputs.size());
     outputs.reserve(functionType.getNumResults());
 
+    for (const auto &typeAndWorkInput : llvm::zip(functionType.getInputs(), workInputs)) {
+        auto type = std::get<0>(typeAndWorkInput);
+        auto workInput = std::get<1>(typeAndWorkInput);
+
+        inputs.push_back(loadWorkInputData(type, workInput));
+        inputsAndOutputs.push_back(&inputs.back());
+    }
+
+//    for (const auto &type : functionType.getResults()) {
     for(auto i = 0ul; i < functionType.getResults().size(); ++i) {
         outputs.push_back(nullptr);
         inputsAndOutputs.push_back(&outputs.back());
@@ -212,7 +204,7 @@ std::vector<void *> WorkerImpl::createPackedInterfaceOutputs(mlir::FunctionType 
     return inputsAndOutputs;
 }
 
-void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, const StoredInfo &workInput)
+void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput)
 {    
     // TODO: all types
     bool isSparse = false;
