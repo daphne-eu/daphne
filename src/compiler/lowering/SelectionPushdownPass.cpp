@@ -5,6 +5,7 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/Support/Casting.h"
@@ -38,13 +39,32 @@ namespace
                 tempOp = comparison;
             } else {
                 auto newEwAndOp = rewriter.create<mlir::daphne::EwAndOp>(comparison->getLoc(), comparison->getResult(0).getType(), tempOp->getResult(0), comparison->getResult(0));
+                newEwAndOp->moveAfter(tempOp);
                 tempOp = newEwAndOp;
             }
         }
         auto newFilterRowOp = rewriter.create<mlir::daphne::FilterRowOp>(tempOp->getLoc(), joinData.getType(), joinData, tempOp->getResult(0));
+        newFilterRowOp->moveAfter(tempOp);
         join->replaceUsesOfWith(joinData, newFilterRowOp->getResult(0));
 
         return newFilterRowOp;
+    }
+
+    Operation * restructureComparisonsBeforeFilterRowOp(PatternRewriter &rewriter, std::vector<Operation *> comparisons, Operation * filterRowOp) {
+        Operation * tempOp = nullptr;
+        for (Operation * comparison : comparisons) {
+            //comparison->dropAllUses();
+            if (tempOp == nullptr) {
+                tempOp = comparison;
+            } else {
+                auto newEwAndOp = rewriter.create<mlir::daphne::EwAndOp>(comparison->getLoc(), comparison->getResult(0).getType(), tempOp->getResult(0), comparison->getResult(0));
+                newEwAndOp->moveAfter(tempOp);
+                tempOp = newEwAndOp;
+            }
+        }
+        filterRowOp->setOperand(1, tempOp->getResult(0));
+
+        return filterRowOp;
     }
 
     bool checkIfBitmapOp(Operation * op) {
@@ -74,16 +94,56 @@ namespace
         return nullptr;
     };
 
-    bool comparisonRhsSameFrame(Operation * comparison) {
+    bool comparisonPushdownPossible(Operation * comparison) {
         auto lhsExtract = getCompareFunctionExtractColOp(comparison, 0);
         auto rhsExtract = getCompareFunctionExtractColOp(comparison, 1);
         auto lhsExtractColumnName = getColumnName(lhsExtract->getOperand(1).getDefiningOp());
         auto rhsExtractColumnName = getColumnName(rhsExtract->getOperand(1).getDefiningOp());
+        auto sourceOp = lhsExtract->getOperand(0).getDefiningOp();
+        
         // We support the pushdown of a comparison between columns if they are on the same frame
-        if (lhsExtractColumnName.substr(0, lhsExtractColumnName.find(".")) == rhsExtractColumnName.substr(0, rhsExtractColumnName.find("."))) {
-            return true;
+        if (llvm::dyn_cast<mlir::daphne::InnerJoinOp>(sourceOp)) {
+            Operation * inputFrameOpLhs = sourceOp->getOperand(0).getDefiningOp();
+            Operation * inputFrameOpRhs = sourceOp->getOperand(1).getDefiningOp();
+            std::vector<std::string> * inputColumnNamesLhs = inputFrameOpLhs->getResult(0).getType().cast<mlir::daphne::FrameType>().getLabels();
+            std::vector<std::string> * inputColumnNamesRhs = inputFrameOpRhs->getResult(0).getType().cast<mlir::daphne::FrameType>().getLabels();
+            if ((std::find(inputColumnNamesLhs->begin(), inputColumnNamesLhs->end(), lhsExtractColumnName) != inputColumnNamesLhs->end() 
+                && (std::find(inputColumnNamesLhs->begin(), inputColumnNamesLhs->end(), rhsExtractColumnName) != inputColumnNamesLhs->end()))
+                || ((std::find(inputColumnNamesRhs->begin(), inputColumnNamesRhs->end(), lhsExtractColumnName) != inputColumnNamesRhs->end())
+                && ((std::find(inputColumnNamesRhs->begin(), inputColumnNamesRhs->end(), rhsExtractColumnName) != inputColumnNamesRhs->end())))) {
+                    return true;
+            }
+            return false;
         }
-        return false;
+        return true;
+    }
+
+    void pushdownComparison(PatternRewriter &rewriter, Operation * comparison, Operation * sourceOp){
+        comparison->moveAfter(sourceOp);
+        if (llvm::dyn_cast<mlir::daphne::CastOp>(comparison)) {
+            Operation * createFrameOp = comparison->getOperand(0).getDefiningOp();
+            Operation * bitmapOp = createFrameOp->getOperand(0).getDefiningOp();
+            createFrameOp->moveAfter(sourceOp);
+            bitmapOp->moveAfter(sourceOp);
+            comparison = comparison->getOperand(0).getDefiningOp()                   // CreateFrameOp
+                ->getOperand(0).getDefiningOp();                         // Possible BitmapOp
+        }
+        comparison->moveAfter(sourceOp);
+        Operation * lhs_cast = comparison->getOperand(0).getDefiningOp();
+        lhs_cast->moveAfter(sourceOp);
+        if (!llvm::dyn_cast<mlir::daphne::ConstantOp>(lhs_cast)) {
+            Operation * lhs_extract = lhs_cast->getOperand(0).getDefiningOp();
+            lhs_extract->moveAfter(sourceOp);
+        }
+        Operation * rhs_cast = comparison->getOperand(1).getDefiningOp();
+        rhs_cast->moveAfter(sourceOp);
+        if (!llvm::dyn_cast<mlir::daphne::ConstantOp>(rhs_cast)) {
+            Operation * rhs_extract = rhs_cast->getOperand(0).getDefiningOp();
+            rhs_extract->moveAfter(sourceOp);
+        }
+        
+        
+        
     }
 
     mlir::LogicalResult moveComparisonsBeforeJoin(PatternRewriter &rewriter, Operation * filterRowOp, std::vector<Operation *> comparisons, Operation * firstFilterRowOp) {
@@ -94,6 +154,7 @@ namespace
         std::vector<std::string> * inputColumnNamesRhs = inputFrameOpRhs->getResult(0).getType().cast<mlir::daphne::FrameType>().getLabels();
         //std::string inputFrameNameLhs = inputColumnNameLhs.substr(0, inputColumnNameLhs.find("."));
         //std::string inputFrameNameRhs = inputColumnNameRhs.substr(0, inputColumnNameRhs.find("."));
+        
 
         OpResult lhsFrameJoin = inputFrameOpLhs->getResult(0);
         OpResult rhsFrameJoin = inputFrameOpRhs->getResult(0);
@@ -101,26 +162,38 @@ namespace
         //update sources of the comparisons
         std::vector<Operation *> lhsComparisons;
         std::vector<Operation *> rhsComparisons;
+        std::vector<Operation *> remainingComparisons;
+        int count = 0;
         for (Operation * comparison : comparisons) {
             Operation * compareFunctionExtractColOpLhs = getCompareFunctionExtractColOp(comparison, 0);
             // Update both operands of the comparison if they are on the same frame
             Operation * compareFunctionExtractColOpRhs = getCompareFunctionExtractColOp(comparison, 1);
             if (compareFunctionExtractColOpLhs) {
                 std::string currentName = getColumnName(compareFunctionExtractColOpLhs->getOperand(1).getDefiningOp());
-                if ((std::find(inputColumnNamesLhs->begin(), inputColumnNamesLhs->end(), currentName) != inputColumnNamesLhs->end())) {
+                std::string currentNameRhs = "";
+                if (compareFunctionExtractColOpRhs) {
+                    currentNameRhs = getColumnName(compareFunctionExtractColOpRhs->getOperand(1).getDefiningOp());
+                }
+                if ((std::find(inputColumnNamesLhs->begin(), inputColumnNamesLhs->end(), currentName) != inputColumnNamesLhs->end()) 
+                && ((std::find(inputColumnNamesLhs->begin(), inputColumnNamesLhs->end(), currentNameRhs) != inputColumnNamesLhs->end()) || currentNameRhs == "")) {
                     compareFunctionExtractColOpLhs->setOperand(0, inputFrameOpLhs->getResult(0));
                     if (compareFunctionExtractColOpRhs) {
                         compareFunctionExtractColOpRhs->setOperand(0, inputFrameOpLhs->getResult(0));
                     }
+                    pushdownComparison(rewriter, comparison, inputFrameOpLhs);
                     lhsComparisons.push_back(comparison);
-                } else if ((std::find(inputColumnNamesRhs->begin(), inputColumnNamesRhs->end(), currentName) != inputColumnNamesRhs->end())) {
+                    count++;
+                } else if ((std::find(inputColumnNamesRhs->begin(), inputColumnNamesRhs->end(), currentName) != inputColumnNamesRhs->end())
+                && ((std::find(inputColumnNamesRhs->begin(), inputColumnNamesRhs->end(), currentNameRhs) != inputColumnNamesRhs->end()) || currentNameRhs == "")) {
                     compareFunctionExtractColOpLhs->setOperand(0, inputFrameOpRhs->getResult(0));
                     if (compareFunctionExtractColOpRhs) {
                         compareFunctionExtractColOpRhs->setOperand(0, inputFrameOpRhs->getResult(0));
                     }
+                    pushdownComparison(rewriter, comparison, inputFrameOpRhs);
                     rhsComparisons.push_back(comparison);
+                    count++;
                 } else {
-                    throw std::runtime_error("SelectionPushdown: frame name not found");
+                    remainingComparisons.push_back(comparison);
                 }
             }
         }
@@ -132,12 +205,19 @@ namespace
         if (!rhsComparisons.empty()) {
             rhsFilterRowOp = restructureComparisonsBeforeJoin(rewriter, rhsComparisons, joinSourceOp, rhsFrameJoin);
         }
+        if (!remainingComparisons.empty()) {
+            filterRowOp = restructureComparisonsBeforeFilterRowOp(rewriter, remainingComparisons, filterRowOp);
+        }
 
         //rewire filterRowOp and InnerJoinOp
         rewriter.startRootUpdate(filterRowOp);
-        filterRowOp->getResult(0).replaceAllUsesWith(joinSourceOp->getResult(0));
-        //filterRowOp->moveAfter(firstFilterRowOp);
-        joinSourceOp->moveAfter(firstFilterRowOp);
+        
+        // check if complete pushdown possible
+        if (comparisons.size() == count) {
+            filterRowOp->getResult(0).replaceAllUsesWith(joinSourceOp->getResult(0));
+        }
+        
+        
         rewriter.finalizeRootUpdate(filterRowOp);
 
         if(llvm::dyn_cast<mlir::daphne::InnerJoinOp>(inputFrameOpLhs) && lhsFilterRowOp) {
@@ -146,8 +226,6 @@ namespace
         if(llvm::dyn_cast<mlir::daphne::InnerJoinOp>(inputFrameOpRhs) && rhsFilterRowOp) {
             moveComparisonsBeforeJoin(rewriter, rhsFilterRowOp, rhsComparisons, firstFilterRowOp);
         }
-
-        rewriter.eraseOp(filterRowOp);
 
         return success();
     }
@@ -198,22 +276,25 @@ void SelectionPushdownPass::runOnOperation() {
     target.addLegalOp<ModuleOp, func::FuncOp>();
 
     target.addDynamicallyLegalOp<mlir::daphne::FilterRowOp>([&](Operation * op) {
+        if (op->use_empty()) {
+            return true;
+        }
         Operation * dataSource = op->getOperand(0).getDefiningOp();
         if (llvm::dyn_cast<mlir::daphne::InnerJoinOp>(dataSource)) {
-            // Check if all operations beforehand are ConstantOps (Pushdown of Comparisons between Columns not supported yet)
             std::vector<Operation *> comparisons;
-
+            size_t comparisonsPushdownPossible = 0;
             Operation * currentBitmap = op->getOperand(1).getDefiningOp();       
             while (llvm::dyn_cast<mlir::daphne::EwAndOp>(currentBitmap)) {
                 Operation * comparison = currentBitmap->getOperand(1).getDefiningOp()       // CastOp
                                         ->getOperand(0).getDefiningOp()                     // CreateFrameOp
                                         ->getOperand(0).getDefiningOp();                    // BitmapOp;
                 if (!llvm::dyn_cast<mlir::daphne::ConstantOp>(comparison->getOperand(1).getDefiningOp())) {
-                    if (!comparisonRhsSameFrame(comparison)) {
-                        return true;
+                    if(comparisonPushdownPossible(comparison)) {
+                        comparisonsPushdownPossible++;
                     }
+                } else {
+                    comparisonsPushdownPossible++;
                 }
-                comparisons.push_back(comparison);
                 currentBitmap = currentBitmap->getOperand(0).getDefiningOp();
             }
             // Pushdown of OR not supported yet
@@ -223,11 +304,17 @@ void SelectionPushdownPass::runOnOperation() {
             auto comparison = currentBitmap->getOperand(0).getDefiningOp()       // CreateFrameOp
                                         ->getOperand(0).getDefiningOp();                      // BitmapOp;
             if (!llvm::dyn_cast<mlir::daphne::ConstantOp>(comparison->getOperand(1).getDefiningOp())) {
-                if (!comparisonRhsSameFrame(comparison)) {
-                    return true;
+                if(comparisonPushdownPossible(comparison)) {
+                    comparisonsPushdownPossible++;
                 }
+            } else {
+                comparisonsPushdownPossible++;
             }
-            comparisons.push_back(currentBitmap); 
+            // Comparisons cannot be pushed down anymore
+            if (comparisonsPushdownPossible == 0) {
+                return true;
+            }
+
             return false;
         }
         
