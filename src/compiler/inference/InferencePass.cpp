@@ -188,7 +188,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         );
                     // Set the infered shapes on all results of this operation.
                     for(size_t i = 0 ; i < numRes ; i++) {
-                        if(op->getResultTypes()[i].isa<mlir::daphne::MatrixType>()) {
+                        if(op->getResultTypes()[i].isa<mlir::daphne::MatrixType>() ||
+                            op->getResultTypes()[i].isa<mlir::daphne::FrameType>()) {
                             const ssize_t numRows = shapes[i].first;
                             const ssize_t numCols = shapes[i].second;
                             Value rv = op->getResult(i);
