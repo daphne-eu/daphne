@@ -19,6 +19,8 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/MCSRMatrix.h>
+#include <runtime/local/datastructures/CSCMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/kernels/EwUnarySca.h>
@@ -57,15 +59,15 @@ struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(UnaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        
+
         const VT * valuesArg = arg->getValues();
         VT * valuesRes = res->getValues();
-        
+
         EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
-        
+
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] = func(valuesArg[c], ctx);
@@ -74,5 +76,79 @@ struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
         }
     }
 };
+
+
+// ----------------------------------------------------------------------------
+// MCSRMatrix <- MCSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwUnaryMat<MCSRMatrix<VT>, MCSRMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, MCSRMatrix<VT> *& res, const MCSRMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        const size_t maxNumNonZeros = arg->getMaxNumNonZeros();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<MCSRMatrix<VT>>(numRows, numCols, maxNumNonZeros, true);
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        for(size_t r = 0; r < numRows; r++) {
+            const VT * rowValuesArg = arg->getValues(r);
+            const size_t * colIdxsArg = arg->getColIdxs(r);
+            size_t rowSize = arg->getNumNonZeros(r);
+
+            for(size_t i = 0; i < rowSize; i++) {
+                VT resultValue = func(rowValuesArg[i], ctx);
+                if(resultValue != 0) { // Only store non-zero results
+                    res->set(r, colIdxsArg[i], resultValue);
+                }
+            }
+        }
+    }
+};
+
+
+
+
+// ----------------------------------------------------------------------------
+// CSCMatrix <- CSCMatrix
+// ----------------------------------------------------------------------------
+
+
+template<typename VT>
+struct EwUnaryMat<CSCMatrix<VT>, CSCMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, CSCMatrix<VT> *& res, const CSCMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        // Ensure the result matrix is initialized
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSCMatrix<VT>>(numRows, numCols, arg->getMaxNumNonZeros(), true);
+
+        // Get function pointer for the unary operation
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        // Iterate over the columns of the CSCMatrix
+        for(size_t c = 0; c < numCols; c++) {
+            // Get non-zero values and their row indices for this column
+            const VT* colValuesArg = arg->getValues(c);
+            const size_t* rowIdxsArg = arg->getRowIdxs(c);
+            size_t numNonZerosInCol = arg->getNumNonZeros(c);
+
+            // Apply the unary operation on each non-zero value in the column
+            for(size_t idx = 0; idx < numNonZerosInCol; idx++) {
+                VT value = colValuesArg[idx];
+                size_t rowIdx = rowIdxsArg[idx];
+
+                // Compute the result and store it in the output matrix
+                res->append(rowIdx, c, func(value, ctx));
+            }
+        }
+    }
+};
+
+
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYMAT_H

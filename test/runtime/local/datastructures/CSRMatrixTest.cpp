@@ -27,19 +27,19 @@
 TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
     // No assertions in this test case. We just want to see if it runs without
     // crashing.
-    
+
     using ValueType = TestType;
-    
+
     const size_t numRows = 10000;
     const size_t numCols = 2000;
     const size_t numNonZeros = 500;
-    
+
     CSRMatrix<ValueType> * m = DataObjectFactory::create<CSRMatrix<ValueType>>(numRows, numCols, numNonZeros, false);
-    
+
     ValueType * values = m->getValues();
     size_t * colIdxs = m->getColIdxs();
     size_t * rowOffsets = m->getRowOffsets();
-    
+
     // Fill all arrays with ones of the respective type. Note that this does
     // not result in a valid CSR representation, but we only want to check if
     // there is enough space.
@@ -49,20 +49,23 @@ TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES, ALL_V
     }
     for(size_t i = 0; i <= numRows; i++)
         rowOffsets[i] = size_t(1);
-    
+
+
+
+
     DataObjectFactory::destroy(m);
 }
 
 TEST_CASE("CSRMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
     using ValueType = uint64_t;
-    
+
     const size_t numRowsOrig = 10;
     const size_t numColsOrig = 7;
     const size_t numNonZeros = 3;
-    
+
     CSRMatrix<ValueType> * mOrig = DataObjectFactory::create<CSRMatrix<ValueType>>(numRowsOrig, numColsOrig, numNonZeros, true);
     CSRMatrix<ValueType> * mSub = DataObjectFactory::create<CSRMatrix<ValueType>>(mOrig, 3, 5);
-    
+
     // Sub-matrix dimensions are as expected.
     CHECK(mSub->getNumRows() == 2);
     CHECK(mSub->getNumCols() == numColsOrig);
@@ -70,13 +73,13 @@ TEST_CASE("CSRMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
     // Sub-matrix shares data array with original.
     CHECK(mSub->getValues() == mOrig->getValues());
     CHECK(mSub->getColIdxs() == mOrig->getColIdxs());
-    
+
     ValueType * rowOffsetsOrig = mOrig->getRowOffsets();
     ValueType * rowOffsetsSub = mSub->getRowOffsets();
     CHECK((rowOffsetsSub >= rowOffsetsOrig && rowOffsetsSub <= rowOffsetsOrig + numRowsOrig));
     rowOffsetsSub[0] = 123;
     CHECK(rowOffsetsOrig[3] == 123);
-    
+
     // Freeing both matrices does not result in double-free errors.
     SECTION("Freeing the original matrix first is fine") {
         DataObjectFactory::destroy(mOrig);

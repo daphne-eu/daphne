@@ -47,20 +47,23 @@ set(TEST_SOURCES
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/vectorized/VectorizedPipelineTest.cpp
         api/cli/Utils.cpp
-    
+
         api/python/DaphneLibTest.cpp
-        
+
         ir/daphneir/InferTypesTest.cpp
-        
+
         parser/config/ConfigParserTest.cpp
-    
+
         runtime/distributed/worker/WorkerTest.cpp
-    
+
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
+        runtime/local/datastructures/CSCMatrixTest.cpp
+        runtime/local/datastructures/MCSRMatrixTest.cpp
+        runtime/local/datastructures/MCSCMatrixTest.cpp
 
         runtime/local/io/ReadCsvTest.cpp
         runtime/local/io/ReadParquetTest.cpp
@@ -89,6 +92,7 @@ set(TEST_SOURCES
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryObjScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
+        runtime/local/kernels/EwUnaryMatTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp

@@ -19,6 +19,8 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/CSCMatrix.h>
+#include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/AggAll.h>
@@ -59,13 +61,13 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
-        
+
         const VTArg * valuesArg = arg->getValues();
         VTRes * valuesRes = res->getValues();
-        
+
         if(opCode == AggOpCode::IDXMIN) {
             for(size_t r = 0; r < numRows; r++) {
                 VTArg minVal = valuesArg[0];
@@ -95,7 +97,7 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             }
         }
         else {
-            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;    
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
             if(AggOpCodeUtils::isPureBinaryReduction(opCode))
                 func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
             else
@@ -126,7 +128,7 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             }
             if(opCode == AggOpCode::MEAN)
                 return;
-            
+
             // else op-code is STDDEV
             // TODO STDDEV
             throw std::runtime_error("unsupported AggOpCode in AggRow for DenseMatrix");
@@ -143,19 +145,19 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
     static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const CSRMatrix<VTArg> * arg, DCTX(ctx)) {
         const size_t numCols = arg->getNumCols();
         const size_t numRows = arg->getNumRows();
-        
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
-        
+
         VTRes * valuesRes = res->getValues();
-        
+
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
-        
+
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
             const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
             const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
-        
+
             for(size_t r = 0; r < numRows; r++) {
                 *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(
                         arg->getValues(r),
@@ -193,5 +195,149 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
         }
     }
 };
+
+
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- MCSRMatrix
+// ----------------------------------------------------------------------------
+
+
+template<typename VTRes, typename VTArg>
+struct AggRow<DenseMatrix<VTRes>, MCSRMatrix<VTArg>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const MCSRMatrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
+
+        VTRes * valuesRes = res->getValues();
+
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
+            const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
+
+            for(size_t r = 0; r < numRows; r++) {
+                const VTArg* rowValues = arg->getValues(r);
+                //const size_t* colIdxs = arg->getColIdxs(r);
+                size_t nnz = arg->getNumNonZeros(r);
+                VTRes aggResult = neutral;
+
+                for(size_t idx = 0; idx < nnz; idx++) {
+                    aggResult = func(aggResult, rowValues[idx], ctx);
+                }
+
+                if (isSparseSafe) {
+                    size_t totalZeros = arg->getNumCols() - nnz;
+                    for(size_t z = 0; z < totalZeros; z++) {
+                        aggResult = func(aggResult, static_cast<VTArg>(0), ctx);
+                    }
+                }
+
+                *valuesRes = aggResult;
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else { // Handle cases like MEAN, STDDEV, etc.
+            switch (opCode) {
+                case AggOpCode::MEAN: {
+                    for (size_t r = 0; r < numRows; r++) {
+                        const VTArg* rowValues = arg->getValues(r);
+                        size_t nnz = arg->getNumNonZeros(r);
+                        VTRes sum = 0;
+
+                        for(size_t idx = 0; idx < nnz; idx++) {
+                            sum += rowValues[idx];
+                        }
+
+                        *valuesRes = sum / arg->getNumCols();
+                        valuesRes += res->getRowSkip();
+                    }
+                    break;
+                }
+                // TODO: Implement for other aggregation operations like STDDEV, etc.
+                default:
+                    throw std::runtime_error("AggRow(MCSR) - Unsupported AggOpCode");
+            }
+        }
+    }
+};
+
+
+
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- CSCMatrix
+// ----------------------------------------------------------------------------
+
+
+
+template<typename VTRes, typename VTArg>
+struct AggRow<DenseMatrix<VTRes>, CSCMatrix<VTArg>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const CSCMatrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
+
+        VTRes * valuesRes = res->getValues();
+
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
+
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            //const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
+            const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
+
+            for(size_t r = 0; r < numRows; r++) {
+                VTRes value = neutral;
+                for (size_t c = 0; c < numCols; c++) {
+                    const VTArg* columnValues = arg->getValues(c);
+                    const size_t* rowIndexes = arg->getRowIdxs(c);
+                    size_t nnzColumn = arg->getNumNonZeros(c);
+
+                    for (size_t i = 0; i < nnzColumn; i++) {
+                        if (rowIndexes[i] == r) {
+                            value = func(value, columnValues[i], ctx);
+                            break;
+                        }
+                    }
+                }
+                *valuesRes = value;
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else { // The op-code is either MEAN or STDDEV
+            const VTRes neutral = VTRes(0);
+            //const bool isSparseSafe = true;
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+
+            for (size_t r = 0; r < numRows; r++) {
+                VTRes value = neutral;
+                for (size_t c = 0; c < numCols; c++) {
+                    const VTArg* columnValues = arg->getValues(c);
+                    const size_t* rowIndexes = arg->getRowIdxs(c);
+                    size_t nnzColumn = arg->getNumNonZeros(c);
+
+                    for (size_t i = 0; i < nnzColumn; i++) {
+                        if (rowIndexes[i] == r) {
+                            value = func(value, columnValues[i], ctx);
+                            break;
+                        }
+                    }
+                }
+                if (opCode == AggOpCode::MEAN)
+                    value = value / numCols;
+                else
+                    throw std::runtime_error("unsupported AggOpCode in AggRow for CSCMatrix");
+
+                *valuesRes = value;
+                valuesRes += res->getRowSkip();
+            }
+        }
+    }
+};
+
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H
