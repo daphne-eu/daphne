@@ -25,7 +25,8 @@ import os
 from typing import Union
 
 VALID_INPUT_TYPES = Union['DAGNode', str, int, float, bool]
-BINARY_OPERATIONS = ['+', '-', '/', '*', '<', '<=', '>', '>=', '==', '!=', '@']
+# These are the operator symbols used in DaphneDSL (not in Python).
+BINARY_OPERATIONS = ['+', '-', '/', '*', '^', '%', '<', '<=', '>', '>=', '==', '!=', '@']
 VALID_ARITHMETIC_TYPES = Union['DAGNode', int, float]
 
 PYTHON_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

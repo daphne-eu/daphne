@@ -18,7 +18,6 @@
 #include "HostUtils.h"
 #include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #include "runtime/local/kernels/CUDA/bin_ops.cuh"
-#include <cstdint>
 
 namespace CUDA {
     template<class VT, class OP>
@@ -65,20 +64,31 @@ namespace CUDA {
         }
     }
 
-    template<class T>
-    void launch_axpy(const cublasHandle_t &handle, int n, const T *alpha, const T *x, int incx,
-                     T *y, int incy);
+    template<class VT, class OP>
+    bool launch_ewbinmat(const size_t& numRowsLhs, const size_t& numColsLhs, const size_t& numRowsRhs,
+            const size_t& numColsRhs, size_t& gridSize, int& minGridSize, int& blockSize, const size_t& N, VT* res, const VT* lhs,
+            const VT* rhs) {
+        OP op;
 
-    template<>
-    void launch_axpy<double>(const cublasHandle_t &handle, int n, const double *alpha, const double *x, int incx,
-                             double *y, int incy) {
-        CHECK_CUBLAS(cublasDaxpy(handle, n, alpha, x, incx, y, incy));
-    }
+        if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
+            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMat<VT, decltype(op)>, 0, 0));
+            gridSize = (N + blockSize - 1) / blockSize;
+            ewBinMat<<<gridSize, blockSize>>>(res, lhs, rhs, N, op);
+        }
+        else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
+            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatRVec<VT, decltype(op)>, 0, 0));
+            gridSize = (N + blockSize - 1) / blockSize;
 
-    template<>
-    void launch_axpy<float>(const cublasHandle_t &handle, int n, const float *alpha, const float *x, int incx,
-                            float *y, int incy) {
-        CHECK_CUBLAS(cublasSaxpy(handle, n, alpha, x, incx, y, incy));
+            ewBinMatRVec<<<gridSize, blockSize>>>(res, lhs, rhs, numColsRhs, N, op);
+        }
+        else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
+            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatCVec<VT, decltype(op)>, 0, 0));
+            gridSize = (N + blockSize - 1) / blockSize;
+            ewBinMatCVec<<<gridSize, blockSize>>>(res, lhs, rhs, numRowsRhs, N, op);
+        }
+        else
+            return true;
+        return false;
     }
 
 // ----------------------------------------------------------------------------
@@ -96,9 +106,9 @@ namespace CUDA {
         const size_t numRowsRhs = rhs->getNumRows();
         const size_t numColsRhs = rhs->getNumCols();
 
-        int blockSize;
-        int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
-        size_t gridSize;
+        int blockSize = 0;
+        int minGridSize = 0; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
+        size_t gridSize = 0;
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false, &alloc_desc);
@@ -109,8 +119,6 @@ namespace CUDA {
         if(opCode == BinaryOpCode::ADD) {
             SumOp<VTres> op;
             if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
-                // auto ctx = dctx->getCUDAContext(0);
-
                 CHECK_CUDART(
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMat<VTres, SumOp<VTres>>, 0,
                                                            0));
@@ -230,6 +238,15 @@ namespace CUDA {
                 err = true;
             }
         }
+
+        else if (opCode == BinaryOpCode::MAX) {
+            err = launch_ewbinmat<VTres, MaxOp<VTres>>(numRowsLhs, numColsLhs, numRowsRhs, numColsRhs, gridSize, minGridSize,
+                blockSize, N, res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc));
+        }
+        else if (opCode == BinaryOpCode::NEQ) {
+            err = launch_ewbinmat<VTres, NeqOp<VTres>>(numRowsLhs, numColsLhs, numRowsRhs, numColsRhs, gridSize, minGridSize,
+                    blockSize, N, res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc));
+        }
         else {
             throw std::runtime_error(fmt::format("Unknown opCode {} for EwBinaryMat", static_cast<uint32_t>(opCode)));
         }
@@ -240,8 +257,8 @@ namespace CUDA {
                              "width/height of the other"
             );
         }
-        spdlog::get("runtime::cuda")->debug("EwBinMat[{}]: {} blocks x {} threads = {} total threads for {} items",
-                static_cast<int>(opCode), gridSize, blockSize, gridSize*blockSize,N);
+        ctx->logger->debug("EwBinMat[{}]: {} blocks x {} threads = {} total threads for {} items",
+                binary_op_codes[static_cast<int>(opCode)], gridSize, blockSize, gridSize*blockSize, N);
     }
 
     template struct EwBinaryMat<DenseMatrix<long>, DenseMatrix<long>, DenseMatrix<long>>;

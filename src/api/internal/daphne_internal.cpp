@@ -124,9 +124,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                                             desc("Choose the options for the distribution backend:"),
                                             values(
                                                     clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange"),
-                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC, "gRPC", "Use remote procedure call for internode data exchange (default)")
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC_SYNC, "sync-gRPC", "Use remote procedure call (synchronous gRPC with threading) for internode data exchange (default)"),
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC_ASYNC, "async-gRPC", "Use remote procedure call (asynchronous gRPC) for internode data exchange")
                                                 ),
-                                            init(ALLOCATION_TYPE::DIST_GRPC)
+                                            init(ALLOCATION_TYPE::DIST_GRPC_SYNC)
                                             );
 
     
@@ -404,12 +405,20 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
-    user_config.libdir = libDir.getValue();
+    if(!libDir.getValue().empty())
+        user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.queueSetupScheme = queueSetupScheme;
 	user_config.victimSelection = victimSelection;
-    user_config.numberOfThreads = numberOfThreads; 
+
+    // only overwrite with non-defaults
+    if(numberOfThreads != 0) {
+        spdlog::trace("Overwriting config file supplied numberOfThreads={} with command line argument --num-threads={}",
+                      user_config.numberOfThreads, numberOfThreads);
+        user_config.numberOfThreads = numberOfThreads;
+    }
+
     user_config.minimumTaskSize = minimumTaskSize; 
     user_config.pinWorkers = pinWorkers;
     user_config.hyperthreadingEnabled = hyperthreadingEnabled;
@@ -423,7 +432,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_selection_pushdown = useSelectionPushdown;
     if(user_config.use_distributed)
     {
-        if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC)
+        if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_SYNC &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_ASYNC)
             spdlog::warn("No backend has been selected. Wiil use the default 'MPI'");
     }
     for (auto explain : explainArgList) {

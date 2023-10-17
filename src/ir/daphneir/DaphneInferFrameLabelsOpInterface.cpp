@@ -48,6 +48,24 @@ void inferFrameLabels_ExtractOrFilterRowOp(ExtractOrFilterRowOp * op) {
 // Frame label inference implementations
 // ****************************************************************************
 
+void daphne::ReadOp::inferFrameLabels() {
+    auto p = CompilerUtils::isConstant<std::string>(getFileName());
+    if (auto resType = getRes().getType().dyn_cast<daphne::FrameType>()) {
+        if (p.first) {
+            std::vector<std::string> * labels;
+            FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
+            if (fmd.labels.empty()) {
+                labels = nullptr;
+            } else {
+                labels = new std::vector<std::string>(fmd.labels);
+            }
+
+            Value res = getResult();
+            res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(labels));
+        }
+    }
+}
+
 void daphne::ColBindOp::inferFrameLabels() {
     auto ftLhs = getLhs().getType().dyn_cast<daphne::FrameType>();
     auto ftRhs = getRhs().getType().dyn_cast<daphne::FrameType>();

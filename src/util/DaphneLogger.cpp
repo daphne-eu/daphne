@@ -43,7 +43,9 @@ const std::vector<LogConfig> DaphneLogger::fallback_loggers = {
         {"default","", 4,"%^[%l]:%$ %v"},
         {"compiler::cuda", "", 4, "%^[%n %L]:%$ %v" },
         {"runtime::cuda", "", 4, "%^[%n %L]:%$ %v" },
-        {"runtime", "", 4, "%^[%n %L]:%$ %v" }
+        {"runtime", "", 4, "%^[%n %L]:%$ %v" },
+        {"compiler", "", 4, "%^[%n %L]:%$ %v" },
+        {"parser", "", 4, "%^[%n %L]:%$ %v" }
 };
 
 void DaphneLogger::createLoggers(const LogConfig& config) {

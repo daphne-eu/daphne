@@ -115,7 +115,7 @@ The following built-in functions all follow the same scheme:
 | **`abs`** | absolute value |
 | **`sign`** | signum (`1` for positive, `0` for zero, `-1` for negative) |
 | **`exp`** | exponentiation (*e* to the power of `arg`) |
-| **`ln`** | natural logarithm (logarithm of `arg` to the base of *e*) |
+| **`ln`** | natural logarithm (logarithm of `arg` to the base of *e*) *(not supported yet, see #614)* |
 | **`sqrt`** | square root |
 
 ### Rounding
@@ -129,7 +129,7 @@ The following built-in functions all follow the same scheme:
 ### Trigonometric
 
 The typical trigonometric functions:
-**`sin`**, **`cos`**, **`tan`**, **`sinh`**, **`cosh`**, **`tanh`**, **`asin`**, **`acos`**, **`atan`**
+**`sin`**, **`cos`**, **`tan`**, **`sinh`**, **`cosh`**, **`tanh`**, **`asin`**, **`acos`**, **`atan`** *(not supported yet, see #614)*
 
 ## Elementwise binary
 
@@ -230,13 +230,13 @@ The following built-in functions all follow the same scheme:
 | ----- | ----- |
 | **`outerAnd`** | logical conjunction |
 | **`outerOr`** | logical disjunction |
-| **`outerXor`** | logical exclusive disjunction |
+| **`outerXor`** | logical exclusive disjunction *(not supported yet)* |
 
 ### Strings
 
 | function | meaning |
 | ----- | ----- |
-| **`outerConcat`** | string concatenation |
+| **`outerConcat`** | string concatenation *(not supported yet)* |
 
 ### Comparison
 
@@ -263,6 +263,7 @@ The following built-in functions all follow the same scheme:
 - **`agg`**`(arg:matrix, axis:si64)`
 
     Row or column aggregation over a *(n x m)* matrix `arg` using aggregation function `agg` (see table below).
+    
     - `axis` == 0: calculate one aggregate per row; the result is a *(n x 1)* (column) matrix
     - `axis` == 1: calculate one aggregate per column; the result is a *(1 x m)* (row) matrix
 

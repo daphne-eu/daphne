@@ -98,7 +98,7 @@ class DaphneDSLScript:
         """
         if not isinstance(dag_node, DAGNode):
             if isinstance(dag_node, bool):
-                return 'TRUE' if dag_node else 'FALSE'
+                return 'true' if dag_node else 'false'
             return str(dag_node)
 
         # If the node already has a name, then it is already defined

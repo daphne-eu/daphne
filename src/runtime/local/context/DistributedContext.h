@@ -25,15 +25,18 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
-
+#include <grpcpp/grpcpp.h>
+#include <runtime/distributed/proto/worker.pb.h>
+#include <runtime/distributed/proto/worker.grpc.pb.h>
 // TODO: Separate implementation in a .cpp file?
 class DistributedContext final : public IContext {
 private:
     std::vector<std::string> workers;
 public:
+    std::map<std::string, std::unique_ptr<distributed::Worker::Stub>> stubs;
     DistributedContext(const DaphneUserConfig &cfg) {
 
-        if (cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_GRPC) {
+        if (cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_GRPC_ASYNC || cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
             // TODO: Get the list of distributed workers from daphne user config/cli arguments and
             // keep environmental variables optional.
             auto envVar = std::getenv("DISTRIBUTED_WORKERS");
@@ -50,6 +53,14 @@ public:
                 workersStr.erase(0, pos + delimiter.size());
             }
             workers.push_back(workersStr);
+            for (auto workerAddr : workers) {
+                grpc::ChannelArguments ch_args;
+                ch_args.SetMaxSendMessageSize(-1);
+                ch_args.SetMaxReceiveMessageSize(-1);
+                auto channel = grpc::CreateCustomChannel(workerAddr, grpc::InsecureChannelCredentials(), ch_args);
+                auto stub = distributed::Worker::NewStub(channel);
+                stubs[workerAddr] = std::move(stub);
+            }
         } else if (cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
 #ifdef USE_MPI
             // Exclude Coordinator

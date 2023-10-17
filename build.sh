@@ -401,11 +401,12 @@ openBlasVersion=0.3.19
 abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
-arrowVersion=11.0.0
+arrowVersion=13.0.0
 openMPIVersion=4.1.5
 eigenVersion=3.4.0
 spdlogVersion=1.11.0
 papiVersion=7.0.1
+hwlocVersion=2.9.3
 
 #******************************************************************************
 # #6 Set some prefixes, paths and dirs
@@ -610,6 +611,58 @@ if [ $WITH_DEPS -gt 0 ]; then
         fi
     fi
 
+
+    #------------------------------------------------------------------------------
+    # PAPI (Performance Application Programming Interface)
+    #------------------------------------------------------------------------------
+    papiDirName="papi-$papiVersion"
+    papiTarName="${papiDirName}.tar.gz"
+    papiInstDirName=$installPrefix
+    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
+        daphne_msg "Get PAPI version ${papiVersion}"
+        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
+            -qO "${cacheDir}/${papiTarName}"
+        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
+        dependency_download_success "papi_v${papiVersion}"
+    fi
+    if ! is_dependency_installed "papi_v${papiVersion}"; then
+        cd "$sourcePrefix/$papiDirName/src"
+        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
+        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
+            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
+
+
+        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+        make install
+        cd - > /dev/null
+        dependency_install_success "papi_v${papiVersion}"
+    else
+        daphne_msg "No need to build PAPI again."
+    fi
+
+    #------------------------------------------------------------------------------
+    # hwloc
+    #------------------------------------------------------------------------------
+    hwlocDirName="hwloc-$hwlocVersion"
+    hwlocTarName="${hwlocDirName}.tar.gz"
+    hwlocInstDirName=$installPrefix
+    if ! is_dependency_downloaded "hwloc_v${hwlocVersion}"; then
+        daphne_msg "Get hwloc version ${hwlocVersion}"
+        wget "https://download.open-mpi.org/release/hwloc/v2.9/${hwlocTarName}" \
+            -qO "${cacheDir}/${hwlocTarName}"
+        tar -xf "$cacheDir/$hwlocTarName" -C "$sourcePrefix"
+        dependency_download_success "hwloc_v${hwlocVersion}"
+    fi
+    if ! is_dependency_installed "hwloc_v${hwlocVersion}"; then
+        cd "$sourcePrefix/$hwlocDirName/"
+        ./configure --prefix="$hwlocInstDirName"
+        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+        make install
+        cd - > /dev/null
+        dependency_install_success "hwloc_v${hwlocVersion}"
+    else
+        daphne_msg "No need to build hwloc again."
+    fi
 
     #------------------------------------------------------------------------------
     # #8.1 Antlr4 (parser)
@@ -845,8 +898,10 @@ if [ $WITH_DEPS -gt 0 ]; then
 
     if ! is_dependency_installed "${dep_arrow[@]}"; then
         cmake -G Ninja -S "${sourcePrefix}/${arrowDirName}/cpp" -B "${buildPrefix}/${arrowDirName}" \
-            -DCMAKE_INSTALL_PREFIX="${installPrefix}" \
-            -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON
+            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON \
+            -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON \
+            -DARROW_WITH_ZSTD=ON
+
         cmake --build "${buildPrefix}/${arrowDirName}" --target install/strip
         dependency_install_success "${dep_arrow[@]}"
     else

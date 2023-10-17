@@ -56,10 +56,8 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
         const size_t numCols = arg->getNumCols();
         
         // skip data movement for vectors
-        // FIXME: The check (numCols == arg->getRowSkip()) is a hack to check if the input arg is only a "view"
-        //        on a larger matrix.
-        if ((numRows == 1 || numCols == 1) && (numCols == arg->getRowSkip())) {
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg->getValuesSharedPtr());
+        if ((numRows == 1 || numCols == 1) && !arg->isView()) {
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg);
         }
         else
         {

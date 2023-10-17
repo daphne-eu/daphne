@@ -765,6 +765,7 @@ mlir::OpFoldResult mlir::daphne::EwModOp::fold(FoldAdaptor adaptor) {
 mlir::OpFoldResult mlir::daphne::EwLogOp::fold(FoldAdaptor adaptor) {
     ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
+        // TODO This is a bug (see #615).
         // Equivalent to log_b(a)
         return ilogb(a) / ilogb(b);
     };

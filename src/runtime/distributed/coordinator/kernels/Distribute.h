@@ -73,15 +73,9 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             DataPlacement *dp = partioner.GetNextChunk();
             auto rank = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getRank();
             
-            //std::cout<<"rank "<< rank+1<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
-            {
-               // std::cout<<"worker already has the data"<<std::endl;
-               auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-               MPIHelper::sendObjectIdentifier(data.identifier, rank);
-               //std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
-               continue;
-            }
+                continue;
+            
             auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
             auto len = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(slicedMat, dataToSend);                        
             MPIHelper::distributeData(len, dataToSend.data(),rank);
@@ -90,13 +84,9 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
         for(size_t i=0;i<targetGroup.size();i++)
         {
             int rank=targetGroup.at(i);
-            //std::cout<<"From distribute waiting for ack ("+std::to_string(rank)+")" << std::endl;
             if (rank==COORDINATOR)
-            {
-
-               // std::cout<<"coordinator doe not need ack from itself" << std::endl;
                 continue;
-            }
+            
             WorkerImpl::StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
             std::string address = std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
@@ -105,7 +95,6 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             data.numRows = dataAcknowledgement.numRows;
             data.numCols = dataAcknowledgement.numCols;
             data.isPlacedAtWorker = true;
-            //std::cout<<"acknowledgement received with distribute identifier " << data.identifier<<std::endl;
             dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
         }
 
@@ -114,18 +103,18 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
 #endif
 
 // ----------------------------------------------------------------------------
-// GRPC
+// Asynchronous GRPC
 // ----------------------------------------------------------------------------
 
 template<class DT>
-struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
+struct Distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
 {
     static void apply(DT *mat, DCTX(dctx)) {
         struct StoredInfo {
             size_t dp_id;
         }; 
         
-        DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
+        DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller(dctx);
             
         assert(mat != nullptr);
         
@@ -171,3 +160,57 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
     }
 };
 
+// ----------------------------------------------------------------------------
+// Synchronous GRPC
+// ----------------------------------------------------------------------------
+
+template<class DT>
+struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
+{
+    static void apply(DT *mat, DCTX(dctx)) {
+        auto ctx = DistributedContext::get(dctx);
+        auto workers = ctx->getWorkers();
+        
+        assert(mat != nullptr);
+        
+        std::vector<std::thread> threads_vector;
+        LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);
+        while (partioner.HasNextChunk()){ 
+            auto dp = partioner.GetNextChunk();
+            // Skip if already placed at workers
+            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+                continue;
+            distributed::Data protoMsg;
+
+            std::vector<char> buffer;
+            
+            auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
+            // DT is const Structure, but we only provide template specialization for structure.
+            // TODO should we implement an additional specialization or remove constness from template parameter?
+            auto length = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(slicedMat, buffer);            
+            protoMsg.set_bytes(buffer.data(), length);
+
+            auto workerAddr = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation();
+            std::thread t([=]()
+            {
+                auto stub = ctx->stubs[workerAddr].get();
+
+                distributed::StoredData storedData;
+                grpc::ClientContext grpc_ctx;
+                auto status = stub->Store(&grpc_ctx, protoMsg, &storedData);
+                if (!status.ok())
+                    throw std::runtime_error(status.error_message());
+
+                DistributedData newData;
+                newData.identifier = storedData.identifier();
+                newData.numRows = storedData.num_rows();
+                newData.numCols = storedData.num_cols();
+                newData.isPlacedAtWorker = true;
+                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(newData);
+            });
+            threads_vector.push_back(move(t));            
+        }
+        for (auto &thread : threads_vector)
+            thread.join();
+    }
+};

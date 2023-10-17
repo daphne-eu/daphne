@@ -1,0 +1,51 @@
+# Copyright 2023 The DAPHNE Consortium
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+m = reshape(seq(1, 12, 1), 4, 3);
+
+# TODO The commented out functions below are not supported yet (see #613).
+
+# Full aggregation.
+print(sum(m));
+print(mean(m));
+# print(var(m));
+# print(stddev(m));
+print(aggMin(m));
+print(aggMax(m));
+
+# Row-wise aggregation.
+print(sum(m, 0));
+print(mean(m, 0));
+# print(var(m, 0));
+# print(stddev(m, 0));
+print(aggMin(m, 0));
+print(aggMax(m, 0));
+print(idxMin(m, 0));
+print(idxMax(m, 0));
+
+# Column-wise aggregation.
+print(sum(m, 1));
+print(mean(m, 1));
+# print(var(m, 1));
+print(stddev(m, 1));
+print(aggMin(m, 1));
+print(aggMax(m, 1));
+print(idxMin(m, 1));
+print(idxMax(m, 1));
+
+# Cumulative (column-wise) aggregation.
+print(cumSum(m));
+print(cumProd(m));
+print(cumMin(m));
+print(cumMax(m));
