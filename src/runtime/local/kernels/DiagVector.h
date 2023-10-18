@@ -27,18 +27,19 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTArg>
+template<class DTRes, class DTArg>
 struct DiagVector {
-    static void apply(DenseMatrix<typename DTArg::VT> *& res, const DTArg * arg, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
 };
 
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-template<class DTArg>
-void diagVector(DenseMatrix<typename DTArg::VT> *& res, const DTArg * arg, DCTX(ctx)) {
-    DiagVector<DTArg>::apply(res, arg, ctx);
+
+template<class DTRes, class DTArg>
+void diagVector(DTRes *& res, const DTArg * arg, DCTX(ctx)) {
+    DiagVector<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
 // ****************************************************************************
@@ -50,7 +51,7 @@ void diagVector(DenseMatrix<typename DTArg::VT> *& res, const DTArg * arg, DCTX(
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct DiagVector<DenseMatrix<VT>> {
+struct DiagVector<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         //------handling corner cases -------
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
@@ -75,7 +76,7 @@ struct DiagVector<DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct DiagVector<CSRMatrix<VT>> {
+struct DiagVector<DenseMatrix<VT>, CSRMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         //-------handling corner cases ---------
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr

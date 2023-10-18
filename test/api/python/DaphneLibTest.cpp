@@ -39,6 +39,13 @@ const std::string dirPath = "test/api/python/";
             compareDaphneToDaphneLibScalar(prefix+".py", prefix+".daphne"); \
         } \
     }
+#define MAKE_TEST_CASE_PARAMETRIZED(name, argument) \
+    TEST_CASE((std::string(name)+"_"+std::string(argument)).c_str(), TAG_DAPHNELIB) { \
+        DYNAMIC_SECTION(name << ".py") { \
+            const std::string prefix = dirPath+name; \
+            compareDaphneToDaphneLib(prefix+".py", prefix+".daphne", argument); \
+        } \
+    }
 
 MAKE_TEST_CASE("data_transfer_numpy_1")
 MAKE_TEST_CASE("data_transfer_numpy_2")
@@ -50,7 +57,67 @@ MAKE_TEST_CASE("random_matrix_subtraction")
 MAKE_TEST_CASE("random_matrix_mult")
 MAKE_TEST_CASE("random_matrix_div")
 MAKE_TEST_CASE("random_matrix_functions")
+MAKE_TEST_CASE("context_datagen")
 MAKE_TEST_CASE("scalar_ops")
+MAKE_TEST_CASE("scalar_ewunary")
+MAKE_TEST_CASE("scalar_ewbinary")
+MAKE_TEST_CASE("frame_dimensions")
+MAKE_TEST_CASE("frame_reorg")
 MAKE_TEST_CASE("frame_cartesian")
+MAKE_TEST_CASE("matrix_dimensions")
+MAKE_TEST_CASE("matrix_ewunary")
+MAKE_TEST_CASE("matrix_ewbinary")
+MAKE_TEST_CASE("matrix_outerbinary")
+MAKE_TEST_CASE("matrix_agg")
+MAKE_TEST_CASE("matrix_reorg")
+MAKE_TEST_CASE("matrix_other")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
+
+// Tests for DaphneLib complex control flow.
+MAKE_TEST_CASE_PARAMETRIZED("if_else_simple", "param=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_simple", "param=0.1")
+MAKE_TEST_CASE_PARAMETRIZED("if_only_simple", "param=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("if_only_simple", "param=0.1")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_2_outputs", "param=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_2_outputs", "param=0.1")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_complex", "param=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_complex", "param=10.0")
+MAKE_TEST_CASE_PARAMETRIZED("for_loop_simple", "param=1")
+MAKE_TEST_CASE_PARAMETRIZED("for_loop_simple", "param=10")
+MAKE_TEST_CASE_PARAMETRIZED("for_loop_with_step", "param=1")
+MAKE_TEST_CASE_PARAMETRIZED("for_loop_with_step", "param=2")
+MAKE_TEST_CASE_PARAMETRIZED("for_loop_use_iterable", "param=1")
+MAKE_TEST_CASE_PARAMETRIZED("for_loop_use_iterable", "param=10")
+MAKE_TEST_CASE_PARAMETRIZED("for_loop_2_outputs", "param=0")
+MAKE_TEST_CASE_PARAMETRIZED("for_loop_2_outputs", "param=1")
+// skipping the next test for now as it is not supported by Daphne yet
+// (manipulating frame read from a file inside loop)
+// MAKE_TEST_CASE("for_loop_with_frame")
+MAKE_TEST_CASE("while_loop_simple")
+MAKE_TEST_CASE("while_loop_complex_cond")
+MAKE_TEST_CASE_PARAMETRIZED("while_loop_2_outputs", "param=0")
+MAKE_TEST_CASE_PARAMETRIZED("while_loop_2_outputs", "param=1")
+MAKE_TEST_CASE("do_while_loop_simple")
+MAKE_TEST_CASE("do_while_loop_complex_cond")
+MAKE_TEST_CASE_PARAMETRIZED("do_while_loop_2_outputs", "param=0")
+MAKE_TEST_CASE_PARAMETRIZED("do_while_loop_2_outputs", "param=1")
+MAKE_TEST_CASE_PARAMETRIZED("nested_control_flow_1", "param=0.1")
+MAKE_TEST_CASE_PARAMETRIZED("nested_control_flow_1", "param=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("nested_control_flow_2", "param=0.1")
+MAKE_TEST_CASE_PARAMETRIZED("nested_control_flow_2", "param=3.8")
+MAKE_TEST_CASE("nested_control_flow_3")
+MAKE_TEST_CASE("user_def_func_simple")
+MAKE_TEST_CASE_PARAMETRIZED("user_def_func_1_input_3_outputs", "param=0")
+MAKE_TEST_CASE_PARAMETRIZED("user_def_func_1_input_3_outputs", "param=1")
+MAKE_TEST_CASE_PARAMETRIZED("user_def_func_1_input_3_outputs", "param=2")
+MAKE_TEST_CASE("user_def_func_multiple_functions")
+MAKE_TEST_CASE("user_def_func_multiple_calls")
+MAKE_TEST_CASE("user_def_func_with_scalar")
+MAKE_TEST_CASE("user_def_func_3_inputs")
+// skipping the next test for now as it is not supported by Daphne yet
+// (manipulating variables in a nested block inside a function)
+// MAKE_TEST_CASE_PARAMETRIZED("user_def_func_with_condition", "param=0.1")
+// MAKE_TEST_CASE_PARAMETRIZED("user_def_func_with_condition", "param=3.8")
+// MAKE_TEST_CASE("user_def_func_with_for_loop")
+// MAKE_TEST_CASE("user_def_func_with_while_loop")

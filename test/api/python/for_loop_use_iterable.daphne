@@ -1,0 +1,7 @@
+X = fill(3.8, 5, 5);
+
+for (i in 1:$param) {
+    X = X + i;
+}
+
+print(X);

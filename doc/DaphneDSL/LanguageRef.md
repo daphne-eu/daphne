@@ -169,11 +169,14 @@ They are referenced by a dollar sign `$` followed by the argument's name.
 
 *Examples:*
 
+`bin/daphne my_script.daphne a=12 b=-2 c=false d=true e=2.0 f=-1.1 g=\"string\" h="\"white spaces\""`
+
 ```r
-$x
+print($g);
+myVar = $a + $b;
 ```
 
-Note that matrix literals are not supported as script arguments yet.
+Note that matrix literals are not supported as script arguments yet. Check out [Running DAPHNE Locally](/doc/RunningDaphneLocally.md) for more information.
 
 ### Complex Expressions
 

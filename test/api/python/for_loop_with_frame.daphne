@@ -1,0 +1,15 @@
+f1 = createFrame(
+    [1], [2], [3], [4],
+    "a", "b", "c", "d"
+);
+
+f2 = createFrame(
+    [1], [2], [3], [4],
+    "a", "b", "c", "d"
+);
+
+for (i in 0:4) {
+    f2 = rbind(f2, f1);
+}
+
+print(f2);

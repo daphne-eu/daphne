@@ -32,7 +32,7 @@ import numpy as np
 
 import json
 import os
-from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
+from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence, List
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -40,10 +40,12 @@ if TYPE_CHECKING:
     
 class Matrix(OperationNode):
     _np_array: np.array
+    __copy: bool
 
     def __init__(self, daphne_context: 'DaphneContext', operation:str, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
                 named_input_nodes:Dict[str, VALID_INPUT_TYPES]=None, 
-                local_data: np.array = None, brackets:bool = False)->'Matrix':
+                local_data: np.array = None, brackets:bool = False, copy: bool = False)->'Matrix':
+        self.__copy = copy
         is_python_local_data = False
         if local_data is not None:
            
@@ -55,6 +57,9 @@ class Matrix(OperationNode):
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
+        if self.__copy:
+            return f'{var_name}={unnamed_input_vars[0]};'
+        
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH)
         
         if self._is_numpy() and self.operation == "readMatrix":
@@ -104,13 +109,20 @@ class Matrix(OperationNode):
         return Matrix(self.daphne_context, '+', [self, other])
 
     def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
-        return Matrix(self.daphne_context,'-', [self, other])
+        return Matrix(self.daphne_context, '-', [self, other])
 
     def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '*', [self, other])
 
     def __truediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '/', [self, other])
+
+    def __pow__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
+        # "**" in Python, "^" in DaphneDSL.
+        return Matrix(self.daphne_context, '^', [self, other])
+
+    def __mod__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
+        return Matrix(self.daphne_context, '%', [self, other])
 
     def __lt__(self, other) -> 'Matrix':
         return Matrix(self.daphne_context, '<', [self, other])
@@ -134,7 +146,7 @@ class Matrix(OperationNode):
         return Matrix(self.daphne_context, '>=', [self, other])
 
     def __rge__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, '>=', [other, self])
+        return Matrix(self.daphne_context, '>= ', [other, self])
 
     def __eq__(self, other) -> 'Matrix':
         return Matrix(self.daphne_context, '==', [self, other])
@@ -165,11 +177,59 @@ class Matrix(OperationNode):
             return Scalar(self.daphne_context,'sum', [self])
         return Matrix(self.daphne_context,'sum', [self, axis])
         
+    def abs(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'abs', [self])
+        
+    def sign(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'sign', [self])
+        
+    def exp(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'exp', [self])
+        
+    def ln(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'ln', [self])
+    
     def sqrt(self) -> 'OperationNode':
         """Calculate sqrt of matrix.
         :return: `Matrix` representing operation
         """
         return Matrix(self.daphne_context,'sqrt', [self])
+    
+    def round(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'round', [self])
+        
+    def floor(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'floor', [self])
+        
+    def ceil(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'ceil', [self])
+        
+    def sin(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'sin', [self])
+        
+    def cos(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'cos', [self])
+        
+    def tan(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'tan', [self])
+        
+    def sinh(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'sinh', [self])
+        
+    def cosh(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'cosh', [self])
+        
+    def tanh(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'tanh', [self])
+        
+    def asin(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'asin', [self])
+        
+    def acos(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'acos', [self])
+        
+    def atan(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'atan', [self])
     
     def aggMin(self, axis: int = None) -> 'OperationNode':
         if axis is not None:
@@ -185,11 +245,38 @@ class Matrix(OperationNode):
         if axis is not None:
             return Matrix(self.daphne_context, 'mean', [self, axis])
         return Scalar(self.daphne_context, 'mean', [self])
+    
+    def var(self, axis: int = None) -> 'OperationNode':
+        if axis is not None:
+            return Matrix(self.daphne_context, 'var', [self, axis])
+        return Scalar(self.daphne_context, 'var', [self])
 
     def stddev(self, axis: int = None) -> 'OperationNode':
         if axis is not None:
             return Matrix(self.daphne_context, 'stddev', [self, axis])
         return Scalar(self.daphne_context, 'stddev', [self])
+    
+    def idxMin(self, axis: int) -> 'OperationNode':
+        if axis is None:
+            raise RuntimeError("parameter axis must be provided for idxMin")
+        return Scalar(self.daphne_context, 'idxMin', [self, axis])
+    
+    def idxMax(self, axis: int) -> 'OperationNode':
+        if axis is None:
+            raise RuntimeError("parameter axis must be provided for idxMax")
+        return Scalar(self.daphne_context, 'idxMax', [self, axis])
+    
+    def cumSum(self) -> 'OperationNode':
+        return Scalar(self.daphne_context, 'cumSum', [self])
+    
+    def cumProd(self) -> 'OperationNode':
+        return Scalar(self.daphne_context, 'cumProd', [self])
+    
+    def cumMin(self) -> 'OperationNode':
+        return Scalar(self.daphne_context, 'cumMin', [self])
+    
+    def cumMax(self) -> 'OperationNode':
+        return Scalar(self.daphne_context, 'cumMax', [self])
     
     def ncol(self) -> 'OperationNode':
         return Scalar(self.daphne_context, 'ncol', [self])
@@ -197,14 +284,47 @@ class Matrix(OperationNode):
     def nrow(self) -> 'OperationNode':
         return Scalar(self.daphne_context, 'nrow', [self])
 
-    def diagMatrix(self) -> 'OperationNode':
-        return Matrix(self.daphne_context, 'diagMatrix', [self])
+    def ncell(self) -> 'OperationNode':
+        return Scalar(self.daphne_context, 'ncell', [self])
+
+    def diagVector(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'diagVector', [self])
     
     def solve(self, other: 'Matrix') -> 'Matrix':
         return Matrix(self.daphne_context, 'solve', [self, other])
 
     def t(self) -> 'OperationNode':
         return Matrix(self.daphne_context, 't', [self])
+
+    def reshape(self, numRows: int, numCols: int) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'reshape', [self, numRows, numCols])
+
+    def cbind(self, other) -> 'Matrix':
+        return Matrix(self.daphne_context, "cbind", [self, other])
+
+    def rbind(self, other) -> 'Matrix':
+        return Matrix(self.daphne_context, "rbind", [self, other])
+
+    def reverse(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'reverse', [self])
+
+    def lowerTri(self, diag: bool, values: bool) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'lowerTri', [self, diag, values])
+
+    def upperTri(self, diag: bool, values: bool) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'upperTri', [self, diag, values])
+
+    def replace(self, pattern, replacement) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'replace', [self, pattern, replacement])
+        
+    def pow(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'pow', [self, other])
+        
+    def log(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'log', [self, other])
+        
+    def mod(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'mod', [self, other])
         
     def max(self, other: 'Matrix') -> 'Matrix':
         """Calculate elementwise max of two matrices.
@@ -219,6 +339,68 @@ class Matrix(OperationNode):
         :return: `Matrix` representing operation
         """
         return Matrix(self.daphne_context, 'min', [self, other])
+        
+    def outerAdd(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerAdd', [self, other])
+        
+    def outerSub(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerSub', [self, other])
+        
+    def outerMul(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerMul', [self, other])
+        
+    def outerDiv(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerDiv', [self, other])
+        
+    def outerPow(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerPow', [self, other])
+        
+    def outerLog(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerLog', [self, other])
+        
+    def outerMod(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerMod', [self, other])
+        
+    def outerMin(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerMin', [self, other])
+        
+    def outerMax(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerMax', [self, other])
+        
+    def outerAnd(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerAnd', [self, other])
+        
+    def outerOr(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerOr', [self, other])
+        
+    def outerXor(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerXor', [self, other])
+        
+    def outerConcat(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerConcat', [self, other])
+        
+    def outerEq(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerEq', [self, other])
+        
+    def outerNeq(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerNeq', [self, other])
+        
+    def outerLt(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerLt', [self, other])
+        
+    def outerLe(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerLe', [self, other])
+        
+    def outerGt(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerGt', [self, other])
+        
+    def outerGe(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'outerGe', [self, other])
+    
+    def order(self, colIdxs: List[int], ascs: List[bool], returnIndexes: bool) -> 'Matrix':
+        if len(colIdxs) != len(ascs):
+            raise RuntimeError("order: the lists given for parameters colIdxs and ascs must have the same length")
+        return Matrix(self.daphne_context, 'order', [self, *colIdxs, *ascs, returnIndexes])
         
     def write(self, file: str) -> 'OperationNode':
         return OperationNode(self.daphne_context, 'writeMatrix', [self,'\"'+file+'\"'], output_type=OutputType.NONE)

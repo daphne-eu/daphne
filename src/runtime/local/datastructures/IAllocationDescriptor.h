@@ -21,7 +21,9 @@
 // An alphabetically sorted wishlist of supported allocation types ;-)
 // Supporting all of that is probably unmaintainable :-/
 enum class ALLOCATION_TYPE {
-    DIST_GRPC,
+    DIST_GRPC, // Generic gRPC TAG
+    DIST_GRPC_ASYNC, // Asynchronous gRPC communication
+    DIST_GRPC_SYNC, // Synchronous gRPC communication
     DIST_MPI,
     DIST_SPARK,
     GPU_CUDA,

@@ -20,13 +20,21 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-
+from __future__ import annotations
 import os
-from typing import Union
+from typing import Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from api.python.script_building.dag import DAGNode
+    from api.python.operator.nodes.matrix import Matrix
+    from api.python.operator.nodes.frame import Frame
+    from api.python.operator.nodes.scalar import Scalar
 
 VALID_INPUT_TYPES = Union['DAGNode', str, int, float, bool]
-BINARY_OPERATIONS = ['+', '-', '/', '*', '<', '<=', '>', '>=', '==', '!=', '@']
+# These are the operator symbols used in DaphneDSL (not in Python).
+BINARY_OPERATIONS = ['+', '-', '/', '*', '^', '%', '<', '<=', '>', '>=', '==', '!=', '@', '&&', '||']
 VALID_ARITHMETIC_TYPES = Union['DAGNode', int, float]
+VALID_COMPUTED_TYPES = Union['Matrix', 'Frame', 'Scalar']
 
 PYTHON_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 

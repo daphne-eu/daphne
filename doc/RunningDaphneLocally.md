@@ -53,7 +53,7 @@ bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
 *This example executes a simplified variant of the k-means clustering algorithm on random data with 1000 rows and 20 features using 5 centroids and a fixed number of 10 iterations.*
 
 `value` must be a valid DaphneDSL literal, e.g., `key=123` (signed 64-bit integer), `key=-12.3` (double-precision floating-point), or `key="hello"` (string).
-Note that the quotation marks `"` are part of the string literal, so they must be escaped on a terminal, e.g., by `key=\"hello\"`.
+Note that the quotation marks `"` are part of the string literal, so they must be escaped on a terminal, e.g., by `key=\"hello\"`. If there are whitespaces in the string, it is necessary to surround the literal with additional quotation marks, like `key="\"hello world\""`
 
 ## Command-Line Arguments
 

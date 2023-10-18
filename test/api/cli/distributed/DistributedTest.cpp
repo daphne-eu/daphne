@@ -57,7 +57,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
             std::stringstream outDist;
             std::stringstream errDist;
             setenv(envVar, distWorkerStr.c_str(), 1);
-            status = runDaphne(outDist, errDist, std::string("--distributed").c_str(), filename.c_str());
+            status = runDaphne(outDist, errDist, std::string("--distributed").c_str(), std::string("--dist_backend=sync-gRPC").c_str(), filename.c_str());
             unsetenv(envVar);
             CHECK(errDist.str() == "");
             REQUIRE(status == StatusCode::SUCCESS);

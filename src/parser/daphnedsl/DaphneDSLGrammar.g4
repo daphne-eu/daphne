@@ -153,10 +153,10 @@ VALUE_TYPE:
     ) ;
 
 INT_LITERAL:
-    ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;
+    ('0' | '-'? NON_ZERO_DIGIT DIGIT* ('l' | 'u' | 'ull' | 'z')?);
 
 FLOAT_LITERAL:
-    ('nan' | '-'? 'inf' | '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ );
+    ('nan' | 'nanf' | '-'? ('inf' | 'inff') | '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ 'f'? );
 
 STRING_LITERAL:
     '"' (ESCAPE_SEQ | ~["\\])* '"';

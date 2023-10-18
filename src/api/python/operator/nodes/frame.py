@@ -32,7 +32,7 @@ import pandas as pd
 
 import json
 import os
-from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
+from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence, List
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -40,11 +40,13 @@ if TYPE_CHECKING:
 
 class Frame(OperationNode):
     _pd_dataframe: pd.DataFrame
+    __copy: bool
 
     def __init__(self, daphne_context: "DaphneContext", operation: str,
                  unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]] = None,
                  named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
-                 local_data: pd.DataFrame = None, brackets: bool = False) -> "Frame":
+                 local_data: pd.DataFrame = None, brackets: bool = False, copy: bool = False) -> "Frame":
+        self.__copy = copy
         is_python_local_data = False
         if local_data is not None:
             self._pd_dataframe = local_data
@@ -56,6 +58,8 @@ class Frame(OperationNode):
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
+        if self.__copy:
+            return f'{var_name}={unnamed_input_vars[0]};'
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH) 
         if self._is_pandas():
             self._pd_dataframe.to_csv(TMP_PATH+"/"+var_name+".csv", header=False, index=False)
@@ -129,6 +133,14 @@ class Frame(OperationNode):
         :return: Scalar containing number of columns of frame
         """
         return Scalar(self.daphne_context, 'ncol',[self])
+
+    def ncell(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'ncell', [self])
+    
+    def order(self, colIdxs: List[int], ascs: List[bool], returnIndexes: bool) -> 'Frame':
+        if len(colIdxs) != len(ascs):
+            raise RuntimeError("order: the lists given for parameters colIdxs and ascs must have the same length")
+        return Frame(self.daphne_context, 'order', [self, *colIdxs, *ascs, returnIndexes])
 
     def write(self, file: str) -> 'OperationNode':
         return OperationNode(self.daphne_context, 'writeFrame', [self,'\"'+file+'\"'], output_type=OutputType.NONE)
