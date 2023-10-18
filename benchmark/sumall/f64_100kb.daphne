@@ -1,7 +1,0 @@
-X = fill(1.0, 100, 125);
-
-start_fill = now();
-a = X + 1;
-end_fill = now();
-print(a[0,0]);
-print(end_fill - start_fill);

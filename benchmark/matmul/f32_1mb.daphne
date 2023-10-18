@@ -1,9 +1,0 @@
-X = rand(100, 2500, as.f32(0.0), as.f32(1.0), 1.0, 2.71828);
-Y = rand(2500, 100, as.f32(0.0), as.f32(1.0), 1.0, 2.71828);
-
-start_mm = now();
-a = X@Y;
-end_mm = now();
-
-print(a[0,0]);
-print(end_mm - start_mm);

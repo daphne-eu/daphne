@@ -1,4 +1,0 @@
-test_name,precompiled,codegen
-f64_10x10,0.023,0.014
-f64_100kb,0.364,0.352
-f64_1gb,1597.061,1411.711

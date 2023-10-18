@@ -1,7 +1,0 @@
-X = fill(as.f32(1.0), 10000, 2500);
-
-start_fill = now();
-a=sum(as.f64(X));
-end_fill = now();
-print(a);
-print(end_fill - start_fill);
