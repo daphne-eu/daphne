@@ -1,0 +1,7 @@
+X = fill(9.9, 5, 5);
+
+while (sum(X) > 1.0 && aggMax(X) > 1.0) {
+    X = X - 1;
+}
+
+print(X);

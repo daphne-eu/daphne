@@ -1,0 +1,10 @@
+def increment(x) {
+    return x + 1;
+}
+
+X = fill(3.8, 5, 5);
+X1 = increment(X);
+X2 = increment(X1);
+X3 = increment(X2);
+
+print(X3);

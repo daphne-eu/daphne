@@ -1,0 +1,15 @@
+def increment(x) {
+    return x + 1, x + 2, x + 3;
+}
+
+X = fill(3.8, 5, 5);
+X1, X2, X3 = increment(X);
+
+index = $param;
+if (index == 0) {
+    print(X1);
+} else if (index == 1) {
+    print(X2);
+} else if (index == 2) {
+    print(X3);
+}
