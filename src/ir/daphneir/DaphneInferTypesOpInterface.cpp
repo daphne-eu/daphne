@@ -497,7 +497,7 @@ std::vector<Type> daphne::tryInferType(Operation* op, spdlog::logger* logger) {
         // of the before-block to fulfill constraints on the WhileOp.
         for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
             Type t = whileOp->getOperand(i).getType();
-            t.dump();
+//            t.dump();
             beforeBlock.getArgument(i).setType(t);
 //            yieldOp->getResult(i).setType(t);
         }
@@ -514,7 +514,7 @@ std::vector<Type> daphne::tryInferType(Operation* op, spdlog::logger* logger) {
         logger->debug("Setting whileOp result types");
         for (size_t i = 1; i < whileOp->getNumOperands(); ++i) {
             auto t = whileOp->getOperand(i).getType();
-            t.dump();
+//            t.dump();
 //        for(size_t i = 1; i < condOp->getNumOperands(); i++) {
 //            Type t = condOp->getOperand(i).getType();
 //            yieldOp->dump();

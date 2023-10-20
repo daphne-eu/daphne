@@ -36,6 +36,7 @@ class DaphneLogger;
 struct DaphneUserConfig {
     // Remember to update UserConfig.json accordingly!
 
+    bool use_codegen = true;
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
@@ -63,6 +64,7 @@ struct DaphneUserConfig {
     bool explain_type_adaptation = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
+    bool explain_codegen = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
     QueueTypeOption queueSetupScheme = CENTRALIZED;
 	VictimSelectionLogic victimSelection = SEQPRI;

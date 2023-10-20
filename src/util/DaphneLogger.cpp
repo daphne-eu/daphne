@@ -55,7 +55,7 @@ void DaphneLogger::createLoggers(const LogConfig& config) {
         if (!config.filename.empty())
             sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(config.filename, true));
 
-        sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+        sinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_mt >());
         logger = std::make_shared<spdlog::async_logger>(config.name, sinks.begin(), sinks.end(), spdlog::thread_pool());
 
         auto level = static_cast<spdlog::level::level_enum>(config.level);

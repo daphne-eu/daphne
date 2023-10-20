@@ -141,8 +141,47 @@ namespace CUDA {
             throw std::runtime_error(fmt::format("Unknown opCode {} for aggRow", static_cast<uint32_t>(opCode)));
         }
     }
+
+    template<typename VT>
+    void AggRow<DenseMatrix<VT>, CSRMatrix<VT>>::apply(AggOpCode opCode, DenseMatrix<VT> *&res,
+                                                         const CSRMatrix<VT> *arg, DCTX(dctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        const size_t deviceID = 0; //ToDo: multi device support
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+        auto ctx = CUDAContext::get(dctx, deviceID);
+
+        int threads;
+        int blocks;
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1, false,  &alloc_desc);
+
+        threads = (numCols < ctx->getMaxNumThreads() * 2) ? nextPow2((numCols + 1) / 2) : ctx->getMaxNumThreads();
+        auto shmSize = sizeof(VT) * threads;
+        blocks = numRows;
+
+        if (opCode == AggOpCode::SUM) {
+            ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
+        }
+        else if (opCode == AggOpCode::MAX) {
+            ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
+        }
+        else if (opCode == AggOpCode::MIN) {
+            ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
+        }
+        else {
+            throw std::runtime_error(fmt::format("Unknown opCode {} for aggRow", static_cast<uint32_t>(opCode)));
+        }
+    }
+
     template struct AggRow<DenseMatrix<double>, DenseMatrix<double>>;
     template struct AggRow<DenseMatrix<float>, DenseMatrix<float>>;
     template struct AggRow<DenseMatrix<int64_t>, DenseMatrix<int64_t>>;
+    template struct AggRow<DenseMatrix<double>, CSRMatrix<double>>;
+    template struct AggRow<DenseMatrix<float>, CSRMatrix<float>>;
+    template struct AggRow<DenseMatrix<int64_t>, CSRMatrix<int64_t>>;
+
 }
 
