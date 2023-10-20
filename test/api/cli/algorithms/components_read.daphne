@@ -21,24 +21,9 @@ iter = 1;
 
 // Iterative computation of connected components (decisive part).
 while(as.si64(diff > 0.0) && iter <= maxi) {
-#    ti0 = now();
-
     u = max(aggMax(G * t(c), 0), c);
     diff = sum(u != c);
     c = u;
-
- #   ti1 = now();
-
-#    if( verbose ) {
-#        print("iteration ", 0, 1);
-#        print(iter, 0, 1);
-#        print(" took [ns]: ", 0, 1);
-#        print(ti1 - ti0, 1, 1);
-
-#        print("Connected components: iter = ",0,0); print(iter+", #diff = "+diff);
-#    }
-
-
     iter = iter + 1;
 }
 

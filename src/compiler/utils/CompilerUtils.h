@@ -24,6 +24,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <iostream>
 
 struct CompilerUtils {
 
@@ -261,4 +262,41 @@ public:
             return vt;
     }
 
+    template<typename T, std::size_t N>
+    static std::vector<mlir::Operation*> isOpSequence(mlir::Operation* op, const std::array<T, N>& sequence) {
+        auto seq_op = op;
+        std::vector<mlir::Operation*> ret_seq;
+        for(auto i = 0u; i < N; ++i) {
+            if(typeid(seq_op) == typeid(sequence[i])) {
+                std::cout << typeid(seq_op).name() << std::endl;
+                std::cout << typeid(sequence[i]).name() << std::endl;
+                ret_seq.emplace_back(seq_op);
+            }
+            else
+                return ret_seq;
+            if(seq_op)
+                seq_op = seq_op->getNextNode();
+            else
+                return ret_seq;
+        }
+        return ret_seq;
+    }
+
+    template<typename T, std::size_t N>
+    static std::vector<mlir::Operation*> isCCseq(mlir::Operation* op, const std::array<T, N>& sequence) {
+        std::vector<mlir::Operation*> ret_seq;
+        if(auto isTransOp = llvm::dyn_cast<mlir::daphne::TransposeOp>(op)) {
+            ret_seq.emplace_back(isTransOp);
+            if(auto isEwMulOp = llvm::dyn_cast<mlir::daphne::EwMulOp>(op->getNextNode())) {
+                ret_seq.emplace_back(isEwMulOp);
+                if(auto isRowAggMaxOp = llvm::dyn_cast<mlir::daphne::RowAggMaxOp>(op->getNextNode()->getNextNode())) {
+                    ret_seq.emplace_back(isRowAggMaxOp);
+                    if(auto isMaxOp = llvm::dyn_cast<mlir::daphne::EwMaxOp>(op->getNextNode()->getNextNode()->getNextNode())) {
+                        ret_seq.emplace_back(isMaxOp);
+                    }
+                }
+            }
+        }
+        return ret_seq;
+    }
 };
