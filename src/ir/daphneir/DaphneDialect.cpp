@@ -703,14 +703,25 @@ mlir::OpFoldResult mlir::daphne::EwModOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
+// mlir::OpFoldResult mlir::daphne::EwLogOp::fold(FoldAdaptor adaptor) {
+//     ArrayRef<Attribute> operands = adaptor.getOperands();
+//     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
+//         // TODO This is a bug (see #615).
+//         // Equivalent to log_b(a)
+//         return ilogb(a) / ilogb(b);
+//     };
+//     if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+//         return res;
+//     return {};
+// }
 mlir::OpFoldResult mlir::daphne::EwLogOp::fold(FoldAdaptor adaptor) {
     ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
-        // TODO This is a bug (see #615).
+        // Compute the element-wise logarithm of a to the base b
         // Equivalent to log_b(a)
-        return ilogb(a) / ilogb(b);
+        return log(a.convertToDouble()) / log(b.convertToDouble());
     };
-    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+    if (auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
         return res;
     return {};
 }
