@@ -42,10 +42,6 @@ struct DaphneUserConfig {
     bool debugMultiThreading = false;
     bool use_fpgaopencl = false;
     bool codegen = false;
-    bool linalg = false;
-    bool _inline = false;
-    bool fusion = false;
-    bool lower_scalar = false;
     bool hybrid = false;
 
     bool debug_llvm = false;

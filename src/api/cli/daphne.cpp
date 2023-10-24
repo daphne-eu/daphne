@@ -196,18 +196,6 @@ main(int argc, char** argv)
             "codegen", cat(daphneOptions),
             desc("Enables DenseMatrix lowering to MLIR codegen.")
     );
-    opt<bool> linalg(
-            "linalg", cat(daphneOptions),
-            desc("Enables linalg lowering to external library calls.")
-    );
-    opt<bool> _inline(
-            "inline", cat(daphneOptions),
-            desc("Enables inlining of function calls.")
-    );
-    opt<bool> fusion(
-            "fusion", cat(daphneOptions),
-            desc("Enables affine loop fusion.")
-    );
     opt<bool> hybrid(
         "mlir", cat(schedulingOptions), "hybrid",
         cat(schedulingOptions),
@@ -377,10 +365,6 @@ main(int argc, char** argv)
     }
 
     user_config.codegen = codegen;
-    user_config.linalg = linalg;
-    user_config._inline = _inline;
-    user_config.lower_scalar = useScalarToMLIRLowering;
-    user_config.fusion = fusion;
     user_config.hybrid = hybrid;
 
     // add this after the cli args loop to work around args order
@@ -427,15 +411,9 @@ main(int argc, char** argv)
 
     // Further, process the module, including optimization and lowering passes.
     try{
-        // TODO MSC: start time benchmarking here
-        // auto t1 = std::chrono::high_resolution_clock::now();
         if (!executor.runPasses(moduleOp)) {
             return StatusCode::PASS_ERROR;
         }
-        // auto t2 = std::chrono::high_resolution_clock::now();
-        // std::cout << "runPasses took: "
-        //     << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
-        //     << " milliseconds\n";
     }
     catch(std::exception & e){
         std::cerr << "Pass error: " << e.what() << std::endl;
