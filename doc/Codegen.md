@@ -56,7 +56,8 @@ kernel implementation vastly outperforms the generated code of this pass.
 Runtime interoperability with the `DenseMatrix` object is achieved with two
 kernels in `src/runtime/local/kernels/MemRefInterop.h` and the corresponding
 DaphneOps `ConvertMemRefToDenseMatrix ` and `ConvertDenseMatrixToMemRef `.
-
+These kernels define how a MemRef is passed to a kernel and how a kernel
+can return a `StridedMemRefType`.
 
 
 #### Debugging
