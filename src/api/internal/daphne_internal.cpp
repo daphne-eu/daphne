@@ -25,6 +25,7 @@
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
+#include <runtime/local/kernels/SIMDOperatorsDAPHNE/VectorExtensions.h>
 #include <parser/config/ConfigParser.h>
 #include <util/DaphneLogger.h>
 
@@ -215,6 +216,46 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "debug-mt", cat(schedulingOptions),
             desc("Prints debug information about the Multithreading Wrapper")
     );
+
+    // Columnar operations
+    static opt<VectorExtensions> vectorExtension("vector_extension",
+            cat(daphneOptions), desc("Choose vector extension to use for columnar operations when enabled."),
+            values(
+                clEnumVal(SCALAR, "Using scalar instructions"),
+                clEnumVal(SSE, "Using SSE instructions"),
+                clEnumVal(AVX2, "Using AVX2 instructions"),
+                clEnumVal(AVX512, "Using AVX512 instructions")
+            ),
+            init(SCALAR)
+    );
+
+    static opt<bool> useColumnar(
+            "columnar", cat(daphneOptions),
+            desc(
+                "Enable the switch to use columnar operations with possible SIMD support "
+                "instead of matrix operations with all optimizations.")
+    );
+
+    static opt<bool> useColumnarReduce(
+            "columnar_reduce", cat(daphneOptions),
+            desc(
+                "Enable the switch to use columnar operations with possible SIMD support "
+                "instead of matrix operations.")
+    );
+
+    static opt<bool> useColumnarRewrite(
+            "columnar_rewrite", cat(daphneOptions),
+            desc(
+                "Enable the switch to use columnar operations with possible SIMD support "
+                "instead of matrix operations.")
+    );
+
+    static opt<bool> useSelectionPushdown(
+            "selection_pushdown", cat(daphneOptions),
+            desc(
+                "Enable the switch to use columnar operations with possible SIMD support "
+                "instead of matrix operations.")
+    );
     
     // Other options
 
@@ -258,12 +299,14 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     );
 
     enum ExplainArgs {
+      columnar,
       kernels,
       llvm,
       parsing,
       parsing_simplified,
       property_inference,
       select_matrix_repr,
+      selection_pushdown,
       sql,
       phy_op_selection,
       type_adaptation,
@@ -279,6 +322,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(parsing, "Show DaphneIR after parsing"),
             clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
+            clEnumVal(columnar, "Show DaphneIR after converting to columnar operations"),
+            clEnumVal(selection_pushdown, "Show DaphneIR after selection pushdown"),
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
             clEnumVal(select_matrix_repr, "Show DaphneIR after selecting physical matrix representations"),
             clEnumVal(phy_op_selection, "Show DaphneIR after selecting physical operators"),
@@ -387,6 +432,11 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.debugMultiThreading = debugMultiThreading;
     user_config.prePartitionRows = prePartitionRows;
     user_config.distributedBackEndSetup = distributedBackEndSetup;
+    user_config.vector_extension = vectorExtension;
+    user_config.use_columnar = useColumnar;
+    user_config.use_columnar_reduce = useColumnarReduce;
+    user_config.use_columnar_rewrite = useColumnarRewrite;
+    user_config.use_selection_pushdown = useSelectionPushdown;
     if(user_config.use_distributed)
     {
         if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_SYNC &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_ASYNC)
@@ -395,6 +445,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.max_distributed_serialization_chunk_size = maxDistrChunkSize;    
     for (auto explain : explainArgList) {
         switch (explain) {
+            case columnar:
+                user_config.explain_columnar = true;
+                break;
             case kernels:
                 user_config.explain_kernels = true;
                 break;
@@ -412,6 +465,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
             case select_matrix_repr:
                 user_config.explain_select_matrix_repr = true;
+                break;
+            case selection_pushdown:
+                user_config.explain_selection_pushdown = true;
                 break;
             case sql:
                 user_config.explain_sql = true;

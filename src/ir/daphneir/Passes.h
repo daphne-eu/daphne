@@ -48,10 +48,14 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createProfilingPass();
     std::unique_ptr<Pass> createLowerToLLVMPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createManageObjRefsPass();
+    std::unique_ptr<Pass> createOptimizeColumnarOpPass();
     std::unique_ptr<Pass> createPhyOperatorSelectionPass();
     std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
+    std::unique_ptr<Pass> createReduceColumnarOpPass();
+    std::unique_ptr<Pass> createRewriteColumnarOpPass();
     std::unique_ptr<Pass> createRewriteSqlOpPass();
     std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
+    std::unique_ptr<Pass> createSelectionPushdownPass();
     std::unique_ptr<Pass> createSelectMatrixRepresentationsPass();
     std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createVectorizeComputationsPass();
@@ -62,6 +66,10 @@ namespace mlir::daphne {
 
 #ifdef USE_FPGAOPENCL
     std::unique_ptr<Pass> createMarkFPGAOPENCLOpsPass(const DaphneUserConfig& cfg);
+#endif
+
+#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
+    std::unique_ptr<Pass> createMarkVectorExtensionOpsPass(const DaphneUserConfig& cfg);
 #endif
 
 #define GEN_PASS_REGISTRATION

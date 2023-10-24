@@ -158,6 +158,11 @@ public:
                     return "CSRMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
                 }
             }
+        else if(auto colTy = t.dyn_cast<mlir::daphne::ColumnType>())
+            if(generalizeToStructure)
+                return "Structure";
+            else
+                return "Column_" + mlirTypeToCppTypeName(colTy.getColumnType(), false);
         else if(t.isa<mlir::daphne::FrameType>())
             if(generalizeToStructure)
                 return "Structure";
@@ -216,7 +221,7 @@ public:
     }
     
     [[maybe_unused]] static bool isObjType(mlir::Type t) {
-        return t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
+        return t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ColumnType>();
     }
     
     [[maybe_unused]] static bool hasObjType(mlir::Value v) {
@@ -237,6 +242,8 @@ public:
             return mt.getElementType();
         if(auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error("getValueType() doesn't support frames yet"); // TODO
+        if(auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.getColumnType();
         else // TODO Check if this is really a scalar.
             return t;
     }
@@ -257,6 +264,8 @@ public:
             return mt.withElementType(vt);
         if(auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
+        if(auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.withColumnType(vt);
         else // TODO Check if this is really a scalar.
             return vt;
     }

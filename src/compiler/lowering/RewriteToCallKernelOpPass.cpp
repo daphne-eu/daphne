@@ -51,6 +51,8 @@ namespace
                 return 2;
             if(llvm::isa<daphne::DistributedComputeOp>(op))
                 return 1;
+            if(llvm::isa<daphne::ColumnProjectionPathOp>(op))
+                return 2;
             throw std::runtime_error(
                     "lowering to kernel call not yet supported for this variadic operation: "
                     + op->getName().getStringRef().str()
@@ -117,6 +119,15 @@ namespace
                         isVariadic[index]
                 );
             }
+            if(auto concreteOp = llvm::dyn_cast<daphne::ColumnProjectionPathOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {false, true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
             throw std::runtime_error(
                     "lowering to kernel call not yet supported for this variadic operation: "
                     + op->getName().getStringRef().str()
@@ -157,6 +168,9 @@ namespace
             else if(op->hasAttr("fpgaopencl_device")) {
                 callee << "FPGAOPENCL";
             }
+		    else if(op->hasAttr("vector_extension")) {
+                callee << op->getAttr("vector_extension").cast<StringAttr>().getValue().str();
+            } 
 
             callee << '_' << op->getName().stripDialect().data();
 

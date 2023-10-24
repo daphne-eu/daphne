@@ -1,0 +1,18 @@
+# Selecting all columns with the asterisk from cartesian join product.
+
+f = createFrame(
+    [  0,  1],
+    [  5,  4],
+    "a", "b");
+
+g = createFrame(
+    [  0,  1],
+    [  5,  4],
+    "a", "b");
+
+registerView("f", f);
+registerView("g", g);
+
+res = sql("SELECT * FROM f, g;");
+
+print(res);

@@ -71,7 +71,9 @@ std::vector<Type> daphne::CastOp::inferTypes() {
     Type resTy = getRes().getType();
     auto mtArg = argTy.dyn_cast<daphne::MatrixType>();
     auto ftArg = argTy.dyn_cast<daphne::FrameType>();
+    auto ctArg = argTy.dyn_cast<daphne::ColumnType>();
     auto mtRes = resTy.dyn_cast<daphne::MatrixType>();
+    auto ctRes = resTy.dyn_cast<daphne::ColumnType>();
 
     // If the result type is a matrix with so far unknown value type, then we
     // infer the value type from the argument.
@@ -94,7 +96,10 @@ std::vector<Type> daphne::CastOp::inferTypes() {
                         "currently CastOp cannot infer the value type of its "
                         "output matrix, if the input is a multi-column frame"
                 );
-        }
+        } 
+        else if (ctArg)
+            // The argument is a column; we use its value type for the result.
+            resVt = ctArg.getColumnType();
         else
             // The argument is a scalar, we use its type for the value type
             // of the result.
@@ -103,6 +108,41 @@ std::vector<Type> daphne::CastOp::inferTypes() {
          
         return {daphne::MatrixType::get(getContext(), resVt)};
     }
+
+    // If the result type is a column with so far unknown value type, then we
+    // infer the value type from the argument.
+    if(ctRes && ctRes.getColumnType().isa<daphne::UnknownType>()) {
+        Type resVt;
+
+        if(mtArg)
+            // The argument is a matrix; we use its value type for the result.
+            resVt = mtArg.getElementType();
+        else if(ftArg) {
+            // The argument is a frame, we use the value type of its only
+            // column for the results; if the argument has more than one
+            // column, we throw an exception.
+            std::vector<Type> ctsArg = ftArg.getColumnTypes();
+            if(ctsArg.size() == 1)
+                resVt = ctsArg[0];
+            else
+                // TODO We could use the most general of the column types.
+                throw std::runtime_error(
+                        "currently CastOp cannot infer the value type of its "
+                        "output matrix, if the input is a multi-column frame"
+                );
+        }
+        else if (ctArg)
+            // The argument is a column; we use its value type for the result.
+            resVt = ctArg.getColumnType();
+        else
+            // The argument is a scalar, we use its type for the value type
+            // of the result.
+            // TODO double-check if it is really a scalar
+            resVt = argTy;
+         
+        return {daphne::ColumnType::get(getContext(), resVt)};
+    }
+
 
     // Otherwise, we leave the result type as it is. We do not reset it to
     // unknown, since this could drop information that was explicitly
@@ -123,9 +163,25 @@ std::vector<Type> daphne::ExtractColOp::inferTypes() {
         // Extracting columns from a frame may change the list of column value types (schema).
         std::vector<Type> resColTys;
 
-        if(auto selStrTy = selTy.dyn_cast<daphne::StringType>())
-            // Extracting a single column by its string label.
-            resColTys = {getFrameColumnTypeByLabel(srcFrmTy, getSelectedCols())};
+        if(auto selStrTy = selTy.dyn_cast<daphne::StringType>()) {
+            std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
+            std::string delimiter = ".";
+            const std::string frameName = label.substr(0, label.find(delimiter));
+            const std::string colLabel = label.substr(label.find(delimiter) + delimiter.length(), label.length());
+            if(colLabel.compare("*") == 0) {
+                std::vector<std::string> labels = *srcFrmTy.getLabels();
+                std::vector<mlir::Type> colTypes = srcFrmTy.getColumnTypes();
+                for (size_t i = 0; i < labels.size(); i++) {
+                    std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
+                    if (labelFrameName.compare(frameName) == 0) {
+                        resColTys.push_back(colTypes[i]);
+                    }
+                }
+            } else {
+                // Extracting a single column by its string label.
+                resColTys = {getFrameColumnTypeByLabel(srcFrmTy, getSelectedCols())};
+            }
+        }
         else if(auto selMatTy = selTy.dyn_cast<daphne::MatrixType>()) {
             // Extracting columns by their positions (given as a column matrix).
 
@@ -230,7 +286,29 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
 
     for(Value t : getKeyCol()){
         //Key Types getting adopted for the new Frame
-        newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
+        std::string labelStr = CompilerUtils::constantOrThrow<std::string>(
+            t, "the specified label must be a constant of string type"
+        );
+        std::string delimiter = ".";
+        const std::string frameName = labelStr.substr(0, labelStr.find(delimiter));
+        const std::string colLabel = labelStr.substr(labelStr.find(delimiter) + delimiter.length(), labelStr.length());
+        if(labelStr == "*") {
+            auto allTypes = arg.getColumnTypes();
+            for (Type type: allTypes) {
+                newColumnTypes.push_back(type);
+            }
+        } else if(colLabel.compare("*") == 0) {
+            std::vector<std::string> labels = *arg.getLabels();
+            std::vector<mlir::Type> colTypes = arg.getColumnTypes();
+            for (size_t i = 0; i < labels.size(); i++) {
+                std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
+                if (labelFrameName.compare(frameName) == 0) {
+                    newColumnTypes.push_back(colTypes[i]);
+                }
+            }
+    }else {
+            newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
+        }
     }
 
     // Values get collected in a easier to use Datastructure
@@ -256,6 +334,21 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
     }
     return {daphne::FrameType::get(ctx, newColumnTypes)};
 }
+
+std::vector<Type> daphne::ColumnJoinOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    return {
+        daphne::ColumnType::get(ctx, builder.getIndexType()),
+        daphne::ColumnType::get(ctx, builder.getIndexType())
+    };
+}
+
+std::vector<Type> daphne::ColumnProjectionPathOp::inferTypes() {
+    Type colType = getData().getType().dyn_cast<daphne::ColumnType>().getColumnType();
+    return {daphne::ColumnType::get(getContext(), colType)};
+}
+
 
 std::vector<Type> daphne::ExtractOp::inferTypes() {
     throw std::runtime_error("type inference not implemented for ExtractOp"); // TODO

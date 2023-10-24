@@ -19,6 +19,7 @@
 
 #include <api/daphnelib/DaphneLibResult.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
+#include <runtime/local/kernels/SIMDOperatorsDAPHNE/VectorExtensions.h>
 #include <runtime/local/datastructures/IAllocationDescriptor.h>
 #include <util/LogConfig.h>
 #include <util/DaphneLogger.h>
@@ -36,6 +37,10 @@ class DaphneLogger;
 struct DaphneUserConfig {
     // Remember to update UserConfig.json accordingly!
 
+    bool use_columnar = false;
+    bool use_columnar_reduce = false;
+    bool use_columnar_rewrite = false;
+    bool use_selection_pushdown = false;
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
@@ -52,12 +57,14 @@ struct DaphneUserConfig {
     bool enable_profiling = false;
 
     bool debug_llvm = false;
+    bool explain_columnar = false;
     bool explain_kernels = false;
     bool explain_llvm = false;
     bool explain_parsing = false;
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
     bool explain_select_matrix_repr = false;
+    bool explain_selection_pushdown = false;
     bool explain_sql = false;
     bool explain_phy_op_selection = false;
     bool explain_type_adaptation = false;
@@ -67,6 +74,7 @@ struct DaphneUserConfig {
     QueueTypeOption queueSetupScheme = CENTRALIZED;
 	VictimSelectionLogic victimSelection = SEQPRI;
     ALLOCATION_TYPE distributedBackEndSetup= ALLOCATION_TYPE::DIST_MPI; // default value
+    VectorExtensions vector_extension = VectorExtensions::SCALAR;
     size_t max_distributed_serialization_chunk_size = std::numeric_limits<int>::max() - 1024; // 2GB (-1KB to make up for gRPC headers etc.) - which is the maximum size allowed by gRPC / MPI. TODO: Investigate what might be the optimal.
     int numberOfThreads = -1;
     int minimumTaskSize = 1;

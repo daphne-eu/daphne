@@ -95,8 +95,26 @@ struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<int64_t>> {
 template<>
 struct ExtractCol<Frame, Frame, char> {
     static void apply(Frame *& res, const Frame * arg, const char * sel, DCTX(ctx)) {
-        size_t colIdx = arg->getColumnIdx(sel);
-        res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
+        std::string delimiter = ".";
+        const std::string colName = std::string(sel);
+        const std::string frameName = colName.substr(0, colName.find(delimiter));
+        const std::string colLabel = colName.substr(colName.find(delimiter) + delimiter.length(), colName.length());
+        if (colLabel.compare("*") ==0) {
+            const std::string * labels = arg->getLabels();
+            const size_t numLabels = arg->getNumCols();
+            std::vector<size_t> extractLabelIdxs;
+            for (size_t i = 0; i < numLabels; i++) {
+                std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
+                if (labelFrameName.compare(frameName) == 0) {
+                    extractLabelIdxs.push_back(arg->getColumnIdx(labels[i]));
+                }
+            }
+            res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), extractLabelIdxs.size(), extractLabelIdxs.data());
+        } else {
+            size_t colIdx = arg->getColumnIdx(sel);
+            res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
+        }
+        
     }
 };
 

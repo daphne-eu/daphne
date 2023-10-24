@@ -28,6 +28,25 @@ set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -O0")
 # silence a warning about DEPFILE path transformations (used in LLVM)
 cmake_policy(SET CMP0116 OLD)
 
+
+if( NOT DEFINED THIRDPARTY)
+    set( THIRDPARTY ${PROJECT_SOURCE_DIR}/thirdparty)
+endif()
+
+# Set include path, if not set
+if( NOT DEFINED CMAKE_PREFIX_PATH )
+    set( CMAKE_PREFIX_PATH ${THIRDPARTY}/installed )
+    set( THIRDPARTY_INSTALLED ${THIRDPARTY}/installed )
+endif()
+
+if( NOT DEFINED THIRDPARTY_INSTALLED )
+    set( THIRDPARTY_INSTALLED ${THIRDPARTY}/installed )
+endif()
+
+if( NOT DEFINED THIRDPARTY_INCLUDE )
+    set( THIRDPARTY_INCLUDE ${THIRDPARTY_INSTALLED}/include)
+endif()
+
 # *****************************************************************************
 # Related to MLIR/LLVM
 # *****************************************************************************
@@ -75,13 +94,30 @@ set(BLA_VENDOR OpenBLAS)
 set(BLA_STATIC OFF)
 find_package(BLAS REQUIRED)
 
+# Add TSL to include path
+# set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${THIRDPARTY_INCLUDE}/TSL )
+# include_directories(${THIRDPARTY_INCLUDE}/TSL)
+
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs
 # to make compile/exec in container plus finding includes in local IDE work, specify both, local third party sources
 # prefix and /usr/local e.g.: -DCMAKE_PREFIX_PATH="/usr/local;${PROJECT_SOURCE_DIR}/thirdparty/installed"
 foreach(path ${CMAKE_PREFIX_PATH})
     message(STATUS "CMAKE_PREFIX_PATH:  ${path}")
     include_directories(${path}/include)
+    include_directories(${path}/include/openblas)
+    set( ANTLR_JAR_FOUND "" )
+    file(GLOB ANTLR_JAR_FOUND ${path}/share/antlr4/antlr-${ANTLR_VERSION}-complete.jar)
+    if(NOT ${ANTLR_JAR_FOUND} EQUAL "")
+        message(STATUS "ANTLR_JAR_FOUND: ${ANTLR_JAR_FOUND}")
+        set(ANTLR4_JAR_LOCATION ${ANTLR_JAR_FOUND})
+    endif()
 endforeach(path)
+
+# fallback if not using CMAKE_PREFIX_PATH (e.g., system/container install)
+if(NOT DEFINED CMAKE_PREFIX_PATH)
+    set(ANTLR4_JAR_LOCATION /usr/local/share/antlr4/antlr-${ANTLR_VERSION}-complete.jar)
+    include_directories(/usr/local/include/openblas)
+endif()
 
 # check <package>_ROOT env var
 cmake_policy(SET CMP0074 NEW)
@@ -144,6 +180,38 @@ if(USE_FPGAOPENCL)
 endif()
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
+
+
+# *****************************************************************************
+# Dependency // SIMDOperators
+# *****************************************************************************
+include(FetchContent)
+
+FetchContent_Declare(
+  SIMDOperators
+  GIT_REPOSITORY https://github.com/db-tu-dresden/SIMDOperators.git
+  GIT_TAG        daphne_integration # or a later release
+)
+
+FetchContent_MakeAvailable(SIMDOperators)
+
+option(USE_AVX512 "Whether to activate compilation of AVX512 features" OFF)
+if(USE_AVX512)
+    add_definitions(-DUSE_AVX512)
+endif()
+option(USE_AVX2 "Whether to activate compilation of AVX2 features" OFF)
+if(USE_AVX2)
+    add_definitions(-DUSE_AVX2)
+endif()
+option(USE_SSE "Whether to activate compilation of SSE features" OFF)
+if(USE_SSE)
+    add_definitions(-DUSE_SSE)
+endif()
+option(USE_SCALAR "Whether to activate compilation of scalar features" OFF)
+if(USE_SCALAR)
+    add_definitions(-DUSE_SCALAR)
+endif()
+
 
 # *****************************************************************************
 # Project-specific include directories

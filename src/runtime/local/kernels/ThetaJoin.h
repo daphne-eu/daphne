@@ -319,7 +319,7 @@ class ThetaJoin<Frame, Frame, Frame> {
             size_t rhsRowCount = container.rhs->getNumRows();
             
             if(!positions) {
-                positions = new ResultContainer(lhsRowCount * rhsRowCount);
+                positions = new ResultContainer(std::max(lhsRowCount , rhsRowCount));
             }
             
             if(depth == 0){

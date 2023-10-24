@@ -1,0 +1,18 @@
+# Selecting all columns with the asterisk from join of two frames and a group.
+
+f = createFrame(
+    [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
+    [  5,  4,  3,  2,  1,  9,  8,  7,  6,  5],
+    "a", "b");
+
+g = createFrame(
+    [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
+    [  5,  4,  3,  2,  1,  9,  8,  7,  6,  5],
+    "a", "b");
+
+registerView("f", f);
+registerView("g", g);
+
+res = sql("SELECT * FROM f JOIN g on f.a = g.a GROUP BY f.b;");
+
+print(res);
