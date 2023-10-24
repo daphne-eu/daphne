@@ -6,6 +6,9 @@ build_*/
 /lib
 /tmp
 
+# runtime dump
+**/*.ll
+
 # dependencies
 thirdparty/*
 !thirdparty/llvm-project/
@@ -30,6 +33,8 @@ tmpdaphne.daphne
 
 # tags file
 tags
+tags.lock
+tags.temp
 
 # clangd cache
 .cache/
