@@ -579,27 +579,77 @@
     },
     {
         "kernelTemplate": {
-            "header": "GetDataPointer.h",
-            "opName": "getDataPointer",
-            "returnType": "StridedMemRefType<VT,N>",
+            "header": "MemRefInterop.h",
+            "opName": "convertMemRefToDenseMatrix",
+            "returnType": "void",
             "templateParams": [
                 {
                     "name": "VT",
-                    "isDataType": true
-                },
-                {
-                    "name": "N",
                     "isDataType": false
                 }
             ],
             "runtimeParams": [
                 {
-                    "type": "const DenseMatrix<VT>*",
+                    "type": "DenseMatrix<VT>*&",
+                    "name": "result"
+                },
+                {
+                    "type": "size_t",
+                    "name": "basePtr"
+                },
+                {
+                    "type": "size_t",
+                    "name": "offset"
+                },
+                {
+                    "type": "size_t",
+                    "name": "size0"
+                },
+                {
+                    "type": "size_t",
+                    "name": "size1"
+                },
+                {
+                    "type": "size_t",
+                    "name": "stride0"
+                },
+                {
+                    "type": "size_t",
+                    "name": "stride1"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["uint64_t"],
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "MemRefInterop.h",
+            "opName": "convertDenseMatrixToMemRef",
+            "returnType": "StridedMemRefType<VT,2>",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DenseMatrix<VT>*",
                     "name": "input"
                 }
             ]
         },
-        "instantiations": [["double", "1"], ["float", "1"]]
+        "instantiations": [
+            ["int64_t"],
+            ["uint64_t"],
+            ["float"],
+            ["double"]
+        ]
     },
     {
         "kernelTemplate": {
