@@ -70,20 +70,9 @@ struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
         const VT* valuesLhs = lhs->getValues();
         VT* valuesRes = res->getValues();
 
-        if (opCode == BinaryOpCode::MOD) {
-            for (size_t r = 0; r < numRows; r++) {
-                for (size_t c = 0; c < numCols; c++)
-                    valuesRes[c] = std::fmod(valuesLhs[c], rhs);
-                valuesLhs += lhs->getRowSkip();
-                valuesRes += res->getRowSkip();
-            }
-            return;
-        }
-
         EwBinaryScaFuncPtr<VT, VT, VT> func =
             getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
 
-        // TODO(phil): also remove func for other BinaryOpCode?
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++)
                 valuesRes[c] = func(valuesLhs[c], rhs, ctx);
