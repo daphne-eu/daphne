@@ -15,28 +15,39 @@
  */
 
 #include "LoweringUtils.h"
-#include "ir/daphneir/Daphne.h"
-#include "mlir/IR/TypeUtilities.h"
 
-/// Insert an allocation and deallocation for the given MemRefType.
-mlir::Value insertAllocAndDealloc(mlir::MemRefType type, mlir::Location loc,
-                                  mlir::PatternRewriter &rewriter) {
+#include <ir/daphneir/Passes.h>
+
+#include "ir/daphneir/Daphne.h"
+#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#include "mlir/Dialect/Affine/Passes.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/IR/TypeUtilities.h"
+#include "mlir/Transforms/Passes.h"
+
+/// Insert an allocation for the given MemRefType.
+mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc,
+                              mlir::PatternRewriter &rewriter) {
     auto alloc = rewriter.create<mlir::memref::AllocOp>(loc, type);
 
     // Make sure to allocate at the beginning of the block.
     auto *parentBlock = alloc->getBlock();
     alloc->moveBefore(&parentBlock->front());
 
-    // Make sure to deallocate this alloc at the end of the block.
-    auto dealloc = rewriter.create<mlir::memref::DeallocOp>(loc, alloc);
-    dealloc->moveBefore(&parentBlock->back());
     return alloc;
 }
 
+void insertMemRefDealloc(mlir::Value memref, mlir::Location loc,
+                         mlir::PatternRewriter &rewriter) {
+    auto dealloc = rewriter.create<mlir::memref::DeallocOp>(loc, memref);
+    dealloc->moveBefore(&memref.getParentBlock()->back());
+}
+
+// TODO(phil) try to provide function templates to remove duplication
 void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
-                      mlir::Location loc, mlir::ArrayRef<int64_t> shape,
-                      mlir::MLIRContext *ctx, mlir::Value memRef,
-                      mlir::Type elemType) {
+                         mlir::Location loc, mlir::ArrayRef<int64_t> shape,
+                         mlir::MLIRContext *ctx, mlir::Value memRef,
+                         mlir::Type elemType) {
     constexpr int ROW = 0;
     constexpr int COL = 1;
     mlir::Value fillValue = rewriter.create<mlir::arith::ConstantOp>(
@@ -98,9 +109,9 @@ void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
     rewriter.setInsertionPointAfter(outerLoop);
 }
 
-mlir::Value getDenseMatrixFromMemRef(mlir::Location loc,
-                                     mlir::ConversionPatternRewriter &rewriter,
-                                     mlir::Value memRef, mlir::Type type) {
+mlir::Value convertMemRefToDenseMatrix(
+    mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
+    mlir::Value memRef, mlir::Type type) {
     auto extractStridedMetadataOp =
         rewriter.create<mlir::memref::ExtractStridedMetadataOp>(loc, memRef);
     // aligned ptr (memref.data)
@@ -114,29 +125,25 @@ mlir::Value getDenseMatrixFromMemRef(mlir::Location loc,
     // sizes
     mlir::ResultRange sizes = extractStridedMetadataOp.getSizes();
 
-    // debug
-    // rewriter.create<mlir::daphne::PrintMemRef>(loc, alignedPtr, offset,
-    //                                            sizes[0], sizes[1],
-    //                                            strides[0], strides[1]);
-
-    return rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
+    return rewriter.create<mlir::daphne::ConvertMemRefToDenseMatrix>(
         loc, type, alignedPtr, offset, sizes[0], sizes[1], strides[0],
         strides[1]);
 }
 
 mlir::Type convertFloat(mlir::FloatType floatType) {
     return mlir::IntegerType::get(floatType.getContext(),
-                            floatType.getIntOrFloatBitWidth());
+                                  floatType.getIntOrFloatBitWidth());
 }
 
 mlir::Type convertInteger(mlir::IntegerType intType) {
     return mlir::IntegerType::get(intType.getContext(),
-                            intType.getIntOrFloatBitWidth());
+                                  intType.getIntOrFloatBitWidth());
 }
 
-llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
-                                                 mlir::ValueRange inputs,
-                                                 mlir::Location loc) {
+llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder,
+                                                       mlir::Type type,
+                                                       mlir::ValueRange inputs,
+                                                       mlir::Location loc) {
     mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
     mlir::Type toType = getElementTypeOrSelf(type);
 
@@ -144,13 +151,15 @@ llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder,
         !toType.isSignlessInteger())
         return std::nullopt;
     // Use unrealized conversion casts to do signful->signless conversions.
-    return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])
+    return builder
+        .create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])
         ->getResult(0);
 }
 
-llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type,
-                                               mlir::ValueRange inputs,
-                                               mlir::Location loc) {
+llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder,
+                                                     mlir::Type type,
+                                                     mlir::ValueRange inputs,
+                                                     mlir::Location loc) {
     mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
     mlir::Type toType = getElementTypeOrSelf(type);
 
@@ -158,7 +167,23 @@ llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, m
         (!toType.isSignedInteger() && !toType.isUnsignedInteger()))
         return std::nullopt;
     // Use unrealized conversion casts to do signless->signful conversions.
-    return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])
+    return builder
+        .create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])
         ->getResult(0);
 }
 
+mlir::Operation *findLastUseOfSSAValue(mlir::Value &v) {
+    mlir::Operation *lastUseOp = nullptr;
+
+    for (mlir::OpOperand &use : v.getUses()) {
+        mlir::Operation *thisUseOp = use.getOwner();
+        // Find parent op in the block where v is defined.
+        while (thisUseOp->getBlock() != v.getParentBlock())
+            thisUseOp = thisUseOp->getParentOp();
+        // Determine if this is a later use.
+        if (!lastUseOp || lastUseOp->isBeforeInBlock(thisUseOp))
+            lastUseOp = thisUseOp;
+    }
+
+    return lastUseOp;
+}
