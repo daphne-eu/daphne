@@ -62,7 +62,7 @@ DaphneOps `ConvertMemRefToDenseMatrix ` and `ConvertDenseMatrixToMemRef `.
 #### Debugging
 
 In order to enable our debug `PrintIRPass` pass, one has to add `--explain
-cdgn` when running `daphne`. Additionally, it is recommended to use the
+code_gen` when running `daphne`. Additionally, it is recommended to use the
 `daphne-opt` tool to test passes in isolation. One just has to provide the
 input IR for a pass to `daphne-opt` and the correct flag to run the pass (or
 multiple passes) on the IR. `daphne-opt` provides all the functionality of the
