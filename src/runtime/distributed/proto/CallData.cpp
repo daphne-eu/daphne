@@ -16,23 +16,29 @@
 
 #include "CallData.h"
 
-void StoreCallData::Proceed() {
+void StoreCallData::Proceed(bool ok) {
     if (status_ == CREATE)
     {
         // Make this instance progress to the PROCESS state.
         status_ = PROCESS;
 
-        service_->RequestStore(&ctx_, &data, &responder_, cq_, cq_,
-                                this);
+        service_->RequestStore(&ctx_, &stream_, cq_, cq_, this);
+        worker->PrepareStoreGRPC();
     }
     else if (status_ == PROCESS)
     {
-        status_ = FINISH;
+        if (ok) {
+            stream_.Read(&data, this);
+            grpc::Status status = worker->StoreGRPC(&ctx_, &data, &storedData);
+            if (!status.ok())
+                throw std::runtime_error("Error while receiving/storing partial data");            
+        }
+        else {
+            new StoreCallData(worker, scq_, cq_);
+            status_ = FINISH;
 
-        new StoreCallData(worker, cq_);
-        grpc::Status status = worker->StoreGRPC(&ctx_, &data, &storedData);
-
-        responder_.Finish(storedData, grpc::Status::OK, this);
+            stream_.Finish(storedData, grpc::Status::OK, this);
+        }
     }
     else
     {
@@ -41,7 +47,7 @@ void StoreCallData::Proceed() {
     }
 }
 
-void ComputeCallData::Proceed() {
+void ComputeCallData::Proceed(bool ok) {
     if (status_ == CREATE)
     {
         // Make this instance progress to the PROCESS state.
@@ -52,6 +58,8 @@ void ComputeCallData::Proceed() {
     }
     else if (status_ == PROCESS)
     {
+        if (!ok)
+            delete this;
         status_ = FINISH;
 
         new ComputeCallData(worker, cq_);
@@ -67,7 +75,7 @@ void ComputeCallData::Proceed() {
     }
 }
 
-void TransferCallData::Proceed() {
+void TransferCallData::Proceed(bool ok) {
     if (status_ == CREATE)
     {
         // Make this instance progress to the PROCESS state.
@@ -78,6 +86,8 @@ void TransferCallData::Proceed() {
     }
     else if (status_ == PROCESS)
     {
+        if (!ok)
+            delete this;
         status_ = FINISH;
 
         new TransferCallData(worker, cq_);

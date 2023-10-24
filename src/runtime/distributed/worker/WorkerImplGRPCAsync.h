@@ -24,13 +24,24 @@
 #include "runtime/distributed/proto/worker.pb.h"
 #include "runtime/distributed/proto/worker.grpc.pb.h"
 
+#include <runtime/local/io/DaphneSerializer.h>
 
 class WorkerImplGRPCAsync : public WorkerImpl 
 {
 private:
+    grpc::ServerContext ctx_;
     std::unique_ptr<grpc::ServerCompletionQueue> cq_;
+    std::unique_ptr<grpc::ServerCompletionQueue> scq_;
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::Server> server;
+    grpc::ServerAsyncReader<distributed::StoredData, distributed::Data> stream_;
+    grpc::ServerAsyncResponseWriter<distributed::StoredData> responder_;
+    
+    // Store in chunks
+    std::unique_ptr<DaphneDeserializerChunks<Structure>> deserializer;
+    std::unique_ptr<DaphneDeserializerChunks<Structure>::Iterator> deserializerIter;
+    Structure *mat;
+    bool isFirstChunk = false;
 public:
     explicit WorkerImplGRPCAsync(const std::string& addr, DaphneUserConfig& _cfg);
     void Wait() override;
@@ -46,6 +57,8 @@ public:
                          ::distributed::Data *response) ;
 
     distributed::Worker::AsyncService service_;
+
+    void PrepareStoreGRPC();
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPCASYNC_H

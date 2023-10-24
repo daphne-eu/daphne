@@ -63,7 +63,7 @@ void distribute(DT *mat, DCTX(dctx))
 template<class DT>
 struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
 {
-    static void apply(DT *mat, DCTX(dctx)) {        
+    static void apply(DT *mat, DCTX(dctx)) {
         std::vector<char> dataToSend;
         std::vector<int> targetGroup;  
 
@@ -77,9 +77,17 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                 continue;
             
             auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
-            auto len = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(slicedMat, dataToSend);                        
-            MPIHelper::distributeData(len, dataToSend.data(),rank);
-            targetGroup.push_back(rank);            
+            
+            // Minimum chunk size
+            auto min_chunk_size = dctx->config.max_distributed_serialization_chunk_size < DaphneSerializer<DT>::length(slicedMat) ? 
+                        dctx->config.max_distributed_serialization_chunk_size : 
+                        DaphneSerializer<DT>::length(slicedMat);
+            MPIHelper::initiateStreaming(rank, min_chunk_size);
+            auto serializer = DaphneSerializerChunks<DT>(slicedMat, min_chunk_size);
+            for (auto it = serializer.begin(); it != serializer.end(); ++it){
+                MPIHelper::sendData(it->first, it->second->data(), rank);
+            }
+            targetGroup.push_back(rank);     
         }
         for(size_t i=0;i<targetGroup.size();i++)
         {
@@ -113,7 +121,6 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
         struct StoredInfo {
             size_t dp_id;
         }; 
-        
         DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller(dctx);
             
         assert(mat != nullptr);
@@ -130,14 +137,27 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
             std::vector<char> buffer;
             
             auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
-            // DT is const Structure, but we only provide template specialization for structure.
-            // TODO should we implement an additional specialization or remove constness from template parameter?
-            auto length = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(slicedMat, buffer);            
-            protoMsg.set_bytes(buffer.data(), length);
 
             StoredInfo storedInfo({dp->dp_id}); 
-            caller.asyncStoreCall(dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);
+
+            auto address = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation();
+
+            caller.asyncStoreCall(address, storedInfo);
+            // Minimum chunk size
+            auto min_chunk_size = dctx->config.max_distributed_serialization_chunk_size < DaphneSerializer<DT>::length(mat) ? 
+                        dctx->config.max_distributed_serialization_chunk_size : 
+                        DaphneSerializer<DT>::length(mat);
+
+            protoMsg.set_bytes(&min_chunk_size, sizeof(size_t));
+            caller.sendDataStream(address, protoMsg);
+
+            auto serializer = DaphneSerializerChunks<DT>(slicedMat, min_chunk_size);
+            for (auto it = serializer.begin(); it != serializer.end(); ++it){                
+                protoMsg.set_bytes(it->second->data(), it->first);
+                caller.sendDataStream(address, protoMsg);
+            }
         }                
+        caller.writesDone();
                        
 
         // get results       
@@ -180,24 +200,32 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
             // Skip if already placed at workers
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
-            distributed::Data protoMsg;
+
 
             std::vector<char> buffer;
             
-            auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
-            // DT is const Structure, but we only provide template specialization for structure.
-            // TODO should we implement an additional specialization or remove constness from template parameter?
-            auto length = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(slicedMat, buffer);            
-            protoMsg.set_bytes(buffer.data(), length);
-
+            
             auto workerAddr = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation();
-            std::thread t([=]()
+            std::thread t([=, &mat]()
             {
                 auto stub = ctx->stubs[workerAddr].get();
 
                 distributed::StoredData storedData;
                 grpc::ClientContext grpc_ctx;
-                auto status = stub->Store(&grpc_ctx, protoMsg, &storedData);
+
+                auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);            
+                auto serializer = DaphneSerializerChunks<DT>(slicedMat, dctx->config.max_distributed_serialization_chunk_size);
+                
+                distributed::Data protoMsg;
+
+                // Send chunks
+                auto writer = stub->Store(&grpc_ctx, &storedData);
+                for (auto it = serializer.begin(); it != serializer.end(); ++it){                
+                    protoMsg.set_bytes(it->second->data(), it->first);
+                    writer->Write(protoMsg);
+                }
+                writer->WritesDone();
+                auto status = writer->Finish();
                 if (!status.ok())
                     throw std::runtime_error(status.error_message());
 
