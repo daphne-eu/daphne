@@ -104,7 +104,6 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             loc, innerLoop.getRegionIterArgs()[0], elementLoad);
         // yield inner loop result
         rewriter.setInsertionPointToEnd(innerLoop.getBody());
-        // rewriter.create<scf::YieldOp>(loc, inner_sum);
         rewriter.create<AffineYieldOp>(loc, inner_sum);
         // yield outer loop result
         rewriter.setInsertionPointToEnd(outerLoop.getBody());
