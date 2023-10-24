@@ -21,6 +21,25 @@
 #include <string>
 
 // **************************************************************************************************
+// Specializations of isConstantHelper for string types
+// **************************************************************************************************
+
+template<>
+std::pair<bool, std::string> CompilerUtils::isConstantHelper<std::string, mlir::StringAttr>(mlir::Value v, std::function<std::string(const mlir::StringAttr&)> func) {
+    if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>()) {
+        if(auto attr = co.getValue().dyn_cast<mlir::StringAttr>()) {
+            return std::make_pair(true, func(attr));
+        }
+    }
+    if(auto co = v.getDefiningOp<mlir::arith::ConstantOp>()) {
+        if(auto attr = co.getValue().dyn_cast<mlir::StringAttr>()) {
+            return std::make_pair(true, func(attr));
+        }
+    }
+    return std::make_pair(false, std::string());
+}
+
+// **************************************************************************************************
 // Specializations of isConstant for various types
 // **************************************************************************************************
 
@@ -81,6 +100,13 @@ std::string CompilerUtils::constantOrThrow<std::string>(mlir::Value v, const std
 template<>
 int64_t CompilerUtils::constantOrThrow<int64_t>(mlir::Value v, const std::string & errorMsg) {
     return constantOrThrowHelper<int64_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}, errorMsg, "integer"
+    );
+}
+
+template<>
+uint64_t CompilerUtils::constantOrThrow<uint64_t>(mlir::Value v, const std::string & errorMsg) {
+    return constantOrThrowHelper<uint64_t, mlir::IntegerAttr>(
             v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}, errorMsg, "integer"
     );
 }
@@ -151,4 +177,11 @@ bool CompilerUtils::constantOrDefault<bool>(mlir::Value v, bool d) {
 
 [[maybe_unused]] FileMetaData CompilerUtils::getFileMetaData(mlir::Value filename) {
     return MetaDataParser::readMetaData(constantOrThrow<std::string>(filename));
+}
+
+bool CompilerUtils::isMatrixComputation(mlir::Operation *v) {
+    return
+            llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty){ return ty.isa<mlir::daphne::MatrixType>(); })
+            ||
+            llvm::any_of(v->getResultTypes(), [&](mlir::Type ty){ return ty.isa<mlir::daphne::MatrixType>(); });
 }

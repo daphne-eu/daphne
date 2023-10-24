@@ -43,10 +43,8 @@ template<typename VT>
     if(this->_numCUDAThreads) {
         this->initCUDAWorkers(q.get(), batchSize8M * 4, verbose);
         this->cudaPrefetchInputs(inputs, numInputs, mem_required, splits);
-#ifndef NDEBUG
-        std::cerr << "Required memory (ins/outs): " << mem_required << "\nRequired mem/row: " << row_mem << std::endl;
-        std::cerr << "batchsizeCPU=" << batchSize8M << " batchsizeGPU=" << batchSize8M*4 << std::endl;
-#endif
+        ctx->logger->info("MTWrapper_dense: \nRequired memory (ins/outs): {} Required mem/row: {}\n batchsizeCPU={} "
+                "batchsizeGPU={}", mem_required, row_mem, batchSize8M, batchSize8M*4);
     }
 #endif
 
@@ -207,10 +205,7 @@ template<typename VT>
 
     auto*** res_cuda = new DenseMatrix<VT>**[numOutputs];
     auto blksize = gpu_task_len / ctx->cuda_contexts.size();
-#ifndef NDEBUG
-    std::cerr << "gpu_task_len:  " << gpu_task_len << "\ntaskRatioCUDA: " << taskRatioCUDA << "\nBlock size: "
-              << blksize << std::endl;
-#endif
+    ctx->logger->debug("gpu_task_len: {}\ntaskRatioCUDA: {}\nBlock size: {}", gpu_task_len, taskRatioCUDA, blksize);
     for (size_t i = 0; i < numOutputs; ++i) {
         res_cuda[i] = new DenseMatrix<VT>*;
         if(combines[i] == mlir::daphne::VectorCombine::ROWS) {
@@ -325,7 +320,7 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
         if (combines[i] == mlir::daphne::VectorCombine::ROWS) {
             const auto &const_res_cuda = *res_cuda;
             auto data_dest = res->getValues();
-            CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValues(&alloc_desc), const_res_cuda.bufferSize(),
+            CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValues(&alloc_desc), const_res_cuda.getBufferSize(),
                                     cudaMemcpyDeviceToHost));
 //            debugPrintCUDABuffer("MTWrapperDense: combine outputs", const_res_cuda.getValues(&alloc_desc), const_res_cuda.getNumItems());
             DataObjectFactory::destroy(res_cuda);

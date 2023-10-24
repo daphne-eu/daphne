@@ -13,14 +13,13 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 #ifdef USE_CUDA
 #include "compiler/utils/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "runtime/local/context/CUDAContext.h"
 #include <mlir/IR/IRMapping.h>
-
-#include <iostream>
 
 using namespace mlir;
 
@@ -33,11 +32,13 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
     size_t available_gpu_mem{};
     size_t total_gpu_mem{};
     size_t mem_budget;
-    
+    std::shared_ptr<spdlog::logger> logger;
+
     explicit MarkCUDAOpsPass(const DaphneUserConfig& cfg) : cfg(cfg) {
         // ToDo: use context and per device mem info
         cudaMemGetInfo(&available_gpu_mem, &total_gpu_mem);
         mem_budget = std::floor(0.9 * static_cast<double>(total_gpu_mem));
+        logger = spdlog::get("compiler::cuda");
     }
     
     void runOnOperation() final;
@@ -58,7 +59,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
             bool pipeline_has_unsupported_cuda_ops = llvm::any_of(pipeline, [&](Operation& o) {
                 if (!llvm::isa<daphne::ReturnOp>(o)) {
                     bool out = checkUseCUDA(&o);
-//                    std::cout << "checking pipeline op for cuda: " << o.getName().getStringRef().str() << ": " << out << std::endl;
+                    logger->trace("checking pipeline op for cuda: {}: {}", o.getName().getStringRef().str(), out);
                     return !out;
                 }
                 else return false;
@@ -87,26 +88,28 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
                 if(rows < 0 || cols < 0) {
-                    std::cerr << "Warning: Ignoring unknown dimension in max mem check of " <<
-                              op->getName().getStringRef().str() << "\ndims are: " << rows << "x" << cols <<
-                              "\nsetting unknowns to 1 for this test" << std::endl;
+                    logger->warn("Ignoring unknown dimension in max mem check of {}"
+                            "dims are: {}x{}\nsetting unknowns to 1 for this test", op->getName().getStringRef().str(),
+                            rows, cols);
                     if(rows < 0)
                         rows = 1;
                     if(cols < 0)
                         cols = 1;
                 }
-                opSize += rows * cols * t.getElementType().getIntOrFloatBitWidth();
+                opSize += rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
-//        auto inSize = opSize;
-//        std::cout << "op in size: " << opSize / 1024 << " kB" << std::endl;
+        auto inSize = opSize;
+        logger->trace("op in size: {} kb", opSize / 1024);
         for(auto result : op->getResults()) {
             auto type = result.getType();
             if(auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
-                opSize += t.getNumRows() * t.getNumCols() * t.getElementType().getIntOrFloatBitWidth();
+                opSize += t.getNumRows() * t.getNumCols() * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
-//        std::cout << "op out size: " << (opSize-inSize) / 1024 << " kB" << std::endl;
+        logger->debug("op out size: {} kb\ntotal op size: {} mb", (opSize-inSize) / 1024,
+                opSize / 1048576);
+
         if(opSize < mem_budget)
             return true;
         else
@@ -114,16 +117,14 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
     }
     
     // ToDo: requirements should be set per operator in tablegen
-    static bool hasReqMinDims(mlir::Operation* op) {
-        for(auto operand : op->getOperands()) {
-            auto type = operand.getType();
+    bool hasReqMinDims(mlir::Operation* op) const {
+        auto checkDims = [this,op](const mlir::Type& type) -> bool {
             if(auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
                 if(rows < 0 || cols < 0) {
-                    std::cerr << "Warning: Ignoring unknown dimension in min input size check of " <<
-                              op->getName().getStringRef().str() << "\ndims are: " << rows << "x" << cols <<
-                              "\nsetting unknowns to 256 for this test" << std::endl;
+                    logger->warn("Ignoring unknown dimension in min input size check of {} dims are: {}x{}\nsetting "
+                            "unknowns to 256 for this test", op->getName().getStringRef().str(), rows, cols);
                     if(rows < 0)
                         rows = 256;
                     if(cols < 0)
@@ -131,28 +132,50 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
                 }
                 return (rows > 255 || cols > 255);
             }
+            return false;
+        };
+
+        bool ret = false;
+        for(auto type : op->getOperandTypes()) {
+            if((ret = checkDims(type)))
+                break;
         }
-        return false;
+
+        if(!ret) {
+            for (auto type: op->getResultTypes()) {
+                if((ret = checkDims(type)))
+                    break;
+            }
+        }
+        return ret;
     }
     
     bool checkUseCUDA(Operation* op) const {
-//        std::cout << "checkUseCUDA: " << op->getName().getStringRef().str() << std::endl;
-        
+        logger->trace("checkUseCUDA: {}", op->getName().getStringRef().str());
         bool use_cuda = op->hasTrait<mlir::OpTrait::CUDASupport>();
+        logger->trace("{} CUDA supported={}", op->getName().getStringRef().str(), use_cuda);
         use_cuda = use_cuda && CompilerUtils::isMatrixComputation(op);
+        logger->trace("{} isMatrixComputation={}", op->getName().getStringRef().str(), use_cuda);
         use_cuda = use_cuda && hasReqMinDims(op);
+        logger->trace("{} hasMinInputDims={}", op->getName().getStringRef().str(), use_cuda);
         use_cuda = use_cuda && fitsInMemory(op);
+        logger->trace("{} fitsInMem={}", op->getName().getStringRef().str(), use_cuda);
         return use_cuda;
     }
 };
 
 void MarkCUDAOpsPass::runOnOperation() {
     getOperation()->walk([&](Operation* op) {
-//        std::cout << "MarkCUDAOpsPass: " << op->getName().getStringRef().str() << " parent: " << op->getParentOp()->getName().getStringRef().str() <<  std::endl;
-        
+        logger->debug("MarkCUDAOpsPass: {} parent: {}", op->getName().getStringRef().str(),
+                op->getParentOp()->getName().getStringRef().str());
         OpBuilder builder(op);
         // handle vectorizedPipelineOps
-        if (auto pipelineOp = llvm::dyn_cast<daphne::VectorizedPipelineOp>(op))
+        if (auto constOp = llvm::dyn_cast<daphne::ConstantOp>(op))
+        {
+            WalkResult::advance();
+            return;
+        }
+        else if (auto pipelineOp = llvm::dyn_cast<daphne::VectorizedPipelineOp>(op))
             addCUDAOpsToVectorizedPipeline(builder, pipelineOp);
         else {
             if((!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op)) ||
@@ -167,4 +190,5 @@ void MarkCUDAOpsPass::runOnOperation() {
 std::unique_ptr<Pass> daphne::createMarkCUDAOpsPass(const DaphneUserConfig& cfg) {
     return std::make_unique<MarkCUDAOpsPass>(cfg);
 }
+
 #endif // USE_CUDA

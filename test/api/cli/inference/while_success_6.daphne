@@ -1,0 +1,9 @@
+// Labels of frame change in while-loop
+
+X = createFrame([0], "a");
+i = 1;
+while(i <= 3) {
+    X = createFrame(fill(i, 1, 1), "b");
+    i = i + 1;
+}
+print(X);

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 
@@ -36,36 +37,14 @@ using namespace mlir;
  * In the future, this pass should take the kernel registry and/or extension catalog into account to find
  * out for which type combinations there are available kernels.
  */
-// TODO This is not always correct for idxMin() and idxMax(): while their output always has an integer value
-// type, it is not always safe to cast their input to integers.
-struct AdaptTypesToKernelsPass
-    : public PassWrapper<AdaptTypesToKernelsPass, OperationPass<func::FuncOp>> {
+struct AdaptTypesToKernelsPass : public PassWrapper<AdaptTypesToKernelsPass, OperationPass<func::FuncOp>>
+{
     void runOnOperation() final;
     StringRef getArgument() const final { return "adapt-types-to-kernels"; }
     StringRef getDescription() const final {
         return "TODO";
     }
 };
-
-// TODO This should become a general utility.
-Type getValueType(Type t) {
-    if(auto mt = t.dyn_cast<daphne::MatrixType>())
-        return mt.getElementType();
-    if(auto ft = t.dyn_cast<daphne::FrameType>())
-        throw std::runtime_error("getValueType() doesn't support frames yet"); // TODO
-    else // TODO Check if this is really a scalar.
-        return t;
-}
-
-// TODO This should become a general utility.
-Type setValueType(Type t, Type vt) {
-    if(auto mt = t.dyn_cast<daphne::MatrixType>())
-        return mt.withElementType(vt);
-    if(auto ft = t.dyn_cast<daphne::FrameType>())
-        throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
-    else // TODO Check if this is really a scalar.
-        return vt;
-}
 
 void AdaptTypesToKernelsPass::runOnOperation()
 {
@@ -81,6 +60,7 @@ void AdaptTypesToKernelsPass::runOnOperation()
                 operandIdxs.push_back(i);
         else if(op->hasTrait<OpTrait::CastFirstTwoArgsToResType>()) // inputs 0 and 1
             operandIdxs = {0, 1};
+        // TODO Instead of such a non-reusable op-specific trait, we should rather check for the concrete op here.
         else if(op->hasTrait<OpTrait::CastArgsToResTypeRandMatrixOp>()) // inputs 2 and 3
             operandIdxs = {2, 3};
 
@@ -97,17 +77,17 @@ void AdaptTypesToKernelsPass::runOnOperation()
                 })
             )) {
                 // Insert casts where necessary.
-                Type resVTy = getValueType(resTy);
+                Type resVTy = CompilerUtils::getValueType(resTy);
                 builder.setInsertionPoint(op);
                 for(size_t i : operandIdxs) {
                     Value argVal = op->getOperand(i);
                     Type argTy = argVal.getType();
-                    if(getValueType(argTy) != resVTy) {
+                    if(CompilerUtils::getValueType(argTy) != resVTy) {
                         op->setOperand(
                                 i,
                                 builder.create<daphne::CastOp>(
                                         argVal.getLoc(),
-                                        setValueType(argTy, resVTy),
+                                        CompilerUtils::setValueType(argTy, resVTy),
                                         argVal
                                 )
                         );

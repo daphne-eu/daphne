@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_CHECKEQ_H
-#define SRC_RUNTIME_LOCAL_KERNELS_CHECKEQ_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+
+// this include file is placed here to solve a compilation issue with spdlog and catch2
+#include <spdlog/spdlog.h>
 
 #include <cstddef>
 #include <cstring>
@@ -212,5 +214,3 @@ template <> struct CheckEq<Frame> {
         return true;
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CHECKEQ_H

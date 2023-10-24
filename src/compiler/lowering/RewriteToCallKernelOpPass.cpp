@@ -97,7 +97,7 @@ namespace
             }
             if(auto concreteOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {false, true, true, true};
+                static bool isVariadic[] = {false, true, true};
                 return std::make_tuple(
                         idxAndLen.first,
                         idxAndLen.second,
@@ -147,9 +147,7 @@ namespace
         {
         }
 
-        LogicalResult matchAndRewrite(Operation *op,
-                                      PatternRewriter &rewriter) const override
-        {
+        LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
             Location loc = op->getLoc();
 
             // Determine the name of the kernel function to call by convention
@@ -158,21 +156,12 @@ namespace
             std::stringstream callee;
 
             // check CUDA support and valid device ID
-//            auto attr = op->getAttr("cuda_device");
-//            if(attr && attr.dyn_cast<IntegerAttr>().getInt() > -1) {
             if(op->hasAttr("cuda_device")) {
-//                op->hasTrait<mlir::OpTrait::CUDASupport>() &&
-//                auto attr = op->getAttr("cuda_device");
-//                if(attr && attr.dyn_cast<IntegerAttr>().getInt() > -1) {
-//                if(attr.dyn_cast<IntegerAttr>().getInt() > -1)
-                    callee << "CUDA";
-//                else
-//                    std::cout << "attr = null: " << op->getName().getStringRef().str() << std::endl;
+                callee << "CUDA";
             }
-	    else if(op->hasAttr("fpgaopencl_device")) {
-		 callee << "FPGAOPENCL";
-	    }
-		    
+            else if(op->hasAttr("fpgaopencl_device")) {
+                callee << "FPGAOPENCL";
+            }
 
             callee << '_' << op->getName().stripDialect().data();
 
@@ -219,8 +208,18 @@ namespace
                     const unsigned idx = std::get<0>(odsOpInfo);
                     const unsigned len = std::get<1>(odsOpInfo);
                     const bool isVariadic = std::get<2>(odsOpInfo);
+                    
+                    // TODO The group operation currently expects at least four inputs due to the
+                    // expectation of a aggregation. To make the group operation possible without aggregations,
+                    // we have to use this workaround to create the correct name and skip the creation
+                    // of the variadic pack ops. Should be changed when reworking the lowering to kernels.
+                    if(llvm::dyn_cast<daphne::GroupOp>(op) && idx >= operandTypes.size()) {
+                        callee << "__char_variadic__size_t";
+                        continue;
+                    } else {
+                        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);
+                    }
 
-                    callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);
                     if(isVariadic) {
                         // Variadic operand.
                         callee << "_variadic__size_t";
@@ -521,7 +520,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::MapOp
     >();
     target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
-        return op.isTrivialCast() || op.isMatrixPropertyCast();
+        return op.isTrivialCast() || op.isRemovePropertyCast();
     });
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.

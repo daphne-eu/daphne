@@ -17,12 +17,18 @@
 
 #pragma once
 
+#include <api/daphnelib/DaphneLibResult.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
+#include <runtime/local/datastructures/IAllocationDescriptor.h>
+#include <util/LogConfig.h>
+#include <util/DaphneLogger.h>
+class DaphneLogger;
 
 #include <vector>
 #include <string>
 #include <memory>
 #include <map>
+#include <limits>
 
 /*
  * Container to pass around user configuration
@@ -34,6 +40,8 @@ struct DaphneUserConfig {
     bool use_vectorized_exec = false;
     bool use_distributed = false;
     bool use_obj_ref_mgnt = true;
+    bool use_ipa_const_propa = true;
+    bool use_phy_op_selection = true;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
     bool prePartitionRows = false;
@@ -43,6 +51,7 @@ struct DaphneUserConfig {
     bool use_fpgaopencl = false;
     bool codegen = false;
     bool hybrid = false;
+    bool enable_profiling = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;
@@ -50,7 +59,9 @@ struct DaphneUserConfig {
     bool explain_parsing = false;
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
+    bool explain_select_matrix_repr = false;
     bool explain_sql = false;
+    bool explain_phy_op_selection = false;
     bool explain_type_adaptation = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
@@ -58,9 +69,15 @@ struct DaphneUserConfig {
 
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
     QueueTypeOption queueSetupScheme = CENTRALIZED;
-	victimSelectionLogic victimSelection = SEQPRI;
+	VictimSelectionLogic victimSelection = SEQPRI;
+    ALLOCATION_TYPE distributedBackEndSetup= ALLOCATION_TYPE::DIST_MPI; // default value
+    size_t max_distributed_serialization_chunk_size = std::numeric_limits<int>::max() - 1024; // 2GB (-1KB to make up for gRPC headers etc.) - which is the maximum size allowed by gRPC / MPI. TODO: Investigate what might be the optimal.
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
+    // minimum considered log level (e.g., no logging below ERROR (essentially suppressing WARN, INFO, DEBUG and TRACE)
+    spdlog::level::level_enum log_level_limit = spdlog::level::err;
+    std::vector<LogConfig> loggers;
+    DaphneLogger* log_ptr{};
     
 #ifdef USE_CUDA
     // User config holds once context atm for convenience until we have proper system infrastructure
@@ -79,4 +96,9 @@ struct DaphneUserConfig {
     std::string libdir;
     std::vector<std::string> library_paths;
     std::map<std::string, std::vector<std::string>> daphnedsl_import_paths;
+
+
+    // TODO Maybe the DaphneLib result should better reside in the DaphneContext,
+    // but having it here is simpler for now.
+    DaphneLibResult* result_struct = nullptr;
 };

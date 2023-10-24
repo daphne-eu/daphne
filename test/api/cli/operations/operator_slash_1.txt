@@ -1,7 +1,8 @@
+scalar / scalar
 2
 0.5
 1.5
-
+matrix / matrix
 DenseMatrix(2x1, int64_t)
 2
 2
@@ -11,7 +12,7 @@ DenseMatrix(2x1, double)
 DenseMatrix(2x1, double)
 0.5
 1
-
+matrix / scalar
 DenseMatrix(2x1, int64_t)
 2
 1
@@ -20,4 +21,11 @@ DenseMatrix(2x1, double)
 2
 DenseMatrix(2x1, double)
 0.5
+1
+scalar / matrix
+DenseMatrix(2x1, double)
+2
+2.5
+DenseMatrix(2x1, double)
+2
 1

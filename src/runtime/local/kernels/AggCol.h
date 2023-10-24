@@ -55,69 +55,124 @@ void aggCol(AggOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) {
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
+template<typename VTRes, typename VTArg>
+struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, false);
         
-        const VT * valuesArg = arg->getValues();
-        VT * valuesRes = res->getValues();
+        const VTArg * valuesArg = arg->getValues();
+        VTRes * valuesRes = res->getValues();
         
-        EwBinaryScaFuncPtr<VT, VT, VT> func;
-        if(AggOpCodeUtils::isPureBinaryReduction(opCode))
-            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
-        else
-            // TODO Setting the function pointer yields the correct result.
-            // However, since MEAN and STDDEV are not sparse-safe, the program
-            // does not take the same path for doing the summation, and is less
-            // efficient.
-            // for MEAN and STDDDEV, we need to sum
-            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+        // TODO Merge the cases for IDXMIN and IDXMAX to avoid code duplication.
+        if(opCode == AggOpCode::IDXMIN) {
+            // Minimum values seen so far per column (initialize with first row of argument).
+            auto tmp = DataObjectFactory::create<DenseMatrix<VTArg>>(1, numCols, false);
+            VTArg * valuesTmp = tmp->getValues();
+            memcpy(valuesTmp, valuesArg, numCols * sizeof(VTArg));
 
-        memcpy(valuesRes, valuesArg, numCols * sizeof(VT));
-        
-        for(size_t r = 1; r < numRows; r++) {
+            // Positions at which the minimum values were found (initialize with zeros),
+            // stored directly in the result.
+            for (size_t c = 0; c < numCols; c++)
+                valuesRes[c] = 0;
+
+            // Scan over the remaining rows and update the minimum values and their positions accordingly.
             valuesArg += arg->getRowSkip();
-            for(size_t c = 0; c < numCols; c++)
-                valuesRes[c] = func(valuesRes[c], valuesArg[c], ctx);
-        }
-        
-        if(AggOpCodeUtils::isPureBinaryReduction(opCode))
-            return;
-        
-        // The op-code is either MEAN or STDDEV.
-
-        for(size_t c = 0; c < numCols; c++)
-            valuesRes[c] /= numRows;
-
-        if(opCode != AggOpCode::STDDEV)
-            return;
-
-        auto tmp = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
-        VT * valuesT = tmp->getValues();
-        valuesArg = arg->getValues();
-
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++) {
-                VT val = valuesArg[c] - valuesRes[c];
-                valuesT[c] = valuesT[c] + val * val;
+            for(size_t r = 1; r < numRows; r++) {
+                for(size_t c = 0; c < numCols; c++)
+                    if(valuesArg[c] < valuesTmp[c]) {
+                        valuesTmp[c] = valuesArg[c];
+                        valuesRes[c] = r;
+                    }
+                valuesArg += arg->getRowSkip();
             }
+
+            // Free the temporary minimum values.
+            DataObjectFactory::destroy(tmp);
+        }
+        else if(opCode == AggOpCode::IDXMAX) {
+            // Maximum values seen so far per column (initialize with first row of argument).
+            auto tmp = DataObjectFactory::create<DenseMatrix<VTArg>>(1, numCols, false);
+            VTArg * valuesTmp = tmp->getValues();
+            memcpy(valuesTmp, valuesArg, numCols * sizeof(VTArg));
+
+            // Positions at which the maximum values were found (initialize with zeros),
+            // stored directly in the result.
+            for (size_t c = 0; c < numCols; c++)
+                valuesRes[c] = 0;
+
+            // Scan over the remaining rows and update the maximum values and their positions accordingly.
             valuesArg += arg->getRowSkip();
-        }
+            for(size_t r = 1; r < numRows; r++) {
+                for(size_t c = 0; c < numCols; c++)
+                    if(valuesArg[c] > valuesTmp[c]) {
+                        valuesTmp[c] = valuesArg[c];
+                        valuesRes[c] = r;
+                    }
+                valuesArg += arg->getRowSkip();
+            }
 
-        for(size_t c = 0; c < numCols; c++) {
-            valuesT[c] /= numRows;
-            valuesT[c] = sqrt(valuesT[c]);
+            // Free the temporary maximum values.
+            DataObjectFactory::destroy(tmp);
         }
+        else {
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
+            if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+                func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            else
+                // TODO Setting the function pointer yields the correct result.
+                // However, since MEAN and STDDEV are not sparse-safe, the program
+                // does not take the same path for doing the summation, and is less
+                // efficient.
+                // for MEAN and STDDDEV, we need to sum
+                func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
-        // TODO We could avoid copying by returning tmp and destroying res. But
-        // that might be wrong if res was not nullptr initially.
-        memcpy(valuesRes, valuesT, numCols * sizeof(VT));
-        DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
+            // memcpy(valuesRes, valuesArg, numCols * sizeof(VTRes));
+            // Can't memcpy because we might have different result type
+            for (size_t c = 0; c < numCols; c++)
+                valuesRes[c] = static_cast<VTRes>(valuesArg[c]);
+            for(size_t r = 1; r < numRows; r++) {
+                valuesArg += arg->getRowSkip();
+                for(size_t c = 0; c < numCols; c++)
+                    valuesRes[c] = func(valuesRes[c], static_cast<VTRes>(valuesArg[c]), ctx);
+            }
+            
+            if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+                return;
+            
+            // The op-code is either MEAN or STDDEV.
+
+            for(size_t c = 0; c < numCols; c++)
+                valuesRes[c] /= numRows;
+
+            if(opCode != AggOpCode::STDDEV)
+                return;
+
+            auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
+            VTRes * valuesT = tmp->getValues();
+            valuesArg = arg->getValues();
+
+            for(size_t r = 0; r < numRows; r++) {
+                for(size_t c = 0; c < numCols; c++) {
+                    VTRes val = static_cast<VTRes>(valuesArg[c]) - valuesRes[c];
+                    valuesT[c] = valuesT[c] + val * val;
+                }
+                valuesArg += arg->getRowSkip();
+            }
+
+            for(size_t c = 0; c < numCols; c++) {
+                valuesT[c] /= numRows;
+                valuesT[c] = sqrt(valuesT[c]);
+            }
+
+            // TODO We could avoid copying by returning tmp and destroying res. But
+            // that might be wrong if res was not nullptr initially.
+            memcpy(valuesRes, valuesT, numCols * sizeof(VTRes));
+            DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
+        }
     }
 };
 
@@ -125,29 +180,29 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
 // DenseMatrix <- CSRMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
+template<typename VTRes, typename VTArg>
+struct AggCol<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const CSRMatrix<VTArg> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
         
-        VT * valuesRes = res->getValues();
+        VTRes * valuesRes = res->getValues();
         
-        EwBinaryScaFuncPtr<VT, VT, VT> func;
+        EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
-            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
         else
             // TODO Setting the function pointer yields the correct result.
             // However, since MEAN and STDDEV are not sparse-safe, the program
             // does not take the same path for doing the summation, and is less
             // efficient.
             // for MEAN and STDDDEV, we need to sum
-            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
-        const VT * valuesArg = arg->getValues(0);
+        const VTArg * valuesArg = arg->getValues(0);
         const size_t * colIdxsArg = arg->getColIdxs(0);
         
         const size_t numNonZeros = arg->getNumNonZeros();
@@ -155,7 +210,7 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
         if(AggOpCodeUtils::isSparseSafe(opCode)) {
             for(size_t i = 0; i < numNonZeros; i++) {
                 const size_t colIdx = colIdxsArg[i];
-                valuesRes[colIdx] = func(valuesRes[colIdx], valuesArg[i], ctx);
+                valuesRes[colIdx] = func(valuesRes[colIdx], static_cast<VTRes>(valuesArg[i]), ctx);
             }
         }
         else {
@@ -164,19 +219,19 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
             const size_t numNonZerosFirstRowArg = arg->getNumNonZeros(0);
             for(size_t i = 0; i < numNonZerosFirstRowArg; i++) {
                 size_t colIdx = colIdxsArg[i];
-                valuesRes[colIdx] = valuesArg[i];
+                valuesRes[colIdx] = static_cast<VTRes>(valuesArg[i]);
                 hist[colIdx]++;
             }
 
             if(arg->getNumRows() > 1) {
                 for(size_t i = numNonZerosFirstRowArg; i < numNonZeros; i++) {
                     const size_t colIdx = colIdxsArg[i];
-                    valuesRes[colIdx] = func(valuesRes[colIdx], valuesArg[i], ctx);
+                    valuesRes[colIdx] = func(valuesRes[colIdx], static_cast<VTRes>(valuesArg[i]), ctx);
                     hist[colIdx]++;
                 }
                 for(size_t c = 0; c < numCols; c++)
                     if(hist[c] < numRows)
-                        valuesRes[c] = func(valuesRes[c], 0, ctx);
+                        valuesRes[c] = func(valuesRes[c], VTRes(0), ctx);
             }
             
             delete[] hist;
@@ -193,13 +248,13 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
         if(opCode != AggOpCode::STDDEV)
             return;
 
-        auto tmp = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
-        VT * valuesT = tmp->getValues();
+        auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
+        VTRes * valuesT = tmp->getValues();
 
         size_t * nnzCol = new size_t[numCols](); // initialized to zeros
         for(size_t i = 0; i < numNonZeros; i++) {
             const size_t colIdx = colIdxsArg[i];
-            VT val = valuesArg[i] - valuesRes[colIdx];
+            VTRes val = static_cast<VTRes>(valuesArg[i]) - valuesRes[colIdx];
             valuesT[colIdx] = valuesT[colIdx] + val * val;
             nnzCol[colIdx]++;
         }
@@ -216,8 +271,8 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
 
         // TODO We could avoid copying by returning tmp and destroying res. But
         // that might be wrong if res was not nullptr initially.
-        memcpy(valuesRes, valuesT, numCols * sizeof(VT));
-        DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
+        memcpy(valuesRes, valuesT, numCols * sizeof(VTRes));
+        DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
 
     }
 };

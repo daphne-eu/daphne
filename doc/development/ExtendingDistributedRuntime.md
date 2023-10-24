@@ -1,7 +1,7 @@
 <!--
 Copyright 2021 The DAPHNE Consortium
 
-Licensed under the Apache License, Version 2.0 (the "License");>
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -16,41 +16,41 @@ limitations under the License.
 
 # Extending the DAPHNE Distributed Runtime
 
-This doc is about implementing and extending the distributed runtime. This focuses on 
-helping the Daphne developer understand the building blocks of the distributed runtime, 
-both of the Daphne coordinator as well as the Daphne distributed worker. If you want to 
+This doc is about implementing and extending the distributed runtime. This focuses on
+helping the Daphne developer understand the building blocks of the distributed runtime,
+both of the Daphne coordinator as well as the Daphne distributed worker. If you want to
 learn how to execute Daphne scripts on the distributed runtime, please see [here](/doc/DistributedRuntime.md).
 
 ## Background
 
-Distributed runtime works similar to the vectorized engine. Compiler passes create 
+Distributed runtime works similar to the vectorized engine. Compiler passes create
 _pipelines_ by merging multiple operations. This allows Daphne to split data across multiple
-workers (nodes) and let them execute a pipeline in parallel. Daphne distributed runtime code 
-can be found at [`src/runtime/distributed`](/src/runtime/distributed) where it is split into two main parts. The 
+workers (nodes) and let them execute a pipeline in parallel. Daphne distributed runtime code
+can be found at [`src/runtime/distributed`](/src/runtime/distributed) where it is split into two main parts. The
 **coordinator** and the **worker**.
 
 Daphne distributed runtime works on an hierarchical approach.
 
 1. Workers are **not** aware of the total execution. They handle a single task-pipeline and return outputs,
 one pipeline at a time.
-2. Workers are **only** aware of their chunk of data. 
+1. Workers are **only** aware of their chunk of data.
 
+## Coordinator
 
-# Coordinator
-
-The coordinator is responsible for distributing data and broadcasting the IR code fragment, 
+The coordinator is responsible for distributing data and broadcasting the IR code fragment,
 that is the task-pipeline. Each worker receives and compiles the IR optimizing it for it's
 local hardware. Coordinator code can be found at:
-```
+
+```bash
 src/runtime/distributed/coordinator/kernels
 ```
 
 ## Distributed Wrapper
 
-**`DistributedWrapper.h`** kernel contains the Distributed wrapper class which is the main entry point 
+**`DistributedWrapper.h`** kernel contains the Distributed wrapper class which is the main entry point
 for a distributed pipeline on the coordinator:
 
-```c++
+```cpp
 void DistributedWrapper::execute(
                 const char *mlirCode,       // The IR code fragment
                 DT ***res,                  // An array of pipeline outputs
@@ -63,22 +63,21 @@ void DistributedWrapper::execute(
                 VectorCombine *combines)    // Compiler hints on how each output should be combined
 ```
 
-Using the hints `splits` provided by the compiler we determine whether an input should be 
-**Distributed/Scattered** (by rows or columns) or **Broadcasted**. Depending on which we call 
-the corresponding kernel (`Distribute.h` or `Broadcast.h`, more below) which is then 
+Using the hints `splits` provided by the compiler we determine whether an input should be
+**Distributed/Scattered** (by rows or columns) or **Broadcasted**. Depending on which we call
+the corresponding kernel (`Distribute.h` or `Broadcast.h`, more below) which is then
 responsible for transferring data to the workers. `DistributedCompute.h` kernel is then called
 in order to broadcast the IR code fragment and start the actual computation.
 Finally, `DistributedCollect.h` kernel collects the final results (pipeline outputs).
 
-
-**`Distribute.h`**, **`Broadcast.h`**, **`DistributedCompute.h`** and **`DistributedCollect.h`** 
+**`Distribute.h`**, **`Broadcast.h`**, **`DistributedCompute.h`** and **`DistributedCollect.h`**
 similar to local runtime kernels
-use C++ template meta programming (more on how we utilize C++ templates on the local runtime [here](/doc/development/ImplementBuiltinKernel.md)). Since Daphne supports many different distributed 
+use C++ template meta programming (more on how we utilize C++ templates on the local runtime [here](/doc/development/ImplementBuiltinKernel.md)). Since Daphne supports many different distributed
 backends (e.g. gRPC, MPI, etc.) we can not provide a fully generic code that would work for
-all implementations. Thus we specialize each template for each distributed backend we want to 
-support. 
+all implementations. Thus we specialize each template for each distributed backend we want to
+support.
 
-The Daphne developer can work on a new distributed backend by simply providing a new template 
+The Daphne developer can work on a new distributed backend by simply providing a new template
 specialization of these 4 kernels with a different distributed backend.
 
 ## Distributed backends
@@ -90,7 +89,7 @@ devices a Daphne object can be allocated to.
 
 Please note that not all of them are supported yet and we might add more in the future.
 
-```C++
+```cpp
 enum class ALLOCATION_TYPE {
     DIST_GRPC,
     DIST_OPENMPI,
@@ -107,7 +106,7 @@ enum class ALLOCATION_TYPE {
 ```
 
 As we described above, each kernel is partially specialized for each distributed backend. We specialize
-the templated distributed kernels for each distributed allocation type in the `enum class` shown above 
+the templated distributed kernels for each distributed allocation type in the `enum class` shown above
 (e.g. `DIST_GRPC`).
 
 ## Templated distributed kernels
@@ -122,8 +121,9 @@ to reduced communication (if an object is already placed on nodes, we don't need
 You can find more on meta data implementation [here](/src/runtime/local/datastructures).
 
 Below we see **`Broadcast.h`** templated kernel, along with it's gRPC specialization.
-`DT` is the type of the object being broadcasted. 
-```C++
+`DT` is the type of the object being broadcasted.
+
+```cpp
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -161,10 +161,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
     ...
 ```
 
-So for example if we wanted to add broadcast support for MPI all we need to do is provide the partial 
-template specialization of Broadcast kernel for MPI. 
+So for example if we wanted to add broadcast support for MPI all we need to do is provide the partial
+template specialization of Broadcast kernel for MPI.
 
-```C++
+```cpp
 // ----------------------------------------------------------------------------
 // MPI
 // ----------------------------------------------------------------------------
@@ -176,13 +176,15 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
     ...
 ```
 
-For now selection of a distributed backend is hardcoded [here](/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h#L73). 
+For now selection of a distributed backend is hardcoded [here](/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h#L73).
 <!-- 
 TODO: PR #436 provides support for MPI and implements a cli argument for selecting a distributed backend. This section will be updated once #436 is merged.
  -->
-# Distributed Worker
+
+## Distributed Worker
 
 Worker code can be found here:
+
 ```bash
 src/runtime/distributed/worker
 ```
@@ -193,7 +195,8 @@ There are 3 important methods in this class:
 - The **Store** method, which stores an object in memory and returns an identifier.
 - The **Compute** method, which receives the IR code fragment along with identifier of inputs, computes the pipeline and returns identifiers of pipeline outputs.
 - And the **Transfer** method, which is used to return an object using an identifier.
-```c++
+
+```cpp
 /**
  * @brief Stores a matrix at worker's memory
  * 
@@ -224,6 +227,7 @@ Structure * Transfer(StoredInfo storedInfo);
 The developer can provide an implementation for a distributed worker by deriving `WorkerImpl` class.
 The derived class handles all the communication using the preferred distributed backend and invokes the parent methods for the logic.
 You can find the gRPC implementation of the distributed worker here:
+
 ```bash
 src/runtime/distributed/worker/WorkerImplGrpc.h/.cpp
 ```
@@ -231,7 +235,7 @@ src/runtime/distributed/worker/WorkerImplGrpc.h/.cpp
 `main.cpp` is the entry point of the distributed worker. A distributed implementation is created using a pointer to the parent class
 `WorkerImpl`. The distributed node then blocks and waits for the coordinator to send a request by invoking the virtual method:
 
-```C++
+```cpp
 virtual void Wait() { };
 ```
 

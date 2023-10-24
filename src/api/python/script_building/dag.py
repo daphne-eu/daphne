@@ -20,6 +20,7 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
+
 from abc import ABC
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, Sequence, Union, Optional
@@ -27,7 +28,9 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence, Union, Optional
 class OutputType(Enum):
     MATRIX = auto()
     NONE = auto()
-    DOUBLE = auto()
+    SCALAR = auto()
+    FRAME = auto()
+    MULTI_RETURN = auto()
 
 class DAGNode(ABC):
     _unnamed_input_nodes: Sequence[Union['DAGNode', str, int, float, bool]]

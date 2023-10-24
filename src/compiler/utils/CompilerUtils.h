@@ -65,6 +65,21 @@ private:
 public:
 
     /**
+     * @brief If the given `Value` is defined by some constant operation, return that constant
+     * operation; otherwise, return `nullptr`.
+     * 
+     * @param v The `Value`.
+     * @return The defining constant operation or `nullptr`.
+     */
+    static mlir::Operation * constantOfAnyType(mlir::Value v) {
+        if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>())
+            return co;
+        if(auto co = v.getDefiningOp<mlir::arith::ConstantOp>())
+            return co;
+        return nullptr;
+    }
+
+    /**
      * @brief Returns if the given `Value` is a constant, and if so, also the constant itself.
      * 
      * @tparam T The C++ type of the constant to extract.
@@ -177,10 +192,8 @@ public:
         );
     }
 
-    [[maybe_unused]] static bool isMatrixComputation(mlir::Operation *v) {
-        return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty) { return ty.isa<mlir::daphne::MatrixType>(); });
-    }
-    
+    static bool isMatrixComputation(mlir::Operation *v);
+
     /**
      * @brief Returns the DAPHNE context used in the given function.
      * 
@@ -213,6 +226,44 @@ public:
     
     [[maybe_unused]] static bool hasObjType(mlir::Value v) {
         return isObjType(v.getType());
+    }
+
+    /**
+     * @brief Returns the value type of the given scalar/matrix/frame type.
+     * 
+     * For matrices and frames, the value type is extracted. For scalars,
+     * the type itself is the value type.
+     * 
+     * @param t the given scalar/matrix/frame type
+     * @return the value type of the given type
+     */
+    static mlir::Type getValueType(mlir::Type t) {
+        if(auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+            return mt.getElementType();
+        if(auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+            throw std::runtime_error("getValueType() doesn't support frames yet"); // TODO
+        else // TODO Check if this is really a scalar.
+            return t;
+    }
+
+    /**
+     * @brief Sets the value type of the given scalar/matrix/frame type to the
+     * given value type and returns this derived type.
+     * 
+     * For matrices and frames, the value type is set to the given value type.
+     * For scalars, the given value type itself is returned.
+     * 
+     * @param t the scalar/matrix/frame type whose value type shall be set
+     * @param vt the value type to use
+     * @return the derived scalar/matrix/frame type
+     */
+    static mlir::Type setValueType(mlir::Type t, mlir::Type vt) {
+        if(auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+            return mt.withElementType(vt);
+        if(auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+            throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
+        else // TODO Check if this is really a scalar.
+            return vt;
     }
 
 };

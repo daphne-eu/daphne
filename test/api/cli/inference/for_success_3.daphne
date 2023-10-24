@@ -1,0 +1,6 @@
+// Sparsity of matrix changes in for-loop.
+
+X = rand(5, 5, 0.0, 1.0, 0.1, -1);
+for(i in 0:2)
+    X = X + rand(5, 5, 0.0, 1.0, 0.1, -1);
+print(X);

@@ -1,0 +1,11 @@
+def use_for_loop(x) {
+    for (i in 1:10) {
+        x + i;
+    }
+    return x;
+}
+
+X = fill(3.8, 5, 5);
+new_X = use_for_loop(X);
+
+print(new_X);

@@ -1,0 +1,44 @@
+# Scalar condition of various value types, then/else-values of various matching data/value types.
+
+f10 = createFrame([10], "x");
+f20 = createFrame([20], "y");
+
+print("boolean condition");
+
+print("scalar values");
+print(false ? 10 : 20);
+print(true  ? 10 : 20);
+print("matrix values");
+print(false ? [10] : [20]);
+print(true  ? [10] : [20]);
+print("frame values");
+print(false ? f10 : f20);
+print(true  ? f10 : f20);
+
+print("");
+
+print("integer condition");
+
+print("scalar values");
+print( 0 ? 10 : 20);
+print( 1 ? 10 : 20);
+print("matrix values");
+print( 0 ? [10] : [20]);
+print( 1 ? [10] : [20]);
+print("frame values");
+print( 0 ? f10 : f20);
+print( 1 ? f10 : f20);
+
+print("");
+
+print("floating-point condition");
+
+print("scalar values");
+print(0.0 ? 10 : 20);
+print(1.0 ? 10 : 20);
+print("matrix values");
+print(0.0 ? [10] : [20]);
+print(1.0 ? [10] : [20]);
+print("frame values");
+print(0.0 ? f10 : f20);
+print(1.0 ? f10 : f20);

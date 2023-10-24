@@ -153,6 +153,9 @@ public:
         this->numRows = numRows;
     }
     
+    size_t getMaxNumNonZeros() const {
+        return maxNumNonZeros;
+    }
     size_t getNumNonZeros() const {
         return rowOffsets.get()[numRows] - rowOffsets.get()[0];
     }
@@ -389,6 +392,8 @@ public:
     size_t bufferSize() {
         return this->getNumItems() * sizeof(ValueType);
     }
+
+    size_t serialize(std::vector<char> &buf) const override ;
 };
 
 template <typename ValueType>

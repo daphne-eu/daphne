@@ -1,0 +1,24 @@
+--- cpp/cmake_modules/DefineOptions.cmake	2023-01-18 14:08:12.000000000 +0100
++++ cpp/cmake_modules/DefineOptions.cmake       2023-02-08 23:45:20.907959122 +0100
+
+@@ -729,7 +729,7 @@
+ # Compute default values for omitted variables
+ 
+ if(NOT ARROW_GIT_ID)
++  execute_process(COMMAND "git" " -c log.showSignature=false" "log" "-n1" "--format=%H"
+-  execute_process(COMMAND "git" "log" "-n1" "--format=%H"
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   OUTPUT_VARIABLE ARROW_GIT_ID
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+--- python/cmake_modules/DefineOptions.cmake    2023-01-18 14:08:12.000000000 +0100
++++ python/cmake_modules/DefineOptions.cmake    2023-02-08 23:45:20.907959122 +0100
+@@ -729,7 +729,7 @@
+ # Compute default values for omitted variables
+
+ if(NOT ARROW_GIT_ID)
++  execute_process(COMMAND "git" " -c log.showSignature=false" "log" "-n1" "--format=%H"
+-  execute_process(COMMAND "git" "log" "-n1" "--format=%H"
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   OUTPUT_VARIABLE ARROW_GIT_ID
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+

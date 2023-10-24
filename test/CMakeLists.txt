@@ -16,6 +16,7 @@ include_directories(${PROJECT_SOURCE_DIR}/test)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
 set(TEST_SOURCES
+        run_tests.h
         run_tests.cpp
 
         api/cli/algorithms/AlgorithmsTest.cpp
@@ -23,14 +24,14 @@ set(TEST_SOURCES
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
         api/cli/expressions/CastTest.cpp
+        api/cli/expressions/CondTest.cpp
         api/cli/expressions/MatrixLiteralTest.cpp
-        api/cli/expressions/TernaryTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/io/ReadTest.cpp
         api/cli/import/ImportTest.cpp
         api/cli/indexing/IndexingTest.cpp
-        api/cli/inference/SparsityTest.cpp
+        api/cli/inference/InferenceTest.cpp
         api/cli/io/ReadTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/ConstantFoldingTest.cpp
@@ -69,13 +70,15 @@ set(TEST_SOURCES
         runtime/local/datastructures/TaskQueueTest.cpp
 
         runtime/local/io/ReadCsvTest.cpp
-	runtime/local/io/ReadParquetTest.cpp
-	runtime/local/io/ReadMMTest.cpp
-	runtime/local/io/WriteDaphneTest.cpp
-	runtime/local/io/ReadDaphneTest.cpp
+        runtime/local/io/ReadParquetTest.cpp
+        runtime/local/io/ReadMMTest.cpp
+        runtime/local/io/WriteDaphneTest.cpp
+        runtime/local/io/ReadDaphneTest.cpp
+        runtime/local/io/DaphneSerializerTest.cpp
 
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
+        runtime/local/kernels/AggCumTest.cpp
         runtime/local/kernels/AggRowTest.cpp
         runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
@@ -89,12 +92,14 @@ set(TEST_SOURCES
         runtime/local/kernels/DiagMatrixTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
         runtime/local/kernels/DNNPoolingTest.cpp
+        runtime/local/kernels/EigenCalTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryObjScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp
+        runtime/local/kernels/FilterColTest.cpp
         runtime/local/kernels/FilterRowTest.cpp
         runtime/local/kernels/GroupJoinTest.cpp
         runtime/local/kernels/GroupTest.cpp
@@ -105,6 +110,7 @@ set(TEST_SOURCES
         runtime/local/kernels/MapTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/OrderTest.cpp
+        runtime/local/kernels/OuterBinaryTest.cpp
         runtime/local/kernels/QuantizeTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/ReadTest.cpp
@@ -131,6 +137,7 @@ set(TEST_SOURCES
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     list(APPEND TEST_SOURCES
+            runtime/local/kernels/CUDA/FillTest.cpp
             runtime/local/kernels/CUDA/MatMulTest.cpp
             runtime/local/kernels/CUDA_ContextTest.cpp
             runtime/local/kernels/DNNActivationTest.cpp
@@ -142,10 +149,11 @@ endif()
 
 add_executable(run_tests ${TEST_SOURCES})
 set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_dependencies(run_tests daphne DistributedWorker)
+add_dependencies(run_tests daphne daphnelib DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES} DaphneConfigParser DaphneMetaDataParser)
+set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto DaphneConfigParser
+        DaphneMetaDataParser Util)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_include_directories(run_tests PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
@@ -160,7 +168,7 @@ endif()
 
 target_link_libraries(run_tests PRIVATE ${LIBS})
 target_link_directories(run_tests PRIVATE ${PROJECT_BINARY_DIR}/lib)
-add_executable(theta_join_test run_tests.cpp runtime/local/kernels/ThetaJoinTest.cpp)
+add_executable(theta_join_test run_tests.cpp run_tests.h runtime/local/kernels/ThetaJoinTest.cpp)
 set_target_properties(theta_join_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 add_dependencies(theta_join_test daphne DistributedWorker)

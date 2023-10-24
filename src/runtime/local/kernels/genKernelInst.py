@@ -60,6 +60,12 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     if "opCodeAsTemplateParam" in kernelTemplateInfo:
         opCodeAsTemplateParam = True if kernelTemplateInfo["opCodeAsTemplateParam"] == 1 else False
 
+    if len(templateParams) != len(templateValues):
+        raise RuntimeError(
+            f"kernel \"{opName}\" has {len(templateParams)} template parameters, but "
+            f"{len(templateValues)} template values are supplied in an instantiation"
+        )
+
     if opCodes is not None:
         # We assume that the op-code is the first run-time parameter.
         opCodeType = runtimeParams[0]["type"]

@@ -1,11 +1,11 @@
 <!--
-Copyright 2022 The DAPHNE Consortium
+Copyright 2021 The DAPHNE Consortium
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,11 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# DAPHNE Packaging, Distributed Deployment, and Management
+# Deploying
+
+DAPHNE Packaging, Distributed Deployment, and Management
 
 ## Overview
 
 This file explains the deployment of the **Daphne system**, on HPC with SLURM or manually through SSH, and highlights the excerpts from descriptions of functionalities in [deploy/](/deploy/) directory (mostly [deploy-distributed-on-slurm.sh](/deploy/deploy-distributed-on-slurm.sh)):
+
 - compilation of the Singularity image,
 - compilation of Daphne (and the Daphne DistributedWorker) within the Singularity image,
 - packaging compiled Daphne,
@@ -39,6 +42,7 @@ through an environmental variable.
 ## Deploying without Slurm support
 
 **`deployDistributed.sh`** can be used to manually connect to a list of machines and remotely start up workers, get status of running workers or terminate distributed worker processes. This script depends only on an SSH client/server and does not require any use of a resource management tool (e.g. SLURM). With this script you can:
+
 - build and deploy DistributedWorkers to remote machines
 - start workers
 - check status of running workers
@@ -53,6 +57,7 @@ Ssh username must be specified inside the script. For now the script assumes all
 Usage example:
 
 ```bash
+# deploy distributed
 $ ./deployDistributed.sh --help
 $ ./deployDistributed.sh --deploy --pathToBuild /path/to/dir --peers localhost:5000,localhost:5001
 $ ./deployDistributed.sh -r # (Uses default peers and path/to/build/ to start workers)
@@ -67,8 +72,7 @@ Building the Daphne system (to be later deployed on distributed nodes) can be do
 This explains how to set up the Distributed Workers on a HPC platform, and it also briefly comments on what to do afterwards (how to run, manage, stop, and clean it).
 Commands, with their parameters and arguments, are hence described below for deployment with [deploy-distributed-on-slurm.sh](/deploy/deploy-distributed-on-slurm.sh).
 
-
-```
+```shell
 Usage: deploy-distributed-on-slurm.sh <options> <command>
 
 Start the DAPHNE distributed deployment on remote machines using Slurm.
@@ -114,121 +118,125 @@ Logs can be found at [pathToBuild]/logs.
 ```
 
 ### Short Examples
+
 The following list presents few examples about how to use the [deploy-distributed-on-slurm.sh](/deploy/deploy-distributed-on-slurm.sh) command.
 
 These comprise more hands-on documentation about deployment, including tutorial-like explanation examples about how to package, distributively deploy, manage, and execute workloads using DAPHNE.
 
 1. Builds the Singularity image and uses it to compile the build directory codes, then packages it.
-```shell
-./deploy-distributed-on-slurm.sh singularity && ./deploy-distributed-on-slurm.sh build && ./deploy-distributed-on-slurm.sh package
-```
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh singularity && ./deploy-distributed-on-slurm.sh build && ./deploy-distributed-on-slurm.sh package
+    ```
 
-2. Transfers a package to the target platform through OpenSSH, using login node HPC, user hpc, and identify key hpc.pub.
-```shell
-./deploy-distributed-on-slurm.sh --login HPC --user hpc -i ~/.ssh/hpc.pub transfer
-```
+1. Transfers a package to the target platform through OpenSSH, using login node HPC, user hpc, and identify key hpc.pub.
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh --login HPC --user hpc -i ~/.ssh/hpc.pub transfer
+    ```
 
-3. Using login node HPC, accesses the target platform and starts workers on remote machines.
-```shell
-./deploy-distributed-on-slurm.sh -l HPC start
-```
+1. Using login node HPC, accesses the target platform and starts workers on remote machines.
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh -l HPC start
+    ```
 
-4. Runs one request (script called example-time.daphne) on the deployment using 1024 cores, login node HPC, and default OpenSSH configuration.
-```shell
-./deploy-distributed-on-slurm.sh -l HPC -n 1024 run example-time.daphne
-```
+1. Runs one request (script called example-time.daphne) on the deployment using 1024 cores, login node HPC, and default OpenSSH configuration.
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh -l HPC -n 1024 run example-time.daphne
+    ```
 
-5. Executes one request (DaphneDSL script input from standard input) at a running deployed platform, using default singularity/srun configurations.
-```shell
-./deploy-distributed-on-slurm.sh run
-```
+1. Executes one request (DaphneDSL script input from standard input) at a running deployed platform, using default singularity/srun configurations.
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh run
+    ```
 
-6. Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans.
-```shell
-./deploy-distributed-on-slurm.sh deploy -n 10
-```
+1. Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans.
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh deploy -n 10
+    ```
 
-7. Starts workers at a running deployed platform using custom srun arguments (2 hours dual-core with 10G memory).
-```shell
-./deploy-distributed-on-slurm.sh workers -R="-t 120 --mem-per-cpu=10G --cpu-bind=cores --cpus-per-task=2"
-```
+1. Starts workers at a running deployed platform using custom srun arguments (2 hours dual-core with 10G memory).
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh workers -R="-t 120 --mem-per-cpu=10G --cpu-bind=cores --cpus-per-task=2"
+    ```
 
-8. Executes a request with custom srun arguments (30 minutes single-core).
-```shell
-./deploy-distributed-on-slurm.sh run -R="--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1"
-```
+1. Executes a request with custom srun arguments (30 minutes single-core).
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh run -R="--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1"
+    ```
 
-9. Example request job from a pipe.
-```shell
-cat ../scripts/examples/hello-world.daph | ./deploy-distributed-on-slurm.sh run
-```
+1. Example request job from a pipe.
 
+    ```shell
+    cat ../scripts/examples/hello-world.daph | ./deploy-distributed-on-slurm.sh run
+    ```
 
 ### Scenario Usage Example
 
 Here is a scenario usage as a longer example demo.
 
 1. Fetch the code from the latest GitHub code repository.
-```shell
-function compile() {
-  git clone --recursive git@github.com:daphne-eu/daphne.git 2>&1 | tee daphne-$(date +%F-%T).log
-  cd daphne/deploy
-  ./deploy-distributed-on-slurm.sh singularity # creates the Singularity container image
-  ./deploy-distributed-on-slurm.sh build   # Builds the daphne codes using the container
-}
-compile
-```
 
+    ```shell
+    function compile() {
+      git clone --recursive git@github.com:daphne-eu/daphne.git 2>&1 | tee daphne-$(date +%F-%T).log
+      cd daphne/deploy
+      ./deploy-distributed-on-slurm.sh singularity # creates the Singularity container image
+      ./deploy-distributed-on-slurm.sh build   # Builds the daphne codes using the container
+    }
+    compile
+    ```
 
-2. Package the built targets (binaries) to packet file `daphne-package.tgz`.
-```shell
-./deploy-distributed-on-slurm.sh package
-```
+1. Package the built targets (binaries) to packet file `daphne-package.tgz`.
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh package
+    ```
 
-3. Transfer the packet file `daphne-package.tgz` to `HPC` (Slurm) with OpenSSH key `~/.ssh/hpc.pub` and unpack it.
-```shell
-./deploy-distributed-on-slurm.sh --login HPC --user $USER -i ~/.ssh/hpc.pub transfer 
-```
-E.g., for EuroHPC Vega, use the instance, if your username matches the one at Vega and the key is `~/.ssh/hpc.pub`:
-```shell
-./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub transfer
-```
+1. Transfer the packet file `daphne-package.tgz` to `HPC` (Slurm) with OpenSSH key `~/.ssh/hpc.pub` and unpack it.
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh --login HPC --user $USER -i ~/.ssh/hpc.pub transfer 
+    ```
 
-4. Start the workers from the local computer by logging into the HPC login node:
-```shell
-./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub start
-```
+    E.g., for EuroHPC Vega, use the instance, if your username matches the one at Vega and the key is `~/.ssh/hpc.pub`:
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub transfer
+    ```
 
-5. Starting a main target on the HPC (Slurm) and connecting it with the started workers, to execute payload from the stream.
-```shell
-cat ../scripts/examples/hello-world.daph | ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub run 
-```
+1. Start the workers from the local computer by logging into the HPC login node:
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub start
+    ```
 
-6. Starting a main target on the HPC (Slurm) and connecting it with the started workers, to execute payload from a file.
-```shell
-./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub run example-time.daphne
-```
+1. Starting a main target on the HPC (Slurm) and connecting it with the started workers, to execute payload from the stream.
 
+    ```shell
+    cat ../scripts/examples/hello-world.daph | ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub run 
+    ```
 
-7. Stopping all workers on the HPC (Slurm).
-```shell
-./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub stop
-```
+1. Starting a main target on the HPC (Slurm) and connecting it with the started workers, to execute payload from a file.
 
+    ```shell
+    ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub run example-time.daphne
+    ```
 
-8. Cleaning the uploaded targets from the HPC login node.
-```shell
-./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub clean
-```
+1. Stopping all workers on the HPC (Slurm).
+
+    ```shell
+    ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub stop
+    ```
+
+1. Cleaning the uploaded targets from the HPC login node.
+
+    ```shell
+    ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub clean
+    ```

@@ -62,7 +62,7 @@ def Matrix : Daphne_Type<"Matrix"> {
         // Creates a MatrixType from mere element type information, with all
         // other parameters reset.
         TypeBuilder<(ins "::mlir::Type":$elementType), [{
-            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Dense);
+            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Default);
         }]>,
     ];
 
@@ -99,12 +99,12 @@ def Matrix : Daphne_Type<"Matrix"> {
         }
 
         /**
-         * @brief Check if other has strictly less information than this matrix type.
-         * @param other other matrix type to compare against
+         * @brief Check if `other` has strictly less information than this matrix type.
+         * @param other the other matrix type to compare to
          * @return true if this type has more information, false otherwise
          */
         bool isSpecializationOf(::mlir::daphne::MatrixType other) {
-            if (getElementType() != other.getElementType())
+            if (!other.getElementType().isa<mlir::daphne::UnknownType>() && getElementType() != other.getElementType())
                 return false;
 
             if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())
@@ -119,6 +119,7 @@ def Matrix : Daphne_Type<"Matrix"> {
             if(other.getRepresentation() != ::mlir::daphne::MatrixRepresentation::Default
                 && getRepresentation() != other.getRepresentation())
                 return false;
+
             return true;
         }
     }];
@@ -179,6 +180,37 @@ def Frame : Daphne_Type<"Frame"> {
 
         ::mlir::daphne::FrameType withSameColumnTypes() {
             return get(getContext(), getColumnTypes());
+        }
+
+        /**
+         * @brief Check if `other` has strictly less information than this frame type.
+         * @param other the other frame type to compare to
+         * @return true if this type has more information, false otherwise
+         */
+        bool isSpecializationOf(::mlir::daphne::FrameType other) {
+            // TODO #421 needs to be taken into account here, once we address it.
+            auto columnTypes = getColumnTypes();
+            auto otherColumnTypes = other.getColumnTypes();
+            // Normally, this size() should always be the same as numCols.
+            if (columnTypes.size() != otherColumnTypes.size())
+                return false;
+            for (size_t i = 0; i < columnTypes.size(); i++)
+                if(!otherColumnTypes[i].isa<mlir::daphne::UnknownType>() && columnTypes[i] != otherColumnTypes[i])
+                    return false;
+
+            if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())
+                return false;
+
+            if (other.getNumCols() != -1 && getNumCols() != other.getNumCols())
+                return false;
+
+            // Note that this compares the labels pointers, not the labels themselves.
+            // This is to ensure consistency with other places, especially when
+            // comparing two mlir::Type/mlir::daphne::FrameType instances using operator==.
+            if (other.getLabels() != nullptr && getLabels() != other.getLabels())
+                return false;
+
+            return true;
         }
     }];
 }

@@ -53,10 +53,6 @@ def RewriteSqlOpPass : Pass<"rewrite-sqlop", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
 }
 
-def SpecializeGenericFunctionsPass : Pass<"specialize-generic-funcs", "::mlir::func::FuncOp"> {
-    let constructor = "mlir::daphne::createSpecializeGenericFunctionsPass()";
-}
-
 def WhileLoopInvariantCodeMotionPass : Pass<"while-loop-invariant-code-motion", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createWhileLoopInvariantCodeMotionPass()";
 }

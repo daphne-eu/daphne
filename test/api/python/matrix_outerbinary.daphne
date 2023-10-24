@@ -1,0 +1,38 @@
+# Copyright 2023 The DAPHNE Consortium
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+m1 = [1.23];
+m2 = [4.56];
+
+print(outerAdd(m1, m2));
+print(outerSub(m1, m2));
+print(outerMul(m1, m2));
+print(outerDiv(m1, m2));
+print(outerPow(m1, m2));
+print(outerLog(m1, m2));
+print(outerMod(m1, m2));
+print(outerMin(m1, m2));
+print(outerMax(m1, m2));
+print(outerAnd(m1, m2));
+print(outerOr(m1, m2));
+# TODO Support this op.
+# print(outerXor(m1, m2));
+# TODO Support this op.
+# print(outerConcat(m1, m2));
+print(outerEq(m1, m2));
+print(outerNeq(m1, m2));
+print(outerLt(m1, m2));
+print(outerLe(m1, m2));
+print(outerGt(m1, m2));
+print(outerGe(m1, m2));

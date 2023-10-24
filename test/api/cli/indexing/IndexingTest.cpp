@@ -20,7 +20,6 @@
 
 #include <catch.hpp>
 
-#include <sstream>
 #include <string>
 
 const std::string dirPath = "test/api/cli/indexing/";
@@ -43,8 +42,8 @@ const std::string dirPath = "test/api/cli/indexing/";
         } \
     }
 
-MAKE_SUCCESS_TEST_CASE("right_indexing", 4)
-MAKE_FAILURE_TEST_CASE("right_indexing", 6)
+MAKE_SUCCESS_TEST_CASE("right_indexing", 5)
+MAKE_FAILURE_TEST_CASE("right_indexing", 10)
         
 // TODO Add a test case for multi-assignments (`X[...], Y[...] = ...`).
 MAKE_SUCCESS_TEST_CASE("left_indexing", 3)

@@ -73,4 +73,25 @@ struct Write<DenseMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Frame
+// ----------------------------------------------------------------------------
+
+template<>
+struct Write<Frame> {
+    static void apply(const Frame * arg, const char * filename, DCTX(ctx)) {
+        File * file = openFileForWrite(filename);
+        std::vector<ValueTypeCode> vtcs;
+        std::vector<std::string> labels;
+        for(size_t i = 0; i < arg->getNumCols(); i++) {
+            vtcs.push_back(arg->getSchema()[i]);
+            labels.push_back(arg->getLabels()[i]);
+        }
+        FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), false, vtcs, labels);
+        MetaDataParser::writeMetaData(filename, metaData);
+        writeCsv(arg, file);
+        closeFile(file);
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_WRITE_H

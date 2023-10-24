@@ -47,13 +47,17 @@ class DenseMatrix : public Matrix<ValueType>
     // fields from the super-classes.
     using Matrix<ValueType>::numRows;
     using Matrix<ValueType>::numCols;
-    
+
+    const bool is_view;
     size_t rowSkip;
+
+    // ToDo: handle this through MDO
     std::shared_ptr<ValueType[]> values{};
-    
+    size_t bufferSize;
+
     size_t lastAppendedRowIdx;
     size_t lastAppendedColIdx;
-    
+
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
     template<class DataType, typename ... ArgTypes>
@@ -101,14 +105,23 @@ class DenseMatrix : public Matrix<ValueType>
     DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
             size_t colUpperExcl);
 
+    /**
+     * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
+     *
+     * @param numRows The exact number of rows.
+     * @param numCols The exact number of columns.
+     * @param values A `std::shared_ptr` to an existing array of values.
+     */
+    DenseMatrix(size_t numRows, size_t numCols, const DenseMatrix<ValueType>* src);
+
     ~DenseMatrix() override = default;
 
-    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
+    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx, bool rowSkipOverride = false) const {
         if(rowIdx >= numRows)
             throw std::runtime_error("rowIdx is out of bounds");
         if(colIdx >= numCols)
             throw std::runtime_error("colIdx is out of bounds");
-        return rowIdx * rowSkip + colIdx;
+        return rowIdx * (rowSkipOverride ? numCols : rowSkip) + colIdx;
     }
     
     void fillZeroUntil(size_t rowIdx, size_t colIdx) {
@@ -119,7 +132,7 @@ class DenseMatrix : public Matrix<ValueType>
                 memset(values.get() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
         }
         else {
-            ValueType * v = values.get() + lastAppendedRowIdx * rowSkip;
+            auto v = values.get() + lastAppendedRowIdx * rowSkip;
             memset(v + lastAppendedColIdx + 1, 0, (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
             v += rowSkip;
             for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
@@ -161,8 +174,14 @@ class DenseMatrix : public Matrix<ValueType>
 
     auto getValuesInternal(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr)
     -> std::tuple<bool, size_t, ValueType*>;
+    
+    [[nodiscard]] size_t offset() const { return this->row_offset * rowSkip + this->col_offset; }
+    
+    
+    ValueType* startAddress() const { return isPartialBuffer() ?  values.get() + offset() : values.get(); }
 
 public:
+    [[nodiscard]] bool isPartialBuffer() const { return bufferSize != this->getNumRows() * this->getRowSkip() * sizeof(ValueType); }
 
     void shrinkNumRows(size_t numRows) {
         assert((numRows <= this->numRows) && "number of rows can only the shrunk");
@@ -170,9 +189,9 @@ public:
         this->numRows = numRows;
     }
     
-    [[nodiscard]] size_t getRowSkip() const {
-        return rowSkip;
-    }
+    [[nodiscard]] size_t getRowSkip() const { return rowSkip; }
+
+    [[nodiscard]] bool isView() const { return is_view; }
 
     /**
      * @brief Fetch a pointer to the data held by this structure meant for read-only access.
@@ -190,7 +209,7 @@ public:
     {
         auto[isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
         if(!isLatest)
-            this->mdo.addLatest(id);
+            this->mdo->addLatest(id);
         return ptr;
     }
 
@@ -209,7 +228,7 @@ public:
     ValueType* getValues(IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
         auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range);
         if(!isLatest)
-            this->mdo.setLatest(id);
+            this->mdo->setLatest(id);
         return ptr;
     }
     
@@ -218,7 +237,7 @@ public:
     }
     
     ValueType get(size_t rowIdx, size_t colIdx) const override {
-        return getValues()[pos(rowIdx, colIdx)];
+        return getValues()[pos(rowIdx, colIdx, isPartialBuffer())];
     }
     
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
@@ -273,10 +292,9 @@ public:
         return DataObjectFactory::create<DenseMatrix<ValueType>>(this, rl, ru, cl, cu);
     }
 
-    // convenience functions
-    size_t bufferSize();
-
-    [[nodiscard]] size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
+    [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
+    
+    size_t serialize(std::vector<char> &buf) const override;
 };
 
 template <typename ValueType>
@@ -366,13 +384,21 @@ class DenseMatrix<const char*> : public Matrix<const char*>
     DenseMatrix(const DenseMatrix<const char*> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
 
     ~DenseMatrix() override = default;
-
-    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
+    
+    /**
+     * @brief Calculates the position within linear memory given row/col indices
+     *
+     * @param rowIdx
+     * @param colIdx
+     * @param rowSkipOverride use numCols instead of rowSkip if get() is used on a partial buffer
+     * @return linearized position
+     */
+    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx, bool rowSkipOverride = false) const {
         if(rowIdx >= numRows)
             throw std::runtime_error("rowIdx is out of bounds");
         if(colIdx >= numCols)
             throw std::runtime_error("colIdx is out of bounds");
-        return rowIdx * rowSkip + colIdx;
+        return rowIdx *  (rowSkipOverride ? numCols : rowSkip) + colIdx;
     }
     
     void appendZerosRange(const char** valsStartPos, const size_t length)
@@ -461,7 +487,7 @@ public:
     }
     
     const char* get(size_t rowIdx, size_t colIdx) const override {
-        return getValues()[pos(rowIdx, colIdx)];
+        return getValues()[pos(rowIdx, colIdx, false)];
     }
 
     void set(size_t rowIdx, size_t colIdx, const char* value) override {
@@ -549,11 +575,7 @@ public:
         return DataObjectFactory::create<DenseMatrix<const char*>>(this, rl, ru, cl, cu);
     }
 
-    size_t bufferSize();
-
-    size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
-
-    float printBufferSize() const { return static_cast<float>(bufferSize()) / (1048576); }
+    float printBufferSize() const { return static_cast<float>(numRows*numCols) / (1048576); }
 
     bool operator==(const DenseMatrix<const char*> &M) const {
         assert(getNumRows() != 0 && getNumCols() != 0 && strBuf && values && "Invalid matrix");
@@ -562,5 +584,9 @@ public:
                 if(strcmp(M.getValues()[M.pos(r,c)], values.get()[pos(r,c)]))
                     return false;
         return true;
+  }
+
+  size_t serialize(std::vector<char> &buf) const override {
+    throw std::runtime_error("Not implemented");
   }
 };

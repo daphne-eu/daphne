@@ -18,6 +18,7 @@ add_library(DataStructures
         DataPlacement.h
         DataPlacement.cpp
         DenseMatrix.cpp
+        CSRMatrix.cpp
         Frame.cpp
         IAllocationDescriptor.h
         MetaDataObject.h

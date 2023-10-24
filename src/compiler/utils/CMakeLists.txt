@@ -15,6 +15,7 @@
 add_library(CompilerUtils STATIC
         CompilerUtils.cpp
         LoweringUtils.cpp
+        TypePrinting.cpp
 )
 
 target_link_libraries(CompilerUtils PUBLIC

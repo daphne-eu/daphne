@@ -1,6 +1,0 @@
-// Check that our inference doesn't throw errors if sparsity changes during for loop
-G = rand(10, 10, 1.0, 1.0, 0.1, -1);
-for (i in 1:10) {
-    G = G + rand(10, 10, 1.0, 1.0, 0.1, -1);
-}
-print(G);

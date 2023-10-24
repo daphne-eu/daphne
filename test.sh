@@ -28,9 +28,9 @@ set -e
 
 catch2_options=""
 BUILD_CUDA=""
-BUILD_ARROW=""
 BUILD_FPGAOPENCL=""
 BUILD_DEBUG=""
+BUILD_DAPHNE=1
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -40,10 +40,6 @@ while [[ $# -gt 0 ]]; do
             echo using CUDA
             export BUILD_CUDA="--cuda"
             ;;
-        --arrow)
-            echo using ARROW
-            BUILD_ARROW="--arrow"
-            ;;
         --fpgaopencl)
             echo using FPGAOPENCL
             export BUILD_FPGAOPENCL="--fpgaopencl"
@@ -52,6 +48,9 @@ while [[ $# -gt 0 ]]; do
             echo building DEBUG version
             export BUILD_DEBUG="--debug"
             ;;
+        -nb | --no-build)
+            BUILD_DAPHNE=0
+            ;;
         *)
             catch2_options="${catch2_options} ${key}"
             ;;
@@ -59,11 +58,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Build tests.
-./build.sh $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG --target run_tests
+if [ $BUILD_DAPHNE -gt 0 ]; then
+  ./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG --target run_tests
+fi
 
 # Preparations for running DaphneLib (Python API) tests.
 export PYTHONPATH="$PYTHONPATH:$PWD/src/"
-mkdir --parents src/api/python/tmp
+
+# this speeds up the vectorized tests
+export OPENBLAS_NUM_THREADS=1
 
 # Run tests.
 # shellcheck disable=SC2086

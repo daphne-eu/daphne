@@ -177,6 +177,29 @@ mlir::Type inferTypeByTraits(O * op) {
             // to the most general type later on.
             resVts = argVts[0];
     }
+    // TODO Reduce the code duplication. Merge the traits ValueTypeFromFirstArg and
+    // ValueTypeFromThirdArg into one parametric trait ValueTypeFromArg<N>, see #487.
+    else if(op->template hasTrait<ValueTypeFromThirdArg>()) {
+        if(resDtc == DataTypeCode::FRAME && argDtc[2] == DataTypeCode::MATRIX) {
+            // We need to make sure that the value type of the input matrix is
+            // repeated in the column value types of the output frame to match
+            // the number of columns of the input matrix.
+            const ssize_t numCols = op->getOperand(2)
+                .getType()
+                .template dyn_cast<daphne::MatrixType>()
+                .getNumCols();
+            if(numCols == -1)
+                // The input's number of columns is unknown.
+                resVts = {u}; // TODO How to properly represent such cases (see #421)?
+            else
+                // The input's number of columns is known.
+                resVts = std::vector(numCols, argVts[2][0]);
+        }
+        else
+            // Even if the third arg is a frame, its column types get collapsed
+            // to the most general type later on.
+            resVts = argVts[2];
+    }
     else if(op->template hasTrait<ValueTypeFromArgs>())
         resVts = inferValueTypeFromArgs(argDtc, argVts);
     else if(op->template hasTrait<ValueTypeFromArgsFP>()) {
@@ -267,8 +290,12 @@ mlir::Type inferTypeByTraits(O * op) {
                 break;
         }
     }
+    else if(op->template hasTrait<ValueTypeSI64>())
+        resVts = {IntegerType::get(ctx, 64, IntegerType::SignednessSemantics::Signed)};
     else if(op->template hasTrait<ValueTypeSize>())
         resVts = {IndexType::get(ctx)};
+    else if(op->template hasTrait<ValueTypeStr>())
+        resVts = {daphne::StringType::get(ctx)};
 
     // --------------------------------------------------------------------
     // Create the result type

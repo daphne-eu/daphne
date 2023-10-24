@@ -76,7 +76,7 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<De
         auto &result = (*_res[o]);
         switch (_data._combines[o]) {
             case VectorCombine::ROWS: {
-                auto bufsize = localResults[o]->bufferSize();
+                auto bufsize = localResults[o]->getBufferSize();
                 auto data = result->getValues(&alloc_desc);
                 data += result->getRowSkip() * rowStart;
                 CHECK_CUDART(cudaMemcpy(data, localResults[o]->getValues(&alloc_desc), bufsize, cudaMemcpyDeviceToDevice));

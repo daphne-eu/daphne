@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if(NOT TARGET spdlog)
+	# Stand-alone build
+	find_package(spdlog REQUIRED)
+endif()
+
 add_library(Util
+		DaphneLogger.h
+		DaphneLogger.cpp
         MurmurHash3.cpp
 		preprocessor_defs.h)
-target_link_libraries(Util)
+
+target_link_libraries(Util PRIVATE spdlog::spdlog)

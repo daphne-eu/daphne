@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_IO_DAPHNEFILE_H
-#define SRC_RUNTIME_LOCAL_IO_DAPHNEFILE_H
+#pragma once
 
 #include <cstdint>
 
@@ -25,21 +24,20 @@ struct DF_header {
 	uint8_t dt;
 	uint64_t nbrows;
 	uint64_t nbcols;
-};
+} __attribute__((__packed__));
 
-enum DF_data_t {reserved = 0, DenseMatrix_t = 1, CSRMatrix_t = 2, Frame_t = 3};
+enum DF_data_t {reserved = 0, DenseMatrix_t = 1, CSRMatrix_t = 2, Frame_t = 3, Value_t = 4};
 
 struct DF_body {
 	uint64_t rx; // row index
 	uint64_t cx; // column index
-};
+} __attribute__((__packed__));
 
 struct DF_body_block {
 	uint32_t nbrows;
 	uint32_t nbcols;
 	uint8_t bt;
-};
+} __attribute__((__packed__));
 
 enum DF_body_t {empty = 0, dense = 1, sparse = 2, ultra_sparse = 3};
 
-#endif

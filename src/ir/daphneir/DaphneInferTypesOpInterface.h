@@ -103,6 +103,17 @@ class DataTypeFrm : public TraitBase<ConcreteOp, DataTypeFrm> {};
 template<class ConcreteOp>
 class ValueTypeFromFirstArg : public TraitBase<ConcreteOp, ValueTypeFromFirstArg> {};
 
+// TODO Merge this trait with ValueTypeFromFirstArg into a parametric trait
+// ValueTypeFromArg<N>, see #487.
+/**
+ * @brief The value type (of the single result) is always the same as the value
+ * type of the third argument.
+ * 
+ * Assumes that the operation has always exactly one result.
+ */
+template<class ConcreteOp>
+class ValueTypeFromThirdArg : public TraitBase<ConcreteOp, ValueTypeFromThirdArg> {};
+
 /**
  * @brief The value type (of the single result) is the most general of the
  * value types of all arguments.
@@ -178,10 +189,22 @@ template<class ConcreteOp>
 class ValueTypesConcat : public TraitBase<ConcreteOp, ValueTypesConcat> {};
 
 /**
+ * @brief The value type (of the single result) is `SI64`.
+ */
+template<class ConcreteOp>
+class ValueTypeSI64 : public TraitBase<ConcreteOp, ValueTypeSI64> {};
+
+/**
  * @brief The value type (of the single result) is `Size`.
  */
 template<class ConcreteOp>
 class ValueTypeSize : public TraitBase<ConcreteOp, ValueTypeSize> {};
+
+/**
+ * @brief The value type (of the single result) is `String`.
+ */
+template<class ConcreteOp>
+class ValueTypeStr : public TraitBase<ConcreteOp, ValueTypeStr> {};
     
 // ============================================================================
 // Traits determining data type and value type together

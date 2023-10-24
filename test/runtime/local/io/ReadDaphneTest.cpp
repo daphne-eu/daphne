@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -22,10 +23,6 @@
 #include <catch.hpp>
 
 #include <vector>
-
-#include <cmath>
-#include <cstdint>
-#include <limits>
 
 #include <runtime/local/io/ReadDaphne.h>
 

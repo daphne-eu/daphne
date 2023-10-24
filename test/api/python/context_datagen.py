@@ -1,0 +1,25 @@
+# Copyright 2023 The DAPHNE Consortium
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from api.python.context.daphne_context import DaphneContext
+
+dc = DaphneContext()
+
+dc.fill(123, 3, 2).print().compute()
+dc.seq(1, 3, 1).print().compute()
+dc.rand(3, 2, 0.0, 1.0, 1, 123456).print().compute()
+dc.createFrame([dc.seq(1, 3, 1), dc.fill(1.23, 3, 1)], ["a", "b"]).print().compute()
+dc.createFrame([dc.seq(1, 3, 1), dc.fill(1.23, 3, 1)]).print().compute()
+dc.diagMatrix(dc.seq(1, 3, 1)).print().compute()
+dc.sample(10, 3, False, 123456).print().compute()

@@ -33,8 +33,8 @@ public:
     { return &context_; }
 private:
     mlir::MLIRContext context_;
-    bool selectMatrixRepresentations_;
     DaphneUserConfig userConfig_;
+    bool selectMatrixRepresentations_;
     // Storage for lib paths needed for StringRefs
     std::vector<std::string> sharedLibRefPaths;
 

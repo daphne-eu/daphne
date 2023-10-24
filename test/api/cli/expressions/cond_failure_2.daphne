@@ -1,0 +1,2 @@
+# If condition is matrix, else-value must not be matrix of different shape.
+print([0] ? 10 : [20, 22]);

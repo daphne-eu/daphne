@@ -103,12 +103,12 @@ This directory includes a set of **bash scripts** providing support for:
 ## List of Files in this Directory
 
 1. This short [README](README.md) file to explain directory structure and point to more documentation at [Deploy](/doc/Deploy.md).
-2. A [script](build-daphne-singularity-image.sh) that builds the "daphne.sif" singularity image from the Docker image ahmedeleliemy/test-workflow (image also contained in this folder).
+2. A [script](build-daphne-singularity-image.sh) that builds the "daphne.sif" singularity image from the [Docker image](/containers/README.md)
+daphneeu/daphne-dev
 3. [deploy-distributed-on-slurm](deploy-distributed-on-slurm.sh) script allows the user to deploy DAPHNE with SLURM.
 4. [deployDistributed](deployDistributed.sh) script builds and sends DAPHNE to remote machines manually with SSH (no tools like Slurm needed).
-5. [Dockerfile](Dockerfile) based on `ubuntu:latest` with some other libraries. It is also used for building a Singularity image that is converted from this Docker image.
-6. [example-time.daphne](example-time.daphne) Daphne example script which prints out the running time of a simple operation.
-8. The [Singularity image](singularity) configuration file.
+5. [example-time.daphne](example-time.daphne) Daphne example script which prints out the running time of a simple operation.
+6. The [Singularity image](singularity) configuration file.
 
 ### More Documentation
 

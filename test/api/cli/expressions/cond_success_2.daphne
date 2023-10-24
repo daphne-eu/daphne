@@ -1,0 +1,38 @@
+# Matrix condition of various value types, then/else-values of various combinations of matrix/scalar.
+
+print("boolean matrix condition");
+
+print("matrix-matrix values");
+print([false, true] ? [10, 11] : [20, 22]);
+print("matrix-scalar values");
+print([false, true] ? [10, 11] : 20);
+print("scalar-matrix values");
+print([false, true] ? 10 : [20, 22]);
+print("scalar-scalar values");
+print([false, true] ? 10 : 20);
+
+print("");
+
+print("integer matrix condition");
+
+print("matrix-matrix values");
+print([0, 1] ? [10, 11] : [20, 22]);
+print("matrix-scalar values");
+print([0, 1] ? [10, 11] : 20);
+print("scalar-matrix values");
+print([0, 1] ? 10 : [20, 22]);
+print("scalar-scalar values");
+print([0, 1] ? 10 : 20);
+
+print("");
+
+print("floating-point matrix condition");
+
+print("matrix-matrix values");
+print([0.0, 1.0] ? [10, 11] : [20, 22]);
+print("matrix-scalar values");
+print([0.0, 1.0] ? [10, 11] : 20);
+print("scalar-matrix values");
+print([0.0, 1.0] ? 10 : [20, 22]);
+print("scalar-scalar values");
+print([0.0, 1.0] ? 10 : 20);

@@ -19,6 +19,8 @@
 #include "Worker.h"
 #include <runtime/local/vectorized/TaskQueues.h>
 
+#include <spdlog/spdlog.h>
+
 class WorkerCPU : public Worker {
     std::vector<TaskQueue*> _q;
     std::vector<int> _physical_ids;
@@ -33,10 +35,10 @@ class WorkerCPU : public Worker {
     int _stealLogic;
     bool _pinWorkers;
 public:
-    // this constructor is to be used in practice
+    // ToDo: remove compile-time verbose parameter and use logger
     WorkerCPU(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads,
-            bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
-            int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) : Worker(), _q(deques),
+            DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
+            int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) : Worker(dctx), _q(deques),
             _physical_ids(physical_ids), _unique_threads(unique_threads),
             _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues),
             _queueMode(queueMode), _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
@@ -64,7 +66,7 @@ public:
         } else if ( _queueMode == 2) {
             targetQueue = _threadID;
         } else {
-            std::cout << "Error finding queue." << std::endl;
+            ctx->logger->error("WorkerCPU: queue not found");
         }
         int startingQueue = targetQueue;
 
@@ -73,7 +75,7 @@ public:
         while( !isEOF(t) ) {
             //execute self-contained task
             if( _verbose )
-                std::cerr << "WorkerCPU: executing task." << std::endl;
+                ctx->logger->trace("WorkerCPU: executing task.");
             t->execute(_fid, _batchSize);
             delete t;
             //get next tasks (blocking)
@@ -196,6 +198,6 @@ public:
 
         // No more tasks available anywhere
         if( _verbose )
-            std::cerr << "WorkerCPU: received EOF, finalized." << std::endl;
+            ctx->logger->debug("WorkerCPU: received EOF, finalized.");
     }
 };

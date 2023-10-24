@@ -1,0 +1,9 @@
+// invalid number of results (expecting 2, getting 1)
+
+def f(a:si64) -> si64 {
+    return a + 1;
+}
+
+x, y = f(123);
+print(x);
+print(y);

@@ -26,10 +26,14 @@
 #include <runtime/local/vectorized/WorkerCPU.h>
 #include <runtime/local/vectorized/WorkerGPU.h>
 
+#include <spdlog/spdlog.h>
+
 #include <fstream>
 #include <functional>
 #include <queue>
 #include <set>
+
+#include <hwloc.h>
 
 //TODO use the wrapper to cache threads
 //TODO generalize for arbitrary inputs (not just binary)
@@ -45,7 +49,6 @@ protected:
     std::vector<int> topologyPhysicalIds;
     std::vector<int> topologyUniqueThreads;
     std::vector<int> topologyResponsibleThreads;
-    std::string _cpuinfoPath = "/proc/cpuinfo";
     size_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
@@ -82,45 +85,16 @@ protected:
     }
 
     void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
-        std::ifstream cpuinfoFile(_cpuinfoPath);
-        std::vector<int> utilizedThreads;
-        std::vector<int> core_ids;
-        int index = 0;
-        if( cpuinfoFile.is_open() ) {
-            std::string line;
-            int value;
-            while ( std::getline(cpuinfoFile, line) ) {
-                if( _parseStringLine(line, "processor", &value ) ) {
-                    utilizedThreads.push_back(value);
-                } else if( _parseStringLine(line, "physical id", &value) ) {
-                    if ( _ctx->getUserConfig().queueSetupScheme == PERGROUP ) {
-                        if (std::find(physicalIds.begin(), physicalIds.end(), value) == physicalIds.end()) {
-                            responsibleThreads.push_back(utilizedThreads[index]);
-                        }
-                    }
-                    physicalIds.push_back(value);
-                } else if( _parseStringLine(line, "core id", &value) ) {
-                    int found = 0;
-                    for (int i=0; i<index; i++) {
-                        if (core_ids[i] == value && physicalIds[i] == physicalIds[index]) {
-                                found++;
-                        }
-                    }
-                    core_ids.push_back(value);
-                    if( _ctx->config.hyperthreadingEnabled || found == 0 ) {
-                        uniqueThreads.push_back(utilizedThreads[index]);
-                        if ( _ctx->getUserConfig().queueSetupScheme == PERCPU ) {
-                            responsibleThreads.push_back(value);
-                        } else if ( _ctx->getUserConfig().queueSetupScheme == CENTRALIZED ) {
-                            responsibleThreads.push_back(0);
-                        }
-                    }
-                    index++;
-                }
-            }
-            cpuinfoFile.close();
-        }
+	hwloc_topology_t topology;
+
+	hwloc_topology_init(&topology);
+	hwloc_topology_load(topology);
+
+	physicalIds.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PACKAGE));
+	uniqueThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE));
+	responsibleThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU));
     }
+
     void initCPPWorkers(std::vector<TaskQueue *> &qvector, uint32_t batchSize, const bool verbose = false,
             int numQueues = 0, int queueMode = 0, bool pinWorkers = false) {
         cpp_workers.resize(_numCPPThreads);
@@ -130,7 +104,7 @@ protected:
 
         int i = 0;
         for( auto& w : cpp_workers ) {
-            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize,
+            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, _ctx, verbose, 0, batchSize,
                     i, numQueues, queueMode, this->_stealLogic, pinWorkers);
             i++;
         }
@@ -139,7 +113,7 @@ protected:
     void initCUDAWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         cuda_workers.resize(_numCUDAThreads);
         for (auto& w : cuda_workers)
-            w = std::make_unique<WorkerGPU>(q, verbose, 1, batchSize);
+            w = std::make_unique<WorkerGPU>(q, _ctx, verbose, 1, batchSize);
     }
 
     void cudaPrefetchInputs(Structure** inputs, uint32_t numInputs, size_t mem_required,
@@ -148,9 +122,7 @@ protected:
         auto ctx = CUDAContext::get(_ctx, deviceID);
         AllocationDescriptorCUDA alloc_desc(_ctx, deviceID);
         auto buffer_usage = static_cast<float>(mem_required) / static_cast<float>(ctx->getMemBudget());
-#ifndef NDEBUG
-        std::cout << "\nVect pipe total in/out buffer usage: " << buffer_usage << std::endl;
-#endif
+        ctx->logger->debug("Vect pipe total in/out buffer usage: {}", buffer_usage);
         if(buffer_usage < 1.0) {
             for (auto i = 0u; i < numInputs; ++i) {
                 if(splits[i] == mlir::daphne::VectorSplit::ROWS) {
@@ -168,7 +140,7 @@ protected:
             if((*res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
                 (*res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
-                mem_required += static_cast<DT*>((*res[i]))->bufferSize();
+                mem_required += static_cast<DT*>((*res[i]))->getBufferSize();
             }
         }
         return mem_required;
@@ -186,7 +158,9 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
+        _ctx->logger->debug("Querying cpu topology");
         get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
+
         if(ctx->config.numberOfThreads > 0)
             _numCPPThreads = ctx->config.numberOfThreads;
         else
@@ -220,6 +194,7 @@ public:
             _numQueues = _numCPPThreads;
         }
 
+        // ToDo: use logger
         if( _ctx->config.debugMultiThreading ) {
             std::cout << "topologyPhysicalIds:" << std::endl;
             for(const auto & topologyEntry: topologyPhysicalIds) {
@@ -236,10 +211,8 @@ public:
             std::cout << std::endl << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
             std::cout << "_numQueues=" << _numQueues << std::endl;
         }
-#ifndef NDEBUG
-        std::cerr << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
-                  << std::endl;
-#endif
+
+        _ctx->logger->debug("spawning {} CPU and {} CUDA worker threads", this->_numCPPThreads, this->_numCUDAThreads);
     }
 
     virtual ~MTWrapperBase() = default;

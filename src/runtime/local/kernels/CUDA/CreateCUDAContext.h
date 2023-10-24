@@ -24,8 +24,5 @@
 // ****************************************************************************
 
 namespace CUDA {
-    static void createCUDAContext(DCTX(ctx)) {
-        // ToDo: one context per device
-        ctx->cuda_contexts.emplace_back(CUDAContext::createCudaContext(0));
-    }
+    void createCUDAContext(DCTX(ctx));
 }

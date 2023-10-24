@@ -17,4 +17,26 @@
 #define CATCH_CONFIG_MAIN // make catch2 generate a main-function
 #include <catch.hpp>
 
+#include <api/cli/DaphneUserConfig.h>
+#include "runtime/local/kernels/CreateDaphneContext.h"
+#ifdef USE_CUDA
+    #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
+#endif
+
+#include "run_tests.h"
+
+std::unique_ptr<DaphneContext> setupContextAndLogger() {
+    if(not logger)
+        logger = std::make_unique<DaphneLogger>(user_config);
+
+    DaphneContext* dctx_;
+    createDaphneContext(dctx_, reinterpret_cast<uint64_t>(&user_config));
+
+#ifdef USE_CUDA
+    CUDA::createCUDAContext(dctx_);
+#endif
+
+    return std::unique_ptr<DaphneContext>(dctx_);
+}
+
 // Nothing to do here, the individual test cases are in separate cpp-files.
