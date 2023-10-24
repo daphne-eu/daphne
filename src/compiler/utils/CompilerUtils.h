@@ -178,8 +178,6 @@ public:
             return "Descriptor";
         else if(t.isa<mlir::daphne::TargetType>())
             return "Target";
-        // TODO: still some problem with this, call to kernel does not exist
-        // (function signature currently hardcoded in kernels.cpp so it works)
         else if(auto memRefType = t.dyn_cast<mlir::MemRefType>()) {
             return "StridedMemRefType_" + mlirTypeToCppTypeName(memRefType.getElementType(), false) + "_2";
         }

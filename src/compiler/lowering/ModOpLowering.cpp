@@ -40,7 +40,6 @@ class EwModOpLowering
     [[nodiscard]] bool optimization_viable(mlir::Value divisor) const {
         std::pair<bool, int64_t> isConstant =
             CompilerUtils::isConstant<int64_t>(divisor);
-        // Apply (n & (n - 1)) optimization when n is a power of two
         return isConstant.first && std::fmod(isConstant.second, 2) == 0;
     }
 
@@ -130,9 +129,6 @@ class EwModOpLowering
             });
     }
 
-    // TODO(phil): currently assumes:
-    // LHS -> matrix
-    // RHS -> scalar
     mlir::LogicalResult matchAndRewrite(
         mlir::daphne::EwModOp op, OpAdaptor adaptor,
         mlir::ConversionPatternRewriter &rewriter) const override {
@@ -150,7 +146,6 @@ class EwModOpLowering
                 op->getLoc(), lhsMemRefType, adaptor.getLhs());
         mlir::Value rhs = adaptor.getRhs();
 
-        // Apply (n & (n - 1)) optimization when n is a power of two
         if (optimization_viable(rhs))
             optimizeEwModOp(lhs, rhs,
                             {lhsTensor.getNumRows(), lhsTensor.getNumCols()},

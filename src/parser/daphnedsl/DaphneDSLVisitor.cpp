@@ -1719,7 +1719,6 @@ mlir::func::FuncOp DaphneDSLVisitor::createUserDefinedFuncOp(const mlir::Locatio
 
     builder.setInsertionPoint(moduleBody, moduleBody->begin());
     auto functionOperation = builder.create<mlir::func::FuncOp>(loc, functionSymbolName, funcType);
-    //functionOperation.setPrivate();
     functionsSymbolMap.insert({functionName, functionOperation});
     return functionOperation;
 }

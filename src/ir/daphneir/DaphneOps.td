@@ -70,7 +70,7 @@ class Daphne_Op<string mnemonic, list<Trait> traits = []> :
         Op<Daphne_Dialect, mnemonic, traits>;
 
 // ****************************************************************************
-// Access
+// DAPHNE Runtime Interoperability
 // ****************************************************************************
 
 def Daphne_ConvertMemRefToDenseMatrix : Daphne_Op<"convertMemRefToDenseMatrix"> {
@@ -188,7 +188,6 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);
     let hasCanonicalizeMethod = 1;
-    let hasVerifier = 1;
 }
 
 // ****************************************************************************

@@ -47,4 +47,4 @@ enum class BinaryOpCode {
 };
 
 static std::string_view binary_op_codes[] = {"ADD", "SUB", "MUL", "DIV", "POW", "MOD", "LOG", "EQ", "NEQ", "LT", "LE",
-        "GT", "GE", "MIN", "MAX", "AND", "OR", "BITAND"};
+        "GT", "GE", "MIN", "MAX", "AND", "OR", "BITWISE_AND"};

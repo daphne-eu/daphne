@@ -116,7 +116,7 @@ void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
     rewriter.setInsertionPointAfter(rowLoop);
 }
 
-class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
+class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
    public:
     using OpConversionPattern::OpConversionPattern;
 
@@ -214,7 +214,7 @@ void MatMulLoweringPass::runOnOperation() {
 
     target.addIllegalOp<mlir::daphne::MatMulOp>();
 
-    patterns.insert<MatMulOpLowering>(&getContext());
+    patterns.insert<MatMulLowering>(&getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();

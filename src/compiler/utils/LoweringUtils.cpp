@@ -76,7 +76,6 @@ void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
     rewriter.setInsertionPointAfter(outerLoop);
 }
 
-// TODO(phil): Look into buildLoopNest() for loop generation
 void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
                       mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                       mlir::MLIRContext *ctx, mlir::Value memRef,

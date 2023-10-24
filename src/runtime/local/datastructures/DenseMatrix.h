@@ -80,15 +80,6 @@ class DenseMatrix : public Matrix<ValueType>
      *
      * @param numRows The exact number of rows.
      * @param numCols The exact number of columns.
-     * @param values a raw pointer to an existing array of values.
-     */
-    // DenseMatrix(size_t numRows, size_t numCols, ValueType* values);
-
-    /**
-     * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
-     *
-     * @param numRows The exact number of rows.
-     * @param numCols The exact number of columns.
      * @param values A `std::shared_ptr` to an existing array of values.
      */
     DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values);

@@ -296,7 +296,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
             clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
-            clEnumVal(codegen, "Show DaphneIR after DenseMatrix codegen")),
+            clEnumVal(code_gen, "Show DaphneIR after DenseMatrix codegen")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(

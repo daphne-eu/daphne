@@ -255,7 +255,6 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
 
         PatternRewriter::InsertionGuard insertGuard(rewriter);
         rewriter.setInsertionPointToStart(module.getBody());
-        // TODO(phil): https://github.com/llvm/llvm-project/blob/5c9013e2664141d3b4071c37b3cbb8cd09a008d8/mlir/lib/Conversion/GPUToNVVM/LowerGpuOpsToNVVMOps.cpp#L223
         rewriter.create<LLVM::LLVMFuncOp>(module.getLoc(), funcName, llvmFnType);
         return SymbolRefAttr::get(context, funcName);
     }
@@ -967,8 +966,6 @@ void DaphneLowerToLLVMPass::runOnOperation()
     LLVMConversionTarget target(getContext());
 
     // populate dialect conversions
-    // populateLoopToStdConversionPatterns(patterns);
-
     mlir::linalg::populateLinalgToStandardConversionPatterns(patterns);
     populateAffineToStdConversionPatterns(patterns);
     populateSCFToControlFlowConversionPatterns(patterns);

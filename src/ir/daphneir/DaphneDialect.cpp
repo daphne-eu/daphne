@@ -60,35 +60,21 @@
 struct DaphneInlinerInterface : public mlir::DialectInlinerInterface {
   using DialectInlinerInterface::DialectInlinerInterface;
 
-  //===--------------------------------------------------------------------===//
-  // Analysis Hooks
-  //===--------------------------------------------------------------------===//
-
-  /// All call operations within toy can be inlined.
   bool isLegalToInline(mlir::Operation *call, mlir::Operation *callable,
                        bool wouldBeCloned) const final {
     return true;
   }
 
-  /// All operations within toy can be inlined.
   bool isLegalToInline(mlir::Operation *, mlir::Region *, bool, mlir::IRMapping &) const final {
     return true;
   }
 
-  // All functions within toy can be inlined.
   bool isLegalToInline(mlir::Region *, mlir::Region *, bool, mlir::IRMapping &) const final {
     return true;
   }
 
-  //===--------------------------------------------------------------------===//
-  // Transformation Hooks
-  //===--------------------------------------------------------------------===//
-
-  /// Handle the given inlined terminator(toy.return) by replacing it with a new
-  /// operation as necessary.
   void handleTerminator(mlir::Operation *op,
                         mlir::ArrayRef<mlir::Value> valuesToRepl) const final {
-    // Only "toy.return" needs to be handled here.
     auto returnOp = mlir::dyn_cast<mlir::daphne::ReturnOp>(op);
 
     // Replace the values directly with the return operands.
@@ -97,11 +83,6 @@ struct DaphneInlinerInterface : public mlir::DialectInlinerInterface {
       valuesToRepl[it.index()].replaceAllUsesWith(it.value());
   }
 
-  /// Attempts to materialize a conversion for a type mismatch between a call
-  /// from this dialect, and a callable region. This method should generate an
-  /// operation that takes 'input' as the only operand, and produces a single
-  /// result of 'resultType'. If a conversion can not be generated, nullptr
-  /// should be returned.
   mlir::Operation *materializeCallConversion(mlir::OpBuilder &builder, mlir::Value input,
                                        mlir::Type resultType,
                                        mlir::Location conversionLoc) const final {
@@ -1056,24 +1037,6 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
         static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), ta)),
         static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), tb))
     );
-    return mlir::success();
-}
-
-mlir::LogicalResult mlir::daphne::MatMulOp::verify() {
-    // constexpr int UNKNOWN = -1;
-    //
-    // mlir::daphne::MatrixType lhs =
-    //     getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-    // mlir::daphne::MatrixType rhs =
-    //     getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-
-    // TODO(phil): check if argument is result of TransposeOp
-    // if (lhs.getNumCols() != UNKNOWN && rhs.getNumRows() != UNKNOWN &&
-    //     lhs.getNumCols() != rhs.getNumRows())
-    //     return emitError(
-    //         "daphne::MatMulOp operands do not satisfy matrix multiplication "
-    //         "shape constraints.");
-
     return mlir::success();
 }
 

@@ -32,13 +32,9 @@ void test_binary_lowering(const std::string op,
     std::stringstream out;
     std::stringstream err;
 
-    // `daphne --explain llvm $scriptFilePath`
     int status = runDaphne(out, err, "--explain", "llvm", (dirPath + op + ".daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
 
-    // --lowering-scalar not passed
-    // make sure EwAddOp is correctly lowered to kernel call
-    // PrintIRPass outputs to stderr
     REQUIRE_THAT(err.str(), Catch::Contains(kernel_call));
     REQUIRE_THAT(err.str(), !Catch::Contains(lowering));
     CHECK(out.str() == result);
@@ -46,37 +42,34 @@ void test_binary_lowering(const std::string op,
     out.str(std::string());
     err.str(std::string());
 
-    // `daphne --explain llvm --scalar-lowering $scriptFilePath`
     status = runDaphne(out, err, "--explain", "llvm", "--codegen", (dirPath + op + ".daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
 
-    // --lowering-scalar
-    // make sure EwAddOp is no longer lowered to kernel call
     REQUIRE_THAT(err.str(), !Catch::Contains(kernel_call));
     REQUIRE_THAT(err.str(), Catch::Contains(lowering));
     CHECK(out.str() == result);
 }
 
-TEST_CASE("ewBinaryAddScalar", TAG_KERNELS) {
+TEST_CASE("ewBinaryAddScalar", TAG_CODEGEN) {
     test_binary_lowering("add", "llvm.call @_ewAdd__", "llvm.add", "3\n");
 }
 
-TEST_CASE("ewBinarySubScalar", TAG_KERNELS) {
+TEST_CASE("ewBinarySubScalar", TAG_CODEGEN) {
     test_binary_lowering("sub", "llvm.call @_ewSub__", "llvm.sub", "-1\n");
 }
 
-TEST_CASE("ewBinaryMulScalar", TAG_KERNELS) {
+TEST_CASE("ewBinaryMulScalar", TAG_CODEGEN) {
     test_binary_lowering("mul", "llvm.call @_ewMul__", "llvm.mul", "2\n");
 }
 
-TEST_CASE("ewBinaryDivScalar", TAG_KERNELS) {
+TEST_CASE("ewBinaryDivScalar", TAG_CODEGEN) {
     test_binary_lowering("div", "llvm.call @_ewDiv__", "llvm.fdiv", "1.5\n");
 }
 
-TEST_CASE("ewBinaryPowScalar", TAG_KERNELS) {
+TEST_CASE("ewBinaryPowScalar", TAG_CODEGEN) {
     test_binary_lowering("pow", "llvm.call @_ewPow__", "llvm.intr.pow", "9\n");
 }
 
-TEST_CASE("ewBinaryAbsScalar", TAG_KERNELS) {
+TEST_CASE("ewBinaryAbsScalar", TAG_CODEGEN) {
     test_binary_lowering("abs", "llvm.call @_ewAbs__", "llvm.intr.fabs", "4\n");
 }
