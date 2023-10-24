@@ -1,194 +1,62 @@
-#include "ir/daphneir/Daphne.h"
-#include "api/cli/DaphneUserConfig.h"
+/*
+ * Copyright 2023 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "daphne-opt.h"
+
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+
 #include "ir/daphneir/Passes.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/IR/Module.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/ErrorOr.h"
-#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/SourceMgr.h"
-#include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/ToolOutputFile.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/Affine/Passes.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/AsmState.h"
-#include "mlir/IR/BuiltinOps.h"
+#include "mlir/Dialect/Linalg/Passes.h"
+#include "mlir/Dialect/Math/IR/Math.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/Verifier.h"
 #include "mlir/InitAllDialects.h"
-#include "mlir/Parser/Parser.h"
+#include "mlir/InitAllPasses.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
-#include "mlir/Target/LLVMIR/Export.h"
-#include "mlir/Transforms/Passes.h"
-#include "runtime/local/context/DaphneContext.h"
-#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
-
-#include "ir/daphneir/Daphne.h"
-
-namespace cl = llvm::cl;
-static cl::opt<std::string> inputFilename(cl::Positional,
-                                          cl::desc("<input hello file>"),
-                                          cl::init("-"),
-                                          cl::value_desc("filename"));
-
-int dumpLLVMIR(mlir::ModuleOp module) {
-    mlir::registerLLVMDialectTranslation(*module->getContext());
-    // Convert the module to LLVM IR in a new LLVM IR context.
-
-    llvm::LLVMContext llvmContext;
-    auto llvmModule = mlir::translateModuleToLLVMIR(module, llvmContext);
-    if (!llvmModule) {
-        llvm::errs() << "Failed to emit LLVM IR\n";
-        return -1;
-    }
-
-    // Initialize LLVM targets.
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
-    mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
-
-    // Optionally run an optimization pipeline over the llvm module.
-    auto optPipeline = mlir::makeOptimizingTransformer(0, 0, nullptr);
-    if (auto err = optPipeline(llvmModule.get())) {
-        llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
-        return -1;
-    }
-    llvm::outs() << *llvmModule << "\n";
-    return 0;
-}
-
-int loadMLIR(mlir::MLIRContext &context,
-             mlir::OwningOpRef<mlir::ModuleOp> &module) {
-    llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
-        llvm::MemoryBuffer::getFileOrSTDIN(inputFilename);
-    if (std::error_code ec = fileOrErr.getError()) {
-        llvm::errs() << "Could not open input file: " << ec.message() << "\n";
-        return -1;
-    }
-
-    llvm::SourceMgr sourceMgr;
-    sourceMgr.AddNewSourceBuffer(std::move(*fileOrErr), llvm::SMLoc());
-    module = mlir::parseSourceFile<mlir::ModuleOp>(sourceMgr, &context);
-    if (!module) {
-        llvm::errs() << "Error can't load file " << inputFilename << "\n";
-        return 3;
-    }
-    return 0;
-}
-
-int loadAndProcessMLIR(mlir::MLIRContext &context,
-                       mlir::OwningOpRef<mlir::ModuleOp> &module) {
-    if (int error = loadMLIR(context, module)) {
-        return error;
-    }
-
-    // Register passes to be applied in this compile process
-    mlir::PassManager passManager(&context);
-    mlir::applyPassManagerCLOptions(passManager);
-
-    DaphneUserConfig cfg{};
-    // TODO
-    // add daphne context creation pass
-
-    passManager.addPass(mlir::daphne::createPrintIRPass(
-        "======== IR BEFORE ========="));
-    // passManager.addPass(mlir::createConvertFuncToLLVMPass());
-
-    passManager.addPass(mlir::daphne::createPrintIRPass(
-        "======== IR MIDDLE ========="));
-
-    passManager.addPass(mlir::createInlinerPass());
-
-    passManager.addPass(mlir::daphne::createPrintIRPass(
-        "======== IR AFTER ========="));
-    // passManager.addPass(mlir::createInlinerPass());
-
-    // passManager.addPass(mlir::daphne::createLowerScalarOpsPass());
-    // passManager.addPass(
-    //     mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
-    // passManager.addPass(mlir::daphne::createLowerDenseMatrixPass());
-    // module->dump();
-    // passManager.addPass(mlir::createLowerAffinePass());
-    // passManager.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(cfg));
-    // passManager.addPass(mlir::daphne::createLowerDenseMatrixPass());
-    // passManager.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
-
-    // passManager.addPass(mlir::createCanonicalizerPass());
-    // passManager.addPass(mlir::createCSEPass());
-    // passManager.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
-    // passManager.addPass(mlir::createLowerToCFGPass());
-    // passManager.addPass(mlir::daphne::createLowerToLLVMPass(cfg));
-
-    if (mlir::failed(passManager.run(*module))) {
-        return 4;
-    }
-
-    return 0;
-}
-
-int runJit(mlir::ModuleOp module) {
-    // Initialize LLVM targets.
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
-
-    // Register the translation from MLIR to LLVM IR, which must happen before
-    // we can JIT-compile.
-    mlir::registerLLVMDialectTranslation(*module->getContext());
-
-    // An optimization pipeline to use within the execution engine.
-    unsigned make_fast = 0;
-    auto optPipeline = mlir::makeOptimizingTransformer(make_fast, 0, nullptr);
-
-    mlir::ExecutionEngineOptions options;
-    options.llvmModuleBuilder = nullptr;
-    options.transformer = optPipeline;
-    options.jitCodeGenOptLevel = llvm::CodeGenOpt::Level::Default;
-    options.enableObjectDump = true;
-    options.enableGDBNotificationListener = true;
-    options.enablePerfNotificationListener = true;
-
-    // Create an MLIR execution engine. The execution engine eagerly
-    // JIT-compiles the module.
-    auto maybeEngine = mlir::ExecutionEngine::create(module, options);
-    assert(maybeEngine && "failed to construct an execution engine");
-    auto &engine = maybeEngine.get();
-
-    // Invoke the JIT-compiled function.
-    auto invocationResult = engine->invokePacked("main");
-    if (invocationResult) {
-        llvm::errs() << "JIT invocation failed\n";
-        return -1;
-    }
-
-    return 0;
-}
+#include "mlir/Support/FileUtilities.h"
+#include "mlir/Tools/mlir-opt/MlirOptMain.h"
 
 int main(int argc, char **argv) {
-    mlir::registerMLIRContextCLOptions();
-    mlir::registerPassManagerCLOptions();
+    mlir::registerAllPasses();
+    // NOTE: One can also register standalone passes here.
+    mlir::daphne::registerDaphnePasses();
 
-    cl::ParseCommandLineOptions(argc, argv, "Hello compiler\n");
-    mlir::MLIRContext context;
-    context.getOrLoadDialect<mlir::daphne::DaphneDialect>();
-    context.getOrLoadDialect<mlir::scf::SCFDialect>();
-    context.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
-    context.getOrLoadDialect<mlir::AffineDialect>();
-    context.getOrLoadDialect<mlir::memref::MemRefDialect>();
-    context.getOrLoadDialect<mlir::linalg::LinalgDialect>();
-    context.getOrLoadDialect<mlir::func::FuncDialect>();
+    mlir::DialectRegistry registry;
+    registry.insert<mlir::daphne::DaphneDialect, mlir::arith::ArithDialect,
+                    mlir::func::FuncDialect, mlir::scf::SCFDialect,
+                    mlir::LLVM::LLVMDialect, mlir::AffineDialect,
+                    mlir::memref::MemRefDialect, mlir::linalg::LinalgDialect,
+                    mlir::math::MathDialect>();
+    // Add the following to include *all* MLIR Core dialects, or selectively
+    // include what you need like above. You only need to register dialects that
+    // will be *parsed* by the tool, not the one generated
+    // registerAllDialects(registry);
 
-    mlir::OwningOpRef<mlir::ModuleOp> module;
-    if (int error = loadAndProcessMLIR(context, module)) {
-        return error;
-    }
-
-    // dumpLLVMIR(*module);
-    //  runJit(*module);
-
-    return 0;
+    return mlir::asMainReturnCode(mlir::MlirOptMain(
+        argc, argv, "Standalone DAPHNE optimizing compiler driver\n",
+        registry));
 }
