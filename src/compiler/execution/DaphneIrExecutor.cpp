@@ -85,6 +85,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
 
             pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass(userConfig_));
+
+            pm.addPass(mlir::daphne::createSelectionPushdownPass());
             if(userConfig_.explain_property_inference)
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
 

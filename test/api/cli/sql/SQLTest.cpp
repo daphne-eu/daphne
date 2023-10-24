@@ -84,6 +84,7 @@ MAKE_SUCCESS_TEST_CASE("join", 1);
 MAKE_SUCCESS_TEST_CASE("group", 3);
 MAKE_PASS_FAILURE_TEST_CASE("group", 1);
 
+MAKE_TEST_CASE("group", 4)
 
 
 MAKE_TEST_CASE("thetaJoin_equal", 4)
@@ -103,5 +104,8 @@ MAKE_TEST_CASE("agg_sum", 1)
 
 MAKE_TEST_CASE("reuseString", 2)
 
+MAKE_TEST_CASE("select_asterisk", 6)
+
+MAKE_TEST_CASE("distinct", 4)
 
 // TODO Use the scripts testing failure cases.
