@@ -46,15 +46,22 @@ set(TEST_SOURCES
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/vectorized/VectorizedPipelineTest.cpp
         api/cli/Utils.cpp
-    
+
         api/python/DaphneLibTest.cpp
-        
+
+        compiler/e2e/EwBinaryScalarTest.cpp
+        compiler/e2e/MatMulTest.cpp
+        compiler/e2e/EwOpLoopFusionTest.cpp
+        compiler/e2e/AggAllTest.cpp
+        compiler/e2e/MapOpTest.cpp
+        compiler/lit/Codegen.cpp
+
         ir/daphneir/InferTypesTest.cpp
-        
+
         parser/config/ConfigParserTest.cpp
-    
+
         runtime/distributed/worker/WorkerTest.cpp
-    
+
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
@@ -118,7 +125,6 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
-        runtime/local/lowering/EwBinaryScalarTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )

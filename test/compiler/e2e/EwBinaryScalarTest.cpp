@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The DAPHNE Consortium
+ * Copyright 2023 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 
 #include "api/cli/StatusCode.h"
 
-const std::string dirPath = "test/runtime/local/lowering/";
+const std::string dirPath = "test/compiler/e2e/";
 
 void test_binary_lowering(const std::string op,
                             const std::string kernel_call,
@@ -47,7 +47,7 @@ void test_binary_lowering(const std::string op,
     err.str(std::string());
 
     // `daphne --explain llvm --scalar-lowering $scriptFilePath`
-    status = runDaphne(out, err, "--explain", "llvm", "--scalar-lowering", (dirPath + op + ".daphne").c_str());
+    status = runDaphne(out, err, "--explain", "llvm", "--codegen", (dirPath + op + ".daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
 
     // --lowering-scalar
@@ -80,8 +80,3 @@ TEST_CASE("ewBinaryPowScalar", TAG_KERNELS) {
 TEST_CASE("ewBinaryAbsScalar", TAG_KERNELS) {
     test_binary_lowering("abs", "llvm.call @_ewAbs__", "llvm.intr.fabs", "4\n");
 }
-
-// TEST_CASE("ewBinaryLogScalar", TAG_KERNELS) {
-//     test_binary_lowering("log", "llvm.call @_ewLog__", "llvm.intr.fabs", "4\n");
-// }
-// TODO: missing ewLn
