@@ -277,7 +277,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       type_adaptation,
       vectorized,
       obj_ref_mgnt,
-      codegen
+      code_gen
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -295,7 +295,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering")
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
             clEnumVal(codegen, "Show DaphneIR after DenseMatrix codegen")),
         CommaSeparated);
 
@@ -442,7 +442,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             case obj_ref_mgnt:
                 user_config.explain_obj_ref_mgnt = true;
                 break;
-            case cdgn:
+            case code_gen:
                 user_config.explain_codegen = true;
                 break;
         }
