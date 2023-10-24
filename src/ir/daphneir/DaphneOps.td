@@ -73,19 +73,7 @@ class Daphne_Op<string mnemonic, list<Trait> traits = []> :
 // Access
 // ****************************************************************************
 
-// TODO: Do we really need this? MatrixOrU may be enough
-def DenseMatrix_T : AnyTypeOf<[MatrixOrU], "::mlir::daphne::DenseMatrix">;
-
-def Daphne_PrintMemRef : Daphne_Op<"printMemRef"> {
-    let summary = "Utility function to print a MemRefs content.";
-
-    let arguments = (ins Size:$base, Size:$offset, Size:$size0, Size:$size1, Size:$stride0, Size:$stride1);
-    //let arguments = (ins AnyMemRef:$base, Size:$offset, Size:$size0, Size:$size1, Size:$stride0, Size:$stride1);
-    /* let arguments = (ins AnyMemRef:$inputMemref); */
-    // let arguments = (ins LLVMPointerType:$base, LLVMPointerType:$data, I64:$offset, I64:$sizes0, I64:$sizes1, I64:$strides0, I64:$strides1);
-}
-
-def Daphne_GetDenseMatrixFromMemRef : Daphne_Op<"getDenseMatrixFromMemRef"> {
+def Daphne_ConvertMemRefToDenseMatrix : Daphne_Op<"convertMemRefToDenseMatrix"> {
     let summary = "Return a DenseMatrix.";
     let description = [{ Constructs a DenseMatrix given a rank 2 StridedMemRefType. }];
 
@@ -95,11 +83,11 @@ def Daphne_GetDenseMatrixFromMemRef : Daphne_Op<"getDenseMatrixFromMemRef"> {
     let results = (outs MatrixOrU:$res);
 }
 
-def Daphne_GetMemRefDenseMatrix : Daphne_Op<"getMemRefDenseMatrix", [Pure]> {
-    let summary = "Return a StridedMemRefType.";
+def Daphne_ConvertDenseMatrixToMemRef : Daphne_Op<"convertDenseMatrixToMemRef", [Pure]> {
+    let summary = "Given a DenseMatrix, return a StridedMemRefType.";
     let description = [{ Constructs a StridedMemRefType with rank 2 from a DenseMatrix* with already allocated memory. }];
     let hasCanonicalizeMethod = 1;
-    let arguments = (ins DenseMatrix_T:$arg);
+    let arguments = (ins MatrixOrU:$arg);
     let results = (outs AnyMemRef:$output);
 }
 
@@ -115,7 +103,6 @@ def Daphne_FillOp : Daphne_Op<"fill", [
     let results = (outs MatrixOrU:$res);
 }
 
-// TODO MSC: should implement InferShapeOpInterface
 def Daphne_MatrixConstantOp : Daphne_Op<"matrixConstant", [
     DataTypeMat
 ]>{

@@ -210,7 +210,6 @@ void MatMulLoweringPass::runOnOperation() {
 
     target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
     target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
-    target.addLegalOp<mlir::daphne::PrintMemRef>();
     target.addLegalOp<mlir::daphne::DecRefOp>();
 
     target.addIllegalOp<mlir::daphne::MatMulOp>();

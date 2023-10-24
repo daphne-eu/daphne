@@ -1,27 +1,36 @@
+/*
+ * Copyright 2023 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <ir/daphneir/Daphne.h>
 
 #include <iostream>
 
 #include "llvm/Support/Casting.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/InliningUtils.h"
 
-mlir::LogicalResult mlir::daphne::GetMemRefDenseMatrix::canonicalize(
-    mlir::daphne::GetMemRefDenseMatrix op, mlir::PatternRewriter &rewriter) {
+mlir::LogicalResult mlir::daphne::ConvertDenseMatrixToMemRef::canonicalize(
+    mlir::daphne::ConvertDenseMatrixToMemRef op,
+    mlir::PatternRewriter &rewriter) {
     // removes unnecessary conversions of MemRef -> DM -> MemRef
-    // %8 = "daphne.getDenseMatrixFromMemRef"(%intptr, ...) : (index, ...) ->
-    // !daphne.Matrix<2x2xf64> %9 = "daphne.getMemRefDenseMatrix"(%8) :
-    // (!daphne.Matrix<2x2xf64>) -> memref<2x2xf64>
-
-#if 0
-    std::cout << "===== GetMemRef canonicalizer =====\n";
-    op->dump();
-#endif
-
     mlir::Operation *dmNode = op->getOperand(0).getDefiningOp();
 
-    if (!llvm::isa<mlir::daphne::GetDenseMatrixFromMemRef>(dmNode))
+    if (!llvm::isa<mlir::daphne::ConvertMemRefToDenseMatrix>(dmNode))
         return failure();
 
     mlir::Operation *originalMemRefOp =
@@ -30,16 +39,18 @@ mlir::LogicalResult mlir::daphne::GetMemRefDenseMatrix::canonicalize(
 
     rewriter.eraseOp(op);
     if (dmNode->getUsers().empty()) rewriter.eraseOp(dmNode);
+
     return mlir::success();
 }
 
-mlir::LogicalResult mlir::daphne::GetDenseMatrixFromMemRef::canonicalize(
-    mlir::daphne::GetDenseMatrixFromMemRef op,
+mlir::LogicalResult mlir::daphne::ConvertMemRefToDenseMatrix::canonicalize(
+    mlir::daphne::ConvertMemRefToDenseMatrix op,
     mlir::PatternRewriter &rewriter) {
-
     mlir::Operation *extractPtr = op->getPrevNode();
-    extractPtr->moveAfter(extractPtr->getOperand(0).getDefiningOp());
+    auto srcMemRef = extractPtr->getOperand(0).getDefiningOp();
+    extractPtr->moveAfter(srcMemRef);
     op->moveAfter(extractPtr);
+
     return mlir::success();
 }
 

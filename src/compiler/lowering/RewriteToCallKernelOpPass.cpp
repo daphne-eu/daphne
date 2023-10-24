@@ -371,9 +371,7 @@ namespace
             // Inject the current DaphneContext as the last input parameter to
             // all kernel calls, unless it's a CreateDaphneContextOp.
 
-            // TODO(phil): call with StridedMemRefType as single argument, no ctx
-            // print MemRef
-            if(!llvm::isa<daphne::PrintMemRef>(op) && !llvm::isa<daphne::CreateDaphneContextOp>(op))
+            if(!llvm::isa<daphne::CreateDaphneContextOp>(op))
                 newOperands.push_back(dctx);
 
             // Create a CallKernelOp for the kernel function to call and return
