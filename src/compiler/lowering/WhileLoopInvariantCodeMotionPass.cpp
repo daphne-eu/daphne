@@ -36,6 +36,9 @@ using namespace mlir;
 struct WhileLoopInvariantCodeMotionPass
 : public PassWrapper <WhileLoopInvariantCodeMotionPass, OperationPass<func::FuncOp>> {
     void runOnOperation() final;
+
+    StringRef getArgument() const final { return "while-loop-invariant-code-motion"; }
+    StringRef getDescription() const final { return "TODO"; }
 };
 
 void WhileLoopInvariantCodeMotionPass::runOnOperation() {

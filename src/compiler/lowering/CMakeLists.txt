@@ -13,8 +13,6 @@
 # limitations under the License.
 
 add_mlir_dialect_library(MLIRDaphneTransforms
-    EwOpLowering.cpp
-    MapOpLowering.cpp
     RewriteSqlOpPass.cpp
     DistributeComputationsPass.cpp
     DistributePipelinesPass.cpp
@@ -23,13 +21,16 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     InsertDaphneContextPass.cpp
     ManageObjRefsPass.cpp
     LowerToLLVMPass.cpp
-    LowerDenseMatrixPass.cpp
-    LowerScalarOpsPass.cpp
     RewriteToCallKernelOpPass.cpp
     SpecializeGenericFunctionsPass.cpp
     VectorizeComputationsPass.cpp
     WhileLoopInvariantCodeMotionPass.cpp
-    DenseMatrixTransformPass.cpp
+    DaphneOptPass.cpp
+    EwOpsLowering.cpp
+    ModOpLowering.cpp
+    MapOpLowering.cpp
+    MatMulOpLowering.cpp
+    AggAllOpLowering.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

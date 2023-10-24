@@ -1,10 +1,8 @@
-// TODO(phil): x % 2n == x < 0 ? x | ~(2n - 1) : x & (2n - 1)
-// Only unsigned integer mod op possible at compile time
-
 #include "compiler/utils/CompilerUtils.h"
 #include "compiler/utils/LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
+#include "llvm/Support/Debug.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
@@ -16,7 +14,6 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "dm-opt"
 
@@ -38,10 +35,12 @@ class IntegerModOpt : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
     mlir::LogicalResult matchAndRewrite(
         mlir::daphne::EwModOp op, OpAdaptor adaptor,
         mlir::ConversionPatternRewriter &rewriter) const override {
-
-        mlir::Value cst_one = rewriter.create<mlir::daphne::ConstantOp>(op.getLoc(), static_cast<uint64_t>(1));
-        mlir::Value sub = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), adaptor.getRhs(), cst_one);
-        mlir::Value andOp = rewriter.create<mlir::daphne::EwBitwiseAndOp>(op.getLoc(), adaptor.getLhs(), sub);
+        mlir::Value cst_one = rewriter.create<mlir::daphne::ConstantOp>(
+            op.getLoc(), static_cast<uint64_t>(1));
+        mlir::Value sub = rewriter.create<mlir::daphne::EwSubOp>(
+            op.getLoc(), adaptor.getRhs(), cst_one);
+        mlir::Value andOp = rewriter.create<mlir::daphne::EwBitwiseAndOp>(
+            op.getLoc(), adaptor.getLhs(), sub);
         rewriter.replaceOp(op, andOp);
         return success();
     }
@@ -54,10 +53,17 @@ struct DenseMatrixOptPass
     explicit DenseMatrixOptPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry
-            .insert<mlir::LLVM::LLVMDialect, mlir::arith::ArithDialect, mlir::daphne::DaphneDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::arith::ArithDialect,
+                        mlir::daphne::DaphneDialect>();
     }
     void runOnOperation() final;
+
+    StringRef getArgument() const final { return "opt-daphne"; }
+    StringRef getDescription() const final {
+        return "Performs optimizations on the DaphneIR by replacing operations "
+               "in the DaphneDialect with other operation also from the "
+               "DaphneDialect.";
+    }
 };
 }  // end anonymous namespace
 
@@ -73,9 +79,10 @@ void DenseMatrixOptPass::runOnOperation() {
     target.addLegalDialect<mlir::arith::ArithDialect>();
     target.addLegalDialect<mlir::daphne::DaphneDialect>();
 
-    target.addDynamicallyLegalOp<mlir::daphne::EwModOp>([&](mlir::daphne::EwModOp op) {
+    target.addDynamicallyLegalOp<mlir::daphne::EwModOp>(
+        [&](mlir::daphne::EwModOp op) {
             return !IntegerModOpt::optimization_viable(op);
-    });
+        });
 
     patterns.insert<IntegerModOpt>(typeConverter, &getContext());
 
@@ -85,6 +92,6 @@ void DenseMatrixOptPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createDenseMatrixTransformPass() {
+std::unique_ptr<mlir::Pass> mlir::daphne::createDaphneOptPass() {
     return std::make_unique<DenseMatrixOptPass>();
 }

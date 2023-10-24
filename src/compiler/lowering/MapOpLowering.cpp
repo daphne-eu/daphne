@@ -42,15 +42,15 @@ class InlineMapOpLowering
         mlir::ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
 
-        // TODO(phil): why doesn't adaptor.getArg().getType() work?
         mlir::daphne::MatrixType lhsTensor =
             op->getOperandTypes().front().dyn_cast<mlir::daphne::MatrixType>();
         auto tensorType = lhsTensor.getElementType();
         auto lhsMemRefType = mlir::MemRefType::get(
             {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, tensorType);
 
-        mlir::Value lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
-            loc, lhsMemRefType, adaptor.getArg());
+        mlir::Value lhs =
+            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+                loc, lhsMemRefType, adaptor.getArg());
         mlir::ModuleOp module = op->getParentOfType<mlir::ModuleOp>();
         func::FuncOp udfFuncOp =
             module.lookupSymbol<func::FuncOp>(op.getFunc());
@@ -84,8 +84,8 @@ class InlineMapOpLowering
         rewriter.create<AffineYieldOp>(loc);
 
         rewriter.setInsertionPointAfter(outerLoop);
-        mlir::Value output =
-            getDenseMatrixFromMemRef(op->getLoc(), rewriter, lhs, op.getType());
+        mlir::Value output = convertMemRefToDenseMatrix(op->getLoc(), rewriter,
+                                                        lhs, op.getType());
         rewriter.replaceOp(op, output);
         return mlir::success();
     }
@@ -103,6 +103,14 @@ struct MapOpLoweringPass
                         mlir::daphne::DaphneDialect, mlir::func::FuncDialect>();
     }
     void runOnOperation() final;
+
+    StringRef getArgument() const final { return "lower-map"; }
+    StringRef getDescription() const final {
+        return "Lowers the daphne.mapOp operator to"
+               "a set of affine loops, directly calling the UDF directly. "
+               "Subsequent use of the inlining pass may inline the call to the "
+               "UDF.";
+    }
 };
 }  // end anonymous namespace
 

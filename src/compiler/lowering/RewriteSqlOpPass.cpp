@@ -79,6 +79,9 @@ namespace
     : public PassWrapper <RewriteSqlOpPass, OperationPass<ModuleOp>>
     {
         void runOnOperation() final;
+
+    StringRef getArgument() const final { return "rewrite-sqlop"; }
+    StringRef getDescription() const final { return "TODO"; }
     };
 }
 

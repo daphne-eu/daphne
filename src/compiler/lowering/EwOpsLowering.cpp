@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -28,6 +44,34 @@
 
 using namespace mlir;
 
+template <class UnaryOp, class IOp, class FOp>
+struct UnaryOpLowering : public mlir::OpConversionPattern<UnaryOp> {
+    using OpAdaptor = typename mlir::OpConversionPattern<UnaryOp>::OpAdaptor;
+
+   public:
+    UnaryOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
+        : mlir::OpConversionPattern<UnaryOp>(typeConverter, ctx) {
+        this->setDebugName("EwDaphneOpsLowering");
+    }
+
+    mlir::LogicalResult matchAndRewrite(
+        UnaryOp op, OpAdaptor adaptor,
+        mlir::ConversionPatternRewriter &rewriter) const override {
+        mlir::Type type = op.getType();
+
+        if (type.isa<mlir::IntegerType>()) {
+            rewriter.replaceOpWithNewOp<IOp>(op.getOperation(),
+                                             adaptor.getOperands());
+        } else if (type.isa<mlir::FloatType>()) {
+            rewriter.replaceOpWithNewOp<FOp>(op.getOperation(),
+                                             adaptor.getOperands());
+        } else {
+            return mlir::failure();
+        }
+        return mlir::success();
+    }
+};
+
 template <class BinaryOp, class IOp, class FOp>
 class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
     using OpAdaptor = typename mlir::OpConversionPattern<BinaryOp>::OpAdaptor;
@@ -35,7 +79,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
    public:
     BinaryOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
         : mlir::OpConversionPattern<BinaryOp>(typeConverter, ctx) {
-        this->setDebugName("ScalarOpLowering");
+        this->setDebugName("EwDaphneOpLowering");
     }
 
     mlir::LogicalResult convertEwScalar(
@@ -97,21 +141,25 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 
         mlir::Type elementType{};
         mlir::Value memRefLhs =
-            rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
                 op->getLoc(), lhsMemRefType, adaptor.getLhs());
+
         mlir::Value memRefRhs{};
-        bool isMatrixMatrix = rhs.getType().template isa<mlir::daphne::MatrixType>();
+        bool isMatrixMatrix =
+            rhs.getType().template isa<mlir::daphne::MatrixType>();
 
         if (isMatrixMatrix) {
-            memRefRhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
-                op->getLoc(), lhsMemRefType, adaptor.getRhs());
+            memRefRhs =
+                rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+                    op->getLoc(), lhsMemRefType, adaptor.getRhs());
             elementType = lhsMemRefType.getElementType();
         } else {
             elementType = rhs.getType();
         }
 
         mlir::Value outputMemRef =
-            insertAllocAndDealloc(lhsMemRefType, op->getLoc(), rewriter);
+            insertMemRefAlloc(lhsMemRefType, op->getLoc(), rewriter);
+
         SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
         SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
         buildAffineLoopNest(
@@ -122,26 +170,26 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                     nestedBuilder.create<AffineLoadOp>(loc, memRefLhs, ivs);
                 mlir::Value binaryOp{};
 
-                // TODO(phil): cast only LHS/RHS in case only one of them is not
-                // signless/float, currently expects LHS and RHS to be of same
-                // type
-                if (adaptor.getRhs().getType().template isa<mlir::FloatType>()) {
-                    binaryOp =
-                        nestedBuilder.create<FOp>(loc, loadLhs, adaptor.getRhs());
+                if (adaptor.getRhs()
+                        .getType()
+                        .template isa<mlir::FloatType>()) {
+                    binaryOp = nestedBuilder.create<FOp>(loc, loadLhs,
+                                                         adaptor.getRhs());
 
-                    nestedBuilder.create<AffineStoreOp>(loc, binaryOp, outputMemRef,
-                                                        ivs);
+                    nestedBuilder.create<AffineStoreOp>(loc, binaryOp,
+                                                        outputMemRef, ivs);
                     return;
                 }
 
                 mlir::Value rhs{};
                 if (isMatrixMatrix)
-                    rhs = nestedBuilder.create<AffineLoadOp>(loc, memRefRhs, ivs);
+                    rhs =
+                        nestedBuilder.create<AffineLoadOp>(loc, memRefRhs, ivs);
                 else
                     rhs = adaptor.getRhs();
 
+                // is integer
                 if (elementType.isInteger(
-                        // is integer
                         elementType.getIntOrFloatBitWidth())) {
                     Value castedLhs =
                         this->typeConverter->materializeTargetConversion(
@@ -172,43 +220,61 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                                                         outputMemRef, ivs);
                 }
             });
-        mlir::Value output = getDenseMatrixFromMemRef(op->getLoc(), rewriter,
-                                                      outputMemRef, op.getType());
+        mlir::Value output = convertMemRefToDenseMatrix(
+            op->getLoc(), rewriter, outputMemRef, op.getType());
+
         rewriter.replaceOp(op, output);
         return mlir::success();
     }
 };
 
 // clang-format off
+// math::sqrt only supports floating point, DAPHNE promotes argument type of sqrt to f32/64
+using SqrtOpLowering = UnaryOpLowering<mlir::daphne::EwSqrtOp, mlir::math::SqrtOp, mlir::math::SqrtOp>;
+using AbsOpLowering = UnaryOpLowering<mlir::daphne::EwAbsOp, mlir::math::AbsIOp, mlir::math::AbsFOp>;
 using AddOpLowering = BinaryOpLowering<mlir::daphne::EwAddOp, mlir::arith::AddIOp, mlir::arith::AddFOp>;
 using SubOpLowering = BinaryOpLowering<mlir::daphne::EwSubOp, mlir::arith::SubIOp, mlir::arith::SubFOp>;
 using MulOpLowering = BinaryOpLowering<mlir::daphne::EwMulOp, mlir::arith::MulIOp, mlir::arith::MulFOp>;
-// using SqrtOpLowering = BinaryOpLowering<mlir::daphne::EwSqrtOp, mlir::math::SqrtOp, mlir::math::SqrtOp>;
-//using DivOpLowering = ScalarOpLowering<mlir::daphne::EwDivOp, mlir::arith::DivFOp, mlir::arith::DivFOp>;
-// // // TODO(phil): IPowIOp has been added to MathOps.td with 08b4cf3 Aug 10
-// using PowOpLowering = ScalarOpLowering<mlir::daphne::EwPowOp, mlir::math::PowFOp, mlir::math::PowFOp>;
-// // // TODO(phil): AbsIOp  has been added to MathOps.td with 7d9fc95 Aug 08
-// using AbsOpLowering = ScalarOpLowering<mlir::daphne::EwAbsOp, mlir::math::AbsFOp, mlir::math::AbsFOp>;
-// // // TODO(phil)
-// using LnOpLowering = ScalarOpLowering<mlir::daphne::EwLnOp, mlir::math::LogOp, mlir::math::LogOp>;
+using DivOpLowering = BinaryOpLowering<mlir::daphne::EwDivOp, mlir::arith::DivSIOp, mlir::arith::DivFOp>;
+using PowOpLowering = BinaryOpLowering<mlir::daphne::EwPowOp, mlir::math::PowFOp, mlir::math::PowFOp>;
 // clang-format on
 
 namespace {
-struct LowerScalarOpsPass
-    : public mlir::PassWrapper<LowerScalarOpsPass,
+struct LowerEwOpPass
+    : public mlir::PassWrapper<LowerEwOpPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
-    explicit LowerScalarOpsPass() {}
+    explicit LowerEwOpPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry
-            .insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                    mlir::memref::MemRefDialect, mlir::daphne::DaphneDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
+                        mlir::memref::MemRefDialect,
+                        mlir::daphne::DaphneDialect, mlir::math::MathDialect>();
     }
     void runOnOperation() final;
+
+    StringRef getArgument() const final { return "lower-ew"; }
+    StringRef getDescription() const final {
+        return "This pass lowers element-wise operations to affine-loop "
+               "structures and arithmetic operations.";
+    }
 };
 }  // end anonymous namespace
 
-void LowerScalarOpsPass::runOnOperation() {
+void populateLowerEwOpConversionPatterns(mlir::LLVMTypeConverter &typeConverter,
+                                         mlir::RewritePatternSet &patterns) {
+    // clang-format off
+    patterns.insert<
+        AddOpLowering,
+        SubOpLowering,
+        MulOpLowering,
+        SqrtOpLowering,
+        AbsOpLowering,
+        DivOpLowering,
+        PowOpLowering>(typeConverter, patterns.getContext());
+    // clang-format on
+}
+
+void LowerEwOpPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
@@ -221,19 +287,19 @@ void LowerScalarOpsPass::runOnOperation() {
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
-    target
-        .addLegalDialect<mlir::arith::ArithDialect, mlir::memref::MemRefDialect,
-                         mlir::AffineDialect, mlir::LLVM::LLVMDialect,
-                         mlir::daphne::DaphneDialect, mlir::BuiltinDialect>();
+    target.addLegalDialect<mlir::arith::ArithDialect,
+                           mlir::memref::MemRefDialect, mlir::AffineDialect,
+                           mlir::LLVM::LLVMDialect, mlir::daphne::DaphneDialect,
+                           mlir::BuiltinDialect, mlir::math::MathDialect>();
 
-    // math::sqrt only supports floating point
-    target.addDynamicallyLegalOp<mlir::daphne::EwSqrtOp>(
-        [&](mlir::daphne::EwSqrtOp op) {
-            return isa<mlir::IntegerType>(op.getArg().getType());
+    target.addDynamicallyLegalOp<mlir::daphne::EwSqrtOp, mlir::daphne::EwAbsOp>(
+        [](Operation *op) {
+            return op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>();
         });
 
     target.addDynamicallyLegalOp<mlir::daphne::EwAddOp, mlir::daphne::EwSubOp,
-                                 mlir::daphne::EwMulOp>([](Operation *op) {
+                                 mlir::daphne::EwMulOp, mlir::daphne::EwPowOp,
+                                 mlir::daphne::EwDivOp>([](Operation *op) {
         if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
             op->getOperandTypes()[1].isa<mlir::daphne::MatrixType>()) {
             mlir::daphne::MatrixType lhs =
@@ -259,14 +325,13 @@ void LowerScalarOpsPass::runOnOperation() {
         return false;
     });
 
-    patterns.insert<AddOpLowering, SubOpLowering, MulOpLowering>(typeConverter,
-                                                                 &getContext());
+    populateLowerEwOpConversionPatterns(typeConverter, patterns);
 
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createLowerScalarOpsPass() {
-    return std::make_unique<LowerScalarOpsPass>();
+std::unique_ptr<mlir::Pass> mlir::daphne::createLowerEwDaphneOpPass() {
+    return std::make_unique<LowerEwOpPass>();
 }
