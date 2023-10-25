@@ -176,7 +176,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.use_distributed)
         pm.addPass(mlir::daphne::createDistributePipelinesPass());
 
-    if (userConfig_.codegen) buildCodegenPipeline(pm);
+    if (userConfig_.use_codegen) buildCodegenPipeline(pm);
 
     if (userConfig_.enable_profiling)
         pm.addNestedPass<mlir::func::FuncOp>(

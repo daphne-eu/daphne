@@ -42,6 +42,7 @@ struct DaphneUserConfig {
     bool use_obj_ref_mgnt = true;
     bool use_ipa_const_propa = true;
     bool use_phy_op_selection = true;
+    bool use_codegen = false;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
     bool prePartitionRows = false;
@@ -49,7 +50,6 @@ struct DaphneUserConfig {
     bool hyperthreadingEnabled = false;
     bool debugMultiThreading = false;
     bool use_fpgaopencl = false;
-    bool codegen = false;
     bool hybrid = false;
     bool enable_profiling = false;
 

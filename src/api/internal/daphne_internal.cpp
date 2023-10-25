@@ -256,14 +256,14 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
-    opt<bool> codegen(
-            "codegen", cat(daphneOptions),
-            desc("Enables DenseMatrix lowering to MLIR codegen.")
+    static opt<bool> performCodegen(
+        "codegen", cat(daphneOptions),
+        desc("Enables DenseMatrix lowering to MLIR codegen.")
     );
-    opt<bool> hybrid(
-        "mlir", cat(schedulingOptions), "hybrid",
-        cat(schedulingOptions),
-        desc("Hybrid compilation"));
+    static opt<bool> performHybridCodegen(
+        "hybrid", cat(daphneOptions),
+        desc("Prototypical hybrid code generation pipeline.")
+    );
 
     enum ExplainArgs {
       kernels,
@@ -377,9 +377,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
-
-    user_config.codegen = codegen;
-    user_config.hybrid = hybrid;
+    user_config.use_codegen = performCodegen;
+    user_config.hybrid = performHybridCodegen;
 
     if(!libDir.getValue().empty())
         user_config.libdir = libDir.getValue();
