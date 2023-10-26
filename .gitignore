@@ -58,3 +58,7 @@ profiler/
 precompiled-dependencies/
 /cmake*/
 /data
+
+# Allow .daphne and .mlir files in test/
+!test/**/*.mlir
+!test/**/*.daphne
