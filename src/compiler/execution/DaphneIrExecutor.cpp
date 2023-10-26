@@ -239,8 +239,10 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
     mlir::ModuleOp module) {
     if (!module) return nullptr;
     // An optimization pipeline to use within the execution engine.
-    unsigned make_fast = 3;
-    auto optPipeline = mlir::makeOptimizingTransformer(make_fast, 0, nullptr);
+    unsigned optLevel = 0;
+    unsigned sizeLevel = 0;
+    llvm::TargetMachine *targetMachine = nullptr;
+    auto optPipeline = mlir::makeOptimizingTransformer(optLevel, sizeLevel, targetMachine);
     std::vector<llvm::StringRef> sharedLibRefs;
     // This next line adds to our Linux platform lock-in
     std::string daphne_executable_dir(
