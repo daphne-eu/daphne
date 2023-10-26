@@ -108,7 +108,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         }
         // additional properties (only print/read them when present, as this will probably get more and more)
         while (succeeded(parser.parseOptionalColon())) {
-            if (succeeded(parser.parseKeyword("sp"))) {
+            if (succeeded(parser.parseOptionalKeyword("sp"))) {
                 if (sparsity != -1.0) {
                     // read sparsity twice
                     return nullptr;
@@ -117,7 +117,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
                     return nullptr;
                 }
             }
-            else if (succeeded(parser.parseKeyword("rep"))) {
+            else if (succeeded(parser.parseOptionalKeyword("rep"))) {
                 llvm::StringRef repName;
                 if (parser.parseLSquare() || parser.parseKeyword(&repName) || parser.parseRSquare()) {
                     return nullptr;
