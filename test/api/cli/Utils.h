@@ -105,7 +105,7 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
             std::cout << "stdout: " << out.str() << std::endl;
             std::cout << "stderr: " << err.str() << std::endl;
             std::cout << "status: " << status << std::endl;
-            LOG(args...);
+            // LOG(args...);
 // #endif
         }
         return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
