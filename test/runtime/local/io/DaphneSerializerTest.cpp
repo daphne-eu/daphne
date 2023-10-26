@@ -167,7 +167,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DaphneSerializer serialize/deserialize in order usin
     size_t idx = 0;
     for (auto it = ser.begin(); it != ser.end(); ++it)
     {
-        std::copy(it->second.begin(), it->second.begin() + it->first, tempBuff.begin() + idx);
+        std::copy(it->second->begin(), it->second->begin() + it->first, tempBuff.begin() + idx);
         idx += it->first;
     }
 
@@ -177,7 +177,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DaphneSerializer serialize/deserialize in order usin
     for (auto it = deser.begin(); it != deser.end(); ++it)
     {
         size_t chnck = std::min(size_t(200), tempBuff.capacity() - idx);
-        std::copy(tempBuff.begin() + idx, tempBuff.begin() + idx + chnck, it->second.begin());
+        std::copy(tempBuff.begin() + idx, tempBuff.begin() + idx + chnck, it->second->begin());
         it->first = chnck;
         idx += chnck;
     }
@@ -294,7 +294,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DaphneSerializer serialize/deserialize in order usin
     size_t idx = 0;
     for (auto it = ser.begin(); it != ser.end(); ++it)
     {
-        std::copy(it->second.begin(), it->second.begin() + it->first, tempBuff.begin() + idx);
+        std::copy(it->second->begin(), it->second->begin() + it->first, tempBuff.begin() + idx);
         idx += it->first;
     }
 
@@ -304,7 +304,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DaphneSerializer serialize/deserialize in order usin
     for (auto it = deser.begin(); it != deser.end(); ++it)
     {
         size_t chnck = std::min(size_t(bufferSize), tempBuff.capacity() - idx);
-        std::copy(tempBuff.begin() + idx, tempBuff.begin() + idx + chnck, it->second.begin());
+        std::copy(tempBuff.begin() + idx, tempBuff.begin() + idx + chnck, it->second->begin());
         it->first = chnck;
         idx += chnck;
     }

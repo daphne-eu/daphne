@@ -38,22 +38,51 @@ void WorkerImplGRPCSync::Wait() {
 }
 
 grpc::Status WorkerImplGRPCSync::Store(::grpc::ServerContext *context,
-                         const ::distributed::Data *request,
+                         ::grpc::ServerReader< ::distributed::Data>* reader,
                          ::distributed::StoredData *response) 
 {
     StoredInfo storedInfo;
-    auto buffer = request->bytes().data();
-    auto len = request->bytes().size();
+    distributed::Data data;
+    reader->Read(&data);
+
+    auto buffer = data.bytes().data();
+    auto len = data.bytes().size();
     if (DF_Dtype(buffer) == DF_data_t::Value_t) {
         double val = DaphneSerializer<double>::deserialize(buffer);
         storedInfo = WorkerImpl::Store(&val);
+        
+        response->set_identifier(storedInfo.identifier);
+        response->set_num_rows(storedInfo.numRows);
+        response->set_num_cols(storedInfo.numCols);
     } else {
-        Structure *mat = DF_deserialize(buffer, len);
+        deserializer.reset(new DaphneDeserializerChunks<Structure>(&mat, len));
+        deserializerIter.reset(new DaphneDeserializerChunks<Structure>::Iterator(deserializer->begin()));    
+
+        (*deserializerIter)->second->resize(len);
+        (*deserializerIter)->first = len;
+        
+        if ((*deserializerIter)->second->size() < len)
+            (*deserializerIter)->second->resize(len);
+        (*deserializerIter)->second->assign(static_cast<const char*>(buffer), static_cast<const char*>(buffer) + len);
+        
+        // advance iterator, this also partially deserializes
+        ++(*deserializerIter);
+        while (reader->Read(&data)){
+            buffer = data.bytes().data();
+            len = data.bytes().size();
+            (*deserializerIter)->first = len;
+            if ((*deserializerIter)->second->size() < len)
+                (*deserializerIter)->second->resize(len);
+            (*deserializerIter)->second->assign(static_cast<const char*>(buffer), static_cast<const char*>(buffer) + len);
+            
+            // advance iterator, this also partially deserializes
+            ++(*deserializerIter);
+        }
         storedInfo = WorkerImpl::Store(mat);
+        response->set_identifier(storedInfo.identifier);
+        response->set_num_rows(storedInfo.numRows);
+        response->set_num_cols(storedInfo.numCols);
     }
-    response->set_identifier(storedInfo.identifier);
-    response->set_num_rows(storedInfo.numRows);
-    response->set_num_cols(storedInfo.numCols);
     return ::grpc::Status::OK;
 }
 

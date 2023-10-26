@@ -72,6 +72,8 @@ class OperationNode(DAGNode):
     def compute(self, type="shared memory"):
         if self._result_var is None:
             self._script = DaphneDSLScript(self.daphne_context)
+            for definition in self.daphne_context._functions.values():
+                self._script.daphnedsl_script += definition
             result = self._script.build_code(self, type)
             self._script.execute()
             self._script.clear(self)

@@ -66,7 +66,6 @@ namespace CUDA {
         const VT blend_beta = 0.0f;
         const VT *d_arg = arg->getValues(&alloc_desc);
         
-        // ToDo: this optimization needs more work on the data placement feature [DAPHNE-191]
         // skip data movement for vectors
         if ((numRows == 1 || numCols == 1) && !arg->isView()) {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg);

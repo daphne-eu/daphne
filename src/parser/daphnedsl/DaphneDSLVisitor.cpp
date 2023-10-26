@@ -1338,28 +1338,52 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
     // primitive C++ data types.
     mlir::Location loc = utils.getLoc(ctx->start);
     if(auto lit = ctx->INT_LITERAL()) {
-        int64_t val = atol(lit->getText().c_str());
-        return static_cast<mlir::Value>(
-                builder.create<mlir::daphne::ConstantOp>(
-                        loc, val
-                )
-        );
+        const std::string litStr = lit->getText();
+        auto ss = std::string_view(litStr);
+//        if(litStr.length() > 2) {
+//            spdlog::debug("litstr: {} len: {}", litStr, litStr.length());
+//            spdlog::debug("stringview: {}", ss);
+//            spdlog::debug("substringview: {}", ss.substr(litStr.length() - 3));
+//        }
+        if (litStr.back() == 'u')
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, std::stoul(litStr)));
+        else if (litStr.back() == 'l')
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, std::stol(litStr)));
+        else if (litStr.back() == 'z') {
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
+                    static_cast<std::size_t>(std::stoll(litStr))));
+        }
+        else if ((ss.length() > 2) && std::string_view(litStr).substr(litStr.length()-3) == "ull") {
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
+                    static_cast<int64_t>(std::stoull(litStr))));
+        }
+        else {
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
+                    static_cast<int64_t>(std::stoll(litStr))));
+        }
     }
     if(auto lit = ctx->FLOAT_LITERAL()) {
         const std::string litStr = lit->getText();
         double val;
         if(litStr == "nan")
             val = std::numeric_limits<double>::quiet_NaN();
+        else if(litStr == "nanf")
+            val = std::numeric_limits<float>::quiet_NaN();
         else if(litStr == "inf")
             val = std::numeric_limits<double>::infinity();
+        else if(litStr == "inff")
+            val = std::numeric_limits<float>::infinity();
         else if(litStr == "-inf")
             val = -std::numeric_limits<double>::infinity();
+        else if(litStr == "-inff")
+            val = -std::numeric_limits<float>::infinity();
+        else if (litStr.back() == 'f') {
+            auto fval = std::stof(litStr.c_str());
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, fval));
+        }
         else
-            val = atof(litStr.c_str());
-        return static_cast<mlir::Value>(
-                builder.create<mlir::daphne::ConstantOp>(
-                        loc, val
-                )
+            val = std::atof(litStr.c_str());
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val)
         );
     }
     if(ctx->bl)

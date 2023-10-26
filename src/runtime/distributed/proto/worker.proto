@@ -23,7 +23,7 @@ option optimize_for = SPEED;
 import "data.proto";
 
 service Worker {
-  rpc Store (Data) returns (StoredData) {}
+  rpc Store (stream Data) returns (StoredData) {}
   rpc Compute (Task) returns (ComputeResult) {}
   rpc Transfer (StoredData) returns (Data) {}
   rpc FreeMem (StoredData) returns (Empty) {}

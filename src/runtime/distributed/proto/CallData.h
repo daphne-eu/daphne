@@ -24,25 +24,26 @@
 class CallData
 {
 public:
-    virtual void Proceed() = 0;
+    virtual void Proceed(bool ok) = 0;
     virtual ~CallData() = default;
 };
 class StoreCallData final : public CallData
 {
 public:
-    StoreCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *cq)
-        : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
+    StoreCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *scq, grpc::ServerCompletionQueue *cq)
+        : worker(worker_), service_(&worker_->service_), scq_(scq), cq_(cq), stream_(&ctx_), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
-        Proceed();
+        Proceed(true);
     }
 
-    void Proceed() override;
+    void Proceed(bool ok) override;
 
 private:
     WorkerImplGRPCAsync *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
+    grpc::ServerCompletionQueue *scq_;
     grpc::ServerCompletionQueue *cq_;
     grpc::ServerContext ctx_;
     // What we get from the client.
@@ -50,6 +51,7 @@ private:
     // What we send back to the client.
     distributed::StoredData storedData;
     // The means to get back to the client.
+    grpc::ServerAsyncReader<distributed::StoredData, distributed::Data> stream_;
     grpc::ServerAsyncResponseWriter<distributed::StoredData> responder_;
 
     // Let's implement a tiny state machine with the following states.
@@ -68,10 +70,10 @@ public:
         : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
-        Proceed();
+        Proceed(true);
     }
 
-    void Proceed() override;
+    void Proceed(bool ok) override;
 
 private:
     WorkerImplGRPCAsync *worker;
@@ -103,9 +105,9 @@ public:
         : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
-        Proceed();
+        Proceed(true);
     }
-    void Proceed() override;
+    void Proceed(bool ok) override;
 private:
     WorkerImplGRPCAsync *worker;
     distributed::Worker::AsyncService *service_;

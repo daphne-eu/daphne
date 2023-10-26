@@ -16,7 +16,7 @@
 #define COORDINATOR 0
 
 enum TypesOfMessages{
-    BROADCAST=0, DATASIZE, DATA, DATAACK, MLIRSIZE, TRANSFER, TRANSFERSIZE, MLIR, INPUTKEYS, COMPUTERESULT, OUTPUT, OUTPUTKEY,  DETACH
+    BROADCAST, STREAM_INIT, STREAM_COMPLETE, DATASIZE, DATA, DATAACK, MLIRSIZE, TRANSFER, TRANSFERSIZE, MLIR, INPUTKEYS, COMPUTERESULT, OUTPUT, OUTPUTKEY,  DETACH
 };
 enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
@@ -40,7 +40,11 @@ public:
             size_t len = 0;
             len += sizeof(Header);
             len += mlir_code.size();
-            len += sizeof(StoredInfo) * inputs.size();
+            for (auto &inp : inputs){
+                len += sizeof(size_t); // strlen
+                len += inp.identifier.size();
+                len += sizeof(size_t) * 2; // numRows + numCols
+            }
             return len;
         }
         void serialize(std::vector<char> &buffer){
@@ -48,7 +52,7 @@ public:
             h.mlir_code_len = mlir_code.size();
             h.num_inputs = inputs.size();
             
-            buffer.reserve(this->sizeInBytes());
+            buffer.resize(this->sizeInBytes());
 
             auto bufIdx = buffer.begin();
             std::copy(reinterpret_cast<char*>(&h), reinterpret_cast<char*>(&h) + sizeof(h), bufIdx);
@@ -121,27 +125,19 @@ public:
         sscanf(results.at(2).c_str(), "%zu", &info.numCols);
         return info;
     }
-    static std::vector<WorkerImpl::StoredInfo> constructStoredInfoVector(std::string input)
+    static std::vector<WorkerImpl::StoredInfo> constructStoredInfoVector(std::vector<char> &buffer)
     {
         std::vector<WorkerImpl::StoredInfo> vecInfo;
-        std::stringstream s_stream(input);
-        std::vector<std::string> results;
-        while (s_stream.good())
+        std::string str(buffer.begin(), buffer.end());
+        std::stringstream s_stream(str);
+        std::string substr;
+        while (getline(s_stream, substr, ':'))
         {
-            std::string substr;
-            getline(s_stream, substr, ':');
             vecInfo.push_back(constructStoredInfo(substr));
         }
         return vecInfo;
     }
 
-    static std::vector<char> getResults(int rank)
-    {
-        size_t resultsLen = 0;
-        std::vector<char> buffer;
-        getMessageFrom(rank, OUTPUT, MPI_UNSIGNED_CHAR, buffer, &resultsLen);
-        return buffer;
-    }
     static std::vector<char> getComputeResults(int rank)
     {
         size_t resultsLen = 0;
@@ -160,7 +156,7 @@ public:
         return info;
     }
 
-    static void sendData(size_t messageLength, void *data)
+    static void broadcastData(size_t messageLength, void *data)
     {
         int worldSize = getCommSize();
         int message = messageLength;
@@ -173,14 +169,18 @@ public:
         MPI_Bcast(data, message, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
     }
 
-    static void distributeData(size_t messageLength, void *data, int rank)
+    static void initiateStreaming(int rank, size_t chunksize)
     {
-        distributeWithTag(DATA, messageLength, data, rank);
+        MPI_Send(&chunksize, 1, MPI_INT, rank, STREAM_INIT, MPI_COMM_WORLD);
+    }
+    static void sendData(size_t messageLength, void *data, int rank)
+    {
+        sendWithTag(DATA, messageLength, data, rank);
     }
 
-    static void distributeTask(size_t messageLength, void *data, int rank)
+    static void sendTask(size_t messageLength, void *data, int rank)
     {
-        distributeWithTag(MLIR, messageLength, data, rank);
+        sendWithTag(MLIR, messageLength, data, rank);
     }
 
     static void displayDataStructure(Structure *inputStruct, std::string dataToDisplay)
@@ -218,14 +218,8 @@ public:
         MPI_Probe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, type, &size);
         *rank = status.MPI_SOURCE;
-        if (type == MPI_UNSIGNED_CHAR)
-        {
-            data.reserve(size * sizeof(unsigned char));
-        }
-        else if (type == MPI_CHAR)
-        {
-            data.reserve(size * sizeof(char));
-        }
+
+        data.resize(size * sizeof(char));
         MPI_Recv(data.data(), size, type, status.MPI_SOURCE, tag, MPI_COMM_WORLD, &status);
         *len = size;
     }
@@ -236,20 +230,13 @@ public:
         MPI_Status status;
         MPI_Probe(rank, tag, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, type, &size);
-        if (type == MPI_UNSIGNED_CHAR)
-        {
-            data.reserve(size * sizeof(unsigned char));
-        }
-        else if (type == MPI_CHAR)
-        {
-            data.reserve(size * sizeof(unsigned char));
-        }
 
+        data.resize(size * sizeof(char));
         MPI_Recv(data.data(), size, type, rank, tag, MPI_COMM_WORLD, &status);
         *len = size;
     }
 
-    static void distributeWithTag(TypesOfMessages tag, size_t messageLength, void *data, int rank)
+    static void sendWithTag(TypesOfMessages tag, size_t messageLength, void *data, int rank)
     {
         if (rank == COORDINATOR)
             return;

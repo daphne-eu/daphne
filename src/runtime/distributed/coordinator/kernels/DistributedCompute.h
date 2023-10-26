@@ -95,12 +95,12 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             task.mlir_code = mlirCode;
             task.serialize(taskBuffer);
             auto len = task.sizeInBytes();
-            MPIHelper::distributeTask(len, taskBuffer.data(),rank);            
+            MPIHelper::sendTask(len, taskBuffer.data(), rank);
         }
 
         for (size_t rank = 1; rank < worldSize; rank++){
             auto buffer = MPIHelper::getComputeResults(rank);
-            std::vector<WorkerImpl::StoredInfo> infoVec = MPIHelper::constructStoredInfoVector(std::string(buffer.data()));
+            std::vector<WorkerImpl::StoredInfo> infoVec = MPIHelper::constructStoredInfoVector(buffer);
             size_t idx = 0;
             for (auto info : infoVec){            
                 auto resMat = *res[idx++];
@@ -242,8 +242,11 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes, const Structur
 
                 distributed::ComputeResult computeResult;
                 grpc::ClientContext grpc_ctx;
-                stub->Compute(&grpc_ctx, task, &computeResult);
-                
+
+                auto status = stub->Compute(&grpc_ctx, task, &computeResult);
+                if (!status.ok())
+                    throw std::runtime_error(status.error_message());
+
                 for (int o = 0; o < computeResult.outputs_size(); o++){            
                     auto resMat = *res[o];
                     auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(addr);

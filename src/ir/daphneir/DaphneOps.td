@@ -1534,9 +1534,9 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, Pure]> {
         OpBuilder<(ins "double":$value), [{
             build($_builder, $_state, $_builder.getF64Type(), $_builder.getF64FloatAttr(value));
         }]>,
-        //OpBuilder<(ins "float":$value), [{
-        //    build($_builder, $_state, $_builder.getF32Type(), $_builder.getF32FloatAttr(value));
-        //}]>,
+        OpBuilder<(ins "float":$value), [{
+            build($_builder, $_state, $_builder.getF32Type(), $_builder.getF32FloatAttr(value));
+        }]>,
         OpBuilder<(ins "int64_t":$value), [{
             Type t = $_builder.getIntegerType(64, true);
             build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));

@@ -72,7 +72,7 @@ struct WriteDaphne<DenseMatrix<VT>> {
 
         auto ser = DaphneSerializerChunks<const DenseMatrix<VT>>(arg, DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = ser.begin(); it != ser.end(); ++it) {
-            f.write(it->second.data(), it->first);
+            f.write(it->second->data(), it->first);
         }
 
         f.close();
@@ -93,7 +93,7 @@ struct WriteDaphne<CSRMatrix<VT>> {
 
         auto ser = DaphneSerializerChunks<const CSRMatrix<VT>>(arg, DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = ser.begin(); it != ser.end(); ++it) {
-            f.write(it->second.data(), it->first);
+            f.write(it->second->data(), it->first);
         }
 
         f.close();
