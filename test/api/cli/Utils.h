@@ -101,12 +101,12 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         int status;
         waitpid(p, &status, 0);
         if(status != 0) {
-#ifndef NDEBUG
+// #ifndef NDEBUG
             std::cout << "stdout: " << out.str() << std::endl;
             std::cout << "stderr: " << err.str() << std::endl;
             std::cout << "status: " << status << std::endl;
             LOG(args...);
-#endif
+// #endif
         }
         return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
     }
