@@ -9,8 +9,7 @@ s1 = dc.fill(2.2, 1, 1)
 s2 = 3.3
 
 s1.sum().pow(s2).print().compute()
-# TODO The constant folding of EwLogOp has a bug in DAPHNE (see #615).
-# s1.sum().log(s2).print().compute()
+s1.sum().log(s2).print().compute()
 s1.sum().mod(s2).print().compute()
 s1.sum().min(s2).print().compute()
 s1.sum().max(s2).print().compute()
