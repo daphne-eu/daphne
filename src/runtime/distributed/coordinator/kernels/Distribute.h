@@ -88,6 +88,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                 MPIHelper::sendData(it->first, it->second->data(), rank);
             }
             targetGroup.push_back(rank);     
+            DataObjectFactory::destroy(slicedMat);
         }
         for(size_t i=0;i<targetGroup.size();i++)
         {
@@ -156,6 +157,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
                 protoMsg.set_bytes(it->second->data(), it->first);
                 caller.sendDataStream(address, protoMsg);
             }
+            DataObjectFactory::destroy(slicedMat);
         }                
         caller.writesDone();
                        
@@ -235,6 +237,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
                 newData.numCols = storedData.num_cols();
                 newData.isPlacedAtWorker = true;
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(newData);
+                DataObjectFactory::destroy(slicedMat);
             });
             threads_vector.push_back(move(t));            
         }
