@@ -42,7 +42,7 @@ struct DaphneUserConfig {
     bool use_obj_ref_mgnt = true;
     bool use_ipa_const_propa = true;
     bool use_phy_op_selection = true;
-    bool use_codegen = false;
+    bool use_mlir_codegen = false;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
     bool prePartitionRows = false;
@@ -65,7 +65,7 @@ struct DaphneUserConfig {
     bool explain_type_adaptation = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
-    bool explain_codegen = false;
+    bool explain_mlir_codegen = false;
 
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
     QueueTypeOption queueSetupScheme = CENTRALIZED;

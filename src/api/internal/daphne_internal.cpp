@@ -256,8 +256,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
-    static opt<bool> performCodegen(
-        "codegen", cat(daphneOptions),
+    static opt<bool> mlirCodegen(
+        "mlir-codegen", cat(daphneOptions),
         desc("Enables DenseMatrix lowering to MLIR codegen.")
     );
     static opt<bool> performHybridCodegen(
@@ -277,7 +277,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       type_adaptation,
       vectorized,
       obj_ref_mgnt,
-      code_gen
+      mlir_code_gen
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -296,7 +296,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
             clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
-            clEnumVal(code_gen, "Show DaphneIR after DenseMatrix codegen")),
+            clEnumVal(mlir_code_gen, "Show DaphneIR after DenseMatrix codegen")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
@@ -377,7 +377,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
-    user_config.use_codegen = performCodegen;
+    user_config.use_mlir_codegen = mlirCodegen;
     user_config.hybrid = performHybridCodegen;
 
     if(!libDir.getValue().empty())
@@ -441,8 +441,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             case obj_ref_mgnt:
                 user_config.explain_obj_ref_mgnt = true;
                 break;
-            case code_gen:
-                user_config.explain_codegen = true;
+            case mlir_code_gen:
+                user_config.explain_mlir_codegen = true;
                 break;
         }
     }

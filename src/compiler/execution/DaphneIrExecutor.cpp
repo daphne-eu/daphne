@@ -176,7 +176,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.use_distributed)
         pm.addPass(mlir::daphne::createDistributePipelinesPass());
 
-    if (userConfig_.use_codegen) buildCodegenPipeline(pm);
+    if (userConfig_.use_mlir_codegen) buildCodegenPipeline(pm);
 
     if (userConfig_.enable_profiling)
         pm.addNestedPass<mlir::func::FuncOp>(
@@ -293,7 +293,7 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
 }
 
 void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
-    if (userConfig_.explain_codegen)
+    if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
 
@@ -317,7 +317,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         mlir::createAffineScalarReplacementPass());
     pm.addPass(mlir::createLowerAffinePass());
 
-    if (userConfig_.explain_codegen)
+    if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after codegen pipeline"));
 }
