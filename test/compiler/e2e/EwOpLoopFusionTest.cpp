@@ -47,7 +47,7 @@ TEST_CASE("ewloopfusion", TAG_CODEGEN) {
     out.str(std::string());
     err.str(std::string());
 
-    status = runDaphne(out, err, "--codegen", (dirPath + "fusion.daphne").c_str());
+    status = runDaphne(out, err, "--mlir-codegen", (dirPath + "fusion.daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == result);
 }

@@ -41,7 +41,7 @@ TEST_CASE("mapOp", TAG_CODEGEN) {
     out.str(std::string());
     err.str(std::string());
 
-    status = runDaphne(out, err, "--codegen", "--no-obj-ref-mgnt",
+    status = runDaphne(out, err, "--mlir-codegen", "--no-obj-ref-mgnt",
                        (dirPath + "map.daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == result);

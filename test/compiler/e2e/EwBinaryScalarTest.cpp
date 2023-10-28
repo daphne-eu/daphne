@@ -42,7 +42,7 @@ void test_binary_lowering(const std::string op,
     out.str(std::string());
     err.str(std::string());
 
-    status = runDaphne(out, err, "--explain", "llvm", "--codegen", (dirPath + op + ".daphne").c_str());
+    status = runDaphne(out, err, "--explain", "llvm", "--mlir-codegen", (dirPath + op + ".daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
 
     REQUIRE_THAT(err.str(), !Catch::Contains(kernel_call));

@@ -42,7 +42,7 @@ TEST_CASE("matmul", TAG_CODEGEN) {
     out.str(std::string());
     err.str(std::string());
 
-    status = runDaphne(out, err, "--codegen", (dirPath + "matmul.daphne").c_str());
+    status = runDaphne(out, err, "--mlir-codegen", (dirPath + "matmul.daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == result);
 }
@@ -65,7 +65,7 @@ TEST_CASE("matvec", TAG_CODEGEN) {
     out.str(std::string());
     err.str(std::string());
 
-    status = runDaphne(out, err, "--codegen", (dirPath + "matvec.daphne").c_str());
+    status = runDaphne(out, err, "--mlir-codegen", (dirPath + "matvec.daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == result);
 }
