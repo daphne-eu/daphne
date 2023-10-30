@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
+
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
@@ -37,18 +39,14 @@ void checkFill(const typename DTRes::VT val, const size_t rows, const size_t col
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-    CUDA::createCUDAContext(dctx.get());
+    auto dctx = setupContextAndLogger();
 
     checkFill<TestType>(0, 123, 456, dctx.get());
     checkFill<TestType>(123.45, 123, 456, dctx.get());
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix), (int64_t, uint8_t)) { // NOLINT(cert-err58-cpp)
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-    CUDA::createCUDAContext(dctx.get());
+    auto dctx = setupContextAndLogger();
 
     checkFill<TestType>(0, 123, 456, dctx.get());
     checkFill<TestType>(123, 123, 456, dctx.get());
