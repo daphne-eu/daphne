@@ -109,6 +109,7 @@ std::unique_ptr<IContext> CUDAContext::createCudaContext(int device_id) {
 
     auto ctx = std::unique_ptr<CUDAContext>(new CUDAContext(device_id));
     ctx->logger = spdlog::get("runtime::cuda");
+    ctx->logger->debug("runtime::cuda logger set for context {}", device_id);
 
     int device_count = -1;
     CHECK_CUDART(cudaGetDeviceCount(&device_count));
