@@ -196,6 +196,7 @@ struct PatternBasedCodeGenPass : public PassWrapper<PatternBasedCodeGenPass, Ope
 };
 
 void PatternBasedCodeGenPass::runOnOperation() {
+    std::vector<Operation*> ops_to_remove;
     getOperation()->walk([&](Operation* op) {
         logger->debug("PatternBasedCodeGenPass: {} parent: {}", op->getName().getStringRef().str(),
                       op->getParentOp()->getName().getStringRef().str());
@@ -261,9 +262,14 @@ void PatternBasedCodeGenPass::runOnOperation() {
             auto generatedOp = builder.create<daphne::CodeGenOpRowwise>(loc, ValueRange(results).getTypes(), operands, nullptr);
 
             ccSeq.back()->getNextNode()->getOperand(0).replaceAllUsesWith(generatedOp.getResult(0));
-//            for (auto it = ccSeq.rbegin(); it != ccSeq.rend(); ++it) {
+            for (auto it = ccSeq.rbegin(); it != ccSeq.rend(); ++it) {
 //                (*it)->erase();
-//            }
+                std::string s;
+                llvm::raw_string_ostream stream(s);
+                (*it)->print(stream);
+                logger->debug("Queuing for deletion: {}", stream.str());
+                ops_to_remove.push_back((*it));
+            }
         }
         else {
 
@@ -350,6 +356,17 @@ void PatternBasedCodeGenPass::runOnOperation() {
         }
         WalkResult::advance();
     });
+
+//    for (auto it = ops_to_remove.rbegin(); it != ops_to_remove.rend(); ++it) {
+//        (*it)->erase();
+//    }
+    for (auto it = ops_to_remove.begin(); it != ops_to_remove.end(); ++it) {
+        std::string s;
+        llvm::raw_string_ostream stream(s);
+        (*it)->print(stream);
+        logger->debug("Deleting {}", stream.str());
+        (*it)->erase();
+    }
 }
 
 std::unique_ptr<Pass> daphne::createPatternBasedCodeGenPass(const DaphneUserConfig& cfg) {
