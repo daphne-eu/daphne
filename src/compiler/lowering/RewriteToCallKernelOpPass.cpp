@@ -529,6 +529,10 @@ void RewriteToCallKernelOpPass::runOnOperation()
       vpo.getCtxMutable().assign(dctx);
     });
 
+    func->walk([&](daphne::CodeGenOpRowwise cgo) {
+        cgo.getCtxMutable().assign(dctx);
+    });
+
     // Apply conversion to CallKernelOps.
     patterns.insert<
             KernelReplacement,
