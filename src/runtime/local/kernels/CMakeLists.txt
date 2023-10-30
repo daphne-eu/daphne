@@ -41,6 +41,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Affine.cpp
             ${PREFIX}/BatchNorm.cpp
             ${PREFIX}/BiasAdd.cpp
+            ${PREFIX}/CodeGen.cpp
             ${PREFIX}/Convolution.cpp
             ${PREFIX}/DeviceUtils.cuh
             ${PREFIX}/Fill.cu
