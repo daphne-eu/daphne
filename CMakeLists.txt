@@ -17,8 +17,17 @@ cmake_minimum_required(VERSION 3.20)
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
+set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler --expt-relaxed-constexpr" CACHE STRING "bla" FORCE)
 
-project(daphne-prototype LANGUAGES CXX C)
+include(CheckLanguage)
+#message(STATUS start checked cuda)
+check_language(CUDA)
+#message(STATUS "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}")
+message(STATUS "cuda flags: ${CMAKE_CUDA_FLAGS}")
+message(STATUS "cuda env flags: $ENV{CUDAFLAGS}")
+message(STATUS "path env: $ENV{PATH}")
+
+project(daphne-prototype LANGUAGES CUDA CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
@@ -95,9 +104,10 @@ endif()
 ##########
 
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
-include(CheckLanguage)
-check_language(CUDA)
+
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler --expt-relaxed-constexpr" CACHE STRING "bla" FORCE)
+
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
 
@@ -125,6 +135,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     if(DEFINED ENV{CUDAHOSTCXX})
         message(STATUS "CUDAHOSTCXX value: $ENV{CUDAHOSTCXX}")
     endif()
+    message(STATUS "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}")
+
 endif()
 
 
