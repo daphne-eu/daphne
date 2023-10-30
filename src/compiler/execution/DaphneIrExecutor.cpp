@@ -110,10 +110,12 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(userConfig_.explain_select_matrix_repr)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
 
+#ifdef USE_CUDA
         if(userConfig_.use_codegen)
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createPatternBasedCodeGenPass(userConfig_));
         if(userConfig_.explain_codegen)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after code generation:"));
+#endif
 
         if(userConfig_.use_phy_op_selection) {
             pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());
