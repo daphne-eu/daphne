@@ -22,6 +22,7 @@ set(LIBS
         ${dialect_libs}
         ${conversion_libs}
         MLIRDaphne
+        MLIRDaphneCodeGen
         MLIRDaphneExplain
         MLIRDaphneInference
         MLIRDaphneTransforms
@@ -31,6 +32,7 @@ set(LIBS
 
 add_llvm_library(DaphneIrExecutor ${SOURCES}
         DEPENDS
+        MLIRDaphneCodeGen
         MLIRDaphneOpsIncGen
         # The kernels are linked at runtime.
         AllKernels
