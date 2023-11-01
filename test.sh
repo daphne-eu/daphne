@@ -31,6 +31,7 @@ BUILD_CUDA=""
 BUILD_FPGAOPENCL=""
 BUILD_DEBUG=""
 BUILD_DAPHNE=1
+BUILD_MPI=""
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -44,6 +45,10 @@ while [[ $# -gt 0 ]]; do
             echo using FPGAOPENCL
             export BUILD_FPGAOPENCL="--fpgaopencl"
             ;;
+        --mpi)
+            echo using MPI
+            export BUILD_FPGAOPENCL="--mpi"
+            ;;    
         --debug)
             echo building DEBUG version
             export BUILD_DEBUG="--debug"
