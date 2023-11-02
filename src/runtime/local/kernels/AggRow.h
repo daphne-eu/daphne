@@ -27,6 +27,8 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstring>
+#include <cmath>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -115,21 +117,77 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 valuesRes += res->getRowSkip();
             }
 
+            // for(size_t c = 0; c < numRows; c++) {
+            //     std::cout << valuesRes[c] << " " ;
+            // }
+            // std::cout << std::endl;            
+
             if(AggOpCodeUtils::isPureBinaryReduction(opCode))
                 return;
 
             // The op-code is either MEAN or STDDEV
             valuesRes = res->getValues();
+            // valuesArg = arg->getValues();
             for(size_t r = 0; r < numRows; r++) {
                 *valuesRes = (*valuesRes) / numCols;
                 valuesRes += res->getRowSkip();
             }
+
+            // for(size_t c = 0; c < numRows; c++) {
+            //     std::cout << valuesRes[c] << " " ;
+            // }
+            
             if(opCode == AggOpCode::MEAN)
                 return;
             
             // else op-code is STDDEV
             // TODO STDDEV
-            throw std::runtime_error("unsupported AggOpCode in AggRow for DenseMatrix");
+
+            // for (size_t c = 0; c < numRows; c++){
+            //     // std::cout << valuesRes[c] << " ";
+            //     valuesRes[c] = static_cast<VTRes>(valuesArg[c]);
+            //     // std::cout << valuesRes[c] << std::endl;
+            // }
+            // for(size_t r = 1; r < numRows; r++) {
+            //     valuesArg += arg->getRowSkip();
+            //     for(size_t c = 0; c < numCols; c++)
+            //         valuesRes[c] = func(valuesRes[c], static_cast<VTRes>(valuesArg[c]), ctx);
+            // }
+            // for(size_t c = 0; c < numRows; c++) {
+            //     std::cout << valuesRes[c] << " " ;
+            // }
+            // std::cout << std::endl;
+            // std::cout << std::endl;
+            // // Create a temporary matrix to store the resulting standard deviations for each row
+            // auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
+            // VTRes * valuesT = tmp->getValues();
+            // valuesArg = arg->getValues();
+
+            // for(size_t r = 0; r < numRows; r++) {
+            //     for(size_t c = 0; c < numCols; c++) {
+            //         std::cout << "ValueArg: " << valuesArg[c] << " ";
+            //         std::cout << "ValueRes: " << valuesRes[c] << " " ;
+            //         VTRes val = static_cast<VTRes>(valuesArg[c]) - valuesRes[r];
+            //         std::cout << "Val: " << val << std::endl ;
+            //         std::cout << "ValueT[c] before: " << valuesT[c] << " " ;
+            //         valuesT[c] = valuesT[c] + val * val;
+            //         std::cout << "ValueT[c] after: " << valuesT[c] << " " ;
+            //     }
+            //     std::cout << std::endl;
+            //     valuesArg += arg->getRowSkip();
+            // }
+
+            // for(size_t c = 0; c < numRows; c++) {
+            //     // std::cout << "ValueT[c] before: " << valuesT[c] << ", ";
+            //     valuesT[c] /= numCols;
+            //     // std::cout << "ValueT[c] after: " << valuesT[c] << std::endl; 
+            //     valuesT[c] = sqrt(valuesT[c]);
+            //     // std::cout << "ValueT[c] after after: " << valuesT[c] << std::endl;
+            // }
+
+            // memcpy(valuesRes, valuesT, numRows * sizeof(VTRes));
+            // DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
+            
         }
     }
 };
@@ -195,3 +253,32 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H
+
+
+// for(size_t c = 0; c < numRows; c++)
+//                 valuesRes[c] /= numCols;
+
+//             if(opCode != AggOpCode::STDDEV)
+//                 return;
+
+//             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
+//             VTRes * valuesT = tmp->getValues();
+//             valuesArg = arg->getValues();
+
+//             for(size_t r = 0; r < numCols; r++) {
+//                 for(size_t c = 0; c < numRows; c++) {
+//                     VTRes val = static_cast<VTRes>(valuesArg[c]) - valuesRes[c];
+//                     valuesT[c] = valuesT[c] + val * val;
+//                 }
+//                 valuesArg += arg->getRowSkip();
+//             }
+
+//             for(size_t c = 0; c < numRows; c++) {
+//                 valuesT[c] /= numCols;
+//                 valuesT[c] = sqrt(valuesT[c]);
+//             }
+
+//             // TODO We could avoid copying by returning tmp and destroying res. But
+//             // that might be wrong if res was not nullptr initially.
+//             memcpy(valuesRes, valuesT, numRows * sizeof(VTRes));
+//             DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);

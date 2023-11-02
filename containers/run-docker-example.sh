@@ -23,11 +23,11 @@ DOCKER_TAG=latest_${ARCH}_BASE
 #DOCKER_TAG=latest_${ARCH}_CUDA
 
 #on some installations docker can only be run with sudo
-USE_SUDO=
-#USE_SUDO=sudo
+#USE_SUDO=
+USE_SUDO=sudo
 
 # run this script from the base path of your DAPHNE source tree
-DAPHNE_ROOT=$PWD
+DAPHNE_ROOT=/home/vkostoula/daphne
 
 # the directory used *inside* the container to bind-mount your source directory
 DAPHNE_ROOT_CONTAINER=/daphne

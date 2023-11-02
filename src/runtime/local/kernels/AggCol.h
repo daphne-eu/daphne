@@ -132,21 +132,38 @@ struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
             // memcpy(valuesRes, valuesArg, numCols * sizeof(VTRes));
             // Can't memcpy because we might have different result type
-            for (size_t c = 0; c < numCols; c++)
+            for (size_t c = 0; c < numCols; c++){
+                // std::cout << valuesRes[c] << " ";
                 valuesRes[c] = static_cast<VTRes>(valuesArg[c]);
+                // std::cout << valuesRes[c] << std::endl;
+            }
             for(size_t r = 1; r < numRows; r++) {
                 valuesArg += arg->getRowSkip();
                 for(size_t c = 0; c < numCols; c++)
                     valuesRes[c] = func(valuesRes[c], static_cast<VTRes>(valuesArg[c]), ctx);
             }
-            
+
+            // for (size_t r=0; r < numRows; r++){
+            //     for (size_t c=0; c < numCols; c++){
+            //         std::cout << valuesRes[c] << std::endl;
+            //     }
+            // }
+            for (size_t c=0; c < numCols; c++){
+                    // std::cout << valuesRes[c] << std::endl;
+            }
+
             if(AggOpCodeUtils::isPureBinaryReduction(opCode))
                 return;
             
             // The op-code is either MEAN or STDDEV.
 
-            for(size_t c = 0; c < numCols; c++)
+            for(size_t c = 0; c < numCols; c++){
+                // std::cout << "valueResc[c] before" << std::endl;
+                // std::cout << valuesRes[c] << std::endl;
                 valuesRes[c] /= numRows;
+                // std::cout << "valueResc[c] after" << std::endl;
+                // std::cout << valuesRes[c] << std::endl;
+            }
 
             if(opCode != AggOpCode::STDDEV)
                 return;
@@ -154,18 +171,45 @@ struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
             VTRes * valuesT = tmp->getValues();
             valuesArg = arg->getValues();
+            
+            // for(size_t r = 0; r < numRows; r++) {
+            //     for(size_t c = 0; c < numCols; c++) {
+            //         std::cout << valuesT[c] << " " ;
+            //     }
+            //     std::cout << std::endl;
+            // }
 
             for(size_t r = 0; r < numRows; r++) {
                 for(size_t c = 0; c < numCols; c++) {
+                    // std::cout << "ValueArg: " << valuesArg[c] << " ";
+                    // std::cout << "ValueRes: " << valuesRes[r] << " " ;
                     VTRes val = static_cast<VTRes>(valuesArg[c]) - valuesRes[c];
+                    // std::cout << "Val: " << val << std::endl ;
+                    // std::cout << "ValueT[c] before: " << valuesT[c] << " " ;
                     valuesT[c] = valuesT[c] + val * val;
+                    // std::cout << "ValueT[c] after: " << valuesT[c] << " " ;
                 }
+                // std::cout << std::endl;
                 valuesArg += arg->getRowSkip();
             }
 
+            
+            // for(size_t c = 0; c < numCols; c++) {
+            //     std::cout << valuesT[c] << " " ;
+            // }
+                
+            
+
             for(size_t c = 0; c < numCols; c++) {
+                // std::cout << "ValueT[c] before: " << valuesT[c] << ", ";
                 valuesT[c] /= numRows;
+                // std::cout << "ValueT[c] after: " << valuesT[c] << std::endl; 
                 valuesT[c] = sqrt(valuesT[c]);
+                // std::cout << "ValueT[c] after after: " << valuesT[c] << std::endl;
+            }
+
+            for(size_t c = 0; c < numCols; c++) {
+                // std::cout << valuesT[c] << " " ;
             }
 
             // TODO We could avoid copying by returning tmp and destroying res. But
