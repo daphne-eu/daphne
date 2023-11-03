@@ -13,7 +13,7 @@
 # limitations under the License.
 
 m = reshape(seq(1, 12, 1), 4, 3);
-# m = rand(4, 3, 100, 200, 1, -1);
+# m = rand(5, 3, 100, 200, 1, -1);
 # TODO The commented out functions below are not supported yet (see #613).
 
 # Full aggregation.
@@ -39,7 +39,7 @@ print(stddev(m, 0));
 # print(sum(m, 1));
 # print(mean(m, 1));
 # print(var(m, 1));
-# print(stddev(m, 1));
+print(stddev(m, 1));
 # print(aggMin(m, 1));
 # print(aggMax(m, 1));
 # print(idxMin(m, 1));

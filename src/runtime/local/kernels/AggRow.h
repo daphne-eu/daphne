@@ -153,45 +153,22 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             VTRes * valuesT = tmp->getValues();
             valuesArg = arg->getValues();
             valuesRes = res->getValues();
-            for(size_t r = 0; r < numRows+1; r++) {
-                // std::cout << r << " ";
+            for(size_t r = 0; r < numRows; r++) {
                 for(size_t c = 0; c < numCols; c++) {
-                    std::cout << r << " ";
-                    std::cout << c << " ";
-                    std::cout << "ValueArg: " << valuesArg[c] << std::endl;
-                    std::cout << "valuesArg[c]) - (*valuesRes)       " << valuesArg[c] << " -";
-                    std::cout << (*valuesRes) << std::endl;
-
-                    // std::cout << "ValueRes: " << *valuesRes << " " ;
                     VTRes val = static_cast<VTRes>(valuesArg[c]) - (*valuesRes);
-                    // std::cout << "Val: " << val << " " ;
-                    // std::cout << "ValueT[" << c << "] before: "<< valuesT[c] << " " ;
                     valuesT[r] = valuesT[r] + val * val;
-                    std::cout << "ValueT[" << c << "] after: " << valuesT[c] << std::endl;
                 }
-                // std::cout << std::endl;
-                if(r!=numRows){
-                    valuesArg += arg->getRowSkip();
-                    valuesRes += res->getRowSkip();
-                }
+                valuesArg += arg->getRowSkip();
+                valuesRes += res->getRowSkip();
+               
             }
-
-            // for(size_t c = 0; c < numCols; c++) {
-            //         std::cout << "ValueArg: " << valuesT[c] << " ";
-            // }
             valuesRes = res->getValues();
             for(size_t c = 0; c < numRows; c++) {
-                // std::cout << "ValueT[c] before: " << valuesT[c] << ", ";
                 valuesT[c] /= numCols;
-                // std::cout << "ValueT[c] after: " << valuesT[c] << std::endl; 
                 *valuesRes = sqrt(valuesT[c]);
-                std::cout << "ValueT[" << c  << "] after after: " << valuesT[c] << std::endl;
                 valuesRes += res->getRowSkip();
             }
 
-            
-
-            //memcpy(valuesRes, valuesT, numRows * sizeof(VTRes));
             DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
             
         }
@@ -259,32 +236,3 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H
-
-
-// for(size_t c = 0; c < numRows; c++)
-//                 valuesRes[c] /= numCols;
-
-//             if(opCode != AggOpCode::STDDEV)
-//                 return;
-
-//             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
-//             VTRes * valuesT = tmp->getValues();
-//             valuesArg = arg->getValues();
-
-//             for(size_t r = 0; r < numCols; r++) {
-//                 for(size_t c = 0; c < numRows; c++) {
-//                     VTRes val = static_cast<VTRes>(valuesArg[c]) - valuesRes[c];
-//                     valuesT[c] = valuesT[c] + val * val;
-//                 }
-//                 valuesArg += arg->getRowSkip();
-//             }
-
-//             for(size_t c = 0; c < numRows; c++) {
-//                 valuesT[c] /= numCols;
-//                 valuesT[c] = sqrt(valuesT[c]);
-//             }
-
-//             // TODO We could avoid copying by returning tmp and destroying res. But
-//             // that might be wrong if res was not nullptr initially.
-//             memcpy(valuesRes, valuesT, numRows * sizeof(VTRes));
-//             DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
