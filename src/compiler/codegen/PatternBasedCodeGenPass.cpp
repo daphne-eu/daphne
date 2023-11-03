@@ -180,15 +180,16 @@ struct PatternBasedCodeGenPass : public PassWrapper<PatternBasedCodeGenPass, Ope
     /**
      * @brief User configuration influencing the rewrite pass
      */
-    const DaphneUserConfig& cfg;
+    DaphneUserConfig& cfg;
     std::shared_ptr<spdlog::logger> logger;
-    std::array<Operation*, 4> ccOpSequence;
+    std::array<Operation*, 4> ccOpSequence{};
     SpoofCUDAContext* codegenContext;
 
-    explicit PatternBasedCodeGenPass(const DaphneUserConfig& cfg) : cfg(cfg) {
+    explicit PatternBasedCodeGenPass(DaphneUserConfig& cfg) : cfg(cfg) {
         logger = spdlog::get("compiler::cuda");
         ccOpSequence = std::array<Operation*, 4>({daphne::TransposeOp(), daphne::EwMulOp(), daphne::RowAggMaxOp(), daphne::EwMaxOp()});
         codegenContext = reinterpret_cast<SpoofCUDAContext*>(SpoofCUDAContext::initialize_cuda(0, "src/compiler/codegen"));
+        cfg.codegen_ctx_ptr = reinterpret_cast<uint64_t>(codegenContext);
     }
     
     void runOnOperation() final;
@@ -369,7 +370,7 @@ void PatternBasedCodeGenPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<Pass> daphne::createPatternBasedCodeGenPass(const DaphneUserConfig& cfg) {
+std::unique_ptr<Pass> daphne::createPatternBasedCodeGenPass(DaphneUserConfig& cfg) {
     return std::make_unique<PatternBasedCodeGenPass>(cfg);
 }
 
