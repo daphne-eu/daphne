@@ -84,6 +84,8 @@ struct DaphneUserConfig {
     // CUDA device IDs (future work, as we create only one context atm)
     std::vector<int> cuda_devices;
 
+    uint64_t codegen_ctx_ptr;
+    
     // ToDo: This is an arbitrary default taken from sample code
 //    int cublas_workspace_size = 1024 * 1024 * 4;
 #endif

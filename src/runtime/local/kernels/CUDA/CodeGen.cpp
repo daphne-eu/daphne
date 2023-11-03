@@ -15,6 +15,7 @@
  */
 
 
+#include <compiler/codegen/spoof-launcher/SpoofCUDAContext.h>
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 #include "runtime/local/datastructures/CSRMatrix.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
@@ -53,6 +54,10 @@ void CodeGenRW(DenseMatrix<VTres>*& res, const CSRMatrix<VTarg>** args, DCTX(dct
     // get codegen context
 
     auto a = args[0];
+    auto b = args[1];
+
+    SpoofCUDAContext* cctx = reinterpret_cast<SpoofCUDAContext*>(dctx->getUserConfig().codegen_ctx_ptr);
+//    cctx->template launch<SpoofRowwiseOp>()
 
     if(res == nullptr)
         res = DataObjectFactory::create<DenseMatrix<VTres>>(a->getNumRows(), 1, false, &alloc_desc);
