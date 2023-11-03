@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-#include <api/cli/Utils.h>
-#include <tags.h>
-
-#include <catch.hpp>
-#include <sstream>
-#include <string>
+#include "run_tests.h"
 
 #include "api/cli/StatusCode.h"
+#include "api/cli/Utils.h"
+
+#include <tags.h>
 
 const std::string dirPath = "test/compiler/lit/";
 
@@ -31,7 +29,7 @@ TEST_CASE("codegen", TAG_CODEGEN) {
     std::stringstream out;
     std::stringstream err;
 
-    int status = 0; // runLIT(out, err, dirPath); TODO: needs docker container update to run during testing
+    int status = runLIT(out, err, dirPath);
 
     CHECK(status == StatusCode::SUCCESS);
 }

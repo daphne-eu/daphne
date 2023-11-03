@@ -62,8 +62,10 @@ if [ $BUILD_DAPHNE -gt 0 ]; then
   ./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG --target run_tests
 fi
 
-# Preparations for running DaphneLib (Python API) tests.
-export PYTHONPATH="$PYTHONPATH:$PWD/src/"
+# Preparations for running DaphneLib (Python API) tests and MLIR codegen tests (LLVM LIT)
+export PYTHONPATH="$PYTHONPATH:$PWD/src/:/usr/lib/llvm-10/build/utils/lit/"
+export PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH
+export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH
 
 # this speeds up the vectorized tests
 export OPENBLAS_NUM_THREADS=1

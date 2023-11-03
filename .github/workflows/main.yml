@@ -44,16 +44,10 @@ jobs:
       run: ./build.sh --no-fancy --no-deps --installPrefix /usr/local --target all | ts
       shell: bash
 
-    - name: "Create symlinks"
-      run: |
-        ln -s bin/daphne /usr/bin/daphne
-        ln -s bin/daphne-opt /usr/bin/daphne-opt
-        ln -s thirdpart/build/llvm-project/bin/FileCheck /usr/bin/FileCheck
-
     - name: Testing
       run: |
         mkdir --parents src/api/python/tmp
-        PYTHONPATH="$PYTHONPATH:$PWD/src/" bin/run_tests
+        LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH PYTHONPATH="$PYTHONPATH:$PWD/src/:/usr/lib/llvm-10/build/utils/lit/" bin/run_tests
 
     - name: "List generated files"
       run: |
