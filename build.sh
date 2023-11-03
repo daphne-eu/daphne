@@ -768,8 +768,8 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "Get abseil version ${abslVersion}"
         rm -rf "$abslPath"
         git clone --depth 1 --branch "$abslVersion" https://github.com/abseil/abseil-cpp.git "$abslPath"
-        daphne_msg "Applying 0002-absl-stdmax-params.patch"
-        patch -Np1 -i "${patchDir}/0002-absl-stdmax-params.patch" -d "$abslPath"
+#        daphne_msg "Applying 0002-absl-stdmax-params.patch"
+#        patch -Np1 -i "${patchDir}/0002-absl-stdmax-params.patch" -d "$abslPath"
         dependency_download_success "${dep_absl[@]}"
     fi
     if ! is_dependency_installed "${dep_absl[@]}"; then
