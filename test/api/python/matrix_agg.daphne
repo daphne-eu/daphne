@@ -19,7 +19,7 @@ m = reshape(seq(1, 12, 1), 4, 3);
 # Full aggregation.
 print(m);
 # print(sum(m));
-print(mean(m));
+# print(mean(m));
 # print(var(m));
 # print(stddev(m));
 # print(aggMin(m));
@@ -29,7 +29,7 @@ print(mean(m));
 # print(sum(m, 0));
 # print(mean(m, 0));
 # print(var(m, 0));
-# print(stddev(m, 0));
+print(stddev(m, 0));
 # print(aggMin(m, 0));
 # print(aggMax(m, 0));
 # print(idxMin(m, 0));
@@ -37,7 +37,7 @@ print(mean(m));
 
 # Column-wise aggregation.
 # print(sum(m, 1));
-print(mean(m, 1));
+# print(mean(m, 1));
 # print(var(m, 1));
 # print(stddev(m, 1));
 # print(aggMin(m, 1));

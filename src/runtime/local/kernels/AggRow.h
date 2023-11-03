@@ -110,8 +110,10 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
             for(size_t r = 0; r < numRows; r++) {
                 VTRes agg = static_cast<VTRes>(*valuesArg);
-                for(size_t c = 1; c < numCols; c++)
+                for(size_t c = 1; c < numCols; c++){
                     agg = func(agg, static_cast<VTRes>(valuesArg[c]), ctx);
+                    // std::cout << agg << " ";
+                }
                 *valuesRes = static_cast<VTRes>(agg);
                 valuesArg += arg->getRowSkip();
                 valuesRes += res->getRowSkip();
@@ -130,63 +132,67 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             // valuesArg = arg->getValues();
             for(size_t r = 0; r < numRows; r++) {
                 *valuesRes = (*valuesRes) / numCols;
+                // std::cout << *valuesRes << std::endl;
+                valuesRes += res->getRowSkip();
+            }
+            
+            valuesRes = res->getValues();
+            for(size_t r = 0; r < numRows; r++) {
+                // std::cout << *valuesRes << std::endl;
                 valuesRes += res->getRowSkip();
             }
 
-            // for(size_t c = 0; c < numRows; c++) {
-            //     std::cout << valuesRes[c] << " " ;
-            // }
-            
             if(opCode == AggOpCode::MEAN)
                 return;
             
             // else op-code is STDDEV
             // TODO STDDEV
 
-            // for (size_t c = 0; c < numRows; c++){
-            //     // std::cout << valuesRes[c] << " ";
-            //     valuesRes[c] = static_cast<VTRes>(valuesArg[c]);
-            //     // std::cout << valuesRes[c] << std::endl;
-            // }
-            // for(size_t r = 1; r < numRows; r++) {
-            //     valuesArg += arg->getRowSkip();
-            //     for(size_t c = 0; c < numCols; c++)
-            //         valuesRes[c] = func(valuesRes[c], static_cast<VTRes>(valuesArg[c]), ctx);
-            // }
-            // for(size_t c = 0; c < numRows; c++) {
-            //     std::cout << valuesRes[c] << " " ;
-            // }
-            // std::cout << std::endl;
-            // std::cout << std::endl;
             // // Create a temporary matrix to store the resulting standard deviations for each row
-            // auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
-            // VTRes * valuesT = tmp->getValues();
-            // valuesArg = arg->getValues();
+            auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
+            VTRes * valuesT = tmp->getValues();
+            valuesArg = arg->getValues();
+            valuesRes = res->getValues();
+            for(size_t r = 0; r < numRows+1; r++) {
+                // std::cout << r << " ";
+                for(size_t c = 0; c < numCols; c++) {
+                    std::cout << r << " ";
+                    std::cout << c << " ";
+                    std::cout << "ValueArg: " << valuesArg[c] << std::endl;
+                    std::cout << "valuesArg[c]) - (*valuesRes)       " << valuesArg[c] << " -";
+                    std::cout << (*valuesRes) << std::endl;
 
-            // for(size_t r = 0; r < numRows; r++) {
-            //     for(size_t c = 0; c < numCols; c++) {
-            //         std::cout << "ValueArg: " << valuesArg[c] << " ";
-            //         std::cout << "ValueRes: " << valuesRes[c] << " " ;
-            //         VTRes val = static_cast<VTRes>(valuesArg[c]) - valuesRes[r];
-            //         std::cout << "Val: " << val << std::endl ;
-            //         std::cout << "ValueT[c] before: " << valuesT[c] << " " ;
-            //         valuesT[c] = valuesT[c] + val * val;
-            //         std::cout << "ValueT[c] after: " << valuesT[c] << " " ;
-            //     }
-            //     std::cout << std::endl;
-            //     valuesArg += arg->getRowSkip();
+                    // std::cout << "ValueRes: " << *valuesRes << " " ;
+                    VTRes val = static_cast<VTRes>(valuesArg[c]) - (*valuesRes);
+                    // std::cout << "Val: " << val << " " ;
+                    // std::cout << "ValueT[" << c << "] before: "<< valuesT[c] << " " ;
+                    valuesT[r] = valuesT[r] + val * val;
+                    std::cout << "ValueT[" << c << "] after: " << valuesT[c] << std::endl;
+                }
+                // std::cout << std::endl;
+                if(r!=numRows){
+                    valuesArg += arg->getRowSkip();
+                    valuesRes += res->getRowSkip();
+                }
+            }
+
+            // for(size_t c = 0; c < numCols; c++) {
+            //         std::cout << "ValueArg: " << valuesT[c] << " ";
             // }
+            valuesRes = res->getValues();
+            for(size_t c = 0; c < numRows; c++) {
+                // std::cout << "ValueT[c] before: " << valuesT[c] << ", ";
+                valuesT[c] /= numCols;
+                // std::cout << "ValueT[c] after: " << valuesT[c] << std::endl; 
+                *valuesRes = sqrt(valuesT[c]);
+                std::cout << "ValueT[" << c  << "] after after: " << valuesT[c] << std::endl;
+                valuesRes += res->getRowSkip();
+            }
 
-            // for(size_t c = 0; c < numRows; c++) {
-            //     // std::cout << "ValueT[c] before: " << valuesT[c] << ", ";
-            //     valuesT[c] /= numCols;
-            //     // std::cout << "ValueT[c] after: " << valuesT[c] << std::endl; 
-            //     valuesT[c] = sqrt(valuesT[c]);
-            //     // std::cout << "ValueT[c] after after: " << valuesT[c] << std::endl;
-            // }
+            
 
-            // memcpy(valuesRes, valuesT, numRows * sizeof(VTRes));
-            // DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
+            //memcpy(valuesRes, valuesT, numRows * sizeof(VTRes));
+            DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
             
         }
     }
