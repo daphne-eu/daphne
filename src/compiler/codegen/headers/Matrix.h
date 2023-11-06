@@ -26,7 +26,7 @@ using uint32_t = unsigned int;
 using int32_t = int;
 
 template <typename T>
-struct Matrix {
+struct CCMatrix {
 	uint64_t nnz;
 	uint32_t rows;
 	uint32_t cols;
@@ -36,7 +36,7 @@ struct Matrix {
 	
 	typedef T value_type;
 	
-	explicit Matrix(uint8_t* jvals) : nnz(*reinterpret_cast<uint32_t*>(&jvals[0])),
+	explicit CCMatrix(uint8_t* jvals) : nnz(*reinterpret_cast<uint32_t*>(&jvals[0])),
 		rows(*reinterpret_cast<uint32_t*>(&jvals[8])), cols(*reinterpret_cast<uint32_t*>(&jvals[12])),
 			row_ptr(reinterpret_cast<uint32_t*>(jvals[16])), col_idx(reinterpret_cast<uint32_t*>((jvals[24]))),
 				data(reinterpret_cast<T*>(jvals[32])) {}
@@ -64,14 +64,14 @@ struct Matrix {
 template<typename T>
 class MatrixAccessor {
 	
-	Matrix<T>* _mat;
+	CCMatrix<T>* _mat;
 
 public:
 	MatrixAccessor() = default;
 	
-	__device__ explicit MatrixAccessor(Matrix<T>* mat) : _mat(mat) {}
+	__device__ explicit MatrixAccessor(CCMatrix<T>* mat) : _mat(mat) {}
 	
-	__device__ void init(Matrix<T>* mat) { _mat = mat; }
+	__device__ void init(CCMatrix<T>* mat) { _mat = mat; }
 	
 //	__device__ uint32_t& nnz() { return _mat->row_ptr == nullptr ? _mat->rows * _mat->cols : _mat->nnz; }
 	__device__ uint32_t cols() { return _mat->cols; }

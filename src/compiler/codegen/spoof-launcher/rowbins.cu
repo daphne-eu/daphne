@@ -7,7 +7,7 @@
 #include <iostream>
 
 template<class T>
-__global__ void rowBinningKernel(Matrix<T>* mat, uint32_t* bin_sizes, uint32_t* bins, const uint32_t* row_ptrs, size_t num_rows) {
+__global__ void rowBinningKernel(CCMatrix<T>* mat, uint32_t* bin_sizes, uint32_t* bins, const uint32_t* row_ptrs, size_t num_rows) {
     auto rid = blockIdx.x * blockDim.x + threadIdx.x;
 //    uint32_t r_nnz = 0;
     
@@ -39,14 +39,14 @@ __global__ void rowBinningKernel(Matrix<T>* mat, uint32_t* bin_sizes, uint32_t* 
 }
 
 template<class T>
-void rowBins(Matrix<T>* mat, uint32_t* bin_sizes, uint32_t* bins, const uint32_t* row_ptrs, size_t num_rows) {
+void rowBins(CCMatrix<T>* mat, uint32_t* bin_sizes, uint32_t* bins, const uint32_t* row_ptrs, size_t num_rows) {
     auto blockSize = 256;
     auto gridSize = (num_rows + blockSize - 1) / blockSize;
     rowBinningKernel<T><<<gridSize, blockSize>>>(mat, bin_sizes, bins, row_ptrs, num_rows);
 }
 
 template
-void rowBins<double>(Matrix<double>* mat, uint32_t* bin_sizes, uint32_t* bins, const uint32_t* row_ptrs, size_t num_rows);
+void rowBins<double>(CCMatrix<double>* mat, uint32_t* bin_sizes, uint32_t* bins, const uint32_t* row_ptrs, size_t num_rows);
 
 template
-void rowBins<float>(Matrix<float>* mat, uint32_t* bin_sizes, uint32_t* bins, const uint32_t* row_ptrs, size_t num_rows);
+void rowBins<float>(CCMatrix<float>* mat, uint32_t* bin_sizes, uint32_t* bins, const uint32_t* row_ptrs, size_t num_rows);

@@ -74,18 +74,18 @@ struct DataBufferWrapper {
 
 
 	template<typename T>
-	Matrix<T>* in(std::byte* buffer, uint32_t idx) {
-		return reinterpret_cast<Matrix<T>*>(&buffer[TRANSFERRED_DATA_HEADER_SIZE + idx * JNI_MAT_ENTRY_SIZE]);
+	CCMatrix<T>* in(std::byte* buffer, uint32_t idx) {
+		return reinterpret_cast<CCMatrix<T>*>(&buffer[TRANSFERRED_DATA_HEADER_SIZE + idx * JNI_MAT_ENTRY_SIZE]);
 	}
 
 	template<typename T>
-	Matrix<T>* sides(std::byte* buffer) {
-		return reinterpret_cast<Matrix<T>*>(&buffer[TRANSFERRED_DATA_HEADER_SIZE + num_inputs() * JNI_MAT_ENTRY_SIZE]);
+	CCMatrix<T>* sides(std::byte* buffer) {
+		return reinterpret_cast<CCMatrix<T>*>(&buffer[TRANSFERRED_DATA_HEADER_SIZE + num_inputs() * JNI_MAT_ENTRY_SIZE]);
 	}
 
 	template<typename T>
-	Matrix<T>* out(std::byte* buffer) {
-		return reinterpret_cast<Matrix<T>*>(&buffer[TRANSFERRED_DATA_HEADER_SIZE + (num_inputs() + num_sides())
+	CCMatrix<T>* out(std::byte* buffer) {
+		return reinterpret_cast<CCMatrix<T>*>(&buffer[TRANSFERRED_DATA_HEADER_SIZE + (num_inputs() + num_sides())
 			* JNI_MAT_ENTRY_SIZE]);
 	}
 
@@ -105,22 +105,22 @@ public:
 	}
 
 	template<typename T>
-	Matrix<T>* d_in(uint32_t num) { return in<T>(device_buffer, num); }
+	CCMatrix<T>* d_in(uint32_t num) { return in<T>(device_buffer, num); }
 
 	template<typename T>
-	Matrix<T>* h_in(uint32_t num) { return in<T>(staging_buffer, num); }
+	CCMatrix<T>* h_in(uint32_t num) { return in<T>(staging_buffer, num); }
 
 	template<typename T>
-	Matrix<T>* d_sides() { return sides<T>(device_buffer); }
+	CCMatrix<T>* d_sides() { return sides<T>(device_buffer); }
 
 	template<typename T>
-	Matrix<T>* h_sides() { return sides<T>(staging_buffer); }
+	CCMatrix<T>* h_sides() { return sides<T>(staging_buffer); }
 
 	template<typename T>
-	Matrix<T>* d_out() { return out<T>(device_buffer); }
+	CCMatrix<T>* d_out() { return out<T>(device_buffer); }
 
 	template<typename T>
-	Matrix<T>* h_out() { return out<T>(staging_buffer); }
+	CCMatrix<T>* h_out() { return out<T>(staging_buffer); }
 
 	template<typename T>
 	T* d_scalars(uint32_t idx = 0) { return scalars<T>(device_buffer, idx); }
