@@ -31,5 +31,8 @@ TEST_CASE("codegen", TAG_CODEGEN) {
 
     int status = runLIT(out, err, dirPath);
 
+    std::cerr << "runLIT return status: " << status << std::endl;
+    std::cerr << "runLIT out:\n" << out.str() << std::endl;
+    std::cerr << "runLIT err:\n" << err.str() << std::endl;
     CHECK(status == StatusCode::SUCCESS);
 }
