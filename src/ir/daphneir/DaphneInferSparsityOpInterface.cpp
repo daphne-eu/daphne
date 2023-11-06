@@ -63,6 +63,30 @@ std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
 
 std::vector<double> daphne::MatMulOp::inferSparsity() {
     auto lhsTy = getLhs().getType().dyn_cast<daphne::MatrixType>();
+    if(getOperand(0).getDefiningOp()->getNumResults() > 1) {
+//        auto lhsT1 = getOperand(0).getDefiningOp()->getResult(1).getType().dyn_cast<daphne::MatrixType>();
+//        if(lhsT1) {
+//            lhsT1.dump();
+//            std::cout << lhsT1.getNumRows() << " " << lhsT1.getNumCols() << " " << lhsT1.getSparsity() << std::endl;
+//        }
+//        else
+//            return {-1.0};
+        std::cout << "num results on first op=" << getOperand(0).getDefiningOp()->getNumResults() << std::endl;
+        for(auto o : getOperand(0).getDefiningOp()->getResults()) {
+    //        o.dump();
+            std::string s;
+            llvm::raw_string_ostream stream(s);
+            o.getType().print(stream);
+            std::cout << "res num " << o.getResultNumber() << ": " << stream.str() << std::endl;
+        }
+    }
+
+    if(getOperand(1).getDefiningOp()->getNumResults() > 1) {
+        std::cout << "num results on second op=" << getOperand(1).getDefiningOp()->getNumResults() << std::endl;
+        for(auto o : getOperand(1).getDefiningOp()->getResults())
+            o.dump();
+    }
+
     auto rhsTy = getRhs().getType().dyn_cast<daphne::MatrixType>();
     if(lhsTy.getSparsity() == -1.0 || rhsTy.getSparsity() == -1.0) {
         return {-1.0};
