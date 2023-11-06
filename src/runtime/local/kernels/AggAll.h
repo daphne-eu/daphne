@@ -61,7 +61,7 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         const VTArg * valuesArg = arg->getValues();
 
         EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
-        VTRes agg;
+        VTRes agg, stddev;
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
             func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
             agg = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
@@ -84,14 +84,28 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         if (AggOpCodeUtils::isPureBinaryReduction(opCode))
             return agg;
 
+        agg /= arg->getNumCols() * arg->getNumRows();
         // The op-code is either MEAN or STDDEV.
         if (opCode == AggOpCode::MEAN) {
-            agg /= arg->getNumCols() * arg->getNumRows();
             return agg;
         }
         // else op-code is STDDEV
         // TODO STDDEV
-        throw std::runtime_error("unsupported AggOpCode in AggAll for DenseMatrix");
+        stddev=0;
+        valuesArg = arg->getValues();
+        for(size_t r = 0; r < numRows; r++) {
+                for(size_t c = 0; c < numCols; c++) {
+                    VTRes val = static_cast<VTRes>(valuesArg[c]) - agg;
+                    stddev = stddev + val * val;
+                }
+                valuesArg += arg->getRowSkip();               
+        }
+
+        stddev /= arg->getNumCols() * arg->getNumRows();
+        stddev = sqrt(stddev);
+        return stddev;
+
+        //throw std::runtime_error("unsupported AggOpCode in AggAll for DenseMatrix");
     }
 };
 
@@ -152,3 +166,15 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGALL_H
+
+
+
+        // valuesArg = arg->getValues();
+        // for(size_t r = 0; r < numRows; r++) {
+        //     for(size_t c = 0; c < numCols; c++){
+        //         agg = func(agg, static_cast<VTRes>(valuesArg[c]), ctx);
+        //         std::cout << *valuesArg << " ";
+        //     }
+        //     std::cout << std::endl;
+        //     valuesArg += arg->getRowSkip();
+        // }
