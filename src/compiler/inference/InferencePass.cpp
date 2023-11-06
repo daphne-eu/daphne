@@ -215,6 +215,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     }
                 }
                 if (doSparsityInference) {
+                    op->dump();
                     // Try to infer the sparsity of all results of this operation.
                     std::vector<double> sparsities = daphne::tryInferSparsity(op);
                     const size_t numRes = op->getNumResults();
