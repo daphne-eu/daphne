@@ -1,0 +1,13 @@
+// Zero-copy semantics for left indexing.
+
+// Rows only 
+X = reshape(seq(0, 8, 1), 3, 3);
+X[1, ] = reshape([100, 101, 102], 1, 3); // original X should be modified
+X[2, ] = reshape([200, 201, 202], 1, 3); // original X should be *further* modified
+print(X);
+
+// Cols only 
+X = reshape(seq(0, 8, 1), 3, 3);
+X[, 1] = [100, 101, 102]; // original X should be modified
+X[, 2] = [200, 201, 202]; // original X should be *further* modified
+print(X);

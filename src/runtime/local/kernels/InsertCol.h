@@ -34,7 +34,7 @@ template<class DTArg, class DTIns>
 struct InsertCol {
     static void apply(
             DTArg *& res,
-            const DTArg * arg, const DTIns * ins,
+            DTArg * arg, const DTIns * ins,
             size_t colLowerIncl, size_t colUpperExcl,
             DCTX(ctx)
     ) = delete;
@@ -47,7 +47,7 @@ struct InsertCol {
 template<class DTArg, class DTIns>
 void insertCol(
         DTArg *& res,
-        const DTArg * arg, const DTIns * ins,
+        DTArg * arg, const DTIns * ins,
         size_t colLowerIncl, size_t colUpperExcl,
         DCTX(ctx)
 ) {
@@ -66,7 +66,7 @@ template<typename VT>
 struct InsertCol<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(
             DenseMatrix<VT> *& res,
-            const DenseMatrix<VT> * arg, const DenseMatrix<VT> * ins,
+            DenseMatrix<VT> * arg, const DenseMatrix<VT> * ins,
             size_t colLowerIncl, size_t colUpperExcl,
             DCTX(ctx)
     ) {
@@ -84,7 +84,17 @@ struct InsertCol<DenseMatrix<VT>, DenseMatrix<VT>> {
                     "insertCol: the number of addressed columns in arg and §"
                     "the number of columns in ins must match"
             );
-        
+
+        bool zeroCopy = false;
+        if((arg->getRefCounter() == 1 && arg->getValuesUseCount() == 1))
+            zeroCopy = true;
+
+        // TODO: issue of returning an input (see #221)
+        if(zeroCopy){
+            res = arg;
+            res->increaseRefCounter();
+        }
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsArg, numColsArg, false);
         
@@ -97,14 +107,16 @@ struct InsertCol<DenseMatrix<VT>, DenseMatrix<VT>> {
         
         // TODO Can be simplified/more efficient in certain cases.
         for(size_t r = 0; r < numRowsArg; r++) {
-            memcpy(valuesRes, valuesArg, colLowerIncl * sizeof(VT));
+            if(!zeroCopy)
+                memcpy(valuesRes, valuesArg, colLowerIncl * sizeof(VT));
             memcpy(valuesRes + colLowerIncl, valuesIns, numColsIns * sizeof(VT));
-            memcpy(valuesRes + colUpperExcl, valuesArg + colUpperExcl, (numColsArg - colUpperExcl) * sizeof(VT));
+            if(!zeroCopy)
+                memcpy(valuesRes + colUpperExcl, valuesArg + colUpperExcl, (numColsArg - colUpperExcl) * sizeof(VT));
             valuesRes += rowSkipRes;
             valuesArg += rowSkipArg;
             valuesIns += rowSkipIns;
         }
     }
 };
-
+ 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H

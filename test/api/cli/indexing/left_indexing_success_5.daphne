@@ -1,0 +1,7 @@
+// Left indexing and copy-on-write.
+
+A = fill(123, 3, 3);
+B = A;
+B[, 1] = [1, 2, 3]; // left indexing on B shall not affect A
+print(A);
+print(B);

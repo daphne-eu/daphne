@@ -226,6 +226,10 @@ public:
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
         return values;
     }
+
+    size_t getValuesUseCount() const {
+        return values.use_count();
+    }
     
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         return getValues()[pos(rowIdx, colIdx, isPartialBuffer())];

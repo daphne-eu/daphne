@@ -3130,7 +3130,7 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "DTArg *",
                     "name": "arg"
                 },
                 {
@@ -3174,7 +3174,7 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "DTArg *",
                     "name": "arg"
                 },
                 {

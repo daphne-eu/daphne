@@ -34,7 +34,7 @@ template<class DTArg, class DTIns>
 struct InsertRow {
     static void apply(
         DTArg *& res,
-        const DTArg * arg, const DTIns * ins,
+        DTArg * arg, const DTIns * ins,
         size_t rowLowerIncl, size_t rowUpperExcl,
         DCTX(ctx)
     ) = delete;
@@ -47,7 +47,7 @@ struct InsertRow {
 template<class DTArg, class DTIns>
 void insertRow(
         DTArg *& res,
-        const DTArg * arg, const DTIns * ins,
+        DTArg * arg, const DTIns * ins,
         size_t rowLowerIncl, size_t rowUpperExcl,
         DCTX(ctx)
 ) {
@@ -66,7 +66,7 @@ template<typename VT>
 struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(
             DenseMatrix<VT> *& res,
-            const DenseMatrix<VT> * arg, const DenseMatrix<VT> * ins,
+            DenseMatrix<VT> * arg, const DenseMatrix<VT> * ins,
             size_t rowLowerIncl, size_t rowUpperExcl,
             DCTX(ctx)
     ) {
@@ -84,7 +84,17 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
             throw std::runtime_error(
                     "insertRow: the number of columns in arg and ins must match"
             );
-        
+
+        bool zeroCopy = false;
+        if((arg->getRefCounter() == 1 && arg->getValuesUseCount() == 1))
+            zeroCopy = true;
+
+        // TODO: issue of returning an input (see #221)
+        if(zeroCopy){
+            res = arg;
+            res->increaseRefCounter();
+        }
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsArg, numColsArg, false);
         
@@ -94,23 +104,30 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
         const size_t rowSkipRes = res->getRowSkip();
         const size_t rowSkipArg = arg->getRowSkip();
         const size_t rowSkipIns = ins->getRowSkip();
-        
+
         // TODO Can be simplified/more efficient in certain cases.
-        for(size_t r = 0; r < rowLowerIncl; r++) {
-            memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
-            valuesRes += rowSkipRes;
-            valuesArg += rowSkipArg;
-        }
+        if(!zeroCopy){
+            for(size_t r = 0; r < rowLowerIncl; r++) {
+                memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
+                valuesRes += rowSkipRes;
+                valuesArg += rowSkipArg;
+            }
+        } else 
+            valuesRes += rowLowerIncl * rowSkipRes;
+
         for(size_t r = rowLowerIncl; r < rowUpperExcl; r++) {
             memcpy(valuesRes, valuesIns, numColsArg * sizeof(VT));
             valuesRes += rowSkipRes;
             valuesIns += rowSkipIns;
         }
-        valuesArg += rowSkipArg * numRowsIns; // skip rows in arg
-        for(size_t r = rowUpperExcl; r < numRowsArg; r++) {
-            memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
-            valuesRes += rowSkipRes;
-            valuesArg += rowSkipArg;
+
+        if(!zeroCopy){
+            valuesArg += rowSkipArg * numRowsIns; // skip rows in arg
+            for(size_t r = rowUpperExcl; r < numRowsArg; r++) {
+                memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
+                valuesRes += rowSkipRes;
+                valuesArg += rowSkipArg;
+            }
         }
     }
 };
