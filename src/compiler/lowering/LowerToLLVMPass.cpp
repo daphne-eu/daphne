@@ -546,10 +546,10 @@ public:
         callee << '_' << op->getName().stripDialect().str();
 
         // Result Matrix
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType());
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType(), false);
 
         // Input Matrix
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getArg().getType());
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getArg().getType(), false);
 
         // Pointer to UDF 
         callee << "__void";
@@ -760,7 +760,7 @@ public:
                     );
             
             // Append the name of the common type of all results to the kernel name.
-            callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0]) << "_variadic__size_t";
+            callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0], false) << "_variadic__size_t";
         }
 
         mlir::Type operandType;
@@ -796,7 +796,7 @@ public:
             daphne::VariadicPackType::get(rewriter.getContext(), rewriter.getI1Type()),
             attrNumInputs);
         // For inputs and numInputs.
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, true);
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, false, true);
         callee << "_variadic__size_t";
         auto vpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc,
             daphne::VariadicPackType::get(rewriter.getContext(), operandType),
@@ -825,11 +825,11 @@ public:
 
         auto numOutputs = op.getNumResults();
         // Variadic num rows operands.
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
         auto rowsOperands = adaptor.getOperands().drop_front(numDataOperands);
         newOperands
             .push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), rowsOperands.take_front(numOutputs)));
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
         auto colsOperands = rowsOperands.drop_front(numOutputs);
         newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), colsOperands.take_front(numOutputs)));
 

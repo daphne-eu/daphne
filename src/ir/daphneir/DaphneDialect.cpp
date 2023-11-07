@@ -196,7 +196,9 @@ std::string unknownStrIf(double val) {
 void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                                             mlir::DialectAsmPrinter &os) const
 {
-    if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+    if (type.isa<mlir::daphne::StructureType>())
+        os << "Structure";
+    else if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
         os << "Matrix<"
                 << unknownStrIf(t.getNumRows()) << 'x'
                 << unknownStrIf(t.getNumCols()) << 'x'

@@ -123,10 +123,15 @@ public:
      * might complain about recursion.
      *
      * @param t MLIR type name
-     * @param generalizeToStructure If true, "Structure" is used instead of derived types DenseMatrix et al.
-     * @return string representation of the C++ type names
+     * @param angleBrackets If `true` (default), angle brackets are used for C++ template types (e.g., `DenseMatrix<float>`);
+     * Otherwise, underscores are used (e.g., `DenseMatrix_float`).
+     * @param generalizeToStructure If `true`, `Structure` is used instead of derived types like `DenseMatrix` etc.
+     * @return A string representation of the C++ type names
      */
-    static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) { // NOLINT(misc-no-recursion)
+    // TODO The parameter generalizeToStructure seems to be used only by some remaining kernel name generation
+    // in LowerToLLVMPass. Once those call-sites have been refactored to use the kernel catalog, this feature
+    // can be removed here.
+    static std::string mlirTypeToCppTypeName(mlir::Type t, bool angleBrackets = true, bool generalizeToStructure = false) { // NOLINT(misc-no-recursion)
         if(t.isF64())
             return "double";
         else if(t.isF32())
@@ -147,22 +152,30 @@ public:
             return "bool";
         else if(t.isIndex())
             return "size_t";
-        else if(auto matTy = t.dyn_cast<mlir::daphne::MatrixType>())
+        else if(t.isa<mlir::daphne::StructureType>())
+            return "Structure";
+        else if(auto matTy = t.dyn_cast<mlir::daphne::MatrixType>()) {
             if(generalizeToStructure)
                 return "Structure";
             else {
                 switch (matTy.getRepresentation()) {
-                case mlir::daphne::MatrixRepresentation::Dense:
-                    return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
-                case mlir::daphne::MatrixRepresentation::Sparse:
-                    return "CSRMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
+                    case mlir::daphne::MatrixRepresentation::Dense: {
+                        const std::string vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
+                        return angleBrackets ? ("DenseMatrix<" + vtName + ">") : ("DenseMatrix_" + vtName);
+                    }
+                    case mlir::daphne::MatrixRepresentation::Sparse: {
+                        const std::string vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
+                        return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
+                    }
                 }
             }
-        else if(t.isa<mlir::daphne::FrameType>())
+        }
+        else if(t.isa<mlir::daphne::FrameType>()) {
             if(generalizeToStructure)
                 return "Structure";
             else
                 return "Frame";
+        }
         else if(t.isa<mlir::daphne::StringType>())
             // This becomes "const char *" (which makes perfect sense for
             // strings) when inserted into the typical "const DT *" template of
@@ -170,8 +183,10 @@ public:
             return "char";
         else if(t.isa<mlir::daphne::DaphneContextType>())
             return "DaphneContext";
-        else if(auto handleTy = t.dyn_cast<mlir::daphne::HandleType>())
-            return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
+        else if(auto handleTy = t.dyn_cast<mlir::daphne::HandleType>()) {
+            const std::string tName = mlirTypeToCppTypeName(handleTy.getDataType(), angleBrackets, generalizeToStructure);
+            return angleBrackets ? ("Handle<" + tName + ">") : ("Handle_" + tName);
+        }
         else if(t.isa<mlir::daphne::FileType>())
             return "File";
         else if(t.isa<mlir::daphne::DescriptorType>())

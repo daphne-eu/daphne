@@ -174,7 +174,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(userConfig_.explain_obj_ref_mgnt)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references:"));
 
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_));
         if(userConfig_.explain_kernels)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
 
