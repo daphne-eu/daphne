@@ -69,8 +69,9 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     find_library(CUDA_${lib_name}_LIBRARY NAMES ${lib_name} HINTS ${CUDAToolkit_LIBRARY_DIR} ENV CUDA_PATH
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
-    target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms CUDA::cudart CUDA::cublasLt CUDA::cublas
-            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver Util MLIRDaphneInference)
+    target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms CUDA::cudart
+            CUDA::cublasLt CUDA::cublas CUDA::nvrtc CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver CUDA::cuda_driver
+            Util MLIRDaphneInference spoof_cuda)
     set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 endif()
 
