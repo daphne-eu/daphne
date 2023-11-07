@@ -1,5 +1,5 @@
 {
-    "use_cuda": false,
+    "use_cuda": true,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
     "cuda_fuse_any": false,
@@ -46,7 +46,7 @@
         {
             "comment": "DAPHNE default",
             "name": "default",
-            "level": "INFO",
+            "level": "TRACE",
             "filename": "",
             "format": "%^[%n %L]:%$ %v"
         },
@@ -54,6 +54,13 @@
             "comment": "DAPHNE default",
             "name": "parser",
             "level": "INFO",
+            "filename": "",
+            "format": "%^[%n %L]:%$ %v"
+        },
+        {
+            "comment": "DAPHNE default",
+            "name": "runtime",
+            "level": "DEBUG",
             "filename": "",
             "format": "%^[%n %L]:%$ %v"
         }

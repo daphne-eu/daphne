@@ -48,6 +48,7 @@ class SpoofCUDAContext {
 
 	const std::string resource_path;
 	const std::vector<std::string> include_paths;
+    double compile_total{};
 	
 public:
 	size_t default_mem_size = 1024; // 1kb for hosting data pointers, scalars and some meta info. This default should

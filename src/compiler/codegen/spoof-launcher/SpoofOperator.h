@@ -38,6 +38,7 @@ struct SpoofOperator {
 	enum class RowType : int { FULL_AGG = 4 };
 
 	std::string name;
+    std::string src;
 	std::unique_ptr<jitify::Program> program;
 	
 	[[nodiscard]] virtual bool isSparseSafe() const = 0;
