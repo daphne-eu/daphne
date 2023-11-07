@@ -4,6 +4,4 @@ B = fill(3.0, N, N);
 
 C = A@B;
 
-//print("GEMM took ", 0);
 print(C); // for small matrices
-// print(C[0,0]); // don't want to print large matrices

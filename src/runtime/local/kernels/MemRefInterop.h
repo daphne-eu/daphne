@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_GETDATAPOINTER_H
-#define SRC_RUNTIME_LOCAL_KERNELS_GETDATAPOINTER_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MEMREFINTEROP_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MEMREFINTEROP_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -53,4 +53,4 @@ inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(
     return memRef;
 }
 
-#endif  // SRC_RUNTIME_LOCAL_KERNELS_GETDATAPOINTER_H
+#endif  // SRC_RUNTIME_LOCAL_KERNELS_MEMREFINTEROP_H

@@ -37,8 +37,8 @@ include "ir/daphneir/FPGAOPENCLSupport.td"
 include "mlir/Dialect/LLVMIR/LLVMTypes.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
-include "mlir/IR/AttrTypeBase.td"
 include "mlir/Interfaces/CallInterfaces.td"
+include "mlir/IR/AttrTypeBase.td"
 
 // ****************************************************************************
 // Custom constraints

@@ -258,11 +258,11 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     );
     static opt<bool> mlirCodegen(
         "mlir-codegen", cat(daphneOptions),
-        desc("Enables DenseMatrix lowering to MLIR codegen.")
+        desc("Enables lowering of certain DaphneIR operations on DenseMatrix to low-level MLIR operations.")
     );
     static opt<bool> performHybridCodegen(
         "hybrid", cat(daphneOptions),
-        desc("Prototypical hybrid code generation pipeline.")
+        desc("Enables prototypical hybrid code generation combining pre-compiled kernels and MLIR code generation.")
     );
 
     enum ExplainArgs {
@@ -277,7 +277,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       type_adaptation,
       vectorized,
       obj_ref_mgnt,
-      mlir_code_gen
+      mlir_codegen
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -296,7 +296,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
             clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
-            clEnumVal(mlir_code_gen, "Show DaphneIR after DenseMatrix codegen")),
+            clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
@@ -441,7 +441,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             case obj_ref_mgnt:
                 user_config.explain_obj_ref_mgnt = true;
                 break;
-            case mlir_code_gen:
+            case mlir_codegen:
                 user_config.explain_mlir_codegen = true;
                 break;
         }

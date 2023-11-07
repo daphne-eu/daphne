@@ -48,3 +48,6 @@ template<class DTRes, class DTLhs, class DTRhs>
 void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, bool transa, bool transb, DCTX(ctx)) {
     MatMul<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, transa, transb, ctx);
 }
+
+
+

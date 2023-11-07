@@ -55,7 +55,7 @@ set(TEST_SOURCES
         compiler/e2e/EwOpLoopFusionTest.cpp
         compiler/e2e/AggAllTest.cpp
         compiler/e2e/MapOpTest.cpp
-        compiler/lit/Codegen.cpp
+        compiler/lit/CodegenTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
 
@@ -149,7 +149,7 @@ endif()
 
 add_executable(run_tests ${TEST_SOURCES})
 set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_dependencies(run_tests daphne daphnelib DistributedWorker)
+add_dependencies(run_tests daphne daphnelib DistributedWorker daphne-opt)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto DaphneConfigParser

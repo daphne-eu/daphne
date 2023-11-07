@@ -9,7 +9,7 @@ DAPHNE provides a kernel for (almost) every DaphneIR operation which reside in
 `src/runtime/local/kernels/`. These are precompiled as a shared library and
 linked during compile-time. Even though these kernels can be highly optimized
 and thus achieve great runtime characteristics, they may not provide a desired
-levl of extensibility for custom value types. They may also be lacking
+level of extensibility for custom value types. They may also be lacking
 information only available at compile-time that could enable further
 optimizations. Additionally, through the process of progressively lowering the
 input IR, the code generation pipeline may enable more optimization
@@ -55,7 +55,7 @@ kernel implementation vastly outperforms the generated code of this pass.
 
 Runtime interoperability with the `DenseMatrix` object is achieved with two
 kernels in `src/runtime/local/kernels/MemRefInterop.h` and the corresponding
-DaphneOps `ConvertMemRefToDenseMatrix ` and `ConvertDenseMatrixToMemRef `.
+DaphneOps `ConvertMemRefToDenseMatrix` and `ConvertDenseMatrixToMemRef`.
 These kernels define how a MemRef is passed to a kernel and how a kernel
 can return a `StridedMemRefType`.
 
@@ -79,7 +79,7 @@ debug information.
 
 To test the generated code, there currently are two different approaches.
 
-Unittests can be found under `test/compiler/unittest/` and are part of the
+Unit tests can be found under `test/compiler/unittest/` and are part of the
 existing Catch2 test-suite with the its own tag, `TAG_CODEGEN`.
 
 Additionally, there are tests that check the generated IR by running the
@@ -91,7 +91,7 @@ file (`RUN:`). In that line we specify how `llvm-lit` executes the test, e.g.,
 called with the `--lower-ew` flag and the current file as input, the output of
 that, in addition to the file itself, is piped to `FileCheck`. `FileCheck` uses
 the comments in the `.mlir` file to check for certain conditions, e.g., `//
-CHECK-NOT: daphne.ewAdd` look through the IR and fails if `daphne.ewAdd` can be
+CHECK-NOT: daphne.ewAdd` looks through the IR and fails if `daphne.ewAdd` can be
 found. These `llvm-lit` tests are all run by the `codegen` testcase in
 `test/compiler/lowering/Codegen.cpp`.
 

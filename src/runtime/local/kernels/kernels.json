@@ -797,7 +797,7 @@
             ],
             "runtimeParams": [
                 {
-                    "type": "DenseMatrix<VT>*&",
+                    "type": "DenseMatrix<VT> *&",
                     "name": "result"
                 },
                 {
@@ -846,7 +846,7 @@
             ],
             "runtimeParams": [
                 {
-                    "type": "DenseMatrix<VT>*",
+                    "type": "DenseMatrix<VT> *",
                     "name": "input"
                 }
             ]

@@ -183,7 +183,7 @@ struct MatMulLoweringPass
 
     StringRef getArgument() const final { return "lower-mm"; }
     StringRef getDescription() const final {
-        return "This pass lowering the MatMulOp to an affine loop structure "
+        return "This pass lowers the MatMulOp to an affine loop structure "
                "performing a naive iterative matrix multiplication.";
     }
 

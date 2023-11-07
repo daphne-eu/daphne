@@ -106,8 +106,8 @@ struct MapOpLoweringPass
 
     StringRef getArgument() const final { return "lower-map"; }
     StringRef getDescription() const final {
-        return "Lowers the daphne.mapOp operator to"
-               "a set of affine loops, directly calling the UDF directly. "
+        return "Lowers the daphne.mapOp operation to"
+               "a set of affine loops, directly calling the UDF. "
                "Subsequent use of the inlining pass may inline the call to the "
                "UDF.";
     }

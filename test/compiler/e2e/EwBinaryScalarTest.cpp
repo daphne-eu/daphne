@@ -26,7 +26,7 @@
 const std::string dirPath = "test/compiler/e2e/";
 
 void test_binary_lowering(const std::string op,
-                            const std::string kernel_call,
+                          const std::string kernel_call,
                           const std::string lowering,
                           const std::string result) {
     std::stringstream out;
