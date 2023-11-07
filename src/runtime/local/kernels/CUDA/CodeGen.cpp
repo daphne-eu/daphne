@@ -118,14 +118,14 @@ void CodeGenRW(DenseMatrix<VTres>*& res, const DenseMatrix<VTarg>** args, DCTX(d
     auto operator_name = cctx->getOperatorName(opID);
     std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
 
-    auto num_inputs = 1;
-    auto num_side_inputs = 1;
-    auto num_scalars = 0;
-    auto grix = 0;
-    auto is_agg = 0;
+    int32_t num_inputs = 1;
+    int32_t num_side_inputs = 1;
+    int32_t num_scalars = 0;
+    int32_t grix = 0;
+    int32_t is_agg = 0;
     auto buf = reinterpret_cast<int32_t*>(cctx->staging_buffer);
-    buf[0] = (num_inputs+1) * JNI_MAT_ENTRY_SIZE + num_scalars * sizeof(VTarg) + TRANSFERRED_DATA_HEADER_SIZE;
-    buf[1] = opID;
+    buf[0] = (num_inputs + num_side_inputs + 1) * JNI_MAT_ENTRY_SIZE + num_scalars * sizeof(VTarg) + TRANSFERRED_DATA_HEADER_SIZE;
+    buf[1] = static_cast<int32_t>(opID);
     buf[2] = grix;
     buf[3] = num_inputs;
     buf[4] = num_side_inputs;
@@ -144,6 +144,11 @@ void CodeGenRW(DenseMatrix<VTres>*& res, const DenseMatrix<VTarg>** args, DCTX(d
     // launch gen op
     cctx->launch<VTarg, SpoofRowwise<VTarg>>();
 
+    ctx->logger->debug("returned from gen_rw op");
+
+    CHECK_CUDART(cudaStreamSynchronize(cctx->stream));
+
+    ctx->logger->debug("stream synchronized");
 }
 
 
