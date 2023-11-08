@@ -307,7 +307,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
 
-    pm.addPass(mlir::daphne::createLowerEwDaphneOpPass());
+    pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::createConvertMathToLLVMPass());
     pm.addPass(mlir::daphne::createModOpLoweringPass());
     pm.addPass(mlir::createCanonicalizerPass());

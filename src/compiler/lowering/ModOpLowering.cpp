@@ -40,7 +40,7 @@ class EwModOpLowering
     [[nodiscard]] bool optimization_viable(mlir::Value divisor) const {
         std::pair<bool, int64_t> isConstant =
             CompilerUtils::isConstant<int64_t>(divisor);
-        return isConstant.first && std::fmod(isConstant.second, 2) == 0;
+        return isConstant.first && (isConstant.second & (isConstant.second - 1)) == 0;
     }
 
     void optimizeEwModOp(mlir::Value memRef, mlir::Value divisor,

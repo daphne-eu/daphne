@@ -60,15 +60,15 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
     LogicalResult matchAndRewrite(
         daphne::AllAggSumOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
-        mlir::daphne::MatrixType tensor =
+        mlir::daphne::MatrixType matrixType =
             adaptor.getArg().getType().dyn_cast<mlir::daphne::MatrixType>();
 
         auto loc = op->getLoc();
-        auto nR = tensor.getNumRows();
-        auto nC = tensor.getNumCols();
+        auto nR = matrixType.getNumRows();
+        auto nC = matrixType.getNumCols();
 
-        auto tensorType = tensor.getElementType();
-        auto memRefType = mlir::MemRefType::get({nR, nC}, tensorType);
+        auto matrixElementType = matrixType.getElementType();
+        auto memRefType = mlir::MemRefType::get({nR, nC}, matrixElementType);
         auto memRef = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
             op->getLoc(), memRefType, adaptor.getArg());
 

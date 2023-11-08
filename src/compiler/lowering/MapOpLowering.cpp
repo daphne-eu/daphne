@@ -42,11 +42,11 @@ class InlineMapOpLowering
         mlir::ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
 
-        mlir::daphne::MatrixType lhsTensor =
+        mlir::daphne::MatrixType lhsMatrixType =
             op->getOperandTypes().front().dyn_cast<mlir::daphne::MatrixType>();
-        auto tensorType = lhsTensor.getElementType();
+        auto matrixElementType = lhsMatrixType.getElementType();
         auto lhsMemRefType = mlir::MemRefType::get(
-            {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, tensorType);
+            {lhsMatrixType.getNumRows(), lhsMatrixType.getNumCols()}, matrixElementType);
 
         mlir::Value lhs =
             rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
@@ -58,7 +58,7 @@ class InlineMapOpLowering
         SmallVector<Value, 4> loopIvs;
 
         auto outerLoop =
-            rewriter.create<AffineForOp>(loc, 0, lhsTensor.getNumRows(), 1);
+            rewriter.create<AffineForOp>(loc, 0, lhsMatrixType.getNumRows(), 1);
         for (Operation &nested : *outerLoop.getBody()) {
             rewriter.eraseOp(&nested);
         }
@@ -67,7 +67,7 @@ class InlineMapOpLowering
         // outer loop body
         rewriter.setInsertionPointToStart(outerLoop.getBody());
         auto innerLoop =
-            rewriter.create<AffineForOp>(loc, 0, lhsTensor.getNumCols(), 1);
+            rewriter.create<AffineForOp>(loc, 0, lhsMatrixType.getNumCols(), 1);
         for (Operation &nested : *innerLoop.getBody()) {
             rewriter.eraseOp(&nested);
         }

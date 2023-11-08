@@ -1376,3 +1376,34 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
         return mlir::success();
     }
 }
+
+mlir::LogicalResult mlir::daphne::ConvertDenseMatrixToMemRef::canonicalize(
+    mlir::daphne::ConvertDenseMatrixToMemRef op,
+    mlir::PatternRewriter &rewriter) {
+    // removes unnecessary conversions of MemRef -> DM -> MemRef
+    mlir::Operation *dmNode = op->getOperand(0).getDefiningOp();
+
+    if (!llvm::isa<mlir::daphne::ConvertMemRefToDenseMatrix>(dmNode))
+        return failure();
+
+    mlir::Operation *originalMemRefOp =
+        dmNode->getPrevNode()->getOperand(0).getDefiningOp();
+    op.replaceAllUsesWith(originalMemRefOp);
+
+    rewriter.eraseOp(op);
+    if (dmNode->getUsers().empty()) rewriter.eraseOp(dmNode);
+
+    return mlir::success();
+}
+
+mlir::LogicalResult mlir::daphne::ConvertMemRefToDenseMatrix::canonicalize(
+    mlir::daphne::ConvertMemRefToDenseMatrix op,
+    mlir::PatternRewriter &rewriter) {
+    mlir::Operation *extractPtr = op->getPrevNode();
+    auto srcMemRef = extractPtr->getOperand(0).getDefiningOp();
+    extractPtr->moveAfter(srcMemRef);
+    op->moveAfter(extractPtr);
+
+    return mlir::success();
+}
+

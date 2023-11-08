@@ -124,28 +124,28 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
-        mlir::daphne::MatrixType lhsTensor =
+        mlir::daphne::MatrixType lhsMatrixType =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-        mlir::daphne::MatrixType rhsTensor =
+        mlir::daphne::MatrixType rhsMatrixType =
             adaptor.getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
 
-        auto lhsRows = lhsTensor.getNumRows();
-        auto lhsCols = lhsTensor.getNumCols();
+        auto lhsRows = lhsMatrixType.getNumRows();
+        auto lhsCols = lhsMatrixType.getNumCols();
 
-        auto rhsRows = rhsTensor.getNumRows();
-        auto rhsCols = rhsTensor.getNumCols();
+        auto rhsRows = rhsMatrixType.getNumRows();
+        auto rhsCols = rhsMatrixType.getNumCols();
 
-        auto tensorType = lhsTensor.getElementType();
+        auto matrixElementType = lhsMatrixType.getElementType();
 
         // TODO(phil): if shape is unknown, e.g., row/col = -1 we currently
         // can't create a MemRefType
         auto lhsMemRefType =
-            mlir::MemRefType::get({lhsRows, lhsCols}, tensorType);
+            mlir::MemRefType::get({lhsRows, lhsCols}, matrixElementType);
         auto rhsMemRefType =
-            mlir::MemRefType::get({rhsRows, rhsCols}, tensorType);
+            mlir::MemRefType::get({rhsRows, rhsCols}, matrixElementType);
 
         mlir::MemRefType outputMemRefType =
-            mlir::MemRefType::get({lhsRows, rhsCols}, tensorType);
+            mlir::MemRefType::get({lhsRows, rhsCols}, matrixElementType);
 
         // daphne::Matrix -> memref
         mlir::Value lhs =
@@ -161,7 +161,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
 
         // Fill the output MemRef
         affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
-                         op->getContext(), outputMemRef, tensorType);
+                         op->getContext(), outputMemRef, matrixElementType);
         // Do the actual MatMul with hand built codegen
         affineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
                      lhsMemRefType.getShape(), rhsMemRefType.getShape(),

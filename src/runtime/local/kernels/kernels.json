@@ -786,7 +786,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "MemRefInterop.h",
+            "header": "ConvertMemRefToDenseMatrix.h",
             "opName": "convertMemRefToDenseMatrix",
             "returnType": "void",
             "templateParams": [
@@ -835,7 +835,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "MemRefInterop.h",
+            "header": "ConvertDenseMatrixToMemRef.h",
             "opName": "convertDenseMatrixToMemRef",
             "returnType": "StridedMemRefType<VT,2>",
             "templateParams": [

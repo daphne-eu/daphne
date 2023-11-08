@@ -58,9 +58,8 @@ void processMemRefInterop(OpBuilder builder, Value v) {
     Operation* lastUseOp = findLastUseOfSSAValue(v);
 
     builder.setInsertionPointAfter(lastUseOp);
-    builder.create<daphne::DecRefOp>(
-        builder.getUnknownLoc(),
-        v.getDefiningOp()->getOperand(0).getDefiningOp()->getResult(0));
+    builder.create<daphne::DecRefOp>(builder.getUnknownLoc(),
+                                     v.getDefiningOp()->getOperand(0));
 }
 
 /**

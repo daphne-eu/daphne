@@ -1,0 +1,1 @@
+set -o pipefail;{ : 'RUN: at line 1';   daphne-opt --lower-agg /home/phil/Documents/daphne_fork/test/codegen/sum_agg.mlir | FileCheck /home/phil/Documents/daphne_fork/test/codegen/sum_agg.mlir; }

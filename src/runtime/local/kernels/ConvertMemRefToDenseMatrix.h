@@ -14,43 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MEMREFINTEROP_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MEMREFINTEROP_H
+#pragma once
 
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/Frame.h>
-
-#include <cstddef>
-
-#include "mlir/ExecutionEngine/CRunnerUtils.h"
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
 
 template <typename T>
-inline void convertMemRefToDenseMatrix(DenseMatrix<T> *&result, size_t basePtr,
+inline void convertMemRefToDenseMatrix(DenseMatrix<T>*& result, size_t basePtr,
                                        size_t offset, size_t size0,
                                        size_t size1, size_t stride0,
                                        size_t stride1, DCTX(ctx)) {
-    auto no_op_deleter = [](T*){};
+    auto no_op_deleter = [](T*) {};
     T* valuePtr = reinterpret_cast<T*>(basePtr);
     std::shared_ptr<T[]> ptr(valuePtr, no_op_deleter);
     result = DataObjectFactory::create<DenseMatrix<T>>(size0, size1, ptr);
 }
 
-template <typename T>
-inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(
-    const DenseMatrix<T> *input, DCTX(ctx)) {
-    StridedMemRefType<T, 2> memRef{};
-    memRef.basePtr = input->getValuesSharedPtr().get();
-    memRef.data = memRef.basePtr;
-    memRef.offset = 0;
-    memRef.sizes[0] = input->getNumRows();
-    memRef.sizes[1] = input->getNumCols();
-
-    // TODO(phil): needs to be calculated for non row-major memory layouts
-    memRef.strides[0] = input->getNumCols();
-    memRef.strides[1] = 1;
-    input->increaseRefCounter();
-
-    return memRef;
-}
-
-#endif  // SRC_RUNTIME_LOCAL_KERNELS_MEMREFINTEROP_H

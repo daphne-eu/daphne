@@ -1,0 +1,1 @@
+set -o pipefail;{ : 'RUN: at line 1';   daphne-opt --lower-mm /home/phil/Documents/daphne_fork/test/codegen/matmul.mlir | FileCheck /home/phil/Documents/daphne_fork/test/codegen/matmul.mlir; }

@@ -23,27 +23,11 @@
 
 #include "api/cli/StatusCode.h"
 
-const std::string dirPath = "test/compiler/e2e/";
+const std::string dirPath = "test/api/cli/codegen/";
 
-TEST_CASE("mapOp", TAG_CODEGEN) {
-    std::stringstream out;
-    std::stringstream err;
+TEST_CASE("aggAll", TAG_CODEGEN) {
+    std::string result = "100\n";
 
-    int status = runDaphne(out, err, (dirPath + "map.daphne").c_str());
-    CHECK(status == StatusCode::SUCCESS);
-
-    std::string result =
-        "DenseMatrix(2x2, double)\n"
-        "2.1 1\n"
-        "6.5 -1.2\n";
-    CHECK(out.str() == result);
-
-    out.str(std::string());
-    err.str(std::string());
-
-    status = runDaphne(out, err, "--mlir-codegen", "--no-obj-ref-mgnt",
-                       (dirPath + "map.daphne").c_str());
-    CHECK(status == StatusCode::SUCCESS);
-    CHECK(out.str() == result);
+    compareDaphneToStr(result, dirPath + "sum_aggall.daphne");
+    compareDaphneToStr(result, dirPath + "sum_aggall.daphne", "--mlir-codegen");
 }
-

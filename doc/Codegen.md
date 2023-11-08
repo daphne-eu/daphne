@@ -54,10 +54,11 @@ kernel implementation vastly outperforms the generated code of this pass.
 #### Runtime Interoperability
 
 Runtime interoperability with the `DenseMatrix` object is achieved with two
-kernels in `src/runtime/local/kernels/MemRefInterop.h` and the corresponding
-DaphneOps `ConvertMemRefToDenseMatrix` and `ConvertDenseMatrixToMemRef`.
-These kernels define how a MemRef is passed to a kernel and how a kernel
-can return a `StridedMemRefType`.
+kernels in `src/runtime/local/kernels/ConvertDenseMatrixToMemRef.h` and
+`src/runtime/local/kernels/ConvertMemRefToDenseMatrix.h` and the corresponding
+DaphneOps `Daphne_ConvertMemRefToDenseMatrix` and
+`Daphne_ConvertDenseMatrixToMemRef`. These kernels define how a MemRef is
+passed to a kernel and how a kernel can return a `StridedMemRefType`.
 
 
 #### Debugging
@@ -79,7 +80,7 @@ debug information.
 
 To test the generated code, there currently are two different approaches.
 
-Unit tests can be found under `test/compiler/unittest/` and are part of the
+End-to-end tests can be found under `test/api/cli/codegen/` and are part of the
 existing Catch2 test-suite with the its own tag, `TAG_CODEGEN`.
 
 Additionally, there are tests that check the generated IR by running the
@@ -93,7 +94,7 @@ that, in addition to the file itself, is piped to `FileCheck`. `FileCheck` uses
 the comments in the `.mlir` file to check for certain conditions, e.g., `//
 CHECK-NOT: daphne.ewAdd` looks through the IR and fails if `daphne.ewAdd` can be
 found. These `llvm-lit` tests are all run by the `codegen` testcase in
-`test/compiler/lowering/Codegen.cpp`.
+`test/codegen/Codegen.cpp`.
 
 
-All codegen tests can be executed by running `bin/run_tests '[codgen]'`.
+All codegen tests can be executed by running `bin/run_tests '[codegen]'`.

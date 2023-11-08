@@ -72,7 +72,7 @@ def MapOpLoweringPass: Pass<"lower-map", "::mlir::func::FuncOp"> {
 }
 
 def LowerEwOpPass: Pass<"lower-ew", "::mlir::func::FuncOp"> {
-    let constructor = "mlir::daphne::createLowerEwDaphneOpPass()";
+    let constructor = "mlir::daphne::createEwOpLoweringPass()";
 }
 
 

@@ -1,3 +1,0 @@
-X = fill(1.0, 10, 10);
-a = sum(X);
-print(a);

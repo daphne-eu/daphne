@@ -59,6 +59,7 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 | java (e.g. openjdk)                  | 11 (1.7 should be fine)   |                                                                                                                                         |
 | gfortran                             | 9.3.0                     |                                                                                                                                         |
 | uuid-dev                             |                           |                                                                                                                                         |
+| lit                                  | 17.0                      | Install with pip, `llvm-lit` is installed in thirdparty/build/llvm-project/bin                                                         |
 | wget                                 |                           | Used to fetch additional dependencies and other artefacts                                                                               |
 | jq                                   |                           | json commandline processor used in docker image generation scripts                                                                      |
 | ***                                  | ***                       | ***                                                                                                                                     |

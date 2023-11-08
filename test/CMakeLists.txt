@@ -50,12 +50,12 @@ set(TEST_SOURCES
 
         api/python/DaphneLibTest.cpp
 
-        compiler/e2e/EwBinaryScalarTest.cpp
-        compiler/e2e/MatMulTest.cpp
-        compiler/e2e/EwOpLoopFusionTest.cpp
-        compiler/e2e/AggAllTest.cpp
-        compiler/e2e/MapOpTest.cpp
-        compiler/lit/CodegenTest.cpp
+        api/cli/codegen/EwBinaryScalarTest.cpp
+        api/cli/codegen/MatMulTest.cpp
+        api/cli/codegen/EwOpLoopFusionTest.cpp
+        api/cli/codegen/AggAllTest.cpp
+        api/cli/codegen/MapOpTest.cpp
+        codegen/CodegenTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
 

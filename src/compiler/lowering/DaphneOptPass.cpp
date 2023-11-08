@@ -29,7 +29,7 @@ class IntegerModOpt : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
         std::pair<bool, uint64_t> isConstant =
             CompilerUtils::isConstant<uint64_t>(op.getRhs());
         // Apply (n & (n - 1)) optimization when n is a power of two
-        return isConstant.first && std::fmod(isConstant.second, 2) == 0;
+        return isConstant.first && (isConstant.second & (isConstant.second - 1)) == 0;
     }
 
     mlir::LogicalResult matchAndRewrite(
@@ -60,9 +60,9 @@ struct DenseMatrixOptPass
 
     StringRef getArgument() const final { return "opt-daphne"; }
     StringRef getDescription() const final {
-        return "Performs optimizations on the DaphneIR by replacing operations "
-               "in the DaphneDialect with other operation also from the "
-               "DaphneDialect.";
+        return "Performs optimizations on the DaphneIR by transforming "
+               "operations in the DaphneDialect to a set of other operation "
+               "also from the DaphneDialect.";
     }
 };
 }  // end anonymous namespace

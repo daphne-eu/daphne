@@ -129,15 +129,15 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
             return convertEwScalar(op, adaptor, rewriter);
 
         // for now assume matrix is LHS and RHS is non matrix
-        mlir::daphne::MatrixType lhsTensor =
+        mlir::daphne::MatrixType lhsMatrixType =
             adaptor.getLhs()
                 .getType()
                 .template dyn_cast<mlir::daphne::MatrixType>();
-        auto tensorType = lhsTensor.getElementType();
-        auto lhsRows = lhsTensor.getNumRows();
-        auto lhsCols = lhsTensor.getNumCols();
+        auto matrixElementType = lhsMatrixType.getElementType();
+        auto lhsRows = lhsMatrixType.getNumRows();
+        auto lhsCols = lhsMatrixType.getNumCols();
         auto lhsMemRefType =
-            mlir::MemRefType::get({lhsRows, lhsCols}, tensorType);
+            mlir::MemRefType::get({lhsRows, lhsCols}, matrixElementType);
 
         mlir::Type elementType{};
         mlir::Value memRefLhs =
@@ -164,7 +164,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
         buildAffineLoopNest(
             rewriter, op.getLoc(), lowerBounds,
-            {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, steps,
+            {lhsMatrixType.getNumRows(), lhsMatrixType.getNumCols()}, steps,
             [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
                 mlir::Value loadLhs =
                     nestedBuilder.create<AffineLoadOp>(loc, memRefLhs, ivs);
@@ -240,10 +240,10 @@ using PowOpLowering = BinaryOpLowering<mlir::daphne::EwPowOp, mlir::math::PowFOp
 // clang-format on
 
 namespace {
-struct LowerEwOpPass
-    : public mlir::PassWrapper<LowerEwOpPass,
+struct EwOpLoweringPass
+    : public mlir::PassWrapper<EwOpLoweringPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
-    explicit LowerEwOpPass() {}
+    explicit EwOpLoweringPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
         registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
@@ -274,7 +274,7 @@ void populateLowerEwOpConversionPatterns(mlir::LLVMTypeConverter &typeConverter,
     // clang-format on
 }
 
-void LowerEwOpPass::runOnOperation() {
+void EwOpLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
@@ -317,9 +317,9 @@ void LowerEwOpPass::runOnOperation() {
         }
 
         if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>()) {
-            mlir::daphne::MatrixType lhsTensor =
+            mlir::daphne::MatrixType lhsMatrixType =
                 op->getOperandTypes()[0].dyn_cast<mlir::daphne::MatrixType>();
-            return lhsTensor.getNumRows() == -1 || lhsTensor.getNumCols() == -1;
+            return lhsMatrixType.getNumRows() == -1 || lhsMatrixType.getNumCols() == -1;
         }
 
         return false;
@@ -332,6 +332,6 @@ void LowerEwOpPass::runOnOperation() {
         signalPassFailure();
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createLowerEwDaphneOpPass() {
-    return std::make_unique<LowerEwOpPass>();
+std::unique_ptr<mlir::Pass> mlir::daphne::createEwOpLoweringPass() {
+    return std::make_unique<EwOpLoweringPass>();
 }

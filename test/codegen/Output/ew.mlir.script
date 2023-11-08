@@ -1,0 +1,1 @@
+set -o pipefail;{ : 'RUN: at line 1';   daphne-opt --lower-ew /home/phil/Documents/daphne_fork/test/codegen/ew.mlir | FileCheck /home/phil/Documents/daphne_fork/test/codegen/ew.mlir; }

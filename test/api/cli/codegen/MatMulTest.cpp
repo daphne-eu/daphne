@@ -23,31 +23,27 @@
 
 #include "api/cli/StatusCode.h"
 
-const std::string dirPath = "test/compiler/e2e/";
+const std::string dirPath = "test/api/cli/codegen/";
 
-TEST_CASE("ewloopfusion", TAG_CODEGEN) {
-    std::stringstream out;
-    std::stringstream err;
-
-    int status = runDaphne(out, err, (dirPath + "fusion.daphne").c_str());
-    CHECK(status == StatusCode::SUCCESS);
-
+TEST_CASE("matmul", TAG_CODEGEN) {
     std::string result =
-        "DenseMatrix(2x2, double)\n"
-        "8 8\n"
-        "8 8\n"
-        "DenseMatrix(2x2, double)\n"
-        "10 10\n"
-        "10 10\n"
-        "DenseMatrix(2x2, double)\n"
-        "9 9\n"
-        "9 9\n";
-    CHECK(out.str() == result);
+        "DenseMatrix(3x3, double)\n"
+        "45 45 45\n"
+        "45 45 45\n"
+        "45 45 45\n";
 
-    out.str(std::string());
-    err.str(std::string());
+    compareDaphneToStr(result, dirPath + "matmul.daphne");
+    compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen");
+}
 
-    status = runDaphne(out, err, "--mlir-codegen", (dirPath + "fusion.daphne").c_str());
-    CHECK(status == StatusCode::SUCCESS);
-    CHECK(out.str() == result);
+
+TEST_CASE("matvec", TAG_CODEGEN) {
+    std::string result =
+        "DenseMatrix(3x3, double)\n"
+        "45 45 45\n"
+        "45 45 45\n"
+        "45 45 45\n";
+
+    compareDaphneToStr(result, dirPath + "matvec.daphne");
+    compareDaphneToStr(result, dirPath + "matvec.daphne", "--mlir-codegen");
 }

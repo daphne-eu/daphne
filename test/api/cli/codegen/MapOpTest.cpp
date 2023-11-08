@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-#include "run_tests.h"
-
-#include "api/cli/StatusCode.h"
-#include "api/cli/Utils.h"
-
+#include <api/cli/Utils.h>
 #include <tags.h>
 
-const std::string dirPath = "test/compiler/lit/";
+#include <catch.hpp>
+#include <sstream>
+#include <string>
 
-// Place all test files with FileCheck directives in the dirPath.
-// LIT will test all *.mlir files in the directory.
-TEST_CASE("codegen", TAG_CODEGEN) {
-    std::stringstream out;
-    std::stringstream err;
+#include "api/cli/StatusCode.h"
 
-    int status = runLIT(out, err, dirPath);
+const std::string dirPath = "test/api/cli/codegen/";
 
-    spdlog::info("runLIT return status: " + std::to_string(status));
-    spdlog::info("runLIT out:\n" + out.str());
-    spdlog::info("runLIT err:\n" + err.str());
-    CHECK(status == StatusCode::SUCCESS);
+TEST_CASE("mapOp", TAG_CODEGEN) {
+    std::string result =
+        "DenseMatrix(2x2, double)\n"
+        "2.1 1\n"
+        "6.5 -1.2\n";
+
+    compareDaphneToStr(result, dirPath + "map.daphne");
+    compareDaphneToStr(result, dirPath + "map.daphne", "--mlir-codegen");
 }
+

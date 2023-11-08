@@ -23,22 +23,20 @@
 
 #include "api/cli/StatusCode.h"
 
-const std::string dirPath = "test/compiler/e2e/";
+const std::string dirPath = "test/api/cli/codegen/";
 
-TEST_CASE("aggAll", TAG_CODEGEN) {
-    std::stringstream out;
-    std::stringstream err;
+TEST_CASE("ewloopfusion", TAG_CODEGEN) {
+    std::string result =
+        "DenseMatrix(2x2, double)\n"
+        "8 8\n"
+        "8 8\n"
+        "DenseMatrix(2x2, double)\n"
+        "10 10\n"
+        "10 10\n"
+        "DenseMatrix(2x2, double)\n"
+        "9 9\n"
+        "9 9\n";
 
-    int status = runDaphne(out, err, (dirPath + "sum_aggall.daphne").c_str());
-    CHECK(status == StatusCode::SUCCESS);
-
-    std::string result = "100\n";
-    CHECK(out.str() == result);
-
-    out.str(std::string());
-    err.str(std::string());
-
-    status = runDaphne(out, err, "--mlir-codegen", (dirPath + "sum_aggall.daphne").c_str());
-    CHECK(status == StatusCode::SUCCESS);
-    CHECK(out.str() == result);
+    compareDaphneToStr(result, dirPath + "fusion.daphne");
+    compareDaphneToStr(result, dirPath + "fusion.daphne", "--mlir-codegen");
 }
