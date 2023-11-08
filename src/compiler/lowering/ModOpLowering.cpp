@@ -163,6 +163,14 @@ class EwModOpLowering
 };
 
 namespace {
+/**
+ * @brief Performs an integer mod optimization on the EwModOp operator by
+ * lowering to an affine loop structure and performing the mod op on values
+ * loaded from a MemRef.
+ *
+ * If possible, we additionally perform the integer modulo optimization by
+ * replacing the modulo with an bitwise AND and a subtraction.
+ */
 struct ModOpLoweringPass
     : public mlir::PassWrapper<ModOpLoweringPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
@@ -179,7 +187,7 @@ struct ModOpLoweringPass
     StringRef getDescription() const final {
         return "Performs an integer mod optimization on the EwModOp operator "
                "by lowering to an affine loop structure"
-               "and perfming the mod op on values loaded from a MemRef.";
+               "and performing the mod op on values loaded from a MemRef.";
     }
 };
 }  // end anonymous namespace

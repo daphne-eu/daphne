@@ -176,6 +176,16 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
 };
 
 namespace {
+/**
+ * @brief The MatMulLoweringPass rewrites the MatMulOp from the DaphneDialect
+ * to a affine loop structure implementing a naive iterative matrix
+ * multiplication.
+ *
+ * The naive iterative algorithm is simply a perfectly nested
+ * loop algorithm running in O(n^3) performing the 3 load operations in it's
+ * inner loop body, calculates an FMA and stores the result in the output
+ * matrix.
+ */
 struct MatMulLoweringPass
     : public mlir::PassWrapper<MatMulLoweringPass,
                                mlir::OperationPass<mlir::ModuleOp>> {

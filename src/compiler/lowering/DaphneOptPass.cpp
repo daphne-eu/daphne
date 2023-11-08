@@ -47,6 +47,11 @@ class IntegerModOpt : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
 };
 
 namespace {
+/**
+ * @brief This pass transforms operations (currently limited to the EwModOp) in
+ * the DaphneDialect to a different set of operations also from the
+ * DaphneDialect.
+ */
 struct DenseMatrixOptPass
     : public mlir::PassWrapper<DenseMatrixOptPass,
                                mlir::OperationPass<mlir::ModuleOp>> {

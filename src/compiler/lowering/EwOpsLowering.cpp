@@ -240,6 +240,13 @@ using PowOpLowering = BinaryOpLowering<mlir::daphne::EwPowOp, mlir::math::PowFOp
 // clang-format on
 
 namespace {
+/**
+ * @brief This pass lowers element-wise operations to affine loop
+ * structures and arithmetic operations.
+ *
+ * This rewrite may enable loop fusion of the produced affine loops by
+ * running the loop fusion pass.
+ */
 struct EwOpLoweringPass
     : public mlir::PassWrapper<EwOpLoweringPass,
                                mlir::OperationPass<mlir::ModuleOp>> {

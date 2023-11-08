@@ -92,6 +92,14 @@ class InlineMapOpLowering
 };
 
 namespace {
+/**
+ * @brief The MapOpLoweringPass rewrites the daphne::MapOp operator
+ * to a set of perfectly nested affine loops and inserts for each element a call
+ * to the UDF assigned to the daphne::MapOp.
+ *
+ * This rewrite enables subsequent inlining pass to completely replace
+ * the daphne::MapOp by inlining the produced CallOps from this pass.
+ */
 struct MapOpLoweringPass
     : public mlir::PassWrapper<MapOpLoweringPass,
                                mlir::OperationPass<mlir::ModuleOp>> {

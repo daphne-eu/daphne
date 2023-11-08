@@ -121,6 +121,14 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
 };
 
 namespace {
+/**
+ * @brief Lowers the daphne::AggAll operator to a set of affine loops and
+ * performs the aggregation on a MemRef which is created from the input
+ * DenseMatrix.
+ *
+ * This rewrite may enable loop fusion of the produced affine loops by
+ * running the loop fusion pass.
+ */
 struct AggAllLoweringPass
     : public mlir::PassWrapper<AggAllLoweringPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
