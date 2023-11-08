@@ -1,6 +1,0 @@
-1.300406e-02 daphne_opt.mlir
-1.703262e-02 ew.mlir
-2.768278e-02 fusion.mlir
-1.899481e-02 mapop.mlir
-1.408362e-02 matmul.mlir
-1.344347e-02 sum_agg.mlir

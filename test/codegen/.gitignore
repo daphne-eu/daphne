@@ -1,3 +1,2 @@
-e2e/*.ll
-lit/Output
-lit/.lit_test_times.txt
+Output/
+.lit_test_times.txt

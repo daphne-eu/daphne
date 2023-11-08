@@ -39,10 +39,10 @@ TEST_CASE("matmul", TAG_CODEGEN) {
 
 TEST_CASE("matvec", TAG_CODEGEN) {
     std::string result =
-        "DenseMatrix(3x3, double)\n"
-        "45 45 45\n"
-        "45 45 45\n"
-        "45 45 45\n";
+        "DenseMatrix(3x1, double)\n"
+        "45\n"
+        "45\n"
+        "45\n";
 
     compareDaphneToStr(result, dirPath + "matvec.daphne");
     compareDaphneToStr(result, dirPath + "matvec.daphne", "--mlir-codegen");
