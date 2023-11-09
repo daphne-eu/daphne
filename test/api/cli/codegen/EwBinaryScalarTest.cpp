@@ -29,8 +29,25 @@ void test_binary_lowering(const std::string op,
                           const std::string kernel_call,
                           const std::string lowering,
                           const std::string result) {
-    compareDaphneToStr(result, dirPath + op + ".daphne");
-    compareDaphneToStr(result, dirPath + op + ".daphne", "--mlir-codegen");
+    std::stringstream out;
+    std::stringstream err;
+
+    int status = runDaphne(out, err, "--explain", "llvm", (dirPath + op + ".daphne").c_str());
+    CHECK(status == StatusCode::SUCCESS);
+
+    CHECK_THAT(err.str(), Catch::Contains(kernel_call));
+    CHECK_THAT(err.str(), !Catch::Contains(lowering));
+    CHECK(out.str() == result);
+
+    out.str(std::string());
+    err.str(std::string());
+
+    status = runDaphne(out, err, "--explain", "llvm", "--mlir-codegen", (dirPath + op + ".daphne").c_str());
+    CHECK(status == StatusCode::SUCCESS);
+
+    CHECK_THAT(err.str(), !Catch::Contains(kernel_call));
+    CHECK_THAT(err.str(), Catch::Contains(lowering));
+    CHECK(out.str() == result);
 }
 
 TEST_CASE("ewBinaryAddScalar", TAG_CODEGEN) {

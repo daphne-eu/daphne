@@ -28,7 +28,7 @@ class IntegerModOpt : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
 
         std::pair<bool, uint64_t> isConstant =
             CompilerUtils::isConstant<uint64_t>(op.getRhs());
-        // Apply (n & (n - 1)) optimization when n is a power of two
+        // Apply (lhs % rhs) to (lhs & (rhs - 1)) optimization when rhs is a power of two
         return isConstant.first && (isConstant.second & (isConstant.second - 1)) == 0;
     }
 
