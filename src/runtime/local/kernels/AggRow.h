@@ -212,10 +212,21 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
         }
         else { // The op-code is either MEAN or STDDEV
             // get sum for each row
+            size_t ctr = 0 ;
             const VTRes neutral = VTRes(0);
+            // VTRes * valuesT = tmp->getValues();
+            // VTRes * valuesT = valuesArg = arg->getValues(r);
             const bool isSparseSafe = true;
+            auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
+            VTRes * valuesT = tmp->getValues();
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             for (size_t r = 0; r < numRows; r++){
+                // std::cout << "Values Array(r): " << (*arg->getValues(r)) << std::endl;
+                // std::cout << "Values Array: " << (*arg->getValues()) << std::endl;
+                // std::cout << "Non zeros: " << arg->getNumNonZeros(r) << std::endl;
+                // std::cout << "Col Ids(r): " << (*arg->getColIdxs(r)) << std::endl;
+                // std::cout << "Col Ids(): " << (*arg->getColIdxs()) << std::endl;
+                // std::cout << "Row offsets: " << (*arg->getRowOffsets()) << std::endl;
                 *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(
                     arg->getValues(r),
                     arg->getNumNonZeros(r),
@@ -225,12 +236,64 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                     neutral,
                     ctx
                 );
-                if (opCode == AggOpCode::MEAN)
-                    *valuesRes = *valuesRes / numCols;
-                else
-                    throw std::runtime_error("unsupported AggOpCode in AggRow for CSRMatrix");
+                const size_t * colIdxsArg = arg->getColIdxs(0);
+                const VTArg * valuesArg = arg->getValues(0);
+                const size_t numNonZeros = arg->getNumNonZeros(r);
+                
+                
+                // std::cout << "valuesRes: " << (*valuesRes) << " ";
+                *valuesRes = *valuesRes / numCols;
+                if (opCode == AggOpCode::MEAN){
+
+                }
+                else{
+                    
+                    // std::cout << "valuesRes: " << (*valuesRes) << " " << std::endl;
+                    // for (size_t r = 0; r < numRows; r++){
+                    //     // std::cout << (*arg->getValues(r))-(*valuesRes) << " " << std::endl;
+                    // // valuesArg = arg->getValues();
+                    // }
+                    size_t * nnzCol = new size_t[numCols](); // initialized to zeros
+                    for(size_t i = ctr; i < ctr+numNonZeros; i++) {
+                        std::cout << "r:  " << r << " ";
+                        const size_t colIdx = colIdxsArg[i];
+                        std::cout << ", i is: " << i << " ";
+                        std::cout << ", colIdxsArg[i] " << colIdxsArg[i] << " ";
+                        std::cout << ", valuesArg[i] " << valuesArg[i] << " ";
+                        std::cout << ", valuesRes " << (*valuesRes) << std::endl;
+                        VTRes val = static_cast<VTRes>(valuesArg[i]) - (*valuesRes);
+                        valuesT[r] = valuesT[r] + val * val;
+                        
+                        nnzCol[colIdx]++;
+                        
+                        // std::cout << "valuesT[r] " << valuesT[r] << std::endl;
+                        // std::cout << std::endl;
+                        // std::cout << colIdx << " " << nnzCol[colIdx] << std::endl;
+                        // std::cout << std::endl;
+                        // ctr++; 
+                    }
+                    ctr+=numNonZeros; 
+                    // std::cout << valuesT[r] << " ";
+                    valuesT[r] /= numCols;
+                    *valuesRes = sqrt(valuesT[r]);
+                    std::cout << " !! " << *valuesRes << "!! " << std::endl;
+                    // for(size_t c = 0; c < numRows; c++) {
+                    //     // Take all zeros in the column into account.
+                    //     std::cout << valuesT[c] << " ";
+                    //     valuesT[c] /= numCols;
+                    //     valuesT[c] = sqrt(valuesT[c]);
+                    // }
+                }
                 valuesRes += res->getRowSkip();
+                // valuesArg += arg->getRowSkip();
             }
+            valuesRes = res->getValues();
+            // for(size_t c = 0; c < numRows; c++){
+            //     std::cout << "  " << valuesT[c] << " ";
+                
+            // }
+            // std::cout << std::endl;
+            // std::cout << std::endl;
         }
     }
 };
