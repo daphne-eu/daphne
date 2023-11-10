@@ -47,7 +47,7 @@ lowerings:
 - LowerAffinePass
 
 These passes are added in the `DaphneIrExecutor::buildCodegenPipeline`
-function. The `--hybrid` flag disables the `MatMulOpLoweringPass` since the
+function. The `--mlir-hybrid-codegen` flag disables the `MatMulOpLoweringPass` since the
 kernel implementation vastly outperforms the generated code of this pass.
 
 

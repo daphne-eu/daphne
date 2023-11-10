@@ -261,7 +261,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         desc("Enables lowering of certain DaphneIR operations on DenseMatrix to low-level MLIR operations.")
     );
     static opt<bool> performHybridCodegen(
-        "hybrid", cat(daphneOptions),
+        "mlir-hybrid-codegen", cat(daphneOptions),
         desc("Enables prototypical hybrid code generation combining pre-compiled kernels and MLIR code generation.")
     );
 
@@ -378,7 +378,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
     user_config.use_mlir_codegen = mlirCodegen;
-    user_config.hybrid = performHybridCodegen;
+    user_config.use_mlir_hybrid_codegen = performHybridCodegen;
 
     if(!libDir.getValue().empty())
         user_config.libdir = libDir.getValue();
