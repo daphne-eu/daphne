@@ -182,4 +182,5 @@ add_subdirectory(src/util)
 
 add_dependencies(CompilerUtils MLIRDaphneTransformsIncGen)
 
+add_subdirectory(daphne-opt)
 add_subdirectory(test)

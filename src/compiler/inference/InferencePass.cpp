@@ -519,6 +519,9 @@ public:
             return false;
         });
     }
+
+    StringRef getArgument() const final { return "inference"; }
+    StringRef getDescription() const final { return "TODO"; }
 };
 
 std::unique_ptr<Pass> daphne::createInferencePass(daphne::InferenceConfig cfg) {

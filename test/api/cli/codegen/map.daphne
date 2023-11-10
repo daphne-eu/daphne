@@ -1,0 +1,10 @@
+// Performs a MapOp with the UDF `increment`. Used to compare precompiled
+// kernel with codegen.
+
+def increment(x) {
+    return x + 1;
+}
+
+X = reshape([1.1, 0.0, 5.5, -2.2], 2, 2);
+
+print(map(X, increment));

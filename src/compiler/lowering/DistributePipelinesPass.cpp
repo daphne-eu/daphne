@@ -67,6 +67,9 @@ struct DistributePipelinesPass
     : public PassWrapper<DistributePipelinesPass, OperationPass<ModuleOp>>
 {
     void runOnOperation() final;
+
+    StringRef getArgument() const final { return "distribute-pipelines"; }
+    StringRef getDescription() const final { return "TODO"; }
 };
 
 void DistributePipelinesPass::runOnOperation()

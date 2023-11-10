@@ -57,6 +57,14 @@ std::pair<bool, int64_t> CompilerUtils::isConstant<int64_t>(mlir::Value v) {
     );
 }
 
+
+template<>
+std::pair<bool, uint64_t> CompilerUtils::isConstant<uint64_t>(mlir::Value v) {
+    return isConstantHelper<uint64_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
+    );
+}
+
 template<>
 std::pair<bool, float> CompilerUtils::isConstant<float>(mlir::Value v) {
     return isConstantHelper<float, mlir::FloatAttr>(

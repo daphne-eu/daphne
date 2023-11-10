@@ -42,29 +42,30 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 
 ### Software
 
-| tool/lib                             | version known to work (*) | comment                                                                                                                                 |
-|--------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| GCC/G++                              | 9.3.0                     | Last checked version: 12.2                                                                                                              |
-| clang                                | 10.0.0                    |                                                                                                                                         |
-| cmake                                | 3.20                      | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
-| git                                  | 2.25.1                    |                                                                                                                                         |
-| libssl-dev                           | 1.1.1                     | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
-| libpfm4-dev                          | 4.10                      | This dependency is needed for profiling support [DAPHNE-#479]                                                                           |
-| lld                                  | 10.0.0                    |                                                                                                                                         |
-| ninja                                | 1.10.0                    |                                                                                                                                         |
-| pkg-config                           | 0.29.1                    |                                                                                                                                         |
-| python3                              | 3.8.5                     |                                                                                                                                         |
-| numpy                                | 1.19.5                    |                                                                                                                                         |
-| pandas                               | 0.25.3                    |                                                                                                                                         |
-| java (e.g. openjdk)                  | 11 (1.7 should be fine)   |                                                                                                                                         |
-| gfortran                             | 9.3.0                     |                                                                                                                                         |
-| uuid-dev                             |                           |                                                                                                                                         |
-| wget                                 |                           | Used to fetch additional dependencies and other artefacts                                                                               |
-| jq                                   |                           | json commandline processor used in docker image generation scripts                                                                      |
-| ***                                  | ***                       | ***                                                                                                                                     |
-| CUDA SDK                             | 11.7.1                    | Optional for CUDA ops                                                                                                                   |
-| OneAPI SDK                           | 2022.x                    | Optional for OneAPI ops                                                                                                                 |
-| Intel FPGA SDK or OneAPI FPGA Add-On | 2022.x                    | Optional for FPGAOPENCL ops                                                                                                             |
+| tool/lib                             | version known to work (*)    | comment                                                                                                                                 |
+|--------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| GCC/G++                              | 9.3.0                        | Last checked version: 12.2                                                                                                              |
+| clang                                | 10.0.0                       |                                                                                                                                         |
+| cmake                                | 3.20                         | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
+| git                                  | 2.25.1                       |                                                                                                                                         |
+| libssl-dev                           | 1.1.1                        | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
+| libpfm4-dev                          | 4.10                         | This dependency is needed for profiling support [DAPHNE-#479]                                                                           |
+| lld                                  | 10.0.0                       |                                                                                                                                         |
+| ninja                                | 1.10.0                       |                                                                                                                                         |
+| pkg-config                           | 0.29.1                       |                                                                                                                                         |
+| python3                              | 3.8.5                        |                                                                                                                                         |
+| numpy                                | 1.19.5                       |                                                                                                                                         |
+| pandas                               | 0.25.3                       |                                                                                                                                         |
+| java (e.g. openjdk)                  | 11 (1.7 should be fine)      |                                                                                                                                         |
+| gfortran                             | 9.3.0                        |                                                                                                                                         |
+| uuid-dev                             |                              |                                                                                                                                         |
+| llvm-10-tools                        | 10, 15                       | On Ubuntu 22.04 you may need to install a newer `llvm-*-tools` version, such as `llvm-15-tools`.                                        |
+| wget                                 |                              | Used to fetch additional dependencies and other artefacts                                                                               |
+| jq                                   |                              | json commandline processor used in docker image generation scripts                                                                      |
+| ***                                  | ***                          | ***                                                                                                                                     |
+| CUDA SDK                             | 11.7.1                       | Optional for CUDA ops                                                                                                                   |
+| OneAPI SDK                           | 2022.x                       | Optional for OneAPI ops                                                                                                                 |
+| Intel FPGA SDK or OneAPI FPGA Add-On | 2022.x                       | Optional for FPGAOPENCL ops                                                                                                             |
 
 ### Hardware
 

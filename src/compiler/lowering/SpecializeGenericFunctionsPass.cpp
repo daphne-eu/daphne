@@ -387,6 +387,9 @@ namespace {
 
     public:
         void runOnOperation() final;
+
+    StringRef getArgument() const final { return "specialize-generic-funcs"; }
+    StringRef getDescription() const final { return "TODO"; }
     };
 }
 

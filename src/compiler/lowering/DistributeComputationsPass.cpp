@@ -73,6 +73,9 @@ struct DistributeComputationsPass
     : public PassWrapper<DistributeComputationsPass, OperationPass<ModuleOp>>
 {
     void runOnOperation() final;
+
+    StringRef getArgument() const final { return "distribute-computation"; }
+    StringRef getDescription() const final { return "TODO"; }
 };
 }
 

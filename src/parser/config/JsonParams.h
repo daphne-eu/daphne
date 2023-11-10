@@ -30,6 +30,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
     inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
     inline static const std::string USE_PHY_OP_SELECTION = "use_phy_op_selection";
+    inline static const std::string USE_MLIR_CODEGEN = "use_mlir_codegen";
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
@@ -45,6 +46,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_TYPE_ADAPTATION = "explain_type_adaptation";
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
     inline static const std::string EXPLAIN_OBJ_REF_MGNT = "explain_obj_ref_mgnt";
+    inline static const std::string EXPLAIN_MLIR_CODEGEN = "explain_mlir_codegen";
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
@@ -53,13 +55,14 @@ struct DaphneConfigJsonParams {
     inline static const std::string LIBRARY_PATHS = "library_paths";
     inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
     inline static const std::string LOGGING = "logging";
-    
+
     inline static const std::string JSON_PARAMS[] = {
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,
             USE_IPA_CONST_PROPA,
             USE_PHY_OP_SELECTION,
+            USE_MLIR_CODEGEN,
             CUDA_FUSE_ANY,
             VECTORIZED_SINGLE_QUEUE,
             DEBUG_LLVM,
@@ -73,6 +76,7 @@ struct DaphneConfigJsonParams {
             EXPLAIN_PHY_OP_SELECTION,
             EXPLAIN_TYPE_ADAPTATION,
             EXPLAIN_VECTORIZED,
+            EXPLAIN_MLIR_CODEGEN,
             EXPLAIN_OBJ_REF_MGNT,
             TASK_PARTITIONING_SCHEME,
             NUMBER_OF_THREADS,
