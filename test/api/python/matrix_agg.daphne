@@ -16,7 +16,6 @@ m = reshape(seq(1, 12, 1), 4, 3);
 # TODO The commented out functions below are not supported yet (see #613).
 
 # Full aggregation.
-print(m);
 print(sum(m));
 print(mean(m));
 # print(var(m));
