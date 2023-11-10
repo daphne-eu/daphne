@@ -9,10 +9,6 @@
       
       
       
-        <link rel="prev" href="../GettingStarted/">
-      
-      
-        <link rel="next" href="../RunningDaphneLocally/">
       
       
       <link rel="icon" href="../assets/logo_small.png">
@@ -20,7 +16,7 @@
     
     
       
-        <title>Quickstart - DAPHNE</title>
+        <title>Code Generation with MLIR - DAPHNE</title>
       
     
     
@@ -77,7 +73,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#quickstarting-daphne" class="md-skip">
+        <a href="#code-generation-with-mlir" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Quickstart
+              Code Generation with MLIR
             
           </span>
         </div>
@@ -226,13 +222,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../Quickstart/" class="md-tabs__link">
           
   
   Users
@@ -401,8 +395,6 @@
       
   
   
-    
-  
   
     
     
@@ -412,12 +404,12 @@
       
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -431,7 +423,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Users
@@ -442,29 +434,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Quickstart
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../Quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -473,74 +445,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#download-a-binary-release" class="md-nav__link">
-    Download a Binary Release
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#run-daphne" class="md-nav__link">
-    Run DAPHNE
-  </a>
-  
-    <nav class="md-nav" aria-label="Run DAPHNE">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#running-a-daphnedsl-script" class="md-nav__link">
-    Running a DaphneDSL Script
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#running-a-python-script-using-daphnelib" class="md-nav__link">
-    Running a Python Script Using DaphneLib
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#more-details" class="md-nav__link">
-    More Details
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-next" class="md-nav__link">
-    What Next?
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1278,50 +1182,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#download-a-binary-release" class="md-nav__link">
-    Download a Binary Release
+  <a href="#motivation" class="md-nav__link">
+    Motivation
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-daphne" class="md-nav__link">
-    Run DAPHNE
+  <a href="#guidelines" class="md-nav__link">
+    Guidelines
   </a>
   
-    <nav class="md-nav" aria-label="Run DAPHNE">
+    <nav class="md-nav" aria-label="Guidelines">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#running-a-daphnedsl-script" class="md-nav__link">
-    Running a DaphneDSL Script
+  <a href="#runtime-interoperability" class="md-nav__link">
+    Runtime Interoperability
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#running-a-python-script-using-daphnelib" class="md-nav__link">
-    Running a Python Script Using DaphneLib
+  <a href="#debugging" class="md-nav__link">
+    Debugging
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    Testing
   </a>
   
 </li>
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#more-details" class="md-nav__link">
-    More Details
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-next" class="md-nav__link">
-    What Next?
-  </a>
   
 </li>
       
@@ -1343,49 +1240,83 @@
   
 
 
-<h1 id="quickstarting-daphne">Quickstarting DAPHNE</h1>
-<p>These reduced instructions should get you started by firing up a hello world script from the latest binary release. </p>
-<h2 id="download-a-binary-release">Download a Binary Release</h2>
-<p>Download and extract <code>daphne-&lt;version&gt;-bin.tgz</code> from the <a href="https://github.com/daphne-eu/daphne/releases">release page</a>.
-Optionally choose the <code>daphne-cuda-&lt;version&gt;-bin.tgz</code> archive if you want to run DAPHNE with CUDA support (Nvidia Pascal 
-hardware or newer and an installed CUDA SDK are required).</p>
-<h2 id="run-daphne">Run DAPHNE</h2>
-<p>DAPHNE offers two ways to define integrated data analysis pipelines:</p>
+<h1 id="code-generation-with-mlir">Code Generation with MLIR</h1>
+<p>This document describes the process of directly generating code with the MLIR
+framework.</p>
+<h2 id="motivation">Motivation</h2>
+<p>DAPHNE provides a kernel for (almost) every DaphneIR operation which reside in
+<code>src/runtime/local/kernels/</code>. These are precompiled as a shared library and
+linked during compile-time. Even though these kernels can be highly optimized
+and thus achieve great runtime characteristics, they may not provide a desired
+level of extensibility for custom value types. They may also be lacking
+information only available at compile-time that could enable further
+optimizations. Additionally, through the process of progressively lowering the
+input IR, the code generation pipeline may enable more optimization
+possibilities such as operator or loop fusion.</p>
+<p>As an alternative way to implement our operators we provide the code generation
+pipeline which progressively lowers the DaphneIR available after parsing the
+DaphneDSL script to operations in either the same dialect or operations from
+other dialects. With that, we can optionally replace certain kernels by
+generating code directly, and also perform a hybrid compilation approach where
+we mix kernel calls with code generation in order to exploit advantages of
+both, precompiled kernel libraries and code generation. Code generation passes
+are found in <code>src/compiler/lowering/</code>.</p>
+<h2 id="guidelines">Guidelines</h2>
+<p>Currently, the code generation pipeline is enabled with the CLI flag
+<code>--mlir-codegen</code>. This adds the following passes that perform transformations and
+lowerings:</p>
 <ul>
-<li><a href="/daphne/DaphneDSLLanguageRef">DaphneDSL</a> (DAPHNE's domain-specific language)</li>
-<li><a href="/daphne/DaphneLib">DaphneLib</a> (DAPHNE's Python API)</li>
+<li><a href="src/compiler/lowering/DaphneOptPass.cpp">DenseMatrixOptPass</a></li>
+<li><a href="src/compiler/lowering/MatMulOpLowering.cpp">MatMulOpLoweringPass</a></li>
+<li><a href="src/compiler/lowering/AggAllOpLowering.cpp">AggAllLoweringPass</a></li>
+<li><a href="src/compiler/lowering/MapOpLowering.cpp">MapOpLoweringPass</a></li>
+<li>InlinerPass</li>
+<li><a href="src/compiler/lowering/EwOpsLowering.cpp">LowerEwOpPass</a></li>
+<li>ConvertMathToLLVMPass</li>
+<li><a href="src/compiler/lowering/ModOpLowering.cpp">ModOpLoweringPass</a></li>
+<li>Canonicalizer</li>
+<li>CSE</li>
+<li>LoopFusion</li>
+<li>AffineScalarReplacement</li>
+<li>LowerAffinePass</li>
 </ul>
-<p>For both ways, we provide lightweight run-scripts that set up the required environment (so your system's shared library loader finds the required <code>.so</code> files) and pass the provided parameters to the <code>daphne</code>/<code>python3</code> executable. </p>
-<h3 id="running-a-daphnedsl-script">Running a DaphneDSL Script</h3>
-<p>In a bash (or compatible) shell, from the extracted DAPHNE directory, execute this command</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./run-daphne.sh<span class="w"> </span>scripts/examples/hello-world.daph
-</code></pre></div>
-<p>Optionally you can activate CUDA ops by including <code>--cuda</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./run-daphne.sh<span class="w"> </span>--cuda<span class="w"> </span>scripts/examples/hello-world.daph
-</code></pre></div>
-<h3 id="running-a-python-script-using-daphnelib">Running a Python Script Using DaphneLib</h3>
-<p>In a bash (or compatible) shell, from the extracted DAPHNE directory, execute this command</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./run-python.sh<span class="w"> </span>scripts/examples/daphnelib/shift-and-scale.py
-</code></pre></div>
-<h2 id="more-details">More Details</h2>
-<p>If you are interested in the details, you could have a look at</p>
-<ul>
-<li>the run-scripts: <code>run-daphne.sh</code> and <code>run-python.sh</code></li>
-<li>the example DaphneDSL and DaphneLib scripts:<ul>
-<li><code>scripts/examples/hello-world.daph</code></li>
-<li><code>scripts/examples/daphnelib/shift-and-scale.py</code></li>
-</ul>
-</li>
-<li>the DAPHNE user configuration: <code>UserConfig.json</code></li>
-<li>the DAPHNE help: <code>run-daphne.sh --help</code></li>
-</ul>
-<h2 id="what-next">What Next?</h2>
-<p>You might want to have a look at</p>
-<ul>
-<li>a more elaborate <a href="/daphne/GettingStarted">getting started guide</a></li>
-<li>the <a href="https://github.com/daphne-eu/daphne/tree/main/doc">documentation</a></li>
-<li>DaphneDSL and DaphneLib example scripts in <code>scripts/algorithms/</code> and <code>scripts/examples/</code></li>
-</ul>
+<p>These passes are added in the <code>DaphneIrExecutor::buildCodegenPipeline</code>
+function. The <code>--mlir-hybrid-codegen</code> flag disables the <code>MatMulOpLoweringPass</code> since the
+kernel implementation vastly outperforms the generated code of this pass.</p>
+<h4 id="runtime-interoperability">Runtime Interoperability</h4>
+<p>Runtime interoperability with the <code>DenseMatrix</code> object is achieved with two
+kernels in <code>src/runtime/local/kernels/ConvertDenseMatrixToMemRef.h</code> and
+<code>src/runtime/local/kernels/ConvertMemRefToDenseMatrix.h</code> and the corresponding
+DaphneOps <code>Daphne_ConvertMemRefToDenseMatrix</code> and
+<code>Daphne_ConvertDenseMatrixToMemRef</code>. These kernels define how a MemRef is
+passed to a kernel and how a kernel can return a <code>StridedMemRefType</code>.</p>
+<h4 id="debugging">Debugging</h4>
+<p>In order to enable our debug <code>PrintIRPass</code> pass, one has to add <code>--explain
+mlir_code_gen</code> when running <code>daphne</code>. Additionally, it is recommended to use the
+<code>daphne-opt</code> tool to test passes in isolation. One just has to provide the
+input IR for a pass to <code>daphne-opt</code> and the correct flag to run the pass (or
+multiple passes) on the IR. <code>daphne-opt</code> provides all the functionality of the
+<code>mlir-opt</code> tool.</p>
+<p><code>daphne-opt --lower-ew --debug-only=dialect-conversion ew.mlir</code> performs the
+<code>LowerEwOpPass</code> on the input file <code>ew.mlir</code> while providing dialect conversion
+debug information.</p>
+<h4 id="testing">Testing</h4>
+<p>To test the generated code, there currently are two different approaches.</p>
+<p>End-to-end tests can be found under <code>test/api/cli/codegen/</code> and are part of the
+existing Catch2 test-suite with the its own tag, <code>TAG_CODEGEN</code>.</p>
+<p>Additionally, there are tests that check the generated IR by running the
+<code>llvm-lit</code>, <code>daphne-opt</code>, and <code>FileCheck</code> utilities. These tests reside under
+<code>test/compiler/lowering/</code>. They are <code>.mlir</code> files containing the input IR of a
+certain pass, or pass pipeline, and the <code>llvm-lit</code> directive at the top of the
+file (<code>RUN:</code>). In that line we specify how <code>llvm-lit</code> executes the test, e.g.,
+<code>// RUN: daphne-opt --lower-ew %s | FileCheck %s</code>, means that <code>daphne-opt</code> is
+called with the <code>--lower-ew</code> flag and the current file as input, the output of
+that, in addition to the file itself, is piped to <code>FileCheck</code>. <code>FileCheck</code> uses
+the comments in the <code>.mlir</code> file to check for certain conditions, e.g., <code>//
+CHECK-NOT: daphne.ewAdd</code> looks through the IR and fails if <code>daphne.ewAdd</code> can be
+found. These <code>llvm-lit</code> tests are all run by the <code>codegen</code> testcase in
+<code>test/codegen/Codegen.cpp</code>.</p>
+<p>All codegen tests can be executed by running <code>bin/run_tests '[codegen]'</code>.</p>
 
 
 

@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/logo_small.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.2.7">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.8">
     
     
       
@@ -24,10 +24,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.046329b4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.4b4a2bd9.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.85d0ee34.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.356b1318.min.css">
       
       
 
@@ -319,15 +319,20 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    
+    
       
-        
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
         
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -400,15 +405,20 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    
+    
       
-        
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
         
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -494,14 +504,16 @@
     
     
     
+    
+    
     <li class="md-nav__item md-nav__item--nested">
       
         
         
         
-        
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
         
+          
           <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
             
   
@@ -596,14 +608,16 @@
     
     
     
+    
+    
     <li class="md-nav__item md-nav__item--nested">
       
         
         
         
-        
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
         
+          
           <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
             
   
@@ -738,14 +752,16 @@
     
     
     
+    
+    
     <li class="md-nav__item md-nav__item--nested">
       
         
         
         
-        
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_9" >
         
+          
           <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="0">
             
   
@@ -869,15 +885,20 @@
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+    
       
-        
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
         
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -1462,7 +1483,7 @@ dependencies get installed. The bulid script must be invoked with the following 
 <td>Print the help page</td>
 </tr>
 <tr>
-<td>--installPrefix &lt;path></td>
+<td>--installPrefix &lt;path&gt;</td>
 <td>Install third party dependencies in <code>&lt;path&gt;</code> (default: <code>&lt;project_root&gt;/thirdparty/installed</code>)</td>
 </tr>
 <tr>
@@ -1482,7 +1503,7 @@ dependencies get installed. The bulid script must be invoked with the following 
 <td>Clean DAPHNE build output and reset the third party directory to the state in the git repo</td>
 </tr>
 <tr>
-<td>--target &lt;target></td>
+<td>--target &lt;target&gt;</td>
 <td>Build specific target</td>
 </tr>
 <tr>
@@ -1529,20 +1550,20 @@ dependencies get installed. The bulid script must be invoked with the following 
 <li>Help message</li>
 <li><strong>printHelp()</strong> // prints help message</li>
 <li>Build message helper</li>
-<li><strong>daphne_msg(</strong> &lt;message> <strong>)</strong> // prints a status message in DAPHNE style</li>
-<li><strong>printableTimestamp(</strong> &lt;timestamp> <strong>)</strong> // converts a unix epoch timestamp into a human readable string (e.g., 5min 20s 100ms)</li>
+<li><strong>daphne_msg(</strong> &lt;message&gt; <strong>)</strong> // prints a status message in DAPHNE style</li>
+<li><strong>printableTimestamp(</strong> &lt;timestamp&gt; <strong>)</strong> // converts a unix epoch timestamp into a human readable string (e.g., 5min 20s 100ms)</li>
 <li><strong>printLogo()</strong> // prints a DAPHNE logo to the console</li>
 <li>Clean build directories</li>
-<li><strong>clean(</strong> &lt;array ref dirs> &lt;array ref files> <strong>)</strong> // removes all given directories (1. parameter) and all given files (2. parameter) from disk</li>
+<li><strong>clean(</strong> &lt;array ref dirs&gt; &lt;array ref files&gt; <strong>)</strong> // removes all given directories (1. parameter) and all given files (2. parameter) from disk</li>
 <li><strong>cleanBuildDirs()</strong> // cleans build dirs (daphne and dependency build dirs)</li>
 <li><strong>cleanAll()</strong> // cleans daphne build dir and wipes all dependencies from disk (resetting the third party directory)</li>
 <li><strong>cleanDeps()</strong> // removes third party build output</li>
 <li><strong>cleanCache()</strong> // removes downloaded third party artifacts (but leaving git submodules (only LLVM/MLIR at the time of writing)</li>
 <li>Create / Check Indicator-files</li>
-<li><strong>dependency_install_success(</strong> &lt;dep> <strong>)</strong> // used after successful build of a dependency; creates related indicator file</li>
-<li>dependency_download_success(&lt;dep>) // used after successful download of a dependency; creates related indicator file</li>
-<li><strong>is_dependency_installed(</strong> &lt;dep> <strong>)</strong> // checks if dependency is already installed/built successfully</li>
-<li><strong>is_dependency_downloaded(</strong> &lt;dep> <strong>)</strong> // checks if dependency is already downloaded successfully</li>
+<li><strong>dependency_install_success(</strong> &lt;dep&gt; <strong>)</strong> // used after successful build of a dependency; creates related indicator file</li>
+<li>dependency_download_success(&lt;dep&gt;) // used after successful download of a dependency; creates related indicator file</li>
+<li><strong>is_dependency_installed(</strong> &lt;dep&gt; <strong>)</strong> // checks if dependency is already installed/built successfully</li>
+<li><strong>is_dependency_downloaded(</strong> &lt;dep&gt; <strong>)</strong> // checks if dependency is already downloaded successfully</li>
 <li>Versions of third party dependencies</li>
 <li>Versions of the software dependencies are configured here</li>
 <li>Set some prefixes, paths and dirs</li>
@@ -1649,10 +1670,11 @@ dependencies get installed. The bulid script must be invoked with the following 
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.dfff1995.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.dff1b7c8.min.js"></script>
+      <script src="../../assets/javascripts/bundle.81fa17fe.min.js"></script>
       
     
   </body>
