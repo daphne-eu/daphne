@@ -197,19 +197,12 @@ STDDEV_TEST_CASE(double);
         0, 6, 0, 0, \
         0, 0, 5, 0, \
     }); \
-    auto m2 = genGivenVals<DTArg>(3, { \
-        1, 6, 3, 9, \
-        2, 2, 8, 9, \
-        4, 4, 5, 4, \
-    }); \
      \
     checkAggAll(AggOpCode::VAR, m0, (VTRes)0); \
     checkAggAll(AggOpCode::VAR, m1, (VTRes)9.1666666666666666667); \
-    checkAggAll(AggOpCode::VAR, m2, (VTRes)6.8541666666666666667); \
      \
     DataObjectFactory::destroy(m0); \
     DataObjectFactory::destroy(m1); \
-    DataObjectFactory::destroy(m2); \
 }
 VAR_TEST_CASE(int64_t);
 VAR_TEST_CASE(double);

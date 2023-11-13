@@ -104,8 +104,10 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         stddev /= arg->getNumCols() * arg->getNumRows();
 
         //Variance --> stddev before sqrt() is variance
-        if (opCode == AggOpCode::VAR)
-            return stddev;
+        if (opCode == AggOpCode::VAR){
+            VTRes var = stddev;
+            return var;
+        }
         
         stddev = sqrt(stddev);
         return stddev;
@@ -176,8 +178,8 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
                  
                 //Variance --> stddev before sqrt() is variance
                 if (opCode == AggOpCode::VAR){
-                    // std::cout << "variance: " << static_cast<VTRes>(stddev) << std::endl;
-                    return stddev;
+                    VTRes var = stddev;
+                    return var;
                 }
 
                 stddev = sqrt(stddev);

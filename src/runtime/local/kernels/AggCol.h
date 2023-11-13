@@ -163,11 +163,20 @@ struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 valuesArg += arg->getRowSkip();
             }
 
-            for(size_t c = 0; c < numCols; c++) {
-                valuesT[c] /= numRows;
-                valuesT[c] = sqrt(valuesT[c]);
+            if (opCode == AggOpCode::STDDEV){
+                for(size_t c = 0; c < numCols; c++) {
+                    valuesT[c] /= numRows;
+                    valuesT[c] = sqrt(valuesT[c]);
+                }
+            }
+            else{
+                for(size_t c = 0; c < numCols; c++){
+                    valuesT[c] /= numRows;          
+                    std::cout << valuesT[c] << " ";
+                }    
             }
 
+            
             // TODO We could avoid copying by returning tmp and destroying res. But
             // that might be wrong if res was not nullptr initially.
             memcpy(valuesRes, valuesT, numCols * sizeof(VTRes));
@@ -264,7 +273,9 @@ struct AggCol<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
             valuesT[c] += (valuesRes[c] * valuesRes[c]) * (numRows - nnzCol[c]);
             // Finish computation of stddev.
             valuesT[c] /= numRows;
-            valuesT[c] = sqrt(valuesT[c]);
+            std::cout << valuesT[c] << " ";
+            if (opCode == AggOpCode::STDDEV)
+                valuesT[c] = sqrt(valuesT[c]);
         }
         
         delete[] nnzCol;
