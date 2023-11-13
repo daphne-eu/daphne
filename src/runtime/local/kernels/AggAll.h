@@ -102,10 +102,13 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         }
 
         stddev /= arg->getNumCols() * arg->getNumRows();
+
+        //Variance --> stddev before sqrt() is variance
+        if (opCode == AggOpCode::VAR)
+            return stddev;
+        
         stddev = sqrt(stddev);
         return stddev;
-
-        //throw std::runtime_error("unsupported AggOpCode in AggAll for DenseMatrix");
     }
 };
 
@@ -160,18 +163,24 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
             if (opCode == AggOpCode::MEAN)
                 return agg;
             else{
-                // TODO STDDEV
+                //STDDEV-VAR
                 VTRes stddev=0;
+
                 const VTArg * valuesArg = arg->getValues(0);
                 for(size_t i = 0; i < arg->getNumNonZeros(); i++) {
-                    // std::cout << "valuesArg[i] " << valuesArg[i] << "   ";
                     VTRes val = static_cast<VTRes>((valuesArg[i])) - agg;
                     stddev = stddev + val * val;
                 }
                 stddev += ((arg->getNumRows() * arg->getNumCols()) - arg->getNumNonZeros())*agg*agg;
                 stddev /= (arg->getNumRows() * arg->getNumCols());
-                stddev = sqrt(stddev);
+                 
+                //Variance --> stddev before sqrt() is variance
+                if (opCode == AggOpCode::VAR){
+                    // std::cout << "variance: " << static_cast<VTRes>(stddev) << std::endl;
+                    return stddev;
+                }
 
+                stddev = sqrt(stddev);
                 return stddev;
 
             }

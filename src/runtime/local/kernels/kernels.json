@@ -48,7 +48,7 @@
                     ["double", ["CSRMatrix", "int64_t"]],
                     ["float", ["CSRMatrix", "int64_t"]]
                 ],
-                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV"]
+                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV", "VAR"]
             }
         ]
     },

@@ -248,16 +248,24 @@ MEAN_TEST_CASE(double);
     using DTArg = TestType; \
     using DTRes = DenseMatrix<VTRes>; \
      \
-    auto m2 = genGivenVals<DTArg>(3, { \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0}); \
+    auto m1 = genGivenVals<DTArg>(3, { \
         4, 0, 0, 8, \
         0, 4, 0, 0, \
         0, 0, 7, 0, \
     }); \
-    auto m2exp = genGivenVals<DTRes>(3, {(VTRes)3.3166247903553998491, (VTRes)1.7320508075688772935, (VTRes)3.0310889132455352637}); \
+    auto m1exp = genGivenVals<DTRes>(3, {(VTRes)3.3166247903553998491, (VTRes)1.7320508075688772935, (VTRes)3.0310889132455352637}); \
      \
-    checkAggRow(AggOpCode::STDDEV, m2, m2exp); \
+    checkAggRow(AggOpCode::STDDEV, m0, m0exp); \
+    checkAggRow(AggOpCode::STDDEV, m1, m1exp); \
      \
-    DataObjectFactory::destroy(m2, m2exp); \
+    DataObjectFactory::destroy(m0, m0exp); \
+    DataObjectFactory::destroy(m1, m1exp); \
 }
 STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);

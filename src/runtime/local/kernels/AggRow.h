@@ -113,17 +113,11 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 VTRes agg = static_cast<VTRes>(*valuesArg);
                 for(size_t c = 1; c < numCols; c++){
                     agg = func(agg, static_cast<VTRes>(valuesArg[c]), ctx);
-                    // std::cout << agg << " ";
                 }
                 *valuesRes = static_cast<VTRes>(agg);
                 valuesArg += arg->getRowSkip();
                 valuesRes += res->getRowSkip();
-            }
-
-            // for(size_t c = 0; c < numRows; c++) {
-            //     std::cout << valuesRes[c] << " " ;
-            // }
-            // std::cout << std::endl;            
+            }       
 
             if(AggOpCodeUtils::isPureBinaryReduction(opCode))
                 return;
@@ -133,13 +127,11 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             // valuesArg = arg->getValues();
             for(size_t r = 0; r < numRows; r++) {
                 *valuesRes = (*valuesRes) / numCols;
-                // std::cout << *valuesRes << std::endl;
                 valuesRes += res->getRowSkip();
             }
             
             valuesRes = res->getValues();
             for(size_t r = 0; r < numRows; r++) {
-                // std::cout << *valuesRes << std::endl;
                 valuesRes += res->getRowSkip();
             }
 
@@ -147,7 +139,6 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 return;
             
             // else op-code is STDDEV
-            // TODO STDDEV
 
             // // Create a temporary matrix to store the resulting standard deviations for each row
             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
@@ -156,13 +147,9 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             valuesRes = res->getValues();
             for(size_t r = 0; r < numRows; r++) {
                 for(size_t c = 0; c < numCols; c++) {
-                    // std::cout << "Values Arg: " << valuesArg[c] << "   ";
-                    // std::cout << "Mean Row: " << (*valuesRes)<< "   ";
                     VTRes val = static_cast<VTRes>(valuesArg[c]) - (*valuesRes);
                     valuesT[r] = valuesT[r] + val * val;
-                    // std::cout << "valueT: " << valuesT[r] << "   ";
                 }
-                // std::cout << std::endl;
                 valuesArg += arg->getRowSkip();
                 valuesRes += res->getRowSkip();
                
@@ -219,19 +206,11 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
             // get sum for each row
             size_t ctr = 0 ;
             const VTRes neutral = VTRes(0);
-            // VTRes * valuesT = tmp->getValues();
-            // VTRes * valuesT = valuesArg = arg->getValues(r);
             const bool isSparseSafe = true;
             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
             VTRes * valuesT = tmp->getValues();
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             for (size_t r = 0; r < numRows; r++){
-                // std::cout << "Values Array(r): " << (*arg->getValues(r)) << std::endl;
-                // std::cout << "Values Array: " << (*arg->getValues()) << std::endl;
-                // std::cout << "Non zeros: " << arg->getNumNonZeros(r) << std::endl;
-                // std::cout << "Col Ids(r): " << (*arg->getColIdxs(r)) << std::endl;
-                // std::cout << "Col Ids(): " << (*arg->getColIdxs()) << std::endl;
-                // std::cout << "Row offsets: " << (*arg->getRowOffsets()) << std::endl;
                 *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(
                     arg->getValues(r),
                     arg->getNumNonZeros(r),
@@ -241,70 +220,25 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                     neutral,
                     ctx
                 );
-                const size_t * colIdxsArg = arg->getColIdxs(0);
+                // const size_t * colIdxsArg = arg->getColIdxs(0);
                 const VTArg * valuesArg = arg->getValues(0);
                 const size_t numNonZeros = arg->getNumNonZeros(r);
-                
-                
-                // std::cout << "valuesRes: " << (*valuesRes) << " ";
                 *valuesRes = *valuesRes / numCols;
-                // if (opCode == AggOpCode::MEAN){
-                //     // std::cout << typeid(*valuesRes).name() << '\n';
-                // }
                 if (opCode == AggOpCode::STDDEV){
-                    
-                    // std::cout << "valuesRes: " << (*valuesRes) << " " << std::endl;
-                    // for (size_t r = 0; r < numRows; r++){
-                    //     // std::cout << (*arg->getValues(r))-(*valuesRes) << " " << std::endl;
-                    // // valuesArg = arg->getValues();
-                    // }
-                    size_t * nnzCol = new size_t[numCols](); // initialized to zeros
                     for(size_t i = ctr; i < ctr+numNonZeros; i++) {
-                        // std::cout << "r, i :  " << r << " " << i << std::endl;
-                        const size_t colIdx = colIdxsArg[i];
-                        // std::cout << "valuesArg[i] " << valuesArg[i] << "   ";
-                        // std::cout << "valuesRes " << (*valuesRes) << "   ";
-                        // std::cout << "colIdxsArg[i] " << colIdxsArg[i] << std::endl;
-                        // std::cout << "valuesRes " << (*valuesRes) << std::endl;
+                        // const size_t colIdx = colIdxsArg[i];
                         VTRes val = static_cast<VTRes>((valuesArg[i])) - (*valuesRes);
                         valuesT[r] = valuesT[r] + val * val;
-                        // std::cout << "valuesT[r] " << valuesT[r] << std::endl;
-                        
-                        nnzCol[colIdx]++;
-                        
-                        // std::cout << "valuesT[r] " << valuesT[r] << std::endl;
-                        // std::cout << std::endl;
-                        // std::cout << colIdx << " " << nnzCol[colIdx] << std::endl;
-                        // std::cout << std::endl;
-                        // ctr++; 
                     }
-                    // std::cout << std::endl;
+
                     ctr+=numNonZeros; 
-                    // std::cout << valuesT[r] << " ";
                     valuesT[r] += (numCols - numNonZeros)* (*valuesRes)*(*valuesRes);
-                    // std::cout << "valuesT[r] " << valuesT[r] << std::endl;
-                    // std::cout << std::endl;
                     valuesT[r] /= numCols;
                     *valuesRes = sqrt(valuesT[r]);
-                    // std::cout << typeid(*valuesRes).name() << '\n';
-                    // std::cout << " !! " << *valuesRes << "!! " << std::endl;
-                    // for(size_t c = 0; c < numRows; c++) {
-                    //     // Take all zeros in the column into account.
-                    //     std::cout << valuesT[c] << " ";
-                    //     valuesT[c] /= numCols;
-                    //     valuesT[c] = sqrt(valuesT[c]);
-                    // }
                 }
                 valuesRes += res->getRowSkip();
-                // valuesArg += arg->getRowSkip();
             }
             valuesRes = res->getValues();
-            // for(size_t c = 0; c < numRows; c++){
-            //     std::cout << "  " << valuesT[c] << " ";
-                
-            // }
-            // std::cout << std::endl;
-            // std::cout << std::endl;
             DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
 
         }

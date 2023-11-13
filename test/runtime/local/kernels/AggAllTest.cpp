@@ -159,14 +159,57 @@ MEAN_TEST_CASE(double);
     using DTArg = TestType;  \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m1 = genGivenVals<DTArg>(3, { \
         4, 0, 0, 9, \
         0, 6, 0, 0, \
         0, 0, 5, 0, \
     }); \
+    auto m2 = genGivenVals<DTArg>(3, { \
+        1, 6, 3, 9, \
+        2, 2, 8, 9, \
+        4, 4, 5, 4, \
+    }); \
      \
-    checkAggAll(AggOpCode::STDDEV, m0, (VTRes)3.0276503540974916654); \
+    checkAggAll(AggOpCode::STDDEV, m0, (VTRes)0); \
+    checkAggAll(AggOpCode::STDDEV, m1, (VTRes)3.0276503540974916654); \
+    checkAggAll(AggOpCode::STDDEV, m2, (VTRes)2.6180463454008346998); \
      \
     DataObjectFactory::destroy(m0); \
+    DataObjectFactory::destroy(m1); \
 }
 STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);
+
+#define VAR_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("var - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
+    using DTArg = TestType;  \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m1 = genGivenVals<DTArg>(3, { \
+        4, 0, 0, 9, \
+        0, 6, 0, 0, \
+        0, 0, 5, 0, \
+    }); \
+    auto m2 = genGivenVals<DTArg>(3, { \
+        1, 6, 3, 9, \
+        2, 2, 8, 9, \
+        4, 4, 5, 4, \
+    }); \
+     \
+    checkAggAll(AggOpCode::VAR, m0, (VTRes)0); \
+    checkAggAll(AggOpCode::VAR, m1, (VTRes)9.1666666666666666667); \
+    checkAggAll(AggOpCode::VAR, m2, (VTRes)6.8541666666666666667); \
+     \
+    DataObjectFactory::destroy(m0); \
+    DataObjectFactory::destroy(m1); \
+    DataObjectFactory::destroy(m2); \
+}
+VAR_TEST_CASE(int64_t);
+VAR_TEST_CASE(double);
