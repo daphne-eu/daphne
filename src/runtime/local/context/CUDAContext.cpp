@@ -34,6 +34,8 @@ void CUDAContext::destroy() {
     CHECK_CUDNN(cudnnDestroyFilterDescriptor(filter_desc));
 
     CHECK_CUDART(cudaFree(cudnn_workspace));
+    CHECK_CUDART(cudaFree(scratch_buffer));
+
 //    CHECK_CUDART(cudaFree(cublas_workspace));
 //    CHECK_CUBLAS(cublasLtDestroy(ltHandle));
 }
@@ -68,6 +70,9 @@ void CUDAContext::init() {
 
     getCUDNNWorkspace(64 * 1024 * 1024);
 
+    // allocate 8MB of scratch space (e.g., aggregation tmp buffer)
+    CHECK_CUDART(cudaMalloc(&scratch_buffer, 8 * 1048576));
+
 //    CHECK_CUBLAS(cublasLtCreate(&cublaslt_Handle));
 //    CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));
 }
@@ -94,6 +99,7 @@ cudaDataType CUDAContext::getCUSparseDataType<double>() const {
 
 void* CUDAContext::getCUDNNWorkspace(size_t size) {
     if (size > cudnn_workspace_size) {
+        //ToDo: don't leak memory here if workspace is already allocated
         logger->debug("Allocating cuDNN workspace of size {} bytes", size);
         CHECK_CUDART(cudaMalloc(&cudnn_workspace, size));
         cudnn_workspace_size = size;

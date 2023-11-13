@@ -136,6 +136,7 @@ __device__ void FULL_AGG(MatrixAccessor<T>* in, MatrixAccessor<T>* out, uint32_t
 	 // write result for this block to global mem
 	 if (tid == 0) {
 	 	out->val(0, blockIdx.x) = sdata[0];
+//         printf("FULL_AGG=%f", sdata[0]);
 	 }
 }
 

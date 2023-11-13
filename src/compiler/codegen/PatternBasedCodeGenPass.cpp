@@ -25,7 +25,7 @@
 
 using namespace mlir;
 
-static std::string cc_test_source = "TMP6\n"
+static std::string cc_row_test_source = "TMP6\n"
                                     "\n"
                                     "// RowType: ROW_AGG\n"
                                     "// ConstDim2: -1\n"
@@ -80,7 +80,7 @@ static std::string cc_test_source = "TMP6\n"
                                     "\t__device__  __forceinline__ void exec_dense(uint32_t ai, uint32_t ci, uint32_t rix) {\n"
                                     "\tif(threadIdx.x == 0 && rix == 0) {\n"
                                     "\t\tprintf(\"rix=%d a->rows=%d b->cols=%d c->rows=%d\\n\", rix, a.rows(), b[0].cols(), c.rows());\n"
-                                    "\t\tprintf(\"cuda sizeof(uint32_t*)=%u\\n\", sizeof(uint32_t*));\n"
+                                    "\t\t//printf(\"cuda sizeof(uint32_t*)=%l\\n\", sizeof(uint32_t*));\n"
                                     "\t}\n"
                                     "\t//return;\n"
                                     "\t\tT TMP3 = rowMaxsVectMult(a.vals(0), b[0].vals(0), ai, 0, a.cols());\n"
@@ -183,6 +183,66 @@ static std::string cc_test_source = "TMP6\n"
                                     "     exec_sparse<T, NUM_B, NUM_TMP_VECT, TMP_VECT_LEN>(a, b, c, scalars, tmp_stor, grix, rix, threadIdx.x, blockDim.x);\n"
                                     " }";
 
+static std::string cc_cell_test_source = "TMP2\n"
+                                     "// CellType: FULL_AGG\n"
+                                     "// AggOp: SUM\n"
+                                     "// SparseSafe: false\n"
+                                     "// SEQ: false\n"
+                                     "\n"
+                                     "#include \"agg_ops.cuh\"\n"
+                                     "#include \"reduction.cuh\"\n"
+                                     "#include \"spoof_utils.cuh\"\n"
+                                     "#include \"utils.cuh\"\n"
+                                     "#include \"Matrix.h\"\n"
+                                     "\n"
+                                     "template<typename T, int NUM_B>\n"
+                                     "struct SpoofCellwiseOp {\n"
+                                     "\t\tMatrixAccessor<T> A;\n"
+                                     "\t\tMatrixAccessor<T> b[NUM_B];\n"
+                                     "\t\tMatrixAccessor<T> c;\n"
+                                     "\t\tT* scalars;\n"
+                                     "\t\tT* avals;\n"
+                                     "\t\tuint32_t* aix;\n"
+                                     "\t\tuint32_t alen;\n"
+                                     "\t\tuint32_t& n;\n"
+                                     "\t\tuint32_t _grix;\n"
+                                     "\n"
+                                     "\tSpoofCellwiseOp(CCMatrix<T>* _A, CCMatrix<T>* _B, CCMatrix<T>* _C, T* scalars, uint32_t grix) :\n"
+                                     "\t\tn(_A->cols), scalars(scalars), _grix(grix)\n"
+                                     "\t{\n"
+                                     "\t\tA.init(_A);\n"
+                                     "\t\tc.init(_C);\n"
+                                     "\t\talen = A.row_len(grix);\n"
+                                     "\n"
+                                     "\t\tif(_B)\n"
+                                     "\t\t\tfor(auto i = 0; i < NUM_B; ++i)\n"
+                                     "\t\t\t\tb[i].init(&(_B[i]));\n"
+                                     "\t}\n"
+                                     "\n"
+                                     "\t__device__  __forceinline__ T operator()(T a, uint32_t idx, uint32_t rix, uint32_t cix) {\n"
+                                     "\t\tT TMP0 = getValue(b[0], rix);\n"
+                                     "\t\tT TMP1 = (a != TMP0) ? 1.0 : 0.0;\n"
+                                     "\n"
+                                     "\t\treturn TMP1;\n"
+                                     "\t}\n"
+                                     "};\n"
+                                     "\n"
+                                     "template<typename T, int NUM_B>\n"
+                                     "__global__ void TMP2_DENSE (CCMatrix<T>* a, CCMatrix<T>* b, CCMatrix<T>* c, T* scalars, uint32_t n, uint32_t grix) {\n"
+                                     "\t//IdentityOp<T> agg_op;\n"
+                                     "\tSumOp<T> agg_op;"
+                                     "\tSpoofCellwiseOp<T, NUM_B> spoof_op(a, b, c, scalars, grix);\n"
+                                     "\t//NO_AGG<T, IdentityOp<T>, SpoofCellwiseOp<T, NUM_B>>(&(spoof_op.A), &(spoof_op.c), n, (T)1.0, agg_op, spoof_op);\n"
+                                     "\tFULL_AGG<T, SumOp<T>, SpoofCellwiseOp<T, NUM_B>>(&(spoof_op.A), &(spoof_op.c), n, (T)0.0, agg_op, spoof_op);\n"
+                                     "};\n"
+                                     "\n"
+                                     "template<typename T, int NUM_B>\n"
+                                     "__global__ void TMP2_SPARSE (CCMatrix<T>* a, CCMatrix<T>* b, CCMatrix<T>* c, T* scalars, uint32_t n, uint32_t grix) {\n"
+                                     "\tIdentityOp<T> agg_op;\n"
+                                     "\tSpoofCellwiseOp<T, NUM_B> spoof_op(a, b, c, scalars, grix);\n"
+                                     "\tNO_AGG_SPARSE<T, IdentityOp<T>, SpoofCellwiseOp<T, NUM_B>>(&(spoof_op.A), &(spoof_op.c), n, (T)1.0, agg_op, spoof_op);\n"
+                                     "};";
+
 struct PatternBasedCodeGenPass : public PassWrapper<PatternBasedCodeGenPass, OperationPass<func::FuncOp>> {
     
     /**
@@ -190,12 +250,14 @@ struct PatternBasedCodeGenPass : public PassWrapper<PatternBasedCodeGenPass, Ope
      */
     DaphneUserConfig& cfg;
     std::shared_ptr<spdlog::logger> logger;
-    std::array<Operation*, 4> ccOpSequence{};
+    std::array<Operation*, 4> ccOpSequenceRW{};
+    std::array<Operation*, 2> ccOpSequenceCW{};
     SpoofCUDAContext* codegenContext;
 
     explicit PatternBasedCodeGenPass(DaphneUserConfig& cfg) : cfg(cfg) {
         logger = spdlog::get("compiler::cuda");
-        ccOpSequence = std::array<Operation*, 4>({daphne::TransposeOp(), daphne::EwMulOp(), daphne::RowAggMaxOp(), daphne::EwMaxOp()});
+        ccOpSequenceRW = std::array<Operation*, 4>({daphne::TransposeOp(), daphne::EwMulOp(), daphne::RowAggMaxOp(), daphne::EwMaxOp()});
+        ccOpSequenceCW = std::array<Operation*, 2>({daphne::EwNegOp(), daphne::AllAggSumOp()});
         codegenContext = reinterpret_cast<SpoofCUDAContext*>(SpoofCUDAContext::initialize_cuda(0, "src/compiler/codegen"));
         cfg.codegen_ctx_ptr = reinterpret_cast<uint64_t>(codegenContext);
     }
@@ -228,8 +290,8 @@ void PatternBasedCodeGenPass::runOnOperation() {
 //        else if (auto ccSeq = CompilerUtils::isOpSequence(op, ccOpSequence); ccSeq.size() == ccOpSequence.size()) {
 //            logger->debug("found cc sequence");
 //        }
-        else if (auto ccSeq = CompilerUtils::isCCseq(op, ccOpSequence); ccSeq.size() == ccOpSequence.size()) {
-            logger->debug("is cc sequence");
+        else if (auto ccSeq = CompilerUtils::isCCseqRW(op, ccOpSequenceRW); ccSeq.size() == ccOpSequenceRW.size()) {
+            logger->debug("is cc rowwise sequence");
 
             std::vector<Location> locations;
             std::vector<Value> results;
@@ -266,14 +328,66 @@ void PatternBasedCodeGenPass::runOnOperation() {
 
             std::unique_ptr<SpoofRowwiseOp> cc_op = std::make_unique<SpoofRowwiseOp>(SpoofOperator::RowType(), false, 0, 0);
             cc_op->name = "TMP6";
-            auto opID = codegenContext->compile(std::move(cc_op), cc_test_source);
+            auto opID = codegenContext->compile(std::move(cc_op), cc_row_test_source);
 
             operands.push_back(builder.create<daphne::ConstantOp>(loc, opID));
             auto generatedOp = builder.create<daphne::CodeGenOpRowwise>(loc, ValueRange(results).getTypes(), operands, nullptr);
 
             ccSeq.back()->getNextNode()->getOperand(0).replaceAllUsesWith(generatedOp.getResult(0));
-            for (auto it = ccSeq.rbegin(); it != ccSeq.rend(); ++it) {
+//            for (auto it = ccSeq.rbegin(); it != ccSeq.rend(); ++it) {
+            for (auto it = ccSeq.begin(); it != ccSeq.end(); ++it) {
+
 //                (*it)->erase();
+                std::string s;
+                llvm::raw_string_ostream stream(s);
+                (*it)->print(stream);
+                logger->debug("Queuing for deletion: {}", stream.str());
+                ops_to_remove.push_back((*it));
+            }
+        }
+        else if (auto ccSeqCW = CompilerUtils::isCCseqCW(op, ccOpSequenceCW); ccSeqCW.size() == ccOpSequenceCW.size()) {
+//            WalkResult::advance();
+//            return;
+            logger->debug("is cc cellwise sequence");
+
+            std::vector<Location> locations;
+            std::vector<Value> results;
+            std::vector<Value> operands;
+
+            for(auto seqOp: ccSeqCW) {
+                locations.push_back(seqOp->getLoc());
+            }
+            auto loc = builder.getFusedLoc(locations);
+            auto result = ccSeqCW.back()->getResult(0);
+            results.push_back(result);
+//            operands.push_back(ccSeqCW[1]->getOperand(0));
+            operands.push_back(ccSeqCW[0]->getOperand(0));
+            operands.push_back(ccSeqCW[0]->getOperand(1));
+
+            std::unique_ptr<SpoofCellwiseOp> cc_op = std::make_unique<SpoofCellwiseOp>(SpoofOperator::AggType::FULL_AGG, SpoofOperator::AggOp::SUM, false);
+            cc_op->name = "TMP2";
+            auto opID = codegenContext->compile(std::move(cc_op), cc_cell_test_source);
+
+            operands.push_back(builder.create<daphne::ConstantOp>(loc, opID));
+            auto generatedOp = builder.create<daphne::CodeGenOpAllAggCellwise>(loc, ValueRange(results).getTypes(), operands, nullptr);
+
+//            logger->debug("replacing");
+            ccSeqCW.back()->dump();
+//            logger->debug("with: ");
+            ccSeqCW.back()->replaceAllUsesWith(generatedOp);
+
+//            ccSeqCW.back()->getNextNode()->getOperand(0).replaceAllUsesWith(generatedOp.getResult(0));
+//            for(auto arg : ccSeqCW.back()->getParentRegion()->getArguments()) {
+//                arg.dump();
+//                arg.replaceAllUsesWith(generatedOp.getResult(0));
+//            }
+//            ccSeqCW.back()->getNextNode()->getNextNode()->getOperand(0).replaceAllUsesWith(generatedOp.getResult(0));
+            for(auto o = 0; o < ccSeqCW.back()->getNumOperands(); o++) {
+                ccSeqCW.back()->getOperand(o).dump();
+            }
+
+//            for (auto it = ccSeqCW.rbegin(); it != ccSeqCW.rend(); ++it) {
+            for (auto it = ccSeqCW.begin(); it != ccSeqCW.end(); ++it) {
                 std::string s;
                 llvm::raw_string_ostream stream(s);
                 (*it)->print(stream);
@@ -367,14 +481,21 @@ void PatternBasedCodeGenPass::runOnOperation() {
         WalkResult::advance();
     });
 
-//    for (auto it = ops_to_remove.rbegin(); it != ops_to_remove.rend(); ++it) {
+    for (auto it = ops_to_remove.rbegin(); it != ops_to_remove.rend(); ++it) {
 //        (*it)->erase();
 //    }
-    for (auto it = ops_to_remove.begin(); it != ops_to_remove.end(); ++it) {
+//    for (auto it = ops_to_remove.begin(); it != ops_to_remove.end(); ++it) {
         std::string s;
         llvm::raw_string_ostream stream(s);
         (*it)->print(stream);
         logger->debug("Deleting {}", stream.str());
+        logger->debug("users of {}:", stream.str());
+        for (auto u: (*it)->getUsers()) {
+            if (u)
+                u->dump();
+            else
+                logger->debug("no users of {}", (*it)->getName().getStringRef().str());
+        }
         (*it)->erase();
     }
 }
