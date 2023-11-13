@@ -52,7 +52,7 @@ struct SpoofCellwiseFullAgg {
 		if(NB > 1) {
 			N = NB;
 			while (NB > 1) {
-				Matrix<T>* out = dbw->d_out<T>();
+				CCMatrix<T>* out = dbw->d_out<T>();
 				void* args[3] = { &out, &out, &N};
 				
 				NB = std::ceil((N + NT * 2 - 1) / (NT * 2));

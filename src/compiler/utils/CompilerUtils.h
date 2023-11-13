@@ -283,7 +283,7 @@ public:
     }
 
     template<typename T, std::size_t N>
-    static std::vector<mlir::Operation*> isCCseq(mlir::Operation* op, const std::array<T, N>& sequence) {
+    static std::vector<mlir::Operation*> isCCseqRW(mlir::Operation* op, const std::array<T, N>& sequence) {
         std::vector<mlir::Operation*> ret_seq;
         if(auto isTransOp = llvm::dyn_cast<mlir::daphne::TransposeOp>(op)) {
             ret_seq.emplace_back(isTransOp);
@@ -295,6 +295,18 @@ public:
                         ret_seq.emplace_back(isMaxOp);
                     }
                 }
+            }
+        }
+        return ret_seq;
+    }
+
+    template<typename T, std::size_t N>
+    static std::vector<mlir::Operation*> isCCseqCW(mlir::Operation* op, const std::array<T, N>& sequence) {
+        std::vector<mlir::Operation*> ret_seq;
+        if(auto isEwNeqOp = llvm::dyn_cast<mlir::daphne::EwNeqOp>(op)) {
+            ret_seq.emplace_back(isEwNeqOp);
+            if(auto isSumAllOp = llvm::dyn_cast<mlir::daphne::AllAggSumOp>(op->getNextNode())) {
+                ret_seq.emplace_back(isSumAllOp);
             }
         }
         return ret_seq;

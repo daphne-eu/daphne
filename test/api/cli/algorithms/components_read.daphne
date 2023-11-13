@@ -22,6 +22,7 @@ iter = 1;
 // Iterative computation of connected components (decisive part).
 while(as.si64(diff > 0.0) && iter <= maxi) {
     u = max(aggMax(G * t(c), 0), c);
+//    print(u);
     diff = sum(u != c);
     c = u;
     iter = iter + 1;
@@ -40,3 +41,4 @@ while(as.si64(diff > 0.0) && iter <= maxi) {
 
 // Result output.
 print(c);
+write(c, "out_cc_read.csv");

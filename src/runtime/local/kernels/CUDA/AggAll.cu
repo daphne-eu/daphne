@@ -110,6 +110,8 @@ namespace CUDA {
     VTRes AggAll<VTRes, DenseMatrix<VTArg>>::apply(AggOpCode opCode, const DenseMatrix<VTArg> * arg, DCTX(dctx)) {
 
         const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+
         AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
         int blockSize;
@@ -146,6 +148,7 @@ namespace CUDA {
         }
         CHECK_CUDART(cudaMemcpy(reinterpret_cast<void **>(&result), tmp_ptr, sizeof(VTRes), cudaMemcpyDeviceToHost));
         CHECK_CUDART(cudaFree(tmp_ptr));
+        ctx->logger->debug("cuda full agg returning: {}", result);
 
         return result;
     }

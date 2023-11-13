@@ -47,6 +47,8 @@ class CUDAContext final : public IContext {
     std::map<size_t, std::shared_ptr<std::byte>> allocations;
     static size_t alloc_count;
 
+    void* scratch_buffer{};
+
     explicit CUDAContext(int id) : device_id(id) {
         logger = spdlog::get("runtime::cuda");
     }
@@ -96,6 +98,7 @@ public:
         ctx.logger->debug(out);
     }
 
+    void* getScratchBuffer() { return scratch_buffer; }
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
     cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};

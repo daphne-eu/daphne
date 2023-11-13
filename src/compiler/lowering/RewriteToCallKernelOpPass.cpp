@@ -51,7 +51,7 @@ namespace
                 return 2;
             if(llvm::isa<daphne::DistributedComputeOp>(op))
                 return 1;
-            if(llvm::isa<daphne::CodeGenOpRowwise>(op))
+            if(llvm::isa<daphne::CodeGenOpAllAggCellwise>(op) || llvm::isa<daphne::CodeGenOpRowwise>(op))
                 return 1;
             throw std::runtime_error(
                     "lowering to kernel call not yet supported for this variadic operation: "
@@ -120,6 +120,15 @@ namespace
                 );
             }
             if(auto concreteOp = llvm::dyn_cast<daphne::CodeGenOpRowwise>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::CodeGenOpAllAggCellwise>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
                 static bool isVariadic[] = {true};
                 return std::make_tuple(
