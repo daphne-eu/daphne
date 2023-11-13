@@ -18,6 +18,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
 #include "antlr4-runtime.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/OpDefinition.h"
 
 #include <stdexcept>
@@ -504,6 +505,10 @@ antlrcpp::Any SQLVisitor::visitSelect(
             throw std::runtime_error(err_msg.str());
         }
     }
+    if(ctx->limitClause()) {
+        currentFrame = res;
+        res = utils.valueOrError(visit(ctx->limitClause()));
+    }
     return res;
 }
 
@@ -824,6 +829,26 @@ antlrcpp::Any SQLVisitor::visitOrderByClause(
             returnFrame
         )
     );
+}
+
+antlrcpp::Any SQLVisitor::visitLimitClause(
+    SQLGrammarParser::LimitClauseContext *ctx
+)
+{
+    mlir::Location loc = utils.getLoc(ctx->start);
+    
+    mlir::Value start = builder.create<mlir::daphne::ConstantOp>(
+        loc, utils.sizeType, builder.getIndexAttr(0)
+    );
+
+    mlir::Value literal = utils.valueOrError(visit(ctx->literal()));
+
+    mlir::Value end = utils.castSizeIf(literal);
+
+    mlir::daphne::FrameType resType = currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().withSameColumnTypes();
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::SliceRowOp>(loc, resType, currentFrame, start, end)
+    ); 
 }
 
 antlrcpp::Any SQLVisitor::visitOrderInformation(

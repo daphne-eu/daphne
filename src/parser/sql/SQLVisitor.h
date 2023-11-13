@@ -203,6 +203,9 @@ public:
 //orderByClause
     antlrcpp::Any visitOrderByClause(SQLGrammarParser::OrderByClauseContext * ctx) override;
 
+//limitClause
+    antlrcpp::Any visitLimitClause(SQLGrammarParser::LimitClauseContext * ctx) override;
+
 //orderInformation
     antlrcpp::Any visitOrderInformation(SQLGrammarParser::OrderInformationContext * ctx) override;
 
