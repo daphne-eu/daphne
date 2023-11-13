@@ -153,3 +153,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 }
 MEAN_TEST_CASE(int64_t);
 MEAN_TEST_CASE(double);
+
+
+#define STDDEV_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
+    using DTArg = TestType;  \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        4, 0, 0, 9, \
+        0, 6, 0, 0, \
+        0, 0, 5, 0, \
+    }); \
+     \
+    checkAggAll(AggOpCode::STDDEV, m0, (VTRes)3.0276503540974916654); \
+     \
+    DataObjectFactory::destroy(m0); \
+}
+STDDEV_TEST_CASE(int64_t);
+STDDEV_TEST_CASE(double);

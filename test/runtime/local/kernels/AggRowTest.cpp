@@ -253,7 +253,7 @@ MEAN_TEST_CASE(double);
         0, 4, 0, 0, \
         0, 0, 7, 0, \
     }); \
-    auto m2exp = genGivenVals<DTRes>(3, {(VTRes)3.31662, (VTRes)1.73205, (VTRes)3.03109}); \
+    auto m2exp = genGivenVals<DTRes>(3, {(VTRes)3.3166247903553998491, (VTRes)1.7320508075688772935, (VTRes)3.0310889132455352637}); \
      \
     checkAggRow(AggOpCode::STDDEV, m2, m2exp); \
      \

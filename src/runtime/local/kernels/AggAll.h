@@ -156,25 +156,27 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
                 VTRes(0),
                 ctx
             );
+            agg = agg / (arg->getNumRows() * arg->getNumCols());
             if (opCode == AggOpCode::MEAN)
-                return agg / (arg->getNumRows() * arg->getNumCols());
-            
-            // TODO STDDEV
-            throw std::runtime_error("unsupported AggOpCode in AggAll for CSRMatrix");
+                return agg;
+            else{
+                // TODO STDDEV
+                VTRes stddev=0;
+                const VTArg * valuesArg = arg->getValues(0);
+                for(size_t i = 0; i < arg->getNumNonZeros(); i++) {
+                    // std::cout << "valuesArg[i] " << valuesArg[i] << "   ";
+                    VTRes val = static_cast<VTRes>((valuesArg[i])) - agg;
+                    stddev = stddev + val * val;
+                }
+                stddev += ((arg->getNumRows() * arg->getNumCols()) - arg->getNumNonZeros())*agg*agg;
+                stddev /= (arg->getNumRows() * arg->getNumCols());
+                stddev = sqrt(stddev);
+
+                return stddev;
+
+            }
         }
     }
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGALL_H
-
-
-
-        // valuesArg = arg->getValues();
-        // for(size_t r = 0; r < numRows; r++) {
-        //     for(size_t c = 0; c < numCols; c++){
-        //         agg = func(agg, static_cast<VTRes>(valuesArg[c]), ctx);
-        //         std::cout << *valuesArg << " ";
-        //     }
-        //     std::cout << std::endl;
-        //     valuesArg += arg->getRowSkip();
-        // }

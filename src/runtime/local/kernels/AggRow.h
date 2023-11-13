@@ -305,6 +305,8 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
             // }
             // std::cout << std::endl;
             // std::cout << std::endl;
+            DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
+
         }
     }
 };
