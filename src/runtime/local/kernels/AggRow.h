@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <cstring>
 #include <cmath>
+#include <typeinfo>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -161,7 +162,7 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                     valuesT[r] = valuesT[r] + val * val;
                     // std::cout << "valueT: " << valuesT[r] << "   ";
                 }
-                std::cout << std::endl;
+                // std::cout << std::endl;
                 valuesArg += arg->getRowSkip();
                 valuesRes += res->getRowSkip();
                
@@ -247,10 +248,10 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                 
                 // std::cout << "valuesRes: " << (*valuesRes) << " ";
                 *valuesRes = *valuesRes / numCols;
-                if (opCode == AggOpCode::MEAN){
-
-                }
-                else{
+                // if (opCode == AggOpCode::MEAN){
+                //     // std::cout << typeid(*valuesRes).name() << '\n';
+                // }
+                if (opCode == AggOpCode::STDDEV){
                     
                     // std::cout << "valuesRes: " << (*valuesRes) << " " << std::endl;
                     // for (size_t r = 0; r < numRows; r++){
@@ -259,11 +260,11 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                     // }
                     size_t * nnzCol = new size_t[numCols](); // initialized to zeros
                     for(size_t i = ctr; i < ctr+numNonZeros; i++) {
-                        std::cout << "r, i :  " << r << " " << i << std::endl;
+                        // std::cout << "r, i :  " << r << " " << i << std::endl;
                         const size_t colIdx = colIdxsArg[i];
-                        std::cout << "valuesArg[i] " << valuesArg[i] << "   ";
-                        std::cout << "valuesRes " << (*valuesRes) << "   ";
-                        std::cout << "colIdxsArg[i] " << colIdxsArg[i] << std::endl;
+                        // std::cout << "valuesArg[i] " << valuesArg[i] << "   ";
+                        // std::cout << "valuesRes " << (*valuesRes) << "   ";
+                        // std::cout << "colIdxsArg[i] " << colIdxsArg[i] << std::endl;
                         // std::cout << "valuesRes " << (*valuesRes) << std::endl;
                         VTRes val = static_cast<VTRes>((valuesArg[i])) - (*valuesRes);
                         valuesT[r] = valuesT[r] + val * val;
@@ -281,10 +282,11 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                     ctr+=numNonZeros; 
                     // std::cout << valuesT[r] << " ";
                     valuesT[r] += (numCols - numNonZeros)* (*valuesRes)*(*valuesRes);
-                    std::cout << "valuesT[r] " << valuesT[r] << std::endl;
-                    std::cout << std::endl;
+                    // std::cout << "valuesT[r] " << valuesT[r] << std::endl;
+                    // std::cout << std::endl;
                     valuesT[r] /= numCols;
                     *valuesRes = sqrt(valuesT[r]);
+                    // std::cout << typeid(*valuesRes).name() << '\n';
                     // std::cout << " !! " << *valuesRes << "!! " << std::endl;
                     // for(size_t c = 0; c < numRows; c++) {
                     //     // Take all zeros in the column into account.

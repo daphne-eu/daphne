@@ -244,7 +244,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VAL
 MEAN_TEST_CASE(int64_t);
 MEAN_TEST_CASE(double);
 
-#define STDDEV_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev - result value type: " #VTRes), TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) { \
+#define STDDEV_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
     using DTArg = TestType; \
     using DTRes = DenseMatrix<VTRes>; \
      \
@@ -259,5 +259,5 @@ MEAN_TEST_CASE(double);
      \
     DataObjectFactory::destroy(m2, m2exp); \
 }
-// STDDEV_TEST_CASE(int64_t);
+STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);
