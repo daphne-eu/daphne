@@ -85,12 +85,11 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
             return agg;
 
         agg /= arg->getNumCols() * arg->getNumRows();
-        // The op-code is either MEAN or STDDEV.
+        // The op-code is either MEAN or STDDEV or VAR.
         if (opCode == AggOpCode::MEAN) {
             return agg;
         }
-        // else op-code is STDDEV
-        // TODO STDDEV
+        // else op-code is STDDEV or VAR
         stddev=0;
         valuesArg = arg->getValues();
         for(size_t r = 0; r < numRows; r++) {
@@ -150,7 +149,7 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
                     ctx
             );
         }
-        else { // The op-code is either MEAN or STDDEV.
+        else { // The op-code is either MEAN or STDDEV or VAR.
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));            
             auto agg = aggArray(
                 arg->getValues(0),

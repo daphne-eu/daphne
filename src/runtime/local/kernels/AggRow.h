@@ -138,7 +138,7 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             if(opCode == AggOpCode::MEAN)
                 return;
             
-            // else op-code is STDDEV
+            // else op-code is STDDEV or VAR
 
             // // Create a temporary matrix to store the resulting standard deviations for each row
             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
@@ -205,7 +205,7 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                 valuesRes += res->getRowSkip();
             }
         }
-        else { // The op-code is either MEAN or STDDEV
+        else { // The op-code is either MEAN or STDDEV or VAR
             // get sum for each row
             size_t ctr = 0 ;
             const VTRes neutral = VTRes(0);
@@ -223,13 +223,11 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                     neutral,
                     ctx
                 );
-                // const size_t * colIdxsArg = arg->getColIdxs(0);
                 const VTArg * valuesArg = arg->getValues(0);
                 const size_t numNonZeros = arg->getNumNonZeros(r);
                 *valuesRes = *valuesRes / numCols;
                 if (opCode != AggOpCode::MEAN){
                     for(size_t i = ctr; i < ctr+numNonZeros; i++) {
-                        // const size_t colIdx = colIdxsArg[i];
                         VTRes val = static_cast<VTRes>((valuesArg[i])) - (*valuesRes);
                         valuesT[r] = valuesT[r] + val * val;
                     }

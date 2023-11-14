@@ -180,6 +180,7 @@ MEAN_TEST_CASE(double);
      \
     DataObjectFactory::destroy(m0); \
     DataObjectFactory::destroy(m1); \
+    DataObjectFactory::destroy(m2); \
 }
 STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);
@@ -197,12 +198,19 @@ STDDEV_TEST_CASE(double);
         0, 6, 0, 0, \
         0, 0, 5, 0, \
     }); \
+    auto m2 = genGivenVals<DTArg>(3, { \
+        0, 1, 2, \
+        4, 4, 5, \
+        9, 12, 8, \
+    }); \
      \
     checkAggAll(AggOpCode::VAR, m0, (VTRes)0); \
     checkAggAll(AggOpCode::VAR, m1, (VTRes)9.1666666666666666667); \
+    checkAggAll(AggOpCode::VAR, m2, (VTRes)14); \
      \
     DataObjectFactory::destroy(m0); \
     DataObjectFactory::destroy(m1); \
+    DataObjectFactory::destroy(m2); \
 }
 VAR_TEST_CASE(int64_t);
 VAR_TEST_CASE(double);

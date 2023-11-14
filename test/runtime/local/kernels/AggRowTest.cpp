@@ -260,12 +260,20 @@ MEAN_TEST_CASE(double);
         0, 0, 7, 0, \
     }); \
     auto m1exp = genGivenVals<DTRes>(3, {(VTRes)3.3166247903553998491, (VTRes)1.7320508075688772935, (VTRes)3.0310889132455352637}); \
+    auto m2 = genGivenVals<DTArg>(3, { \
+        5, 7, 3, 9, \
+        2, 5, 0, 1, \
+        7, 4, 5, 4, \
+    }); \
+    auto m2exp = genGivenVals<DTRes>(3, {(VTRes)2.2360679774997896964, (VTRes)1.8708286933869706928, (VTRes)1.2247448713915890491}); \
      \
     checkAggRow(AggOpCode::STDDEV, m0, m0exp); \
     checkAggRow(AggOpCode::STDDEV, m1, m1exp); \
+    checkAggRow(AggOpCode::STDDEV, m2, m2exp); \
      \
     DataObjectFactory::destroy(m0, m0exp); \
     DataObjectFactory::destroy(m1, m1exp); \
+    DataObjectFactory::destroy(m2, m2exp); \
 }
 STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);
@@ -286,12 +294,21 @@ STDDEV_TEST_CASE(double);
         0, 5, 0, 5, \
     }); \
     auto m1exp = genGivenVals<DTRes>(3, {1, 1, (VTRes)6.25}); \
+    auto m2 = genGivenVals<DTArg>(3, { \
+        5, 7, 3, 9, \
+        2, 5, 0, 1, \
+        7, 4, 5, 4, \
+    }); \
+    auto m2exp = genGivenVals<DTRes>(3, {5, (VTRes)3.5, (VTRes)1.5}); \
+     \
      \
     checkAggRow(AggOpCode::VAR, m0, m0exp); \
     checkAggRow(AggOpCode::VAR, m1, m1exp); \
+    checkAggRow(AggOpCode::VAR, m2, m2exp); \
      \
     DataObjectFactory::destroy(m0, m0exp); \
     DataObjectFactory::destroy(m1, m1exp); \
+    DataObjectFactory::destroy(m2, m2exp); \
 }
 VAR_TEST_CASE(int64_t);
 VAR_TEST_CASE(double);

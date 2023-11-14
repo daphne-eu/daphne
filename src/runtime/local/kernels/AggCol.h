@@ -143,7 +143,7 @@ struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             if(AggOpCodeUtils::isPureBinaryReduction(opCode))
                 return;
             
-            // The op-code is either MEAN or STDDEV.
+            // The op-code is either MEAN or STDDEV os VAR.
 
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] /= numRows;
@@ -243,7 +243,7 @@ struct AggCol<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
             return;
         
-        // The op-code is either MEAN or STDDEV.
+        // The op-code is either MEAN or STDDEV or VAR.
 
         for(size_t c = 0; c < numCols; c++)
             valuesRes[c] /= arg->getNumRows();
