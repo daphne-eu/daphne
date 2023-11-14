@@ -269,3 +269,29 @@ MEAN_TEST_CASE(double);
 }
 STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);
+
+#define VAR_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("var - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
+    using DTArg = TestType; \
+    using DTRes = DenseMatrix<VTRes>; \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0}); \
+    auto m1 = genGivenVals<DTArg>(3, { \
+        1, 1, 3, 3, \
+        3, 3, 1, 1, \
+        0, 5, 0, 5, \
+    }); \
+    auto m1exp = genGivenVals<DTRes>(3, {1, 1, (VTRes)6.25}); \
+     \
+    checkAggRow(AggOpCode::VAR, m0, m0exp); \
+    checkAggRow(AggOpCode::VAR, m1, m1exp); \
+     \
+    DataObjectFactory::destroy(m0, m0exp); \
+    DataObjectFactory::destroy(m1, m1exp); \
+}
+VAR_TEST_CASE(int64_t);
+VAR_TEST_CASE(double);

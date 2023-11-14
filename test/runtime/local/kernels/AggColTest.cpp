@@ -212,7 +212,7 @@ STDDEV_TEST_CASE(double);
         0, 0, 0, 0, \
     }); \
     auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0}); \
-    auto m1 = genGivenVals<DTArg>(3, { \
+    auto m1 = genGivenVals<DTArg>(4, { \
         1, 3, 0, \
         1, 3, 5, \
         3, 1, 0, \

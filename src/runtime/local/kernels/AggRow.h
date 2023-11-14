@@ -157,7 +157,10 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             valuesRes = res->getValues();
             for(size_t c = 0; c < numRows; c++) {
                 valuesT[c] /= numCols;
-                *valuesRes = sqrt(valuesT[c]);
+                if(opCode == AggOpCode::STDDEV)
+                    *valuesRes = sqrt(valuesT[c]);
+                else
+                    *valuesRes = valuesT[c];
                 valuesRes += res->getRowSkip();
             }
 
@@ -224,7 +227,7 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                 const VTArg * valuesArg = arg->getValues(0);
                 const size_t numNonZeros = arg->getNumNonZeros(r);
                 *valuesRes = *valuesRes / numCols;
-                if (opCode == AggOpCode::STDDEV){
+                if (opCode != AggOpCode::MEAN){
                     for(size_t i = ctr; i < ctr+numNonZeros; i++) {
                         // const size_t colIdx = colIdxsArg[i];
                         VTRes val = static_cast<VTRes>((valuesArg[i])) - (*valuesRes);
@@ -234,7 +237,10 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                     ctr+=numNonZeros; 
                     valuesT[r] += (numCols - numNonZeros)* (*valuesRes)*(*valuesRes);
                     valuesT[r] /= numCols;
-                    *valuesRes = sqrt(valuesT[r]);
+                    if(opCode == AggOpCode::STDDEV)
+                        *valuesRes = sqrt(valuesT[r]);
+                    else
+                        *valuesRes = valuesT[r];
                 }
                 valuesRes += res->getRowSkip();
             }

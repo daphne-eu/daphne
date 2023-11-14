@@ -148,7 +148,7 @@ struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] /= numRows;
 
-            if(opCode != AggOpCode::STDDEV)
+            if(opCode == AggOpCode::MEAN)
                 return;
 
             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
@@ -161,20 +161,14 @@ struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                     valuesT[c] = valuesT[c] + val * val;
                 }
                 valuesArg += arg->getRowSkip();
-            }
-
-            if (opCode == AggOpCode::STDDEV){
-                for(size_t c = 0; c < numCols; c++) {
-                    valuesT[c] /= numRows;
+            } 
+                
+            for(size_t c = 0; c < numCols; c++) {
+                valuesT[c] /= numRows;
+                if (opCode == AggOpCode::STDDEV)
                     valuesT[c] = sqrt(valuesT[c]);
-                }
             }
-            else{
-                for(size_t c = 0; c < numCols; c++){
-                    valuesT[c] /= numRows;          
-                    std::cout << valuesT[c] << " ";
-                }    
-            }
+            
 
             
             // TODO We could avoid copying by returning tmp and destroying res. But
@@ -254,7 +248,7 @@ struct AggCol<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
         for(size_t c = 0; c < numCols; c++)
             valuesRes[c] /= arg->getNumRows();
 
-        if(opCode != AggOpCode::STDDEV)
+        if(opCode == AggOpCode::MEAN)
             return;
 
         auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
@@ -273,7 +267,6 @@ struct AggCol<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
             valuesT[c] += (valuesRes[c] * valuesRes[c]) * (numRows - nnzCol[c]);
             // Finish computation of stddev.
             valuesT[c] /= numRows;
-            std::cout << valuesT[c] << " ";
             if (opCode == AggOpCode::STDDEV)
                 valuesT[c] = sqrt(valuesT[c]);
         }

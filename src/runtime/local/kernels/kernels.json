@@ -207,7 +207,7 @@
                     [["DenseMatrix", "float"], ["CSRMatrix", "int64_t"]],
                     [["DenseMatrix", "double"], ["CSRMatrix", "int64_t"]]
                 ],
-                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV", "IDXMIN", "IDXMAX"]
+                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV", "IDXMIN", "IDXMAX", "VAR"]
             }
         ]
     },
