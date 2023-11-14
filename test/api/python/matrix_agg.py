@@ -18,7 +18,6 @@ dc = DaphneContext()
 
 m = dc.seq(1, 12, 1).reshape(4, 3)
 
-# TODO The commented out functions below are not supported yet (see #613).
 
 # Full aggregation.
 m.sum().print().compute()
