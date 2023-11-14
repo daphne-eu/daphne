@@ -59,7 +59,7 @@ done
 
 # Build tests.
 if [ $BUILD_DAPHNE -gt 0 ]; then
-  ./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG --no-deps --installPrefix /usr/local --target run_tests
+  ./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG --target run_tests
 fi
 
 # Preparations for running DaphneLib (Python API) tests.
