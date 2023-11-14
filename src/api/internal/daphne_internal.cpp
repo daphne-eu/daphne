@@ -248,6 +248,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "cuda", cat(daphneOptions),
             desc("Use CUDA")
     );
+    static opt<bool> cuda_codegen(
+            "cuda_codegen", cat(daphneOptions),
+            desc("Use CUDA code generation")
+    );
     static opt<bool> fpgaopencl(
             "fpgaopencl", cat(daphneOptions),
             desc("Use FPGAOPENCL")
@@ -450,17 +454,33 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         }
 #endif 
     }
+
+    // set cuda mode from config file
+    if(user_config.use_cuda)
+        cuda = true;
+
+    // check for cuda from cli flag and enable if supported
     if(cuda) {
         int device_count = 0;
 #ifdef USE_CUDA
         CHECK_CUDART(cudaGetDeviceCount(&device_count));
 #endif
-        if(device_count < 1)
+        if(device_count < 1) {
             spdlog::warn("CUDA ops requested by user option but no suitable device found");
+            user_config.use_cuda = false;
+            user_config.use_cuda_codegen = false;
+        }
         else {
             user_config.use_cuda = true;
+
+            // only enable cuda code gen if cuda is supported
+            if(cuda_codegen)
+                user_config.use_cuda_codegen = true;
         }
     }
+    else
+        if(cuda_codegen)
+            spdlog::warn("CUDA code generation requested but CUDA is not enabled (cli param or user config option).");
 
     if(fpgaopencl) {
         user_config.use_fpgaopencl = true;

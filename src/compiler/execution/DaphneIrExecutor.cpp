@@ -111,9 +111,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
 
 #ifdef USE_CUDA
-        if(userConfig_.use_codegen)
+        if(userConfig_.use_cuda_codegen)
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createPatternBasedCodeGenPass(userConfig_));
-        if(userConfig_.explain_codegen)
+        if(userConfig_.explain_cuda_codegen)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after code generation:"));
 #endif
 
