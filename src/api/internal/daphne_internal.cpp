@@ -248,7 +248,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "cuda", cat(daphneOptions),
             desc("Use CUDA")
     );
-    static opt<bool> cuda_codegen(
+    static opt<bool> use_cuda_codegen(
             "cuda_codegen", cat(daphneOptions),
             desc("Use CUDA code generation")
     );
@@ -272,7 +272,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       phy_op_selection,
       type_adaptation,
       vectorized,
-      obj_ref_mgnt
+      obj_ref_mgnt,
+      cuda_codegen
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -290,8 +291,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
-        CommaSeparated);
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
+            clEnumVal(cuda_codegen, "Show DaphneIR after CUDA codegen")),
+    CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
             "args", cat(daphneOptions),
@@ -431,6 +433,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
             case obj_ref_mgnt:
                 user_config.explain_obj_ref_mgnt = true;
+                break;
+            case cuda_codegen:
+                user_config.explain_cuda_codegen = true;
                 break;
         }
     }

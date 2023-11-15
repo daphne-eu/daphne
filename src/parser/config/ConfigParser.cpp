@@ -81,6 +81,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_vectorized = jf.at(DaphneConfigJsonParams::EXPLAIN_VECTORIZED).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT))
         config.explain_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_CUDA_CODEGEN))
+        config.explain_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::EXPLAIN_CUDA_CODEGEN).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME)) {
         config.taskPartitioningScheme = jf.at(DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME).get<SelfSchedulingScheme>();
         if (config.taskPartitioningScheme == SelfSchedulingScheme::INVALID) {

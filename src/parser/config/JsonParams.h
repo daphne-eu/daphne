@@ -45,6 +45,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_TYPE_ADAPTATION = "explain_type_adaptation";
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
     inline static const std::string EXPLAIN_OBJ_REF_MGNT = "explain_obj_ref_mgnt";
+    inline static const std::string EXPLAIN_CUDA_CODEGEN = "explain_cuda_codegen";
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
@@ -76,6 +77,7 @@ struct DaphneConfigJsonParams {
             EXPLAIN_TYPE_ADAPTATION,
             EXPLAIN_VECTORIZED,
             EXPLAIN_OBJ_REF_MGNT,
+            EXPLAIN_CUDA_CODEGEN,
             TASK_PARTITIONING_SCHEME,
             NUMBER_OF_THREADS,
             MINIMUM_TASK_SIZE,
