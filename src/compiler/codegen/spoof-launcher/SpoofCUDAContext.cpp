@@ -87,20 +87,20 @@ void SpoofCUDAContext::destroy_cuda(SpoofCUDAContext *ctx, [[maybe_unused]] uint
 }
 
 size_t SpoofCUDAContext::compile(std::unique_ptr<SpoofOperator> op, const std::string &src) {
-	auto compile_start = clk::now();
+//	auto compile_start = clk::now();
 
 	op->program = std::make_unique<jitify::Program>(kernel_cache.program(src, 0, include_paths));
     op->src = src;
 
-    std::cout << "Compiling kernel src:\n" << src << std::endl;
+//    std::cout << "Compiling kernel src:\n" << src << std::endl;
 
-    auto compile_end = clk::now();
-	auto compile_duration = std::chrono::duration_cast<sec>(compile_end - compile_start).count();
+//    auto compile_end = clk::now();
+//	auto compile_duration = std::chrono::duration_cast<sec>(compile_end - compile_start).count();
 	compiled_ops.push_back(std::move(op));
-	compile_total += compile_duration;
-	std::cout << compiled_ops.back()->name << " compiled in "
-			<< compile_duration << " seconds. Total compile time (abs/rel): "
-			<< compile_total << "/" << compiled_ops.size() << std::endl;
+//	compile_total += compile_duration;
+//	std::cout << compiled_ops.back()->name << " compiled in "
+//			<< compile_duration << " seconds. Total compile time (abs/rel): "
+//			<< compile_total << "/" << compiled_ops.size() << std::endl;
 	return compiled_ops.size() - 1;
 }
 

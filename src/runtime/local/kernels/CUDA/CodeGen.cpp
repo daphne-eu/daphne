@@ -48,7 +48,7 @@ uint32_t writeInputToStagingBuffer2(std::byte* bbuf, const DenseMatrix<VT>* inpu
     auto vtmp = input->getValues(alloc_desc);
     auto vtmp1 =  const_cast<double*>(vtmp);
     auto vtmp2 = reinterpret_cast<size_t>(vtmp1);
-    std::cout << vtmp2 << std::endl;
+//    std::cout << vtmp2 << std::endl;
     ptr_size_t = reinterpret_cast<size_t*>(ptr);
     *ptr_size_t = vtmp2;
     pos += (sizeof(size_t) + 4 * sizeof(uint32_t*) + sizeof(VT));
@@ -113,7 +113,7 @@ VTres CodeGenCW(const DenseMatrix<VTarg>** args, DCTX(dctx)) {
     auto cctx = reinterpret_cast<SpoofCUDAContext*>(dctx->getUserConfig().codegen_ctx_ptr);
     auto opID = reinterpret_cast<size_t>(args[2]);
     auto operator_name = cctx->getOperatorName(opID);
-    std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
+//    std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
 
     int32_t num_inputs = 1;
     int32_t num_side_inputs = 1;
@@ -184,7 +184,7 @@ void CodeGenRW(DenseMatrix<VTres>*& res, const DenseMatrix<VTarg>** args, DCTX(d
     auto cctx = reinterpret_cast<SpoofCUDAContext*>(dctx->getUserConfig().codegen_ctx_ptr);
     auto opID = reinterpret_cast<size_t>(args[2]);
     auto operator_name = cctx->getOperatorName(opID);
-    std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
+//    std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
 
     int32_t num_inputs = 1;
     int32_t num_side_inputs = 1;
@@ -250,14 +250,14 @@ extern "C" {
     void CUDA_codegenCW__double__DenseMatrix_double_variadic__size_t(double *res, const DenseMatrix<double> **arg,
             size_t num_operands, DCTX(ctx)) {
         auto nc = ctx->cuda_contexts.size();
-        std::cout << "codegenCW: num operands: " << num_operands << ", num cuda contexts: " << nc << std::endl;
+//        std::cout << "codegenCW: num operands: " << num_operands << ", num cuda contexts: " << nc << std::endl;
         *res = CodeGenCW<double>(arg, ctx);
     }
 
     void CUDA_codegenRW__DenseMatrix_double__DenseMatrix_double_variadic__size_t(DenseMatrix<double> **res,
             const DenseMatrix<double> **arg, size_t num_operands, DCTX(ctx)) {
         auto nc = ctx->cuda_contexts.size();
-        std::cout << "codegenRW: num operands: " << num_operands << ", num cuda contexts: " << nc << std::endl;
+//        std::cout << "codegenRW: num operands: " << num_operands << ", num cuda contexts: " << nc << std::endl;
         CodeGenRW(*res, arg, ctx);
     }
 

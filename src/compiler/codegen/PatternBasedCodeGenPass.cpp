@@ -79,7 +79,7 @@ static std::string cc_row_test_source = "TMP6\n"
                                     "\n"
                                     "\t__device__  __forceinline__ void exec_dense(uint32_t ai, uint32_t ci, uint32_t rix) {\n"
                                     "\tif(threadIdx.x == 0 && rix == 0) {\n"
-                                    "\t\tprintf(\"rix=%d a->rows=%d b->cols=%d c->rows=%d\\n\", rix, a.rows(), b[0].cols(), c.rows());\n"
+                                    "\t\t//printf(\"rix=%d a->rows=%d b->cols=%d c->rows=%d\\n\", rix, a.rows(), b[0].cols(), c.rows());\n"
                                     "\t\t//printf(\"cuda sizeof(uint32_t*)=%l\\n\", sizeof(uint32_t*));\n"
                                     "\t}\n"
                                     "\t//return;\n"
@@ -372,7 +372,7 @@ void PatternBasedCodeGenPass::runOnOperation() {
             auto generatedOp = builder.create<daphne::CodeGenOpAllAggCellwise>(loc, ValueRange(results).getTypes(), operands, nullptr);
 
 //            logger->debug("replacing");
-            ccSeqCW.back()->dump();
+//            ccSeqCW.back()->dump();
 //            logger->debug("with: ");
             ccSeqCW.back()->replaceAllUsesWith(generatedOp);
 
@@ -382,9 +382,9 @@ void PatternBasedCodeGenPass::runOnOperation() {
 //                arg.replaceAllUsesWith(generatedOp.getResult(0));
 //            }
 //            ccSeqCW.back()->getNextNode()->getNextNode()->getOperand(0).replaceAllUsesWith(generatedOp.getResult(0));
-            for(auto o = 0; o < ccSeqCW.back()->getNumOperands(); o++) {
-                ccSeqCW.back()->getOperand(o).dump();
-            }
+//            for(auto o = 0; o < ccSeqCW.back()->getNumOperands(); o++) {
+//                ccSeqCW.back()->getOperand(o).dump();
+//            }
 
 //            for (auto it = ccSeqCW.rbegin(); it != ccSeqCW.rend(); ++it) {
             for (auto it = ccSeqCW.begin(); it != ccSeqCW.end(); ++it) {
@@ -396,7 +396,8 @@ void PatternBasedCodeGenPass::runOnOperation() {
             }
         }
         else {
-
+            WalkResult::advance();
+            return;
             if(auto transOp = llvm::dyn_cast<daphne::TransposeOp>(op))
 //                    llvm::dyn_cast<daphne::RowAggMaxOp>(op->use_begin()->get().use_begin()->get().getType()))
             {
@@ -485,17 +486,17 @@ void PatternBasedCodeGenPass::runOnOperation() {
 //        (*it)->erase();
 //    }
 //    for (auto it = ops_to_remove.begin(); it != ops_to_remove.end(); ++it) {
-        std::string s;
-        llvm::raw_string_ostream stream(s);
-        (*it)->print(stream);
-        logger->debug("Deleting {}", stream.str());
-        logger->debug("users of {}:", stream.str());
-        for (auto u: (*it)->getUsers()) {
-            if (u)
-                u->dump();
-            else
-                logger->debug("no users of {}", (*it)->getName().getStringRef().str());
-        }
+    //        std::string s;
+    //        llvm::raw_string_ostream stream(s);
+    //        (*it)->print(stream);
+    //        logger->debug("Deleting {}", stream.str());
+    //        logger->debug("users of {}:", stream.str());
+    //        for (auto u: (*it)->getUsers()) {
+    //            if (u)
+    //                u->dump();
+    //            else
+    //                logger->debug("no users of {}", (*it)->getName().getStringRef().str());
+    //        }
         (*it)->erase();
     }
 }
