@@ -131,66 +131,6 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
     }
 }
 
-template<typename... Args>
-int runProgramMPI(std::stringstream & out, std::stringstream & err, const char * execPath, Args ... args) {
-    int linkOut[2]; // pipe ends for stdout
-    int linkErr[2]; // pipe ends for stderr
-    char buf[1024]; // internal buffer for reading from the pipes
-    
-    // Try to create the pipes.
-    if(pipe(linkOut) == -1)
-        throw std::runtime_error("could not create pipe");
-    if(pipe(linkErr) == -1)
-        throw std::runtime_error("could not create pipe");
-    
-    // Try to create the child process.
-    pid_t p = fork();
-    
-    if(p == -1)
-        throw std::runtime_error("could not create child process");
-    else if(p) { // parent
-        // Close write end of pipes.
-        close(linkOut[1]);
-        close(linkErr[1]);
-        
-        // Read data from stdout and stderr of the child from the pipes.
-        ssize_t numBytes;
-        while((numBytes = read(linkOut[0], buf, sizeof(buf)))){
-            out.write(buf, numBytes);
-            // std::cout << "MPI" << out.str() << std::endl;
-        }
-        while((numBytes = read(linkErr[0], buf, sizeof(buf))))
-            err.write(buf, numBytes);
-
-        // Wait for child's termination.
-        int status;
-        waitpid(p, &status, 0);
-        if(status != 0) {
-#ifndef NDEBUG
-            std::cout << "stdout: " << out.str() << std::endl;
-            std::cout << "stderr: " << err.str() << std::endl;
-            std::cout << "status: " << status << std::endl;
-            LOG(args...);
-#endif
-        }
-        return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-    }
-    else { // child
-        // Redirect stdout and stderr to the pipe.
-        dup2(linkOut[1], STDOUT_FILENO);
-        dup2(linkErr[1], STDERR_FILENO);
-        close(linkOut[0]);
-        close(linkOut[1]);
-        close(linkErr[0]);
-        close(linkErr[1]);
-        
-        // Execute other program.
-        execl(execPath, " ", static_cast<char *>(nullptr));
-        // execl does not return, unless it failed.
-        throw std::runtime_error("could not execute the program");
-    }
-}
-
 /**
  * @brief Executes the specified program with the given arguments in the background.
  *  
@@ -284,7 +224,7 @@ int runDaphne(std::stringstream & out, std::stringstream & err, Args ... args) {
 // Function to run Daphne
 template<typename... Args>
 int runDaphneMPI(std::stringstream & out, std::stringstream & err, Args... args) {
-    return runProgramMPI(out, err, args...);
+    return runProgram(out, err, args..., " ");
 }
 
 /**
