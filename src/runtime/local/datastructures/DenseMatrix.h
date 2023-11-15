@@ -217,10 +217,18 @@ public:
      * @return A pointer to the data in the requested memory space
      */
     ValueType* getValues(IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
-        auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range);
-        if(!isLatest)
-            this->mdo->setLatest(id);
-        return ptr;
+//        auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range);
+//        auto [isLatest, id, ptr] = this->mdo->getDataPlacement(alloc_desc);
+//        if(!isLatest)
+//            this->mdo->setLatest(id);
+        DataPlacement* dp;
+        if(!alloc_desc)
+//            alloc_desc = &reinterpret_cast<IAllocationDescriptor>(AllocationDescriptorHost());
+            dp = this->mdo->getDataPlacement(AllocationDescriptorHost());
+        else
+            dp = this->mdo->getDataPlacement(alloc_desc);
+//        auto ptr = reinterpret_cast<ValueType*>(this->mdo->getDataPlacement(alloc_desc));
+        return dp->allocation->getData().get();
     }
     
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {

@@ -47,6 +47,7 @@ enum class ALLOCATION_TYPE {
  * the allocator.
  */
 class IAllocationDescriptor {
+    size_t size = 0;
 public:
     virtual ~IAllocationDescriptor() = default;
     [[nodiscard]] virtual ALLOCATION_TYPE getType() const = 0;
@@ -57,4 +58,5 @@ public:
     virtual void transferFrom(std::byte* dst, size_t size) = 0;
     [[nodiscard]] virtual std::unique_ptr<IAllocationDescriptor> clone() const = 0;
     virtual bool operator==(const IAllocationDescriptor* other) const { return (getType() == other->getType()); }
+    [[nodiscard]] virtual size_t getSize() const { return size; };
 };

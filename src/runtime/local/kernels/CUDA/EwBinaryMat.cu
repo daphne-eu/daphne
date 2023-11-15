@@ -324,7 +324,6 @@ namespace CUDA {
         auto ctx = CUDAContext::get(dctx, deviceID);
         AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
-        // output will be n x m because of column major format of cublas
         if(res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VTres>>(lhs->getNumRows(), lhs->getNumCols(), false, &alloc_desc);
 
