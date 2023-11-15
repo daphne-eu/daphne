@@ -59,6 +59,11 @@ precompiled-dependencies/
 /cmake*/
 /data
 
+<<<<<<< HEAD
 # Allow .daphne and .mlir files in test/
 !test/**/*.mlir
 !test/**/*.daphne
+=======
+# containers
+containers/
+>>>>>>> d86b189 (fix gitignore)
