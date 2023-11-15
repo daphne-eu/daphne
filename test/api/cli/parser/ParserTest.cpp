@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+#include "run_tests.h"
+
 #include <tags.h>
 
 #include <catch.hpp>
@@ -46,6 +48,8 @@ const std::string dirPath = "test/api/cli/parser/";
 /// dialect operations and types is compatible.
 TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER)
 {
+    auto dctx = setupContextAndLogger();
+
     std::string daphneIrCode;
     std::string daphneIRCodeMatRepr;
     {
@@ -70,7 +74,7 @@ TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER)
         mlir::PassManager passManager(&context);
         passManager.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
         passManager.addPass(mlir::createCanonicalizerPass());
-        passManager.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass());
+        passManager.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass(dctx->getUserConfig()));
         
         REQUIRE(failed(passManager.run(moduleOp)) == false);
         
