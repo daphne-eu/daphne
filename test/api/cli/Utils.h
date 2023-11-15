@@ -87,6 +87,7 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         throw std::runtime_error("could not create child process");
     else if(p) { // parent
         // Close write end of pipes.
+        // std::cout << "I am in parent" << std::endl;
         close(linkOut[1]);
         close(linkErr[1]);
         
@@ -94,6 +95,70 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         ssize_t numBytes;
         while((numBytes = read(linkOut[0], buf, sizeof(buf))))
             out.write(buf, numBytes);
+        while((numBytes = read(linkErr[0], buf, sizeof(buf))))
+            err.write(buf, numBytes);
+
+        // Wait for child's termination.
+        int status;
+        waitpid(p, &status, 0);
+        if(status != 0) {
+#ifndef NDEBUG
+            std::cout << "stdout: " << out.str() << std::endl;
+            std::cout << "stderr: " << err.str() << std::endl;
+            std::cout << "status: " << status << std::endl;
+            // std::cout << "I am in parent degub" << std::endl;
+            LOG(args...);
+#endif
+        }
+        return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+    }
+    else { // child
+        // Redirect stdout and stderr to the pipe.
+        // std::cout << "I am in child" << std::endl;
+        // std::cout << execPath << std::endl;
+        dup2(linkOut[1], STDOUT_FILENO);
+        dup2(linkErr[1], STDERR_FILENO);
+        close(linkOut[0]);
+        close(linkOut[1]);
+        close(linkErr[0]);
+        close(linkErr[1]);
+        
+        // Execute other program.
+        execl(execPath, args..., static_cast<char *>(nullptr));
+
+        // execl does not return, unless it failed.
+        throw std::runtime_error("could not execute the program");
+    }
+}
+
+template<typename... Args>
+int runProgramMPI(std::stringstream & out, std::stringstream & err, const char * execPath, Args ... args) {
+    int linkOut[2]; // pipe ends for stdout
+    int linkErr[2]; // pipe ends for stderr
+    char buf[1024]; // internal buffer for reading from the pipes
+    
+    // Try to create the pipes.
+    if(pipe(linkOut) == -1)
+        throw std::runtime_error("could not create pipe");
+    if(pipe(linkErr) == -1)
+        throw std::runtime_error("could not create pipe");
+    
+    // Try to create the child process.
+    pid_t p = fork();
+    
+    if(p == -1)
+        throw std::runtime_error("could not create child process");
+    else if(p) { // parent
+        // Close write end of pipes.
+        close(linkOut[1]);
+        close(linkErr[1]);
+        
+        // Read data from stdout and stderr of the child from the pipes.
+        ssize_t numBytes;
+        while((numBytes = read(linkOut[0], buf, sizeof(buf)))){
+            out.write(buf, numBytes);
+            // std::cout << "MPI" << out.str() << std::endl;
+        }
         while((numBytes = read(linkErr[0], buf, sizeof(buf))))
             err.write(buf, numBytes);
 
@@ -120,8 +185,7 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         close(linkErr[1]);
         
         // Execute other program.
-        execl(execPath, args..., static_cast<char *>(nullptr));
-        
+        execl(execPath, " ", static_cast<char *>(nullptr));
         // execl does not return, unless it failed.
         throw std::runtime_error("could not execute the program");
     }
@@ -201,9 +265,26 @@ int runLIT(std::stringstream &out, std::stringstream &err, std::string dirPath,
  * @return The status code returned by the process, or `-1` if it did not exit
  * normally.
  */
+// template<typename T>
+// void printArgs(T&& arg) {
+//     std::cout << arg << std::endl;
+// }
+
+// template<typename T, typename... Args>
+// void printArgs(T&& arg, Args&&... args) {
+//     std::cout << arg << ", ";
+//     printArgs(std::forward<Args>(args)...);
+// }
+
 template<typename... Args>
 int runDaphne(std::stringstream & out, std::stringstream & err, Args ... args) {
     return runProgram(out, err, "bin/daphne", "daphne", args...);
+}
+
+// Function to run Daphne
+template<typename... Args>
+int runDaphneMPI(std::stringstream & out, std::stringstream & err, Args... args) {
+    return runProgramMPI(out, err, args...);
 }
 
 /**
