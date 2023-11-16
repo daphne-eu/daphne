@@ -65,7 +65,7 @@ forStatement:
 
 // TODO: variable tuple returns
 functionStatement:
-	KW_DEF name=IDENTIFIER '(' args=functionArgs? ')' ('->' retTy=funcTypeDef)? bodyStmt=blockStatement;
+	KW_DEF name=IDENTIFIER '(' args=functionArgs? ')' ('->' retTys=functionRetTypes)? bodyStmt=blockStatement;
 
 returnStatement:
     KW_RETURN ( expr ( ',' expr )* )? ';';
@@ -73,6 +73,8 @@ returnStatement:
 functionArgs: functionArg (',' functionArg)* ','?;
 
 functionArg: var=IDENTIFIER (':' ty=funcTypeDef)?;
+
+functionRetTypes: funcTypeDef (',' funcTypeDef)*;
 
 funcTypeDef: (dataTy=DATA_TYPE ('<' elTy=VALUE_TYPE '>')? | scalarTy=VALUE_TYPE);
 
@@ -151,10 +153,10 @@ VALUE_TYPE:
     ) ;
 
 INT_LITERAL:
-    ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;
+    ('0' | '-'? NON_ZERO_DIGIT DIGIT* ('l' | 'u' | 'ull' | 'z')?);
 
 FLOAT_LITERAL:
-    ('nan' | '-'? 'inf' | '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ );
+    ('nan' | 'nanf' | '-'? ('inf' | 'inff') | '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ 'f'? );
 
 STRING_LITERAL:
     '"' (ESCAPE_SEQ | ~["\\])* '"';

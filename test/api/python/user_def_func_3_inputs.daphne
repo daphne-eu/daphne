@@ -1,0 +1,11 @@
+def use_all_types(s, m, f) {
+    n = nrow(f);
+    sumM = sum(m);
+    return s + sumM*n;
+}
+
+S = 1;
+M = fill(1.0, 5, 5);
+F = createFrame([1], [2], [3], [4], "a", "b", "c", "d");
+ret = use_all_types(S, M, F);
+print(ret);

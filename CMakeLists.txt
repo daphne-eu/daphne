@@ -18,8 +18,23 @@ cmake_minimum_required(VERSION 3.20)
 # This needs to be set *before* the project() command
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
 
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "Using ccache")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
 project(daphne-prototype LANGUAGES CXX C)
 
+find_program(LLD_PROGRAM lld)
+if(LLD_PROGRAM)
+    message(STATUS "Using lld")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-ld=lld")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld")
+endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -117,6 +132,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(CMAKE_CUDA_ARCHITECTURES  OFF)
     cmake_policy(SET CMP0104 NEW)
     add_definitions(-DUSE_CUDA)
+    message(STATUS "Note: disabled CUSPARSE_DEPRECATED in main CMakeLists.txt")
+    add_definitions(-DDISABLE_CUSPARSE_DEPRECATED)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     message(STATUS  "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
@@ -180,4 +197,5 @@ add_subdirectory(src/util)
 
 add_dependencies(CompilerUtils MLIRDaphneTransformsIncGen)
 
+add_subdirectory(daphne-opt)
 add_subdirectory(test)

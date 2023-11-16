@@ -122,11 +122,19 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     static opt<ALLOCATION_TYPE> distributedBackEndSetup("dist_backend", cat(distributedBackEndSetupOptions), 
                                             desc("Choose the options for the distribution backend:"),
                                             values(
-                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange"),
-                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC, "gRPC", "Use remote procedure call for internode data exchange (default)")
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange (default)"),
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC_SYNC, "sync-gRPC", "Use remote procedure call (synchronous gRPC with threading) for internode data exchange"),
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC_ASYNC, "async-gRPC", "Use remote procedure call (asynchronous gRPC) for internode data exchange")
                                                 ),
-                                            init(ALLOCATION_TYPE::DIST_GRPC)
+                                            init(ALLOCATION_TYPE::DIST_MPI)
                                             );
+    static opt<size_t> maxDistrChunkSize("max-distr-chunk-size", cat(distributedBackEndSetupOptions), 
+                                            desc(
+                                                "Define the maximum chunk size per message for the distributed runtime (in bytes)"
+                                                "(default is close to maximum allowed ~2GB)"
+                                            ),
+                                            init(std::numeric_limits<int>::max() - 1024)
+                                        );
 
     
     // Scheduling options
@@ -248,6 +256,14 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
+    static opt<bool> mlirCodegen(
+        "mlir-codegen", cat(daphneOptions),
+        desc("Enables lowering of certain DaphneIR operations on DenseMatrix to low-level MLIR operations.")
+    );
+    static opt<bool> performHybridCodegen(
+        "mlir-hybrid-codegen", cat(daphneOptions),
+        desc("Enables prototypical hybrid code generation combining pre-compiled kernels and MLIR code generation.")
+    );
 
     enum ExplainArgs {
       kernels,
@@ -260,7 +276,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       phy_op_selection,
       type_adaptation,
       vectorized,
-      obj_ref_mgnt
+      obj_ref_mgnt,
+      mlir_codegen
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -278,7 +295,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
+            clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
@@ -359,12 +377,23 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
-    user_config.libdir = libDir.getValue();
+    user_config.use_mlir_codegen = mlirCodegen;
+    user_config.use_mlir_hybrid_codegen = performHybridCodegen;
+
+    if(!libDir.getValue().empty())
+        user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.queueSetupScheme = queueSetupScheme;
 	user_config.victimSelection = victimSelection;
-    user_config.numberOfThreads = numberOfThreads; 
+
+    // only overwrite with non-defaults
+    if(numberOfThreads != 0) {
+        spdlog::trace("Overwriting config file supplied numberOfThreads={} with command line argument --num-threads={}",
+                      user_config.numberOfThreads, numberOfThreads);
+        user_config.numberOfThreads = numberOfThreads;
+    }
+
     user_config.minimumTaskSize = minimumTaskSize; 
     user_config.pinWorkers = pinWorkers;
     user_config.hyperthreadingEnabled = hyperthreadingEnabled;
@@ -373,9 +402,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.distributedBackEndSetup = distributedBackEndSetup;
     if(user_config.use_distributed)
     {
-        if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC)
+        if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_SYNC &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_ASYNC)
             spdlog::warn("No backend has been selected. Wiil use the default 'MPI'");
     }
+    user_config.max_distributed_serialization_chunk_size = maxDistrChunkSize;    
     for (auto explain : explainArgList) {
         switch (explain) {
             case kernels:
@@ -410,6 +440,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
             case obj_ref_mgnt:
                 user_config.explain_obj_ref_mgnt = true;
+                break;
+            case mlir_codegen:
+                user_config.explain_mlir_codegen = true;
                 break;
         }
     }

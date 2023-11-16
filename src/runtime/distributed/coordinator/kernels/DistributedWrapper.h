@@ -29,7 +29,6 @@
     #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #endif
 
-
 #include <mlir/InitAllDialects.h>
 #include <mlir/IR/AsmState.h>
 #include <mlir/Parser/Parser.h>
@@ -116,23 +115,33 @@ public:
             if (isBroadcast(splits[i], inputs[i])){
                 auto type = inputTypes.at(i);
                 if (type==INPUT_TYPE::Matrix) {
-                        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+                    if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
 #ifdef USE_MPI           
-                            broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], false, _dctx);
+                        broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], false, _dctx);
 #endif
-                        }
-                        else { 
-                             broadcast<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], false, _dctx);
-                        }
+                    }
+                    else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) 
+                    { 
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], false, _dctx);
+                    }
+                    else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) 
+                    { 
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], false, _dctx);
+                    }
                 }
                 else {
                         if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
 #ifdef USE_MPI 
-                             broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], true, _dctx);
+                            broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], true, _dctx);
 #endif
                         }
-                        else {
-                            broadcast<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], true, _dctx);
+                        else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) 
+                        { 
+                            broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], true, _dctx);
+                        }
+                        else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) 
+                        { 
+                            broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], true, _dctx);
                         }
                 }
             }
@@ -141,12 +150,17 @@ public:
                 // std::cout << i << " distr: " << inputs[i]->getNumRows() << " x " << inputs[i]->getNumCols() << std::endl;
                 if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
 #ifdef USE_MPI 
-                        distribute<ALLOCATION_TYPE::DIST_MPI>(inputs[i], _dctx);
+                    distribute<ALLOCATION_TYPE::DIST_MPI>(inputs[i], _dctx);
 #endif
                 }
-                else {
-                        distribute<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], _dctx);       
-                }        
+                else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) 
+                {
+                    distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], _dctx);  
+                }
+                else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) 
+                { 
+                    distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], _dctx);  
+                }
             }
         }
 
@@ -154,9 +168,12 @@ public:
 #ifdef USE_MPI   
             distributedCompute<ALLOCATION_TYPE::DIST_MPI>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
 #endif        
-         }
-        else {
-            distributedCompute<ALLOCATION_TYPE::DIST_GRPC>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);   
+        }
+        else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) { 
+            distributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);   
+        }
+        else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) { 
+            distributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);   
         }
         //handle my part as coordinator we currently exclude the coordinator
         /*if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
@@ -173,8 +190,13 @@ public:
                 distributedCollect<ALLOCATION_TYPE::DIST_MPI>(*res[o], _dctx);      
 #endif
             }
-            else {
-                 distributedCollect<ALLOCATION_TYPE::DIST_GRPC>(*res[o], _dctx);
+            else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) 
+            { 
+                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(*res[o], _dctx);
+            }
+            else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) 
+            { 
+                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC>(*res[o], _dctx);
             }
         }      
     }

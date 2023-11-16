@@ -163,6 +163,31 @@ pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ...
     }
 }
 
+/**
+ * @brief Executes the "run-lit.py" python script in a directory and
+ * captures `stdout`, `stderr`, and the status code.
+ *
+ * "run-lit.py" is required to run the LLVM tool llvm-lit in order to
+ * test "*.mlir" files in the directoy using the llvm-lit command RUN:
+ * in each file.
+ *
+ * @param out The stream where to direct the program's standard output.
+ * @param err The stream where to direct the program's standard error.
+ * @param dirPath The path to the directory containing the "run-lit.py" script
+ * and the "*.mlir" test cases.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ * @return The status code returned by the process, or `-1` if it did not exit
+ * normally.
+ */
+template <typename... Args>
+int runLIT(std::stringstream &out, std::stringstream &err, std::string dirPath,
+           Args... args) {
+    return runProgram(out, err, "/bin/python3", "python3",
+                      (dirPath + "run-lit.py").c_str(), "-v", dirPath.c_str(),
+                      args...);
+}
 
 /**
  * @brief Executes DAPHNE's command line interface with the given arguments and
@@ -323,7 +348,7 @@ void compareDaphneToDaphneLib(const std::string & pythonScriptFilePath, const st
     std::stringstream outDaphneLib;
     std::stringstream errDaphneLib;
     int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
-    int statusDaphne = runDaphne(outDaphne, errDaphne, args..., daphneDSLScriptFilePath.c_str());
+    int statusDaphne = runDaphne(outDaphne, errDaphne, daphneDSLScriptFilePath.c_str(), args...);
     
     // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
     // checks of out and err still run and provide useful messages. For err,

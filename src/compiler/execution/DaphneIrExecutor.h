@@ -19,6 +19,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include <api/cli/DaphneUserConfig.h>
+#include "mlir/Pass/PassManager.h"
 
 class DaphneIrExecutor
 {
@@ -32,9 +33,11 @@ public:
     { return &context_; }
 private:
     mlir::MLIRContext context_;
-    bool selectMatrixRepresentations_;
     DaphneUserConfig userConfig_;
+    bool selectMatrixRepresentations_;
     // Storage for lib paths needed for StringRefs
     std::vector<std::string> sharedLibRefPaths;
+
+    void buildCodegenPipeline(mlir::PassManager &);
 };
 

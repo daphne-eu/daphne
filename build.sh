@@ -393,17 +393,7 @@ function clean_param_check() {
 #******************************************************************************
 # #5 Versions of third party dependencies
 #******************************************************************************
-antlrVersion=4.9.2
-catch2Version=2.13.8
-openBlasVersion=0.3.23
-abslVersion=20211102.0
-grpcVersion=1.38.0
-nlohmannjsonVersion=3.10.5
-arrowVersion=12.0.0
-openMPIVersion=4.1.5
-eigenVersion=3.4.0
-spdlogVersion=1.11.0
-papiVersion=7.0.1
+source software-package-versions.txt
 
 #******************************************************************************
 # #6 Set some prefixes, paths and dirs
@@ -624,6 +614,29 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build PAPI again."
     fi
 
+    #------------------------------------------------------------------------------
+    # hwloc
+    #------------------------------------------------------------------------------
+    hwlocDirName="hwloc-$hwlocVersion"
+    hwlocTarName="${hwlocDirName}.tar.gz"
+    hwlocInstDirName=$installPrefix
+    if ! is_dependency_downloaded "hwloc_v${hwlocVersion}"; then
+        daphne_msg "Get hwloc version ${hwlocVersion}"
+        wget "https://download.open-mpi.org/release/hwloc/v2.9/${hwlocTarName}" \
+            -qO "${cacheDir}/${hwlocTarName}"
+        tar -xf "$cacheDir/$hwlocTarName" -C "$sourcePrefix"
+        dependency_download_success "hwloc_v${hwlocVersion}"
+    fi
+    if ! is_dependency_installed "hwloc_v${hwlocVersion}"; then
+        cd "$sourcePrefix/$hwlocDirName/"
+        ./configure --prefix="$hwlocInstDirName"
+        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+        make install
+        cd - > /dev/null
+        dependency_install_success "hwloc_v${hwlocVersion}"
+    else
+        daphne_msg "No need to build hwloc again."
+    fi
 
     #------------------------------------------------------------------------------
     # #8.1 Antlr4 (parser)
@@ -858,8 +871,10 @@ if [ $WITH_DEPS -gt 0 ]; then
 
     if ! is_dependency_installed "${dep_arrow[@]}"; then
         cmake -G Ninja -S "${sourcePrefix}/${arrowDirName}/cpp" -B "${buildPrefix}/${arrowDirName}" \
-            -DCMAKE_INSTALL_PREFIX="${installPrefix}" \
-            -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON
+            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON \
+            -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON \
+            -DARROW_WITH_ZSTD=ON
+
         cmake --build "${buildPrefix}/${arrowDirName}" --target install/strip
         dependency_install_success "${dep_arrow[@]}"
     else

@@ -98,7 +98,7 @@ class DaphneDSLScript:
         """
         if not isinstance(dag_node, DAGNode):
             if isinstance(dag_node, bool):
-                return 'TRUE' if dag_node else 'FALSE'
+                return 'true' if dag_node else 'false'
             return str(dag_node)
 
         # If the node already has a name, then it is already defined
@@ -110,17 +110,13 @@ class DaphneDSLScript:
             self._dfs_dag_nodes(dag_node._source_node)
         # For each node do the dfs operation and save the variable names in `input_var_names`.
         # Get variable names of unnamed parameters.
-
         unnamed_input_vars = [self._dfs_dag_nodes(input_node) for input_node in dag_node.unnamed_input_nodes]
 
         named_input_vars = {}
         if dag_node.named_input_nodes:
             for name, input_node in dag_node.named_input_nodes.items():
                 named_input_vars[name] = self._dfs_dag_nodes(input_node)
-                if isinstance(input_node, DAGNode) and input_node._output_type == OutputType.LIST:
-                    dag_node.daphnedsl_name = named_input_vars[name] + name
-                    return dag_node.daphnedsl_name
-
+                
         # Check if the node gets a name after multi-returns.
         # If it has, return that name.
         if dag_node.daphnedsl_name != "":
@@ -151,12 +147,15 @@ class DaphneDSLScript:
         dag_node._daphnedsl_name = ""
         for n in dag_node.unnamed_input_nodes:
             self._dfs_clear_dag_nodes(n)
+        if dag_node._source_node is not None:
+            self._dfs_clear_dag_nodes(dag_node._source_node)
+            if dag_node._source_node.output_type == OutputType.MULTI_RETURN:
+                for node in dag_node._source_node:
+                    node._daphnedsl_name = ""
         if not dag_node.named_input_nodes:
             return
         for name,n in dag_node._named_input_nodes.items():
             self._dfs_clear_dag_nodes(n)
-        if dag_node._source_node is not None:
-            self._dfs_clear_dag_nodes(dag_node._source_node)
 
     def _next_unique_var(self)->str:
         var_id = self._variable_counter

@@ -1,0 +1,9 @@
+// Performs a MatMulOp. Used to compare precompiled kernel with codegen.
+
+N = 3;
+A = fill(5.0, N, N);
+B = fill(3.0, N, 1);
+
+C = A@B;
+
+print(C); // for small matrices

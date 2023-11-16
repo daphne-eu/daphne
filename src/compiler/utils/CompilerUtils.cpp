@@ -21,6 +21,25 @@
 #include <string>
 
 // **************************************************************************************************
+// Specializations of isConstantHelper for string types
+// **************************************************************************************************
+
+template<>
+std::pair<bool, std::string> CompilerUtils::isConstantHelper<std::string, mlir::StringAttr>(mlir::Value v, std::function<std::string(const mlir::StringAttr&)> func) {
+    if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>()) {
+        if(auto attr = co.getValue().dyn_cast<mlir::StringAttr>()) {
+            return std::make_pair(true, func(attr));
+        }
+    }
+    if(auto co = v.getDefiningOp<mlir::arith::ConstantOp>()) {
+        if(auto attr = co.getValue().dyn_cast<mlir::StringAttr>()) {
+            return std::make_pair(true, func(attr));
+        }
+    }
+    return std::make_pair(false, std::string());
+}
+
+// **************************************************************************************************
 // Specializations of isConstant for various types
 // **************************************************************************************************
 
@@ -34,6 +53,14 @@ std::pair<bool, std::string> CompilerUtils::isConstant<std::string>(mlir::Value 
 template<>
 std::pair<bool, int64_t> CompilerUtils::isConstant<int64_t>(mlir::Value v) {
     return isConstantHelper<int64_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
+    );
+}
+
+
+template<>
+std::pair<bool, uint64_t> CompilerUtils::isConstant<uint64_t>(mlir::Value v) {
+    return isConstantHelper<uint64_t, mlir::IntegerAttr>(
             v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
     );
 }

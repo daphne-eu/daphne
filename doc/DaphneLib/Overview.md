@@ -129,7 +129,8 @@ DaphneLib currently supports the following binary operators on DAPHNE matrices/f
 | Operator | Meaning |
 | --- | --- |
 | `@` | matrix multiplication |
-| `*`, `/` | multiplication, division |
+| `**` | exponentiation |
+| `*`, `/`, `%` | multiplication, division, modulo |
 | `+`, `-` | addition/string concatenation, subtraction |
 | `==`, `!=`, `<`, `<=`, `>`, `>=` | comparison |
 

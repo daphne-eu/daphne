@@ -51,4 +51,3 @@ void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, bool transa, boo
 
 
 
-

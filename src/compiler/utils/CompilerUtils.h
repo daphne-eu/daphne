@@ -178,6 +178,9 @@ public:
             return "Descriptor";
         else if(t.isa<mlir::daphne::TargetType>())
             return "Target";
+        else if(auto memRefType = t.dyn_cast<mlir::MemRefType>()) {
+            return "StridedMemRefType_" + mlirTypeToCppTypeName(memRefType.getElementType(), false) + "_2";
+        }
 
         std::string typeName;
         llvm::raw_string_ostream rsos(typeName);

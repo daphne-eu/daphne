@@ -1,0 +1,7 @@
+// Performs a Abs. Used to compare precompiled kernel with codegen. Value
+// extracted as scalar to avoid it being optimized out of the calculation with
+// constant folding or similar.
+
+X = [1.0, -2.0, -4.0];
+a = as.scalar(X[2:3, 0:1]);
+print(abs(a));

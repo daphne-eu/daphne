@@ -43,7 +43,9 @@ const std::vector<LogConfig> DaphneLogger::fallback_loggers = {
         {"default","", 4,"%^[%l]:%$ %v"},
         {"compiler::cuda", "", 4, "%^[%n %L]:%$ %v" },
         {"runtime::cuda", "", 4, "%^[%n %L]:%$ %v" },
-        {"runtime", "", 4, "%^[%n %L]:%$ %v" }
+        {"runtime", "", 4, "%^[%n %L]:%$ %v" },
+        {"compiler", "", 4, "%^[%n %L]:%$ %v" },
+        {"parser", "", 4, "%^[%n %L]:%$ %v" }
 };
 
 void DaphneLogger::createLoggers(const LogConfig& config) {
@@ -65,7 +67,7 @@ void DaphneLogger::createLoggers(const LogConfig& config) {
         // special treatment for the default logger
         if (config.name == "default") {
             // make sure errors will always be displayed
-            if (logger->level() < spdlog::level::err)
+            if (logger->level() > spdlog::level::err)
                 logger->set_level(spdlog::level::err);
 
             default_logger = logger;

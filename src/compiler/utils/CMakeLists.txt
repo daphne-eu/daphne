@@ -14,6 +14,7 @@
 
 add_library(CompilerUtils STATIC
         CompilerUtils.cpp
+        LoweringUtils.cpp
         TypePrinting.cpp
 )
 

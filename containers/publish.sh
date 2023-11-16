@@ -22,8 +22,13 @@ echo
 exit
 
 TIMESTAMP_DATE=$(date -I)
-#VERSION=$TIMESTAMP_DATE
-VERSION=v0.2-rc1
+
+# swap comments to tag a specific version
+VERSION=$TIMESTAMP_DATE
+#VERSION=v0.2-rc1
+
+# read needed software versions (e.g., CUDA version,...)
+source ../software-package-versions.txt
 
 #on some installations docker can only be run with sudo
 USE_SUDO=
@@ -36,21 +41,21 @@ if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
 fi
 
 # cuda dev image
-$USE_SUDO docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04 daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04
-$USE_SUDO docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04
+$USE_SUDO docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion} daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}
+$USE_SUDO docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}
 $USE_SUDO docker push daphneeu/daphne-dev:latest_${ARCH}_CUDA
 
 # base dev image
-$USE_SUDO docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04 daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE_ubuntu20.04
-$USE_SUDO docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE_ubuntu20.04
+$USE_SUDO docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu${ubuntuVersion} daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE_ubuntu${ubuntuVersion}
+$USE_SUDO docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE_ubuntu${ubuntuVersion}
 $USE_SUDO docker push daphneeu/daphne-dev:latest_${ARCH}_BASE
 
 # cuda run image
-$USE_SUDO docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04 daphneeu/daphne:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04
-$USE_SUDO docker push daphneeu/daphne:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04
+$USE_SUDO docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_CUDA_${cudaVersion}-cudnn8-runtime-ubuntu${ubuntuVersion} daphneeu/daphne:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-runtime-ubuntu${ubuntuVersion}
+$USE_SUDO docker push daphneeu/daphne:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-runtime-ubuntu${ubuntuVersion}
 $USE_SUDO docker push daphneeu/daphne:latest_${ARCH}_CUDA
 
 # base run image
-$USE_SUDO docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04 daphneeu/daphne:${VERSION}_${ARCH}_BASE_ubuntu20.04
-$USE_SUDO docker push daphneeu/daphne:${VERSION}_${ARCH}_BASE_ubuntu20.04
+$USE_SUDO docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu${ubuntuVersion} daphneeu/daphne:${VERSION}_${ARCH}_BASE_ubuntu${ubuntuVersion}
+$USE_SUDO docker push daphneeu/daphne:${VERSION}_${ARCH}_BASE_ubuntu${ubuntuVersion}
 $USE_SUDO docker push daphneeu/daphne:latest_${ARCH}_BASE

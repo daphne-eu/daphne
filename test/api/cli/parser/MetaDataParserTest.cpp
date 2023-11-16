@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+#include "run_tests.h"
+
 #include <tags.h>
 
 #include <catch.hpp>
@@ -72,6 +74,13 @@ TEST_CASE("Frame meta data file without \"label\" keys", TAG_PARSER)
 {
     const std::string metaDataFile = dirPath + "MetaData7";
     REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
+}
+
+TEST_CASE("Frame meta data file with default \"valueType\"", TAG_PARSER)
+{
+    auto dctx = setupContextAndLogger();
+    const std::string metaDataFile = dirPath + "MetaData8";
+    REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER,(DenseMatrix, CSRMatrix), (double))

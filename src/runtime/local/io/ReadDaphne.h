@@ -70,7 +70,7 @@ struct ReadDaphne<DenseMatrix<VT>> {
         auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(&res, DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = deser.begin(); it != deser.end(); ++it) {
             it->first = DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
-            f.read(it->second.data(), it->first);
+            f.read(it->second->data(), it->first);
             // in case we read less than that
             it->first = f.gcount();
         }
@@ -90,7 +90,7 @@ struct ReadDaphne<CSRMatrix<VT>> {
         auto deser = DaphneDeserializerChunks<CSRMatrix<VT>>(&res, DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = deser.begin(); it != deser.end(); ++it) {
             it->first = DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
-            f.read(it->second.data(), it->first);
+            f.read(it->second->data(), it->first);
             // in case we read less than that
             it->first = f.gcount();
         }

@@ -1,3 +1,13 @@
+DenseMatrix(1x2, uint64_t)
+1 0
+DenseMatrix(1x2, uint64_t)
+1 0
+DenseMatrix(1x2, uint64_t)
+1 0
+
+DenseMatrix(2x1, uint64_t)
+1
+0
 DenseMatrix(2x1, uint64_t)
 1
 0
