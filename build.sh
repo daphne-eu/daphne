@@ -1003,9 +1003,11 @@ daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
+    -DLLVM_PARALLEL_LINK_JOBS=2 \
+    -DLLVM_PARALLEL_COMPILE_JOBS=6 \
     $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI
 
-cmake --build "$daphneBuildDir" --target "$target"
+cmake --build "$daphneBuildDir" --target "$target" -j 6
 
 build_ts_end=$(date +%s%N)
 daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
