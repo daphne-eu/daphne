@@ -142,7 +142,9 @@ template <> struct Group<Frame> {
                         starLabels.push_back(argLabels[m]);
                     }
                 }
-                // we assume that other key columns are included in the * operator, otherwise they would not be in the argument frame and throw a error later on 
+                // we assume that other key columns are included in the *
+                // operator, otherwise they would not be in the argument frame
+                // and throw a error later on
                 numColsRes = starLabels.size() + numAggCols;
             } 
         }
@@ -152,16 +154,10 @@ template <> struct Group<Frame> {
         auto idxs = std::shared_ptr<size_t[]>(new size_t[numColsRes]);
         numKeyCols = starLabels.size()? starLabels.size() : numKeyCols;
         bool * ascending = new bool[starLabels.size()];
-        if (starLabels.size()) {
-            for (size_t i = 0; i < numKeyCols; i++) {
-                idxs[i] = arg->getColumnIdx(starLabels[i]);
-                ascending[i] = true;
-            } 
-        } else {
-            for (size_t i = 0; i < numKeyCols; i++) {
-                idxs[i] = arg->getColumnIdx(keyCols[i]);
-                ascending[i] = true;
-            }   
+        for (size_t i = 0; i < numKeyCols; ++i) {
+          idxs[i] = starLabels.size() ? arg->getColumnIdx(starLabels[i])
+                                      : arg->getColumnIdx(keyCols[i]);
+          ascending[i] = true;
         }
         for (size_t i = numKeyCols; i < numColsRes; i++) {
             idxs[i] = arg->getColumnIdx(aggCols[i-numKeyCols]);

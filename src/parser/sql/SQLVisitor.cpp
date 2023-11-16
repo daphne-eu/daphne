@@ -581,36 +581,24 @@ antlrcpp::Any SQLVisitor::visitTableExpr(
 
 //distinctExpr
 antlrcpp::Any SQLVisitor::visitDistinctExpr(
-    SQLGrammarParser::DistinctExprContext *ctx
+        SQLGrammarParser::DistinctExprContext *ctx
 )
 {
-    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)       //If group is active
-       != columnName.size())                                          //EXCLUSIVE OR there is an aggregation  
-    {
-        // due to earlier grouping XOR aggregation the result is already distinct
-        return currentFrame;
-    }else {
-        mlir::Location loc = utils.getLoc(ctx->start);
-        mlir::Value starLiteral = createStringConstant("*");
-        std::vector<mlir::Value> cols{starLiteral};
-        std::vector<mlir::Value> aggs;
-        std::vector<mlir::Attribute> functions;
-        mlir::Type vt = utils.unknownType;
-        std::vector<mlir::Type> colTypes{vt};
-        mlir::Type resType = mlir::daphne::FrameType::get(
-            builder.getContext(), colTypes
-        );
-        return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::GroupOp>(
-                loc,
-                resType,
-                currentFrame,
-                cols,
-                aggs,
-                builder.getArrayAttr(functions)
-            )
-        );
-    }   
+  if (isBitSet(sqlFlag, (int64_t)SQLBit::group) // If group is active
+      != columnName.size())     // EXCLUSIVE OR there is an aggregation
+        return currentFrame;    // due to earlier grouping XOR aggregation the result is already distinct
+
+  mlir::Location loc = utils.getLoc(ctx->start);
+  mlir::Value starLiteral = createStringConstant("*");
+  std::vector<mlir::Value> cols{starLiteral};
+  std::vector<mlir::Value> aggs;
+  std::vector<mlir::Attribute> functions;
+  mlir::Type vt = utils.unknownType;
+  std::vector<mlir::Type> colTypes{vt};
+  mlir::Type resType =
+      mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+  return static_cast<mlir::Value>(builder.create<mlir::daphne::GroupOp>(
+      loc, resType, currentFrame, cols, aggs, builder.getArrayAttr(functions)));
 }
 
 //fromExpr
@@ -915,8 +903,8 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
 {
     if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
         && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggregation
-        && grouped[ctx->selectIdent()->getText()] == 0 //AND the label is not in group expr
-        && grouped["*"] == 0) //AND there is no * in group expr
+        && grouped.count(ctx->selectIdent()->getText()) == 0 //AND the label is not in group expr
+        && grouped.count("*") == 0) //AND there is no * in group expr
     {
         std::stringstream err_msg;
         err_msg << "Error during a generalExpr. \""
