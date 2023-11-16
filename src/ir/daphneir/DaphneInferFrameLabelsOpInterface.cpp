@@ -200,7 +200,15 @@ void daphne::GroupOp::inferFrameLabels() {
     std::vector<std::string> aggFuncNames;
 
     for(Value t: getKeyCol()){ //Adopting keyCol Labels
-        newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(t));
+        std::string keyLabel = CompilerUtils::constantOrThrow<std::string>(t);
+        if(keyLabel == "*") {
+            daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+            for (std::string frameLabel : *arg.getLabels()) {
+                newLabels->push_back(frameLabel);
+            }
+        } else {
+            newLabels->push_back(keyLabel);
+        }
     }
 
     for(Value t: getAggCol()){

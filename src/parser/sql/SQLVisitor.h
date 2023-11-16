@@ -183,6 +183,9 @@ public:
 //tableExpr
     antlrcpp::Any visitTableExpr(SQLGrammarParser::TableExprContext * ctx) override;
 
+//distinctExpr
+    antlrcpp::Any visitDistinctExpr(SQLGrammarParser::DistinctExprContext * ctx) override;
+
 //fromExpr
     antlrcpp::Any visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx) override;
 
