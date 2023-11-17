@@ -167,6 +167,10 @@ void CUDAContext::free(size_t id) {
     allocations.erase(id);
 }
 
-int CUDAContext::getMaxNumThreads() {
+int CUDAContext::getMaxNumThreads() const {
     return device_properties.maxThreadsPerBlock;
+}
+
+int CUDAContext::getMaxNumBlocks() const {
+    return device_properties.maxGridSize[0];
 }
