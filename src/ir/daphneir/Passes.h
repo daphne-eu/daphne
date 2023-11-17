@@ -43,8 +43,15 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createAdaptTypesToKernelsPass();
     std::unique_ptr<Pass> createDistributeComputationsPass();
     std::unique_ptr<Pass> createDistributePipelinesPass();
+    std::unique_ptr<Pass> createMapOpLoweringPass();
+    std::unique_ptr<Pass> createEwOpLoweringPass();
+    std::unique_ptr<Pass> createModOpLoweringPass();
     std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
+    std::unique_ptr<Pass> createDaphneOptPass();
+    std::unique_ptr<Pass> createMatMulOpLoweringPass();
+    std::unique_ptr<Pass> createAggAllOpLoweringPass();
+    std::unique_ptr<Pass> createMemRefTestPass();
     std::unique_ptr<Pass> createProfilingPass();
     std::unique_ptr<Pass> createLowerToLLVMPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createManageObjRefsPass();

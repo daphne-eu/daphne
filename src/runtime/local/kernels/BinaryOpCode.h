@@ -18,29 +18,33 @@
 
 enum class BinaryOpCode {
     // Arithmetic.
-    ADD, // addition
-    SUB, // subtraction
-    MUL, // multiplication
-    DIV, // division
-    POW, // to the power of
-    MOD, // modulus
-    LOG, // logarithm
+    ADD,  // addition
+    SUB,  // subtraction
+    MUL,  // multiplication
+    DIV,  // division
+    POW,  // to the power of
+    MOD,  // modulus
+    LOG,  // logarithm
+
     // Comparisons.
-    EQ,  // equal
-    NEQ, // not equal
-    LT,  // less than
-    LE,  // less equal
-    GT,  // greater than
-    GE,  // greater equal
-    
+    EQ,   // equal
+    NEQ,  // not equal
+    LT,   // less than
+    LE,   // less equal
+    GT,   // greater than
+    GE,   // greater equal
+
     // Min/max.
     MIN,
     MAX,
-    
+
     // Logical.
     AND,
     OR,
+
+    // Bitwise.
+    BITWISE_AND,
 };
 
 static std::string_view binary_op_codes[] = {"ADD", "SUB", "MUL", "DIV", "POW", "MOD", "LOG", "EQ", "NEQ", "LT", "LE",
-        "GT", "GE", "MIN", "MAX", "AND", "OR"};
+        "GT", "GE", "MIN", "MAX", "AND", "OR", "BITWISE_AND"};

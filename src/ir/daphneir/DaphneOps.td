@@ -34,8 +34,11 @@ include "ir/daphneir/DaphneTypeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
 include "ir/daphneir/FPGAOPENCLSupport.td"
 
+include "mlir/Dialect/LLVMIR/LLVMTypes.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Interfaces/CallInterfaces.td"
+include "mlir/IR/AttrTypeBase.td"
 
 // ****************************************************************************
 // Custom constraints
@@ -65,6 +68,28 @@ class TypesMatchOrOneIsMatrixOfOther<string a, string b> : PredOpTrait<
 
 class Daphne_Op<string mnemonic, list<Trait> traits = []> :
         Op<Daphne_Dialect, mnemonic, traits>;
+
+// ****************************************************************************
+// DAPHNE Runtime Interoperability
+// ****************************************************************************
+
+def Daphne_ConvertMemRefToDenseMatrix : Daphne_Op<"convertMemRefToDenseMatrix"> {
+    let summary = "Return a DenseMatrix.";
+    let description = [{ Constructs a DenseMatrix given a rank 2 StridedMemRefType. }];
+
+    /* let arguments = (ins AnyMemRef:$arg); */
+    let hasCanonicalizeMethod = 1;
+    let arguments = (ins Size:$base, Size:$offset, Size:$size0, Size:$size1, Size:$stride0, Size:$stride1);
+    let results = (outs MatrixOrU:$res);
+}
+
+def Daphne_ConvertDenseMatrixToMemRef : Daphne_Op<"convertDenseMatrixToMemRef", [Pure]> {
+    let summary = "Given a DenseMatrix, return a StridedMemRefType.";
+    let description = [{ Constructs a StridedMemRefType with rank 2 from a DenseMatrix* with already allocated memory. }];
+    let hasCanonicalizeMethod = 1;
+    let arguments = (ins MatrixOrU:$arg);
+    let results = (outs AnyMemRef:$output);
+}
 
 // ****************************************************************************
 // Data generation
@@ -110,7 +135,6 @@ def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
     NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>,
     SparsityFromIthScalar<4>, CastArgsToResTypeRandMatrixOp
 ]> {
-    //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
     let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
     let results = (outs MatrixOrU:$res);
 }
@@ -173,7 +197,8 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
 class Daphne_EwUnaryOp<string name, Type scalarType, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeFromFirstArg,
     ShapeFromArg,
-    CastArgsToResType
+    CastArgsToResType,
+    NoMemoryEffect
 ])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$arg);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
@@ -228,7 +253,8 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
     DeclareOpInterfaceMethods<DistributableOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     ShapeEwBinary,
-    CastArgsToResType
+    CastArgsToResType,
+    NoMemoryEffect
 ])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
@@ -278,6 +304,12 @@ def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar, [ValueTypeFromArgs
 def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
 def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , NumScalar, [Commutative, ValueTypeFromArgsInt]>;
 def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
+
+// ----------------------------------------------------------------------------
+// Bitwise
+// ----------------------------------------------------------------------------
+
+def Daphne_EwBitwiseAndOp    : Daphne_EwBinaryOp<"ewBitwiseAnd", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
 
 // ----------------------------------------------------------------------------
 // Strings
@@ -576,7 +608,7 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArg, NumColsFromIthArgNumRows<1>, CUDASupport
+    DeclareOpInterfaceMethods<InferShapeOpInterface>, CUDASupport
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -1288,7 +1320,7 @@ def Daphne_PrintOp : Daphne_Op<"print"> {
     // TODO We might change it to only accept scalars here and enforce toString
     // for matrices and frames. But currently, we need it like that for the
     // rest of the program.
-    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame, Unknown]>:$arg, BoolScalar:$newline, BoolScalar:$err);
+    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame, AnyMemRef, Unknown]>:$arg, BoolScalar:$newline, BoolScalar:$err);
     let results = (outs); // no results
 }
 

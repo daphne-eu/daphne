@@ -27,6 +27,9 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstring>
+#include <cmath>
+#include <typeinfo>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -108,8 +111,9 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
             for(size_t r = 0; r < numRows; r++) {
                 VTRes agg = static_cast<VTRes>(*valuesArg);
-                for(size_t c = 1; c < numCols; c++)
+                for(size_t c = 1; c < numCols; c++){
                     agg = func(agg, static_cast<VTRes>(valuesArg[c]), ctx);
+                }
                 *valuesRes = static_cast<VTRes>(agg);
                 valuesArg += arg->getRowSkip();
                 valuesRes += res->getRowSkip();
@@ -118,18 +122,45 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             if(AggOpCodeUtils::isPureBinaryReduction(opCode))
                 return;
 
-            // The op-code is either MEAN or STDDEV
+            // The op-code is either MEAN or STDDEV or VAR
             valuesRes = res->getValues();
+            // valuesArg = arg->getValues();
             for(size_t r = 0; r < numRows; r++) {
                 *valuesRes = (*valuesRes) / numCols;
                 valuesRes += res->getRowSkip();
             }
+
             if(opCode == AggOpCode::MEAN)
                 return;
             
-            // else op-code is STDDEV
-            // TODO STDDEV
-            throw std::runtime_error("unsupported AggOpCode in AggRow for DenseMatrix");
+            // else op-code is STDDEV or VAR
+
+            // Create a temporary matrix to store the resulting standard deviations for each row
+            auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
+            VTRes * valuesT = tmp->getValues();
+            valuesArg = arg->getValues();
+            valuesRes = res->getValues();
+            for(size_t r = 0; r < numRows; r++) {
+                for(size_t c = 0; c < numCols; c++) {
+                    VTRes val = static_cast<VTRes>(valuesArg[c]) - (*valuesRes);
+                    valuesT[r] = valuesT[r] + val * val;
+                }
+                valuesArg += arg->getRowSkip();
+                valuesRes += res->getRowSkip();
+               
+            }
+            valuesRes = res->getValues();
+            for(size_t c = 0; c < numRows; c++) {
+                valuesT[c] /= numCols;
+                if(opCode == AggOpCode::STDDEV)
+                    *valuesRes = sqrt(valuesT[c]);
+                else
+                    *valuesRes = valuesT[c];
+                valuesRes += res->getRowSkip();
+            }
+
+            DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
+            
         }
     }
 };
@@ -169,10 +200,13 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                 valuesRes += res->getRowSkip();
             }
         }
-        else { // The op-code is either MEAN or STDDEV
+        else { // The op-code is either MEAN or STDDEV or VAR
             // get sum for each row
+            size_t ctr = 0 ;
             const VTRes neutral = VTRes(0);
             const bool isSparseSafe = true;
+            auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
+            VTRes * valuesT = tmp->getValues();
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             for (size_t r = 0; r < numRows; r++){
                 *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(
@@ -184,14 +218,31 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                     neutral,
                     ctx
                 );
-                if (opCode == AggOpCode::MEAN)
-                    *valuesRes = *valuesRes / numCols;
-                else
-                    throw std::runtime_error("unsupported AggOpCode in AggRow for CSRMatrix");
+                const VTArg * valuesArg = arg->getValues(0);
+                const size_t numNonZeros = arg->getNumNonZeros(r);
+                *valuesRes = *valuesRes / numCols;
+                if (opCode != AggOpCode::MEAN){
+                    for(size_t i = ctr; i < ctr+numNonZeros; i++) {
+                        VTRes val = static_cast<VTRes>((valuesArg[i])) - (*valuesRes);
+                        valuesT[r] = valuesT[r] + val * val;
+                    }
+
+                    ctr+=numNonZeros; 
+                    valuesT[r] += (numCols - numNonZeros) * (*valuesRes)*(*valuesRes);
+                    valuesT[r] /= numCols;
+                    if(opCode == AggOpCode::STDDEV)
+                        *valuesRes = sqrt(valuesT[r]);
+                    else
+                        *valuesRes = valuesT[r];
+                }
                 valuesRes += res->getRowSkip();
             }
+            valuesRes = res->getValues();
+            DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
+
         }
     }
 };
+
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H

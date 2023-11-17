@@ -33,6 +33,7 @@ enum class AggOpCode {
     IDXMAX,
     MEAN,
     STDDEV,
+    VAR,
 };
 
 struct AggOpCodeUtils {
@@ -45,6 +46,7 @@ struct AggOpCodeUtils {
                 return true;
             case AggOpCode::MEAN:
             case AggOpCode::STDDEV:
+            case AggOpCode::VAR:
                 return false;
             default:
                 throw std::runtime_error("unsupported AggOpCode");
@@ -85,6 +87,7 @@ struct AggOpCodeUtils {
             case AggOpCode::MAX:
             case AggOpCode::MEAN:
             case AggOpCode::STDDEV:
+            case AggOpCode::VAR:
                 return false;
             default:
                 throw std::runtime_error("unsupported AggOpCode");

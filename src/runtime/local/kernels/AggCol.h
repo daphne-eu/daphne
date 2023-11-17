@@ -143,12 +143,12 @@ struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             if(AggOpCodeUtils::isPureBinaryReduction(opCode))
                 return;
             
-            // The op-code is either MEAN or STDDEV.
+            // The op-code is either MEAN or STDDEV or VAR.
 
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] /= numRows;
 
-            if(opCode != AggOpCode::STDDEV)
+            if(opCode == AggOpCode::MEAN)
                 return;
 
             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
@@ -165,9 +165,12 @@ struct AggCol<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
             for(size_t c = 0; c < numCols; c++) {
                 valuesT[c] /= numRows;
-                valuesT[c] = sqrt(valuesT[c]);
+                if (opCode == AggOpCode::STDDEV)
+                    valuesT[c] = sqrt(valuesT[c]);
             }
+            
 
+            
             // TODO We could avoid copying by returning tmp and destroying res. But
             // that might be wrong if res was not nullptr initially.
             memcpy(valuesRes, valuesT, numCols * sizeof(VTRes));
@@ -240,12 +243,12 @@ struct AggCol<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
             return;
         
-        // The op-code is either MEAN or STDDEV.
+        // The op-code is either MEAN or STDDEV or VAR.
 
         for(size_t c = 0; c < numCols; c++)
             valuesRes[c] /= arg->getNumRows();
 
-        if(opCode != AggOpCode::STDDEV)
+        if(opCode == AggOpCode::MEAN)
             return;
 
         auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
@@ -264,7 +267,8 @@ struct AggCol<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
             valuesT[c] += (valuesRes[c] * valuesRes[c]) * (numRows - nnzCol[c]);
             // Finish computation of stddev.
             valuesT[c] /= numRows;
-            valuesT[c] = sqrt(valuesT[c]);
+            if (opCode == AggOpCode::STDDEV)
+                valuesT[c] = sqrt(valuesT[c]);
         }
         
         delete[] nnzCol;

@@ -33,7 +33,7 @@ query:
     select ';'?;
 
 select:
-    SQL_SELECT selectExpr (',' selectExpr)*
+    SQL_SELECT distinctExpr? selectExpr (',' selectExpr)*
     SQL_FROM tableExpr
     whereClause?
     groupByClause?
@@ -51,6 +51,9 @@ selectExpr:
 
 tableExpr:
     fromExpr joinExpr*;
+
+distinctExpr:
+    SQL_DISTINCT;
 
 fromExpr:
     var=tableReference #tableIdentifierExpr
@@ -83,6 +86,7 @@ orderInformation:
 
 generalExpr:
     literal # literalExpr
+    | '*' # starExpr
     | selectIdent # identifierExpr
     | func=IDENTIFIER '(' var=generalExpr ')' #groupAggExpr
     | '(' generalExpr ')' # paranthesesExpr
@@ -97,7 +101,7 @@ tableReference:
     var=IDENTIFIER (SQL_AS? aka=IDENTIFIER)?;
 
 selectIdent:
-     (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
+    (frame=IDENTIFIER '.')? var=(IDENTIFIER|'*')  #stringIdent
     ;
 
 literal:

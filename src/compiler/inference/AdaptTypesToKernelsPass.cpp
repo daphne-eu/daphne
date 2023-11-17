@@ -40,6 +40,10 @@ using namespace mlir;
 struct AdaptTypesToKernelsPass : public PassWrapper<AdaptTypesToKernelsPass, OperationPass<func::FuncOp>>
 {
     void runOnOperation() final;
+    StringRef getArgument() const final { return "adapt-types-to-kernels"; }
+    StringRef getDescription() const final {
+        return "TODO";
+    }
 };
 
 void AdaptTypesToKernelsPass::runOnOperation()

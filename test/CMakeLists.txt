@@ -47,15 +47,22 @@ set(TEST_SOURCES
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/vectorized/VectorizedPipelineTest.cpp
         api/cli/Utils.cpp
-    
+
         api/python/DaphneLibTest.cpp
-        
+
+        api/cli/codegen/EwBinaryScalarTest.cpp
+        api/cli/codegen/MatMulTest.cpp
+        api/cli/codegen/EwOpLoopFusionTest.cpp
+        api/cli/codegen/AggAllTest.cpp
+        api/cli/codegen/MapOpTest.cpp
+        codegen/CodegenTest.cpp
+
         ir/daphneir/InferTypesTest.cpp
-        
+
         parser/config/ConfigParserTest.cpp
-    
+
         runtime/distributed/worker/WorkerTest.cpp
-    
+
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
@@ -142,7 +149,7 @@ endif()
 
 add_executable(run_tests ${TEST_SOURCES})
 set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_dependencies(run_tests daphne daphnelib DistributedWorker)
+add_dependencies(run_tests daphne daphnelib DistributedWorker daphne-opt)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto DaphneConfigParser

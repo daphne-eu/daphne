@@ -55,4 +55,25 @@ def WhileLoopInvariantCodeMotionPass : Pass<"while-loop-invariant-code-motion", 
     let constructor = "mlir::daphne::createWhileLoopInvariantCodeMotionPass()";
 }
 
+def AggAllLoweringPass : Pass<"lower-agg", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createAggAllOpLoweringPass()";
+}
+
+def MatMulOpLoweringPass : Pass<"lower-mm", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createMatMulOpLoweringPass()";
+}
+
+def DaphneOpsOptPass : Pass<"opt-daphne", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createDaphneOptPass()";
+}
+
+def MapOpLoweringPass: Pass<"lower-map", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createMapOpLoweringPass()";
+}
+
+def LowerEwOpPass: Pass<"lower-ew", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createEwOpLoweringPass()";
+}
+
+
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

@@ -33,5 +33,3 @@ const std::string dirPath = "test/api/cli/sql/";
             } \
         } \
     }
-
-MAKE_TEST_CASE("group", 2)

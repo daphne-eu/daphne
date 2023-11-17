@@ -161,6 +161,9 @@ public:
             f.getBody().back().getTerminator()->getOperandTypes()));
     }
 
+    StringRef getArgument() const final { return "select-matrix-representations"; }
+    StringRef getDescription() const final { return "TODO"; }
+
     static bool returnsKnownProperties(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type rt) {
             if(auto mt = rt.dyn_cast<daphne::MatrixType>())

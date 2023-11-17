@@ -1,0 +1,11 @@
+// Performs loop fusion on multiple EwBinaryOps. Used to compare precompiled
+// kernel with codegen.
+
+X = fill(4.0, 2, 2);
+X = X * 2.0;
+Y = X + 2.0;
+Z = X + 1.0;
+
+print(X);
+print(Y);
+print(Z);

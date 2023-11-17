@@ -1,0 +1,2 @@
+Frame(1x1, [SUM(f.a):int64_t])
+30

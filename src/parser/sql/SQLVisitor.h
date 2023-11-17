@@ -75,7 +75,7 @@ class SQLVisitor : public SQLGrammarVisitor {
     /**
      * @brief creates ExtractColOp and CastOp
      */
-    mlir::Value extractMatrixFromFrame(
+    mlir::Value extractColumnAsMatrixFromFrame(
         mlir::Value frame, mlir::Value colname);
 
     /**
@@ -94,6 +94,12 @@ class SQLVisitor : public SQLGrammarVisitor {
      * @brief returns result of stringifyGroupEnum for the given func.
      */
     std::string getEnumLabelExt(const std::string& func);
+
+    /**
+     * @brief returns a frame in which the contents of a column specified by
+     * the columnName is copied.
+     */
+    mlir::Value extractColumnFromFrame(mlir::Value frame, mlir::Value columnName);
 
 
 //Data Structures and access functions
@@ -142,11 +148,17 @@ class SQLVisitor : public SQLGrammarVisitor {
     std::vector<mlir::Value> groupName;
     std::vector<mlir::Value> columnName;
     std::vector<mlir::Attribute> functionName;
+    std::set<std::string> groundGroupColumns;
 
     //Flags
     enum class SQLBit{group=0, codegen, agg, checkgroup};
     //group has group clause, activated codegen, is a complex general Expression, is a complex Group Expression, has aggregation function.
     int64_t sqlFlag = 0;
+
+    //Counter for the group names, to enable multiple aggregations on the same column and to avoid name clashes.
+    //We need two counter, as we need to reproduce the same names when actually doing the code generation.
+    int64_t groupCounter = 0;
+    int64_t groupCounterCodegen = 0;
 
 public:
     [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder & builder) : utils(builder), builder(builder) {
@@ -183,6 +195,9 @@ public:
 //tableExpr
     antlrcpp::Any visitTableExpr(SQLGrammarParser::TableExprContext * ctx) override;
 
+//distinctExpr
+    antlrcpp::Any visitDistinctExpr(SQLGrammarParser::DistinctExprContext * ctx) override;
+
 //fromExpr
     antlrcpp::Any visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx) override;
 
@@ -208,6 +223,8 @@ public:
 
 //generalExpr
     antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;
+
+    antlrcpp::Any visitStarExpr(SQLGrammarParser::StarExprContext * ctx) override;
 
     antlrcpp::Any visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext * ctx) override;
 
