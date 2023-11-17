@@ -608,7 +608,7 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArg, NumColsFromIthArgNumRows<1>, CUDASupport
+    DeclareOpInterfaceMethods<InferShapeOpInterface>, CUDASupport
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 

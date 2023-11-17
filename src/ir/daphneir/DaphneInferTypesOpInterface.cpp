@@ -123,9 +123,25 @@ std::vector<Type> daphne::ExtractColOp::inferTypes() {
         // Extracting columns from a frame may change the list of column value types (schema).
         std::vector<Type> resColTys;
 
-        if(auto selStrTy = selTy.dyn_cast<daphne::StringType>())
-            // Extracting a single column by its string label.
-            resColTys = {getFrameColumnTypeByLabel(srcFrmTy, getSelectedCols())};
+        if(auto selStrTy = selTy.dyn_cast<daphne::StringType>()) {
+            std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
+            std::string delimiter = ".";
+            const std::string frameName = label.substr(0, label.find(delimiter));
+            const std::string colLabel = label.substr(label.find(delimiter) + delimiter.length(), label.length());
+            if(colLabel.compare("*") == 0) {
+                std::vector<std::string> labels = *srcFrmTy.getLabels();
+                std::vector<mlir::Type> colTypes = srcFrmTy.getColumnTypes();
+                for (size_t i = 0; i < labels.size(); i++) {
+                    std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
+                    if (labelFrameName.compare(frameName) == 0) {
+                        resColTys.push_back(colTypes[i]);
+                    }
+                }
+            } else {
+                // Extracting a single column by its string label.
+                resColTys = {getFrameColumnTypeByLabel(srcFrmTy, getSelectedCols())};
+            }
+        }
         else if(auto selMatTy = selTy.dyn_cast<daphne::MatrixType>()) {
             // Extracting columns by their positions (given as a column matrix).
 
@@ -238,10 +254,22 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
         std::string labelStr = CompilerUtils::constantOrThrow<std::string>(
             t, "the specified label must be a constant of string type"
         );
+        std::string delimiter = ".";
+        const std::string frameName = labelStr.substr(0, labelStr.find(delimiter));
+        const std::string colLabel = labelStr.substr(labelStr.find(delimiter) + delimiter.length(), labelStr.length());
         if(labelStr == "*") {
             auto allTypes = arg.getColumnTypes();
             for (Type type: allTypes) {
                 newColumnTypes.push_back(type);
+            }
+        } else if(colLabel.compare("*") == 0) {
+            std::vector<std::string> labels = *arg.getLabels();
+            std::vector<mlir::Type> colTypes = arg.getColumnTypes();
+            for (size_t i = 0; i < labels.size(); i++) {
+                std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
+                if (labelFrameName.compare(frameName) == 0) {
+                    newColumnTypes.push_back(colTypes[i]);
+                }
             }
         } else {
             newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));

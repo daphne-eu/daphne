@@ -135,6 +135,10 @@ template <> struct Group<Frame> {
             aggColsVec.push_back(aggCols[m]);
         }
         for (size_t i = 0; i < numKeyCols; i++) {
+            std::string delimiter = ".";
+            std::string keyLabel = keyCols[i];
+            const std::string frameName = keyLabel.substr(0, keyLabel.find(delimiter));
+            const std::string colLabel = keyLabel.substr(keyLabel.find(delimiter) + delimiter.length(), keyLabel.length());
             if (strcmp(keyCols[i], "*") == 0) {
                 for (size_t m = 0; m < numColsArg; m++) {
                     // check that we do not include columns in the result that are used for aggregations and would lead to duplicates
@@ -146,7 +150,16 @@ template <> struct Group<Frame> {
                 // operator, otherwise they would not be in the argument frame
                 // and throw a error later on
                 numColsRes = starLabels.size() + numAggCols;
-            } 
+            } else if (colLabel.compare("*") == 0) { // f.*
+                for (size_t m = 0; m < numColsArg; m++) {
+                    std::string frameArg = argLabels[m].substr(0, argLabels[m].find(delimiter));
+                    if (frameName.compare(argLabels[m].substr(0, argLabels[m].find(delimiter))) == 0
+                        && frameName.compare(frameArg) == 0) {
+                        starLabels.push_back(argLabels[m]);
+                    }
+                }
+                numColsRes = starLabels.size() + numAggCols;
+            }
         }
 
 
