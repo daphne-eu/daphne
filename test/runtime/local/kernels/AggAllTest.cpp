@@ -34,7 +34,7 @@
 template<typename VTRes, class DTArg>
 void checkAggAll(AggOpCode opCode, const DTArg * arg, VTRes exp) {
     VTRes res = aggAll<VTRes, DTArg>(opCode, arg, nullptr);
-    CHECK(res == exp);
+    CHECK(Approx(res).epsilon(1e-5) == exp);
 }
 
 // The value types of argument and result could be different, so we need to

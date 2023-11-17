@@ -117,21 +117,16 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 *valuesRes = static_cast<VTRes>(agg);
                 valuesArg += arg->getRowSkip();
                 valuesRes += res->getRowSkip();
-            }       
+            }
 
             if(AggOpCodeUtils::isPureBinaryReduction(opCode))
                 return;
 
-            // The op-code is either MEAN or STDDEV
+            // The op-code is either MEAN or STDDEV or VAR
             valuesRes = res->getValues();
             // valuesArg = arg->getValues();
             for(size_t r = 0; r < numRows; r++) {
                 *valuesRes = (*valuesRes) / numCols;
-                valuesRes += res->getRowSkip();
-            }
-            
-            valuesRes = res->getValues();
-            for(size_t r = 0; r < numRows; r++) {
                 valuesRes += res->getRowSkip();
             }
 
@@ -140,7 +135,7 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             
             // else op-code is STDDEV or VAR
 
-            // // Create a temporary matrix to store the resulting standard deviations for each row
+            // Create a temporary matrix to store the resulting standard deviations for each row
             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
             VTRes * valuesT = tmp->getValues();
             valuesArg = arg->getValues();
@@ -233,7 +228,7 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                     }
 
                     ctr+=numNonZeros; 
-                    valuesT[r] += (numCols - numNonZeros)* (*valuesRes)*(*valuesRes);
+                    valuesT[r] += (numCols - numNonZeros) * (*valuesRes)*(*valuesRes);
                     valuesT[r] /= numCols;
                     if(opCode == AggOpCode::STDDEV)
                         *valuesRes = sqrt(valuesT[r]);

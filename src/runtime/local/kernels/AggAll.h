@@ -68,10 +68,10 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         }
         else {
             // TODO Setting the function pointer yields the correct result.
-            // However, since MEAN and STDDEV are not sparse-safe, the program
+            // However, since MEAN, VAR, and STDDEV are not sparse-safe, the program
             // does not take the same path for doing the summation, and is less
             // efficient.
-            // for MEAN and STDDDEV, we need to sum
+            // for MEAN, VAR, and STDDEV, we need to sum
             func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             agg = VTRes(0);
         }
@@ -93,11 +93,11 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         stddev=0;
         valuesArg = arg->getValues();
         for(size_t r = 0; r < numRows; r++) {
-                for(size_t c = 0; c < numCols; c++) {
-                    VTRes val = static_cast<VTRes>(valuesArg[c]) - agg;
-                    stddev = stddev + val * val;
-                }
-                valuesArg += arg->getRowSkip();               
+            for(size_t c = 0; c < numCols; c++) {
+                VTRes val = static_cast<VTRes>(valuesArg[c]) - agg;
+                stddev = stddev + val * val;
+            }
+            valuesArg += arg->getRowSkip();               
         }
 
         stddev /= arg->getNumCols() * arg->getNumRows();

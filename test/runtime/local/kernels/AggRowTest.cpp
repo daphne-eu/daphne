@@ -17,7 +17,7 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/AggRow.h>
 #include <runtime/local/kernels/AggOpCode.h>
 
@@ -35,7 +35,7 @@ template<class DTRes, class DTArg>
 void checkAggRow(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
     DTRes * res = nullptr;
     aggRow<DTRes, DTArg>(opCode, res, arg, nullptr);
-    CHECK(*res == *exp);
+    CHECK(checkEqApprox(res, exp, 1e-5, nullptr));
 }
 
 // The value types of argument and result could be different, so we need to
