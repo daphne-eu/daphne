@@ -489,7 +489,7 @@ std::vector<Type> daphne::tryInferType(Operation* op, spdlog::logger* logger) {
         Block & afterBlock = whileOp.getAfter().front();
         // Get the ConditionOp.
         Operation * condOp = beforeBlock.getTerminator();
-        Operation * yieldOp = afterBlock.getTerminator();
+//        Operation * yieldOp = afterBlock.getTerminator();
         if(!llvm::isa<scf::ConditionOp>(condOp))
             throw std::runtime_error("WhileOp terminator is not a ConditionOp");
 
