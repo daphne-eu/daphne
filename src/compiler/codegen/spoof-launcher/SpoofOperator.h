@@ -25,7 +25,8 @@
 #include <cstdint>
 #include <string>
 #include "../src/compiler/codegen/ext/jitify/jitify.hpp"
-#include "host_utils.h"
+//#include "host_utils.h"
+#include "runtime/local/kernels/CUDA/HostUtils.h"
 #include "../src/compiler/codegen/headers/Matrix.h"
 
 // these two constants have equivalents in Java code:
@@ -52,7 +53,7 @@ struct SpoofCellwiseOp : public SpoofOperator {
 	AggType agg_type;
 	AggOp agg_op;
 	CUfunction agg_kernel{};
-	SpoofCellwiseOp(AggType at, AggOp ao, bool ss) : agg_type(at), agg_op(ao), sparse_safe(ss) {}
+	SpoofCellwiseOp(AggType at, AggOp ao, bool ss) : sparse_safe(ss), agg_type(at), agg_op(ao) {}
 	
 	[[nodiscard]] bool isSparseSafe() const override { return sparse_safe; }
 };
@@ -63,8 +64,8 @@ struct SpoofRowwiseOp : public SpoofOperator {
 	int32_t const_dim2;
 	RowType row_type;
 	
-	SpoofRowwiseOp(RowType rt, bool tb1, uint32_t ntv, int32_t cd2) : row_type(rt), TB1(tb1), num_temp_vectors(ntv),
-			const_dim2(cd2) {}
+	SpoofRowwiseOp(RowType rt, bool tb1, uint32_t ntv, int32_t cd2) : TB1(tb1), num_temp_vectors(ntv), const_dim2(cd2),
+			row_type(rt) {}
 			
 	[[nodiscard]] bool isSparseSafe() const override { return false; }
 };

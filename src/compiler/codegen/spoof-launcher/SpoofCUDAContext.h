@@ -63,7 +63,7 @@ public:
 			    CHECK_CUDART(cudaStreamCreate(&stream));
             }
 
-    virtual ~SpoofCUDAContext() { CHECK_CUDART(cudaStreamDestroy(stream)); }
+    virtual ~SpoofCUDAContext() = default;
 
 	static size_t initialize_cuda(uint32_t device_id, const char* resource_path_);
 

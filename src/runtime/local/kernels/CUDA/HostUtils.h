@@ -23,8 +23,22 @@
 #include <cudnn.h>
 #include <cusolverDn.h>
 
+#include <spdlog/fmt/fmt.h>
+
 #include <iostream>
 #include <memory>
+
+#define CHECK_CUDADRV(call)                                                  \
+  do {                                                                    \
+    CUresult status = call;                                               \
+    if (status != CUDA_SUCCESS) {                                         \
+      const char* str;                                                    \
+      cuGetErrorName(status, &str);                                       \
+      std::cout << "(CUDA) returned: " << str;                             \
+      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
+                << "())" << std::endl;                                    \
+    }                                                                     \
+  } while (0)
 
 #define CHECK_CUDART(call)                                                \
   do {                                                                    \
