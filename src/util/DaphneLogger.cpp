@@ -59,7 +59,7 @@ void DaphneLogger::createLoggers(const LogConfig& config) {
         logger = std::make_shared<spdlog::async_logger>(config.name, sinks.begin(), sinks.end(), spdlog::thread_pool());
 
         auto level = static_cast<spdlog::level::level_enum>(config.level);
-        logger->set_level(config.level >= level_limit ? level : spdlog::level::off);
+        logger->set_level(config.level >= level_limit ? level : level_limit);
         logger->set_pattern(config.format);
         spdlog::register_logger(logger);
         loggers.push_back(logger);
