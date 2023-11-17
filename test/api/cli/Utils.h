@@ -124,7 +124,12 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         close(linkErr[1]);
         
         // Execute other program.
-        execl(execPath, args..., static_cast<char *>(nullptr));
+        // If execPath is a path (contains "/") use execl, otherwise use execlp. 
+        // We need this to support "mpirun" for the MPI test cases.
+        if (std::string(execPath).find("/") != std::string::npos)
+            execl(execPath, args..., static_cast<char *>(nullptr));
+        else
+            execlp(execPath, args..., static_cast<char *>(nullptr));
 
         // execl does not return, unless it failed.
         throw std::runtime_error("could not execute the program");
@@ -166,7 +171,6 @@ pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ...
         throw std::runtime_error("could not execute the program");
     }
 }
-
 /**
  * @brief Executes the "run-lit.py" python script in a directory and
  * captures `stdout`, `stderr`, and the status code.
@@ -205,26 +209,10 @@ int runLIT(std::stringstream &out, std::stringstream &err, std::string dirPath,
  * @return The status code returned by the process, or `-1` if it did not exit
  * normally.
  */
-// template<typename T>
-// void printArgs(T&& arg) {
-//     std::cout << arg << std::endl;
-// }
-
-// template<typename T, typename... Args>
-// void printArgs(T&& arg, Args&&... args) {
-//     std::cout << arg << ", ";
-//     printArgs(std::forward<Args>(args)...);
-// }
 
 template<typename... Args>
 int runDaphne(std::stringstream & out, std::stringstream & err, Args ... args) {
     return runProgram(out, err, "bin/daphne", "daphne", args...);
-}
-
-// Function to run Daphne
-template<typename... Args>
-int runDaphneMPI(std::stringstream & out, std::stringstream & err, Args... args) {
-    return runProgram(out, err, args..., " ");
 }
 
 /**
