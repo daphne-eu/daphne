@@ -146,21 +146,21 @@ namespace CUDA {
     void AggRow<DenseMatrix<VT>, CSRMatrix<VT>>::apply(AggOpCode opCode, DenseMatrix<VT> *&res,
                                                          const CSRMatrix<VT> *arg, DCTX(dctx)) {
         const size_t numRows = arg->getNumRows();
-        const size_t numCols = arg->getNumCols();
+//        const size_t numCols = arg->getNumCols();
 
         const size_t deviceID = 0; //ToDo: multi device support
         AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
         auto ctx = CUDAContext::get(dctx, deviceID);
 
-        int threads;
-        int blocks;
+//        int threads;
+//        int blocks;
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1, false,  &alloc_desc);
 
-        threads = (numCols < ctx->getMaxNumThreads() * 2) ? nextPow2((numCols + 1) / 2) : ctx->getMaxNumThreads();
-        auto shmSize = sizeof(VT) * threads;
-        blocks = numRows;
+//        threads = (numCols < ctx->getMaxNumThreads() * 2) ? nextPow2((numCols + 1) / 2) : ctx->getMaxNumThreads();
+//        auto shmSize = sizeof(VT) * threads;
+//        blocks = numRows;
 
         if (opCode == AggOpCode::SUM) {
             ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
