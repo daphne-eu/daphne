@@ -48,7 +48,7 @@
                     ["double", ["CSRMatrix", "int64_t"]],
                     ["float", ["CSRMatrix", "int64_t"]]
                 ],
-                "opCodes": ["SUM", "MIN", "MAX", "MEAN"]
+                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV", "VAR"]
             }
         ]
     },
@@ -108,7 +108,7 @@
                     [["DenseMatrix", "double"], ["CSRMatrix", "int64_t"]],
                     [["DenseMatrix", "float"], ["CSRMatrix", "int64_t"]]
                 ],
-                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV", "IDXMIN", "IDXMAX"]
+                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV", "VAR", "IDXMIN", "IDXMAX"]
             }
         ]
     },
@@ -207,7 +207,7 @@
                     [["DenseMatrix", "float"], ["CSRMatrix", "int64_t"]],
                     [["DenseMatrix", "double"], ["CSRMatrix", "int64_t"]]
                 ],
-                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "IDXMIN", "IDXMAX"]
+                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV", "VAR", "IDXMIN", "IDXMAX"]
             }
         ]
     },

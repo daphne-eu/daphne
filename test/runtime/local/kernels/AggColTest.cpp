@@ -17,7 +17,7 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/AggCol.h>
 #include <runtime/local/kernels/AggOpCode.h>
 
@@ -35,7 +35,7 @@ template<class DTRes, class DTArg>
 void checkAggCol(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
     DTRes * res = nullptr;
     aggCol<DTRes, DTArg>(opCode, res, arg, nullptr);
-    CHECK(*res == *exp);
+    CHECK(checkEqApprox(res, exp, 1e-5, nullptr));
 }
 
 // The value types of argument and result could be different, so we need to
@@ -201,3 +201,32 @@ MEAN_TEST_CASE(double);
 }
 STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);
+
+#define VAR_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("var - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
+    using DTArg = TestType; \
+    using DTRes = DenseMatrix<VTRes>; \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0}); \
+    auto m1 = genGivenVals<DTArg>(4, { \
+        1, 3, 0, \
+        1, 3, 5, \
+        3, 1, 0, \
+        3, 1, 5, \
+    }); \
+    auto m1exp = genGivenVals<DTRes>(1, {1, 1, (VTRes)6.25}); \
+     \
+    checkAggCol(AggOpCode::VAR, m0, m0exp); \
+    checkAggCol(AggOpCode::VAR, m1, m1exp); \
+     \
+    DataObjectFactory::destroy(m0); \
+    DataObjectFactory::destroy(m0exp); \
+    DataObjectFactory::destroy(m1); \
+    DataObjectFactory::destroy(m1exp); \
+}
+VAR_TEST_CASE(int64_t);
+VAR_TEST_CASE(double);
