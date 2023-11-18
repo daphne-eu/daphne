@@ -87,7 +87,6 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         throw std::runtime_error("could not create child process");
     else if(p) { // parent
         // Close write end of pipes.
-        // std::cout << "I am in parent" << std::endl;
         close(linkOut[1]);
         close(linkErr[1]);
         
@@ -106,7 +105,6 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
             std::cout << "stdout: " << out.str() << std::endl;
             std::cout << "stderr: " << err.str() << std::endl;
             std::cout << "status: " << status << std::endl;
-            // std::cout << "I am in parent degub" << std::endl;
             LOG(args...);
 #endif
         }
@@ -114,8 +112,6 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
     }
     else { // child
         // Redirect stdout and stderr to the pipe.
-        // std::cout << "I am in child" << std::endl;
-        // std::cout << execPath << std::endl;
         dup2(linkOut[1], STDOUT_FILENO);
         dup2(linkErr[1], STDERR_FILENO);
         close(linkOut[0]);
