@@ -64,7 +64,7 @@ done
 
 # Build tests.
 if [ $BUILD_DAPHNE -gt 0 ]; then
-  ./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI --no-deps --installPrefix /usr/local --target run_tests
+  ./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI --target run_tests
 fi
 
 # Preparations for running DaphneLib (Python API) tests and MLIR codegen tests (LLVM LIT)
