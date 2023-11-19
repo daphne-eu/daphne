@@ -115,8 +115,23 @@ The following built-in functions all follow the same scheme:
 | **`abs`** | absolute value |
 | **`sign`** | signum (`1` for positive, `0` for zero, `-1` for negative) |
 | **`exp`** | exponentiation (*e* to the power of `arg`) |
-| **`ln`** | natural logarithm (logarithm of `arg` to the base of *e*) *(not supported yet, see #614)* |
+| **`ln`** | natural logarithm (logarithm of `arg` to the base of *e*) |
 | **`sqrt`** | square root |
+
+### Trigonometric/Hyperbolic
+
+`arg` unit must be radians (conversion: $x^\circ * \frac{\pi}{180^\circ} = y$ radians)
+| function | meaning |
+| ----- | ----- |
+| **`sin`** | sine |
+| **`cos`** | cosine |
+| **`tan`** | tangent |
+| **`asin`** | arc sine  (inverse of sine) |
+| **`acos`** | arc cosine (inverse of cosine) |
+| **`atan`** | arc tangetnt (inverse of tangent) |
+| **`sinh`** | hyperbolic sine ($0.5 \, (e^\text{arg} - e^{- \text{arg}})$) |
+| **`cosh`** | hyperbolic cosine ($0.5 \, (e^\text{arg} + e^{- \text{arg}})$) |
+| **`tanh`** | hyperbolic tangent ($\frac{\text{sinh arg}}{\text{cosh arg}}$) |
 
 ### Rounding
 
@@ -125,11 +140,6 @@ The following built-in functions all follow the same scheme:
 | **`round`** | round to nearest |
 | **`floor`** | round down |
 | **`ceil`** | round up |
-
-### Trigonometric
-
-The typical trigonometric functions:
-**`sin`**, **`cos`**, **`tan`**, **`sinh`**, **`cosh`**, **`tanh`**, **`asin`**, **`acos`**, **`atan`** *(not supported yet, see #614)*
 
 ## Elementwise binary
 

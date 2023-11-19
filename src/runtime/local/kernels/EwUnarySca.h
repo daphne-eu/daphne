@@ -60,11 +60,22 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
     switch(opCode) {
         #define MAKE_CASE(opCode) case opCode: return &EwUnarySca<opCode, VTRes, VTArg>::apply;
         // Arithmetic/general math.
+        MAKE_CASE(UnaryOpCode::ABS)
         MAKE_CASE(UnaryOpCode::SIGN)
         MAKE_CASE(UnaryOpCode::SQRT)
         MAKE_CASE(UnaryOpCode::EXP)
+        MAKE_CASE(UnaryOpCode::LN)
+        // Trigonometric/Hyperbolic functions
+        MAKE_CASE(UnaryOpCode::SIN)
+        MAKE_CASE(UnaryOpCode::COS)
+        MAKE_CASE(UnaryOpCode::TAN)
+        MAKE_CASE(UnaryOpCode::ASIN)
+        MAKE_CASE(UnaryOpCode::ACOS)
+        MAKE_CASE(UnaryOpCode::ATAN)
+        MAKE_CASE(UnaryOpCode::SINH)
+        MAKE_CASE(UnaryOpCode::COSH)
+        MAKE_CASE(UnaryOpCode::TANH)
         // Rounding.
-        MAKE_CASE(UnaryOpCode::ABS)
         MAKE_CASE(UnaryOpCode::FLOOR)
         MAKE_CASE(UnaryOpCode::CEIL)
         MAKE_CASE(UnaryOpCode::ROUND)
@@ -79,7 +90,7 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
 // ****************************************************************************
 
 /**
- * @brief Performs a unary operation a scalar.
+ * @brief Performs a unary operation on a scalar.
  * 
  * @param opCode The unary operation to perform.
  * @param arg The operand.
@@ -104,11 +115,23 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
 
 // One such line for each unary function to support.
 // Arithmetic/general math.
+MAKE_EW_UNARY_SCA(UnaryOpCode::ABS, abs(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::SIGN, (arg == 0) ? 0 : ((arg < 0) ? -1 : ((arg > 0) ? 1 : std::numeric_limits<TRes>::quiet_NaN())));
+// MAKE_EW_UNARY_SCA(UnaryOpCode::SQUARE, pow(arg, 2.0));
 MAKE_EW_UNARY_SCA(UnaryOpCode::SQRT, sqrt(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::EXP, exp(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::LN, log(arg));
+// Trigonometric/Hyperbolic functions
+MAKE_EW_UNARY_SCA(UnaryOpCode::SIN, sin(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::COS, cos(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::TAN, tan(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::ASIN, asin(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::ACOS, acos(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::ATAN, atan(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::SINH, sinh(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::COSH, cosh(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::TANH, tanh(arg));
 // Rounding.
-MAKE_EW_UNARY_SCA(UnaryOpCode::ABS, abs(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::FLOOR, floor(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::CEIL, std::ceil(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::ROUND, round(arg));

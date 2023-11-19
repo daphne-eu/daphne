@@ -14,32 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/EwUnaryMat.h>
 
-#pragma once
+#include <tags.h>
 
-enum class UnaryOpCode {
-    // Arithmetic/general math.
-    ABS,
-    SIGN, // signum (-1, 0, +1)
-    SQRT,
-    EXP,
-    LN,
-    // Trigonometric/Hyperbolic functions
-    SIN,
-    COS,
-    TAN,
-    ASIN,
-    ACOS,
-    ATAN,
-    SINH,
-    COSH,
-    TANH,
-    // Rounding.
-    FLOOR,
-    CEIL,
-    ROUND,
-};
+#include <catch.hpp>
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
+#include <cstdint>
