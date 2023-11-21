@@ -14,4 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DISTRIBUTED_WORKERS=unused mpirun --allow-run-as-root -np 4 ./bin/daphne --distributed --dist_backend=MPI --vec scripts/examples/matrix_addition_for_mpi.daph
+mpirun --allow-run-as-root -np 4 ./bin/daphne --distributed --dist_backend=MPI --vec scripts/examples/distributed.daph
