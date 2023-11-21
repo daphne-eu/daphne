@@ -18,6 +18,7 @@
 
 #include "DataPlacement.h"
 #include <memory>
+#include <utility>
 
 class AllocationDescriptorHost : public IAllocationDescriptor {
     ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST;
@@ -35,5 +36,8 @@ public:
     [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorHost>(*this);
     }
+
+    void setData(std::shared_ptr<std::byte> _data) { data = std::move(_data); }
+
     bool operator==(const IAllocationDescriptor* other) const override { return (getType() == other->getType()); }
 };

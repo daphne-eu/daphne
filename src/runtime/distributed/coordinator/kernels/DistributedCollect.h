@@ -142,7 +142,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
         DistributedGRPCCaller<StoredInfo, distributed::StoredData, distributed::Data> caller(dctx);
 
 
-        auto dpVector = mat->getMetaDataObject()->getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
+        auto dpVector = mat->getMetaDataObject()->getRangeDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
         for (auto &dp : *dpVector) {
             auto address = dp->allocation->getLocation();
             
@@ -204,7 +204,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
         auto ctx = DistributedContext::get(dctx);
         std::vector<std::thread> threads_vector;
 
-        auto dpVector = mat->getMetaDataObject()->getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
+        auto dpVector = mat->getMetaDataObject()->getRangeDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
         for (auto &dp : *dpVector) {
             auto address = dp->allocation->getLocation();
             

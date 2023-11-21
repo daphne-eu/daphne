@@ -39,6 +39,8 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
         if(zero)
             memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
         new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
+        reinterpret_cast<AllocationDescriptorHost*>(new_data_placement->allocation.get())->
+                setData(std::reinterpret_pointer_cast<std::byte>(values));
     }
     this->mdo->addLatest(new_data_placement->dp_id);
 }

@@ -51,14 +51,17 @@ protected:
     void clone_mdo(const Structure* src) {
         // FIXME: This clones the meta data to avoid locking (thread synchronization for data copy)
         for(int i = 0; i < static_cast<int>(ALLOCATION_TYPE::NUM_ALLOC_TYPES); i++) {
-            auto placements = src->mdo->getDataPlacementByType(static_cast<ALLOCATION_TYPE>(i));
-            for(auto it = placements->begin(); it != placements->end(); it++) {
-                auto src_alloc = it->get()->allocation.get();
-                auto src_range = it->get()->range.get();
-                auto new_data_placement = this->mdo->addDataPlacement(src_alloc, src_range);
-                if(src->mdo->isLatestVersion(it->get()->dp_id))
-                    this->mdo->addLatest(new_data_placement->dp_id);
-            }
+            auto placement = src->mdo->getDataPlacementByType(static_cast<ALLOCATION_TYPE>(i));
+            auto new_dp = this->mdo->addDataPlacement(placement->allocation.get());
+            if(src->mdo->isLatestVersion(placement->dp_id))
+                this->mdo->addLatest(new_dp->dp_id);
+//            for(auto it = placements->begin(); it != placements->end(); it++) {
+//                auto src_alloc = it->get()->allocation.get();
+//                auto src_range = it->get()->range.get();
+//                auto new_data_placement = this->mdo->addDataPlacement(src_alloc, src_range);
+//                if(src->mdo->isLatestVersion(it->get()->dp_id))
+//                    this->mdo->addLatest(new_data_placement->dp_id);
+//            }
         }
     }
 public:

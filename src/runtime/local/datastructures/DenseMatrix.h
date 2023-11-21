@@ -198,10 +198,20 @@ public:
      */
     const ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const
     {
-        auto[isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
-        if(!isLatest)
-            this->mdo->addLatest(id);
-        return ptr;
+//        auto[isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
+        DataPlacement* dp;
+        if(!alloc_desc) {
+            auto ad = AllocationDescriptorHost();
+            dp = const_cast<DenseMatrix<ValueType> *>(this)->mdo->getDataPlacement(&ad);
+        }
+        else
+            dp = const_cast<DenseMatrix<ValueType> *>(this)->mdo->getDataPlacement(alloc_desc);
+        this->mdo->setLatest(dp->dp_id);
+        if(!const_cast<DenseMatrix<ValueType> *>(this)->mdo->isLatestVersion
+        (dp->dp_id))
+            const_cast<DenseMatrix<ValueType> *>(this)->mdo->addLatest(dp->dp_id);
+        return reinterpret_cast<const ValueType*>(dp->allocation->getData().get());
+
     }
 
     /**
@@ -213,6 +223,7 @@ public:
      * @param alloc_desc An allocation descriptor describing which type of memory is requested (e.g. main memory in
      * the current system, memory in an accelerator card or memory in another host)
      *
+     *
      * @param range A Range object describing optionally requesting a sub range of a data structure.
      * @return A pointer to the data in the requested memory space
      */
@@ -222,13 +233,16 @@ public:
 //        if(!isLatest)
 //            this->mdo->setLatest(id);
         DataPlacement* dp;
-        if(!alloc_desc)
+        if(!alloc_desc) {
 //            alloc_desc = &reinterpret_cast<IAllocationDescriptor>(AllocationDescriptorHost());
-            dp = this->mdo->getDataPlacement(AllocationDescriptorHost());
+            auto ad = AllocationDescriptorHost();
+            dp = this->mdo->getDataPlacement(&ad);
+        }
         else
             dp = this->mdo->getDataPlacement(alloc_desc);
 //        auto ptr = reinterpret_cast<ValueType*>(this->mdo->getDataPlacement(alloc_desc));
-        return dp->allocation->getData().get();
+        this->mdo->setLatest(dp->dp_id);
+        return reinterpret_cast<ValueType*>(dp->allocation->getData().get());
     }
     
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
