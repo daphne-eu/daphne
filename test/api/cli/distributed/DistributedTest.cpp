@@ -30,7 +30,7 @@
 
 const std::string dirPath = "test/api/cli/distributed/";
 
-TEST_CASE("Simple distributed execution test for gRPC", TAG_DISTRIBUTED)
+TEST_CASE("Distributed runtime tests using gRPC", TAG_DISTRIBUTED)
 {
     auto addr1 = "0.0.0.0:50051";
     auto addr2 = "0.0.0.0:50052";    
@@ -41,7 +41,7 @@ TEST_CASE("Simple distributed execution test for gRPC", TAG_DISTRIBUTED)
     assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
 
-    SECTION("Execution of distributed scripts"){
+    SECTION("Execution of scripts using distributed runtime (gRPC)"){
         // TODO Make these script individual DYNAMIC_SECTIONs.
         for (auto i = 1u; i < 4; ++i) {
             auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
@@ -65,7 +65,7 @@ TEST_CASE("Simple distributed execution test for gRPC", TAG_DISTRIBUTED)
             CHECK(outLocal.str() == outDist.str());
         }
     }
-    SECTION("Distributed chunked messages"){
+    SECTION("Distributed chunked messages (gRPC)"){
         
         auto filename = dirPath + "distributed_2.daphne";
 
@@ -117,10 +117,10 @@ TEST_CASE("Simple distributed execution test for gRPC", TAG_DISTRIBUTED)
 }
 
 #ifdef USE_MPI
-TEST_CASE("Simple distributed execution test for MPI", TAG_DISTRIBUTED)
+TEST_CASE("Distributed runtime tests using MPI", TAG_DISTRIBUTED)
 {
 
-    SECTION("Execution of distributed scripts using MPI"){
+    SECTION("Execution of scripts using distributed runtime (MPI)"){
         // TODO Make these script individual DYNAMIC_SECTIONs.
 
         for (auto i = 1u; i < 4; ++i) {
@@ -143,7 +143,7 @@ TEST_CASE("Simple distributed execution test for MPI", TAG_DISTRIBUTED)
             CHECK(outLocal.str() == outDist.str());
         }
     }
-    SECTION("Distributed chunked messages-MPI"){
+    SECTION("Distributed chunked messages (MPI)"){
 
         auto filename = dirPath + "distributed_2.daphne";
 
