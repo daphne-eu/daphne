@@ -21,6 +21,7 @@
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/GPU/IR/GPUDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -515,7 +516,8 @@ void RewriteToCallKernelOpPass::runOnOperation()
     target.addLegalDialect<mlir::AffineDialect, LLVM::LLVMDialect,
                            scf::SCFDialect, memref::MemRefDialect,
                            mlir::linalg::LinalgDialect,
-                           mlir::arith::ArithDialect, mlir::BuiltinDialect>();
+                           mlir::arith::ArithDialect, mlir::BuiltinDialect,
+                           mlir::gpu::GPUDialect>();
 
     target.addLegalOp<ModuleOp, func::FuncOp, func::CallOp, func::ReturnOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();

@@ -109,7 +109,7 @@ void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
 }
 
 mlir::Value convertMemRefToDenseMatrix(
-    mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
+    mlir::Location loc, mlir::PatternRewriter &rewriter,
     mlir::Value memRef, mlir::Type type) {
     auto extractStridedMetadataOp =
         rewriter.create<mlir::memref::ExtractStridedMetadataOp>(loc, memRef);

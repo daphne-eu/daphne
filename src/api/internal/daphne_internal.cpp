@@ -487,8 +487,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     }
 
     // add this after the cli args loop to work around args order
-    if(!user_config.libdir.empty() && user_config.use_cuda)
-            user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
+    // if(!user_config.libdir.empty() && user_config.use_cuda)
+    //         user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
 
     // For DaphneLib (Python API).
     user_config.result_struct = daphneLibRes;
@@ -556,7 +556,6 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     try{
         auto engine = executor.createExecutionEngine(moduleOp);
         tpBegExec = clock::now();
-
         // set jump address for catching exceptions in kernel libraries via signal handling
         if(setjmp(return_from_handler) == 0) {
             auto error = engine->invoke("main");
@@ -569,6 +568,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             spdlog::error("Execution error: Returning from signal {}", gSignalStatus);
             return StatusCode::EXECUTION_ERROR;
         }
+
+        engine->dumpToObjectFile("a.o");
     }
     catch (std::runtime_error& re) {
         spdlog::error("Execution error: {}", re.what());

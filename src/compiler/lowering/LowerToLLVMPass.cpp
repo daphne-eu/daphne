@@ -18,6 +18,7 @@
 #include "ir/daphneir/Passes.h"
 #include "compiler/utils/CompilerUtils.h"
 
+#include "mlir/Conversion/IndexToLLVM/IndexToLLVM.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
@@ -31,11 +32,15 @@
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
+#include "mlir/Dialect/GPU/IR/GPUDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/LLVMIR/NVVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "spdlog/fmt/bundled/core.h"
 
 #include <memory>
 #include <utility>
@@ -974,8 +979,10 @@ void DaphneLowerToLLVMPass::runOnOperation()
     cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
     populateFuncToLLVMConversionPatterns(typeConverter, patterns);
     populateReturnOpTypeConversionPattern(patterns, typeConverter);
+    index::populateIndexToLLVMConversionPatterns(typeConverter, patterns);
 
     target.addLegalOp<ModuleOp>();
+    target.addLegalDialect<mlir::gpu::GPUDialect, mlir::cf::ControlFlowDialect, mlir::NVVM::NVVMDialect>();
 
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);

@@ -45,7 +45,7 @@ void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
                       mlir::Type elemType);
 
 mlir::Value convertMemRefToDenseMatrix(mlir::Location,
-                                       mlir::ConversionPatternRewriter &,
+                                       mlir::PatternRewriter &,
                                        mlir::Value memRef, mlir::Type);
 
 llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder,
