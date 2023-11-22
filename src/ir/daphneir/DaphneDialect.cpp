@@ -251,6 +251,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         return ColumnType::get(
                 parser.getBuilder().getContext(), cts, numRows, nullptr
         );
+    }
     else if (keyword == "DaphneContext") {
         return mlir::daphne::DaphneContextType::get(parser.getBuilder().getContext());
     }
