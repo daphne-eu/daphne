@@ -16,6 +16,7 @@ doc_build/
 thirdparty/*
 !thirdparty/llvm-project/
 !thirdparty/patches/
+!thirdparty/sources/TSLGenerator
 
 # Visual Studio Code
 .vscode/
@@ -52,12 +53,24 @@ compile_commands.json
 # release scripts output
 /artifacts
 
+# clang cache
+.cache
+
+
+# local symlinks for convenience
+TSLGen
+TSL
+
+
 bin/
 logs/
 profiler/
 precompiled-dependencies/
 /cmake*/
 /data
+# clang cache
+.cache
+
 
 # Allow .daphne and .mlir files in test/
 !test/**/*.mlir

@@ -131,6 +131,8 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
+        runtime/local/kernels/SIMDOperatorsDAPHNE/PositionListBitmapConverterTest.cpp
+        runtime/local/kernels/SIMDOperatorsDAPHNE/BitmapPositionListConverterTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )
@@ -174,3 +176,4 @@ set_target_properties(theta_join_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJ
 add_dependencies(theta_join_test daphne DistributedWorker)
 target_link_libraries(theta_join_test PRIVATE ${LIBS})
 target_compile_options(theta_join_test PUBLIC -g -O0)
+

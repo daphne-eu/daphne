@@ -223,6 +223,35 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
     else if (keyword == "String") {
         return StringType::get(parser.getBuilder().getContext());
     }
+    else if (keyword == "Column") {
+        ssize_t numRows = -1;
+        if (
+            parser.parseLess() ||
+            parser.parseOptionalQuestion() ||
+            // TODO Parse #rows if there was no '?'.
+            //parser.parseInteger<ssize_t>(numRows) ||
+            parser.parseKeyword("x") ||
+            parser.parseLSquare() ||
+            parser.parseOptionalQuestion() ||
+            parser.parseColon()
+        ) {
+            return nullptr;
+        }
+        mlir::Type cts;
+        mlir::Type type;
+        do {
+            if (parser.parseType(type))
+                return nullptr;
+            cts = type;
+        }
+        while (succeeded(parser.parseOptionalComma()));
+        if (parser.parseRSquare() || parser.parseGreater()) {
+            return nullptr;
+        }
+        return ColumnType::get(
+                parser.getBuilder().getContext(), cts, numRows, nullptr
+        );
+    }
     else if (keyword == "DaphneContext") {
         return mlir::daphne::DaphneContextType::get(parser.getBuilder().getContext());
     }
@@ -303,6 +332,24 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "Target";
     else if (type.isa<mlir::daphne::UnknownType>())
         os << "Unknown";
+    else if (auto t = type.dyn_cast<mlir::daphne::ColumnType>()) {
+        os << "Column<"
+                << unknownStrIf(t.getNumRows()) << "x";
+        // Column types.
+        mlir::Type cts = t.getColumnType();
+        os << cts;
+        os << ":, ";
+        // Column labels.
+        std::string * label = t.getLabel();
+        if(label) {
+            os << '[';
+            os << '"' << (*label) << '"';
+            os << ']';
+        }
+        else
+            os << '?';
+        os << '>';
+    }
 }
 
 std::string mlir::daphne::matrixRepresentationToString(MatrixRepresentation rep) {
@@ -461,6 +508,18 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
     }
     else
         return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
+}
+
+::mlir::LogicalResult mlir::daphne::ColumnType::verify(
+        ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+        Type columnType,
+        ssize_t numRows, std::string * label
+)
+{
+    // TODO Verify the individual column type.
+    if(numRows < -1)
+        return mlir::failure();
+    return mlir::success();
 }
 
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
@@ -993,6 +1052,106 @@ mlir::OpFoldResult mlir::daphne::EwGeOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
+mlir::OpFoldResult mlir::daphne::ColumnEqOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::ColumnNeqOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a != b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a != b; };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::ColumnLtOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a < b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.slt(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ult(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::ColumnLeOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a <= b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sle(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ule(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::ColumnGtOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a > b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sgt(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ugt(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::ColumnGeOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a >= b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sge(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.uge(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
 /**
  * @brief Transposition-aware matrix multiplication
  * Identifies if an input to a MatMulOp is the result of a TransposeOp; Rewrites the Operation,
@@ -1053,6 +1212,28 @@ mlir::LogicalResult mlir::daphne::NumRowsOp::canonicalize(
     if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
         numRows = t.getNumRows();
     else if(auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
+        numRows = t.getNumRows();
+    
+    if(numRows != -1) {
+        rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
+                op, rewriter.getIndexType(), rewriter.getIndexAttr(numRows)
+        );
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
+ * @brief Replaces ColumnNumRowsOp by a constant, if the #rows of the input is known
+ * (e.g., due to shape inference).
+ */
+mlir::LogicalResult mlir::daphne::ColumnNumRowsOp::canonicalize(
+        mlir::daphne::ColumnNumRowsOp op, PatternRewriter &rewriter
+) {
+    ssize_t numRows = -1;
+    
+    mlir::Type inTy = op.getArg().getType();
+    if(auto t = inTy.dyn_cast<mlir::daphne::ColumnType>())
         numRows = t.getNumRows();
     
     if(numRows != -1) {

@@ -108,6 +108,40 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         if (userConfig_.explain_property_inference)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
 
+        if(userConfig_.use_selection_pushdown) {
+                pm.addPass(mlir::daphne::createSelectionPushdownPass());
+                pm.addPass(mlir::createCanonicalizerPass());
+                pm.addPass(mlir::createCSEPass());
+            }
+
+#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
+        if(userConfig_.use_columnar_rewrite) {
+            pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
+        }
+
+        if(userConfig_.use_columnar_reduce) {
+            pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+            pm.addPass(mlir::createCanonicalizerPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
+        }
+
+        if(userConfig_.use_columnar) {
+            pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+            pm.addPass(mlir::createCanonicalizerPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
+            pm.addPass(mlir::createCanonicalizerPass());
+            pm.addPass(mlir::createCSEPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createOptimizeColumnarOpPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
+        }
+        if(userConfig_.explain_columnar)    
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar rewriting:"));
+#endif
+
         if (failed(pm.run(module))) {
             module->dump();
             module->emitError("module pass error");
@@ -272,6 +306,35 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
         sharedLibRefs.emplace_back(sharedLibRefPaths.back());
     }
 #endif
+
+#ifdef USE_AVX512
+        if(userConfig_.use_columnar || userConfig_.use_columnar_reduce || userConfig_.use_columnar_rewrite) {
+            sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libAVX512Kernels.so"));
+            sharedLibRefs.emplace_back(sharedLibRefPaths.back());
+        }
+#endif
+
+#ifdef USE_AVX2
+        if(userConfig_.use_columnar || userConfig_.use_columnar_reduce || userConfig_.use_columnar_rewrite) {
+            sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libAVX2Kernels.so"));
+            sharedLibRefs.emplace_back(sharedLibRefPaths.back());
+        }
+#endif
+
+#ifdef USE_SSE
+        if(userConfig_.use_columnar || userConfig_.use_columnar_reduce || userConfig_.use_columnar_rewrite) {
+            sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libSSEKernels.so"));
+            sharedLibRefs.emplace_back(sharedLibRefPaths.back());
+        }
+#endif
+
+#ifdef USE_SCALAR
+        if(userConfig_.use_columnar || userConfig_.use_columnar_reduce || userConfig_.use_columnar_rewrite) {
+            sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libSCALARKernels.so"));
+            sharedLibRefs.emplace_back(sharedLibRefPaths.back());
+        }
+#endif
+
     registerLLVMDialectTranslation(context_);
     // module.dump();
     mlir::ExecutionEngineOptions options;
