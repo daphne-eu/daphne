@@ -1,6 +1,6 @@
 [submodule "thirdparty/llvm-project"]
 	path = thirdparty/llvm-project
 	url = https://github.com/llvm/llvm-project.git
-[submodule "thirdparty/sources/TSLGenerator"]
-	path = thirdparty/sources/TSLGenerator
+[submodule "thirdparty/TSLGenerator"]
+	path = thirdparty/TSLGenerator
 	url = https://github.com/EricMier/TVLGen.git
