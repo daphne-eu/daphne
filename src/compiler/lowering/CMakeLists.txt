@@ -26,6 +26,11 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     RewriteToCallKernelOpPass.cpp
     SpecializeGenericFunctionsPass.cpp
     VectorizeComputationsPass.cpp
+    RewriteColumnarOpPass.cpp
+    OptimizeColumnarOpPass.cpp
+    ReduceColumnarOpPass.cpp
+    MarkVectorExtensionOpsPass.cpp
+    SelectionPushdownPass.cpp
     DaphneOptPass.cpp
     EwOpsLowering.cpp
     ModOpLowering.cpp
@@ -64,3 +69,4 @@ target_link_libraries(MLIRDaphneTransforms PUBLIC
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     include_directories(${CUDAToolkit_INCLUDE_DIRS})
 endif()
+    

@@ -107,6 +107,40 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_property_inference)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
 
+    if (userConfig_.use_selection_pushdown) {
+        pm.addPass(mlir::daphne::createSelectionPushdownPass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+    }
+
+#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
+    if (userConfig_.use_columnar_rewrite) {
+        pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
+    }
+
+    if (userConfig_.use_columnar_reduce) {
+        pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
+    }
+
+    if (userConfig_.use_columnar) {
+        pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createOptimizeColumnarOpPass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
+    }
+    if (userConfig_.explain_columnar)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar rewriting:"));
+#endif
+
     // Note that property inference and canonicalization have already been done
     // in the SpecializeGenericFunctionsPass, so actually, it's not necessary
     // here anymore.

@@ -90,6 +90,100 @@ file(GLOB CODEGEN_CPP_FILES CONFIGURE_DEPENDS
      "${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels_*.cpp")
 # message("CODEGEN_CPP_FILES: ${CODEGEN_CPP_FILES}")
 
+
+# TODO remove
+add_custom_command(
+        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp CPP
+        MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
+        DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
+)
+
+if(USE_SCALAR)
+        execute_process(
+          COMMAND
+            ${Python3_EXECUTABLE} genKernelInst.py kernels.json
+            ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/SCALARkernels
+            ${PROJECT_SOURCE_DIR}/lib/SCALARcatalog.json SCALAR
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
+
+        set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/SIMDOperatorsDAPHNE)
+        set(SCALARKernels_SRC
+                ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/SCALARkernels.cpp
+                )
+
+        add_library(SCALARKernels SHARED ${SCALARKernels_SRC})
+
+        target_link_libraries(SCALARKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms Util MLIRDaphneInference)
+        set_target_properties(SCALARKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+
+        list(APPEND LIBS SCALARKernels)
+endif()
+
+if(USE_SSE)
+        execute_process(
+          COMMAND
+            ${Python3_EXECUTABLE} genKernelInst.py kernels.json
+            ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/SSEkernels
+            ${PROJECT_SOURCE_DIR}/lib/SSEcatalog.json SSE
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
+
+        set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/SIMDOperatorsDAPHNE)
+        set(SSEKernels_SRC
+                ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/SSEkernels.cpp
+                )
+
+        add_library(SSEKernels SHARED ${SSEKernels_SRC})
+
+        target_link_libraries(SSEKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms Util MLIRDaphneInference)
+        set_target_properties(SSEKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+
+        list(APPEND LIBS SSEKernels)
+endif()
+
+if(USE_AVX2)
+        execute_process(
+          COMMAND
+            ${Python3_EXECUTABLE} genKernelInst.py kernels.json
+            ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/AVX2kernels
+            ${PROJECT_SOURCE_DIR}/lib/AVX2catalog.json AVX2
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
+
+        set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/SIMDOperatorsDAPHNE)
+        set(AVX2Kernels_SRC
+                ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/AVX2kernels.cpp
+                )
+
+        add_library(AVX2Kernels SHARED ${AVX2Kernels_SRC})
+
+        target_link_libraries(AVX2Kernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms Util MLIRDaphneInference)
+        set_target_properties(AVX2Kernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+
+        list(APPEND LIBS AVX2Kernels)
+endif()
+
+if(USE_AVX512)
+        execute_process(
+          COMMAND
+            ${Python3_EXECUTABLE} genKernelInst.py kernels.json
+            ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/AVX512kernels
+            ${PROJECT_SOURCE_DIR}/lib/AVX512catalog.json AVX512
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
+
+        set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/SIMDOperatorsDAPHNE)
+        set(AVX512Kernels_SRC
+                ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/AVX512kernels.cpp
+                )
+
+        add_library(AVX512Kernels SHARED ${AVX512Kernels_SRC})
+
+        target_link_libraries(AVX512Kernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms Util MLIRDaphneInference)
+        set_target_properties(AVX512Kernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+
+        list(APPEND LIBS AVX512Kernels)
+endif()
+
 list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
 
 set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
@@ -140,3 +234,6 @@ endif()
 
 target_link_libraries(KernelObjLib PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
 target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
+
+# Add SIMDOperators
+add_subdirectory(SIMDOperatorsDAPHNE)

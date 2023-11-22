@@ -81,6 +81,12 @@ namespace mlir::OpTrait {
 template <class ConcreteOp> class FPGAOPENCLSupport : public TraitBase<ConcreteOp, FPGAOPENCLSupport> {};
 } // namespace mlir::OpTrait
 
+namespace mlir::OpTrait {
+    template<class ConcreteOp>
+    class VectorExtensionSupport : public TraitBase<ConcreteOp, VectorExtensionSupport> {
+    };
+}
+
 namespace mlir::daphne {
 enum class MatrixRepresentation {
     Dense = 0,
