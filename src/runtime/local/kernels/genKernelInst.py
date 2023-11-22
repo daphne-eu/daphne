@@ -216,8 +216,13 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
         kernelCallString = "{}{}::apply({});\n" if opCodeAsTemplateParam else "{}{}({});\n"
 
+        if API in ["SCALAR", "AVX512", "AVX2", "SSE"]:
+            callTemplateParams.append("tsl::" + API.lower())
+            opNameKernelCall = opName
+        else:
+            opNameKernelCall = opName if API == "CPP" else (API + "::" + opName)
         outFile.write(kernelCallString.format(
-            opName if API == "CPP" else (API + "::" + opName),
+            opNameKernelCall,
             # Template parameters, if the kernel is a template:
             "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
             # Run-time parameters, possibly including DaphneContext:
@@ -303,7 +308,10 @@ def codegenKernelInfos(kernelInfos, catalog_entries) -> Tuple[bool, str]:
                         ops_inst_str += INDENT + "// {}\n".format("-" * 76)
 
                         # Include for the required header.
-                        if API != "CPP":
+
+                        if API in ["AVX512", "SCALAR", "AVX2", "SSE"]:
+                            header_str = header_str + "#include <runtime/local/kernels/SIMDOperatorsDAPHNE/{}>\n".format(kernelTemplateInfo["header"])
+                        elif API != "CPP":
                             header_str = header_str + "#include <runtime/local/kernels/{}/{}>\n".format(API, kernelTemplateInfo["header"])
                         else:
                             header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
@@ -370,12 +378,6 @@ if __name__ == "__main__":
         cppFiles.append(fileName)
         with open(fileName, "w") as outFile:
             outFile.write(file)
-
-    # Store kernel catalog info as JSON.
-
-    catalogFile = Path(outCatalogPath)
-    catalogFile.parent.mkdir(exist_ok=True, parents=True)
-    with catalogFile.open('w') as outCatalog:
         print("writing catalog to " + outCatalogPath)
         outCatalog.write(json.dumps(catalog_entries, indent=2))
 

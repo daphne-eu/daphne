@@ -67,37 +67,72 @@ std::vector<Type> daphne::CastOp::inferTypes() {
     Type resultType = getRes().getType();
     auto matrixArgument = argumentType.dyn_cast<daphne::MatrixType>();
     auto frameArgument = argumentType.dyn_cast<daphne::FrameType>();
+    auto columnArgument = argumentType.dyn_cast<daphne::ColumnType>();
     auto matrixResult = resultType.dyn_cast<daphne::MatrixType>();
+    auto columnResult = resultType.dyn_cast<daphne::ColumnType>();
 
-    // If the result type is not a matrix or a matrix with so far unknown value type, then we
-    // we leave the result type as it is. We do not reset it to
-    // unknown, since this could drop information that was explicitly
-    // encoded in the CastOp.
-    if (!matrixResult || !llvm::isa<daphne::UnknownType>(matrixResult.getElementType()))
-        return {resultType};
+    if (matrixResult) {
+        // If the result type is a matrix with so far unknown value type, then we
+        // we leave the result type as it is. We do not reset it to
+        // unknown, since this could drop information that was explicitly
+        // encoded in the CastOp.
+        if (!llvm::isa<daphne::UnknownType>(matrixResult.getElementType()))
+            return {resultType};
 
-    // The argument is a matrix, result is a matrix; we use its value type for the result.
-    if (matrixArgument)
-        return {matrixResult.withElementType(matrixArgument.getElementType())};
+        // The argument is a matrix, result is a matrix; we use its value type for the result.
+        if (matrixArgument)
+            return {matrixResult.withElementType(matrixArgument.getElementType())};
 
-    // The argument is a frame, result is a matrix; we use the value type of its only
-    // column for the results; if the argument has more than one
-    // column, we throw an exception.
-    if (frameArgument) {
-        auto argumentColumnTypes = frameArgument.getColumnTypes();
-        if (argumentColumnTypes.size() != 1) {
-            // TODO We could use the most general of the column types.
-            throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface (daphne::CastOp::inferTypes)",
-                                              "currently CastOp cannot infer the value type of its "
-                                              "output matrix, if the input is a multi-column frame");
+        // The argument is a frame, result is a matrix; we use the value type of its only
+        // column for the results; if the argument has more than one
+        // column, we throw an exception.
+        if (frameArgument) {
+            auto argumentColumnTypes = frameArgument.getColumnTypes();
+            if (argumentColumnTypes.size() != 1) {
+                // TODO We could use the most general of the column types.
+                throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface (daphne::CastOp::inferTypes)",
+                                                "currently CastOp cannot infer the value type of its "
+                                                "output matrix, if the input is a multi-column frame");
+            }
+            return {matrixResult.withElementType(argumentColumnTypes[0])};
         }
-        return {matrixResult.withElementType(argumentColumnTypes[0])};
-    }
 
-    // The argument is a scalar, result is a matrix; we use its type for the value type
-    // of the result.
-    // TODO double-check if it is really a scalar
-    return {daphne::MatrixType::get(getContext(), argumentType)};
+        // The argument is a scalar, result is a matrix; we use its type for the value type
+        // of the result.
+        // TODO double-check if it is really a scalar
+        return {daphne::MatrixType::get(getContext(), argumentType)};
+    } else if (columnResult) {
+        // If the result type is a column with so far unknown value type, then we
+        // we leave the result type as it is. We do not reset it to
+        // unknown, since this could drop information that was explicitly
+        // encoded in the CastOp.
+        if (!llvm::isa<daphne::UnknownType>(columnResult.getColumnType()))
+            return {resultType};
+
+        // The argument is a column, result is a column; we use its value type for the result.
+        if (columnArgument)
+            return {columnResult.withColumnType(columnArgument.getColumnType())};
+
+        // The argument is a frame, result is a column; we use the value type of its only
+        // column for the results; if the argument has more than one
+        // column, we throw an exception.
+        if (frameArgument) {
+            auto argumentColumnTypes = frameArgument.getColumnTypes();
+            if (argumentColumnTypes.size() != 1) {
+                // TODO We could use the most general of the column types.
+                throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface (daphne::CastOp::inferTypes)",
+                                                "currently CastOp cannot infer the value type of its "
+                                                "output column, if the input is a multi-column frame");
+            }
+            return {columnResult.withColumnType(argumentColumnTypes[0])};
+        }
+
+        // The argument is a scalar, result is a column; we use its type for the value type
+        // of the result.
+        // TODO double-check if it is really a scalar
+        return {daphne::ColumnType::get(getContext(), argumentType)};
+    } else
+        return {resultType};
 }
 
 std::vector<Type> daphne::ExtractColOp::inferTypes() {
@@ -283,6 +318,21 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
     }
     return {daphne::FrameType::get(ctx, newColumnTypes)};
 }
+
+std::vector<Type> daphne::ColumnJoinOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    return {
+        daphne::ColumnType::get(ctx, builder.getIndexType()),
+        daphne::ColumnType::get(ctx, builder.getIndexType())
+    };
+}
+
+std::vector<Type> daphne::ColumnProjectionPathOp::inferTypes() {
+    Type colType = getData().getType().dyn_cast<daphne::ColumnType>().getColumnType();
+    return {daphne::ColumnType::get(getContext(), colType)};
+}
+
 
 std::vector<Type> daphne::ExtractOp::inferTypes() {
     throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",

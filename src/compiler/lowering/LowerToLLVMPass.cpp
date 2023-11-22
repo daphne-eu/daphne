@@ -906,6 +906,8 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     typeConverter.addConversion(
         [&](daphne::ListType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
     typeConverter.addConversion(
+        [&](daphne::ColumnType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
+    typeConverter.addConversion(
         [&](daphne::StringType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 8)); });
     typeConverter.addConversion([&](daphne::VariadicPackType t) {
         return LLVM::LLVMPointerType::get(typeConverter.convertType(t.getContainedType()));

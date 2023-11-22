@@ -318,4 +318,91 @@ def DaphneContext : Daphne_Type<"DaphneContext"> {
     }];
 }
 
+// ****************************************************************************
+// Additional types
+// ****************************************************************************
+
+def Column : Daphne_Type<"Column"> {
+    let summary = "column";
+
+    let parameters = (ins
+        "::mlir::Type":$columnType,
+        "ssize_t":$numRows,
+        "std::string *":$label
+    );
+
+    let genVerifyDecl = 1;
+
+    let builders = [
+        // Creates a FrameType from mere column type information, with all
+        // other parameters reset.
+        TypeBuilder<(ins "::mlir::Type":$columnType), [{
+            return Base::get($_ctxt, columnType, -1, nullptr);
+        }]>,
+    ];
+
+    let extraClassDeclaration =  [{
+        // The following methods return a ColumnType with the same parameters
+        // as this ColumnType, except for one parameter, which is replaced by a
+        // new value.
+
+        ::mlir::daphne::ColumnType withColumnType(::mlir::Type columnType) {
+            return get(getContext(), columnType, getNumRows(), getLabel());
+        }
+
+        ::mlir::daphne::ColumnType withShape(ssize_t numRows) {
+            return get(getContext(), getColumnType(), numRows, getLabel());
+        }
+
+        ::mlir::daphne::ColumnType withLabels(std::string * label) {
+            return get(getContext(), getColumnType(), getNumRows(), label);
+        }
+
+        // The following method returns a ColumnType with the same column type
+        // as this ColumnType, but all other parameters reset.
+
+        ::mlir::daphne::ColumnType withSameColumnType() {
+            return get(getContext(), getColumnType());
+        }
+
+        /**
+         * @brief Check if `other` has strictly less information than this column type.
+         * @param other the other column type to compare to
+         * @return true if this type has more information, false otherwise
+         */
+        bool isSpecializationOf(::mlir::daphne::ColumnType other) {
+            auto columnType = getColumnType();
+            auto otherColumnType = other.getColumnType();
+            if(!otherColumnType.isa<mlir::daphne::UnknownType>() && columnType != otherColumnType)
+                return false;
+
+            if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())
+                return false;
+
+            // Note that this compares the labels pointers, not the labels themselves.
+            // This is to ensure consistency with other places, especially when
+            // comparing two mlir::Type/mlir::daphne::ColumnType instances using operator==.
+            if (other.getLabel() != nullptr && getLabel() != other.getLabel())
+                return false;
+
+            return true;
+        }
+    }];
+}
+def ColumnOrU : AnyTypeOf<[Column, Unknown]>;
+
+// TODO We could omit the "Of" and have it default to ScalarType.
+// A type constraint checking if a type is a column whose value type is one of
+// the given types (whereby Unknown is always allowed automatically).
+// Reuses MLIR's ContainerType constraint in a way inspired by MLIR's VectorOf.
+class ColumnOf<list<Type> allowedTypes> : AnyTypeOf<[
+        ContainerType<
+                AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
+                Column.predicate,
+                "$_self.dyn_cast<::mlir::daphne::ColumnType>().getColumnType()",
+                "column"
+        >,
+        Unknown
+]>;
+
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD

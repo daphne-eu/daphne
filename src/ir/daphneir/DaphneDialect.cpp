@@ -206,6 +206,35 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         return mlir::daphne::HandleType::get(parser.getBuilder().getContext(), dataType);
     } else if (keyword == "String") {
         return StringType::get(parser.getBuilder().getContext());
+    }
+    else if (keyword == "Column") {
+        ssize_t numRows = -1;
+        if (
+            parser.parseLess() ||
+            parser.parseOptionalQuestion() ||
+            // TODO Parse #rows if there was no '?'.
+            //parser.parseInteger<ssize_t>(numRows) ||
+            parser.parseKeyword("x") ||
+            parser.parseLSquare() ||
+            parser.parseOptionalQuestion() ||
+            parser.parseColon()
+        ) {
+            return nullptr;
+        }
+        mlir::Type cts;
+        mlir::Type type;
+        do {
+            if (parser.parseType(type))
+                return nullptr;
+            cts = type;
+        }
+        while (succeeded(parser.parseOptionalComma()));
+        if (parser.parseRSquare() || parser.parseGreater()) {
+            return nullptr;
+        }
+        return ColumnType::get(
+                parser.getBuilder().getContext(), cts, numRows, nullptr
+        );
     } else if (keyword == "DaphneContext") {
         return mlir::daphne::DaphneContextType::get(parser.getBuilder().getContext());
     } else {
@@ -275,6 +304,24 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPri
         os << "Target";
     else if (isa<mlir::daphne::UnknownType>(type))
         os << "Unknown";
+    else if (auto t = type.dyn_cast<mlir::daphne::ColumnType>()) {
+        os << "Column<"
+                << unknownStrIf(t.getNumRows()) << "x";
+        // Column types.
+        mlir::Type cts = t.getColumnType();
+        os << cts;
+        os << ":, ";
+        // Column labels.
+        std::string * label = t.getLabel();
+        if(label) {
+            os << '[';
+            os << '"' << (*label) << '"';
+            os << ']';
+        }
+        else
+            os << '?';
+        os << '>';
+    }
 }
 
 std::string mlir::daphne::matrixRepresentationToString(MatrixRepresentation rep) {
@@ -404,4 +451,16 @@ MatrixRepresentation MatrixType::getRepresentation() const { return getImpl()->r
         return mlir::success();
     } else
         return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
+}
+
+::mlir::LogicalResult mlir::daphne::ColumnType::verify(
+        ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+        Type columnType,
+        ssize_t numRows, std::string * label
+)
+{
+    // TODO Verify the individual column type.
+    if(numRows < -1)
+        return mlir::failure();
+    return mlir::success();
 }

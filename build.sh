@@ -454,6 +454,10 @@ BUILD_MPI="-DUSE_MPI=OFF"
 BUILD_HDFS="-DUSE_HDFS=OFF"
 BUILD_IO_URING="-DUSE_IO_URING=OFF"
 BUILD_PAPI="-DUSE_PAPI=ON"
+BUILD_AVX2="-DUSE_AVX2=OFF"
+BUILD_AVX512="-DUSE_AVX512=OFF"
+BUILD_SCALAR="-DUSE_SCALAR=OFF"
+BUILD_SSE="-DUSE_SSE=OFF"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
 
@@ -513,6 +517,22 @@ while [[ $# -gt 0 ]]; do
     --no-papi)
         echo not using PAPI
         export BUILD_PAPI="-DUSE_PAPI=OFF"
+        ;;
+    --scalar)
+        echo using SCALAR
+        export BUILD_SCALAR="-DUSE_SCALAR=ON"
+        ;;
+    --sse)
+        echo using SSE
+        export BUILD_SSE="-DUSE_SSE=ON"
+        ;;
+    --avx2)
+        echo using AVX2
+        export BUILD_AVX2="-DUSE_AVX2=ON"
+        ;;
+    --avx512)
+        echo using AVX512
+        export BUILD_AVX512="-DUSE_AVX512=ON"
         ;;
     --debug)
         echo building DEBUG version
@@ -1105,11 +1125,12 @@ fi
 # #9 Build DAPHNE target.
 #******************************************************************************
 
+
 daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
-    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_HDFS $BUILD_PAPI
+    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_HDFS $BUILD_PAPI $BUILD_SCALAR $BUILD_SSE $BUILD_AVX2 $BUILD_AVX512
 
 cmake --build "$daphneBuildDir" --target "$target"
 

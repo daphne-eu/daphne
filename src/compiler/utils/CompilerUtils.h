@@ -181,12 +181,17 @@ struct CompilerUtils {
                     return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
                 }
             }
-        } else if (llvm::isa<mlir::daphne::FrameType>(t))
+        } else if (llvm::isa<mlir::daphne::FrameType>(t)) {
             if (generalizeToStructure)
                 return "Structure";
             else
                 return "Frame";
-        else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
+        } else if(auto colTy = t.dyn_cast<mlir::daphne::ColumnType>()) {
+            if(generalizeToStructure)
+                return "Structure";
+            else
+                return "Column_" + mlirTypeToCppTypeName(colTy.getColumnType(), false);
+        } else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
             if (generalizeToStructure)
                 return "Structure";
             else {
@@ -251,7 +256,7 @@ struct CompilerUtils {
     }
 
     [[maybe_unused]] static bool isObjType(mlir::Type t) {
-        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(t);
+        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ColumnType>(t);
     }
 
     [[maybe_unused]] static bool hasObjType(mlir::Value v) { return isObjType(v.getType()); }
@@ -270,6 +275,8 @@ struct CompilerUtils {
             return mt.getElementType();
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error("getValueType() doesn't support frames yet"); // TODO
+        if(auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.getColumnType();
         else // TODO Check if this is really a scalar.
             return t;
     }
@@ -290,6 +297,8 @@ struct CompilerUtils {
             return mt.withElementType(vt);
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
+        if(auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.withColumnType(vt);
         else // TODO Check if this is really a scalar.
             return vt;
     }

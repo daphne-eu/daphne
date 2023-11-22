@@ -134,6 +134,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 t = mt.withSameElementType();
             else if (auto ft = t.dyn_cast<daphne::FrameType>())
                 t = ft.withSameColumnTypes();
+            else if(auto ct = t.dyn_cast<daphne::ColumnType>())
+                t = ct.withSameColumnType();
             op->getResult(i).setType(t);
         }
         return WalkResult::advance();
@@ -486,6 +488,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 for (Type ct : ft.getColumnTypes())
                     if (llvm::isa<daphne::UnknownType>(ct))
                         return true;
+            if(auto ct = resType.dyn_cast<daphne::ColumnType>())
+                return ct.getColumnType().isa<daphne::UnknownType>();
             return false;
         });
     }

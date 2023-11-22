@@ -298,6 +298,7 @@ template <> class ThetaJoin<Frame, Frame, Frame> {
 
             if (!positions) {
                 positions = new ResultContainer(lhsRowCount * rhsRowCount);
+                // positions = new ResultContainer(std::max(lhsRowCount, rhsRowCount));
             }
 
             if (depth == 0) {

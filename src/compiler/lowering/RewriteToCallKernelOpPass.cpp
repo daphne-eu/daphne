@@ -57,7 +57,7 @@ class KernelReplacement : public RewritePattern {
             return 4;
         if (llvm::isa<daphne::GroupOp>(op))
             return 3;
-        if (llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
+        if (llvm::isa<daphne::ColumnProjectionPathOp, daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
             return 2;
         if (llvm::isa<daphne::DistributedComputeOp, daphne::CreateListOp>(op))
             return 1;
@@ -107,6 +107,11 @@ class KernelReplacement : public RewritePattern {
         if (auto concreteOp = llvm::dyn_cast<daphne::OrderOp>(op)) {
             auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
             static bool isVariadic[] = {false, true, true, false};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
+        }
+        if (auto concreteOp = llvm::dyn_cast<daphne::ColumnProjectionPathOp>(op)) {
+            auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {false, true};
             return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
         }
         throw ErrorHandler::compilerError(op, "RewriteToCallKernelOpPass",

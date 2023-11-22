@@ -61,12 +61,16 @@ createMatMulOpLoweringPass(bool matmul_tile, int matmul_vec_size_bits = 0,
 std::unique_ptr<OperationPass<ModuleOp>> createMatMulOpLoweringPass();
 std::unique_ptr<Pass> createMemRefTestPass();
 std::unique_ptr<Pass> createModOpLoweringPass();
+std::unique_ptr<Pass> createOptimizeColumnarOpPass();
 std::unique_ptr<Pass> createPhyOperatorSelectionPass();
 std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
 std::unique_ptr<Pass> createProfilingPass();
+std::unique_ptr<Pass> createReduceColumnarOpPass();
+std::unique_ptr<Pass> createRewriteColumnarOpPass();
 std::unique_ptr<Pass> createRewriteSqlOpPass();
 std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig &cfg,
                                                       std::unordered_map<std::string, bool> &usedLibPaths);
+std::unique_ptr<Pass> createSelectionPushdownPass();
 std::unique_ptr<Pass> createSelectMatrixRepresentationsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createTransposeOpLoweringPass();
@@ -77,6 +81,10 @@ std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
 
 #ifdef USE_FPGAOPENCL
 std::unique_ptr<Pass> createMarkFPGAOPENCLOpsPass(const DaphneUserConfig &cfg);
+#endif
+
+#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
+    std::unique_ptr<Pass> createMarkVectorExtensionOpsPass(const DaphneUserConfig& cfg);
 #endif
 
 #define GEN_PASS_REGISTRATION

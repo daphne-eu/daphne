@@ -1,0 +1,28 @@
+# SSB Query 2.1 SF1
+
+lineorder = readFrame("../ssb-data/sf1/lineorder.csv");
+
+date = readFrame("../ssb-data/sf1/date.csv");
+
+part = readFrame("../ssb-data/sf1/part.csv");
+
+supplier = readFrame("../ssb-data/sf1/supplier.csv");
+
+registerView("lineorder", lineorder);
+
+registerView("date", date);
+
+registerView("part", part);
+
+registerView("supplier", supplier);
+
+res = sql("select sum(lineorder.lo_revenue), date.d_year, part.p_brand1
+from lineorder
+JOIN date ON lineorder.lo_orderdate = date.d_datekey 
+JOIN part ON lineorder.lo_partkey = part.p_partkey
+JOIN supplier ON lineorder.lo_suppkey = supplier.s_suppkey
+WHERE part.p_category = 1
+and supplier.s_region = 1
+group by date.d_year, part.p_brand1 order by date.d_year DESC, part.p_brand1 DESC;");
+
+print(res);
