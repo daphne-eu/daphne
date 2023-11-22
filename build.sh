@@ -1013,6 +1013,20 @@ if [ $WITH_DEPS -gt 0 ]; then
         else
               daphne_msg "No need to build HAWQ (libhdfs3) again."
         fi
+    #------------------------------------------------------------------------------
+    # TSL (Template SIMD Library)
+    #------------------------------------------------------------------------------
+    if ! is_dependency_installed "TSL"; then
+        daphne_msg "Install TSL."
+        tsl_generator="${thirdpartyPath}/TSLGenerator"
+        # install TSL requirements
+        pip3 install -r "${tsl_generator}/requirements.txt"
+        tsl_output="${installPrefix}/include/TSL"
+        # python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
+        cmake ${tsl_generator} -B ${tsl_generator}/build -D GENERATOR_OUTPUT_PATH=${tsl_output}
+        dependency_install_success "TSL"
+    else
+        daphne_msg "No need to generate TSL again."
     fi
 
     #------------------------------------------------------------------------------
