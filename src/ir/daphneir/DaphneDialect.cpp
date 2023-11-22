@@ -16,24 +16,33 @@
 
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
+
 #include <ir/daphneir/DaphneOpsEnums.cpp.inc>
+
+#include "mlir/Support/LogicalResult.h"
 #define GET_OP_CLASSES
 #include <ir/daphneir/DaphneOps.cpp.inc>
 #define GET_TYPEDEF_CLASSES
-#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
-#include <ir/daphneir/DaphneOpsDialect.cpp.inc>
+#include <llvm/ADT/APInt.h>
+#include <llvm/ADT/APSInt.h>
+#include <llvm/ADT/BitVector.h>
 
+#include <ir/daphneir/DaphneOpsDialect.cpp.inc>
+#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
+
+#include "llvm/ADT/ArrayRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/Builders.h"
-#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
+#include "mlir/IR/FunctionImplementation.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/SymbolTable.h"
-#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Interfaces/CastInterfaces.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
@@ -41,11 +50,45 @@
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/Interfaces/VectorInterfaces.h"
 #include "mlir/Interfaces/ViewLikeInterface.h"
+#include "mlir/Transforms/InliningUtils.h"
 
 #include <llvm/ADT/BitVector.h>
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APSInt.h>
 #include <llvm/ADT/DenseMap.h>
+
+struct DaphneInlinerInterface : public mlir::DialectInlinerInterface {
+  using DialectInlinerInterface::DialectInlinerInterface;
+
+  bool isLegalToInline(mlir::Operation *call, mlir::Operation *callable,
+                       bool wouldBeCloned) const final {
+    return true;
+  }
+
+  bool isLegalToInline(mlir::Operation *, mlir::Region *, bool, mlir::IRMapping &) const final {
+    return true;
+  }
+
+  bool isLegalToInline(mlir::Region *, mlir::Region *, bool, mlir::IRMapping &) const final {
+    return true;
+  }
+
+  void handleTerminator(mlir::Operation *op,
+                        mlir::ArrayRef<mlir::Value> valuesToRepl) const final {
+    auto returnOp = mlir::dyn_cast<mlir::daphne::ReturnOp>(op);
+
+    // Replace the values directly with the return operands.
+    assert(returnOp.getNumOperands() == valuesToRepl.size());
+    for (const auto &it : llvm::enumerate(returnOp.getOperands()))
+      valuesToRepl[it.index()].replaceAllUsesWith(it.value());
+  }
+
+  mlir::Operation *materializeCallConversion(mlir::OpBuilder &builder, mlir::Value input,
+                                       mlir::Type resultType,
+                                       mlir::Location conversionLoc) const final {
+    return builder.create<mlir::daphne::CastOp>(conversionLoc, resultType, input);
+  }
+};
 
 void mlir::daphne::DaphneDialect::initialize()
 {
@@ -57,6 +100,7 @@ void mlir::daphne::DaphneDialect::initialize()
         #define GET_TYPEDEF_LIST
         #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
     >();
+    addInterfaces<DaphneInlinerInterface>();
 }
 
 mlir::Operation *mlir::daphne::DaphneDialect::materializeConstant(OpBuilder &builder,
@@ -108,7 +152,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         }
         // additional properties (only print/read them when present, as this will probably get more and more)
         while (succeeded(parser.parseOptionalColon())) {
-            if (succeeded(parser.parseKeyword("sp"))) {
+            if (succeeded(parser.parseOptionalKeyword("sp"))) {
                 if (sparsity != -1.0) {
                     // read sparsity twice
                     return nullptr;
@@ -117,7 +161,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
                     return nullptr;
                 }
             }
-            else if (succeeded(parser.parseKeyword("rep"))) {
+            else if (succeeded(parser.parseOptionalKeyword("rep"))) {
                 llvm::StringRef repName;
                 if (parser.parseLSquare() || parser.parseKeyword(&repName) || parser.parseRSquare()) {
                     return nullptr;
@@ -207,6 +251,8 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         return ColumnType::get(
                 parser.getBuilder().getContext(), cts, numRows, nullptr
         );
+    else if (keyword == "DaphneContext") {
+        return mlir::daphne::DaphneContextType::get(parser.getBuilder().getContext());
     }
     else {
         parser.emitError(parser.getCurrentLocation()) << "Parsing failed, keyword `" << keyword << "` not recognized!";
@@ -410,6 +456,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
             // Value type is known.
             || elementType.isSignedInteger(64)
             || elementType.isUnsignedInteger(8)
+            || elementType.isUnsignedInteger(64)
             || elementType.isF32()
             || elementType.isF64()
             || elementType.isIndex()
@@ -765,11 +812,11 @@ mlir::OpFoldResult mlir::daphne::EwModOp::fold(FoldAdaptor adaptor) {
 mlir::OpFoldResult mlir::daphne::EwLogOp::fold(FoldAdaptor adaptor) {
     ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
-        // TODO This is a bug (see #615).
+        // Compute the element-wise logarithm of a to the base b
         // Equivalent to log_b(a)
-        return ilogb(a) / ilogb(b);
+        return log(a.convertToDouble()) / log(b.convertToDouble());
     };
-    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+    if (auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
         return res;
     return {};
 }
@@ -839,6 +886,10 @@ mlir::OpFoldResult mlir::daphne::EwAndOp::fold(FoldAdaptor adaptor) {
     // TODO: should output bool?
     if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
         return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwBitwiseAndOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
@@ -1505,3 +1556,34 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
         return mlir::success();
     }
 }
+
+mlir::LogicalResult mlir::daphne::ConvertDenseMatrixToMemRef::canonicalize(
+    mlir::daphne::ConvertDenseMatrixToMemRef op,
+    mlir::PatternRewriter &rewriter) {
+    // removes unnecessary conversions of MemRef -> DM -> MemRef
+    mlir::Operation *dmNode = op->getOperand(0).getDefiningOp();
+
+    if (!llvm::isa<mlir::daphne::ConvertMemRefToDenseMatrix>(dmNode))
+        return failure();
+
+    mlir::Operation *originalMemRefOp =
+        dmNode->getPrevNode()->getOperand(0).getDefiningOp();
+    op.replaceAllUsesWith(originalMemRefOp);
+
+    rewriter.eraseOp(op);
+    if (dmNode->getUsers().empty()) rewriter.eraseOp(dmNode);
+
+    return mlir::success();
+}
+
+mlir::LogicalResult mlir::daphne::ConvertMemRefToDenseMatrix::canonicalize(
+    mlir::daphne::ConvertMemRefToDenseMatrix op,
+    mlir::PatternRewriter &rewriter) {
+    mlir::Operation *extractPtr = op->getPrevNode();
+    auto srcMemRef = extractPtr->getOperand(0).getDefiningOp();
+    extractPtr->moveAfter(srcMemRef);
+    op->moveAfter(extractPtr);
+
+    return mlir::success();
+}
+

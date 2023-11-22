@@ -393,18 +393,7 @@ function clean_param_check() {
 #******************************************************************************
 # #5 Versions of third party dependencies
 #******************************************************************************
-antlrVersion=4.9.2
-catch2Version=2.13.8
-openBlasVersion=0.3.23
-abslVersion=20211102.0
-grpcVersion=1.38.0
-nlohmannjsonVersion=3.10.5
-arrowVersion=13.0.0
-openMPIVersion=4.1.5
-eigenVersion=3.4.0
-spdlogVersion=1.11.0
-papiVersion=7.0.1
-hwlocVersion=2.9.3
+source software-package-versions.txt
 
 #******************************************************************************
 # #6 Set some prefixes, paths and dirs

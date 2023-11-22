@@ -297,6 +297,14 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
+    static opt<bool> mlirCodegen(
+        "mlir-codegen", cat(daphneOptions),
+        desc("Enables lowering of certain DaphneIR operations on DenseMatrix to low-level MLIR operations.")
+    );
+    static opt<bool> performHybridCodegen(
+        "mlir-hybrid-codegen", cat(daphneOptions),
+        desc("Enables prototypical hybrid code generation combining pre-compiled kernels and MLIR code generation.")
+    );
 
     enum ExplainArgs {
       columnar,
@@ -311,7 +319,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       phy_op_selection,
       type_adaptation,
       vectorized,
-      obj_ref_mgnt
+      obj_ref_mgnt,
+      mlir_codegen
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -331,7 +340,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
+            clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
@@ -412,6 +422,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
+    user_config.use_mlir_codegen = mlirCodegen;
+    user_config.use_mlir_hybrid_codegen = performHybridCodegen;
+
     if(!libDir.getValue().empty())
         user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
@@ -483,6 +496,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
             case obj_ref_mgnt:
                 user_config.explain_obj_ref_mgnt = true;
+                break;
+            case mlir_codegen:
+                user_config.explain_mlir_codegen = true;
                 break;
         }
     }

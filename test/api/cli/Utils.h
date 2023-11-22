@@ -120,8 +120,13 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         close(linkErr[1]);
         
         // Execute other program.
-        execl(execPath, args..., static_cast<char *>(nullptr));
-        
+        // If execPath is a path (contains "/") use execl, otherwise use execlp.
+        // We need this to support "mpirun" for the MPI test cases.
+        if (std::string(execPath).find("/") != std::string::npos)
+            execl(execPath, args..., static_cast<char *>(nullptr));
+        else
+            execlp(execPath, args..., static_cast<char *>(nullptr));
+
         // execl does not return, unless it failed.
         throw std::runtime_error("could not execute the program");
     }
@@ -163,6 +168,31 @@ pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ...
     }
 }
 
+/**
+ * @brief Executes the "run-lit.py" python script in a directory and
+ * captures `stdout`, `stderr`, and the status code.
+ *
+ * "run-lit.py" is required to run the LLVM tool llvm-lit in order to
+ * test "*.mlir" files in the directoy using the llvm-lit command RUN:
+ * in each file.
+ *
+ * @param out The stream where to direct the program's standard output.
+ * @param err The stream where to direct the program's standard error.
+ * @param dirPath The path to the directory containing the "run-lit.py" script
+ * and the "*.mlir" test cases.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ * @return The status code returned by the process, or `-1` if it did not exit
+ * normally.
+ */
+template <typename... Args>
+int runLIT(std::stringstream &out, std::stringstream &err, std::string dirPath,
+           Args... args) {
+    return runProgram(out, err, "/bin/python3", "python3",
+                      (dirPath + "run-lit.py").c_str(), "-v", dirPath.c_str(),
+                      args...);
+}
 
 /**
  * @brief Executes DAPHNE's command line interface with the given arguments and

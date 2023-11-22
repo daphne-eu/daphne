@@ -75,7 +75,7 @@ class SQLVisitor : public SQLGrammarVisitor {
     /**
      * @brief creates ExtractColOp and CastOp
      */
-    mlir::Value extractMatrixFromFrame(
+    mlir::Value extractColumnAsMatrixFromFrame(
         mlir::Value frame, mlir::Value colname);
 
     /**
@@ -96,9 +96,10 @@ class SQLVisitor : public SQLGrammarVisitor {
     std::string getEnumLabelExt(const std::string& func);
 
     /**
-     * @brief returns the frame only containing a column with given name as string.
+     * @brief returns a frame in which the contents of a column specified by
+     * the columnName is copied.
      */
-    mlir::Value extractFrameFromFrame(mlir::Value frame, mlir::Value columnName);
+    mlir::Value extractColumnFromFrame(mlir::Value frame, mlir::Value columnName);
 
 
 //Data Structures and access functions

@@ -299,34 +299,20 @@ mlir::Value SQLVisitor::getColIdx(
     );
 }
 
-mlir::Value SQLVisitor::extractMatrixFromFrame(
+mlir::Value SQLVisitor::extractColumnAsMatrixFromFrame(
     mlir::Value frame,
     mlir::Value colname
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
-
-    mlir::Type vt = utils.unknownType;
-    mlir::Type resTypeCol = mlir::daphne::FrameType::get(
-            builder.getContext(), {vt}
-    );
 
     //TODO: Integration of Transformation of ColName to ColIdx Op.
     //mlir::Value colIdx = getColIdx(frame, colname);
+    mlir::Value col = extractColumnFromFrame(frame, colname);
 
-    mlir::Value col = static_cast<mlir::Value>(
-        builder.create<mlir::daphne::ExtractColOp>(
-            loc,
-            resTypeCol,
-            frame,
-            //colIdx
-            colname
-        )
-    );
-
+    mlir::Type vt = utils.unknownType;
     mlir::Type resType = utils.matrixOf(vt);
     return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
-            loc,
+           builder.getUnknownLoc(),
             resType,
             col
     ));
@@ -401,7 +387,7 @@ std::string SQLVisitor::getEnumLabelExt(const std::string &func){
     return mlir::daphne::stringifyGroupEnum(getGroupEnum(func).dyn_cast<mlir::daphne::GroupEnumAttr>().getValue()).str();
 }
 
-mlir::Value SQLVisitor::extractFrameFromFrame(
+mlir::Value SQLVisitor::extractColumnFromFrame(
     mlir::Value frame,
     mlir::Value columnName
 ) {
@@ -416,7 +402,7 @@ mlir::Value SQLVisitor::extractFrameFromFrame(
         builder.create<mlir::daphne::ExtractColOp>(
             loc,
             resTypeCol,
-            currentFrame,
+            frame,
             columnName
         )
     ));
@@ -607,40 +593,32 @@ antlrcpp::Any SQLVisitor::visitTableExpr(
 
 //distinctExpr
 antlrcpp::Any SQLVisitor::visitDistinctExpr(
-    SQLGrammarParser::DistinctExprContext *ctx
+        SQLGrammarParser::DistinctExprContext *ctx
 )
 {
-    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)    //If group is active
-     && columnName.size())                                         //AND there is an aggregation
-    {
-        throw std::runtime_error("DISTINCT with GROUP BY and Aggregation is not supported");
-    }else if(isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
-     || columnName.size())                                            //OR there is an aggregation  
-    {
-        // due to earlier grouping/aggregation the result is already distinct
-        return currentFrame;
-    }else {
-        mlir::Location loc = utils.getLoc(ctx->start);
-        mlir::Value starLiteral = createStringConstant("*");
-        std::vector<mlir::Value> cols{starLiteral};
-        std::vector<mlir::Value> aggs;
-        std::vector<mlir::Attribute> functions;
-        mlir::Type vt = utils.unknownType;
-        std::vector<mlir::Type> colTypes{vt};
-        mlir::Type resType = mlir::daphne::FrameType::get(
-            builder.getContext(), colTypes
-        );
-        return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::GroupOp>(
-                loc,
-                resType,
-                currentFrame,
-                cols,
-                aggs,
-                builder.getArrayAttr(functions)
-            )
-        );
-    }   
+  if (isBitSet(sqlFlag, (int64_t)SQLBit::group) // If group is active
+      && columnName.size())                     // AND there is an aggregation
+  {
+    throw std::runtime_error(
+        "DISTINCT with GROUP BY and Aggregation is not supported");
+  } else if (isBitSet(sqlFlag, (int64_t)SQLBit::group) // If group is active
+             || columnName.size()) // OR there is an aggregation
+  {
+    return currentFrame; // due to earlier grouping/aggregation the result is
+                         // already distinct
+  }
+
+  mlir::Location loc = utils.getLoc(ctx->start);
+  mlir::Value starLiteral = createStringConstant("*");
+  std::vector<mlir::Value> cols{starLiteral};
+  std::vector<mlir::Value> aggs;
+  std::vector<mlir::Attribute> functions;
+  mlir::Type vt = utils.unknownType;
+  std::vector<mlir::Type> colTypes{vt};
+  mlir::Type resType =
+      mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+  return static_cast<mlir::Value>(builder.create<mlir::daphne::GroupOp>(
+      loc, resType, currentFrame, cols, aggs, builder.getArrayAttr(functions)));
 }
 
 //fromExpr
@@ -945,9 +923,9 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
 {
     if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
         && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggregation
-        && grouped[ctx->selectIdent()->getText()] == 0 //AND the label is not in group expr
+        && grouped.count(ctx->selectIdent()->getText()) == 0 //AND the label is not in group expr
         && ctx->selectIdent()->getText()[ctx->selectIdent()->getText().length() - 1] != '*' //AND the label does not end in * (* or f.*)
-        && grouped["*"] == 0) //AND there is no * in group expr
+        && grouped.count("*") == 0) //AND there is no * in group expr
     {
         std::stringstream err_msg;
         err_msg << "Error during a generalExpr. \""
@@ -965,11 +943,11 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
         return utils.valueOrError(visit(ctx->selectIdent()));
     } else if(label.compare(label.length() - 2, 2, ".*") == 0){      //SELECT frame.*
         mlir::Value colname = utils.valueOrError(visit(ctx->selectIdent()));
-        return extractFrameFromFrame(currentFrame, colname);
+        return extractColumnFromFrame(currentFrame, colname);
     }
 
     mlir::Value colname = utils.valueOrError(visit(ctx->selectIdent()));
-    return extractMatrixFromFrame(currentFrame, colname);
+    return extractColumnAsMatrixFromFrame(currentFrame, colname);
 }
 
 antlrcpp::Any SQLVisitor::visitStarExpr(
@@ -986,11 +964,11 @@ antlrcpp::Any SQLVisitor::visitStarExpr(
 
         mlir::Value colname = createStringConstant(columnName);
 
-        mlir::Value resultFrame = extractFrameFromFrame(currentFrame, colname);
+        mlir::Value resultFrame = extractColumnFromFrame(currentFrame, colname);
         std::set<std::string>::iterator itr;
         for (itr = groundGroupColumns.begin(); itr != groundGroupColumns.end(); itr++ ) {
             mlir::Value groupColname = createStringConstant(itr->c_str());
-            mlir::Value addFrame = extractFrameFromFrame(currentFrame, groupColname);
+            mlir::Value addFrame = extractColumnFromFrame(currentFrame, groupColname);
 
             std::vector<mlir::Type> colTypes;
             for(mlir::Type t : resultFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
@@ -1135,7 +1113,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
         const std::string &func = toLower(ctx->func->getText());
         std::string newColumnNameAppended = getEnumLabelExt(func) + "(" + newColumnName + ")";
         mlir::Value colname = utils.valueOrError(createStringConstant(newColumnNameAppended));
-        return extractMatrixFromFrame(currentFrame, colname); //returns Matrix
+        return extractColumnAsMatrixFromFrame(currentFrame, colname); //returns Matrix
     }
 }
 

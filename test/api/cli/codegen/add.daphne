@@ -1,0 +1,8 @@
+// Performs an AddOp. Used to compare precompiled kernel with codegen.
+// Values extracted as scalar to avoid them being optimized out of
+// the calculation with constant folding or similar.
+
+X = [1, 2, 3];
+a = as.scalar(X[0:1, 0:1]);
+b = as.scalar(X[1:2, 0:1]);
+print(a + b);

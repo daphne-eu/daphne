@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-x = 1.0;
-y = 2.0;
+#ifndef DAPHNEOPT_DAPHNEOP_H
+#define DAPHNEOPT_DAPHNEOP_H
 
-m1 = rand(6000, 15000, 1.0, 1000.0, 1.0, 42);
-m2= rand(6000, 15000, 1.0, 1000.0, 1.0, 43);
-print("---------------");
-print("part of random matrix m1");
-print(m1[1:5,1:5]);
-print("part of random matrix m2");
-print(m2[1:5,1:5]);
+#include "mlir/IR/Dialect.h"
 
-m3= m1 + m2;
-print("m3 = m1 + m2");
-print(m3[1:5,1:5]);
+#include "ir/daphneir/Daphne.h"
 
-print("Hello world!");
-print("Bye!"); 
+#endif // DAPHNEOPT_DAPHNEOP_H

@@ -63,6 +63,7 @@ Other features we do and don't support right now can be found below.
 * Having Clauses
 * Order By Clauses
 * As
+* Distinct
 
 ### Not Yet Supported Features
 
@@ -71,7 +72,6 @@ Other features we do and don't support right now can be found below.
 * All Set Operations (Union, Except, Intersect)
 * Recursive SQL Queries
 * Limit
-* Distinct
 
 ## Examples
 

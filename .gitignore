@@ -6,6 +6,9 @@ build_*/
 /lib
 /tmp
 
+# runtime dump
+**/*.ll
+
 # documentation build output
 doc_build/
 
@@ -26,7 +29,26 @@ __pycache__/
 .idea/
 .clion.source.upload.marker
 
+# local test/dev scripts
 tmpdaphne.daphne
+*.daphne
+*.mlir
+*.log
+
+# tags file
+tags
+tags.lock
+tags.temp
+
+# clangd cache
+.cache/
+
+# gdb
+.gdb_history
+
+# compile commands
+compile_commands.json
+
 
 # release scripts output
 /artifacts
@@ -49,3 +71,7 @@ precompiled-dependencies/
 # clang cache
 .cache
 
+
+# Allow .daphne and .mlir files in test/
+!test/**/*.mlir
+!test/**/*.daphne

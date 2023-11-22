@@ -33,6 +33,7 @@
 #include "mlir/Parser/Parser.h"
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Transforms/Passes.h>
+#include <ir/daphneir/Passes.h>
 
 #include <iostream>
 #include <memory>
@@ -46,11 +47,13 @@ const std::string dirPath = "test/api/cli/parser/";
 TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER)
 {
     std::string daphneIrCode;
+    std::string daphneIRCodeMatRepr;
     {
         mlir::MLIRContext context;
         context.getOrLoadDialect<mlir::daphne::DaphneDialect>();
         context.getOrLoadDialect<mlir::func::FuncDialect>();
         context.getOrLoadDialect<mlir::scf::SCFDialect>();
+        context.getOrLoadDialect<mlir::func::FuncDialect>();
 
         mlir::OpBuilder builder(&context);
         auto moduleOp = mlir::ModuleOp::create(builder.getUnknownLoc());
@@ -62,6 +65,17 @@ TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER)
 
         llvm::raw_string_ostream stream(daphneIrCode);
         moduleOp.print(stream);
+        
+        // Print IR after SelectMatrixRepresentationsPass
+        mlir::PassManager passManager(&context);
+        passManager.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+        passManager.addPass(mlir::createCanonicalizerPass());
+        passManager.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass());
+        
+        REQUIRE(failed(passManager.run(moduleOp)) == false);
+        
+        llvm::raw_string_ostream streamMatRepr(daphneIRCodeMatRepr);
+        moduleOp.print(streamMatRepr);
     }
 
     mlir::MLIRContext context;
@@ -77,4 +91,14 @@ TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER)
     module->print(stream);
 
     REQUIRE(daphneIrCode == newCode);
+        
+    // Parse after SelectMatrixRepresentationsPass
+    mlir::OwningOpRef<mlir::ModuleOp> moduleMatReprPass(mlir::parseSourceString<mlir::ModuleOp>(daphneIRCodeMatRepr, &context));
+    REQUIRE(moduleMatReprPass);
+
+    std::string newCodeMatRepr;
+    llvm::raw_string_ostream streamMatRepr(newCodeMatRepr);
+    moduleMatReprPass->print(streamMatRepr);
+
+    REQUIRE(daphneIRCodeMatRepr == newCodeMatRepr);
 }

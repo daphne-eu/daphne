@@ -110,6 +110,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
                 resValues += denseMat->getRowSkip();
                 slicedMatValues += slicedMat->getRowSkip();
             }
+            DataObjectFactory::destroy(slicedMat);
             
             collectedDataItems+=  dp->range->r_len *  dp->range->c_len;
 
@@ -179,7 +180,9 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
                 memcpy(resValues + dp->range->c_start, slicedMatValues, dp->range->c_len * sizeof(double));
                 resValues += denseMat->getRowSkip();                    
                 slicedMatValues += slicedMat->getRowSkip();
-            }               
+            }
+            DataObjectFactory::destroy(slicedMat);
+
             data.isPlacedAtWorker = false;
             dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
         } 
@@ -233,7 +236,9 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
                     memcpy(resValues + dp->range->c_start, slicedMatValues, dp->range->c_len * sizeof(double));
                     resValues += denseMat->getRowSkip();                    
                     slicedMatValues += slicedMat->getRowSkip();
-                }               
+                }
+                DataObjectFactory::destroy(slicedMat);
+                
                 distributedData.isPlacedAtWorker = false;
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(distributedData);
             });

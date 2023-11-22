@@ -18,16 +18,23 @@
 #include "ir/daphneir/Passes.h"
 #include "compiler/utils/CompilerUtils.h"
 
+#include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
+
+#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
+#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include <memory>
@@ -40,35 +47,6 @@ using namespace mlir;
 // Optional attribute of CallKernelOp, which indicates that all results shall
 // be combined into a single variadic result.
 const std::string ATTR_HASVARIADICRESULTS = "hasVariadicResults";
-
-#if 0
-// At the moment, all of these operations are lowered to kernel calls.
-template <typename BinaryOp, typename ReplIOp, typename ReplFOp>
-struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
-{
-    using OpConversionPattern<BinaryOp>::OpConversionPattern;
-
-    LogicalResult
-    matchAndRewrite(BinaryOp op, OpAdaptor adaptor,
-                    ConversionPatternRewriter &rewriter) const override
-    {
-        Type type = op.getType();
-        if (type.isa<IntegerType>()) {
-            rewriter.replaceOpWithNewOp<ReplIOp>(op.getOperation(), adaptor.getOperands());
-        }
-        else if (type.isa<FloatType>()) {
-            rewriter.replaceOpWithNewOp<ReplFOp>(op.getOperation(), adaptor.getOperands());
-        }
-        else {
-            return failure();
-        }
-        return success();
-    }
-};
-using AddOpLowering = BinaryOpLowering<daphne::AddOp, AddIOp, AddFOp>;
-using SubOpLowering = BinaryOpLowering<daphne::SubOp, SubIOp, SubFOp>;
-using MulOpLowering = BinaryOpLowering<daphne::MulOp, MulIOp, MulFOp>;
-#endif
 
 struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
 {
@@ -308,16 +286,18 @@ public:
         auto loc = op.getLoc();
 
         auto inputOutputTypes = getLLVMInputOutputTypes(
-                                                        loc, rewriter.getContext(), typeConverter,
-                                                        op.getResultTypes(), ValueRange(adaptor.getOperands()).getTypes(),
-                                                        hasVarRes, rewriter.getIndexType());
+            loc, rewriter.getContext(), typeConverter, op.getResultTypes(),
+            ValueRange(adaptor.getOperands()).getTypes(), hasVarRes,
+            rewriter.getIndexType());
 
         // create function protoype and get `FlatSymbolRefAttr` to it
         auto kernelRef = getOrInsertFunctionAttr(
-                                                 rewriter, module, op.getCalleeAttr().getValue(),
-                                                 getKernelFuncSignature(rewriter.getContext(), inputOutputTypes));
+            rewriter, module, op.getCalleeAttr().getValue(),
+            getKernelFuncSignature(rewriter.getContext(), inputOutputTypes));
 
-        auto kernelOperands = allocOutputReferences(loc, rewriter, adaptor.getOperands(), inputOutputTypes, op->getNumResults(), hasVarRes);
+        auto kernelOperands = allocOutputReferences(
+            loc, rewriter, adaptor.getOperands(), inputOutputTypes,
+            op->getNumResults(), hasVarRes);
 
         // call function
         // The kernel call has an empty list of return types, because our
@@ -934,6 +914,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
     RewritePatternSet patterns(&getContext());
 
     LowerToLLVMOptions llvmOptions(&getContext());
+    // llvmOptions.useBarePtrCallConv = true;
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
     typeConverter.addConversion([&](daphne::MatrixType t)
     {
@@ -990,9 +971,13 @@ void DaphneLowerToLLVMPass::runOnOperation()
     LLVMConversionTarget target(getContext());
 
     // populate dialect conversions
-    arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
-    populateFuncToLLVMConversionPatterns(typeConverter, patterns);
+    mlir::linalg::populateLinalgToStandardConversionPatterns(patterns);
+    populateAffineToStdConversionPatterns(patterns);
+    populateSCFToControlFlowConversionPatterns(patterns);
+    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
+    populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
     cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
+    populateFuncToLLVMConversionPatterns(typeConverter, patterns);
     populateReturnOpTypeConversionPattern(patterns, typeConverter);
 
     target.addLegalOp<ModuleOp>();

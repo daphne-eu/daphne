@@ -32,6 +32,12 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     ReduceColumnarOpPass.cpp
     MarkVectorExtensionOpsPass.cpp
     SelectionPushdownPass.cpp
+    DaphneOptPass.cpp
+    EwOpsLowering.cpp
+    ModOpLowering.cpp
+    MapOpLowering.cpp
+    MatMulOpLowering.cpp
+    AggAllOpLowering.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen
@@ -40,9 +46,14 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     LINK_COMPONENTS
     Core
 )
+
 target_link_libraries(MLIRDaphneTransforms PUBLIC
     CompilerUtils
+    MLIRSCFToControlFlow
     MLIRArithToLLVM
+    MLIRMemRefToLLVM
+    MLIRAffineToStandard
+    MLIRLinalgToStandard
     MLIRControlFlowToLLVM
     MLIRFuncToLLVM
     MLIRFuncTransforms

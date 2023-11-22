@@ -1,0 +1,31 @@
+# Copyright 2023 The DAPHNE Consortium
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# alphabetically ordered version information for third party dependencies of DAPHNE
+# used in shell scripts like build.sh, publish.sh, etc
+
+abslVersion=20211102.0
+antlrVersion=4.9.2
+arrowVersion=13.0.0
+catch2Version=2.13.8
+cudaVersion=12.2.2
+eigenVersion=3.4.0
+grpcVersion=1.38.0
+hwlocVersion=2.9.3
+nlohmannjsonVersion=3.10.5
+openBlasVersion=0.3.23
+openMPIVersion=4.1.5
+papiVersion=7.0.1
+spdlogVersion=1.11.0
+ubuntuVersion=20.04

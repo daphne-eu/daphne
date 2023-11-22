@@ -33,6 +33,7 @@
 #include "mlir/IR/AttrTypeSubElements.h"
 #pragma GCC diagnostic pop
 
+#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"

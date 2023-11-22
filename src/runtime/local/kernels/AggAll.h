@@ -61,17 +61,17 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         const VTArg * valuesArg = arg->getValues();
 
         EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
-        VTRes agg;
+        VTRes agg, stddev;
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
             func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
             agg = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
         }
         else {
             // TODO Setting the function pointer yields the correct result.
-            // However, since MEAN and STDDEV are not sparse-safe, the program
+            // However, since MEAN, VAR, and STDDEV are not sparse-safe, the program
             // does not take the same path for doing the summation, and is less
             // efficient.
-            // for MEAN and STDDDEV, we need to sum
+            // for MEAN, VAR, and STDDEV, we need to sum
             func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             agg = VTRes(0);
         }
@@ -84,14 +84,32 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         if (AggOpCodeUtils::isPureBinaryReduction(opCode))
             return agg;
 
-        // The op-code is either MEAN or STDDEV.
+        agg /= arg->getNumCols() * arg->getNumRows();
+        // The op-code is either MEAN or STDDEV or VAR.
         if (opCode == AggOpCode::MEAN) {
-            agg /= arg->getNumCols() * arg->getNumRows();
             return agg;
         }
-        // else op-code is STDDEV
-        // TODO STDDEV
-        throw std::runtime_error("unsupported AggOpCode in AggAll for DenseMatrix");
+        // else op-code is STDDEV or VAR
+        stddev=0;
+        valuesArg = arg->getValues();
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numCols; c++) {
+                VTRes val = static_cast<VTRes>(valuesArg[c]) - agg;
+                stddev = stddev + val * val;
+            }
+            valuesArg += arg->getRowSkip();               
+        }
+
+        stddev /= arg->getNumCols() * arg->getNumRows();
+
+        //Variance --> stddev before sqrt() is variance
+        if (opCode == AggOpCode::VAR){
+            VTRes var = stddev;
+            return var;
+        }
+        
+        stddev = sqrt(stddev);
+        return stddev;
     }
 };
 
@@ -131,7 +149,7 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
                     ctx
             );
         }
-        else { // The op-code is either MEAN or STDDEV.
+        else { // The op-code is either MEAN or STDDEV or VAR.
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));            
             auto agg = aggArray(
                 arg->getValues(0),
@@ -142,11 +160,31 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
                 VTRes(0),
                 ctx
             );
+            agg = agg / (arg->getNumRows() * arg->getNumCols());
             if (opCode == AggOpCode::MEAN)
-                return agg / (arg->getNumRows() * arg->getNumCols());
-            
-            // TODO STDDEV
-            throw std::runtime_error("unsupported AggOpCode in AggAll for CSRMatrix");
+                return agg;
+            else{
+                //STDDEV-VAR
+                VTRes stddev=0;
+
+                const VTArg * valuesArg = arg->getValues(0);
+                for(size_t i = 0; i < arg->getNumNonZeros(); i++) {
+                    VTRes val = static_cast<VTRes>((valuesArg[i])) - agg;
+                    stddev = stddev + val * val;
+                }
+                stddev += ((arg->getNumRows() * arg->getNumCols()) - arg->getNumNonZeros())*agg*agg;
+                stddev /= (arg->getNumRows() * arg->getNumCols());
+                 
+                //Variance --> stddev before sqrt() is variance
+                if (opCode == AggOpCode::VAR){
+                    VTRes var = stddev;
+                    return var;
+                }
+
+                stddev = sqrt(stddev);
+                return stddev;
+
+            }
         }
     }
 };
