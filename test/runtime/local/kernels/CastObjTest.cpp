@@ -19,8 +19,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
-#include <runtime/local/datastructures/ValueTypeCode.h>
-#include <SIMDOperators/datastructure/column.hpp>
+#include <SIMDOperators/datastructures/column.hpp>
 #include <runtime/local/kernels/CastObj.h>
 #include <runtime/local/kernels/CheckEq.h>
 
