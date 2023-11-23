@@ -206,11 +206,11 @@ public:
         }
         else
             dp = const_cast<DenseMatrix<ValueType> *>(this)->mdo->getDataPlacement(alloc_desc);
-        this->mdo->setLatest(dp->dp_id);
+        this->mdo->setLatest(dp->getID());
         if(!const_cast<DenseMatrix<ValueType> *>(this)->mdo->isLatestVersion
-        (dp->dp_id))
-            const_cast<DenseMatrix<ValueType> *>(this)->mdo->addLatest(dp->dp_id);
-        return reinterpret_cast<const ValueType*>(dp->allocation->getData().get());
+        (dp->getID()))
+            const_cast<DenseMatrix<ValueType> *>(this)->mdo->addLatest(dp->getID());
+        return reinterpret_cast<const ValueType*>(dp->getAllocation(0)->getData().get());
 
     }
 
@@ -241,8 +241,8 @@ public:
         else
             dp = this->mdo->getDataPlacement(alloc_desc);
 //        auto ptr = reinterpret_cast<ValueType*>(this->mdo->getDataPlacement(alloc_desc));
-        this->mdo->setLatest(dp->dp_id);
-        return reinterpret_cast<ValueType*>(dp->allocation->getData().get());
+        this->mdo->setLatest(dp->getID());
+        return reinterpret_cast<ValueType*>(dp->getAllocation(0)->getData().get());
     }
     
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {

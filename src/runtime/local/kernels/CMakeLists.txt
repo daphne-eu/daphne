@@ -91,6 +91,8 @@ set(HEADERS_cpp_kernels
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/DistributedPipeline.h
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CreateDaphneContext.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp
@@ -99,6 +101,7 @@ set(SOURCES_cpp_kernels
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
+
         )
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED ${SOURCES_cpp_kernels} ${HEADERS_cpp_kernels})

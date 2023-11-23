@@ -16,16 +16,20 @@
 
 #include "MetaDataObject.h"
 
-DataPlacement* MetaDataObject::addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r) {
+DataPlacement* MetaDataObject::addDataPlacement(std::vector<std::unique_ptr<IAllocationDescriptor>>& allocInfos, Range *r) {
     if(r) {
-        range_data_placements[static_cast<size_t>(allocInfo->getType())].emplace_back(std::make_unique<DataPlacement>(
-                allocInfo->clone(), r->clone()));
-        return range_data_placements[static_cast<size_t>(allocInfo->getType())].back().get();
+//        range_data_placements[static_cast<size_t>(allocInfo->getType())].emplace_back(std::make_unique<DataPlacement>(
+//                allocInfo->clone(), r->clone()));
+//        return range_data_placements[static_cast<size_t>(allocInfo->getType())].back().get();
+        auto type = static_cast<size_t>(allocInfos.front()->getType());
+        range_data_placements[type].emplace_back(std::make_unique<DataPlacement>(std::move(allocInfos), r->clone()));
+        return range_data_placements[type].back().get();
     }
     else {
-        data_placements[static_cast<size_t>(allocInfo->getType())] = std::make_unique<DataPlacement>(
-                allocInfo->clone(), nullptr);
-        return data_placements[static_cast<size_t>(allocInfo->getType())].get();
+        auto type = static_cast<size_t>(allocInfos.front()->getType());
+        data_placements[type] = std::make_unique<DataPlacement>(
+                std::move(allocInfos), nullptr);
+        return data_placements[type].get();
     }
 
 }
@@ -43,7 +47,7 @@ DataPlacement* MetaDataObject::getDataPlacementByLocation(const std::string& loc
     // ToDo: no range?
     for (const auto &_omdType: range_data_placements) {
         for (auto &_omd: _omdType) {
-            if(_omd->allocation->getLocation() == location)
+            if(_omd->getLocation() == location)
                 return const_cast<DataPlacement *>(_omd.get());
         }
     }
@@ -53,8 +57,8 @@ DataPlacement* MetaDataObject::getDataPlacementByLocation(const std::string& loc
 void MetaDataObject::updateRangeDataPlacementByID(size_t id, Range *r) {
     for(auto &_omdType : range_data_placements) {
         for(auto& _omd : _omdType) {
-            if(_omd->dp_id == id){
-                _omd->range = r->clone();
+            if(_omd->getID() == id){
+                _omd->setRange(r->clone());
                 return;
             }
         }
@@ -63,39 +67,39 @@ void MetaDataObject::updateRangeDataPlacementByID(size_t id, Range *r) {
 
 DataPlacement *MetaDataObject::getDataPlacementByID(size_t id) const {
     for (const auto &_omdType: data_placements) {
-        if(_omdType->dp_id == id)
+        if(_omdType->getID() == id)
             return const_cast<DataPlacement *>(_omdType.get());
     }
     for (const auto &_omdType: range_data_placements) {
         for (auto &_omd: _omdType) {
-            if(_omd->dp_id == id)
+            if(_omd->getID() == id)
                 return const_cast<DataPlacement *>(_omd.get());
         }
     }
     return nullptr;
 }
 
-const DataPlacement* MetaDataObject::findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const {
-    if(range) {
-        auto res = getRangeDataPlacementByType(alloc_desc->getType());
-        if (res->empty())
-            return nullptr;
-        else {
-            for (size_t i = 0; i < res->size(); ++i) {
-                if ((*res)[i]->allocation->operator==(alloc_desc)) {
-                    if (((*res)[i]->range == nullptr && range == nullptr) ||
-                        ((*res)[i]->range != nullptr && (*res)[i]->range->operator==(range))) {
-                        return (*res)[i].get();
-                    }
-                }
-            }
-            return nullptr;
-        }
-
-    }
-    else
-        return getDataPlacementByType(alloc_desc->getType());
-}
+//const DataPlacement* MetaDataObject::findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const {
+//    if(range) {
+//        auto res = getRangeDataPlacementByType(alloc_desc->getType());
+//        if (res->empty())
+//            return nullptr;
+//        else {
+//            for (size_t i = 0; i < res->size(); ++i) {
+//                if ((*res)[i]->allocation->operator==(alloc_desc)) {
+//                    if (((*res)[i]->range == nullptr && range == nullptr) ||
+//                        ((*res)[i]->range != nullptr && (*res)[i]->range->operator==(range))) {
+//                        return (*res)[i].get();
+//                    }
+//                }
+//            }
+//            return nullptr;
+//        }
+//
+//    }
+//    else
+//        return getDataPlacementByType(alloc_desc->getType());
+//}
 
 bool MetaDataObject::isLatestVersion(size_t placement) const {
     return (std::find(latest_version.begin(), latest_version.end(), placement) != latest_version.end());
@@ -116,7 +120,7 @@ auto MetaDataObject::getLatest() const -> std::vector<size_t> {
 
 DataPlacement *MetaDataObject::getDataPlacement(const IAllocationDescriptor* alloc_desc) {
     // tuple content: <is latest, latest-id, ptr-to-data-placement>
-    std::tuple<bool, size_t, std::byte *> result = std::make_tuple(false, 0, nullptr);
+//    std::tuple<bool, size_t, std::byte *> result = std::make_tuple(false, 0, nullptr);
     auto dp = getDataPlacementByType(alloc_desc->getType());
     if(!dp) {
         // find other allocation type X (preferably host allocation) to transfer from in latest_version
@@ -144,21 +148,28 @@ DataPlacement *MetaDataObject::getDataPlacement(const IAllocationDescriptor* all
 //        }
 
         // create new data placement
-        auto new_data_placement = addDataPlacement(alloc_desc);
-        new_data_placement->allocation->createAllocation(placement->allocation->getSize(), false);
+//        auto new_data_placement = addDataPlacement(alloc_desc);
+//        new_data_placement->allocation->createAllocation(placement->allocation->getSize(), false);
 
-        // transfer to requested data placement
-        new_data_placement->allocation->transferTo(placement->allocation->getData().get(), placement->allocation->getSize());
-//        return std::make_tuple(true, new_data_placement->dp_id, new_data_placement->allocation->getData().get());
-        return new_data_placement;
+        std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+        for(uint32_t i = 0; i < placement->getNumAllocations(); ++i) {
+            auto other_alloc = placement->getAllocation(i);
+            auto new_alloc = alloc_desc->createAllocation(other_alloc->getSize(), false);
+            new_alloc->transferTo(other_alloc->getData().get(), other_alloc->getSize());
+            allocations.emplace_back(std::move(new_alloc));
+            // transfer to requested data placement
+        }
+        return addDataPlacement(allocations);
     }
     else {
-        bool isLatest = isLatestVersion(dp->dp_id);
+        bool isLatest = isLatestVersion(dp->getID());
         if(!isLatest) {
             auto latest = getDataPlacementByID(getLatest().front());
-            dp->allocation->transferTo(latest->allocation->getData().get(), latest->allocation->getSize());
+            for(uint32_t i = 0; i < latest->getNumAllocations(); ++i) {
+                auto other_alloc = latest->getAllocation(i);
+                dp->getAllocation(i)->transferTo(other_alloc->getData().get(), other_alloc->getSize());
+            }
         }
-//        return std::make_tuple(latest, dp->dp_id, dp->allocation->getData().get());
         return dp;
     }
 }

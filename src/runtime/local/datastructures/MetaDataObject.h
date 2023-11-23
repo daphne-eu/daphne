@@ -40,8 +40,8 @@ class MetaDataObject {
     std::vector<size_t> latest_version;
 
 public:
-    DataPlacement *addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r = nullptr);
-    const DataPlacement *findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const;
+    DataPlacement *addDataPlacement(std::vector<std::unique_ptr<IAllocationDescriptor>>& allocInfos, Range *r = nullptr);
+//    const DataPlacement *findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const;
     [[nodiscard]] DataPlacement *getDataPlacementByID(size_t id) const;
     [[nodiscard]] DataPlacement *getDataPlacementByLocation(const std::string& location) const;
     [[nodiscard]] auto getRangeDataPlacementByType(ALLOCATION_TYPE type) const ->

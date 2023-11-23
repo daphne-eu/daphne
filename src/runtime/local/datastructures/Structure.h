@@ -52,9 +52,14 @@ protected:
         // FIXME: This clones the meta data to avoid locking (thread synchronization for data copy)
         for(int i = 0; i < static_cast<int>(ALLOCATION_TYPE::NUM_ALLOC_TYPES); i++) {
             auto placement = src->mdo->getDataPlacementByType(static_cast<ALLOCATION_TYPE>(i));
-            auto new_dp = this->mdo->addDataPlacement(placement->allocation.get());
-            if(src->mdo->isLatestVersion(placement->dp_id))
-                this->mdo->addLatest(new_dp->dp_id);
+
+//            auto new_dp = this->mdo->addDataPlacement(placement->allocation.get());
+            throw std::runtime_error("ToDo: clone_mdo");
+
+            std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+            DataPlacement* new_dp = this->mdo->addDataPlacement(allocations);
+            if(src->mdo->isLatestVersion(placement->getID()))
+                this->mdo->addLatest(new_dp->getID());
 //            for(auto it = placements->begin(); it != placements->end(); it++) {
 //                auto src_alloc = it->get()->allocation.get();
 //                auto src_range = it->get()->range.get();

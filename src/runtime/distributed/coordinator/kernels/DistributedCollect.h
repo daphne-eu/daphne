@@ -79,7 +79,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             
             std::string address = std::to_string(rank);  
             auto dp=mat->getMetaDataObject()->getDataPlacementByLocation(address);   
-            auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
+            auto distributedData = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getDistributedData();            
             WorkerImpl::StoredInfo info = {
                 distributedData.identifier,
                 distributedData.numRows,
@@ -103,20 +103,20 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             }            
 
             auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_deserialize(buffer));
-            auto resValues = denseMat->getValues() + (dp->range->r_start * denseMat->getRowSkip());
+            auto resValues = denseMat->getValues() + (dp->getRange()->r_start * denseMat->getRowSkip());
             auto slicedMatValues = slicedMat->getValues();
-            for (size_t r = 0; r < dp->range->r_len; r++) {
-                memcpy(resValues + dp->range->c_start, slicedMatValues, dp->range->c_len * sizeof(double));
+            for (size_t r = 0; r < dp->getRange()->r_len; r++) {
+                memcpy(resValues + dp->getRange()->c_start, slicedMatValues, dp->getRange()->c_len * sizeof(double));
                 resValues += denseMat->getRowSkip();
                 slicedMatValues += slicedMat->getRowSkip();
             }
             DataObjectFactory::destroy(slicedMat);
             
-            collectedDataItems+=  dp->range->r_len *  dp->range->c_len;
+            collectedDataItems+=  dp->getRange()->r_len *  dp->getRange()->c_len;
 
-            auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
+            auto distributedData = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getDistributedData();            
             distributedData.isPlacedAtWorker = false;
-            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(distributedData);
+            dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->updateDistributedData(distributedData);
             // this is to handle the case when not all workers participate in the computation, i.e., number of workers is larger than of the work items
             if(collectedDataItems == denseMat->getNumRows() * denseMat->getNumCols())
                 break;
@@ -144,10 +144,10 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
 
         auto dpVector = mat->getMetaDataObject()->getRangeDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
         for (auto &dp : *dpVector) {
-            auto address = dp->allocation->getLocation();
+            auto address = dp->getAllocation(0)->getLocation();
             
-            auto distributedData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
-            StoredInfo storedInfo({dp->dp_id});
+            auto distributedData = dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getDistributedData();
+            StoredInfo storedInfo({dp->getID()});
             distributed::StoredData protoData;
             protoData.set_identifier(distributedData.identifier);
             protoData.set_num_rows(distributedData.numRows);
@@ -162,7 +162,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
             auto response = caller.getNextResult();
             auto dp_id = response.storedInfo.dp_id;
             auto dp = mat->getMetaDataObject()->getDataPlacementByID(dp_id);
-            auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();            
+            auto data = dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getDistributedData();            
 
             auto matProto = response.result;
             
@@ -174,17 +174,17 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
             // Zero copy buffer
             std::vector<char> buf(static_cast<const char*>(matProto.bytes().data()), static_cast<const char*>(matProto.bytes().data()) + matProto.bytes().size()); 
             auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_deserialize(buf));
-            auto resValues = denseMat->getValues() + (dp->range->r_start * denseMat->getRowSkip());
+            auto resValues = denseMat->getValues() + (dp->getRange()->r_start * denseMat->getRowSkip());
             auto slicedMatValues = slicedMat->getValues();
-            for (size_t r = 0; r < dp->range->r_len; r++){
-                memcpy(resValues + dp->range->c_start, slicedMatValues, dp->range->c_len * sizeof(double));
+            for (size_t r = 0; r < dp->getRange()->r_len; r++){
+                memcpy(resValues + dp->getRange()->c_start, slicedMatValues, dp->getRange()->c_len * sizeof(double));
                 resValues += denseMat->getRowSkip();                    
                 slicedMatValues += slicedMat->getRowSkip();
             }
             DataObjectFactory::destroy(slicedMat);
 
             data.isPlacedAtWorker = false;
-            dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
+            dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->updateDistributedData(data);
         } 
     };
 };
@@ -206,9 +206,9 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
 
         auto dpVector = mat->getMetaDataObject()->getRangeDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
         for (auto &dp : *dpVector) {
-            auto address = dp->allocation->getLocation();
+            auto address = dp->getAllocation(0)->getLocation();
             
-            auto distributedData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();            
+            auto distributedData = dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getDistributedData();            
             distributed::StoredData protoData;
             protoData.set_identifier(distributedData.identifier);
             protoData.set_num_rows(distributedData.numRows);
@@ -230,19 +230,19 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
                 // Zero copy buffer
                 std::vector<char> buf(static_cast<const char*>(matProto.bytes().data()), static_cast<const char*>(matProto.bytes().data()) + matProto.bytes().size()); 
                 auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_deserialize(buf));
-                auto resValues = denseMat->getValues() + (dp->range->r_start * denseMat->getRowSkip());
+                auto resValues = denseMat->getValues() + (dp->getRange()->r_start * denseMat->getRowSkip());
                 auto slicedMatValues = slicedMat->getValues();
-                for (size_t r = 0; r < dp->range->r_len; r++){
-                    memcpy(resValues + dp->range->c_start, slicedMatValues, dp->range->c_len * sizeof(double));
+                for (size_t r = 0; r < dp->getRange()->r_len; r++){
+                    memcpy(resValues + dp->getRange()->c_start, slicedMatValues, dp->getRange()->c_len * sizeof(double));
                     resValues += denseMat->getRowSkip();                    
                     slicedMatValues += slicedMat->getRowSkip();
                 }
                 DataObjectFactory::destroy(slicedMat);
                 
                 distributedData.isPlacedAtWorker = false;
-                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(distributedData);
+                dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->updateDistributedData(distributedData);
             });
-            threads_vector.push_back(move(t));        
+            threads_vector.push_back(std::move(t));        
         }
         for (auto &thread : threads_vector)
             thread.join();

@@ -3,7 +3,6 @@
 
 #include <mpi.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/worker/MPISerializer.h>
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
@@ -15,7 +14,6 @@
 #include <ir/daphneir/Daphne.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/IR/AsmState.h>
-##include <mlir/Parser.h>
 #include <llvm/Support/SourceMgr.h>
 #include <mlir/IR/BuiltinTypes.h>
 
@@ -58,17 +56,17 @@ class MPICoordinator{
 
                 }*/
                 WorkerImpl::StoredInfo info;
-                if(!scalars.at(i))
-                {
-                    Structure* mat = (Structure *)(&inputs[i]);
-                    //info = solver.doStore(mat);
-                }
-                else
-                {
-                    auto ptr = (double*)(&inputs[i]);
-                    double val = *ptr;
-                    //info= solver.doStore(&val);
-                }
+//                if(!scalars.at(i))
+//                {
+//                    Structure* mat = (Structure *)(&inputs[i]);
+//                    //info = solver.doStore(mat);
+//                }
+//                else
+//                {
+////                    auto ptr = (double*)(&inputs[i]);
+////                    double val = *ptr;
+//                    //info= solver.doStore(&val);
+//                }
                 inputsStoredInfo.push_back(info);
 
             }
@@ -100,15 +98,14 @@ class MPICoordinator{
                 std::string addr= std::to_string(COORDINATOR);
                 // If dp already exists for this worker, update the range and data
                 if (auto dp = (*res[i])->getMetaDataObject()->getDataPlacementByLocation(addr)) { 
-                    (*res[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
-                    dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);                    
+                    (*res[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->getID(), &range);
+                    dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->updateDistributedData(data);
                 }
                 else { // else create new dp entry   
-                    AllocationDescriptorMPI allocationDescriptor(
-                                            dctx,
-                                            COORDINATOR,
-                                            data);                                    
-                    ((*res[i]))->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);                    
+                    AllocationDescriptorMPI allocationDescriptor(COORDINATOR, dctx, data);
+                    std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+                    allocations.emplace_back(&allocationDescriptor);
+                    ((*res[i]))->getMetaDataObject()->addDataPlacement(allocations, &range);
                 } 
             }
             //solver.Compute(&outputsStoredInfo, inputsStoredInfo, mlirCode);

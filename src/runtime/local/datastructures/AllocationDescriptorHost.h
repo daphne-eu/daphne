@@ -26,18 +26,39 @@ class AllocationDescriptorHost : public IAllocationDescriptor {
 
 public:
     ~AllocationDescriptorHost() override = default;
+
     [[nodiscard]] ALLOCATION_TYPE getType() const override { return type; }
-    void createAllocation(size_t size, bool zero) override { }
-    std::string getLocation() const override 
-    { return "Host"; }
+
+    static std::unique_ptr<AllocationDescriptorHost> createHostAllocation(std::shared_ptr<std::byte> data, size_t size,
+            bool zero) {
+        auto new_alloc = std::make_unique<AllocationDescriptorHost>();
+        new_alloc->data = std::move(data);
+        new_alloc->size = size;
+        if(zero)
+            memset(new_alloc->data.get(), 0, size);
+        return new_alloc;
+    }
+
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor> createAllocation(size_t size, bool zero) const override {
+        auto new_alloc = std::make_unique<AllocationDescriptorHost>();
+        new_alloc->size = size;
+        if(zero)
+            memset(new_alloc->data.get(), 0, size);
+
+        return new_alloc;
+    }
+
+    [[nodiscard]] std::string getLocation() const override { return "Host"; }
+
     std::shared_ptr<std::byte> getData() override { return data; }
+
+    void setData(std::shared_ptr<std::byte>& _data) { data = _data; }
+
     void transferTo(std::byte* src, size_t size) override { }
     void transferFrom(std::byte* dst, size_t size) override {}
     [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorHost>(*this);
     }
-
-    void setData(std::shared_ptr<std::byte> _data) { data = std::move(_data); }
 
     bool operator==(const IAllocationDescriptor* other) const override { return (getType() == other->getType()); }
 };
