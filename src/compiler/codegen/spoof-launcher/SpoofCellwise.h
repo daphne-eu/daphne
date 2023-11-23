@@ -44,7 +44,7 @@ struct SpoofCellwiseFullAgg {
 						  << N << " elements"
 						  << std::endl;
 #endif
-		CHECK_CUDA(op->program.get()->kernel(op_name)
+		CHECK_CUDADRV(op->program.get()->kernel(op_name)
 						   .instantiate(type_of(value_type), std::max(static_cast<uint32_t>(1u), dbw->num_sides()))
 						   .configure(grid, block, shared_mem_size, ctx->stream)
 						   .launch(dbw->d_in<T>(0), dbw->d_sides<T>(), dbw->d_out<T>(), dbw->d_scalars<T>(), N, dbw->grix()));
@@ -64,7 +64,7 @@ struct SpoofCellwiseFullAgg {
                     << N << " elements"
                     << std::endl;
 #endif
-				CHECK_CUDA(cuLaunchKernel(op->agg_kernel,NB, 1, 1, NT, 1, 1, shared_mem_size, ctx->stream, args, nullptr));
+				CHECK_CUDADRV(cuLaunchKernel(op->agg_kernel,NB, 1, 1, NT, 1, 1, shared_mem_size, ctx->stream, args, nullptr));
 				N = NB;
 			}
 		}
@@ -88,7 +88,7 @@ struct SpoofCellwiseRowAgg {
 					<< shared_mem_size << " bytes of shared memory for row aggregation of "
 					<< N << " elements" << std::endl;
 #endif
-		CHECK_CUDA(op->program->kernel(op_name)
+		CHECK_CUDADRV(op->program->kernel(op_name)
 						   .instantiate(type_of(value_type), std::max(static_cast<uint32_t>(1u), dbw->num_sides()))
 						   .configure(grid, block, shared_mem_size, ctx->stream)
 						   .launch(dbw->d_in<T>(0), dbw->d_sides<T>(), dbw->d_out<T>(), dbw->d_scalars<T>(), N, dbw->grix()));
@@ -113,7 +113,7 @@ struct SpoofCellwiseColAgg {
 						<< NT * NB << " threads in " << NB << " blocks for column aggregation of "
 						<< N << " elements" << std::endl;
 #endif
-		CHECK_CUDA(op->program->kernel(op_name)
+		CHECK_CUDADRV(op->program->kernel(op_name)
 						   .instantiate(type_of(value_type), std::max(static_cast<uint32_t>(1u), dbw->num_sides()))
 						   .configure(grid, block, shared_mem_size, ctx->stream)
 						   .launch(dbw->d_in<T>(0), dbw->d_sides<T>(), dbw->d_out<T>(), dbw->d_scalars<T>(), N, dbw->grix()));
@@ -153,7 +153,7 @@ struct SpoofCellwiseNoAgg {
 				" blocks without aggregation for " << N << " elements" << std::endl;
 		}
 #endif
-		CHECK_CUDA(op->program->kernel(op_name)
+		CHECK_CUDADRV(op->program->kernel(op_name)
 						   .instantiate(type_of(value_type), std::max(static_cast<uint32_t>(1u), dbw->num_sides()))
 						   .configure(grid, block, shared_mem_size, ctx->stream)
 						   .launch(dbw->d_in<T>(0), dbw->d_sides<T>(), dbw->d_out<T>(), dbw->d_scalars<T>(), N, dbw->grix()));

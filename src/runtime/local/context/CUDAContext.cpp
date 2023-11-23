@@ -18,8 +18,12 @@
 
 size_t CUDAContext::alloc_count = 0;
 
+using clk = std::chrono::high_resolution_clock;
+using sec = std::chrono::duration<double, std::ratio<1>>;
+
 void CUDAContext::destroy() {
     logger->debug("Destroying CUDA context...");
+#if 1
     CHECK_CUBLAS(cublasDestroy(cublas_handle));
     CHECK_CUSPARSE(cusparseDestroy(cusparse_handle));
     CHECK_CUDNN(cudnnDestroy(cudnn_handle));
@@ -35,12 +39,15 @@ void CUDAContext::destroy() {
 
     CHECK_CUDART(cudaFree(cudnn_workspace));
     CHECK_CUDART(cudaFree(scratch_buffer));
+#endif
 
 //    CHECK_CUDART(cudaFree(cublas_workspace));
 //    CHECK_CUBLAS(cublasLtDestroy(ltHandle));
 }
 
 void CUDAContext::init() {
+    auto init_start = clk::now();
+
     CHECK_CUDART(cudaSetDevice(device_id));
     CHECK_CUDART(cudaGetDeviceProperties(&device_properties, device_id));
 
@@ -52,7 +59,7 @@ void CUDAContext::init() {
 
     logger->info("Using CUDA device {}: {}\n\tAvailable mem: {} Total mem: {} using {}% -> {}", device_id,
             device_properties.name, available, total, mem_usage * 100, mem_budget);
-
+#if 1
     CHECK_CUBLAS(cublasCreate(&cublas_handle));
     CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
     CHECK_CUDNN(cudnnCreate(&cudnn_handle));
@@ -70,11 +77,19 @@ void CUDAContext::init() {
 
     getCUDNNWorkspace(64 * 1024 * 1024);
 
+
     // allocate 8MB of scratch space (e.g., aggregation tmp buffer)
     CHECK_CUDART(cudaMalloc(&scratch_buffer, 8 * 1048576));
+#endif
+
 
 //    CHECK_CUBLAS(cublasLtCreate(&cublaslt_Handle));
 //    CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));
+
+    auto init_end = clk::now();
+	auto init_duration = std::chrono::duration_cast<sec>(init_end - init_start).count();
+
+    logger->info("CUDA context {} init time: {} sec", device_id, init_duration);
 }
 
 template<>
@@ -154,4 +169,8 @@ void CUDAContext::free(size_t id) {
 
 int CUDAContext::getMaxNumThreads() const {
     return device_properties.maxThreadsPerBlock;
+}
+
+int CUDAContext::getMaxNumBlocks() const {
+    return device_properties.maxGridSize[0];
 }

@@ -130,7 +130,7 @@ struct SpoofRowwise {
             // special bins:
             // bin0: empty rows
             // bin1: very sparse rows (<16 non zeros) -> 1 thread per row
-            for (int i = 0; i < num_bins; i++) {
+            for (auto i = 0u; i < num_bins; i++) {
                 auto bin_size = h_bin_sizes[i];
 
                 // skip empty bins
@@ -164,7 +164,7 @@ struct SpoofRowwise {
                 CHECK_CUDART(cudaDeviceSynchronize());
                 auto start = clk::now();
 #endif
-                CHECK_CUDA(op->program->kernel(sparse_op_name)
+                CHECK_CUDADRV(op->program->kernel(sparse_op_name)
                                    .instantiate(type_of(value_type),
                                                 std::max(static_cast<uint32_t>(1), dbw->num_sides()),
                                                 op->num_temp_vectors, tmp_len)
@@ -185,7 +185,7 @@ struct SpoofRowwise {
             CHECK_CUDART(cudaFree(d_bin_sizes));
         }
         else {
-            CHECK_CUDA(op->program->kernel(op_name)
+            CHECK_CUDADRV(op->program->kernel(op_name)
                     .instantiate(type_of(value_type), std::max(static_cast<uint32_t>(1), dbw->num_sides()),
                             op->num_temp_vectors, tmp_len)
                     .configure(grid, block, shared_mem_size, ctx->stream)

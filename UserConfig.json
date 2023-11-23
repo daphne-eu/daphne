@@ -1,11 +1,13 @@
 {
     "use_cuda": true,
     "use_cuda_codegen": false,
+    "use_cuda_codegen": false,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
     "cuda_fuse_any": false,
     "vectorized_single_queue": false,
     "debug_llvm": false,
+    "explain_cuda_codegen": false,
     "explain_kernels": true,
     "explain_llvm": false,
     "explain_parsing": false,

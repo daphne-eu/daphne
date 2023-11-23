@@ -1146,8 +1146,8 @@ class CUDAKernel {
       cuda_safe_call(cuLinkCreate((unsigned)_opts.size(), _opts.data(),
                                   _optvals.data(), &_link_state));
       cuda_safe_call(cuLinkAddData(_link_state, CU_JIT_INPUT_PTX,
-                                   (void*)_ptx.c_str(), _ptx.size(),
-                                   "jitified_source.ptx", 0, 0, 0));
+                                   const_cast<char*>(_ptx.c_str()), _ptx.size(),
+                                   "jitified_source.ptx", 0, nullptr, nullptr));
       for (int i = 0; i < (int)link_files.size(); ++i) {
         std::string link_file = link_files[i];
         CUjitInputType jit_input_type;
@@ -3158,7 +3158,7 @@ class KernelLauncher {
    */
   template <typename... ArgTypes>
   inline CUresult launch(const ArgTypes&... args) const {
-    return this->launch(std::vector<void*>({(void*)&args...}),
+    return this->launch(std::vector<void*>({const_cast<ArgTypes*>(&args)...}),
                         {reflection::reflect<ArgTypes>()...});
   }
   /*! Launch the kernel and check for cuda errors.

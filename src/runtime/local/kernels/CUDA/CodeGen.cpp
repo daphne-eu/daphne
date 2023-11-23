@@ -48,7 +48,7 @@ uint32_t writeInputToStagingBuffer2(std::byte* bbuf, const DenseMatrix<VT>* inpu
     auto vtmp = input->getValues(alloc_desc);
     auto vtmp1 =  const_cast<double*>(vtmp);
     auto vtmp2 = reinterpret_cast<size_t>(vtmp1);
-    std::cout << vtmp2 << std::endl;
+//    std::cout << vtmp2 << std::endl;
     ptr_size_t = reinterpret_cast<size_t*>(ptr);
     *ptr_size_t = vtmp2;
     pos += (sizeof(size_t) + 4 * sizeof(uint32_t*) + sizeof(VT));
@@ -66,12 +66,16 @@ uint32_t writeInputToStagingBuffer(std::byte* bbuf, const DenseMatrix<VT>* input
 //    ptr_size_t++;
     auto ptr = reinterpret_cast<uint32_t*>(&(bbuf[pos]));
     tmp = input->getNumRows();
-    *ptr = *reinterpret_cast<uint32_t*>(&tmp);
+    auto tmp1 = static_cast<uint32_t>(tmp);
+//    *ptr = *reinterpret_cast<uint32_t*>(&tmp);
+    *ptr = tmp1;
 //    ptr++;
     pos += sizeof(uint32_t);
     ptr = reinterpret_cast<uint32_t*>(&(bbuf[pos]));
     tmp = input->getNumCols();
-    *ptr = *reinterpret_cast<uint32_t*>(&tmp);
+    tmp1 = static_cast<uint32_t>(tmp);
+//    *ptr = *reinterpret_cast<uint32_t*>(&tmp);
+    *ptr = tmp1;
 //    ptr++;
     pos += sizeof(uint32_t);
 
@@ -101,8 +105,8 @@ uint32_t writeInputToStagingBuffer(std::byte* bbuf, const DenseMatrix<VT>* input
 template<typename VTres, typename VTarg>
 VTres CodeGenCW(const DenseMatrix<VTarg>** args, DCTX(dctx)) {
     const size_t deviceID = 0; //ToDo: multi device support
-    if(dctx->useCUDA())
-        dctx->logger->info("daphne context CodeGenCW");
+//    if(dctx->useCUDA())
+//        dctx->logger->info("daphne context CodeGenCW");
 
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
@@ -113,7 +117,7 @@ VTres CodeGenCW(const DenseMatrix<VTarg>** args, DCTX(dctx)) {
     auto cctx = reinterpret_cast<SpoofCUDAContext*>(dctx->getUserConfig().codegen_ctx_ptr);
     auto opID = reinterpret_cast<size_t>(args[2]);
     auto operator_name = cctx->getOperatorName(opID);
-    std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
+//    std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
 
     int32_t num_inputs = 1;
     int32_t num_side_inputs = 1;
@@ -147,11 +151,9 @@ VTres CodeGenCW(const DenseMatrix<VTarg>** args, DCTX(dctx)) {
     // launch gen op
     cctx->launch<VTarg, SpoofCellwise<VTarg>>();
 
-    ctx->logger->debug("returned from gen_cw op");
-
-    CHECK_CUDART(cudaStreamSynchronize(cctx->stream));
-
-    ctx->logger->debug("stream synchronized");
+//    ctx->logger->debug("returned from gen_cw op");
+//    CHECK_CUDART(cudaStreamSynchronize(cctx->stream));
+//    ctx->logger->debug("stream synchronized");
 
 //    std::vector<VTres> res(1048576);
 //    CHECK_CUDART(cudaMemcpy(res.data(), d_res, sizeof(VTres) * 24, cudaMemcpyDeviceToHost));
@@ -169,8 +171,8 @@ VTres CodeGenCW(const DenseMatrix<VTarg>** args, DCTX(dctx)) {
 template<typename VTres, typename VTarg>
 void CodeGenRW(DenseMatrix<VTres>*& res, const DenseMatrix<VTarg>** args, DCTX(dctx)) {
     const size_t deviceID = 0; //ToDo: multi device support
-    if(dctx->useCUDA())
-        dctx->logger->info("daphne context CodeGenRW");
+//    if(dctx->useCUDA())
+//        dctx->logger->info("daphne context CodeGenRW");
 
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
@@ -184,7 +186,7 @@ void CodeGenRW(DenseMatrix<VTres>*& res, const DenseMatrix<VTarg>** args, DCTX(d
     auto cctx = reinterpret_cast<SpoofCUDAContext*>(dctx->getUserConfig().codegen_ctx_ptr);
     auto opID = reinterpret_cast<size_t>(args[2]);
     auto operator_name = cctx->getOperatorName(opID);
-    std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
+//    std::cout << "executing op=" << operator_name << " id=" << opID << std::endl;
 
     int32_t num_inputs = 1;
     int32_t num_side_inputs = 1;
@@ -212,19 +214,17 @@ void CodeGenRW(DenseMatrix<VTres>*& res, const DenseMatrix<VTarg>** args, DCTX(d
     // launch gen op
     cctx->launch<VTarg, SpoofRowwise<VTarg>>();
 
-    ctx->logger->debug("returned from gen_rw op");
-
-    CHECK_CUDART(cudaStreamSynchronize(cctx->stream));
-
-    ctx->logger->debug("stream synchronized");
+//    ctx->logger->debug("returned from gen_rw op");
+//    CHECK_CUDART(cudaStreamSynchronize(cctx->stream));
+//    ctx->logger->debug("stream synchronized");
 }
 
 
 template<typename VTres, typename VTarg>
 void CodeGenRW(DenseMatrix<VTres>*& res, const CSRMatrix<VTarg>** args, DCTX(dctx)) {
     const size_t deviceID = 0; //ToDo: multi device support
-    if(dctx)
-        dctx->logger->info("daphne context CodeGenRW");
+//    if(dctx)
+//        dctx->logger->info("daphne context CodeGenRW");
 
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
@@ -232,9 +232,9 @@ void CodeGenRW(DenseMatrix<VTres>*& res, const CSRMatrix<VTarg>** args, DCTX(dct
     // get codegen context
 
     auto a = args[0];
-    auto b = args[1];
+//    auto b = args[1];
 
-    SpoofCUDAContext* cctx = reinterpret_cast<SpoofCUDAContext*>(dctx->getUserConfig().codegen_ctx_ptr);
+//    SpoofCUDAContext* cctx = reinterpret_cast<SpoofCUDAContext*>(dctx->getUserConfig().codegen_ctx_ptr);
 //    cctx->template launch<SpoofRowwiseOp>()
 
     if(res == nullptr)
@@ -249,15 +249,15 @@ extern "C" {
 
     void CUDA_codegenCW__double__DenseMatrix_double_variadic__size_t(double *res, const DenseMatrix<double> **arg,
             size_t num_operands, DCTX(ctx)) {
-        auto nc = ctx->cuda_contexts.size();
-        std::cout << "codegenCW: num operands: " << num_operands << ", num cuda contexts: " << nc << std::endl;
+//        auto nc = ctx->cuda_contexts.size();
+//        std::cout << "codegenCW: num operands: " << num_operands << ", num cuda contexts: " << nc << std::endl;
         *res = CodeGenCW<double>(arg, ctx);
     }
 
     void CUDA_codegenRW__DenseMatrix_double__DenseMatrix_double_variadic__size_t(DenseMatrix<double> **res,
             const DenseMatrix<double> **arg, size_t num_operands, DCTX(ctx)) {
-        auto nc = ctx->cuda_contexts.size();
-        std::cout << "codegenRW: num operands: " << num_operands << ", num cuda contexts: " << nc << std::endl;
+//        auto nc = ctx->cuda_contexts.size();
+//        std::cout << "codegenRW: num operands: " << num_operands << ", num cuda contexts: " << nc << std::endl;
         CodeGenRW(*res, arg, ctx);
     }
 
