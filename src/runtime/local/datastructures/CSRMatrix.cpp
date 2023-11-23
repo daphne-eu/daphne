@@ -19,6 +19,114 @@
 #include "CSRMatrix.h"
 
 template<typename ValueType>
+CSRMatrix<ValueType>::CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero, IAllocationDescriptor* allocInfo) :
+        Matrix<ValueType>(maxNumRows, numCols), numRowsAllocated(maxNumRows), isRowAllocatedBefore(false),
+        maxNumNonZeros(maxNumNonZeros), lastAppendedRowIdx(0) {
+    auto val_buf_size = maxNumNonZeros * sizeof(ValueType);
+    auto cidx_buf_size = maxNumNonZeros * sizeof(size_t);
+    auto rptr_buf_size = (numRows + 1) * sizeof(size_t);
+
+    std::unique_ptr<IAllocationDescriptor> val_alloc;
+    std::unique_ptr<IAllocationDescriptor> cidx_alloc;
+    std::unique_ptr<IAllocationDescriptor> rptr_alloc;
+
+    if(!allocInfo) {
+        values = std::shared_ptr<ValueType>(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>());
+        auto bytes = std::reinterpret_pointer_cast<std::byte>(values);
+        val_alloc = AllocationDescriptorHost::createHostAllocation(bytes, val_buf_size, zero);
+        colIdxs = std::shared_ptr<size_t>(new size_t[maxNumNonZeros], std::default_delete<size_t[]>());
+        bytes = std::reinterpret_pointer_cast<std::byte>(colIdxs);
+        cidx_alloc = AllocationDescriptorHost::createHostAllocation(bytes, cidx_buf_size, zero);
+        rowOffsets = std::shared_ptr<size_t>(new size_t[numRows + 1], std::default_delete<size_t[]>());
+        bytes = std::reinterpret_pointer_cast<std::byte>(rowOffsets);
+        rptr_alloc = AllocationDescriptorHost::createHostAllocation(bytes, rptr_buf_size, zero);
+    }
+    else {
+        val_alloc = allocInfo->createAllocation(val_buf_size, zero);
+        cidx_alloc = allocInfo->createAllocation(cidx_buf_size, zero);
+        rptr_alloc = allocInfo->createAllocation(rptr_buf_size, zero);
+
+        // ToDo: refactor data storage into memory management
+        if(allocInfo->getType() == ALLOCATION_TYPE::HOST) {
+//            values = std::shared_ptr<ValueType>(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>());
+//            colIdxs = std::shared_ptr<size_t>(new size_t[maxNumNonZeros], std::default_delete<size_t[]>());
+//            rowOffsets = std::shared_ptr<size_t>(new size_t[numRows + 1], std::default_delete<size_t[]>());
+//
+//            if(zero) {
+//                memset(values.get(), 0, val_buf_size);
+//                memset(colIdxs.get(), 0, cidx_buf_size);
+//                memset(rowOffsets.get(), 0, rptr_buf_size);
+//            }
+//            auto val_bytes = std::reinterpret_pointer_cast<std::byte>(values);
+//            dynamic_cast<AllocationDescriptorHost *>(val_alloc.get())->setData(val_bytes);
+            values = std::reinterpret_pointer_cast<ValueType>(val_alloc->getData());
+            colIdxs = std::reinterpret_pointer_cast<size_t>(cidx_alloc->getData());
+            rowOffsets = std::reinterpret_pointer_cast<size_t>(rptr_alloc->getData());
+        }
+    }
+
+    spdlog::debug("Creating {} x {} sparse matrix of type: {}. Required memory: vals={}, cidxs={}, rptrs={}, total={} Mb", numRows, numCols,
+                  val_alloc->getTypeName(), static_cast<float>(val_buf_size) / (1048576), static_cast<float>(cidx_buf_size) / (1048576),
+                  static_cast<float>(rptr_buf_size) / (1048576), static_cast<float>(val_buf_size + cidx_buf_size + rptr_buf_size) / (1048576));
+
+    std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+    allocations.emplace_back(std::move(val_alloc));
+    allocations.emplace_back(std::move(cidx_alloc));
+    allocations.emplace_back(std::move(rptr_alloc));
+    auto p = this->mdo->addDataPlacement(allocations);
+    this->mdo->addLatest(p->getID());
+}
+
+
+//template<typename ValueType>
+//ValueType*  CSRMatrix<ValueType>::getValues(const IAllocationDescriptor* alloc_desc, const Range* range)
+//{
+////    DataPlacement* dp;
+////    if(!alloc_desc) {
+//////            alloc_desc = &reinterpret_cast<IAllocationDescriptor>(AllocationDescriptorHost());
+////        auto ad = AllocationDescriptorHost();
+////        dp = this->mdo->getDataPlacement(&ad);
+////    }
+////    else
+////        dp = this->mdo->getDataPlacement(alloc_desc);
+//////        auto ptr = reinterpret_cast<ValueType*>(this->mdo->getDataPlacement(alloc_desc));
+////    this->mdo->setLatest(dp->getID());
+////    return reinterpret_cast<ValueType*>(dp->getAllocation(0)->getData().get());
+//    return  reinterpret_cast<ValueType*>(this->mdo->getData(0, alloc_desc, range));
+//}
+
+//template<typename ValueType>
+//const ValueType* CSRMatrix<ValueType>::getValues(const IAllocationDescriptor* alloc_desc, const Range* range) const
+//{
+//    DataPlacement* dp;
+//    if(!alloc_desc) {
+//        auto ad = AllocationDescriptorHost();
+//        dp = const_cast<CSRMatrix<ValueType> *>(this)->mdo->getDataPlacement(&ad);
+//    }
+//    else
+//        dp = const_cast<CSRMatrix<ValueType> *>(this)->mdo->getDataPlacement(alloc_desc);
+//    this->mdo->setLatest(dp->getID());
+//    if(!const_cast<CSRMatrix<ValueType> *>(this)->mdo->isLatestVersion
+//            (dp->getID()))
+//        const_cast<CSRMatrix<ValueType> *>(this)->mdo->addLatest(dp->getID());
+//    return reinterpret_cast<const ValueType*>(dp->getAllocation(0)->getData().get());
+//}
+
+//template<typename ValueType>
+//ValueType* CSRMatrix<ValueType>::getRowValues(size_t rowIdx, const IAllocationDescriptor* alloc_desc, const Range* range)
+//{
+//    // We allow equality here to enable retrieving a pointer to the end.
+//    assert((rowIdx <= numRows) && "rowIdx is out of bounds");
+//    return &getValues(alloc_desc, range)[getRowOffsets()[rowIdx]];
+//}
+
+//template<typename ValueType>
+//const ValueType * CSRMatrix<ValueType>::getRowValues(size_t rowIdx, const IAllocationDescriptor* alloc_desc,
+//        const Range* range) const {
+//    return const_cast<CSRMatrix<ValueType> *>(this)->getRowValues(rowIdx, alloc_desc, range);
+//}
+
+template<typename ValueType>
 size_t CSRMatrix<ValueType>::serialize(std::vector<char> &buf) const {
     return DaphneSerializer<CSRMatrix<ValueType>>::serialize(this, buf);
 }

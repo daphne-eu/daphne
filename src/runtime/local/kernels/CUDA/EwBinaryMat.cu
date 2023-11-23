@@ -65,6 +65,49 @@ namespace CUDA {
     }
 
     template<class VT, class OP>
+    __global__ void ewBinMatSparseDense(VT *res, const VT *lhs_val, const size_t* lhs_cidxs, const size_t * lhs_rptrs, const VT *rhs_val, size_t N, OP op) {
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+        auto row_start = lhs_rptrs[blockIdx.x];
+        auto row_end = lhs_rptrs[blockIdx.x + 1];
+        auto idx = row_start + threadIdx.x;
+
+//        if(tid < N) {
+//
+//        }
+
+        if(idx < row_end) {
+            auto val = lhs_val[idx];
+            auto col = lhs_cidxs[idx];
+            auto r_val = rhs_val[col];
+            res[idx] = op(val, r_val);
+//        if(threadIdx.x < 1)
+//            printf("bid=%d ltid=%d lhs=%4.3f rhs=%4.3f res=%4.3f\n", blockIdx.x, ltid, lhs[ltid], rhs[ltid], res[ltid]);
+	    }
+    }
+
+    template<class VT, class OP>
+    __global__ void ewBinMatSparseSparse(VT *res, const VT *lhs_val, const size_t* lhs_cidxs, const size_t * lhs_rptrs, const VT *rhs_val, size_t N, OP op) {
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+        auto row_start = lhs_rptrs[blockIdx.x];
+        auto row_end = lhs_rptrs[blockIdx.x + 1];
+        auto idx = row_start + threadIdx.x;
+
+        if(tid < N)
+            printf("tid=%d N=%llu\n", tid, N);
+
+        if(idx < row_end) {
+            auto val = lhs_val[idx];
+            auto col = lhs_cidxs[idx];
+//            auto r_val = rhs_val[col];
+//            res[idx] = op(val, r_val);
+//            if(threadIdx.x < 1)
+            printf("bid=%d tid=%d idx=%d lhs_val=%4.3f col_idx=%llu row_start=%llu row_end=%llu row_nnz=%llu N=%llu nnz=%llu\n", blockIdx.x, tid, idx, val, col, row_start, row_end, (row_end - row_start), N, lhs_rptrs[N]);
+        }
+    }
+
+    template<class VT, class OP>
     bool launch_ewbinmat(const size_t& numRowsLhs, const size_t& numColsLhs, const size_t& numRowsRhs,
             const size_t& numColsRhs, size_t& gridSize, int& minGridSize, int& blockSize, const size_t& N, VT* res, const VT* lhs,
             const VT* rhs) {
@@ -278,9 +321,24 @@ namespace CUDA {
 
         // output will be n x m because of column major format of cublas
         if(res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VTres>>(lhs->getNumRows(), lhs->getNumCols(), false, &alloc_desc);
+            res = DataObjectFactory::create<CSRMatrix<VTres>>(lhs->getNumRows(), lhs->getNumCols(), lhs->getNumNonZeros(), false, &alloc_desc);
 
+        if(opCode == BinaryOpCode::MUL) {
+            ProductOp<VTres> op;
+//            if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
+//            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMat<VTres, decltype(op)>, 0, 0));
+//            gridSize = (N + blockSize - 1) / blockSize;
+            auto gridSize = lhs->getNumRows();
+            auto blockSize = 32;
+            auto N = lhs->getNumNonZeros();
 
+            CHECK_CUDART(cudaMemcpy(res->getRowOffsets(&alloc_desc), lhs->getRowOffsets(&alloc_desc), (lhs->getNumRows() + 1) * sizeof(size_t), cudaMemcpyDeviceToDevice));
+            CHECK_CUDART(cudaMemcpy(res->getColIdxs(&alloc_desc), lhs->getColIdxs(&alloc_desc), N * sizeof(size_t), cudaMemcpyDeviceToDevice));
+
+            ewBinMatSparseSparse<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc),
+                    res->getColIdxs(&alloc_desc), res->getRowOffsets(&alloc_desc), rhs->getValues(&alloc_desc), N, op);
+//            }
+        }
 //        for(size_t rowIdx = 0; rowIdx < lhs->getNumRows(); rowIdx++) {
 //            size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
 //            if(nnzRowLhs) {
@@ -325,9 +383,20 @@ namespace CUDA {
         AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
         if(res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VTres>>(lhs->getNumRows(), lhs->getNumCols(), false, &alloc_desc);
+            res = DataObjectFactory::create<CSRMatrix<VTres>>(lhs->getNumRows(), lhs->getNumCols(), lhs->getNumNonZeros(), true, &alloc_desc);
 
-
+        if(opCode == BinaryOpCode::MUL) {
+            ProductOp<VTres> op;
+//            if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
+//            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMat<VTres, decltype(op)>, 0, 0));
+//            gridSize = (N + blockSize - 1) / blockSize;
+            auto gridSize = lhs->getNumRows();
+            auto blockSize = 32;
+            auto N = lhs->getNumNonZeros();
+            ewBinMatSparseDense<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc),
+                    lhs->getColIdxs(&alloc_desc), lhs->getRowOffsets(&alloc_desc), rhs->getValues(&alloc_desc), N, op);
+//            }
+        }
 //        for(size_t rowIdx = 0; rowIdx < lhs->getNumRows(); rowIdx++) {
 //            size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
 //            if(nnzRowLhs) {

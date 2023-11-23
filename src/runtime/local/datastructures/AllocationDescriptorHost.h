@@ -42,6 +42,8 @@ public:
     [[nodiscard]] std::unique_ptr<IAllocationDescriptor> createAllocation(size_t size, bool zero) const override {
         auto new_alloc = std::make_unique<AllocationDescriptorHost>();
         new_alloc->size = size;
+        new_alloc->data = std::shared_ptr<std::byte>(new std::byte[size], std::default_delete<std::byte[]>());
+
         if(zero)
             memset(new_alloc->data.get(), 0, size);
 

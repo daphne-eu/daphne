@@ -38,7 +38,7 @@ class MetaDataObject {
     std::array<std::unique_ptr<DataPlacement>, static_cast<size_t>(ALLOCATION_TYPE::NUM_ALLOC_TYPES)> data_placements;
 
     std::vector<size_t> latest_version;
-
+    std::pair<uint32_t, std::byte*> getDataInternal(uint32_t alloc_idx, const IAllocationDescriptor* alloc_desc, const Range* range);
 public:
     DataPlacement *addDataPlacement(std::vector<std::unique_ptr<IAllocationDescriptor>>& allocInfos, Range *r = nullptr);
 //    const DataPlacement *findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const;
@@ -57,4 +57,6 @@ public:
     void setLatest(size_t id);
     [[nodiscard]] auto getLatest() const -> std::vector<size_t>;
 
+    const std::byte* getData(uint32_t alloc_idx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const;
+    std::byte* getData(uint32_t alloc_idx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr);
 };

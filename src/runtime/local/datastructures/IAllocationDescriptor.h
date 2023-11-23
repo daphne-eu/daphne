@@ -57,7 +57,7 @@ protected:
 public:
     virtual ~IAllocationDescriptor() = default;
     [[nodiscard]] virtual ALLOCATION_TYPE getType() const = 0;
-    [[nodiscard]] virtual std::unique_ptr<IAllocationDescriptor> createAllocation(size_t size, bool zero) const = 0;
+    [[nodiscard]] virtual std::unique_ptr<IAllocationDescriptor> createAllocation(size_t size, bool zero)  const = 0;
     [[nodiscard]] virtual std::string getLocation() const = 0;
     virtual std::shared_ptr<std::byte> getData() = 0;
     virtual void transferTo(std::byte* src, size_t size) = 0;

@@ -26,7 +26,7 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
 {
     std::unique_ptr<IAllocationDescriptor> val_alloc;
     if(!allocInfo) {
-        alloc_shared_values();
+        alloc_shared_values(zero);
         auto bytes = std::reinterpret_pointer_cast<std::byte>(values);
         val_alloc = AllocationDescriptorHost::createHostAllocation(bytes, getBufferSize(), zero);
     }
@@ -35,7 +35,8 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
 
         // ToDo: refactor data storage into memory management
         if(allocInfo->getType() == ALLOCATION_TYPE::HOST) {
-            alloc_shared_values();
+            alloc_shared_values(zero);
+
             auto bytes = std::reinterpret_pointer_cast<std::byte>(values);
             dynamic_cast<AllocationDescriptorHost *>(val_alloc.get())->setData(bytes);
         }
@@ -101,7 +102,7 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
 
     // ToDo: manage host mem (values) in a data placement
     if(src->values) {
-        alloc_shared_values(src->values, offset());
+        alloc_shared_values(false, src->values, offset());
         bufferSize = numRows*rowSkip*sizeof(ValueType);
     }
     this->clone_mdo(src);
@@ -237,14 +238,18 @@ template <>
 }
 
 template<typename ValueType>
-void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> src, size_t offset) {
+void DenseMatrix<ValueType>::alloc_shared_values(bool zero, std::shared_ptr<ValueType[]> src, size_t offset) {
     // correct since C++17: Calls delete[] instead of simple delete
     if(src) {
         values = std::shared_ptr<ValueType[]>(src, src.get() + offset);
     }
-    else
+    else {
 //        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
-        values = std::shared_ptr<ValueType[]>(new ValueType[numRows * getRowSkip()]);
+//        values = std::shared_ptr<ValueType[]>(new ValueType[numRows * getRowSkip()]);
+        values = std::shared_ptr<ValueType[]>(new ValueType[getBufferSize()]);
+        if(zero)
+            memset(values.get(), 0, getBufferSize());
+    }
 }
 
 template<typename ValueType>

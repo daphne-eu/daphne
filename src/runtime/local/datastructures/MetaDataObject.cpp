@@ -16,6 +16,8 @@
 
 #include "MetaDataObject.h"
 
+#include <runtime/local/datastructures/AllocationDescriptorHost.h>
+
 DataPlacement* MetaDataObject::addDataPlacement(std::vector<std::unique_ptr<IAllocationDescriptor>>& allocInfos, Range *r) {
     if(r) {
 //        range_data_placements[static_cast<size_t>(allocInfo->getType())].emplace_back(std::make_unique<DataPlacement>(
@@ -66,14 +68,16 @@ void MetaDataObject::updateRangeDataPlacementByID(size_t id, Range *r) {
 }
 
 DataPlacement *MetaDataObject::getDataPlacementByID(size_t id) const {
-    for (const auto &_omdType: data_placements) {
-        if(_omdType->getID() == id)
-            return const_cast<DataPlacement *>(_omdType.get());
+    for (const auto &dp: data_placements) {
+        if(dp)
+            if(dp->getID() == id)
+                return const_cast<DataPlacement *>(dp.get());
     }
-    for (const auto &_omdType: range_data_placements) {
-        for (auto &_omd: _omdType) {
-            if(_omd->getID() == id)
-                return const_cast<DataPlacement *>(_omd.get());
+    for (const auto &rdp_by_type: range_data_placements) {
+        for (auto &rdp: rdp_by_type) {
+            if(rdp)
+                if(rdp->getID() == id)
+                    return const_cast<DataPlacement *>(rdp.get());
         }
     }
     return nullptr;
@@ -131,8 +135,8 @@ DataPlacement *MetaDataObject::getDataPlacement(const IAllocationDescriptor* all
 //            std::get<0>(result) = true;
 //            std::get<1>(result) = placement->dp_id;
 //            // prefer host allocation
-//            if(placement->allocation->getType() == ALLOCATION_TYPE::HOST) {
 //                std::get<2>(result) = reinterpret_cast<ValueType *>(values.get());
+//            if(placement->allocation->getType() == ALLOCATION_TYPE::HOST) {
 //                break;
 //            }
 //        }
@@ -172,4 +176,30 @@ DataPlacement *MetaDataObject::getDataPlacement(const IAllocationDescriptor* all
         }
         return dp;
     }
+}
+
+std::pair<uint32_t, std::byte*> MetaDataObject::getDataInternal(uint32_t alloc_idx, const IAllocationDescriptor* alloc_desc, const Range* range) {
+    DataPlacement *dp;
+    if (!range) {
+        if (!alloc_desc) {
+            auto ad = AllocationDescriptorHost();
+            dp = getDataPlacement(&ad);
+        } else
+            dp = getDataPlacement(alloc_desc);
+
+        return std::make_pair(dp->getID(), dp->getAllocation(alloc_idx)->getData().get());
+    } else
+        throw std::runtime_error("Range support under construction");
+}
+
+const std::byte* MetaDataObject::getData(uint32_t alloc_idx, const IAllocationDescriptor *alloc_desc, const Range *range) const {
+    auto [id, ptr] = const_cast<MetaDataObject*>(this)->getDataInternal(alloc_idx, alloc_desc, range);
+    const_cast<MetaDataObject*>(this)->addLatest(id);
+    return ptr;
+}
+
+ std::byte*MetaDataObject::getData(uint32_t alloc_idx, const IAllocationDescriptor *alloc_desc, const Range *range) {
+     auto [id, ptr] = getDataInternal(alloc_idx, alloc_desc, range);
+     setLatest(id);
+     return ptr;
 }

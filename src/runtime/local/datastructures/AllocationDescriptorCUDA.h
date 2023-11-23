@@ -48,6 +48,7 @@ public:
         auto new_alloc = std::make_unique<AllocationDescriptorCUDA>(dctx, device_id);
         auto ctx = CUDAContext::get(dctx, device_id);
         new_alloc->data = ctx->malloc(size, zero, new_alloc->alloc_id);
+        new_alloc->size = size;
         return new_alloc;
     }
 

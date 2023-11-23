@@ -158,7 +158,7 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
         
             for(size_t r = 0; r < numRows; r++) {
                 *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(
-                        arg->getValues(r),
+                        arg->getRowValues(r),
                         arg->getNumNonZeros(r),
                         numCols,
                         func,
@@ -176,7 +176,7 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             for (size_t r = 0; r < numRows; r++){
                 *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(
-                    arg->getValues(r),
+                    arg->getRowValues(r),
                     arg->getNumNonZeros(r),
                     numCols,
                     func,

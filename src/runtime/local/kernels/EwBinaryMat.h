@@ -147,12 +147,12 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                     size_t nnzRowRhs = rhs->getNumNonZeros(rowIdx);
                     if(nnzRowLhs && nnzRowRhs) {
                         // merge within row
-                        const VT * valuesRowLhs = lhs->getValues(rowIdx);
-                        const VT * valuesRowRhs = rhs->getValues(rowIdx);
-                        VT * valuesRowRes = res->getValues(rowIdx);
-                        const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
-                        const size_t * colIdxsRowRhs = rhs->getColIdxs(rowIdx);
-                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        const VT * valuesRowLhs = lhs->getRowValues(rowIdx);
+                        const VT * valuesRowRhs = rhs->getRowValues(rowIdx);
+                        VT * valuesRowRes = res->getRowValues(rowIdx);
+                        const size_t * colIdxsRowLhs = lhs->getColIdxsOfRow(rowIdx);
+                        const size_t * colIdxsRowRhs = rhs->getColIdxsOfRow(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxsOfRow(rowIdx);
                         size_t posLhs = 0;
                         size_t posRhs = 0;
                         size_t posRes = 0;
@@ -188,14 +188,14 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                     }
                     else if(nnzRowLhs) {
                         // copy from left
-                        memcpy(res->getValues(rowIdx), lhs->getValues(rowIdx), nnzRowLhs * sizeof(VT));
-                        memcpy(res->getColIdxs(rowIdx), lhs->getColIdxs(rowIdx), nnzRowLhs * sizeof(size_t));
+                        memcpy(res->getRowValues(rowIdx), lhs->getRowValues(rowIdx), nnzRowLhs * sizeof(VT));
+                        memcpy(res->getColIdxsOfRow(rowIdx), lhs->getColIdxsOfRow(rowIdx), nnzRowLhs * sizeof(size_t));
                         rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + nnzRowLhs;
                     }
                     else if(nnzRowRhs) {
                         // copy from right
-                        memcpy(res->getValues(rowIdx), rhs->getValues(rowIdx), nnzRowRhs * sizeof(VT));
-                        memcpy(res->getColIdxs(rowIdx), rhs->getColIdxs(rowIdx), nnzRowRhs * sizeof(size_t));
+                        memcpy(res->getRowValues(rowIdx), rhs->getRowValues(rowIdx), nnzRowRhs * sizeof(VT));
+                        memcpy(res->getColIdxsOfRow(rowIdx), rhs->getColIdxsOfRow(rowIdx), nnzRowRhs * sizeof(size_t));
                         rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + nnzRowRhs;
                     }
                     else
@@ -210,12 +210,12 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                     size_t nnzRowRhs = rhs->getNumNonZeros(rowIdx);
                     if(nnzRowLhs && nnzRowRhs) {
                         // intersect within row
-                        const VT * valuesRowLhs = lhs->getValues(rowIdx);
-                        const VT * valuesRowRhs = rhs->getValues(rowIdx);
-                        VT * valuesRowRes = res->getValues(rowIdx);
-                        const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
-                        const size_t * colIdxsRowRhs = rhs->getColIdxs(rowIdx);
-                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        const VT * valuesRowLhs = lhs->getRowValues(rowIdx);
+                        const VT * valuesRowRhs = rhs->getRowValues(rowIdx);
+                        VT * valuesRowRes = res->getRowValues(rowIdx);
+                        const size_t * colIdxsRowLhs = lhs->getColIdxsOfRow(rowIdx);
+                        const size_t * colIdxsRowRhs = rhs->getColIdxsOfRow(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxsOfRow(rowIdx);
                         size_t posLhs = 0;
                         size_t posRhs = 0;
                         size_t posRes = 0;
@@ -286,10 +286,10 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
                 size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
                 if(nnzRowLhs) {
                     // intersect within row
-                    const VT * valuesRowLhs = lhs->getValues(rowIdx);
-                    VT * valuesRowRes = res->getValues(rowIdx);
-                    const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
-                    size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                    const VT * valuesRowLhs = lhs->getRowValues(rowIdx);
+                    VT * valuesRowRes = res->getRowValues(rowIdx);
+                    const size_t * colIdxsRowLhs = lhs->getColIdxsOfRow(rowIdx);
+                    size_t * colIdxsRowRes = res->getColIdxsOfRow(rowIdx);
                     auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
                     size_t posRes = 0;
                     for (size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
