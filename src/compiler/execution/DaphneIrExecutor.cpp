@@ -82,11 +82,11 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations,
 
     // llvm::InitializeNativeTarget();
     // llvm::InitializeNativeTargetAsmPrinter();
-    llvm::InitializeAllTargets();
-    llvm::InitializeAllTargetInfos();
     llvm::InitializeAllAsmPrinters();
-
-    mlir::registerGpuSerializeToCubinPass();
+    llvm::InitializeAllTargetInfos();
+    // llvm::InitializeAllTargetMCAs();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllTargets();
 }
 
 bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
@@ -205,127 +205,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addNestedPass<mlir::func::FuncOp>(
         mlir::daphne::createInsertDaphneContextPass(userConfig_));
 
-#ifdef USE_CUDA
-    if (userConfig_.use_cuda)
-        pm.addNestedPass<mlir::func::FuncOp>(
-            mlir::daphne::createMarkCUDAOpsPass(userConfig_));
-
-    pm.addPass(mlir::daphne::createGPULoweringPass(userConfig_));
-    pm.addPass(mlir::daphne::createPrintIRPass("after GPUlowering pass"));
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU lowering"));
-
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::createConvertLinalgToParallelLoopsPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after linalg to parallel loops pass"));
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU lowering"));
-
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "before rewritekernelcall"));
-    pm.addNestedPass<mlir::func::FuncOp>(
-        mlir::daphne::createRewriteToCallKernelOpPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after rewrite to call kernel op"));
-
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::createGpuMapParallelLoopsPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after GPU Map Parallel Loops pass"));
-
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::createParallelLoopToGpuPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after ParallelLoops to GPUpass"));
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU lowering"));
-
-
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU lowering"));
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU lowering"));
-
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU lowering"));
-    pm.addPass(mlir::createGpuKernelOutliningPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after GPU Kernel outlining pass"));
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU lowering"));
-
-    // pm.addPass(mlir::createLowerAffinePass());
-    // pm.addNestedPass<mlir::func::FuncOp>(mlir::createArithToLLVMConversionPass());
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU To NVVMOp lowering"));
-
-
-
-
-    pm.addPass(mlir::createCanonicalizerPass());
-    pm.addPass(mlir::createCSEPass());
-
-
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU To NVVMOp lowering"));
-    pm.addPass(mlir::createConvertSCFToCFPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after SCF to CF pass"));
-
-    pm.addNestedPass<mlir::func::FuncOp>(
-        mlir::LLVM::createRequestCWrappersPass());
-
-    pm.addPass(mlir::cf::createConvertControlFlowToLLVMPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after CF to LLVM pass"));
-
-    pm.addPass(mlir::bufferization::createOneShotBufferizePass());
-    pm.addPass(mlir::func::createFuncBufferizePass());
-
-    pm.addPass(mlir::createLowerAffinePass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after Affine lowering"));
-
-    pm.addNestedPass<mlir::gpu::GPUModuleOp>(mlir::createLowerGpuOpsToNVVMOpsPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("after GPU to NVVM lowering"));
-
-    pm.addNestedPass<mlir::gpu::GPUModuleOp>(mlir::createGpuSerializeToCubinPass("nvptx64-nvidia-cuda", "sm_35", "+ptx60"));
-    pm.addPass(mlir::daphne::createPrintIRPass(
-        "after CUBIN "));
-
-    // pm.addPass(mlir::createArithToLLVMConversionPass());
-    // pm.addNestedPass<mlir::func::FuncOp>(mlir::createArithToLLVMConversionPass());
-    // pm.addPass(mlir::daphne::createPrintIRPass("after Arith lowering"));
-
-
-
-    // pm.addPass(mlir::daphne::createPrintIRPass("after lowerllvm pass"));
-
-
-
-
-    pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
-
-    pm.addPass(mlir::daphne::createPrintIRPass(
-        "after LLVM "));
-
-    pm.addPass(mlir::createGpuToLLVMConversionPass());
-    // pm.addPass(mlir::createLowerHostCodeToLLVMPass());
-    pm.addPass(mlir::daphne::createPrintIRPass(
-        "after host code llvm  "));
-
-
-    // pm.addPass(mlir::daphne::createPrintIRPass("after LowerToLLVM pass"));
-    // pm.addNestedPass<mlir::gpu::GPUModuleOp>(mlir::NVVM::createOptimizeForTargetPass());
-    // std::string cuda_triplet = "gpu-triple";
-    // std::string cuda_arch = "sm_80";
-    // std::string cuda_features = "+ptx76";
-    // pm.addNestedPass<mlir::gpu::GPUModuleOp>(
-    //     mlir::createGpuSerializeToCubinPass(cuda_triplet, cuda_arch,
-    //                                         cuda_features));
-    //
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after reconcile lowering"));
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU serialize CUBIN"));
- //pm.addNestedPass<gpu::GPUModuleOp>
-    // pm.addNestedPass<mlir::func::FuncOp>(mlir::createAffineForToGPUPass());
-    // pm.addPass(mlir::daphne::createPrintIRPass(
-    //     "after GPU lowering"));
-
-
-    pm.addPass(mlir::createReconcileUnrealizedCastsPass());
-#endif
+    if (userConfig_.use_cuda) {
+        buildGPUCodegenPipeline(pm);
+    }
 
 #ifdef USE_FPGAOPENCL
     if (userConfig_.use_fpgaopencl)
@@ -338,29 +220,29 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     // references are managed could be cleared away by common subexpression
     // elimination (CSE), while retaining its IncRefOps/DecRefOps, which could
     // lead to double frees etc.
-    // pm.addPass(mlir::createCanonicalizerPass());
-    // pm.addPass(mlir::createCSEPass());
-    //
-    // if (userConfig_.use_obj_ref_mgnt)
-    //     pm.addNestedPass<mlir::func::FuncOp>(
-    //         mlir::daphne::createManageObjRefsPass());
-    // if (userConfig_.explain_obj_ref_mgnt)
-    //     pm.addPass(mlir::daphne::createPrintIRPass(
-    //         "IR after managing object references:"));
-    //
-    // pm.addNestedPass<mlir::func::FuncOp>(
-    //     mlir::daphne::createRewriteToCallKernelOpPass());
-    // if (userConfig_.explain_kernels)
-    //     pm.addPass(
-    //         mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
-    //
-    // pm.addPass(mlir::createConvertSCFToCFPass());
-    // pm.addNestedPass<mlir::func::FuncOp>(
-    //     mlir::LLVM::createRequestCWrappersPass());
-    // pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
-    // pm.addPass(mlir::createReconcileUnrealizedCastsPass());
-    // if (userConfig_.explain_llvm)
-    //     pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering:"));
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
+
+    if (userConfig_.use_obj_ref_mgnt)
+        pm.addNestedPass<mlir::func::FuncOp>(
+            mlir::daphne::createManageObjRefsPass());
+    if (userConfig_.explain_obj_ref_mgnt)
+        pm.addPass(mlir::daphne::createPrintIRPass(
+            "IR after managing object references:"));
+
+    pm.addNestedPass<mlir::func::FuncOp>(
+        mlir::daphne::createRewriteToCallKernelOpPass());
+    if (userConfig_.explain_kernels)
+        pm.addPass(
+            mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
+
+    pm.addPass(mlir::createConvertSCFToCFPass());
+    pm.addNestedPass<mlir::func::FuncOp>(
+        mlir::LLVM::createRequestCWrappersPass());
+    pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
+    pm.addPass(mlir::createReconcileUnrealizedCastsPass());
+    if (userConfig_.explain_llvm)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering:"));
 
     if (failed(pm.run(module))) {
         module->dump();
@@ -423,7 +305,7 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
     LLVMInitializeNVPTXTargetInfo();
     LLVMInitializeNVPTXTargetMC();
     LLVMInitializeNVPTXAsmPrinter();
-    module.dump();
+    // module.dump();
     mlir::ExecutionEngineOptions options;
     options.llvmModuleBuilder = nullptr;
     options.transformer = optPipeline;
@@ -473,4 +355,74 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after codegen pipeline"));
+}
+
+void DaphneIrExecutor::buildGPUCodegenPipeline(mlir::PassManager &pm) {
+      pm.addNestedPass<mlir::func::FuncOp>(
+          mlir::daphne::createMarkCUDAOpsPass(userConfig_));
+      pm.addPass(mlir::daphne::createGPULoweringPass(userConfig_));
+      // pm.addPass(mlir::daphne::createPrintIRPass("after GPUlowering pass"));
+
+      pm.addNestedPass<mlir::func::FuncOp>(
+          mlir::createConvertLinalgToParallelLoopsPass());
+      // pm.addPass(mlir::daphne::createPrintIRPass(
+      //     "after linalg to parallel loops pass"));
+
+      pm.addNestedPass<mlir::func::FuncOp>(
+          mlir::daphne::createRewriteToCallKernelOpPass());
+      // pm.addPass(
+      //     mlir::daphne::createPrintIRPass("after rewrite to call kernel op"));
+
+      pm.addNestedPass<mlir::func::FuncOp>(
+          mlir::createGpuMapParallelLoopsPass());
+      // pm.addPass(
+      //     mlir::daphne::createPrintIRPass("after GPU Map Parallel Loops pass"));
+
+      pm.addNestedPass<mlir::func::FuncOp>(mlir::createParallelLoopToGpuPass());
+      // pm.addPass(
+      //     mlir::daphne::createPrintIRPass("after ParallelLoops to GPUpass"));
+
+      pm.addPass(mlir::createGpuKernelOutliningPass());
+      // pm.addPass(
+      //     mlir::daphne::createPrintIRPass("after GPU Kernel outlining pass"));
+
+      pm.addPass(mlir::createLowerAffinePass());
+      // pm.addPass(mlir::daphne::createPrintIRPass("after Affine lowering"));
+
+      pm.addNestedPass<mlir::func::FuncOp>(mlir::createArithToLLVMConversionPass());
+      // pm.addPass(mlir::daphne::createPrintIRPass("after Arith lowering"));
+
+      pm.addPass(mlir::createCanonicalizerPass());
+      pm.addPass(mlir::createCSEPass());
+
+      pm.addPass(mlir::createConvertSCFToCFPass());
+      // pm.addPass(mlir::daphne::createPrintIRPass("after SCF to CF pass"));
+
+      pm.addNestedPass<mlir::func::FuncOp>(
+          mlir::LLVM::createRequestCWrappersPass());
+
+      pm.addPass(mlir::cf::createConvertControlFlowToLLVMPass());
+      // pm.addPass(mlir::daphne::createPrintIRPass("after CF to LLVM pass"));
+
+      pm.addNestedPass<mlir::gpu::GPUModuleOp>(
+          mlir::createLowerGpuOpsToNVVMOpsPass());
+      // pm.addPass(mlir::daphne::createPrintIRPass("after GPU to NVVM lowering"));
+
+      pm.addNestedPass<mlir::func::FuncOp>(mlir::createArithToLLVMConversionPass());
+      // pm.addPass(mlir::daphne::createPrintIRPass("after Arith lowering"));
+
+      pm.addNestedPass<mlir::gpu::GPUModuleOp>(
+          mlir::createGpuSerializeToCubinPass("nvptx64-nvidia-cuda", "sm_86",
+                                              "+ptx76"));
+      // pm.addPass(mlir::daphne::createPrintIRPass("after CUBIN "));
+
+      pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
+      // pm.addPass(mlir::daphne::createPrintIRPass("after LLVM "));
+
+      pm.addPass(mlir::createGpuToLLVMConversionPass());
+      // pm.addPass(mlir::daphne::createPrintIRPass("after GPU to LLVM"));
+      // pm.addPass(mlir::createLowerHostCodeToLLVMPass());
+      // pm.addPass(mlir::daphne::createPrintIRPass("after host code llvm"));
+
+      pm.addPass(mlir::createReconcileUnrealizedCastsPass());
 }

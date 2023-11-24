@@ -26,6 +26,7 @@
 #include "ir/daphneir/Passes.h"
 #include "mlir/Dialect/GPU/IR/GPUDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/PatternMatch.h"
@@ -54,8 +55,6 @@ struct MatMulGPU : public OpRewritePattern<daphne::MatMulOp> {
 
     auto matrixElementType = lhsMatrixType.getElementType();
 
-    // TODO(phil): if shape is unknown, e.g., row/col = -1 we currently
-    // can't create a MemRefType
     auto lhsMemRefType =
         mlir::MemRefType::get({lhsRows, lhsCols}, matrixElementType);
     auto rhsMemRefType =
@@ -69,20 +68,32 @@ struct MatMulGPU : public OpRewritePattern<daphne::MatMulOp> {
         op->getLoc(), lhsMemRefType, op.getLhs());
     mlir::Value rhs = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
         op->getLoc(), rhsMemRefType, op.getRhs());
+    // mlir::Value lhs = rewriter.create<mlir::memref::AllocaOp>(loc, outputMemRefType);
+    // mlir::Value rhs = rewriter.create<mlir::memref::AllocaOp>(loc, outputMemRefType);
 
     // Alloc output memref
     mlir::Value outputMemRef =
         insertMemRefAlloc(outputMemRefType, loc, rewriter);
 
+    Value zero = rewriter.create<arith::ConstantOp>(
+        loc, rewriter.getF32Type(), rewriter.getF32FloatAttr(0));
+
+    // Value one = rewriter.create<arith::ConstantOp>(
+    //     loc, rewriter.getF32Type(), rewriter.getF32FloatAttr(1));
+    // rewriter.create<linalg::FillOp>(loc, ValueRange{one}, ValueRange{lhs});
+    // rewriter.create<linalg::FillOp>(loc, ValueRange{one}, ValueRange{rhs});
+
+    rewriter.create<linalg::FillOp>(loc, ValueRange{zero}, ValueRange{outputMemRef});
+
     mlir::Type unranked = UnrankedMemRefType::get(matrixElementType, 0);
 
     Value lhsC = rewriter.create<memref::CastOp>(loc, unranked, lhs);
     Value rhsC = rewriter.create<memref::CastOp>(loc, unranked, rhs);
-    Value resC = rewriter.create<memref::CastOp>(loc, unranked, outputMemRef);
+    Value outC = rewriter.create<memref::CastOp>(loc, unranked, outputMemRef);
 
     rewriter.create<gpu::HostRegisterOp>(loc, lhsC);
     rewriter.create<gpu::HostRegisterOp>(loc, rhsC);
-    rewriter.create<gpu::HostRegisterOp>(loc, resC);
+    rewriter.create<gpu::HostRegisterOp>(loc, outC);
 
     rewriter.create<linalg::MatmulOp>(loc,
                                       ValueRange{lhs, rhs}, ValueRange{outputMemRef});

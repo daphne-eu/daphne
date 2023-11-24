@@ -39,7 +39,7 @@ void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
                          mlir::MLIRContext *ctx, mlir::Value memRef,
                          mlir::Type elemType);
 
-void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
+void affineFillMemRef(double value, mlir::PatternRewriter &rewriter,
                       mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                       mlir::MLIRContext *ctx, mlir::Value memRef,
                       mlir::Type elemType);
