@@ -29,6 +29,7 @@ set -e
 catch2_options=""
 BUILD_CUDA=""
 BUILD_FPGAOPENCL=""
+BUILD_MPI=""
 BUILD_DEBUG=""
 BUILD_DAPHNE=1
 
@@ -43,6 +44,10 @@ while [[ $# -gt 0 ]]; do
         --fpgaopencl)
             echo using FPGAOPENCL
             export BUILD_FPGAOPENCL="--fpgaopencl"
+            ;;
+        --mpi)
+            echo using MPI
+            export BUILD_MPI="--mpi"
             ;;
         --debug)
             echo building DEBUG version
@@ -59,7 +64,7 @@ done
 
 # Build tests.
 if [ $BUILD_DAPHNE -gt 0 ]; then
-  ./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG --target run_tests
+  ./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_MPI $BUILD_DEBUG --target run_tests
 fi
 
 # Preparations for running DaphneLib (Python API) tests and MLIR codegen tests (LLVM LIT)
