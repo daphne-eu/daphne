@@ -180,6 +180,9 @@ void MarkCUDAOpsPass::runOnOperation() {
         else {
             if((!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op)) ||
                  llvm::isa<daphne::CreateCUDAContextOp>(op)) {
+                 // || llvm::isa<daphne::MatMulOp>(op)) { // TODO(phil): why
+                                                       // is nothing being
+                                                       // lowered to GPU calls
                 op->setAttr("cuda_device", builder.getI32IntegerAttr(0));
             }
         }

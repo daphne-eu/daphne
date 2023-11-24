@@ -39,5 +39,6 @@ private:
     std::vector<std::string> sharedLibRefPaths;
 
     void buildCodegenPipeline(mlir::PassManager &);
+    void buildGPUCodegenPipeline(mlir::PassManager &);
 };
 

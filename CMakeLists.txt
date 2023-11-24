@@ -109,7 +109,7 @@ if(USE_MPI)
 endif()    
 ##########
 
-option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
+option(USE_CUDA "Whether to activate compilation of CUDA features" ON)
 include(CheckLanguage)
 check_language(CUDA)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)

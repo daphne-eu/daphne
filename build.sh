@@ -965,7 +965,9 @@ if [ $WITH_DEPS -gt 0 ]; then
         cmake -G Ninja -S llvm -B "$buildPrefix/$llvmName" \
             -DLLVM_ENABLE_PROJECTS=mlir \
             -DLLVM_BUILD_EXAMPLES=OFF \
-            -DLLVM_TARGETS_TO_BUILD="$LLVM_ARCH" \
+            -DMLIR_ENABLE_CUDA_RUNNER=ON \
+            -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" \
+            -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_ENABLE_ASSERTIONS=ON \
             -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \
@@ -1003,6 +1005,7 @@ daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
+    -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
     $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI
 
 cmake --build "$daphneBuildDir" --target "$target"

@@ -17,6 +17,7 @@
 #ifndef SRC_IR_DAPHNEIR_PASSES_H
 #define SRC_IR_DAPHNEIR_PASSES_H
 
+#include <memory>
 #pragma once
 
 #include <api/cli/DaphneUserConfig.h>
@@ -65,6 +66,7 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
 #ifdef USE_CUDA
     std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg);
+    std::unique_ptr<Pass> createGPULoweringPass(const DaphneUserConfig& cfg);
 #endif
 
 #ifdef USE_FPGAOPENCL

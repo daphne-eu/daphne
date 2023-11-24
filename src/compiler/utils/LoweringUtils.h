@@ -39,13 +39,13 @@ void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
                          mlir::MLIRContext *ctx, mlir::Value memRef,
                          mlir::Type elemType);
 
-void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
+void affineFillMemRef(double value, mlir::PatternRewriter &rewriter,
                       mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                       mlir::MLIRContext *ctx, mlir::Value memRef,
                       mlir::Type elemType);
 
 mlir::Value convertMemRefToDenseMatrix(mlir::Location,
-                                       mlir::ConversionPatternRewriter &,
+                                       mlir::PatternRewriter &,
                                        mlir::Value memRef, mlir::Type);
 
 llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder,
