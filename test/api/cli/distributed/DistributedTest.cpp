@@ -30,7 +30,7 @@
 
 const std::string dirPath = "test/api/cli/distributed/";
 
-TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
+TEST_CASE("Distributed runtime tests using gRPC", TAG_DISTRIBUTED)
 {
     auto addr1 = "0.0.0.0:50051";
     auto addr2 = "0.0.0.0:50052";    
@@ -41,7 +41,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
     assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
 
-    SECTION("Execution of distributed scripts"){
+    SECTION("Execution of scripts using distributed runtime (gRPC)"){
         // TODO Make these script individual DYNAMIC_SECTIONs.
         for (auto i = 1u; i < 4; ++i) {
             auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
@@ -65,7 +65,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
             CHECK(outLocal.str() == outDist.str());
         }
     }
-    SECTION("Distributed chunked messages"){
+    SECTION("Distributed chunked messages (gRPC)"){
         
         auto filename = dirPath + "distributed_2.daphne";
 
@@ -115,3 +115,54 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
     kill(pid2, SIGKILL);
     wait(NULL);   
 }
+
+#ifdef USE_MPI
+TEST_CASE("Distributed runtime tests using MPI", TAG_DISTRIBUTED)
+{
+
+    SECTION("Execution of scripts using distributed runtime (MPI)"){
+        // TODO Make these script individual DYNAMIC_SECTIONs.
+
+        for (auto i = 1u; i < 4; ++i) {
+            auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
+           
+            std::stringstream outLocal;
+            std::stringstream errLocal;
+            int status = runDaphne(outLocal, errLocal, filename.c_str());
+           
+            CHECK(errLocal.str() == "");
+            REQUIRE(status == StatusCode::SUCCESS);
+
+            std::stringstream outDist;
+            std::stringstream errDist;
+            status = runProgram(outDist, errDist, "mpirun", "--allow-run-as-root", "-np", "4", "bin/daphne", "--distributed", "--dist_backend=MPI", filename.c_str());
+           
+            CHECK(errDist.str() == "");
+            REQUIRE(status == StatusCode::SUCCESS);
+
+            CHECK(outLocal.str() == outDist.str());
+        }
+    }
+    SECTION("Distributed chunked messages (MPI)"){
+
+        auto filename = dirPath + "distributed_2.daphne";
+
+        std::stringstream outLocal;
+        std::stringstream errLocal;
+       
+        int status = runDaphne(outLocal, errLocal, filename.c_str());
+        CHECK(errLocal.str() == "");
+        REQUIRE(status == StatusCode::SUCCESS);
+        
+        std::stringstream outDist;
+        std::stringstream errDist;
+        status = runProgram(outDist, errDist,  "mpirun", "--allow-run-as-root", "-np", "4", "bin/daphne", "--distributed", "--dist_backend=MPI", "--max-distr-chunk-size=100", filename.c_str());
+        CHECK(errDist.str() == "");
+        REQUIRE(status == StatusCode::SUCCESS);
+
+        CHECK(outLocal.str() == outDist.str());
+    
+    }
+    wait(NULL);   
+}
+#endif

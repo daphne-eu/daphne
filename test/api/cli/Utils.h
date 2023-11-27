@@ -120,8 +120,13 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         close(linkErr[1]);
         
         // Execute other program.
-        execl(execPath, args..., static_cast<char *>(nullptr));
-        
+        // If execPath is a path (contains "/") use execl, otherwise use execlp.
+        // We need this to support "mpirun" for the MPI test cases.
+        if (std::string(execPath).find("/") != std::string::npos)
+            execl(execPath, args..., static_cast<char *>(nullptr));
+        else
+            execlp(execPath, args..., static_cast<char *>(nullptr));
+
         // execl does not return, unless it failed.
         throw std::runtime_error("could not execute the program");
     }
