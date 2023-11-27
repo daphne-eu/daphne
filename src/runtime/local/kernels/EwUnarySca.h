@@ -117,16 +117,15 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
 // Arithmetic/general math.
 MAKE_EW_UNARY_SCA(UnaryOpCode::ABS, abs(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::SIGN, (arg == 0) ? 0 : ((arg < 0) ? -1 : ((arg > 0) ? 1 : std::numeric_limits<TRes>::quiet_NaN())));
-// MAKE_EW_UNARY_SCA(UnaryOpCode::SQUARE, pow(arg, 2.0));
-MAKE_EW_UNARY_SCA(UnaryOpCode::SQRT, sqrt(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::SQRT, sqrt(arg));    // domain: [0, inf)
 MAKE_EW_UNARY_SCA(UnaryOpCode::EXP, exp(arg));
-MAKE_EW_UNARY_SCA(UnaryOpCode::LN, log(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::LN, log(arg));       // domain: (0, inf)
 // Trigonometric/Hyperbolic functions
 MAKE_EW_UNARY_SCA(UnaryOpCode::SIN, sin(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::COS, cos(arg));
-MAKE_EW_UNARY_SCA(UnaryOpCode::TAN, tan(arg));
-MAKE_EW_UNARY_SCA(UnaryOpCode::ASIN, asin(arg));
-MAKE_EW_UNARY_SCA(UnaryOpCode::ACOS, acos(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::TAN, tan(arg));      // domain: undefined points neglectable
+MAKE_EW_UNARY_SCA(UnaryOpCode::ASIN, asin(arg));    // domain: [-1,1]
+MAKE_EW_UNARY_SCA(UnaryOpCode::ACOS, acos(arg));    // domain: [-1,1]
 MAKE_EW_UNARY_SCA(UnaryOpCode::ATAN, atan(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::SINH, sinh(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::COSH, cosh(arg));
@@ -139,3 +138,7 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::ROUND, round(arg));
 #undef MAKE_EW_UNARY_SCA
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H
+
+
+// TODO
+// Add domain check to relevant funcs (seems to be faster than catching nan)
