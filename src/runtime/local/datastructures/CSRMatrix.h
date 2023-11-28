@@ -171,11 +171,11 @@ auto row = roff[rowIdx];
     ValueType* getRowValues(size_t rowIdx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
         // We allow equality here to enable retrieving a pointer to the end.
         assert((rowIdx <= numRows) && "rowIdx is out of bounds");
-        return &reinterpret_cast<ValueType*>(getValues(alloc_desc, range))[getRowOffsets()[rowIdx]];
+        return &(reinterpret_cast<ValueType*>(getValues(alloc_desc, range))[getRowOffsets()[rowIdx]]);
     }
 
     const ValueType* getRowValues(size_t rowIdx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const {
-        return &reinterpret_cast<const ValueType*>(getValues(alloc_desc, range))[getRowOffsets()[rowIdx]];
+        return &(reinterpret_cast<const ValueType*>(getValues(alloc_desc, range))[getRowOffsets()[rowIdx]]);
     }
     
     size_t* getColIdxs(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
@@ -193,13 +193,13 @@ auto row = roff[rowIdx];
         assert((rowIdx <= numRows) && "rowIdx is out of bounds");
 //        return colIdxs.get() + rowOffsets.get()[rowIdx];
         auto data = this->mdo->getData(1, alloc_desc, range);
-        return &reinterpret_cast<size_t*>(data)[rowIdx];
+        return &(reinterpret_cast<size_t*>(data)[getRowOffsets()[rowIdx]]);
     }
 
     const size_t* getColIdxsOfRow(size_t rowIdx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const {
 //        return const_cast<CSRMatrix<ValueType> *>(this)->getColIdxs(rowIdx);
         auto data = this->mdo->getData(1, alloc_desc, range);
-        return &reinterpret_cast<const size_t*>(data)[rowIdx];
+        return &(reinterpret_cast<const size_t*>(data)[getRowOffsets()[rowIdx]]);
     }
 
     size_t* getRowOffsets(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
