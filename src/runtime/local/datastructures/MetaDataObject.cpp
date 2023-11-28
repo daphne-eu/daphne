@@ -159,7 +159,13 @@ DataPlacement *MetaDataObject::getDataPlacement(const IAllocationDescriptor* all
         for(uint32_t i = 0; i < placement->getNumAllocations(); ++i) {
             auto other_alloc = placement->getAllocation(i);
             auto new_alloc = alloc_desc->createAllocation(other_alloc->getSize(), false);
-            new_alloc->transferTo(other_alloc->getData().get(), other_alloc->getSize());
+
+            // ToDo: this works for the HOST <-> CUDA use case for now
+            // ToDo: update *Matrix own shared ptrs when trasnferring back from other storage
+            if(new_alloc->getType() == ALLOCATION_TYPE::HOST)
+                other_alloc->transferFrom(new_alloc->getData().get(), new_alloc->getSize());
+            else
+                new_alloc->transferTo(other_alloc->getData().get(), other_alloc->getSize());
             allocations.emplace_back(std::move(new_alloc));
             // transfer to requested data placement
         }
