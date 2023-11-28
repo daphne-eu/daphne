@@ -105,6 +105,88 @@ namespace CUDA {
             output[block] = AssigmentOp::exec(sdata[0], 0);
     }
 
+    template<class VT, class ReductionOp, class AssigmentOp>
+    __global__ void agg_row_sparse(VT* output, const VT *in_val, const size_t* in_cidxs, const size_t * in_rptrs) {
+        auto sdata = shared_memory_proxy<VT>();
+
+        auto tid = threadIdx.x;
+        auto row_start = in_rptrs[blockIdx.x];
+        auto row_end = in_rptrs[blockIdx.x + 1];
+        auto idx = row_start + tid;
+
+//        unsigned int block = blockIdx.x;
+
+        unsigned int i = idx;
+//        unsigned int block_offset = block * cols;
+
+        VT v = ReductionOp::init();
+
+        while (i < row_end) {
+            auto val = in_val[i];
+            v = ReductionOp::exec(v, val);
+            i += blockDim.x;
+        }
+
+        // each thread puts its local sum into shared memory
+        sdata[tid] = v;
+        __syncthreads();
+
+        // do reduction in shared mem
+        if (blockDim.x >= 1024) {
+            if (tid < 512) {
+                sdata[tid] = v = ReductionOp::exec(v, sdata[tid + 512]);
+            }
+            __syncthreads();
+        }
+        if (blockDim.x >= 512) {
+            if (tid < 256) {
+                sdata[tid] = v = ReductionOp::exec(v, sdata[tid + 256]);
+            }
+            __syncthreads();
+        }
+        if (blockDim.x >= 256) {
+            if (tid < 128) {
+                sdata[tid] = v = ReductionOp::exec(v, sdata[tid + 128]);
+            }
+            __syncthreads();
+        }
+        if (blockDim.x >= 128) {
+            if (tid < 64) {
+                sdata[tid] = v = ReductionOp::exec(v, sdata[tid + 64]);
+            }
+            __syncthreads();
+        }
+
+        if (tid < 32) {
+            // now that we are using warp-synchronous programming (below)
+            // we need to declare our shared memory volatile so that the compiler
+            // doesn't reorder stores to it and induce incorrect behavior.
+            volatile VT *smem = sdata;
+            if (blockDim.x >= 64) {
+                smem[tid] = v = ReductionOp::exec(v, smem[tid + 32]);
+            }
+            if (blockDim.x >= 32) {
+                smem[tid] = v = ReductionOp::exec(v, smem[tid + 16]);
+            }
+            if (blockDim.x >= 16) {
+                smem[tid] = v = ReductionOp::exec(v, smem[tid + 8]);
+            }
+            if (blockDim.x >= 8) {
+                smem[tid] = v = ReductionOp::exec(v, smem[tid + 4]);
+            }
+            if (blockDim.x >= 4) {
+                smem[tid] = v = ReductionOp::exec(v, smem[tid + 2]);
+            }
+            if (blockDim.x >= 2) {
+                smem[tid] = v = ReductionOp::exec(v, smem[tid + 1]);
+            }
+        }
+
+        // write result for this block to global mem, modify it with assignment op
+        if (tid == 0)
+            output[blockIdx.x] = AssigmentOp::exec(sdata[0], 0);
+    }
+
     template<typename VT>
     void AggRow<DenseMatrix<VT>, DenseMatrix<VT>>::apply(AggOpCode opCode, DenseMatrix<VT> *&res,
             const DenseMatrix<VT> *arg, DCTX(dctx)) {
@@ -163,15 +245,14 @@ namespace CUDA {
 //        blocks = numRows;
 
         if (opCode == AggOpCode::SUM) {
-//            ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
             SumOp<VT> op;
-            auto gridSize = arg->getNumRows();
-            auto blockSize = 32;
-            auto N = arg->getNumNonZeros();
+            auto blocks = arg->getNumRows();
+            auto threads = 256;
+//            auto N = arg->getNumNonZeros();
+            auto shmSize = sizeof(VT) * threads;
 
-            ewBinMatSparseDense<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc),
-                                                         lhs->getColIdxs(&alloc_desc), lhs->getRowOffsets(&alloc_desc), lhs->getNumCols(),
-                                                         rhs->getValues(&alloc_desc), r_type, op);
+            agg_row_sparse<VT, SumOp<VT>, IdentityOp<VT>><<<blocks, threads, shmSize>>>(res->getValues(&alloc_desc),
+                    arg->getValues(&alloc_desc), arg->getColIdxs(&alloc_desc), arg->getRowOffsets(&alloc_desc));
 
         }
         else if (opCode == AggOpCode::MAX) {
