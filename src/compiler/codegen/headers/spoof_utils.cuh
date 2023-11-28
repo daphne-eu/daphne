@@ -200,7 +200,7 @@ if(tid < 64 && (tid+64) < len) {
 
 
 template<typename T, typename AggOp, typename LoadOp>
-__device__ T BLOCK_ROW_AGG(T *a, T *b, uint32_t* aix, uint32_t len, AggOp agg_op, LoadOp load_op, uint32_t tid, uint32_t block_dim) {
+__device__ T BLOCK_ROW_AGG(T *a, T *b, size_t* aix, uint32_t len, AggOp agg_op, LoadOp load_op, uint32_t tid, uint32_t block_dim) {
     auto sdata = shared_memory_proxy<T>();
 //    uint tid = threadIdx.x;
 
@@ -307,22 +307,25 @@ __device__ T rowMaxsVectMult(T* a, T* b, uint32_t ai, uint32_t bi, uint32_t len)
 }
 
 template<typename T>
-__device__ T rowMaxsVectMult(T* a, T* b, uint32_t* aix, uint32_t ai, uint32_t bi, uint32_t len, uint32_t tid, uint32_t block_dim) {
-    MaxOp<T> agg_op;
-    ProductOp<T> load_op;
+__device__ T rowMaxsVectMult(T* a, T* b, size_t* aix, uint32_t ai, uint32_t bi, uint32_t len, uint32_t tid, uint32_t block_dim) {
+    if (len > 0) {
+        MaxOp <T> agg_op;
+        ProductOp <T> load_op;
 
-    if(block_dim > 1)
-        return BLOCK_ROW_AGG(&a[ai], &b[0], &aix[ai], len, agg_op, load_op, tid, block_dim);
-    else {
-        uint32_t i = 0;
-        T v = agg_op.init();
-        while(i < len) {
-            v = agg_op(v, load_op(a[ai+i], b[aix[ai+i]]));
-            i += block_dim;
+        if (block_dim > 1) {
+            return BLOCK_ROW_AGG(&a[ai], &b[0], &aix[ai], len, agg_op, load_op, tid, block_dim);
+        } else {
+            uint32_t i = 0;
+            T v = agg_op.init();
+            while (i < len) {
+                v = agg_op(v, load_op(a[ai + i], b[aix[ai + i]]));
+                i += block_dim;
+            }
+            return v;
         }
-        return v;
     }
-
+    else
+        return 0.0f;
 }
 
 template<typename T>

@@ -310,7 +310,7 @@ __device__ void NO_AGG_SPARSE(MatrixAccessor<T>* in, MatrixAccessor<T>* out, uin
 	while(tid < row_len) {
 		uint32_t idx = row_start + tid;
 		if(in->hasData()) {
-			uint32_t *aix = in->col_idxs(rix);
+			size_t* aix = in->col_idxs(rix);
 			uint32_t cix = aix[tid];
 			T result = spoof_op(in->val(idx), idx, rix, cix);
 			out->set(idx, cix, result);

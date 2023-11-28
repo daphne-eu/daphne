@@ -30,16 +30,20 @@ struct CCMatrix {
 	uint64_t nnz;
 	uint32_t rows;
 	uint32_t cols;
-	uint32_t* row_ptr;
-	uint32_t* col_idx;
+//	uint32_t* row_ptr;
+//	uint32_t* col_idx;
+    size_t* row_ptr;
+    size_t* col_idx;
+
 	T* data;
 	
 	typedef T value_type;
 	
-	explicit CCMatrix(uint8_t* jvals) : nnz(*reinterpret_cast<uint32_t*>(&jvals[0])),
+	explicit CCMatrix(uint8_t* jvals) : nnz(*reinterpret_cast<uint64_t*>(&jvals[0])),
 		rows(*reinterpret_cast<uint32_t*>(&jvals[8])), cols(*reinterpret_cast<uint32_t*>(&jvals[12])),
-			row_ptr(reinterpret_cast<uint32_t*>(jvals[16])), col_idx(reinterpret_cast<uint32_t*>((jvals[24]))),
-				data(reinterpret_cast<T*>(jvals[32])) {}
+//			row_ptr(reinterpret_cast<uint32_t*>(jvals[16])), col_idx(reinterpret_cast<uint32_t*>((jvals[24]))),
+            row_ptr(reinterpret_cast<size_t*>(jvals[16])), col_idx(reinterpret_cast<size_t*>((jvals[24]))),
+                data(reinterpret_cast<T*>(jvals[32])) {}
 };
 
 #ifdef __CUDACC__
@@ -100,11 +104,11 @@ public:
 		return _mat->row_ptr == nullptr ? _mat->rows : row_len_sparse(rix);
 	}
 	
-	__device__ uint32_t* col_idxs(uint32_t rix) { return cols_sparse(rix); }
+	__device__ size_t* col_idxs(uint32_t rix) { return cols_sparse(rix); }
 
 	__device__ void set(uint32_t r, uint32_t c, T v) { set_sparse(r,c,v); }
 	
-//	__device__ uint32_t* indexes() {  return _mat->row_ptr;	}
+//	__device__ size_t* indexes() {  return _mat->row_ptr;	}
 	
 	__device__ bool hasData() { return _mat->data != nullptr; }
 private:
@@ -137,7 +141,7 @@ private:
 		return _mat->row_ptr[rix];
 	}
 	
-	__device__ uint32_t* cols_sparse(uint32_t rix) {
+	__device__ size_t* cols_sparse(uint32_t rix) {
 		return &_mat->col_idx[_mat->row_ptr[rix]];
 	}
 	
