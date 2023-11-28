@@ -43,6 +43,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 
     if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
         config.use_cuda = jf.at(DaphneConfigJsonParams::USE_CUDA_).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_CODEGEN))
+        config.use_cuda_codegen = jf.at(DaphneConfigJsonParams::USE_CUDA_CODEGEN).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_VECTORIZED_EXEC))
         config.use_vectorized_exec = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_EXEC).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_OBJ_REF_MGNT))
@@ -83,6 +85,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN))
         config.explain_mlir_codegen = jf.at(DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_CUDA_CODEGEN))
+        config.explain_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::EXPLAIN_CUDA_CODEGEN).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME)) {
         config.taskPartitioningScheme = jf.at(DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME).get<SelfSchedulingScheme>();
         if (config.taskPartitioningScheme == SelfSchedulingScheme::INVALID) {
@@ -126,6 +130,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 
         }
     }
+    if (keyExists(jf, DaphneConfigJsonParams::SPARSITY_THRESHOLD))
+        config.sparsity_threshold = jf.at(DaphneConfigJsonParams::SPARSITY_THRESHOLD).get<float>();
 }
 
 bool ConfigParser::keyExists(const nlohmann::json& j, const std::string& key) {

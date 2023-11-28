@@ -138,7 +138,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createOptimizeColumnarOpPass());
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
         }
-        if(userConfig_.explain_columnar)    
+        if(userConfig_.explain_columnar)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar rewriting:"));
 #endif
 
@@ -162,12 +162,17 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     if (selectMatrixRepresentations_)
         pm.addNestedPass<mlir::func::FuncOp>(
-            mlir::daphne::createSelectMatrixRepresentationsPass());
+            mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass(
             "IR after selecting matrix representations:"));
 
-    if (userConfig_.use_phy_op_selection) {
+#ifdef USE_CUDA
+        if(userConfig_.use_cuda_codegen)
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createPatternBasedCodeGenPass(userConfig_));
+        if(userConfig_.explain_cuda_codegen)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after code generation:"));
+#endif    if (userConfig_.use_phy_op_selection) {
         pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());
         pm.addPass(mlir::createCSEPass());
     }

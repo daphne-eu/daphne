@@ -20,7 +20,6 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
@@ -37,6 +36,18 @@ namespace CUDA {
     template<typename VTres, typename VTlhs, typename VTrhs>
     struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs,
+                          const DenseMatrix<VTrhs> *rhs, DCTX(ctx));
+    };
+
+    template<typename VTres, typename VTlhs, typename VTrhs>
+    struct EwBinaryMat<CSRMatrix<VTres>, CSRMatrix<VTlhs>, CSRMatrix<VTrhs>> {
+        static void apply(BinaryOpCode opCode, CSRMatrix<VTres> *&res, const CSRMatrix<VTlhs> *lhs,
+                          const CSRMatrix<VTrhs> *rhs, DCTX(ctx));
+    };
+
+    template<typename VTres, typename VTlhs, typename VTrhs>
+    struct EwBinaryMat<CSRMatrix<VTres>, CSRMatrix<VTlhs>, DenseMatrix<VTrhs>> {
+        static void apply(BinaryOpCode opCode, CSRMatrix<VTres> *&res, const CSRMatrix<VTlhs> *lhs,
                           const DenseMatrix<VTrhs> *rhs, DCTX(ctx));
     };
 

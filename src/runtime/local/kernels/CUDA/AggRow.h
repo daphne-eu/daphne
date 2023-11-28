@@ -17,6 +17,7 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
@@ -45,12 +46,14 @@ namespace CUDA {
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-// ----------------------------------------------------------------------------
-// DenseMatrix <- DenseMatrix
-// ----------------------------------------------------------------------------
-
     template<typename VT>
     struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
         static void apply(AggOpCode opCode, DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx));
     };
+
+    template<typename VT>
+    struct AggRow<DenseMatrix<VT>, CSRMatrix<VT>> {
+        static void apply(AggOpCode opCode, DenseMatrix<VT> *&res, const CSRMatrix<VT> *arg, DCTX(ctx));
+    };
+
 }

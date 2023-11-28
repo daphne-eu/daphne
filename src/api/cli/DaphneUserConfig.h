@@ -41,6 +41,7 @@ struct DaphneUserConfig {
     bool use_columnar_reduce = false;
     bool use_columnar_rewrite = false;
     bool use_selection_pushdown = false;
+    bool use_cuda_codegen = false;
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
@@ -74,6 +75,7 @@ struct DaphneUserConfig {
     bool explain_obj_ref_mgnt = false;
     bool explain_mlir_codegen = false;
 
+    bool explain_cuda_codegen = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
     QueueTypeOption queueSetupScheme = CENTRALIZED;
 	VictimSelectionLogic victimSelection = SEQPRI;
@@ -86,12 +88,15 @@ struct DaphneUserConfig {
     spdlog::level::level_enum log_level_limit = spdlog::level::err;
     std::vector<LogConfig> loggers;
     DaphneLogger* log_ptr{};
-    
+    float sparsity_threshold = 0.25;
+
 #ifdef USE_CUDA
     // User config holds once context atm for convenience until we have proper system infrastructure
 
     // CUDA device IDs (future work, as we create only one context atm)
     std::vector<int> cuda_devices;
+
+    uint64_t codegen_ctx_ptr;
 
     // ToDo: This is an arbitrary default taken from sample code
 //    int cublas_workspace_size = 1024 * 1024 * 4;

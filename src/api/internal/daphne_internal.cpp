@@ -256,7 +256,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 "Enable the switch to use columnar operations with possible SIMD support "
                 "instead of matrix operations.")
     );
-    
+
     // Other options
 
     static opt<bool> noObjRefMgnt(
@@ -288,6 +288,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     static opt<bool> cuda(
             "cuda", cat(daphneOptions),
             desc("Use CUDA")
+    );
+    static opt<bool> use_cuda_codegen(
+            "cuda_codegen", cat(daphneOptions),
+            desc("Use CUDA code generation")
     );
     static opt<bool> fpgaopencl(
             "fpgaopencl", cat(daphneOptions),
@@ -321,6 +325,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       vectorized,
       obj_ref_mgnt,
       mlir_codegen
+      obj_ref_mgnt,
+      cuda_codegen
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -343,6 +349,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
             clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
         CommaSeparated);
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
+            clEnumVal(cuda_codegen, "Show DaphneIR after CUDA codegen")),
+    CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
             "args", cat(daphneOptions),
@@ -500,6 +509,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             case mlir_codegen:
                 user_config.explain_mlir_codegen = true;
                 break;
+            case cuda_codegen:
+                user_config.explain_cuda_codegen = true;
+                break;
         }
     }
 
@@ -522,17 +534,40 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         }
 #endif 
     }
+
+    // set cuda mode from config file
+    if(user_config.use_cuda)
+        cuda = true;
+
+    clock::time_point tpBegCudaDevCount;
+    clock::time_point tpEndCudaDevCount;
+    // check for cuda from cli flag and enable if supported
     if(cuda) {
         int device_count = 0;
+
+        // CUDA device enumeration might delay execution for 1 - 2 seconds if no persistence mode is used
+        tpBegCudaDevCount = clock::now();
 #ifdef USE_CUDA
         CHECK_CUDART(cudaGetDeviceCount(&device_count));
 #endif
-        if(device_count < 1)
+         tpEndCudaDevCount = clock::now();
+
+        if(device_count < 1) {
             spdlog::warn("CUDA ops requested by user option but no suitable device found");
+            user_config.use_cuda = false;
+            user_config.use_cuda_codegen = false;
+        }
         else {
             user_config.use_cuda = true;
+
+            // only enable cuda code gen if cuda is supported
+            if(use_cuda_codegen)
+                user_config.use_cuda_codegen = true;
         }
     }
+    else
+        if(user_config.explain_cuda_codegen)
+            spdlog::warn("CUDA code generation requested but CUDA is not enabled (cli param or user config option).");
 
     if(fpgaopencl) {
         user_config.use_fpgaopencl = true;
@@ -638,7 +673,11 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     if(timing) {
         // Calculate durations of the individual high-level steps of DAPHNE.
-        double durStrt  = chrono::duration_cast<chrono::duration<double>>(tpBegPars - tpBeg    ).count();
+
+        double durDevCount = 0.0;
+        if(cuda)
+            durDevCount = chrono::duration_cast<chrono::duration<double>>(tpEndCudaDevCount - tpBegCudaDevCount).count();
+        double durStrt  = chrono::duration_cast<chrono::duration<double>>(tpBegPars - tpBeg).count() - durDevCount;
         double durPars  = chrono::duration_cast<chrono::duration<double>>(tpBegComp - tpBegPars).count();
         double durComp  = chrono::duration_cast<chrono::duration<double>>(tpBegExec - tpBegComp).count();
         double durExec  = chrono::duration_cast<chrono::duration<double>>(tpEnd     - tpBegExec).count();
@@ -647,6 +686,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         // Output durations in JSON.
         std::cerr << "{";
         std::cerr << "\"startup_seconds\": "     << durStrt  << ", ";
+        if(cuda)
+            std::cerr << "\"cuda_dev_count_sec\": "     << durDevCount  << ", ";
         std::cerr << "\"parsing_seconds\": "     << durPars  << ", ";
         std::cerr << "\"compilation_seconds\": " << durComp  << ", ";
         std::cerr << "\"execution_seconds\": "   << durExec  << ", ";

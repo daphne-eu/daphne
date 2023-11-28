@@ -41,6 +41,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Affine.cpp
             ${PREFIX}/BatchNorm.cpp
             ${PREFIX}/BiasAdd.cpp
+            ${PREFIX}/CodeGen.cpp
             ${PREFIX}/Convolution.cpp
             ${PREFIX}/DeviceUtils.cuh
             ${PREFIX}/Fill.cu
@@ -59,7 +60,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
-    )
+            ${PROJECT_SOURCE_DIR}/src/compiler/codegen/spoof-launcher/rowbins.cu
+)
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
@@ -68,8 +70,9 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     find_library(CUDA_${lib_name}_LIBRARY NAMES ${lib_name} HINTS ${CUDAToolkit_LIBRARY_DIR} ENV CUDA_PATH
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
-    target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms CUDA::cudart CUDA::cublasLt CUDA::cublas
-            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver Util MLIRDaphneInference)
+    target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms CUDA::cudart
+            CUDA::cublasLt CUDA::cublas CUDA::nvrtc CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver CUDA::cuda_driver
+            Util MLIRDaphneInference spoof_cuda)
     set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 endif()
 
@@ -181,6 +184,8 @@ set(HEADERS_cpp_kernels
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/DistributedPipeline.h
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CreateDaphneContext.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp
@@ -189,6 +194,7 @@ set(SOURCES_cpp_kernels
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
+
         )
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED ${SOURCES_cpp_kernels} ${HEADERS_cpp_kernels})

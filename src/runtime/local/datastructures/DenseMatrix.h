@@ -137,7 +137,7 @@ class DenseMatrix : public Matrix<ValueType>
 
     void printValue(std::ostream & os, ValueType val) const;
 
-    void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
+    void alloc_shared_values(bool zero = false, std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
 
 
     /**
@@ -196,12 +196,21 @@ public:
      * @param range A Range object describing optionally requesting a sub range of a data structure.
      * @return A pointer to the data in the requested memory space
      */
-    const ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const
-    {
-        auto[isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
-        if(!isLatest)
-            this->mdo->addLatest(id);
-        return ptr;
+    const ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const {
+////        auto[isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
+//        DataPlacement* dp;
+//        if(!alloc_desc) {
+//            auto ad = AllocationDescriptorHost();
+//            dp = const_cast<DenseMatrix<ValueType> *>(this)->mdo->getDataPlacement(&ad);
+//        }
+//        else
+//            dp = const_cast<DenseMatrix<ValueType> *>(this)->mdo->getDataPlacement(alloc_desc);
+//        this->mdo->setLatest(dp->getID());
+//        if(!const_cast<DenseMatrix<ValueType> *>(this)->mdo->isLatestVersion
+//        (dp->getID()))
+//            const_cast<DenseMatrix<ValueType> *>(this)->mdo->addLatest(dp->getID());
+//        return reinterpret_cast<const ValueType*>(dp->getAllocation(0)->getData().get());
+        return  reinterpret_cast<const ValueType*>(this->mdo->getData(0, alloc_desc, range));
     }
 
     /**
@@ -213,14 +222,27 @@ public:
      * @param alloc_desc An allocation descriptor describing which type of memory is requested (e.g. main memory in
      * the current system, memory in an accelerator card or memory in another host)
      *
+     *
      * @param range A Range object describing optionally requesting a sub range of a data structure.
      * @return A pointer to the data in the requested memory space
      */
-    ValueType* getValues(IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
-        auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range);
-        if(!isLatest)
-            this->mdo->setLatest(id);
-        return ptr;
+    ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
+////        auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range);
+////        auto [isLatest, id, ptr] = this->mdo->getDataPlacement(alloc_desc);
+////        if(!isLatest)
+////            this->mdo->setLatest(id);
+//        DataPlacement* dp;
+//        if(!alloc_desc) {
+////            alloc_desc = &reinterpret_cast<IAllocationDescriptor>(AllocationDescriptorHost());
+//            auto ad = AllocationDescriptorHost();
+//            dp = this->mdo->getDataPlacement(&ad);
+//        }
+//        else
+//            dp = this->mdo->getDataPlacement(alloc_desc);
+////        auto ptr = reinterpret_cast<ValueType*>(this->mdo->getDataPlacement(alloc_desc));
+//        this->mdo->setLatest(dp->getID());
+//        return reinterpret_cast<ValueType*>(dp->getAllocation(0)->getData().get());
+        return  reinterpret_cast<ValueType*>(this->mdo->getData(0, alloc_desc, range));
     }
     
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {

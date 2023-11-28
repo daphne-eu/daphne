@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <runtime/local/datastructures/AllocationDescriptorHost.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
@@ -91,23 +92,8 @@ class CSRMatrix : public Matrix<ValueType> {
      * @param zero Whether the allocated memory of the internal arrays shall be
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
-    CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero) : 
-            Matrix<ValueType>(maxNumRows, numCols),
-            numRowsAllocated(maxNumRows),
-            isRowAllocatedBefore(false),
-            maxNumNonZeros(maxNumNonZeros),
-            values(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>()),
-            colIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
-            rowOffsets(new size_t[numRows + 1], std::default_delete<size_t[]>()),
-            lastAppendedRowIdx(0)
-    {
-        if(zero) {
-            memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
-            memset(colIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
-            memset(rowOffsets.get(), 0, (numRows + 1) * sizeof(size_t));
-        }
-    }
-    
+    CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero, IAllocationDescriptor* allocInfo = nullptr);
+
     /**
      * @brief Creates a `CSRMatrix` around a sub-matrix of another `CSRMatrix`
      * without copying the data.
@@ -133,9 +119,7 @@ class CSRMatrix : public Matrix<ValueType> {
         rowOffsets = std::shared_ptr<size_t>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
     
-    virtual ~CSRMatrix() {
-        // nothing to do
-    }
+    virtual ~CSRMatrix() = default;
     
     void fillNextPosUntil(size_t nextPos, size_t rowIdx) {
         if(rowIdx > lastAppendedRowIdx) {
@@ -153,16 +137,21 @@ public:
         this->numRows = numRows;
     }
     
-    size_t getMaxNumNonZeros() const {
+    [[nodiscard]] size_t getMaxNumNonZeros() const {
         return maxNumNonZeros;
     }
-    size_t getNumNonZeros() const {
-        return rowOffsets.get()[numRows] - rowOffsets.get()[0];
+    [[nodiscard]] size_t getNumNonZeros() const {
+//        return rowOffsets.get()[numRows] - rowOffsets.get()[0];
+        return getRowOffsets()[numRows] - getRowOffsets()[0];
     }
     
-    size_t getNumNonZeros(size_t rowIdx) const {
+    [[nodiscard]] size_t getNumNonZeros(size_t rowIdx) const {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        return rowOffsets.get()[rowIdx + 1] - rowOffsets.get()[rowIdx];
+//        return rowOffsets.get()[rowIdx + 1] - rowOffsets.get()[rowIdx];
+auto roff = getRowOffsets();
+auto rownext = roff[rowIdx+1];
+auto row = roff[rowIdx];
+        return  rownext - row;
     }
     
     void shrinkNumNonZeros(size_t numNonZeros) {
@@ -171,56 +160,64 @@ public:
         // colIdxs arrays.
     }
 
-    ValueType * getValues() {
-        return values.get();
+    ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
+        return  reinterpret_cast<ValueType*>(this->mdo->getData(0, alloc_desc, range));
     }
-    
-    const ValueType * getValues() const {
-        return values.get();
+
+    const ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const {
+        return  reinterpret_cast<const ValueType*>(this->mdo->getData(0, alloc_desc, range));
     }
-    
-    ValueType * getValues(size_t rowIdx) {
+
+    ValueType* getRowValues(size_t rowIdx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
         // We allow equality here to enable retrieving a pointer to the end.
         assert((rowIdx <= numRows) && "rowIdx is out of bounds");
-        return values.get() + rowOffsets.get()[rowIdx];
+        return &(reinterpret_cast<ValueType*>(getValues(alloc_desc, range))[getRowOffsets()[rowIdx]]);
+    }
+
+    const ValueType* getRowValues(size_t rowIdx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const {
+        return &(reinterpret_cast<const ValueType*>(getValues(alloc_desc, range))[getRowOffsets()[rowIdx]]);
     }
     
-    const ValueType * getValues(size_t rowIdx) const {
-        return const_cast<CSRMatrix<ValueType> *>(this)->getValues(rowIdx);
+    size_t* getColIdxs(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
+//        return colIdxs.get();
+        return reinterpret_cast<size_t*>(this->mdo->getData(1, alloc_desc, range));
     }
     
-    size_t * getColIdxs() {
-        return colIdxs.get();
+    const size_t* getColIdxs(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const {
+//        return colIdxs.get();
+        return reinterpret_cast<const size_t*>(this->mdo->getData(1, alloc_desc, range));
     }
     
-    const size_t * getColIdxs() const {
-        return colIdxs.get();
-    }
-    
-    size_t * getColIdxs(size_t rowIdx) {
+    size_t* getColIdxsOfRow(size_t rowIdx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
         // We allow equality here to enable retrieving a pointer to the end.
         assert((rowIdx <= numRows) && "rowIdx is out of bounds");
-        return colIdxs.get() + rowOffsets.get()[rowIdx];
+//        return colIdxs.get() + rowOffsets.get()[rowIdx];
+        auto data = this->mdo->getData(1, alloc_desc, range);
+        return &(reinterpret_cast<size_t*>(data)[getRowOffsets()[rowIdx]]);
     }
 
-    const size_t * getColIdxs(size_t rowIdx) const {
-        return const_cast<CSRMatrix<ValueType> *>(this)->getColIdxs(rowIdx);
+    const size_t* getColIdxsOfRow(size_t rowIdx, const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const {
+//        return const_cast<CSRMatrix<ValueType> *>(this)->getColIdxs(rowIdx);
+        auto data = this->mdo->getData(1, alloc_desc, range);
+        return &(reinterpret_cast<const size_t*>(data)[getRowOffsets()[rowIdx]]);
     }
 
-    size_t * getRowOffsets() {
-        return rowOffsets.get();
+    size_t* getRowOffsets(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
+//        return rowOffsets.get();
+        return reinterpret_cast<size_t*>(this->mdo->getData(2, alloc_desc, range));
     }
 
-    const size_t * getRowOffsets() const {
-        return rowOffsets.get();
+    const size_t* getRowOffsets(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const {
+//        return rowOffsets.get();
+        return reinterpret_cast<const size_t*>(this->mdo->getData(2, alloc_desc, range));
     }
 
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
         assert((colIdx < numCols) && "colIdx is out of bounds");
         
-        const size_t * rowColIdxsBeg = getColIdxs(rowIdx);
-        const size_t * rowColIdxsEnd = getColIdxs(rowIdx + 1);
+        const size_t * rowColIdxsBeg = getColIdxsOfRow(rowIdx);
+        const size_t * rowColIdxsEnd = getColIdxsOfRow(rowIdx + 1);
         const size_t * ptrExpected = std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
 
         if(ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx)
@@ -228,20 +225,20 @@ public:
             return ValueType(0);
         else
             // Entry for the given coordinates present.
-            return getValues(rowIdx)[ptrExpected - rowColIdxsBeg];
+            return getRowValues(rowIdx)[ptrExpected - rowColIdxsBeg];
     }
     
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
         assert((colIdx < numCols) && "colIdx is out of bounds");
         
-        size_t * rowColIdxsBeg = getColIdxs(rowIdx);
-        size_t * rowColIdxsEnd = getColIdxs(rowIdx + 1);
+        size_t * rowColIdxsBeg = getColIdxsOfRow(rowIdx);
+        size_t * rowColIdxsEnd = getColIdxsOfRow(rowIdx + 1);
         const size_t * ptrExpected = std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
         const size_t posExpected = ptrExpected - rowColIdxsBeg;
         
         const size_t posEnd = colIdxs.get() + rowOffsets.get()[numRowsAllocated] - rowColIdxsBeg;
-        ValueType * rowValuesBeg = getValues(rowIdx);
+        ValueType * rowValuesBeg = getRowValues(rowIdx);
         
         if(ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx) {
             // No entry for the given coordinates present.
@@ -315,7 +312,7 @@ public:
         fillNextPosUntil(rowOffsets.get()[lastAppendedRowIdx + 1], numRows - 1);
     }
 
-    bool isView() const {
+    [[nodiscard]] bool isView() const {
         return (numRowsAllocated > numRows || isRowAllocatedBefore);
     }
     
@@ -332,12 +329,12 @@ public:
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
         // Note that, in general, the values within one row might not be sorted
         // by column index. Thus, the following is a little complicated.
-        ValueType * oneRow = new ValueType[numCols];
+        auto oneRow = new ValueType[numCols];
         for (size_t r = 0; r < numRows; r++) {
             memset(oneRow, 0, numCols * sizeof(ValueType));
             const size_t rowNumNonZeros = getNumNonZeros(r);
-            const size_t * rowColIdxs = getColIdxs(r);
-            const ValueType * rowValues = getValues(r);
+            const size_t* rowColIdxs = getColIdxsOfRow(r);
+            const ValueType* rowValues = getRowValues(r);
             for(size_t i = 0; i < rowNumNonZeros; i++)
                 oneRow[rowColIdxs[i]] = rowValues[i];
             for(size_t c = 0; c < numCols; c++) {

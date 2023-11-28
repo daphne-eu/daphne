@@ -132,6 +132,7 @@ namespace {
  */
 class InferencePass : public PassWrapper<InferencePass, OperationPass<func::FuncOp>> {
     daphne::InferenceConfig cfg;
+    std::shared_ptr<spdlog::logger> logger;
 
     /**
      * @brief Sets all properties of all results of the given operation to unknown
@@ -160,8 +161,10 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
     std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         // Type inference.
         try {
-            if (returnsUnknownType(op))
-                daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
+            if (returnsUnknownType(op)) {//} && !llvm::dyn_cast<scf::WhileOp>(op)) {
+//                op->dump();
+                daphne::setInferedTypes(op, cfg.partialInferenceAllowed, this->logger.get());
+            }
         }
         catch (std::runtime_error& re) {
             spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
@@ -173,6 +176,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
         bool doFrameLabelInference = cfg.frameLabelInference && returnsFrameWithUnknownLabels(op);
         if(doShapeInference || doSparsityInference || doFrameLabelInference) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
+
             // ----------------------------------------------------------------
             // Handle all non-control-flow (non-SCF) operations
             // ----------------------------------------------------------------
@@ -188,7 +192,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                                 std::to_string(shapes.size()) + " shapes, but the "
                                                                 "op has " + std::to_string(numRes) + " results"
                         );
-                    // Set the infered shapes on all results of this operation.
+                    // Set the inferred shapes on all results of this operation.
                     for(size_t i = 0 ; i < numRes ; i++) {
                         if(
                             op->getResultTypes()[i].isa<mlir::daphne::MatrixType>() ||
@@ -213,6 +217,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     }
                 }
                 if (doSparsityInference) {
+//                    op->dump();
                     // Try to infer the sparsity of all results of this operation.
                     std::vector<double> sparsities = daphne::tryInferSparsity(op);
                     const size_t numRes = op->getNumResults();
@@ -223,7 +228,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                                 std::to_string(sparsities.size()) + " shapes, but the "
                                                                 "op has " + std::to_string(numRes) + " results"
                         );
-                    // Set the inferred sparsities on all results of this operation.
+                    // Set the inferred sparsity on all results of this operation.
                     for(size_t i = 0 ; i < numRes ; i++) {
                         const double sparsity = sparsities[i];
                         if(
@@ -283,8 +288,12 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 // arguments' properties.
                 // This loop searches a fix-point and always terminates, since we only
                 // set properties to unknown and in the extreme case, after a finite
-                // number of iterations all of the arguments properties will have
+                // number of iterations all the arguments properties will have
                 // become unknown.
+//                uint32_t repeat = 0;
+
+//                while(repeat < 2) {
+//                    uint32_t old_repeat = repeat;
                 while(true) {
                     bool repeat = false;
 
@@ -322,6 +331,10 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
 
                     // Get the YieldOp.
                     Operation * yieldOp = afterBlock.getTerminator();
+
+//                    auto yieldTypeWithSparsity = returnsUnknownSparsity(yieldOp);
+//                    auto whileTypeWithSparsity = returnsUnknownSparsity(op);
+
                     // TODO Make this an assertion?
                     if(whileOp->getNumOperands() != yieldOp->getNumOperands())
                         throw std::runtime_error("WhileOp and YieldOp must have the same number of operands");
@@ -332,28 +345,58 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
                         Type yieldedTy = yieldOp->getOperand(i).getType();
                         Type operandTy = op->getOperand(i).getType();
+//                        double a = 2.0, b = 2.0;
+//                        if(yieldedTy.dyn_cast<daphne::MatrixType>()) {
+//                            a = yieldedTy.dyn_cast<daphne::MatrixType>().getSparsity();
+//                            if (a == -1.0) {
+//                                yieldOp->getOperand(i).setType(yieldedTy.dyn_cast<daphne::MatrixType>().withSparsity(1.0));
+//                                yieldedTy = yieldOp->getOperand(i).getType();
+//                                yieldedTy.dump();
+//                            }
+//                        }
+//                        if(operandTy.dyn_cast<daphne::MatrixType>()) {
+//                            b = operandTy.dyn_cast<daphne::MatrixType>().getSparsity();
+//                            if (b == -1.0) {
+//                                operandTy.dyn_cast<daphne::MatrixType>().withSparsity(-1.0);
+//                                operandTy = op->getOperand(i).getType();
+//                                operandTy.dump();
+//                            }
+//                        }
+
+//yieldedTy.dump(); operandTy.dump();
                         if(yieldedTy != operandTy) {
                             // Get a type with the conflicting properties set to unknown.
                             Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, operandTy);
+//                            typeWithCommonInfo.dump();
+
                             if(!typeWithCommonInfo) {
                                 throw std::runtime_error(
                                         "the data type (matrix, frame, scalar) of a variable "
                                         "must not be changed within the body of a while-loop"
                                 );
                             }
-                            // Use casts to remove those properties accordingly.
-                            castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
-                            castOperandIf(builder, whileOp, i, typeWithCommonInfo);
-                            // Since the WhileOp's argument types/properties have changed,
-                            // we must repeat the inference for the loop body.
-                            repeat = true;
+
+                            if(!typeWithCommonInfo.isa<daphne::UnknownType>()) {
+                                // Use casts to remove those properties accordingly.
+                                castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
+                                castOperandIf(builder, whileOp, i, typeWithCommonInfo);
+                                // Since the WhileOp's argument types/properties have changed,
+                                // we must repeat the inference for the loop body.
+//                                repeat++;
+                                repeat = true;
+                            }
+                            else
+                                castOperandIf(builder, yieldOp, i, operandTy);
                         }
                     }
+//                    if(old_repeat != repeat) {
                     if(repeat) {
                         // Before we can repeat the inference, we reset all information
                         // inferred so far to unknown (in the loop body).
                         beforeBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
                         afterBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
+//                        logger->debug("op {} after reset to unknown:", op->getName().getStringRef().str());
+//                        op->dump();
                     }
                     else
                         // If all types matched, we are done.
@@ -374,7 +417,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 // arguments' properties.
                 // This loop searches a fix-point and always terminates, since we only
                 // set properties to unknown and in the extreme case, after a finite
-                // number of iterations all of the arguments properties will have
+                // number of iterations all the arguments properties will have
                 // become unknown.
                 while(true) {
                     bool repeat = false;
@@ -466,7 +509,9 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
     };
 
 public:
-    InferencePass(daphne::InferenceConfig cfg) : cfg(cfg) {}
+    explicit InferencePass(daphne::InferenceConfig cfg) : cfg(cfg) {
+        logger = spdlog::get("compiler");
+    }
 
     void runOnOperation() override {
         func::FuncOp f = getOperation();

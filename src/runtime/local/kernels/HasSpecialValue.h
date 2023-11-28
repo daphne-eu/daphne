@@ -82,8 +82,8 @@ template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, 
         auto numCols = arg->getNumCols();
         auto numNonZeros = arg->getNumNonZeros();
         auto numElements = numRows*numCols;
-        auto vBegin = arg->getValues(0);
-        auto vEnd = arg->getValues(numRows);
+        auto vBegin = arg->getRowValues(0);
+        auto vEnd = arg->getRowValues(numRows);
         auto hasZeroes = numNonZeros < numElements;
         auto zero = VT(0);
 

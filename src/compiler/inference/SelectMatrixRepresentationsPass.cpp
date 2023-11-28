@@ -23,13 +23,14 @@
 
 #include <stdexcept>
 #include <memory>
-#include <vector>
-#include <utility>
 
 using namespace mlir;
 
 class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresentationsPass, OperationPass<func::FuncOp>> {
-    static WalkResult walkOp(Operation *op) {
+    const DaphneUserConfig& cfg;
+    std::shared_ptr<spdlog::logger> logger;
+
+    std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         if(returnsKnownProperties(op)) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
             // ----------------------------------------------------------------
@@ -40,8 +41,7 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 for(auto res : op->getResults()) {
                     if(auto matTy = res.getType().dyn_cast<daphne::MatrixType>()) {
                         const double sparsity = matTy.getSparsity();
-                        // TODO: set threshold by user
-                        if(sparsity < 0.1) {
+                        if(sparsity < cfg.sparsity_threshold) {
                             res.setType(matTy.withRepresentation(daphne::MatrixRepresentation::Sparse));
                         }
                     }
@@ -64,11 +64,11 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                     whileOp.getResult(i).setType(t);
                 }
                 // Continue the walk on both blocks of the WhileOp. We trigger
-                // this explicitly, since we need to do something afterwards.
+                // this explicitly, since we need to do something afterward.
                 beforeBlock.walk<WalkOrder::PreOrder>(walkOp);
                 afterBlock.walk<WalkOrder::PreOrder>(walkOp);
 
-                // Check if the infered matrix representations match the required result representations.
+                // Check if the inferred matrix representations match the required result representations.
                 // This is not the case if, for instance, the representation of some
                 // variable written in the loop changes. The WhileOp would also
                 // check this later during verification, but here, we want to
@@ -151,6 +151,10 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
     };
 
 public:
+    explicit SelectMatrixRepresentationsPass(const DaphneUserConfig& cfg) : cfg(cfg) {
+        logger = spdlog::get("compiler");
+    }
+
     void runOnOperation() override {
         func::FuncOp f = getOperation();
         f.walk<WalkOrder::PreOrder>(walkOp);
@@ -173,6 +177,6 @@ public:
     }
 };
 
-std::unique_ptr<Pass> daphne::createSelectMatrixRepresentationsPass() {
-    return std::make_unique<SelectMatrixRepresentationsPass>();
+std::unique_ptr<Pass> daphne::createSelectMatrixRepresentationsPass(const DaphneUserConfig& cfg) {
+    return std::make_unique<SelectMatrixRepresentationsPass>(cfg);
 }

@@ -53,7 +53,7 @@ void AdaptTypesToKernelsPass::runOnOperation()
     f.getBody().front().walk([&](Operation* op) {
         const size_t numOperands = op->getNumOperands();
 
-        // Depending on the related trait, detemine which inputs to harmonize with the output.
+        // Depending on the related trait, determine which inputs to harmonize with the output.
         std::vector<size_t> operandIdxs;
         if(op->hasTrait<OpTrait::CastArgsToResType>()) // all inputs
             for(size_t i = 0; i < numOperands; i++)

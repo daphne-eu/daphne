@@ -58,6 +58,8 @@ namespace
                 return 1;
             if(llvm::isa<daphne::ColumnProjectionPathOp>(op))
                 return 2;
+            if(llvm::isa<daphne::CodeGenOpAllAggCellwise>(op) || llvm::isa<daphne::CodeGenOpRowwise>(op))
+                return 1;
             throw std::runtime_error(
                     "lowering to kernel call not yet supported for this variadic operation: "
                     + op->getName().getStringRef().str()
@@ -124,6 +126,24 @@ namespace
                         isVariadic[index]
                 );
             }
+            if(auto concreteOp = llvm::dyn_cast<daphne::CodeGenOpRowwise>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::CodeGenOpAllAggCellwise>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
             if(auto concreteOp = llvm::dyn_cast<daphne::ColumnProjectionPathOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
                 static bool isVariadic[] = {false, true};
@@ -175,7 +195,7 @@ namespace
             }
 		    else if(op->hasAttr("vector_extension")) {
                 callee << op->getAttr("vector_extension").cast<StringAttr>().getValue().str();
-            } 
+            }
 
             callee << '_' << op->getName().stripDialect().data();
 
@@ -554,6 +574,10 @@ void RewriteToCallKernelOpPass::runOnOperation()
     func->walk([&](daphne::VectorizedPipelineOp vpo)
     {
       vpo.getCtxMutable().assign(dctx);
+    });
+
+    func->walk([&](daphne::CodeGenOpRowwise cgo) {
+        cgo.getCtxMutable().assign(dctx);
     });
 
     // Apply conversion to CallKernelOps.

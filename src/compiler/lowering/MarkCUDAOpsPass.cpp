@@ -88,7 +88,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
                 if(rows < 0 || cols < 0) {
-                    logger->warn("Ignoring unknown dimension in max mem check of {}"
+                    logger->warn("Ignoring unknown dimension in max mem check of {}\n"
                             "dims are: {}x{}\nsetting unknowns to 1 for this test", op->getName().getStringRef().str(),
                             rows, cols);
                     if(rows < 0)
@@ -156,10 +156,10 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
         logger->trace("{} CUDA supported={}", op->getName().getStringRef().str(), use_cuda);
         use_cuda = use_cuda && CompilerUtils::isMatrixComputation(op);
         logger->trace("{} isMatrixComputation={}", op->getName().getStringRef().str(), use_cuda);
-        use_cuda = use_cuda && hasReqMinDims(op);
-        logger->trace("{} hasMinInputDims={}", op->getName().getStringRef().str(), use_cuda);
-        use_cuda = use_cuda && fitsInMemory(op);
-        logger->trace("{} fitsInMem={}", op->getName().getStringRef().str(), use_cuda);
+//        use_cuda = use_cuda && hasReqMinDims(op);
+//        logger->trace("{} hasMinInputDims={}", op->getName().getStringRef().str(), use_cuda);
+//        use_cuda = use_cuda && fitsInMemory(op);
+//        logger->trace("{} fitsInMem={}", op->getName().getStringRef().str(), use_cuda);
         return use_cuda;
     }
 };

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_RANDMATRIX_H
-#define SRC_RUNTIME_LOCAL_KERNELS_RANDMATRIX_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -163,7 +162,7 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
 
         // The exact number of non-zeros to generate.
         // TODO Ideally, it should not be allowed that zero is included in [min, max].
-        const size_t nnz = static_cast<size_t>(round(numRows * numCols * sparsity));
+        const auto nnz = static_cast<size_t>(round(numRows * numCols * sparsity));
         
         if(res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, nnz, false);
@@ -194,9 +193,11 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
         // Randomly determine the number of non-zeros per row. Store them in
         // the result matrix's rowOffsets array to avoid an additional
         // allocation and to make the prefix sum more cache-efficient.
-        size_t * rowOffsetsRes = res->getRowOffsets();
+        size_t* rowOffsetsRes = res->getRowOffsets();
+
         // We need signed ssize_t for the >0 check.
-        ssize_t * nnzPerRow = reinterpret_cast<ssize_t *>(rowOffsetsRes + 1);
+        auto nnzPerRow = reinterpret_cast<ssize_t *>(rowOffsetsRes + 1);
+
         if(sparsity <= 0.5) {
             // Start with empty rows, increment nnz of random row until the
             // desired total number of non-zeros is reached.
@@ -223,7 +224,6 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
                 }
             }
         }
-        
         // Generate random column indexes, sorted within each row.
         size_t * colIdxsRes = res->getColIdxs();
         if(sparsity <= 0.5) {
@@ -247,12 +247,10 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
                         *colIdxsRes++ = c;
             }
         }
-        
+
         // Calculate the row offsets as the prefix sum over the nnz per row.
         rowOffsetsRes[0] = 0;
         for(size_t i = 1; i <= numRows; i++)
             rowOffsetsRes[i] += rowOffsetsRes[i - 1];
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_RANDMATRIX_H

@@ -17,6 +17,7 @@ cmake_minimum_required(VERSION 3.20)
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
+set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler --expt-relaxed-constexpr" CACHE STRING "bla" FORCE)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -26,6 +27,15 @@ if(CCACHE_PROGRAM)
 endif()
 
 project(daphne-prototype LANGUAGES CXX C)
+include(CheckLanguage)
+#message(STATUS start checked cuda)
+check_language(CUDA)
+#message(STATUS "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}")
+message(STATUS "cuda flags: ${CMAKE_CUDA_FLAGS}")
+message(STATUS "cuda env flags: $ENV{CUDAFLAGS}")
+message(STATUS "path env: $ENV{PATH}")
+
+project(daphne-prototype LANGUAGES CUDA CXX C)
 
 find_program(LLD_PROGRAM lld)
 if(LLD_PROGRAM)
@@ -134,9 +144,10 @@ endif()
 ##########
 
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
-include(CheckLanguage)
-check_language(CUDA)
+
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler --expt-relaxed-constexpr" CACHE STRING "bla" FORCE)
+
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
 
@@ -164,6 +175,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     if(DEFINED ENV{CUDAHOSTCXX})
         message(STATUS "CUDAHOSTCXX value: $ENV{CUDAHOSTCXX}")
     endif()
+    message(STATUS "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}")
+
 endif()
 
 
@@ -233,6 +246,7 @@ add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/api/cli)
 add_subdirectory(src/api/daphnelib)
 add_subdirectory(src/api/internal)
+add_subdirectory(src/compiler/codegen)
 add_subdirectory(src/compiler/execution)
 add_subdirectory(src/compiler/explanation)
 add_subdirectory(src/compiler/inference)

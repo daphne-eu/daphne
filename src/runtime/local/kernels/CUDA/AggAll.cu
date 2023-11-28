@@ -23,7 +23,7 @@
 
 namespace CUDA {
 
-    template<class VT, class ReductionOp, class AssigmentOp>
+    template<class VT, class ReductionOp>
     __global__ void agg(VT* output, const VT* input, size_t N) {
         auto sdata = shared_memory_proxy<VT>();
 
@@ -110,42 +110,85 @@ namespace CUDA {
     VTRes AggAll<VTRes, DenseMatrix<VTArg>>::apply(AggOpCode opCode, const DenseMatrix<VTArg> * arg, DCTX(dctx)) {
 
         const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+
         AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
-        int blockSize;
-        int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
-        size_t gridSize;
+        int threadsPerBlock;
+        int blocksPerGrid;
 
         auto N = arg->getNumItems();
         VTRes result;
         VTRes* tmp_ptr;
 
         // determine kernel launch parameters
-        CHECK_CUDART(cudaOccupancyMaxPotentialBlockSizeVariableSMem(&minGridSize, &blockSize,
-                agg<VTRes, SumOp<VTArg>, IdentityOp<VTRes>>, smem_calc<VTArg>(), 0));
-        gridSize = (N + blockSize - 1) / blockSize;
-        auto shmSize = sizeof(VTArg) * blockSize;
+        threadsPerBlock = (N < ctx->getMaxNumThreads() * 2) ? nextPow2((N + 1) / 2) : ctx->getMaxNumThreads();
+        auto shmSize = sizeof(VTRes) * threadsPerBlock;
+        blocksPerGrid = (N + (threadsPerBlock * 2 - 1)) / (threadsPerBlock * 2);
+        blocksPerGrid = std::min(ctx->getMaxNumBlocks(), blocksPerGrid);
+//        auto threads = (N < ctx->getMaxNumThreads() * 2) ? nextPow2((N + 1) / 2) : ctx->getMaxNumThreads();
+//        auto shmSize2 = sizeof(VTRes) * threads;
+//        auto blocks = (N + (threads * 2 - 1)) / (threads * 2);
+//        blocks = Math.min(MAX_BLOCKS, blocks);
+//ctx->logger->debug("threads={}, shmSize2={}, blocks={}", threads, shmSize2, blocks);
 
         // ToDo: get rid of this per-invocation malloc/free
-        CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&tmp_ptr), blockSize * sizeof(VTRes)));
+        CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&tmp_ptr), blocksPerGrid * sizeof(VTRes)));
 
         if (opCode == AggOpCode::SUM) {
-            agg<VTRes, SumOp<VTArg>,  IdentityOp<VTRes>><<<gridSize, blockSize, shmSize>>>(tmp_ptr,
-                    arg->getValues(&alloc_desc), N);
+            ctx->logger->debug("AggAll[{}]: {} blocks x {} threads = {} total threads for {} items. ShmSize = {}",
+                    binary_op_codes[static_cast<int>(opCode)], blocksPerGrid, threadsPerBlock, blocksPerGrid * threadsPerBlock, N, shmSize);
+            agg<VTRes, SumOp<VTArg>>
+                    <<<blocksPerGrid, threadsPerBlock, shmSize>>>(tmp_ptr, arg->getValues(&alloc_desc), N);
+            while (blocksPerGrid > 1) {
+                N = blocksPerGrid;
+                blocksPerGrid = (N + (threadsPerBlock * 2 - 1)) / (threadsPerBlock * 2);
+                ctx->logger->debug("AggAll[{}]: {} blocks x {} threads = {} total threads for {} items. ShmSize = {}",
+                                   binary_op_codes[static_cast<int>(opCode)], blocksPerGrid, threadsPerBlock, blocksPerGrid * threadsPerBlock, N, shmSize);
+
+                agg<VTRes, SumOp<VTArg>>
+                       <<<blocksPerGrid, threadsPerBlock, shmSize>>>(tmp_ptr, tmp_ptr, N);
+            }
         }
         else if (opCode == AggOpCode::MIN) {
-            agg<VTRes, MinOp<VTArg>, IdentityOp<VTRes>><<<gridSize, blockSize, shmSize>>>(tmp_ptr,
-                    arg->getValues(&alloc_desc), N);
+            ctx->logger->debug("AggAll[{}]: {} blocks x {} threads = {} total threads for {} items. ShmSize = {}",
+                               binary_op_codes[static_cast<int>(opCode)], blocksPerGrid, threadsPerBlock, blocksPerGrid * threadsPerBlock, N, shmSize);
+            agg<VTRes, MinOp<VTArg>>
+            <<<blocksPerGrid, threadsPerBlock, shmSize>>>(tmp_ptr, arg->getValues(&alloc_desc), N);
+            while (blocksPerGrid > 1) {
+                N = blocksPerGrid;
+                blocksPerGrid = (N + (threadsPerBlock * 2 - 1)) / (threadsPerBlock * 2);
+                ctx->logger->debug("AggAll[{}]: {} blocks x {} threads = {} total threads for {} items. ShmSize = {}",
+                                   binary_op_codes[static_cast<int>(opCode)], blocksPerGrid, threadsPerBlock, blocksPerGrid * threadsPerBlock, N, shmSize);
+
+                agg<VTRes, MinOp<VTArg>>
+                <<<blocksPerGrid, threadsPerBlock, shmSize>>>(tmp_ptr, tmp_ptr, N);
+            }
         }
         else if (opCode == AggOpCode::MAX) {
-            agg<VTRes, MaxOp<VTArg>, IdentityOp<VTRes>><<<gridSize, blockSize, shmSize>>>(tmp_ptr,
-                    arg->getValues(&alloc_desc), N);
+            ctx->logger->debug("AggAll[{}]: {} blocks x {} threads = {} total threads for {} items. ShmSize = {}",
+                               binary_op_codes[static_cast<int>(opCode)], blocksPerGrid, threadsPerBlock, blocksPerGrid * threadsPerBlock, N, shmSize);
+            agg<VTRes, MaxOp<VTArg>>
+            <<<blocksPerGrid, threadsPerBlock, shmSize>>>(tmp_ptr, arg->getValues(&alloc_desc), N);
+            while (blocksPerGrid > 1) {
+                N = blocksPerGrid;
+                blocksPerGrid = (N + (threadsPerBlock * 2 - 1)) / (threadsPerBlock * 2);
+                ctx->logger->debug("AggAll[{}]: {} blocks x {} threads = {} total threads for {} items. ShmSize = {}",
+                                   binary_op_codes[static_cast<int>(opCode)], blocksPerGrid, threadsPerBlock, blocksPerGrid * threadsPerBlock, N, shmSize);
+
+                agg<VTRes, MaxOp<VTArg>>
+                <<<blocksPerGrid, threadsPerBlock, shmSize>>>(tmp_ptr, tmp_ptr, N);
+            }
         }
         else {
             throw std::runtime_error(fmt::format("Unknown opCode {} for aggCol", static_cast<uint32_t>(opCode)));
         }
+
+
+        CUDAContext::debugPrintCUDABuffer(*ctx, "aggAll tmp buffer", tmp_ptr, blocksPerGrid);
         CHECK_CUDART(cudaMemcpy(reinterpret_cast<void **>(&result), tmp_ptr, sizeof(VTRes), cudaMemcpyDeviceToHost));
         CHECK_CUDART(cudaFree(tmp_ptr));
+        ctx->logger->debug("cuda full agg returning: {}", result);
 
         return result;
     }

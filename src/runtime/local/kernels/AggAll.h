@@ -140,7 +140,7 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
             
             return aggArray(
-                    arg->getValues(0),
+                    arg->getRowValues(0),
                     arg->getNumNonZeros(),
                     arg->getNumRows() * arg->getNumCols(),
                     func,
@@ -152,7 +152,7 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
         else { // The op-code is either MEAN or STDDEV or VAR.
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));            
             auto agg = aggArray(
-                arg->getValues(0),
+                arg->getRowValues(0),
                 arg->getNumNonZeros(),
                 arg->getNumRows() * arg->getNumCols(),
                 func,

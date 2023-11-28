@@ -151,6 +151,7 @@ def Daphne_SampleOp : Daphne_Op<"sample", [
 
 def Daphne_SeqOp : Daphne_Op<"seq", [
     DataTypeMat, ValueTypeFromArgs,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
     OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>,
     CompletelyDense,
     CastArgsToResType
@@ -1799,5 +1800,30 @@ def Daphne_SetCellOp : Daphne_Op<"setCell",  []> {
 
     let arguments = (ins MatrixOrU:$mat, Index:$row, Index:$col, AnyScalar:$val);
 }
+
+// ****************************************************************************
+// CodeGen operations
+// ****************************************************************************
+
+class Daphne_CodeGenOp<string name, list<Trait> traits = []> : Daphne_Op<name, traits> {
+    let summary = "Executes a runtime generated and compiled fused operator.";
+
+    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame, Unknown]>>:$inputs,
+            // TODO: both types should be SIZE, but we require `-1` for dynamic/unknown
+            Optional<DaphneContext>:$ctx);
+    let results = (outs Variadic<MatrixOrFrame>:$outputs);
+}
+
+class Daphne_CodeGenAllAggOp<string name, Type scalarType, list<Trait> traits = []> : Daphne_Op<name, traits> {
+    let summary = "Executes a runtime generated and compiled fused operator.";
+
+    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame, Unknown]>>:$inputs,
+            // TODO: both types should be SIZE, but we require `-1` for dynamic/unknown
+            Optional<DaphneContext>:$ctx);
+    let results = (outs scalarType:$res);
+}
+
+def Daphne_CodeGenOpRowwise : Daphne_CodeGenOp<"codegenRW", [ AttrSizedOperandSegments, CUDASupport ]>;
+def Daphne_CodeGenOpAllAggCellwise : Daphne_CodeGenAllAggOp<"codegenCW", NumScalar, [ AttrSizedOperandSegments, CUDASupport ]>;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNEOPS_TD

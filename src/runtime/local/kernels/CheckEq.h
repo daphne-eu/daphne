@@ -129,10 +129,10 @@ struct CheckEq<CSRMatrix<VT>> {
         if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
         
-        const VT * valuesBegLhs = lhs->getValues(0);
-        const VT * valuesEndLhs = lhs->getValues(numRows);
-        const VT * valuesBegRhs = rhs->getValues(0);
-        const VT * valuesEndRhs = rhs->getValues(numRows);
+        const VT * valuesBegLhs = lhs->getRowValues(0);
+        const VT * valuesEndLhs = lhs->getRowValues(numRows);
+        const VT * valuesBegRhs = rhs->getRowValues(0);
+        const VT * valuesEndRhs = rhs->getRowValues(numRows);
         
         const size_t nnzLhs = valuesEndLhs - valuesBegLhs;
         const size_t nnzRhs = valuesEndRhs - valuesBegRhs;
@@ -144,8 +144,8 @@ struct CheckEq<CSRMatrix<VT>> {
             if(memcmp(valuesBegLhs, valuesBegRhs, nnzLhs * sizeof(VT)))
                 return false;
         
-        const size_t * colIdxsBegLhs = lhs->getColIdxs(0);
-        const size_t * colIdxsBegRhs = rhs->getColIdxs(0);
+        const size_t * colIdxsBegLhs = lhs->getColIdxsOfRow(0);
+        const size_t * colIdxsBegRhs = rhs->getColIdxsOfRow(0);
         
         if(colIdxsBegLhs != colIdxsBegRhs)
             if(memcmp(colIdxsBegLhs, colIdxsBegRhs, nnzLhs * sizeof(size_t)))

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_CONFIG_JSONPARAMS_H
-#define SRC_PARSER_CONFIG_JSONPARAMS_H
+#pragma once
 
 #include <string>
 #include <unordered_map>
@@ -26,6 +25,7 @@
  */
 struct DaphneConfigJsonParams {
     inline static const std::string USE_CUDA_ = "use_cuda";
+    inline static const std::string USE_CUDA_CODEGEN = "use_cuda_codegen";
     inline static const std::string USE_VECTORIZED_EXEC = "use_vectorized_exec";
     inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
     inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
@@ -47,6 +47,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
     inline static const std::string EXPLAIN_OBJ_REF_MGNT = "explain_obj_ref_mgnt";
     inline static const std::string EXPLAIN_MLIR_CODEGEN = "explain_mlir_codegen";
+    inline static const std::string EXPLAIN_CUDA_CODEGEN = "explain_cuda_codegen";
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
@@ -55,9 +56,10 @@ struct DaphneConfigJsonParams {
     inline static const std::string LIBRARY_PATHS = "library_paths";
     inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
     inline static const std::string LOGGING = "logging";
-
+inline static const std::string SPARSITY_THRESHOLD = "sparsity_threshold";
     inline static const std::string JSON_PARAMS[] = {
             USE_CUDA_,
+            USE_CUDA_CODEGEN,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,
             USE_IPA_CONST_PROPA,
@@ -78,6 +80,7 @@ struct DaphneConfigJsonParams {
             EXPLAIN_VECTORIZED,
             EXPLAIN_MLIR_CODEGEN,
             EXPLAIN_OBJ_REF_MGNT,
+            EXPLAIN_CUDA_CODEGEN,
             TASK_PARTITIONING_SCHEME,
             NUMBER_OF_THREADS,
             MINIMUM_TASK_SIZE,
@@ -85,8 +88,7 @@ struct DaphneConfigJsonParams {
             LIB_DIR,
             LIBRARY_PATHS,
             DAPHNEDSL_IMPORT_PATHS,
-            LOGGING
+            LOGGING,
+            SPARSITY_THRESHOLD
     };
 };
-
-#endif

@@ -18,6 +18,8 @@
 #include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
 
+#include <mlir/Dialect/SCF/IR/SCF.h>
+
 #include <spdlog/spdlog.h>
 
 #include <string>
@@ -38,9 +40,8 @@ using namespace mlir::OpTrait;
 // ****************************************************************************
 
 Type getFrameColumnTypeByLabel(daphne::FrameType ft, Value labelVal) {
-    std::string labelStr = CompilerUtils::constantOrThrow<std::string>(
-            labelVal, "the specified label must be a constant of string type"
-    );
+    auto labelStr = CompilerUtils::constantOrThrow<std::string>(labelVal,
+            "the specified label must be a constant of string type");
 
     std::vector<std::string> * labels = ft.getLabels();
     if(labels) {
@@ -108,6 +109,10 @@ std::vector<Type> daphne::CastOp::inferTypes() {
          
         return {daphne::MatrixType::get(getContext(), resVt)};
     }
+//    else if (!argTy.isa<daphne::UnknownType>() && resTy.isa<daphne::UnknownType>()) {
+//         propagate known input type to output
+//        resTy = argTy;
+//    }
 
     // If the result type is a column with so far unknown value type, then we
     // infer the value type from the argument.
@@ -254,8 +259,8 @@ std::vector<Type> daphne::EigenOp::inferTypes() {
 }
 
 std::vector<Type> daphne::GroupJoinOp::inferTypes() {
-    daphne::FrameType lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
-    daphne::FrameType rhsFt = getRhs().getType().dyn_cast<daphne::FrameType>();
+    auto lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
+    auto rhsFt = getRhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, getLhsOn());
     Type rhsAggType = getFrameColumnTypeByLabel(rhsFt, getRhsAgg());
 
@@ -268,7 +273,7 @@ std::vector<Type> daphne::GroupJoinOp::inferTypes() {
 }
 
 std::vector<Type> daphne::SemiJoinOp::inferTypes() {
-    daphne::FrameType lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
+    auto lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, getLhsOn());
 
     MLIRContext * ctx = getContext();
@@ -279,11 +284,15 @@ std::vector<Type> daphne::SemiJoinOp::inferTypes() {
     };
 }
 
+std::vector<Type> daphne::SeqOp::inferTypes() {
+    return {daphne::MatrixType::get(getContext(), getInc().getType())};
+}
+
 std::vector<Type> daphne::GroupOp::inferTypes() {
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
 
-    daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+    auto arg = getFrame().getType().dyn_cast<daphne::FrameType>();
 
     std::vector<Type> newColumnTypes;
     std::vector<Value> aggColValues;
@@ -316,11 +325,11 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
         }
     }
 
-    // Values get collected in a easier to use Datastructure
+    // Values get collected in an easier to use data structure
     for(Value t : getAggCol()){
         aggColValues.push_back(t);
     }
-    // Function names get collected in a easier to use Datastructure
+    // Function names get collected in an easier to use data structure
     for(Attribute t: getAggFuncs()){
         GroupEnum aggFuncValue = t.dyn_cast<GroupEnumAttr>().getValue();
         aggFuncNames.push_back(stringifyGroupEnum(aggFuncValue).str());
@@ -393,7 +402,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
 
     auto p = CompilerUtils::isConstant<std::string>(getFileName());
     Builder builder(getContext());
-    if (auto resType = getRes().getType().dyn_cast<daphne::MatrixType>()) {
+    if (getRes().getType().dyn_cast<daphne::MatrixType>()) {
         // If an individual value type was specified per column
         // (fmd.isSingleValueType == false), then this silently uses the
         // type of the first column.
@@ -407,7 +416,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
             return {mlir::daphne::MatrixType::get(getContext(), daphne::UnknownType::get(getContext()))};
         }
     }
-    else if (auto resType = getRes().getType().dyn_cast<daphne::FrameType>()) {
+    else if (getRes().getType().dyn_cast<daphne::FrameType>()) {
         if (p.first) {
             FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
             std::vector<mlir::Type> cts;
@@ -446,7 +455,9 @@ std::vector<Type> daphne::SliceColOp::inferTypes() {
             ssize_t upExPos = upEx.second;
             std::vector<Type> srcColTys = srcFrmTy.getColumnTypes();
             std::vector<Type> resColTys;
-            const ssize_t srcNumCols = srcColTys.size();
+
+            // ToDo: remove this when dealing with the next ToDo below (just getting rid of a linter warning here)
+            const auto srcNumCols = static_cast<ssize_t>(srcColTys.size());
 
             // TODO Don't duplicate these checks from shape inference.
             if(loInPos < 0 || loInPos >= srcNumCols)
@@ -543,7 +554,7 @@ std::vector<Type> daphne::CondOp::inferTypes() {
 // Type inference function
 // ****************************************************************************
 
-std::vector<Type> daphne::tryInferType(Operation* op) {
+std::vector<Type> daphne::tryInferType(Operation* op, spdlog::logger* logger) {
     if(auto inferTypeOp = llvm::dyn_cast<daphne::InferTypes>(op))
         // If the operation implements the type inference interface,
         // we apply that.
@@ -558,6 +569,59 @@ std::vector<Type> daphne::tryInferType(Operation* op) {
         // has exactly one result (which is the case for most DaphneIR ops).
         return {resTy};
     }
+    else if (auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
+        // resolve whileOp's region arguments that might have been set to unknown
+        // and are not updated anymore during type inference
+
+//        op->getRegion(0).getArgument(1).setType(op->getOperand(1).getType());
+//        op->getRegion(0).getArgument(2).setType(op->getOperand(2).getType());
+//        op->getRegion(1).getArgument(1).setType(op->getOperand(2).getType());
+
+        Block & beforeBlock = whileOp.getBefore().front();
+        logger->debug("Setting types on beforeBlock");
+        Block & afterBlock = whileOp.getAfter().front();
+        // Get the ConditionOp.
+        Operation * condOp = beforeBlock.getTerminator();
+//        Operation * yieldOp = afterBlock.getTerminator();
+        if(!llvm::isa<scf::ConditionOp>(condOp))
+            throw std::runtime_error("WhileOp terminator is not a ConditionOp");
+
+        // Transfer the WhileOp's operand types to the block arguments
+        // of the before-block to fulfill constraints on the WhileOp.
+        for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
+            Type t = whileOp->getOperand(i).getType();
+//            t.dump();
+            beforeBlock.getArgument(i).setType(t);
+//            yieldOp->getResult(i).setType(t);
+        }
+
+        // Transfer the ConditionOp's operand types to the block arguments
+        // of the after-block and the results of the WhileOp to fulfill
+        // constraints on the WhileOp.
+        // Note that the first operand of the ConditionOp is skipped, since it
+        // is the condition value itself.
+        std::vector<Type> res;
+
+//        condOp->dump();
+//        yieldOp->dump();
+        logger->debug("Setting whileOp result types");
+        for (size_t i = 1; i < whileOp->getNumOperands(); ++i) {
+            auto t = whileOp->getOperand(i).getType();
+//            t.dump();
+//        for(size_t i = 1; i < condOp->getNumOperands(); i++) {
+//            Type t = condOp->getOperand(i).getType();
+//            yieldOp->dump();
+            afterBlock.getArgument(i - 1).setType(t);
+            whileOp.getResult(i - 1).setType(t);
+//            yieldOp->getResult(i-1).setType(t);
+//            auto bla = yieldOp->getNumResults();
+            res.push_back(t);
+//            res.back().dump();
+        }
+
+//        return {op->getOperand(0).getType(), op->getOperand(2).getType()};
+        return res;
+    }
     else {
         // If the operation does not implement the type inference interface
         // and has zero or more than one results, we return unknowns.
@@ -568,11 +632,11 @@ std::vector<Type> daphne::tryInferType(Operation* op) {
     }
 }
 
-void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
+void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed, spdlog::logger* logger) {
     // Try to infer the types of all results of this operation.
     std::vector<Type> types;
     try {
-        types = daphne::tryInferType(op);
+        types = daphne::tryInferType(op, logger);
     }
     catch (std::runtime_error& re) {
         spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
@@ -592,14 +656,12 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
         );
     // Set the inferred types on all results of this operation.
     for(size_t i = 0; i < numRes; i++) {
-        if (types[i].isa<daphne::UnknownType>() && !partialInferenceAllowed)
+        if (types[i].isa<daphne::UnknownType>() && !partialInferenceAllowed) {// && !llvm::dyn_cast<scf::WhileOp>(op)) {
             // TODO As soon as the run-time can handle unknown
             // data/value types, we do not need to throw here anymore.
-            throw std::runtime_error(
-                    "type inference returned an unknown result type "
-                    "for some op, but partial inference is not allowed "
-                    "at this point: " + op->getName().getStringRef().str()
-        );
+            throw std::runtime_error("type inference returned an unknown result type for some op, but partial inference"
+                    " is not allowed at this point: " + op->getName().getStringRef().str());
+        }
         op->getResult(i).setType(types[i]);
     }
 }
