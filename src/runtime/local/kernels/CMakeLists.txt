@@ -60,7 +60,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
-    )
+            ${PROJECT_SOURCE_DIR}/src/compiler/codegen/spoof-launcher/rowbins.cu
+)
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
