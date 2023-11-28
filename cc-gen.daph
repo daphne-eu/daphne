@@ -36,7 +36,11 @@ verbose = true;
 n = $n;
 e = $e;
 seed = 42;
-UT = upperTri(rand(n, n, 1.0, 1.0, 2.0*e/n^2.0, seed), false, false);
+#sp = 2.0 * e/n^2.0;
+#print(sp);
+# sparsity need to be a compile time constant atm, so hardcoding this:
+sp = 0.0000261224;
+UT = upperTri(rand(n, n, 1.0, 1.0, sp, seed), false, false);
 G = UT + t(UT);
 
 # best effort check for symmetry (not exact but fast)
