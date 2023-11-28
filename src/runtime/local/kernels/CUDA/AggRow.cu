@@ -256,7 +256,15 @@ namespace CUDA {
 
         }
         else if (opCode == AggOpCode::MAX) {
-            ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
+//            ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
+//            MaxOp<VT> op;
+            auto blocks = arg->getNumRows();
+            auto threads = 256;
+//            auto N = arg->getNumNonZeros();
+            auto shmSize = sizeof(VT) * threads;
+
+            agg_row_sparse<VT, MaxOp<VT>, IdentityOp<VT>><<<blocks, threads, shmSize>>>(res->getValues(&alloc_desc),
+                    arg->getValues(&alloc_desc), arg->getColIdxs(&alloc_desc), arg->getRowOffsets(&alloc_desc));
         }
         else if (opCode == AggOpCode::MIN) {
             ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
