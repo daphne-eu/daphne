@@ -163,7 +163,16 @@ namespace CUDA {
 //        blocks = numRows;
 
         if (opCode == AggOpCode::SUM) {
-            ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
+//            ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
+            SumOp<VT> op;
+            auto gridSize = arg->getNumRows();
+            auto blockSize = 32;
+            auto N = arg->getNumNonZeros();
+
+            ewBinMatSparseDense<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc),
+                                                         lhs->getColIdxs(&alloc_desc), lhs->getRowOffsets(&alloc_desc), lhs->getNumCols(),
+                                                         rhs->getValues(&alloc_desc), r_type, op);
+
         }
         else if (opCode == AggOpCode::MAX) {
             ctx->logger->info("ToDo: CUDA_Agg<op> Dense <-- Sparse");
