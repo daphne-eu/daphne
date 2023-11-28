@@ -112,9 +112,11 @@ template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, const DenseMatrix<ValueType> *src) :
         Matrix<ValueType>(numRows, numCols), is_view(false), rowSkip(numCols),
         bufferSize(numRows*numCols*sizeof(ValueType)), lastAppendedRowIdx(0), lastAppendedColIdx(0) {
-    if(src->values)
-        values = src->values;
-    this->clone_mdo(src);
+//    if(src->values)
+//        values = src->values;
+//    this->clone_mdo(src);
+this->values = src->values;
+this->mdo = src->mdo;
 }
 
 //template<typename ValueType>
