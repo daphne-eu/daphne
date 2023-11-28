@@ -54,7 +54,7 @@ namespace CUDA {
         auto idx = row_start + threadIdx.x;
 
 
-        if(idx < row_end) {
+        while(idx < row_end) {
             auto val = lhs_val[idx];
             auto col = lhs_cidxs[idx];
             size_t r_idx;
@@ -72,6 +72,7 @@ namespace CUDA {
 //        if(threadIdx.x < 1)
 //            printf("gridDim.x=%d lhs_col=%llu bid=%d tid=%d idx=%llu lhs_val=%4.3f col_idx=%llu row_start=%llu row_end=%llu row_nnz=%llu r_idx=%llu r_val=%4.2f\n",
 //                   gridDim.x, lhs_ncol, blockIdx.x, tid, idx, val, col, row_start, row_end, (row_end - row_start), r_idx, r_val);
+            idx += blockDim.x;
 	    }
     }
 
@@ -84,7 +85,7 @@ namespace CUDA {
         auto row_end = lhs_rptrs[blockIdx.x + 1];
         auto idx = row_start + threadIdx.x;
 
-        if(idx < row_end) {
+        while(idx < row_end) {
             auto val = lhs_val[idx];
             auto col = lhs_cidxs[idx];
 
@@ -116,6 +117,7 @@ namespace CUDA {
                 }
             }
 //            printf("bid=%d tid=%d idx=%d lhs_val=%4.3f col_idx=%llu row_start=%llu row_end=%llu row_nnz=%llu N=%llu nnz=%llu\n", blockIdx.x, tid, idx, val, col, row_start, row_end, (row_end - row_start), N, lhs_rptrs[N]);
+            idx += blockDim.x;
         }
     }
 
@@ -346,7 +348,7 @@ namespace CUDA {
             ProductOp<VTres> op;
 
             auto gridSize = lhs->getNumRows();
-            auto blockSize = 32;
+            auto blockSize = 256;
             auto N = lhs->getNumNonZeros();
 
             CHECK_CUDART(cudaMemcpy(res->getRowOffsets(&alloc_desc), lhs->getRowOffsets(&alloc_desc), (lhs->getNumRows() + 1) * sizeof(size_t), cudaMemcpyDeviceToDevice));
@@ -392,7 +394,7 @@ namespace CUDA {
 
         ProductOp<VTres> op;
         auto gridSize = lhs->getNumRows();
-        auto blockSize = 32;
+        auto blockSize = 256;
         auto N = lhs->getNumNonZeros();
 
         // calculate type of operation according to input type (row/col vector or matrix) used for index calculation
