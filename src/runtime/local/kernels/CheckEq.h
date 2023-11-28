@@ -129,9 +129,9 @@ struct CheckEq<CSRMatrix<VT>> {
             return false;
         
         const VT * valuesBegLhs = lhs->getRowValues(0);
-        const VT * valuesEndLhs = lhs->getValues(numRows);
+        const VT * valuesEndLhs = lhs->getRowValues(numRows);
         const VT * valuesBegRhs = rhs->getRowValues(0);
-        const VT * valuesEndRhs = rhs->getValues(numRows);
+        const VT * valuesEndRhs = rhs->getRowValues(numRows);
         
         const size_t nnzLhs = valuesEndLhs - valuesBegLhs;
         const size_t nnzRhs = valuesEndRhs - valuesBegRhs;

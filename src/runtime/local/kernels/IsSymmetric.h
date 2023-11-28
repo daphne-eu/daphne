@@ -110,8 +110,8 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
                 VT valA = rowA[idx];
 
                 // B references the transposed element to compare for symmetry.
-                const VT* rowB = arg->getValues(colIdxA);
-                const size_t* colIdxsB = arg->getColIdxs(colIdxA);
+                const VT* rowB = arg->getRowValues(colIdxA);
+                const size_t* colIdxsB = arg->getColIdxsOfRow(colIdxA);
                 const size_t numNonZerosB = arg->getNumNonZeros(colIdxA);
 
                 positions[colIdxA]++; // colIdxA is rowIdxB
