@@ -27,7 +27,6 @@
 
 #include "llvm/Support/TargetSelect.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
-#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
@@ -35,7 +34,6 @@
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Math/IR/Math.h"
@@ -168,11 +166,12 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
             "IR after selecting matrix representations:"));
 
 #ifdef USE_CUDA
-        if(userConfig_.use_cuda_codegen)
-            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createPatternBasedCodeGenPass(userConfig_));
-        if(userConfig_.explain_cuda_codegen)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after code generation:"));
-#endif    if (userConfig_.use_phy_op_selection) {
+    if(userConfig_.use_cuda_codegen)
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createPatternBasedCodeGenPass(userConfig_));
+    if(userConfig_.explain_cuda_codegen)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after code generation:"));
+#endif
+    if (userConfig_.use_phy_op_selection) {
         pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());
         pm.addPass(mlir::createCSEPass());
     }
@@ -360,7 +359,7 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
     return std::move(maybeEngine.get());
 }
 
-void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
+void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) const {
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR before codegen pipeline"));

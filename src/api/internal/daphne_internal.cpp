@@ -324,8 +324,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       type_adaptation,
       vectorized,
       obj_ref_mgnt,
-      mlir_codegen
-      obj_ref_mgnt,
+      mlir_codegen,
       cuda_codegen
     };
 
@@ -347,11 +346,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
             clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
-            clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
-        CommaSeparated);
+            clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen"),
             clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
             clEnumVal(cuda_codegen, "Show DaphneIR after CUDA codegen")),
-    CommaSeparated);
+            CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
             "args", cat(daphneOptions),

@@ -38,6 +38,6 @@ private:
     // Storage for lib paths needed for StringRefs
     std::vector<std::string> sharedLibRefPaths;
 
-    void buildCodegenPipeline(mlir::PassManager &);
+    void buildCodegenPipeline(mlir::PassManager &) const;
 };
 
