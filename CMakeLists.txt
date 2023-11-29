@@ -27,13 +27,6 @@ endif()
 
 project(daphne-prototype LANGUAGES CXX C)
 
-find_program(LLD_PROGRAM lld)
-if(LLD_PROGRAM)
-    message(STATUS "Using lld")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-ld=lld")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld")
-endif()
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
@@ -142,6 +135,12 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     endif()
 endif()
 
+find_program(LLD_PROGRAM lld)
+if(LLD_PROGRAM)
+    message(STATUS "Using lld")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-ld=lld")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld")
+endif()
 
 find_package(Arrow REQUIRED)
 find_package(Parquet REQUIRED)
