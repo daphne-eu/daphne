@@ -1,0 +1,23 @@
+{
+  "numRows": 200000,
+  "numCols": 4,
+  "valueType": "ui64",
+  "schema": [
+    {
+      "label": "p_partkey",
+      "valueType": "si64"
+    },
+    {
+      "label": "p_mfgr",
+      "valueType": "si64"
+    },
+	{
+      "label": "p_category",
+      "valueType": "si64"
+    },
+	{
+      "label": "p_brand",
+      "valueType": "si64"
+    }
+   ]
+}

@@ -141,9 +141,9 @@ int main() {
     //SF1
     {
         Frame* date = nullptr;
-        read(date, "../ssb-data/sf1/date.csv", nullptr);
+        read(date, "data/ssb/sf1/date.csv", nullptr);
         Frame* lineorder = nullptr;
-        read(lineorder, "../ssb-data/sf1/lineorder.csv", nullptr);
+        read(lineorder, "data/ssb/sf1/lineorder.csv", nullptr);
 
         Frame* date_d_datekey = nullptr;
         Frame* date_d_year = nullptr;
@@ -271,9 +271,9 @@ int main() {
     //SF10
     {
         Frame* date = nullptr;
-        read(date, "../ssb-data/sf10/date.csv", nullptr);
+        read(date, "data/ssb/sf10/date.csv", nullptr);
         Frame* lineorder = nullptr;
-        read(lineorder, "../ssb-data/sf10/lineorder.csv", nullptr);
+        read(lineorder, "data/ssb/sf10/lineorder.csv", nullptr);
 
         Frame* date_d_datekey = nullptr;
         Frame* date_d_year = nullptr;

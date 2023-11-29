@@ -117,6 +117,7 @@ class CSRMatrix : public Matrix<ValueType> {
         values = src->values;
         colIdxs = src->colIdxs;
         rowOffsets = std::shared_ptr<size_t>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
+        this->clone_mdo(src);
     }
     
     virtual ~CSRMatrix() = default;

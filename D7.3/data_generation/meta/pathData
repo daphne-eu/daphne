@@ -1,0 +1,23 @@
+{
+  "numRows": 2000,
+  "numCols": 4,
+  "valueType": "ui64",
+  "schema": [
+    {
+      "label": "s_suppkey",
+      "valueType": "si64"
+    },
+    {
+      "label": "s_city",
+      "valueType": "si64"
+    },
+	{
+      "label": "s_nation",
+      "valueType": "si64"
+    },
+	{
+      "label": "s_region",
+      "valueType": "si64"
+    }
+  ]
+}

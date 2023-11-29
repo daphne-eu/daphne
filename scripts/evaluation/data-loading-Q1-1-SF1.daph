@@ -1,6 +1,6 @@
-lineorder = readFrame("../ssb-data/sf1/lineorder.csv");
+lineorder = readFrame("data/ssb/sf1/lineorder.csv");
 
-date = readFrame("../ssb-data/sf1/date.csv");
+date = readFrame("data/ssb/sf1/date.csv");
 
 registerView("lineorder", lineorder);
 

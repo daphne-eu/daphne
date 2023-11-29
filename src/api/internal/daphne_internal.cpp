@@ -347,9 +347,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
             clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
             clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
             clEnumVal(cuda_codegen, "Show DaphneIR after CUDA codegen")),
-            CommaSeparated);
+             CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1(
             "args", cat(daphneOptions),

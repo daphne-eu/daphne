@@ -1,0 +1,43 @@
+{
+  "numRows": 6001171,
+  "numCols": 9,
+  "valueType": "ui64",
+  "schema": [
+    {
+      "label": "lo_custkey",
+      "valueType": "si64"
+    },
+    {
+      "label": "lo_partkey",
+      "valueType": "si64"
+    },
+    {
+      "label": "lo_suppkey",
+      "valueType": "si64"
+    },
+    {
+      "label": "lo_orderdate",
+      "valueType": "si64"
+    },
+    {
+      "label": "lo_quantity",
+      "valueType": "si64"
+    },
+    {
+      "label": "lo_extendedprice",
+      "valueType": "si64"
+    },
+    {
+      "label": "lo_discount",
+      "valueType": "si64"
+    },
+    {
+      "label": "lo_revenue",
+      "valueType": "si64"
+    },
+    {
+      "label": "lo_supplycost",
+      "valueType": "si64"
+    }
+  ]
+}

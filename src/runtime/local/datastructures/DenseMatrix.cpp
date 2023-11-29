@@ -105,9 +105,9 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
         alloc_shared_values(false, src->values, offset());
         bufferSize = numRows*rowSkip*sizeof(ValueType);
     }
-//    this->clone_mdo(src);
+    this->clone_mdo(src);
 //ToDo: temporary fix to directly assign mdo
-    this->mdo = src->mdo;
+//    this->mdo = src->mdo;
 
 }
 
@@ -115,11 +115,11 @@ template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, const DenseMatrix<ValueType> *src) :
         Matrix<ValueType>(numRows, numCols), is_view(false), rowSkip(numCols),
         bufferSize(numRows*numCols*sizeof(ValueType)), lastAppendedRowIdx(0), lastAppendedColIdx(0) {
-//    if(src->values)
-//        values = src->values;
-//    this->clone_mdo(src);
-this->values = src->values;
-this->mdo = src->mdo;
+    if(src->values)
+        values = src->values;
+    this->clone_mdo(src);
+//this->values = src->values;
+//this->mdo = src->mdo;
 }
 
 //template<typename ValueType>

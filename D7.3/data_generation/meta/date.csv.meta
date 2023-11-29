@@ -1,0 +1,27 @@
+{
+  "numRows": 2556,
+  "numCols": 5,
+  "valueType": "ui64",
+  "schema": [
+    {
+      "label": "d_datekey",
+      "valueType": "si64"
+    },
+    {
+      "label": "d_year",
+      "valueType": "si64"
+    },
+    {
+      "label": "d_yearmonthnum",
+      "valueType": "si64"
+    },
+    {
+      "label": "d_yearmonth",
+      "valueType": "si64"
+    },
+    {
+      "label": "d_weeknuminyear",
+      "valueType": "si64"
+    }
+  ]
+}

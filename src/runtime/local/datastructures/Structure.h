@@ -54,12 +54,19 @@ protected:
             auto placement = src->mdo->getDataPlacementByType(static_cast<ALLOCATION_TYPE>(i));
 
 //            auto new_dp = this->mdo->addDataPlacement(placement->allocation.get());
-            throw std::runtime_error("ToDo: clone_mdo");
+//            throw std::runtime_error("ToDo: clone_mdo");
 
-            std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
-            DataPlacement* new_dp = this->mdo->addDataPlacement(allocations);
-            if(src->mdo->isLatestVersion(placement->getID()))
-                this->mdo->addLatest(new_dp->getID());
+            if(placement) {
+                std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+
+                for(auto a = 0u; a < placement->getNumAllocations(); a++) {
+                    auto old_alloc = placement->getAllocation(a);
+                    allocations.emplace_back(std::move(old_alloc->clone()));
+                }
+                auto new_placement = this->mdo->addDataPlacement(allocations);
+                if (src->mdo->isLatestVersion(placement->getID()))
+                    this->mdo->addLatest(new_placement->getID());
+            }
 //            for(auto it = placements->begin(); it != placements->end(); it++) {
 //                auto src_alloc = it->get()->allocation.get();
 //                auto src_range = it->get()->range.get();

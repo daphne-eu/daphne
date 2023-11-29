@@ -1,0 +1,38 @@
+{
+    "customer": [
+        "c_custkey",
+        "c_city",
+        "c_nation",
+        "c_region"
+    ],
+    "date": [
+        "d_datekey",
+        "d_year",
+        "d_yearmonthnum",
+        "d_yearmonth",
+        "d_weeknuminyear"
+    ],
+    "lineorder": [
+        "lo_custkey",
+        "lo_partkey",
+        "lo_suppkey",
+        "lo_orderdate",
+        "lo_quantity",
+        "lo_extendedprice",
+        "lo_discount",
+        "lo_revenue",
+        "lo_supplycost"
+    ],
+    "part": [
+        "p_partkey",
+        "p_mfgr",
+        "p_category",
+        "p_brand"
+    ],
+    "supplier": [
+        "s_suppkey",
+        "s_city",
+        "s_nation",
+        "s_region"
+    ]
+}

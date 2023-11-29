@@ -1,0 +1,6 @@
+language: cpp
+sudo: false
+compiler:
+  - clang
+
+script: make && ./dbgen -s 1 -T c

@@ -181,7 +181,6 @@ void VectorizeComputationsPass::runOnOperation()
     auto func = getOperation();
     // TODO: fuse pipelines that have the matching inputs, even if no output of the one pipeline is used by the other.
     //  This requires multi-returns in way more cases, which is not implemented yet.
-std::cout << "vect op pass: " << func->getName().getStringRef().str() << std::endl;
     // Find vectorizable operations and their inputs of vectorizable operations
     std::vector<daphne::Vectorizable> vectOps;
     func->walk([&](daphne::Vectorizable op)

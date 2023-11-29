@@ -264,7 +264,15 @@ struct PatternBasedCodeGenPass : public PassWrapper<PatternBasedCodeGenPass, Ope
         logger = spdlog::get("compiler::cuda");
         ccOpSequenceRW = std::array<Operation*, 4>({daphne::TransposeOp(), daphne::EwMulOp(), daphne::RowAggMaxOp(), daphne::EwMaxOp()});
         ccOpSequenceCW = std::array<Operation*, 2>({daphne::EwNegOp(), daphne::AllAggSumOp()});
-        codegenContext = reinterpret_cast<SpoofCUDAContext*>(SpoofCUDAContext::initialize_cuda(0, "src/compiler/codegen"));
+        std::string ccg_resource_dir;
+        auto daphne_root = std::getenv("DAPHNE_ROOT");
+        if(daphne_root)
+            ccg_resource_dir = std::string(daphne_root) + std::string("/src/compiler/codegen");
+        else
+            ccg_resource_dir = std::string("src/compiler/codegen");
+
+        logger->debug("ccg resoruce dir: {}", ccg_resource_dir);
+        codegenContext = reinterpret_cast<SpoofCUDAContext*>(SpoofCUDAContext::initialize_cuda(0, ccg_resource_dir.c_str()));
         cfg.codegen_ctx_ptr = reinterpret_cast<uint64_t>(codegenContext);
     }
     
