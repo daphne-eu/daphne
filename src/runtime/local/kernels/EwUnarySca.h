@@ -171,7 +171,3 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::ROUND, round(arg));
 #undef MAKE_EW_UNARY_SCA
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H
-
-
-// TODO
-// Add domain check to relevant funcs (seems to be faster than catching nan)

@@ -30,7 +30,7 @@
 #define VALUE_TYPES SI_VALUE_TYPES, FP_VALUE_TYPES
 
 template<UnaryOpCode opCode, typename VT>
-void checkEwUnarySca(VT arg, VT exp) {
+void checkEwUnarySca(const VT arg, const VT exp) {
     CHECK(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr) == exp);
     CHECK(ewUnarySca<VT, VT>(opCode, arg, nullptr) == exp);
 }
@@ -38,19 +38,19 @@ void checkEwUnarySca(VT arg, VT exp) {
 // decimals below are implicitely truncated if VALUE_TYPES is integer
 // generally avoid this for input arguments
 template<UnaryOpCode opCode, typename VT>
-void checkEwUnaryScaApprox(VT arg, VT exp) {
+void checkEwUnaryScaApprox(const VT arg, const VT exp) {
     CHECK(Approx(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr)).epsilon(1e-2) == exp);
     CHECK(Approx(ewUnarySca<VT, VT>(opCode, arg, nullptr)).epsilon(1e-2) == exp);
 }
 
 template<UnaryOpCode opCode, typename VT>
-void checkEwUnaryScaThrow(VT arg) {
+void checkEwUnaryScaThrow(const VT arg) {
     REQUIRE_THROWS_AS((EwUnarySca<opCode, VT, VT>::apply(arg, nullptr)), std::domain_error);
     REQUIRE_THROWS_AS((ewUnarySca<VT, VT>(opCode, arg, nullptr)), std::domain_error);
 }
 
 template<UnaryOpCode opCode, typename VT>
-void checkEwUnaryScaNaN(VT arg) {
+void checkEwUnaryScaNaN(const VT arg) {
     VT res1 = EwUnarySca<opCode, VT, VT>::apply(arg, nullptr);
     VT res2 = ewUnarySca<VT, VT>(opCode, arg, nullptr);
     CHECK(res1 != res1);
