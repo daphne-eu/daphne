@@ -24,7 +24,7 @@ dc.fill(1, 1, 1).sign().print().compute()
 dc.fill(0, 1, 1).sign().print().compute()
 dc.fill(-3.3, 1, 1).sign().print().compute()
 
-m = dc.fill(1.23, 1, 1)
+m = dc.fill(0.99, 1, 1)
 
 m.exp().print().compute()
 m.ln().print().compute()

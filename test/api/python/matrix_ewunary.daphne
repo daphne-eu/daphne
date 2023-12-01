@@ -20,7 +20,7 @@ print(sign([1]));
 print(sign([0]));
 print(sign([-3.3]));
 
-m = [1.23];
+m = [0.99];
 
 print(exp(m));
 print(ln(m));

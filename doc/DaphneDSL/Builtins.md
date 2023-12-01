@@ -129,8 +129,8 @@ The following built-in functions all follow the same scheme:
 | **`asin`** | arc sine  (inverse of sine) |
 | **`acos`** | arc cosine (inverse of cosine) |
 | **`atan`** | arc tangetnt (inverse of tangent) |
-| **`sinh`** | hyperbolic sine ($\frac{1}{2} \, (e^\text{arg} - e^{- \text{arg}})$) |
-| **`cosh`** | hyperbolic cosine ($\frac{1}{2} \, (e^\text{arg} + e^{- \text{arg}})$) |
+| **`sinh`** | hyperbolic sine ($\frac{1}{2} (e^\text{arg} - e^{- \text{arg}})$) |
+| **`cosh`** | hyperbolic cosine ($\frac{1}{2} (e^\text{arg} + e^{- \text{arg}})$) |
 | **`tanh`** | hyperbolic tangent ($\frac{\text{sinh arg}}{\text{cosh arg}}$) |
 
 ### Rounding

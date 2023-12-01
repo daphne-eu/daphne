@@ -44,6 +44,12 @@ void checkEwUnaryScaApprox(VT arg, VT exp) {
 }
 
 template<UnaryOpCode opCode, typename VT>
+void checkEwUnaryScaThrow(VT arg) {
+    REQUIRE_THROWS_AS((EwUnarySca<opCode, VT, VT>::apply(arg, nullptr)), std::domain_error);
+    REQUIRE_THROWS_AS((ewUnarySca<VT, VT>(opCode, arg, nullptr)), std::domain_error);
+}
+
+template<UnaryOpCode opCode, typename VT>
 void checkEwUnaryScaNaN(VT arg) {
     VT res1 = EwUnarySca<opCode, VT, VT>::apply(arg, nullptr);
     VT res2 = ewUnarySca<VT, VT>(opCode, arg, nullptr);
@@ -89,6 +95,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::SQRT, VT>(0, 0);
     checkEwUnarySca<UnaryOpCode::SQRT, VT>(1, 1);
     checkEwUnarySca<UnaryOpCode::SQRT, VT>(16, 4);
+    checkEwUnaryScaThrow<UnaryOpCode::SQRT, VT>(-1);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("exp"), TAG_KERNELS, VALUE_TYPES) {
@@ -103,6 +110,12 @@ TEMPLATE_TEST_CASE(TEST_NAME("ln"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::LN, VT>(1, 0);
     checkEwUnaryScaApprox<UnaryOpCode::LN, VT>(3, 1.098);
     checkEwUnaryScaApprox<UnaryOpCode::LN, VT>(8, 2.079);
+    checkEwUnaryScaThrow<UnaryOpCode::LN, VT>(-1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("ln, floating-point-specific"), TAG_KERNELS, FP_VALUE_TYPES) {
+    using VT = TestType;
+    checkEwUnarySca<UnaryOpCode::LN, VT>(0, -std::numeric_limits<VT>::infinity());
 }
 
 // ****************************************************************************
@@ -135,6 +148,8 @@ TEMPLATE_TEST_CASE(TEST_NAME("asin"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::ASIN, VT>(0, 0);
     checkEwUnaryScaApprox<UnaryOpCode::ASIN, VT>(1, 1.57);
     checkEwUnaryScaApprox<UnaryOpCode::ASIN, VT>(-1, -1.57);
+    checkEwUnaryScaThrow<UnaryOpCode::ASIN, VT>(-2);
+    checkEwUnaryScaThrow<UnaryOpCode::ASIN, VT>(2);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("acos"), TAG_KERNELS, VALUE_TYPES) {
@@ -142,6 +157,8 @@ TEMPLATE_TEST_CASE(TEST_NAME("acos"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::ACOS, VT>(1, 0);
     checkEwUnaryScaApprox<UnaryOpCode::ACOS, VT>(0, 1.57);
     checkEwUnaryScaApprox<UnaryOpCode::ACOS, VT>(-1, 3.141);
+    checkEwUnaryScaThrow<UnaryOpCode::ACOS, VT>(-2);
+    checkEwUnaryScaThrow<UnaryOpCode::ACOS, VT>(2);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("atan"), TAG_KERNELS, VALUE_TYPES) {
