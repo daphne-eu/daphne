@@ -49,6 +49,14 @@ void checkEwUnaryMatApprox(UnaryOpCode opCode, const DTArg * arg, const DTRes * 
     DataObjectFactory::destroy(res);
 }
 
+template<typename DTArg>
+void checkEwUnaryMatThrow(UnaryOpCode opCode, const DTArg * arg) {
+    DTArg * res = nullptr;
+    REQUIRE_THROWS_AS((ewUnaryMat<DTArg, DTArg>(opCode, res, arg, nullptr)), std::domain_error);
+    REQUIRE_THROWS_AS((ewUnaryMat<DTArg, DTArg>(opCode, res, arg, nullptr)), std::domain_error);
+    DataObjectFactory::destroy(res);
+}
+
 // ****************************************************************************
 // Arithmetic/general math
 // ****************************************************************************
@@ -133,6 +141,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     DataObjectFactory::destroy(arg, dense_exp);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+
+    auto arg = genGivenVals<DT>(3, {
+        0,
+        1,
+        -1,
+    });
+
+    checkEwUnaryMatThrow(UnaryOpCode::SQRT, arg);
+
+    DataObjectFactory::destroy(arg);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("exp"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
@@ -173,6 +195,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln"), TAG_KERNELS, (DATA_TYPES), (VALUE_TY
     checkEwUnaryMatApprox(UnaryOpCode::LN, arg, dense_exp);
 
     DataObjectFactory::destroy(arg, dense_exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+
+    auto arg = genGivenVals<DT>(3, {
+        0,
+        1,
+        -1,
+    });
+
+    checkEwUnaryMatThrow(UnaryOpCode::LN, arg);
+
+    DataObjectFactory::destroy(arg);
 }
 
 // ****************************************************************************
@@ -263,6 +299,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     DataObjectFactory::destroy(arg, dense_exp);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+
+    auto arg = genGivenVals<DT>(3, {
+        0,
+        1,
+        -2,
+    });
+
+    checkEwUnaryMatThrow(UnaryOpCode::ASIN, arg);
+
+    DataObjectFactory::destroy(arg);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
@@ -282,6 +332,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     checkEwUnaryMatApprox(UnaryOpCode::ACOS, arg, dense_exp);
 
     DataObjectFactory::destroy(arg, dense_exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+
+    auto arg = genGivenVals<DT>(3, {
+        0,
+        1,
+        -2,
+    });
+
+    checkEwUnaryMatThrow(UnaryOpCode::ACOS, arg);
+
+    DataObjectFactory::destroy(arg);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("atan"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
