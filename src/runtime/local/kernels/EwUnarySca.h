@@ -145,10 +145,10 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
 MAKE_EW_UNARY_SCA(UnaryOpCode::ABS, abs(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::SIGN, (arg == 0) ? 0 : ((arg < 0) ? -1 : ((arg > 0) ? 1 : std::numeric_limits<TRes>::quiet_NaN())));
 MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR(UnaryOpCode::SQRT, sqrt(arg),
-                                    -0.0, "SQRT with domain [-0, inf)")
+                                    -0.0, "SQRT with domain [-0, inf]")
 MAKE_EW_UNARY_SCA(UnaryOpCode::EXP, exp(arg));
 MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR(UnaryOpCode::LN, log(arg),
-                                    -0.0, "LN with domain [-0, inf))");     // -0 maps to -inf
+                                    -0.0, "LN with domain [-0, inf]");     // -0 maps to -inf
 // Trigonometric/Hyperbolic functions
 MAKE_EW_UNARY_SCA(UnaryOpCode::SIN, sin(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::COS, cos(arg));
