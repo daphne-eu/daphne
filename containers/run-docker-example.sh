@@ -39,7 +39,8 @@ GID=$(id -g)
 # some environment setup
 CUDA_PATH=/usr/local/cuda
 LD_LIBRARY_PATH=$CUDA_PATH/lib64:$DAPHNE_ROOT/lib:/usr/local/lib:$LD_LIBRARY_PATH
-PATH=$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
+# temporarily adding this NSight Systems path
+PATH=/opt/nvidia/nsight-compute/2023.2.2/host/target-linux-x64:$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
 
 # uncomment the appropriate to pass GPU devices to the container (goes hand in hand with DOCKER_TAG)
 DEVICE_FLAGS=""

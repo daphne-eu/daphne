@@ -20,7 +20,7 @@
 
 ARG BASE_IMAGE=ubuntu:20.04
 #ARG FINAL_BASE_IMAGE=ubuntu:20.04
-ARG CMAKE_VERSION=3.26.4
+ARG CMAKE_VERSION=3.27.9
 ARG TIMESTAMP=0
 
 #FROM ${BASE_IMAGE} as base
@@ -75,6 +75,7 @@ RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recom
     build-essential clang gfortran lld llvm ninja-build openjdk-11-jdk-headless pkg-config python3-numpy python3-pandas \
     vim nano rsync sudo iputils-ping virtualenv openssh-server iproute2 git htop gdb lldb lld gpg-agent net-tools \
     software-properties-common ca-certificates file unzip wget tar zstd \
+    ccache python3-pip python3-networkx python3-dev graphviz-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=daphneeu/daphne-deps /usr/local/bin/ /usr/local/bin/
 COPY --from=daphneeu/daphne-deps /usr/local/include/ /usr/local/include/

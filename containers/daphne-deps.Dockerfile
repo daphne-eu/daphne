@@ -21,7 +21,7 @@
 
 # defaults:
 ARG BASE_IMAGE=ubuntu:20.04
-ARG CMAKE_VERSION=3.26.4
+ARG CMAKE_VERSION=3.27.9
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG DEBCONF_NOWARNINGS="yes"
 ARG DAPHNE_DIR=/daphne
@@ -86,4 +86,5 @@ RUN ldconfig
 
 FROM daphneeu/daphne-deps as github-action
 RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recommends install  \
-    moreutils python3-numpy python3-pandas && apt-get clean && rm -rf /var/lib/apt/lists/*
+    moreutils python3-numpy python3-pandas ccache python3-pip python3-networkx python3-dev graphviz-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
