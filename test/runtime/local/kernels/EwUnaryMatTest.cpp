@@ -53,7 +53,6 @@ template<typename DTArg>
 void checkEwUnaryMatThrow(UnaryOpCode opCode, const DTArg * arg) {
     DTArg * res = nullptr;
     REQUIRE_THROWS_AS((ewUnaryMat<DTArg, DTArg>(opCode, res, arg, nullptr)), std::domain_error);
-    REQUIRE_THROWS_AS((ewUnaryMat<DTArg, DTArg>(opCode, res, arg, nullptr)), std::domain_error);
     DataObjectFactory::destroy(res);
 }
 
