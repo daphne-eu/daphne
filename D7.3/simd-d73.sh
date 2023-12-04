@@ -14,9 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cd daphne
-
-RUN_IN_CONTAINER=containers/run-docker-example.sh
-
-echo "Running GPU example"
-$RUN_IN_CONTAINER D7.3/gpu-d73.sh
+# daphne directory inside the container
+export DAPHNE_ROOT=/daphne
+cd $DAPHNE_ROOT
+./bin/daphne --columnar --vector_extension=SCALAR $DAPHNE_ROOT/scripts/evaluation/ssb-Q1-1-SF1.daph
+cd -

@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export DAPHNE_ROOT=$PWD/daphne
-cd $DAPHNE_ROOT
-./bin/daphne --columnar --vector_extension=SCALAR $DAPHNE_ROOT/scripts/evaluation/ssb-Q1-1-SF1.daph
-cd -
+cd daphne
+
+RUN_IN_CONTAINER=containers/run-docker-example.sh
+
+echo "Running SIMD example"
+$RUN_IN_CONTAINER D7.3/simd-d73.sh

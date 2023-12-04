@@ -14,8 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cd daphne
+
+RUN_IN_CONTAINER=containers/run-docker-example.sh
+
 echo "Running SIMD example"
-daphne/D7.3/run-simd.sh
+$RUN_IN_CONTAINER D7.3/simd-d73.sh
 
 echo "Running GPU example"
-daphne/D7.3/run-gpu.sh
+$RUN_IN_CONTAINER  D7.3/gpu-d73.sh

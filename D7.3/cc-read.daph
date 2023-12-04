@@ -80,5 +80,7 @@ if(verbose) {
 // Result output.
 //print(c);
 write(c, $outFile);
-if(verbose)
-    print("Results written to cc-out.csv");
+if(verbose) {
+    print("Results written to ",0,0);
+    print($outFile);
+}

@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cd daphne
-
-RUN_IN_CONTAINER=containers/run-docker-example.sh
-
-echo "Running GPU example"
-$RUN_IN_CONTAINER D7.3/gpu-d73.sh
+cd D7.3/data_generation
+./data_gen.sh -sf 1
+cd -

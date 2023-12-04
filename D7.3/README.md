@@ -13,6 +13,11 @@ Runtime as described in [3].
 Alternatively, the expert user can compile and run from the provided DAPHNE sources if a supported environment as 
 described in our [getting started documentation](../doc/GettingStarted.md). 
 
+## Getting Started
+
+1. Run the provided ``` setup.sh ```. It will pull the daphne-dev container from Docker Hub and extract/generate the necessary data for the experiments.
+2. Running ``` run.sh ``` will run the SIMD and GPU examples described in the D7.3 PDF in the downloaded Docker container.
+
 ## Folder Structure
 
 - daphne: Subdirectory containing a snapshot of the DAPHNE repository from branch D7.3 at githash  
@@ -23,6 +28,7 @@ described in our [getting started documentation](../doc/GettingStarted.md).
 - run.sh: Run SIMD and GPU example
 - run-simd.sh: Run the SIMD example
 - run-gpu.sh: Run the GPU example
+
 
 
 [1] https://hub.docker.com/u/daphneeu.

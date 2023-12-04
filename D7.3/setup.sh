@@ -15,14 +15,17 @@
 # limitations under the License.
 
 echo "Fetching DAPHNE container"
-#docker pull daphneeu/daphne-dev:latest_X86-64_CUDA
+docker pull daphneeu/daphne-dev:latest_X86-64_CUDA
 
-export DAPHNE_ROOT=$PWD/daphne
+# daphne directory inside the container
+export DAPHNE_ROOT=/daphne
+
+cd daphne
+RUN_IN_CONTAINER=containers/run-docker-example.sh
 
 echo "Deflating amazon co-purchasing dataset"
-zstd -f -d $DAPHNE_ROOT/data/amazon/amazon.mtx.zst
+$RUN_IN_CONTAINER zstd -f -d $DAPHNE_ROOT/data/amazon/amazon.mtx.zst
 
 echo "Preparing SSB data"
-cd $DAPHNE_ROOT/D7.3/data_generation/
-./data_gen.sh -sf 1
+$RUN_IN_CONTAINER D7.3/run-data-gen.sh
 cd -
