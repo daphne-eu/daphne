@@ -80,7 +80,7 @@ your command line.
 
 
 ## Building a Docker container
-To build the DAPHNE containers, use the provided [``containers/build-containers.sh``](containers/build-containers.sh) 
+To build the DAPHNE containers, use the provided [``containers/build-containers.sh``](/containers/build-containers.sh) 
 script contained in this directory.
 Edit the script to customize the repository and branch where DAPHNE is fetched from or to comment out one build command
 (e.g., if you don't want/need the interactive container).
