@@ -120,7 +120,7 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
         inline static TRes apply(TArg arg, DCTX(ctx)) { \
             if (lowerBound > arg) { \
                 std::ostringstream errMsg; \
-                errMsg << "invalid argumend '" << arg << "' passed to unary func " << strFuncDomain; \
+                errMsg << "invalid argument '" << arg << "' passed to unary func " << strFuncDomain; \
                 throw std::domain_error(errMsg.str()); \
             } \
             return expr; \
@@ -133,7 +133,7 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
         inline static TRes apply(TArg arg, DCTX(ctx)) { \
             if (lowerBound > arg || arg > upperBound) { \
                 std::ostringstream errMsg; \
-                errMsg << "invalid argumend '" << arg << "' passed to unary func " << strFuncDomain; \
+                errMsg << "invalid argument '" << arg << "' passed to unary func " << strFuncDomain; \
                 throw std::domain_error(errMsg.str()); \
             } \
             return expr; \

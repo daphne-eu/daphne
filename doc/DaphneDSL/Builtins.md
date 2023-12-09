@@ -128,7 +128,7 @@ The following built-in functions all follow the same scheme:
 | **`tan`** | tangent |
 | **`asin`** | arc sine  (inverse of sine) |
 | **`acos`** | arc cosine (inverse of cosine) |
-| **`atan`** | arc tangetnt (inverse of tangent) |
+| **`atan`** | arc tangent (inverse of tangent) |
 | **`sinh`** | hyperbolic sine ($\frac{e^\text{arg}-e^\text{ - arg}}{2}$) |
 | **`cosh`** | hyperbolic cosine ($\frac{e^\text{arg}+e^\text{ - arg}}{2}$) |
 | **`tanh`** | hyperbolic tangent ($\frac{\text{sinh arg}}{\text{cosh arg}}$) |
