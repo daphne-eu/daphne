@@ -21,11 +21,22 @@
 
 enum class UnaryOpCode {
     // Arithmetic/general math.
+    ABS,
     SIGN, // signum (-1, 0, +1)
     SQRT,
     EXP,
+    LN,
+    // Trigonometric/Hyperbolic functions
+    SIN,
+    COS,
+    TAN,
+    ASIN,
+    ACOS,
+    ATAN,
+    SINH,
+    COSH,
+    TANH,
     // Rounding.
-    ABS,
     FLOOR,
     CEIL,
     ROUND,
