@@ -24,6 +24,7 @@
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
+#include <sstream>
 #include <stdexcept>
 
 #include <cstddef>
@@ -63,10 +64,11 @@ template<typename VTSel>
 struct ExtractRow<Frame, Frame, VTSel> {
     static void apply(Frame *& res, const Frame * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
         if(sel->getNumCols() != 1)
-            throw std::runtime_error("sel must be a single-column matrix");
+            throw std::runtime_error("parameter rowIdxs must be a column matrix");
         
         const size_t numRowsSel = sel->getNumRows();
         const size_t numCols = arg->getNumCols();
+        const size_t numRowsArg = arg->getNumRows();
         const ValueTypeCode * schema = arg->getSchema();
         
 #if EXTRACTROW_FRAME_MODE == 0
@@ -97,6 +99,11 @@ struct ExtractRow<Frame, Frame, VTSel> {
         // Actual filtering.
         for(size_t r = 0; r < numRowsSel; r++) {
             const size_t pos = valuesSel[r];
+            if (valuesSel[r] < 0 || numRowsArg <= pos) {
+                std::ostringstream errMsg;
+                errMsg << "invalid argument '" << valuesSel[r] << "' passed to ExtractRow on frame with row boundaries '[0, " << numRowsArg << "]'";
+                throw std::out_of_range(errMsg.str());
+            }
             for(size_t c = 0; c < numCols; c++) {
                 // We always copy in units of 8 bytes (uint64_t). If the
                 // actual element size is lower, the superfluous bytes will
@@ -134,36 +141,41 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             throw std::runtime_error("arg cannot be null");
         }
         if(sel== nullptr){
-            throw std::runtime_error("sel cannot be null");
+            throw std::runtime_error("rowIdxs cannot be null");
         }
         if(sel->getNumCols() != 1){
-            throw std::runtime_error("sel must be a single-column matrix");
+            throw std::runtime_error("parameter rowIdxs must be a column matrix");
         }
-        const size_t numRowsInSel = sel->getNumRows();
-        const size_t numInputRows = arg->getNumRows();
-        const size_t numInputCols = arg->getNumCols();   
+        const size_t numRowsSel = sel->getNumRows();
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
         if(res ==nullptr){
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsInSel, numInputCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsSel, numCols, false);
         }
-        else if(res->getNumRows() != numRowsInSel || res->getNumCols() != numInputCols){
+        else if(res->getNumRows() != numRowsSel || res->getNumCols() != numCols){
             // TODO what is the best strategy: throw a warning or just re-allocate?
             throw std::runtime_error("res is not null, but it has wrong numCols and numRows");
         }
         
         //Main Logic
         VT * allUpdatedValues = res->getValues();
-        const VTSel * rowsInSel = sel->getValues();
-        for(size_t r = 0; r < numRowsInSel; r++){
-            const VTSel valSelectedRow = rowsInSel[r];  // only one column
+        const VTSel * valuesSel = sel->getValues();
+        for(size_t r = 0; r < numRowsSel; r++){
+            const VTSel valSelectedRow = valuesSel[r];  // only one column
             // TODO For performance reasons, we might skip such checks or make
             // them optional somehow, but it is okay for now.
-            if(std::isnan(valSelectedRow) || valSelectedRow < 0 || static_cast<size_t>(valSelectedRow) > numInputRows-1){
-                throw std::runtime_error("sel cannot have NaN nor negative nor value that is greater than numRows in arg");
-            }  
+            if(std::isnan(valSelectedRow)){
+                throw std::runtime_error("rowIdxs cannot have NaN");
+            } 
+            else if (valSelectedRow < 0 || numRowsArg <= static_cast<const size_t>(valSelectedRow)) {
+                std::ostringstream errMsg;
+                errMsg << "invalid argument '" << valSelectedRow << "' passed to ExtractRow on dense matrix with row boundaries '[0, " << numRowsArg << "]'";
+                throw std::out_of_range(errMsg.str());
+            }
             else
             {
                 const VT * allValues = arg->getValues()+valSelectedRow*arg->getRowSkip();
-                for(size_t c = 0; c < numInputCols; c++){
+                for(size_t c = 0; c < numCols; c++){
                     allUpdatedValues[c]=allValues[c];   
                 }   
                 allUpdatedValues += res->getRowSkip();                     

@@ -24,6 +24,7 @@
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
+#include <sstream>
 #include <stdexcept>
 
 #include <cstddef>
@@ -33,32 +34,42 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
+template<class DTRes, class DTArg, typename VTSel>
 struct SliceCol {
-    static void apply(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void sliceCol(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-    SliceCol<DTRes, DTArg>::apply(res, arg, lowerIncl, upperExcl, ctx);
+template<class DTRes, class DTArg, typename VTSel>
+void sliceCol(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
+    SliceCol<DTRes, DTArg, VTSel>::apply(res, arg, lowerIncl, upperExcl, ctx);
 }
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
+// verifies 0 <= lowerIncl <= upperExcl <= numColsArg
+#define CHECK_BOUNDARY(lowerIncl, upperExcl, DT) \
+    const size_t numColsArg = arg->getNumCols(); \
+    if (lowerIncl < 0 || upperExcl < lowerIncl || numColsArg < static_cast<size_t>(upperExcl)) { \
+            std::ostringstream errMsg; \
+            errMsg << "invalid arguments '[..., [" << lowerIncl << "," << upperExcl << "]]' passed to SliceCol on " << DT << " with column boundaries '[0, " << numColsArg << "]'"; \
+            throw std::out_of_range(errMsg.str()); \
+        }
+
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct SliceCol<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-        res = arg->sliceCol(lowerIncl, upperExcl);
+template<typename VTArg, typename VTSel>
+struct SliceCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
+    static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
+        CHECK_BOUNDARY(lowerIncl, upperExcl, "dense matrix");
+        res = arg->sliceCol(static_cast<const size_t>(lowerIncl), static_cast<const size_t>(upperExcl));
     }        
 };
 
@@ -66,9 +77,13 @@ struct SliceCol<DenseMatrix<VT>, DenseMatrix<VT>> {
 // Frame <- Frame
 // ----------------------------------------------------------------------------
 
-template <> struct SliceCol<Frame, Frame> {
-    static void apply(Frame *& res, const Frame * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-        res = arg->sliceCol(lowerIncl, upperExcl);
+template <typename VTSel>
+struct SliceCol<Frame, Frame, VTSel> {
+    static void apply(Frame *& res, const Frame * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
+        CHECK_BOUNDARY(lowerIncl, upperExcl, "frame");
+        res = arg->sliceCol(static_cast<const size_t>(lowerIncl), static_cast<const size_t>(upperExcl));
     }        
 };
+
+#undef CHECK_BOUNDARY
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SLICECOL_H

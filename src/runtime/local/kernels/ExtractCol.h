@@ -21,9 +21,9 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
+#include <sstream>
 #include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
@@ -57,31 +57,38 @@ void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) {
 // DenseMatrix <- DenseMatrix, DenseMatrix (positions)
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<int64_t>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * sel, DCTX(ctx)) {
-        assert((sel->getNumCols() == 1) && "parameter colIdxs must be a column matrix");
+template<typename VTArg, typename VTSel>
+struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
+    static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+        if(sel->getNumCols() != 1)
+            throw std::runtime_error("parameter colIdxs must be a column matrix");
 
+        // left as VTSel to enable more boundary validation, converted to size_t later
+        const VTSel * colIdxs = sel->getValues();
         const size_t numColsRes = sel->getNumRows();
-        const auto* colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
-        for(size_t i = 0; i < numColsRes; i++) {
-            assert((colIdxs[i] < arg->getNumCols()) && "column index out of bounds");
-        }
-        
-        const size_t numRows = arg->getNumRows();
-        
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
+        const size_t numRowsRes = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
 
-        const VT * valuesArg = arg->getValues();
-        VT * valuesRes = res->getValues();
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsRes, numColsRes, false);
+
+        const VTArg * valuesArg = arg->getValues();
+        VTArg * valuesRes = res->getValues();
         
         const size_t rowSkipArg = arg->getRowSkip();
         const size_t rowSkipRes = res->getRowSkip();
         
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numColsRes; c++)
-                valuesRes[c] = valuesArg[colIdxs[c]];
+        for (size_t r = 0; r < numRowsRes; r++) {
+            for (size_t c = 0; c < numColsRes; c++) {
+                const VTSel colIdx = colIdxs[c];
+                if (colIdx < 0 || numColsArg <= static_cast<size_t>(colIdx)) {
+                    std::ostringstream errMsg;
+                    errMsg << "invalid argument '" << colIdx << "' passed to ExtractCol on dense matrix with column boundaries '[0, " << numColsArg << "]'";
+                    throw std::out_of_range(errMsg.str());
+                }
+
+                valuesRes[c] = valuesArg[static_cast<const size_t>(colIdx)];
+            }
             valuesArg += rowSkipArg;
             valuesRes += rowSkipRes;
         }
@@ -124,14 +131,21 @@ struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
         if(sel->getNumCols() != 1)
             throw std::runtime_error("parameter colIdxs must be a column matrix");
 
+        // left as VTSel to enable more boundary validation, converted to size_t later
+        const VTSel * valuesSel = sel->getValues();
         const size_t numColsRes = sel->getNumRows();
-        const auto* colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
-        for(size_t i = 0; i < numColsRes; i++) {
-            if(colIdxs[i] >= arg->getNumCols())
-                throw std::runtime_error("column index out of bounds");
+        const size_t numRowsRes = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+        for (size_t c = 0; c < numColsRes; c++) {
+            const VTSel colIdx = valuesSel[c];
+            if (colIdx < 0 || numColsArg < static_cast<size_t>(colIdx)) {
+                std::ostringstream errMsg;
+                errMsg << "index '" << colIdx << "' out of bounds for given frame with '" << numColsArg << "' columns";
+                throw std::out_of_range(errMsg.str());
+            }
         }
-        const size_t numRows = arg->getNumRows();
 
-        res = DataObjectFactory::create<Frame>(arg, 0, numRows, numColsRes, colIdxs);
+        const size_t* colIdxs = reinterpret_cast<const size_t *>(valuesSel);
+        res = DataObjectFactory::create<Frame>(arg, 0, numRowsRes, numColsRes, colIdxs);
     }
 };
