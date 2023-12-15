@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <string>
+#include <iostream>
 
 class LoadPartitioning {
 
@@ -52,21 +53,23 @@ private:
         return actual_step+1;
     }
 public:
-    LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autochunk){
-        
-        if(const char* env_m = std::getenv("DAPHNE_TASK_PARTITION")){
-            method= getMethod(env_m);
-        } 
+LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autoChunk){
         schedulingMethod = method;
         totalTasks = tasks;
         double tSize = (totalTasks+workers-1.0)/workers;
         mfscChunk = ceil(tSize*log(2.0)/log((1.0*tSize)));
         fissStages = getStages(totalTasks, workers);
-        if(!autochunk){    
+        if(!autoChunk){    
             chunkParam = chunk;
         }
         else{
-            chunkParam = mfscChunk; //indicate automatic chunk parameter
+            // calculate expertChunk
+            int mul = log2(totalTasks/workers)*0.618; 
+            chunkParam = (totalTasks)/((2<<mul)*workers);
+            method=SS;
+            if (chunkParam < 1){
+                chunkParam = 1;
+            }
         }
         totalWorkers = workers;
         remainingTasks = tasks;

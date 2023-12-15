@@ -153,7 +153,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 clEnumVal(PLS, "Performance loop-based self-scheduling"),
                 clEnumVal(MSTATIC, "Modified version of Static, i.e., instead of n/p, it uses n/(4*p) where n is number of tasks and p is number of threads"),
                 clEnumVal(MFSC, "Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC"),
-                clEnumVal(PSS, "Probabilistic self-scheduling")
+                clEnumVal(PSS, "Probabilistic self-scheduling"),
+                clEnumVal(AUTO, "Automatic partitioning")
             ),
             init(STATIC)
     );

@@ -59,7 +59,10 @@ template<typename VT>
     int chunkParam = ctx->config.minimumTaskSize;
     if(chunkParam<=0)
         chunkParam=1;
-    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
+    bool autoChunk=false;
+    if(method==AUTO)
+        autoChunk = true;
+    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, autoChunk);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
         q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
@@ -149,7 +152,10 @@ template<typename VT>
             }
         }
     } else {
-        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
+        bool autoChunk=false;
+        if(method==AUTO)
+            autoChunk = true;
+        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, autoChunk);
         if (ctx->getUserConfig().pinWorkers) {
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
@@ -280,7 +286,11 @@ template<typename VT>
         int chunkParam = ctx->config.minimumTaskSize;
         if(chunkParam<=0)
             chunkParam=1;
-        LoadPartitioning lp(method, cpu_task_len, chunkParam, this->_numCPPThreads, true);
+        bool autoChunk=false;
+        if(method==AUTO)
+            autoChunk = true;
+
+        LoadPartitioning lp(method, cpu_task_len, chunkParam, this->_numCPPThreads, autoChunk);
         while (lp.hasNextChunk()) {
             endChunk += lp.getNextChunk();
             target = currentItr % this->_numQueues;
