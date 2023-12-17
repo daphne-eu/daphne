@@ -52,7 +52,7 @@ void insertCol(
         VTSel colLowerIncl, VTSel colUpperExcl,
         DCTX(ctx)
 ) {
-    InsertCol<DTArg, DTIns>::apply(res, arg, ins, colLowerIncl, colUpperExcl, ctx);
+    InsertCol<DTArg, DTIns, VTSel>::apply(res, arg, ins, colLowerIncl, colUpperExcl, ctx);
 }
 
 // ****************************************************************************
