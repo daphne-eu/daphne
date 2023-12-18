@@ -174,7 +174,7 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             }
             else
             {
-                const VT * allValues = arg->getValues()+valSelectedRow*arg->getRowSkip();
+                const VT * allValues = arg->getValues()+static_cast<size_t>(valSelectedRow)*arg->getRowSkip();
                 for(size_t c = 0; c < numCols; c++){
                     allUpdatedValues[c]=allValues[c];   
                 }   

@@ -238,3 +238,72 @@ TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int repeated with initialized resMa
     DataObjectFactory::destroy(resMatrix);
     DataObjectFactory::destroy(expMatrix);
 }
+
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix boundary checking", TAG_KERNELS, int32_t, double) {
+    using VT = TestType;
+    using DT = DenseMatrix<VT>;
+
+    auto argMatrix = genGivenVals<DT>(3, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9,
+    });
+
+    DT * selMatrix = nullptr;
+    DT * resMatrix = nullptr;
+
+    SECTION("sel out of bounds - negative") {
+        selMatrix = genGivenVals<DT>(3, {
+            -1,
+            2,
+            2,
+        });
+    }
+    SECTION("sel out of bounds - too high") {
+        selMatrix = genGivenVals<DT>(3, {
+            0,
+            2,
+            3,
+        });
+    }
+
+    REQUIRE_THROWS_AS((extractRow<DT, DT, VT>(resMatrix, argMatrix, selMatrix, nullptr)), std::out_of_range);
+    DataObjectFactory::destroy(argMatrix, selMatrix, resMatrix);
+}
+
+TEMPLATE_TEST_CASE("ExtractRow - Frame boundary checking", TAG_KERNELS, int32_t, double) {
+    using VTSel = TestType;
+    using DTSel = DenseMatrix<VTSel>;
+    
+    using DT0 = DenseMatrix<double>;
+    using DT1 = DenseMatrix<int32_t>;
+    using DT2 = DenseMatrix<uint64_t>;
+    
+    auto c0 = genGivenVals<DT0>(5, {0.0, 1.1, 2.2, 3.3, 4.4});
+    auto c1 = genGivenVals<DT1>(5, {0, -10, -20, -30, -40});
+    auto c2 = genGivenVals<DT2>(5, {0, 1, 2, 3, 4});
+    std::vector<Structure *> colMats = {c0, c1, c2};
+    std::string labels[] = {"aaa", "bbb", "ccc"};
+    auto arg = DataObjectFactory::create<Frame>(colMats, labels);
+
+    DTSel * selMatrix = nullptr;
+    Frame * res = nullptr;
+
+    SECTION("sel out of bounds - negative") {
+        selMatrix = genGivenVals<DTSel>(3, {
+            -1,
+            2,
+            2,
+        });
+    }
+    SECTION("sel out of bounds - too high") {
+        selMatrix = genGivenVals<DTSel>(3, {
+            0,
+            2,
+            5,
+        });
+    }
+
+    REQUIRE_THROWS_AS((extractRow<Frame, Frame, VTSel>(res, arg, selMatrix, nullptr)), std::out_of_range);
+    DataObjectFactory::destroy(arg, selMatrix, res);
+}

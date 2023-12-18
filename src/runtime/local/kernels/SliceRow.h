@@ -57,7 +57,7 @@ void sliceRow(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl,
     const size_t numRowsArg = arg->getNumRows(); \
     if (lowerIncl < 0 || upperExcl < lowerIncl || numRowsArg < static_cast<size_t>(upperExcl)) { \
             std::ostringstream errMsg; \
-            errMsg << "invalid arguments '[..., [" << lowerIncl << "," << upperExcl << "]]' passed to SliceRow on " << DT << " with row boundaries '[0, " << numRowsArg << "]'"; \
+            errMsg << "invalid arguments '[[" << lowerIncl << "," << upperExcl << "], ...]' passed to SliceRow on " << DT << " with row boundaries '[0, " << numRowsArg << "]'"; \
             throw std::out_of_range(errMsg.str()); \
         }
 
