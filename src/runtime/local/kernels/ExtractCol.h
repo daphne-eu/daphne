@@ -138,7 +138,7 @@ struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
         const size_t numColsArg = arg->getNumCols();
         for (size_t c = 0; c < numColsRes; c++) {
             const VTSel colIdx = valuesSel[c];
-            if (colIdx < 0 || numColsArg < static_cast<size_t>(colIdx)) {
+            if (colIdx < 0 || numColsArg <= static_cast<size_t>(colIdx)) {
                 std::ostringstream errMsg;
                 errMsg << "index '" << colIdx << "' out of bounds for given frame with '" << numColsArg << "' columns";
                 throw std::out_of_range(errMsg.str());
