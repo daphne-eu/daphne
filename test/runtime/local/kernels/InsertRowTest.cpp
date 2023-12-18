@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -21,54 +22,108 @@
 #include <runtime/local/kernels/InsertRow.h>
 
 #include <tags.h>
-
 #include <catch.hpp>
 
 #include <cstdint>
 
 #define VALUE_TYPES int32_t, double
 
-TEMPLATE_TEST_CASE("InsertRow - dense matrix", TAG_KERNELS, VALUE_TYPES) {
-    using VT = TestType;
+template<typename DTArg, typename VTSel>
+void checkInsertRow(const DTArg * arg, const DTArg * ins, const VTSel lowerIncl, const VTSel upperExcl, const DTArg * exp) {
+    DTArg * res = nullptr;
+    insertRow<DTArg, DTArg, VTSel>(res, arg, ins, lowerIncl, upperExcl, nullptr);
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res, exp);
+}
 
-    auto arg = genGivenVals<DenseMatrix<VT>>(3, {
-        1, 2, 3,
-        4, 5, 6,
-        7, 8, 9,
+template<typename DTArg, typename VTSel>
+void checkInsertRowThrow(const DTArg * arg, const DTArg * ins, const VTSel lowerIncl, const VTSel upperExcl) {
+    DTArg * res = nullptr;
+    REQUIRE_THROWS_AS((insertRow<DTArg, DTArg, VTSel>(res, arg, ins, lowerIncl, upperExcl, nullptr)), std::out_of_range);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+
+    auto arg = genGivenVals<DT>(4, {
+        1, -2, 3,
+        4, -5, 6,
+        7, -8, 9,
+        10, -11, VT(12.4),
     });
 
-    auto ins = genGivenVals<DenseMatrix<VT>>(2, {
-        0, 2, 1,
-        1, 1, 1,
+    auto ins = genGivenVals<DT>(2, {
+        2, -2, 2,
+        7, 9, 11,
     });
 
-    size_t lowerIncl = 0;
-    size_t upperExcl = 2;
-
-    std::cout << "before test" << std::endl;
-
-    SECTION("test func") {
-        /*
-        auto dense_exp = genGivenVals<DenseMatrix<VT>>({
+    SECTION("multiple insertions, lower bound") {
+        VT lowerIncl = 0;
+        VT upperExcl = 2;
+        DT * exp = genGivenVals<DT>(4, {
+            2, -2, 2,
+            7, 9, 11,
+            7, -8, 9,
+            10, -11, VT(12.4),
         });
-        */
-        std::cout << *arg << std::endl;
-        std::cout << *ins << std::endl;
-        std::cout << lowerIncl << std::endl;
-        std::cout << upperExcl << std::endl;
-        std::cout << "end of section" << std::endl;
+
+        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
     }
-    std::cout << "after section" << std::endl;
 
+    SECTION("multiple insertion, middle") {
+        VT lowerIncl = 1;
+        VT upperExcl = 3;
+        DT * exp = genGivenVals<DT>(4, {
+            1, -2, 3,
+            2, -2, 2,
+            7, 9, 11,
+            10, -11, VT(12.4),
+        });
 
-    DenseMatrix<VT> * res = nullptr;
+        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
+    }
 
-    
+    SECTION("multiple insertions, upper bound") {
+        VT lowerIncl = 2;
+        VT upperExcl = 4;
+        DT * exp = genGivenVals<DT>(4, {
+            1, -2, 3,
+            4, -5, 6,
+            2, -2, 2,
+            7, 9, 11,
+        });
 
-    insertRow<DenseMatrix<VT>, DenseMatrix<VT>>(res, arg, ins, lowerIncl, upperExcl, nullptr);
+        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
+    }
 
-    std::cout << *res << std::endl;
-    std::cout << "end" << std::endl;
+    SECTION("multiple insertions, FP bounds") {
+        VT lowerIncl = 2.4;
+        VT upperExcl = 4.9;
+        DT * exp = genGivenVals<DT>(4, {
+            1, -2, 3,
+            4, -5, 6,
+            2, -2, 2,
+            7, 9, 11,
+        });
 
-    DataObjectFactory::destroy(arg, ins, res);
+        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
+    }
+
+    SECTION("out of bounds - negative") {
+        VT lowerIncl = -1;
+        VT upperExcl = 1;
+
+        checkInsertRowThrow(arg, ins, lowerIncl, upperExcl);
+    }
+
+    SECTION("out of bounds - too high") {
+        VT lowerIncl = 3;
+        VT upperExcl = 5;
+
+        checkInsertRowThrow(arg, ins, lowerIncl, upperExcl);
+    }
+
+    DataObjectFactory::destroy(arg, ins);
 }

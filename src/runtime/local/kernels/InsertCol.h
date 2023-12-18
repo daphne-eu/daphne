@@ -56,6 +56,36 @@ void insertCol(
 }
 
 // ****************************************************************************
+// Boundary validation function
+// ****************************************************************************
+
+template<typename VTSel>
+void validateInsertColArgs(const size_t colLowerIncl, VTSel colLowerInclRaw, const size_t colUpperExcl, VTSel colUpperExclRaw,
+                    const size_t numRowsArg, const size_t numColsArg, const size_t numRowsIns, const size_t numColsIns) {
+
+    if (colLowerInclRaw < 0 || colUpperExclRaw < colLowerInclRaw || numColsArg < colUpperExcl) {
+        std::ostringstream errMsg;
+        errMsg << "invalid arguments '" << colLowerInclRaw << ", " << colUpperExclRaw
+                << "' passed to InsertCol: must be positive, colLowerIncl must be smaller than colUpperExcl "
+                << "and both within columns of arg '" << numColsArg << "'";
+        throw std::out_of_range(errMsg.str());
+    }
+
+    if(numColsIns != colUpperExcl - colLowerIncl){
+        std::ostringstream errMsg;
+        errMsg << "InsertCol: the number of addressed rows in arg '" << colUpperExcl - colLowerIncl
+                << "' and the number of rows in ins '" << numColsIns << "' must match";
+        throw std::runtime_error(errMsg.str());
+    }
+
+    if(numRowsIns != numRowsArg) {
+        std::ostringstream errMsg;
+        errMsg << "insertRow: the number of columns in arg '" << numRowsArg << "' and ins '" << numRowsIns << "' must match";
+        throw std::runtime_error(errMsg.str());
+    }
+}
+
+// ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
@@ -68,24 +98,21 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
     static void apply(
             DenseMatrix<VTArg> *& res,
             const DenseMatrix<VTArg> * arg, const DenseMatrix<VTArg> * ins,
-            VTSel colLowerIncl, VTSel colUpperExcl,
+            VTSel colLowerInclRaw, VTSel colUpperExclRaw,
             DCTX(ctx)
     ) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
+
+        // VTSel enables better validation
+        const size_t colLowerIncl = static_cast<const size_t>(colLowerInclRaw);
+        const size_t colUpperExcl = static_cast<const size_t>(colUpperExclRaw);
         
-        if(numRowsIns != numRowsArg)
-            throw std::runtime_error(
-                    "insertCol: the number of rows in arg and ins must match"
-            );
-        if(numColsIns != colUpperExcl - colLowerIncl)
-            throw std::runtime_error(
-                    "insertCol: the number of addressed columns in arg and "
-                    "the number of columns in ins must match"
-            );
-        
+        validateInsertColArgs(colLowerIncl, colLowerInclRaw, colUpperExcl, colUpperExclRaw,
+                    numRowsArg, numColsArg, numRowsIns, numColsIns);
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsArg, false);
         

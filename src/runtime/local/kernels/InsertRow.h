@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
+#include <sstream>
 #include <stdexcept>
 
 #include <cstddef>
@@ -30,12 +31,12 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTArg, class DTIns>
+template<class DTArg, class DTIns, typename VTSel>
 struct InsertRow {
     static void apply(
         DTArg *& res,
         const DTArg * arg, const DTIns * ins,
-        size_t rowLowerIncl, size_t rowUpperExcl,
+        VTSel rowLowerIncl, VTSel rowUpperExcl,
         DCTX(ctx)
     ) = delete;
 };
@@ -44,14 +45,44 @@ struct InsertRow {
 // Convenience function
 // ****************************************************************************
 
-template<class DTArg, class DTIns>
+template<class DTArg, class DTIns, typename VTSel>
 void insertRow(
         DTArg *& res,
         const DTArg * arg, const DTIns * ins,
-        size_t rowLowerIncl, size_t rowUpperExcl,
+        VTSel rowLowerIncl, VTSel rowUpperExcl,
         DCTX(ctx)
 ) {
-    InsertRow<DTArg, DTIns>::apply(res, arg, ins, rowLowerIncl, rowUpperExcl, ctx);
+    InsertRow<DTArg, DTIns, VTSel>::apply(res, arg, ins, rowLowerIncl, rowUpperExcl, ctx);
+}
+
+// ****************************************************************************
+// Boundary validation function
+// ****************************************************************************
+
+template<typename VTSel>
+void validateInsertRowArgs(const size_t rowLowerIncl, VTSel rowLowerInclRaw, const size_t rowUpperExcl, VTSel rowUpperExclRaw,
+                    const size_t numRowsArg, const size_t numColsArg, const size_t numRowsIns, const size_t numColsIns) {
+
+    if (rowLowerInclRaw < 0 || rowUpperExclRaw < rowLowerInclRaw || numRowsArg < rowUpperExcl) {
+        std::ostringstream errMsg;
+        errMsg << "invalid arguments '" << rowLowerInclRaw << ", " << rowUpperExclRaw
+                << "' passed to InsertRow: must be positive, rowLowerIncl must be smaller than rowUpperExcl "
+                << "and both within rows of arg '" << numRowsArg << "'";
+        throw std::out_of_range(errMsg.str());
+    }
+
+    if(numRowsIns != rowUpperExcl - rowLowerIncl){
+        std::ostringstream errMsg;
+        errMsg << "insertRow: the number of addressed rows in arg '" << rowUpperExcl - rowLowerIncl
+                << "' and the number of rows in ins '" << numRowsIns << "' must match";
+        throw std::runtime_error(errMsg.str());
+    }
+
+    if(numColsIns != numColsArg) {
+        std::ostringstream errMsg;
+        errMsg << "insertRow: the number of columns in arg '" << numColsArg << "' and ins '" << numColsIns << "' must match";
+        throw std::runtime_error(errMsg.str());
+    }
 }
 
 // ****************************************************************************
@@ -62,29 +93,26 @@ void insertRow(
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
+template<typename VT, typename VTSel>
+struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
     static void apply(
             DenseMatrix<VT> *& res,
             const DenseMatrix<VT> * arg, const DenseMatrix<VT> * ins,
-            size_t rowLowerIncl, size_t rowUpperExcl,
+            VTSel rowLowerInclRaw, VTSel rowUpperExclRaw,
             DCTX(ctx)
     ) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
+
+        // VTSel enables better validation
+        const size_t rowLowerIncl = static_cast<const size_t>(rowLowerInclRaw);
+        const size_t rowUpperExcl = static_cast<const size_t>(rowUpperExclRaw);
         
-        if(numRowsIns != rowUpperExcl - rowLowerIncl)
-            throw std::runtime_error(
-                    "insertRow: the number of addressed rows in arg and "
-                    "the number of rows in ins must match"
-            );
-        if(numColsIns != numColsArg)
-            throw std::runtime_error(
-                    "insertRow: the number of columns in arg and ins must match"
-            );
-        
+        validateInsertRowArgs(rowLowerIncl, rowLowerInclRaw, rowUpperExcl, rowUpperExclRaw,
+                    numRowsArg, numColsArg, numRowsIns, numColsIns);
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsArg, numColsArg, false);
         
