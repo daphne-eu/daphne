@@ -443,10 +443,13 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
     if(numRows < -1 || numCols < -1)
         return mlir::failure();
     if(numCols != -1) {
-        if(static_cast<ssize_t>(columnTypes.size()) != numCols)
-            return mlir::failure();
-        if(labels && static_cast<ssize_t>(labels->size()) != numCols)
-            return mlir::failure();
+        // ToDo: ExtractColOp does not provide these columnTypes
+        if(!columnTypes.empty()) {
+            if (static_cast<ssize_t>(columnTypes.size()) != numCols)
+                return mlir::failure();
+            if (labels && static_cast<ssize_t>(labels->size()) != numCols)
+                return mlir::failure();
+        }
     }
     if(labels && labels->size() != columnTypes.size())
         return mlir::failure();
