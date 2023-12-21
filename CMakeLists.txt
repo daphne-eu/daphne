@@ -178,6 +178,9 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_BINARY_DIR}/src)
 
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty/installed/include/hdfs)
+find_library(hdfs3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+
 # *****************************************************************************
 # Descend to subdirectories
 # *****************************************************************************

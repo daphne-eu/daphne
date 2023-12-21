@@ -122,4 +122,7 @@ endif()
 
 find_library(HWLOC_LIB NAMES libhwloc.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB})
+target_include_directories(AllKernels PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/hdfs)
+find_library(LIBHDFS3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
