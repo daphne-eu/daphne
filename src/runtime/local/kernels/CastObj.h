@@ -23,6 +23,7 @@
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
+#include "SIMDOperators/datastructures/column.hpp"
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -252,6 +253,93 @@ public:
                 res->set(r,c,temp);
             }
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Column  <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+class CastObj<tuddbs::Column<VT>, DenseMatrix<VT>> {
+
+public:
+    static void apply(tuddbs::Column<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        std::vector<Structure *> cols;
+        if (numCols == 1 && arg->getRowSkip() == 1) {
+            // The input matrix has a single column and is not a view into a
+            // column range of another matrix, so it can be reused as the
+            // column matrix of the output Column.
+            // Cheap/Low-cost cast from dense matrix to column.
+            res = new tuddbs::Column<VT>(numRows, arg->getValuesSharedPtr(), 0);
+        }
+        else {
+            // The input matrix has multiple columns.
+            // Conversion not supported.
+            throw std::runtime_error("CastObj::apply: cannot cast DenseMatrix with multiple columns to Column");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  DenseMatrix  <- Column
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+class CastObj<DenseMatrix<VT>, tuddbs::Column<VT>> {
+
+public:
+    static void apply(DenseMatrix<VT> *& res, const tuddbs::Column<VT> * arg, DCTX(ctx)) {
+        tuddbs::Column<VT> * col = const_cast<tuddbs::Column<VT> *>(arg);
+        size_t numRows = col->getPopulationCount();
+        std::shared_ptr<VT[]> values = col->getData();
+        res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1, values);
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Column  <- Frame
+// ----------------------------------------------------------------------------
+
+template<typename VTRes>
+class CastObj<tuddbs::Column<VTRes>, Frame> {
+
+public:
+    static void apply(tuddbs::Column<VTRes> *& res, const Frame * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        if(numCols == 1 && arg->getColumnType(0) == ValueTypeUtils::codeFor<VTRes>) {
+            // The input frame has a single column of the result's value type.
+            // Zero-cost cast from frame to Column.
+            // TODO This case could even be used for (un)signed integers of the
+            // same width, involving a reinterpret cast of the pointers.
+            // TODO Can we avoid this const_cast?
+            res = new tuddbs::Column<VTRes>(numRows, arg->getColumn<VTRes>(0)->getValuesSharedPtr(), 0);
+        }
+        else {
+            // The input frame has multiple columns and/or other value types
+            // than the result.
+            throw std::runtime_error("CastObj::apply: cannot cast Frame with mutliple columns to Column");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Frame  <- Column
+// ----------------------------------------------------------------------------
+
+template<typename VTArg>
+class CastObj<Frame, tuddbs::Column<VTArg>> {
+
+public:
+    static void apply(Frame *& res, const tuddbs::Column<VTArg> * arg, DCTX(ctx)) {
+        std::vector<Structure *> cols;
+        DenseMatrix<VTArg> * col = nullptr;
+        CastObj<DenseMatrix<VTArg>, tuddbs::Column<VTArg>>::apply(col, arg, ctx);
+        cols.push_back(const_cast<DenseMatrix<VTArg> *>(col));
+        res = DataObjectFactory::create<Frame>(cols, nullptr);
     }
 };
 

@@ -15,6 +15,10 @@
 include_directories(${PROJECT_SOURCE_DIR}/test)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
+set(SIMD_PREFIX ${PROJECT_BINARY_DIR}/_deps/simdoperators-src/src)
+message(STATUS "SIMD_PREFIX: ${SIMD_PREFIX}")
+include_directories(${SIMD_PREFIX})
+
 set(TEST_SOURCES
         run_tests.h
         run_tests.cpp
@@ -132,6 +136,8 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
+        runtime/local/kernels/SIMDOperatorsDAPHNE/PositionListBitmapConverterTest.cpp
+        runtime/local/kernels/SIMDOperatorsDAPHNE/BitmapPositionListConverterTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )
@@ -175,3 +181,4 @@ set_target_properties(theta_join_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJ
 add_dependencies(theta_join_test daphne DistributedWorker)
 target_link_libraries(theta_join_test PRIVATE ${LIBS})
 target_compile_options(theta_join_test PUBLIC -g -O0)
+

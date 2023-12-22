@@ -19,7 +19,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
-#include <runtime/local/datastructures/ValueTypeCode.h>
+#include <SIMDOperators/datastructures/column.hpp>
 #include <runtime/local/kernels/CastObj.h>
 #include <runtime/local/kernels/CheckEq.h>
 
@@ -28,8 +28,6 @@
 #include <catch.hpp>
 
 #include <vector>
-
-#include <cstdint>
 
 TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, single-column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
     using DTRes = TestType;
@@ -411,4 +409,109 @@ TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, double, floa
     DataObjectFactory::destroy(m0, d0, res0);
     DataObjectFactory::destroy(m1, d1, res1);
     DataObjectFactory::destroy(m2, d2, res2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, column to matrix", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTRes = TestType;
+    using VTRes = typename DTRes::VT;
+    
+    const size_t numRows = 4;
+    tuddbs::Column<VTRes>* arg = new tuddbs::Column<VTRes>(numRows);
+    auto data = arg->getData();
+    arg->setPopulationCount(numRows);
+    VTRes vals[numRows] = {VTRes(0.0), VTRes(1.1), VTRes(2.2), VTRes(3.3)};
+    for (int i = 0; i < arg->getLength(); ++i) {
+        data[i] = vals[i];
+    }
+    auto c0Exp = genGivenVals<DenseMatrix<VTRes>>(numRows, {VTRes(0.0), VTRes(1.1), VTRes(2.2), VTRes(3.3)});
+    
+    DTRes * res = nullptr;
+    castObj<DTRes, tuddbs::Column<VTRes>>(res, arg, nullptr);
+    
+    REQUIRE(res->getNumRows() == numRows);
+    REQUIRE(res->getNumCols() == 1);
+    CHECK(*res == *c0Exp);
+    
+    DataObjectFactory::destroy(c0Exp);
+    delete arg;
+    DataObjectFactory::destroy(res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+    
+    const size_t numRows = 4;
+    tuddbs::Column<VTArg>* exp = new tuddbs::Column<VTArg>(numRows);
+    auto data = exp->getData();
+    exp->setPopulationCount(numRows);
+    VTArg vals[numRows] = {VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3)};
+    for (int i = 0; i < exp->getLength(); ++i) {
+        data[i] = vals[i];
+    }
+    auto arg = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3)});
+    
+    tuddbs::Column<VTArg> * res = nullptr;
+    castObj<tuddbs::Column<VTArg>, DTArg>(res, arg, nullptr);
+    
+    REQUIRE(res->getPopulationCount() == numRows);
+    REQUIRE(res->getLength() == numRows);
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(arg);
+    delete exp;
+    delete res;
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, column to frame", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+
+    const size_t numRows = 4;
+    tuddbs::Column<VTArg>* arg = new tuddbs::Column<VTArg>(numRows);
+    auto data = arg->getData();
+    arg->setPopulationCount(numRows);
+    VTArg vals[numRows] = {VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3)};
+    for (int i = 0; i < (int)arg->getLength(); i++) {
+        data[i] = vals[i];
+    }
+    auto dense = genGivenVals<DenseMatrix<VTArg>>(numRows,{VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3),});    
+    std::vector<Structure *> cols = {dense};
+    auto exp = DataObjectFactory::create<Frame>(cols, nullptr);
+
+    Frame * res = nullptr;
+    castObj<Frame, tuddbs::Column<VTArg>>(res, arg, nullptr);
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(exp);
+    delete arg;
+    DataObjectFactory::destroy(res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+    
+    const size_t numRows = 4;
+    tuddbs::Column<VTArg>* exp = new tuddbs::Column<VTArg>(numRows);
+    auto data = exp->getData();
+    exp->setPopulationCount(numRows);
+    VTArg vals[numRows] = {VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3)};
+    for (int i = 0; i < exp->getLength(); ++i) {
+        data[i] = vals[i];
+    }
+    auto dense = genGivenVals<DenseMatrix<VTArg>>(numRows,{VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3),});    
+    std::vector<Structure *> cols = {dense};
+    auto arg = DataObjectFactory::create<Frame>(cols, nullptr);
+
+    tuddbs::Column<VTArg> * res = nullptr;
+    castObj<tuddbs::Column<VTArg>, Frame>(res, arg, nullptr);
+    
+    REQUIRE(res->getPopulationCount() == numRows);
+    REQUIRE(res->getLength() == numRows);
+    CHECK(*res == *exp);
+    
+    DataObjectFactory::destroy(arg);
+    delete exp;
+    delete res;
 }

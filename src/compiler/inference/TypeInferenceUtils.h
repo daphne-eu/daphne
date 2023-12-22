@@ -45,6 +45,7 @@ enum class DataTypeCode : uint8_t {
     // The greater the number, the more general the type.
     SCALAR, // least general
     MATRIX,
+    COLUMN,
     FRAME,
     UNKNOWN // most general
 };
@@ -120,6 +121,10 @@ mlir::Type inferTypeByTraits(O * op) {
             argDtc.push_back(DataTypeCode::MATRIX);
             argVts.push_back({mt.getElementType()});
         }
+        else if(auto ct = t.dyn_cast<daphne::ColumnType>()) {
+            argDtc.push_back(DataTypeCode::COLUMN);
+            argVts.push_back({ct.getColumnType()});
+        }
         else { // TODO Check if this is really a supported scalar type!
             argDtc.push_back(DataTypeCode::SCALAR);
             argVts.push_back({t});
@@ -144,6 +149,8 @@ mlir::Type inferTypeByTraits(O * op) {
         resDtc = DataTypeCode::SCALAR;
     else if(op->template hasTrait<DataTypeMat>())
         resDtc = DataTypeCode::MATRIX;
+    else if(op->template hasTrait<DataTypeCol>())
+        resDtc = DataTypeCode::COLUMN;
     else if(op->template hasTrait<DataTypeFrm>())
         resDtc = DataTypeCode::FRAME;
 
@@ -270,6 +277,11 @@ mlir::Type inferTypeByTraits(O * op) {
                             // the result column types.
                             resVts.push_back(argVts[i][0]);
                             break;
+                        case DataTypeCode::COLUMN:
+                            // Append the value type of this input column
+                            // to the result column types.
+                            resVts.push_back(argVts[i][0]);
+                            break;
                         case DataTypeCode::UNKNOWN:
                             // It is unclear how this input contributes to
                             // the result's column types.
@@ -282,6 +294,7 @@ mlir::Type inferTypeByTraits(O * op) {
                 }
                 break;
             case DataTypeCode::MATRIX: // fall-through intended
+            case DataTypeCode::COLUMN: // fall-through intended
             case DataTypeCode::SCALAR:
                 resVts = {mostGeneralVt(argVts, numArgsConsider)};
                 break;
@@ -316,6 +329,10 @@ mlir::Type inferTypeByTraits(O * op) {
         case DataTypeCode::FRAME: {
             resTy = daphne::FrameType::get(ctx, resVts);
             break;
+        case DataTypeCode::COLUMN: {
+            resTy = daphne::ColumnType::get(ctx, mostGeneralVt(resVts));
+            break;
+        }
         }
     }
 

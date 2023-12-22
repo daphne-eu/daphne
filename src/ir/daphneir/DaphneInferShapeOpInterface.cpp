@@ -41,6 +41,8 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
         return std::make_pair(mt.getNumRows(), mt.getNumCols());
     if(auto ft = t.dyn_cast<daphne::FrameType>())
         return std::make_pair(ft.getNumRows(), ft.getNumCols());
+    if(auto ct = t.dyn_cast<daphne::ColumnType>())
+        return std::make_pair(ct.getNumRows(), 1);
     // TODO Maybe check if it is really a scalar type.
     else // scalar
         return std::make_pair(1, 1);
@@ -214,6 +216,18 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     
     const size_t numCols = newLabels.size() + getAggCol().size();
     return {{numRows, numCols}};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::ColumnJoinOp::inferShape() {
+    // We don't know the exact numbers of rows here, but we know the numbers of
+    // columns.
+    return {{-1, 1}, {-1, 1}};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::ColumnProjectionPathOp::inferShape() {
+    // We don't know the exact numbers of rows here, but we know the numbers of
+    // columns.
+    return {{-1, 1}};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {

@@ -448,6 +448,10 @@ BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 BUILD_MPI="-DUSE_MPI=OFF"
+BUILD_AVX2="-DUSE_AVX2=OFF"
+BUILD_AVX512="-DUSE_AVX512=OFF"
+BUILD_SCALAR="-DUSE_SCALAR=OFF"
+BUILD_SSE="-DUSE_SSE=OFF"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
 
@@ -495,6 +499,22 @@ while [[ $# -gt 0 ]]; do
     --mpi)
         echo using MPI
         export BUILD_MPI="-DUSE_MPI=ON"
+        ;;
+    --scalar)
+        echo using SCALAR
+        export BUILD_SCALAR="-DUSE_SCALAR=ON"
+        ;;
+    --sse)
+        echo using SSE
+        export BUILD_SSE="-DUSE_SSE=ON"
+        ;;
+    --avx2)
+        echo using AVX2
+        export BUILD_AVX2="-DUSE_AVX2=ON"
+        ;;
+    --avx512)
+        echo using AVX512
+        export BUILD_AVX512="-DUSE_AVX512=ON"
         ;;
     --debug)
         echo building DEBUG version
@@ -920,6 +940,21 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
       daphne_msg "No need to build eigen again."
     fi
+    #------------------------------------------------------------------------------
+    # TSL (Template SIMD Library)
+    #------------------------------------------------------------------------------
+    if ! is_dependency_installed "TSL"; then
+        daphne_msg "Install TSL."
+        tsl_generator="${thirdpartyPath}/TSLGenerator"
+        # install TSL requirements
+        pip3 install -r "${tsl_generator}/requirements.txt"
+        tsl_output="${installPrefix}/include/TSL"
+        # python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
+        cmake ${tsl_generator} -B ${tsl_generator}/build -D GENERATOR_OUTPUT_PATH=${tsl_output}
+        dependency_install_success "TSL"
+    else
+        daphne_msg "No need to generate TSL again."
+    fi
 
     #------------------------------------------------------------------------------
     # #8.9 Build MLIR
@@ -999,11 +1034,12 @@ fi
 # #9 Build DAPHNE target.
 #******************************************************************************
 
+
 daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
-    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI
+    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_SCALAR $BUILD_SSE $BUILD_AVX2 $BUILD_AVX512
 
 cmake --build "$daphneBuildDir" --target "$target"
 
