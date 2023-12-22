@@ -18,6 +18,7 @@
 #include <parser/metadata/JsonKeys.h>
 
 #include <fstream>
+#include <iostream>
 
 FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
     std::string metaFilename = filename_ + ".meta";
@@ -34,14 +35,21 @@ FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
 
     const size_t numRows = jf.at(JsonKeys::NUM_ROWS).get<size_t>();
     const size_t numCols = jf.at(JsonKeys::NUM_COLS).get<size_t>();
+    const bool isHDFS = (keyExists(jf, JsonKeys::HDFS));
     const bool isSingleValueType = !(keyExists(jf, JsonKeys::SCHEMA));
     const ssize_t numNonZeros = (keyExists(jf, JsonKeys::NUM_NON_ZEROS)) ? jf.at(JsonKeys::NUM_NON_ZEROS).get<ssize_t>()
             : -1;
     
+    HDFSMetaData hdfs;
+    if (isHDFS){
+        // TODO check if key exist and throw errors if not
+        hdfs.isHDFS = jf.at(JsonKeys::HDFS)["isHDFS"];;
+        hdfs.HDFSFilename = jf.at(JsonKeys::HDFS)["HDFSFilename"];
+    }
     if (isSingleValueType) {
         if (keyExists(jf, JsonKeys::VALUE_TYPE)) {
             ValueTypeCode vtc = jf.at(JsonKeys::VALUE_TYPE).get<ValueTypeCode>();
-            return {numRows, numCols, isSingleValueType, vtc, numNonZeros};
+            return {numRows, numCols, isSingleValueType, vtc, numNonZeros, hdfs};
         }
         else {
             throw std::invalid_argument("A (matrix) meta data JSON file should contain the \"" + JsonKeys::VALUE_TYPE
@@ -68,7 +76,7 @@ FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
                 schema.emplace_back(vtc);
                 labels.emplace_back(column.getLabel());
             }
-            return {numRows, numCols, isSingleValueType, schema, labels, numNonZeros};
+            return {numRows, numCols, isSingleValueType, schema, labels, numNonZeros, hdfs};
         }
         else {
             throw std::invalid_argument("A (frame) meta data JSON file should contain the \"" + JsonKeys::SCHEMA
@@ -84,7 +92,7 @@ void MetaDataParser::writeMetaData(const std::string& filename_, const FileMetaD
         throw std::runtime_error("could not open file '" + metaFilename + "' for writing meta data");
 
     if(ofs.is_open()) {
-        nlohmann::json json;
+        nlohmann::json json;        
 
         json[JsonKeys::NUM_ROWS] = metaData.numRows;
         json[JsonKeys::NUM_COLS] = metaData.numCols;
@@ -108,7 +116,12 @@ void MetaDataParser::writeMetaData(const std::string& filename_, const FileMetaD
 
         if (metaData.numNonZeros != -1)
             json[JsonKeys::NUM_NON_ZEROS] = metaData.numNonZeros;
-
+        
+        // HDFS
+        if (metaData.hdfs.isHDFS){
+            json[JsonKeys::HDFS][JsonKeys::HDFSKeys::isHDFS] = metaData.hdfs.isHDFS;
+            json[JsonKeys::HDFS][JsonKeys::HDFSKeys::HDFSFilename] = metaData.hdfs.HDFSFilename;
+        }
         ofs << json.dump();
     }
     else

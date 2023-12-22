@@ -101,12 +101,24 @@ struct Read<DenseMatrix<VT>> {
 	case 3:
 		readDaphne(res, filename);
 		break;
-	case 4:
+	case 4: 
 		if(res == nullptr)
 			res = DataObjectFactory::create<DenseMatrix<VT>>(
 				fmd.numRows, fmd.numCols, false
 			);
-		readHDFSCsv(res, filename, fmd.numRows, fmd.numCols, ',', ctx);
+		{
+		std::string fn(filename);
+		auto baseFile = fn.substr(0, fn.find_last_of("."));
+		auto nestedExt = extValue(baseFile.c_str());
+		std::cout << baseFile << std::endl;
+		std::cout << nestedExt << std::endl;
+		std::cout << fmd.hdfs.HDFSFilename << std::endl;
+		
+		if (nestedExt == 0)
+			readHDFSCsv(res, fmd.hdfs.HDFSFilename.c_str(), fmd.numRows, fmd.numCols, ',', ctx);
+		else if (nestedExt == 3)
+			throw std::runtime_error("Not implemented");
+		}
 		break;
 	default:
 		throw std::runtime_error("File extension not supported");

@@ -100,6 +100,7 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
     char *cur = nullptr;
     size_t n = 0;
 
+    size_t cell = 0;
     for (size_t r = 0; r < numRows; r++) {
         std::string line;
 
@@ -119,16 +120,25 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
                 cur = eol + 1;
             }
         } while (cur == nullptr);
-        std::cout << line << std::endl;
-        // char *next = (char *)line.c_str();
-        // for (size_t c = 0; c < numCols; c++, valuesRes++, next++) {
-        //     convertCstr(next, valuesRes, &next);
-        // }
+        size_t pos = 0;
+        for(size_t c = 0; c < numCols; c++) {
+            VT val;
+            convertCstr(line.c_str() + pos, &val);
+            
+            // TODO This assumes that rowSkip == numCols.
+            valuesRes[cell++] = val;
+            // TODO We could even exploit the fact that the strtoX functions can
+            // return a pointer to the first character after the parsed input, then
+            // we wouldn't have to search for that ourselves, just would need to
+            // check if it is really the delimiter.
+            if(c < numCols - 1) {
+                while(line[pos] != delim) pos++;
+                pos++; // skip delimiter
+            }
+        }
     }
 
     hdfsCloseFile(fs, hFile);
     hdfsDisconnect(fs);
-
-    res->print(std::cerr);
   }
 };
