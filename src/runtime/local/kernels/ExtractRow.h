@@ -50,6 +50,19 @@ void extractRow(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel,
 }
 
 // ****************************************************************************
+// Boundary validation
+// ****************************************************************************
+
+// index boundaries are verified later for performance
+#define validateExtractRowArgs(numColsSel) \
+    if(numColsSel != 1) { \
+        std::ostringstream errMsg; \
+        errMsg << "invalid argument passed to ExtractRow: column selection must be given as column matrix but has '" \
+            << numColsSel << "' rows instead"; \
+        throw std::runtime_error(errMsg.str()); \
+    } \
+
+// ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
@@ -63,8 +76,7 @@ void extractRow(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel,
 template<typename VTSel>
 struct ExtractRow<Frame, Frame, VTSel> {
     static void apply(Frame *& res, const Frame * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
-        if(sel->getNumCols() != 1)
-            throw std::runtime_error("parameter rowIdxs must be a column matrix");
+        validateExtractRowArgs(sel->getNumCols());
         
         const size_t numRowsSel = sel->getNumRows();
         const size_t numCols = arg->getNumCols();
@@ -143,9 +155,8 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         if(sel== nullptr){
             throw std::runtime_error("rowIdxs cannot be null");
         }
-        if(sel->getNumCols() != 1){
-            throw std::runtime_error("parameter rowIdxs must be a column matrix");
-        }
+        validateExtractRowArgs(sel->getNumCols());
+
         const size_t numRowsSel = sel->getNumRows();
         const size_t numRowsArg = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
@@ -183,4 +194,7 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         }
     }        
 };
+
+#undef validateExtractRowArgs
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EXTRACTROW_H
