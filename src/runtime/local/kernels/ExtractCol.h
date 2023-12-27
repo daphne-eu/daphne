@@ -54,7 +54,7 @@ void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) {
 // ****************************************************************************
 
 // index boundaries are verified later for performance
-#define validateExtractColArgs(numColsSel) \
+#define VALIDATE_ARGS(numColsSel) \
     if(numColsSel != 1) { \
         std::ostringstream errMsg; \
         errMsg << "invalid argument passed to ExtractCol: column selection must be given as column matrix but has '" \
@@ -73,7 +73,7 @@ void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) {
 template<typename VTArg, typename VTSel>
 struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
     static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
-        validateExtractColArgs(sel->getNumCols());
+        VALIDATE_ARGS(sel->getNumCols());
 
         // left as VTSel to enable more boundary validation, converted to size_t later
         const VTSel * VTcolIdxs = sel->getValues();
@@ -142,7 +142,7 @@ struct ExtractCol<Frame, Frame, char> {
 template< typename VTSel >
 struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
     static void apply(Frame *& res, const Frame * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
-        validateExtractColArgs(sel->getNumCols());
+        VALIDATE_ARGS(sel->getNumCols());
 
         // left as VTSel to enable more boundary validation, converted to size_t later
         const VTSel * VTvaluesSel = sel->getValues();
@@ -163,4 +163,4 @@ struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
     }
 };
 
-#undef validateExtractColArgs
+#undef VALIDATE_ARGS

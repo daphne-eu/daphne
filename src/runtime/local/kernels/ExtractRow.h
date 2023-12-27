@@ -54,7 +54,7 @@ void extractRow(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel,
 // ****************************************************************************
 
 // index boundaries are verified later for performance
-#define validateExtractRowArgs(numColsSel) \
+#define VALIDATE_ARGS(numColsSel) \
     if(numColsSel != 1) { \
         std::ostringstream errMsg; \
         errMsg << "invalid argument passed to ExtractRow: column selection must be given as column matrix but has '" \
@@ -76,7 +76,7 @@ void extractRow(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel,
 template<typename VTSel>
 struct ExtractRow<Frame, Frame, VTSel> {
     static void apply(Frame *& res, const Frame * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
-        validateExtractRowArgs(sel->getNumCols());
+        VALIDATE_ARGS(sel->getNumCols());
         
         const size_t numRowsSel = sel->getNumRows();
         const size_t numCols = arg->getNumCols();
@@ -150,12 +150,16 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
         // input validation
         if(arg==nullptr){
-            throw std::runtime_error("arg cannot be null");
+            std::ostringstream errMsg;
+            errMsg << "invalid argument passed to ExtractRow on dense matrix: arg cannot be null";
+            throw std::runtime_error(errMsg.str());
         }
         if(sel== nullptr){
-            throw std::runtime_error("rowIdxs cannot be null");
+            std::ostringstream errMsg;
+            errMsg << "invalid argument passed to ExtractRow on dense matrix: rowIdxs sel cannot be null";
+            throw std::runtime_error(errMsg.str());
         }
-        validateExtractRowArgs(sel->getNumCols());
+        VALIDATE_ARGS(sel->getNumCols());
 
         const size_t numRowsSel = sel->getNumRows();
         const size_t numRowsArg = arg->getNumRows();
@@ -165,7 +169,10 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         }
         else if(res->getNumRows() != numRowsSel || res->getNumCols() != numCols){
             // TODO what is the best strategy: throw a warning or just re-allocate?
-            throw std::runtime_error("res is not null, but it has wrong numCols and numRows");
+            std::ostringstream errMsg;
+            errMsg << "invalid argument passed to ExtractRow on dense matrix: res was not null, but given res has wrong dimensions "
+                        << res->getNumRows() << "x" << res->getNumCols() << " instead of " << numRowsSel << "x" << numCols;
+            throw std::runtime_error(errMsg.str());
         }
         
         //Main Logic
@@ -176,7 +183,9 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             // TODO For performance reasons, we might skip such checks or make
             // them optional somehow, but it is okay for now.
             if(std::isnan(valSelectedRow)){
-                throw std::runtime_error("rowIdxs cannot have NaN");
+                std::ostringstream errMsg;
+                errMsg << "invalid argument passed to ExtractRow on dense matrix: rowIdxs sel value at index " << r << " is NaN";
+                throw std::runtime_error(errMsg.str());
             } 
             else if (valSelectedRow < 0 || numRowsArg <= static_cast<const size_t>(valSelectedRow)) {
                 std::ostringstream errMsg;
@@ -185,7 +194,7 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             }
             else
             {
-                const VT * allValues = arg->getValues()+static_cast<size_t>(valSelectedRow)*arg->getRowSkip();
+                const VT * allValues = arg->getValues()+static_cast<const size_t>(valSelectedRow)*arg->getRowSkip();
                 for(size_t c = 0; c < numCols; c++){
                     allUpdatedValues[c]=allValues[c];   
                 }   
@@ -195,6 +204,6 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
     }        
 };
 
-#undef validateExtractRowArgs
+#undef VALIDATE_ARGS
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EXTRACTROW_H

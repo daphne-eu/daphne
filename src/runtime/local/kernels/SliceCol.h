@@ -49,17 +49,21 @@ void sliceCol(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl,
 }
 
 // ****************************************************************************
-// (Partial) template specializations for different data/value types
+// Boundary validation
 // ****************************************************************************
 
 // verifies 0 <= lowerIncl <= upperExcl <= numColsArg
-#define CHECK_BOUNDARY(lowerIncl, upperExcl, DT) \
+#define VALIDATE_ARGS(lowerIncl, upperExcl, DT) \
     const size_t numColsArg = arg->getNumCols(); \
-    if (lowerIncl < 0 || upperExcl < lowerIncl || numColsArg < static_cast<size_t>(upperExcl)) { \
+    if (lowerIncl < 0 || upperExcl < lowerIncl || numColsArg < static_cast<const size_t>(upperExcl)) { \
             std::ostringstream errMsg; \
             errMsg << "invalid arguments '[..., [" << lowerIncl << "," << upperExcl << "]]' passed to SliceCol on " << DT << " with column boundaries '[0, " << numColsArg << "]'"; \
             throw std::out_of_range(errMsg.str()); \
         }
+
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
 
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix
@@ -68,7 +72,7 @@ void sliceCol(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl,
 template<typename VTArg, typename VTSel>
 struct SliceCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
     static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
-        CHECK_BOUNDARY(lowerIncl, upperExcl, "dense matrix");
+        VALIDATE_ARGS(lowerIncl, upperExcl, "dense matrix");
         res = arg->sliceCol(static_cast<const size_t>(lowerIncl), static_cast<const size_t>(upperExcl));
     }        
 };
@@ -80,10 +84,11 @@ struct SliceCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
 template <typename VTSel>
 struct SliceCol<Frame, Frame, VTSel> {
     static void apply(Frame *& res, const Frame * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
-        CHECK_BOUNDARY(lowerIncl, upperExcl, "frame");
+        VALIDATE_ARGS(lowerIncl, upperExcl, "frame");
         res = arg->sliceCol(static_cast<const size_t>(lowerIncl), static_cast<const size_t>(upperExcl));
     }        
 };
 
-#undef CHECK_BOUNDARY
+#undef VALIDATE_ARGS
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SLICECOL_H

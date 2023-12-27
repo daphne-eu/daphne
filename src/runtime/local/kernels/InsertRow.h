@@ -36,7 +36,7 @@ struct InsertRow {
     static void apply(
         DTArg *& res,
         const DTArg * arg, const DTIns * ins,
-        VTSel rowLowerIncl, VTSel rowUpperExcl,
+        const VTSel rowLowerIncl, const VTSel rowUpperExcl,
         DCTX(ctx)
     ) = delete;
 };
@@ -49,43 +49,41 @@ template<class DTArg, class DTIns, typename VTSel>
 void insertRow(
         DTArg *& res,
         const DTArg * arg, const DTIns * ins,
-        VTSel rowLowerIncl, VTSel rowUpperExcl,
+        const VTSel rowLowerIncl, const VTSel rowUpperExcl,
         DCTX(ctx)
 ) {
     InsertRow<DTArg, DTIns, VTSel>::apply(res, arg, ins, rowLowerIncl, rowUpperExcl, ctx);
 }
 
 // ****************************************************************************
-// Boundary validation function
+// Boundary validation
 // ****************************************************************************
 
-template<typename VTSel>
-void validateInsertRowArgs(const size_t rowLowerIncl, VTSel rowLowerInclRaw, const size_t rowUpperExcl, VTSel rowUpperExclRaw,
-                    const size_t numRowsArg, const size_t numColsArg, const size_t numRowsIns, const size_t numColsIns) {
-
-    if (rowLowerInclRaw < 0 || rowUpperExclRaw < rowLowerInclRaw || numRowsArg < rowUpperExcl) {
-        std::ostringstream errMsg;
-        errMsg << "invalid arguments '" << rowLowerInclRaw << ", " << rowUpperExclRaw
-                << "' passed to InsertRow: must be positive, rowLowerIncl must be smaller than rowUpperExcl "
-                << "and both within rows of arg '" << numRowsArg << "'";
-        throw std::out_of_range(errMsg.str());
+#define VALIDATE_ARGS(rowLowerIncl, rowLowerInclRaw, rowUpperExcl, rowUpperExclRaw, \
+                    numRowsArg, numColsArg, numRowsIns, numColsIns) \
+    \
+    if (rowLowerInclRaw < 0 || rowUpperExclRaw < rowLowerInclRaw || numRowsArg < rowUpperExcl) { \
+        std::ostringstream errMsg; \
+        errMsg << "invalid arguments '" << rowLowerInclRaw << ", " << rowUpperExclRaw \
+                << "' passed to InsertRow: must be positive, rowLowerIncl must be smaller than rowUpperExcl " \
+                << "and both within rows of arg '" << numRowsArg << "'"; \
+        throw std::out_of_range(errMsg.str()); \
+    } \
+    \
+    if(numRowsIns != rowUpperExcl - rowLowerIncl){ \
+        std::ostringstream errMsg; \
+        errMsg << "invalid arguments '" << rowLowerInclRaw << ", " << rowUpperExclRaw \
+                << "' passed to InsertRow: the number of addressed rows in arg '" << rowUpperExcl - rowLowerIncl \
+                << "' and the number of rows in ins '" << numRowsIns << "' must match"; \
+        throw std::runtime_error(errMsg.str()); \
+    } \
+    \
+    if(numColsIns != numColsArg) { \
+        std::ostringstream errMsg; \
+        errMsg << "invalid arguments passed to InsertRow: the number of columns in arg '" << numColsArg \
+                << "' and ins '" << numColsIns << "' must match"; \
+        throw std::runtime_error(errMsg.str()); \
     }
-
-    if(numRowsIns != rowUpperExcl - rowLowerIncl){
-        std::ostringstream errMsg;
-        errMsg << "invalid arguments '" << rowLowerInclRaw << ", " << rowUpperExclRaw
-                << "' passed to InsertRow: the number of addressed rows in arg '" << rowUpperExcl - rowLowerIncl
-                << "' and the number of rows in ins '" << numRowsIns << "' must match";
-        throw std::runtime_error(errMsg.str());
-    }
-
-    if(numColsIns != numColsArg) {
-        std::ostringstream errMsg;
-        errMsg << "invalid arguments passed to InsertRow: the number of columns in arg '" << numColsArg
-                << "' and ins '" << numColsIns << "' must match";
-        throw std::runtime_error(errMsg.str());
-    }
-}
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -112,7 +110,7 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         const size_t rowLowerIncl = static_cast<const size_t>(rowLowerInclRaw);
         const size_t rowUpperExcl = static_cast<const size_t>(rowUpperExclRaw);
         
-        validateInsertRowArgs(rowLowerIncl, rowLowerInclRaw, rowUpperExcl, rowUpperExclRaw,
+        VALIDATE_ARGS(rowLowerIncl, rowLowerInclRaw, rowUpperExcl, rowUpperExclRaw,
                     numRowsArg, numColsArg, numRowsIns, numColsIns);
 
         if(res == nullptr)
@@ -144,5 +142,7 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         }
     }
 };
+
+#undef VALIDATE_ARGS
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H
