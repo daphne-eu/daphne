@@ -25,9 +25,8 @@
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/WriteCsv.h>
 #include <runtime/local/io/WriteDaphne.h>
-#include <runtime/local/io/WriteHDFSCsv.h>
+#include <runtime/local/io/HDFS/WriteHDFS.h>
 #include <parser/metadata/MetaDataParser.h>
-
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -73,18 +72,15 @@ struct Write<DenseMatrix<VT>> {
 		writeDaphne(arg, filename);
 	} else if (ext == "hdfs"){
         HDFSMetaData hdfs = {true, filename};
-        FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>, -1, hdfs);
+        FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>, -1, hdfs);        
         // Get file extension before .hdfs (e.g. file.csv.hdfs)
         auto posHdfs = pos;
         auto posExt = fn.find_last_of('.', pos-1);
 	    std::string nestedExt(fn.substr(posExt + 1, posHdfs - posExt - 1));
         MetaDataParser::writeMetaData(filename, metaData);
-        
-        if (nestedExt == "csv") {
-            writeHDFSCsv(arg, filename);
-        } else if (nestedExt == "dbdf"){
-            // Write binary HDFS
-        }
+
+        // call WriteHDFS
+        writeHDFS(arg, filename, ctx);
     }
     }
 };

@@ -94,6 +94,8 @@ class DenseMatrix : public Matrix<ValueType>
      */
     DenseMatrix(const DenseMatrix<ValueType> * src, int64_t rowLowerIncl, int64_t rowUpperExcl, int64_t colLowerIncl,
             int64_t colUpperExcl);
+    DenseMatrix(const DenseMatrix<ValueType> * src, int64_t rowLowerIncl, int64_t rowUpperExcl) : DenseMatrix(src, rowLowerIncl, rowUpperExcl, 0, src->numCols) {};
+
 
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.

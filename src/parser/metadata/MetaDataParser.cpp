@@ -19,14 +19,19 @@
 
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
     std::string metaFilename = filename_ + ".meta";
     std::ifstream ifs(metaFilename, std::ios::in);
     if (!ifs.good())
         throw std::runtime_error("Could not open file '" + metaFilename + "' for reading meta data.");
-
-    nlohmann::json jf = nlohmann::json::parse(ifs);
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+    return MetaDataParser::readMetaDataFromString(buffer.str());
+}
+FileMetaData MetaDataParser::readMetaDataFromString(const std::string& str) {
+    nlohmann::json jf = nlohmann::json::parse(str);
 
     if (!keyExists(jf, JsonKeys::NUM_ROWS) || !keyExists(jf, JsonKeys::NUM_COLS)) {
         throw std::invalid_argument("A meta data JSON file should always contain \"" + JsonKeys::NUM_ROWS + "\" and \""
@@ -85,44 +90,50 @@ FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
     }
 }
 
+std::string MetaDataParser::writeMetaDataToString(const FileMetaData& metaData) {
+    nlohmann::json json;        
+
+    json[JsonKeys::NUM_ROWS] = metaData.numRows;
+    json[JsonKeys::NUM_COLS] = metaData.numCols;
+
+    if (metaData.isSingleValueType) {
+        if (metaData.schema.size() != 1)
+            throw std::runtime_error("inappropriate meta data tried to be written to file");
+        json[JsonKeys::VALUE_TYPE] = metaData.schema[0];
+    }
+    else {
+        std::vector<SchemaColumn> schemaColumns;
+        // assume that the schema and labels are the same lengths
+        for (unsigned int i = 0; i < metaData.schema.size(); i++) {
+            SchemaColumn schemaColumn;
+            schemaColumn.setLabel(metaData.labels[i]);
+            schemaColumn.setValueType(metaData.schema[i]);
+            schemaColumns.emplace_back(schemaColumn);
+        }
+        json[JsonKeys::SCHEMA] = schemaColumns;
+    }
+
+    if (metaData.numNonZeros != -1)
+        json[JsonKeys::NUM_NON_ZEROS] = metaData.numNonZeros;
+    
+    // HDFS
+    if (metaData.hdfs.isHDFS){
+        json[JsonKeys::HDFS][JsonKeys::HDFSKeys::isHDFS] = metaData.hdfs.isHDFS;
+        std::filesystem::path filePath(metaData.hdfs.HDFSFilename);
+        auto baseFileName = filePath.filename().string();
+
+        json[JsonKeys::HDFS][JsonKeys::HDFSKeys::HDFSFilename] = "/" + baseFileName;
+    }
+    return json.dump();
+}
 void MetaDataParser::writeMetaData(const std::string& filename_, const FileMetaData& metaData) {
-    std::string metaFilename = filename_ + ".meta";
+    std::string metaFilename = filename_ + ".meta";    
     std::ofstream ofs(metaFilename, std::ios::out);
     if (!ofs.good())
         throw std::runtime_error("could not open file '" + metaFilename + "' for writing meta data");
 
     if(ofs.is_open()) {
-        nlohmann::json json;        
-
-        json[JsonKeys::NUM_ROWS] = metaData.numRows;
-        json[JsonKeys::NUM_COLS] = metaData.numCols;
-
-        if (metaData.isSingleValueType) {
-            if (metaData.schema.size() != 1)
-                throw std::runtime_error("inappropriate meta data tried to be written to file");
-            json[JsonKeys::VALUE_TYPE] = metaData.schema[0];
-        }
-        else {
-            std::vector<SchemaColumn> schemaColumns;
-            // assume that the schema and labels are the same lengths
-            for (unsigned int i = 0; i < metaData.schema.size(); i++) {
-                SchemaColumn schemaColumn;
-                schemaColumn.setLabel(metaData.labels[i]);
-                schemaColumn.setValueType(metaData.schema[i]);
-                schemaColumns.emplace_back(schemaColumn);
-            }
-            json[JsonKeys::SCHEMA] = schemaColumns;
-        }
-
-        if (metaData.numNonZeros != -1)
-            json[JsonKeys::NUM_NON_ZEROS] = metaData.numNonZeros;
-        
-        // HDFS
-        if (metaData.hdfs.isHDFS){
-            json[JsonKeys::HDFS][JsonKeys::HDFSKeys::isHDFS] = metaData.hdfs.isHDFS;
-            json[JsonKeys::HDFS][JsonKeys::HDFSKeys::HDFSFilename] = metaData.hdfs.HDFSFilename;
-        }
-        ofs << json.dump();
+        ofs << MetaDataParser::writeMetaDataToString(metaData);
     }
     else
         throw std::runtime_error("could not open file '" + metaFilename + "' for writing meta data");

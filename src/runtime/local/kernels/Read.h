@@ -27,7 +27,7 @@
 #include <runtime/local/io/ReadParquet.h>
 #include <runtime/local/io/ReadDaphne.h>
 #include <parser/metadata/MetaDataParser.h>
-#include <runtime/local/io/ReadHDFSCsv.h>
+#include <runtime/local/io/HDFS/ReadHDFS.h>
 
 #include <string>
 #include <regex>
@@ -105,20 +105,8 @@ struct Read<DenseMatrix<VT>> {
 		if(res == nullptr)
 			res = DataObjectFactory::create<DenseMatrix<VT>>(
 				fmd.numRows, fmd.numCols, false
-			);
-		{
-		std::string fn(filename);
-		auto baseFile = fn.substr(0, fn.find_last_of("."));
-		auto nestedExt = extValue(baseFile.c_str());
-		std::cout << baseFile << std::endl;
-		std::cout << nestedExt << std::endl;
-		std::cout << fmd.hdfs.HDFSFilename << std::endl;
-		
-		if (nestedExt == 0)
-			readHDFSCsv(res, fmd.hdfs.HDFSFilename.c_str(), fmd.numRows, fmd.numCols, ',', ctx);
-		else if (nestedExt == 3)
-			throw std::runtime_error("Not implemented");
-		}
+			);		
+		readHDFS(res, filename, ctx);				
 		break;
 	default:
 		throw std::runtime_error("File extension not supported");

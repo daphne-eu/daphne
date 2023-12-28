@@ -18,10 +18,12 @@
 #define SRC_RUNTIME_LOCAL_IO_WRITEHDFSCSV_H
 
 #include <hdfs.h>
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
+#include <runtime/local/io/HDFS/HDFSUtils.h>
 
 #include <cassert>
 #include <cstddef>
@@ -37,7 +39,7 @@
 
 template <class DTArg>
 struct WriteHDFSCsv {
-    static void apply(const DTArg *arg, const char *hdfsFilename) = delete;
+    static void apply(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,8 +47,8 @@ struct WriteHDFSCsv {
 // ****************************************************************************
 
 template <class DTArg>
-void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename) {
-    WriteHDFSCsv<DTArg>::apply(arg, hdfsFilename);
+void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
+    WriteHDFSCsv<DTArg>::apply(arg, hdfsFilename, dctx);
 }
 
 // ****************************************************************************
@@ -59,21 +61,22 @@ void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename) {
 
 template <typename VT>
 struct WriteHDFSCsv<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename) {
+    static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename, DCTX(dctx)) {
         assert(hdfsFilename != nullptr && "File path required");
 
         std::string fn(hdfsFilename);
-        const char *host = "hdfs://10.0.1.94";
-        tPort port = 9000;  // Default port
-        const char *user = "ubuntu";
 
-        hdfsFS fs = hdfsConnectAsUser(host, port, user);
+        auto IpPort = HDFSUtils::parseIPAddress(dctx->getUserConfig().hdfs_Address);
+        hdfsFS fs = hdfsConnectAsUser(std::get<0>(IpPort).c_str(), std::get<1>(IpPort), dctx->getUserConfig().hdfs_username.c_str());
         if (fs == NULL) {
             std::cout << "Error connecting to HDFS" << std::endl;
         }
 
-        // Check if the file already exists
-        if (hdfsExists(fs, fn.c_str()) == -1) {
+        // Check if path exists
+        std::filesystem::path filePath(hdfsFilename);
+        auto dirFileName = filePath.parent_path();
+        
+        if (hdfsExists(fs, dirFileName.c_str()) == -1) {
             // The file does not exist, so create the directory structure
             // and the file
             // TODO extract directory path from filename
@@ -86,8 +89,18 @@ struct WriteHDFSCsv<DenseMatrix<VT>> {
         if (fn.find("/") == std::string::npos)
             fn = "/" + fn;
 
-        // Open the HDFS file for reading
-        hdfsFile hdfsFile = hdfsOpenFile(fs, fn.c_str(), O_WRONLY, 0, 0, 0);
+        // Write related fmd
+        FileMetaData fmd(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
+        auto fmdStr = MetaDataParser::writeMetaDataToString(fmd);
+        auto mdtFn = fn + ".meta";
+        hdfsFile hdfsFile = hdfsOpenFile(fs, mdtFn.c_str(), O_WRONLY, 0, 0, 0);
+        if (hdfsFile == NULL) {
+            throw std::runtime_error("Error opening HDFS file");
+        }
+        hdfsWrite(fs, hdfsFile, static_cast<const void *>(fmdStr.c_str()), fmdStr.size());
+        hdfsCloseFile(fs, hdfsFile);
+        // Open the HDFS file for writing
+        hdfsFile = hdfsOpenFile(fs, fn.c_str(), O_WRONLY, 0, 0, 0);
         if (hdfsFile == NULL) {
             throw std::runtime_error("Error opening HDFS file");
         }
@@ -105,9 +118,7 @@ struct WriteHDFSCsv<DenseMatrix<VT>> {
                 const std::string &valueStr = oss.str();
 
                 // Write the value string to the HDFS file
-                if (hdfsWrite(fs, hdfsFile,
-                              static_cast<const void *>(valueStr.c_str()),
-                              valueStr.size()) == -1) {
+                if (hdfsWrite(fs, hdfsFile, static_cast<const void *>(valueStr.c_str()), valueStr.size()) == -1) {
                     hdfsCloseFile(fs, hdfsFile);
                     hdfsDisconnect(fs);
                     throw std::runtime_error("Failed to write to HDFS file");
