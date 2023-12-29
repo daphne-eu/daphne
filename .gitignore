@@ -51,8 +51,6 @@ tags.temp
 
 # compile commands
 compile_commands.json
-# UserConfig.json ?
-
 
 # release scripts output
 /artifacts

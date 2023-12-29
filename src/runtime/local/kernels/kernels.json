@@ -1519,9 +1519,6 @@
             {
                 "name":  ["CPP"],
                 "instantiations": [
-                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "size_t"]],
                     ["Frame", "Frame", "char"],
                     ["Frame", "Frame", ["DenseMatrix", "int64_t"]],
                     ["Frame", "Frame", ["DenseMatrix", "size_t"]]]
@@ -1643,20 +1640,12 @@
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], "int64_t"],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], "size_t"],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "float"],
             [["DenseMatrix", "float"], ["DenseMatrix", "float"], "int64_t"],
             [["DenseMatrix", "float"], ["DenseMatrix", "float"], "size_t"],
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], "double"],
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "size_t"],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "double"],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "float"],
             ["Frame", "Frame", "int64_t"],
-            ["Frame", "Frame", "size_t"],
-            ["Frame", "Frame", "double"],
-            ["Frame", "Frame", "float"]
+            ["Frame", "Frame", "size_t"]
         ]
     },
     {
@@ -3125,10 +3114,6 @@
                 {
                     "name": "DTArg",
                     "isDataType": true
-                },
-                {
-                    "name": "VTSel",
-                    "isDataType": false
                 }
             ],
             "runtimeParams": [
@@ -3141,11 +3126,11 @@
                     "name": "arg"
                 },
                 {
-                    "type": "const VTSel",
+                    "type": "size_t",
                     "name": "lowerIncl"
                 },
                 {
-                    "type": "const VTSel",
+                    "type": "size_t",
                     "name": "upperExcl"
                 }
             ]
@@ -3171,10 +3156,6 @@
                 {
                     "name": "DTArg",
                     "isDataType": true
-                },
-                {
-                    "name": "VTSel",
-                    "isDataType": false
                 }
             ],
             "runtimeParams": [
@@ -3187,11 +3168,11 @@
                     "name": "arg"
                 },
                 {
-                    "type": "const VTSel",
+                    "type": "size_t",
                     "name": "lowerIncl"
                 },
                 {
-                    "type": "const VTSel",
+                    "type": "size_t",
                     "name": "upperExcl"
                 }
             ]
@@ -3216,10 +3197,6 @@
                 {
                     "name": "DTIns",
                     "isDataType": true
-                },
-                {
-                    "name": "VTSel",
-                    "isDataType": false
                 }
             ],
             "runtimeParams": [
@@ -3236,11 +3213,11 @@
                     "name": "ins"
                 },
                 {
-                    "type": "const VTSel",
+                    "type": "size_t",
                     "name": "rowLowerIncl"
                 },
                 {
-                    "type": "const VTSel",
+                    "type": "size_t",
                     "name": "rowUpperExcl"
                 }
             ]
@@ -3264,10 +3241,6 @@
                 {
                     "name": "DTIns",
                     "isDataType": true
-                },
-                {
-                    "name": "VTSel",
-                    "isDataType": false
                 }
             ],
             "runtimeParams": [
@@ -3284,11 +3257,11 @@
                     "name": "ins"
                 },
                 {
-                    "type": "const VTSel",
+                    "type": "size_t",
                     "name": "colLowerIncl"
                 },
                 {
-                    "type": "const VTSel",
+                    "type": "size_t",
                     "name": "colUpperExcl"
                 }
             ]

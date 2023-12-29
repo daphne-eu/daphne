@@ -97,7 +97,7 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
                 if (VTcolIdx < 0 || numColsArg <= colIdx) {
                     std::ostringstream errMsg;
                     errMsg << "invalid argument '" << VTcolIdx << "' passed to ExtractCol: out of bounds "
-                        "for dense matrix with column boundaries '[0, " << numColsArg << "]'";
+                        "for dense matrix with column boundaries '[0, " << numColsArg << ")'";
                     throw std::out_of_range(errMsg.str());
                 }
 
@@ -155,7 +155,7 @@ struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
             if (VTcolIdx < 0 || numColsArg <= colIdxs[c]) {
                 std::ostringstream errMsg;
                 errMsg << "invalid argument '" << VTcolIdx << "' passed to ExtractCol: ouf of bounds "
-                    "for frame with column boundaries '[0, " << numColsArg << "]'";
+                    "for frame with column boundaries '[0, " << numColsArg << ")'";
                 throw std::out_of_range(errMsg.str());
             }
         }

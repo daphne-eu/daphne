@@ -113,7 +113,8 @@ struct ExtractRow<Frame, Frame, VTSel> {
             const size_t pos = valuesSel[r];
             if (valuesSel[r] < 0 || numRowsArg <= pos) {
                 std::ostringstream errMsg;
-                errMsg << "invalid argument '" << valuesSel[r] << "' passed to ExtractRow on frame with row boundaries '[0, " << numRowsArg << "]'";
+                errMsg << "invalid argument '" << valuesSel[r] << "' passed to ExtractRow: "
+                    "out of bounds for frame with row boundaries '[0, " << numRowsArg << ")'";
                 throw std::out_of_range(errMsg.str());
             }
             for(size_t c = 0; c < numCols; c++) {
@@ -189,7 +190,8 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             } 
             else if (valSelectedRow < 0 || numRowsArg <= static_cast<const size_t>(valSelectedRow)) {
                 std::ostringstream errMsg;
-                errMsg << "invalid argument '" << valSelectedRow << "' passed to ExtractRow on dense matrix with row boundaries '[0, " << numRowsArg << "]'";
+                errMsg << "invalid argument '" << valSelectedRow << "' passed to ExtractRow: out of bounds for "
+                    "matrix with row boundaries '[0, " << numRowsArg << ")'";
                 throw std::out_of_range(errMsg.str());
             }
             else
