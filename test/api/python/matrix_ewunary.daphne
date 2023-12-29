@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO The commented out functions below are not supported yet (see #614).
-
 print(abs([1]));
 print(abs([0]));
 print(abs([-3.3]));
@@ -22,22 +20,22 @@ print(sign([1]));
 print(sign([0]));
 print(sign([-3.3]));
 
-m = [1.23];
+m = [0.99];
 
 print(exp(m));
-# print(ln(m));
+print(ln(m));
 print(sqrt(m));
 
 print(round(m));
 print(floor(m));
 print(ceil(m));
 
-# print(sin(m));
-# print(cos(m));
-# print(tan(m));
-# print(sinh(m));
-# print(cosh(m));
-# print(tanh(m));
-# print(asin(m));
-# print(acos(m));
-# print(atan(m));
+print(sin(m));
+print(cos(m));
+print(tan(m));
+print(asin(m));
+print(acos(m));
+print(atan(m));
+print(sinh(m));
+print(cosh(m));
+print(tanh(m));

@@ -1,4 +1,16 @@
-# TODO The commented out functions below are not supported yet (see #614).
+# Copyright 2023 The DAPHNE Consortium
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 print(abs(1));
 print(abs(0));
@@ -8,22 +20,22 @@ print(sign(1));
 print(sign(0));
 print(sign(-3.3));
 
-s = 1.23;
+s = 0.99;
 
 print(exp(s));
-# print(ln(s));
+print(ln(s));
 print(sqrt(s));
 
 print(round(s));
 print(floor(s));
 print(ceil(s));
 
-# print(sin(s));
-# print(cos(s));
-# print(tan(s));
-# print(sinh(s));
-# print(cosh(s));
-# print(tanh(s));
-# print(asin(s));
-# print(acos(s));
-# print(atan(s));
+print(sin(s));
+print(cos(s));
+print(tan(s));
+print(asin(s));
+print(acos(s));
+print(atan(s));
+print(sinh(s));
+print(cosh(s));
+print(tanh(s));

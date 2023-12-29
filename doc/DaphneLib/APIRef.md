@@ -66,20 +66,20 @@ In the following, we describe only the latter.
 - **`abs`**`()`
 - **`sign`**`()`
 - **`exp`**`()`
-- **`ln`**`()` *(not supported yet, see #614)*
+- **`ln`**`()`
 - **`sqrt`**`()`
 - **`round`**`()`
 - **`floor`**`()`
 - **`ceil`**`()`
-- **`sin`**`()` *(not supported yet, see #614)*
-- **`cos`**`()` *(not supported yet, see #614)*
-- **`tan`**`()` *(not supported yet, see #614)*
-- **`sinh`**`()` *(not supported yet, see #614)*
-- **`cosh`**`()` *(not supported yet, see #614)*
-- **`tanh`**`()` *(not supported yet, see #614)*
-- **`asin`**`()` *(not supported yet, see #614)*
-- **`acos`**`()` *(not supported yet, see #614)*
-- **`atan`**`()` *(not supported yet, see #614)*
+- **`sin`**`()`
+- **`cos`**`()`
+- **`tan`**`()`
+- **`asin`**`()`
+- **`acos`**`()`
+- **`atan`**`()`
+- **`sinh`**`()`
+- **`cosh`**`()`
+- **`tanh`**`()`
 
 **Elementwise binary:**
 
@@ -181,20 +181,20 @@ In the following, we describe only the latter.
 - **`abs`**`()`
 - **`sign`**`()`
 - **`exp`**`()`
-- **`ln`**`()` *(not supported yet, see #614)*
+- **`ln`**`()`
 - **`sqrt`**`()`
 - **`round`**`()`
 - **`floor`**`()`
 - **`ceil`**`()`
-- **`sin`**`()` *(not supported yet, see #614)*
-- **`cos`**`()` *(not supported yet, see #614)*
-- **`tan`**`()` *(not supported yet, see #614)*
-- **`sinh`**`()` *(not supported yet, see #614)*
-- **`cosh`**`()` *(not supported yet, see #614)*
-- **`tanh`**`()` *(not supported yet, see #614)*
-- **`asin`**`()` *(not supported yet, see #614)*
-- **`acos`**`()` *(not supported yet, see #614)*
-- **`atan`**`()` *(not supported yet, see #614)*
+- **`sin`**`()`
+- **`cos`**`()`
+- **`tan`**`()`
+- **`asin`**`()`
+- **`acos`**`()`
+- **`atan`**`()`
+- **`sinh`**`()`
+- **`cosh`**`()`
+- **`tanh`**`()`
 
 **Elementwise binary:**
 

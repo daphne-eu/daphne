@@ -96,6 +96,7 @@ set(TEST_SOURCES
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryObjScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
+        runtime/local/kernels/EwUnaryMatTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp

@@ -28,8 +28,6 @@ namespace CUDA {
 
     template<typename VT>
     void Fill<DenseMatrix<VT>, VT>::apply(DenseMatrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(dctx)) {
-        assert(numRows > 0 && "numRows must be > 0");
-        assert(numCols > 0 && "numCols must be > 0");
 
         const size_t deviceID = 0; //ToDo: multi device support
         auto ctx = CUDAContext::get(dctx, deviceID);

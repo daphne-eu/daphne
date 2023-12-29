@@ -2712,7 +2712,8 @@
             [["DenseMatrix", "double"],["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"],["DenseMatrix", "int64_t"]]
         ],
-        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND"]
+        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND", "LN",
+                    "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "SINH", "COSH", "TANH"]
     },
     {
         "kernelTemplate": {
@@ -2745,7 +2746,8 @@
             ["float", "float"],
             ["int64_t", "int64_t"]
         ],
-        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND"]
+        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND", "LN",
+                    "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "SINH", "COSH", "TANH"]
     },
     {
         "kernelTemplate": {

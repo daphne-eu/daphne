@@ -19,6 +19,7 @@ dc = DaphneContext()
 m = dc.seq(1.0, 16.0, 1.0).reshape(4, 4)
 m.diagVector().print().compute()
 
-A = dc.seq(1.0, 16.0, 1.0).reshape(4, 4)
+A1 = dc.seq(1.0, 16.0, 1.0).reshape(4, 4)
+A = (A1 * A1)
 b = dc.seq(1.0, 4.0, 1.0)
 A.solve(b).print().compute()
