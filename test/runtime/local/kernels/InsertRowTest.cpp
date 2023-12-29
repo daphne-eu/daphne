@@ -98,19 +98,6 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix", TAG_KERNELS, (DenseMatri
         checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
     }
 
-    SECTION("multiple insertions, FP bounds") {
-        VT lowerIncl = 2.4;
-        VT upperExcl = 4.9;
-        DT * exp = genGivenVals<DT>(4, {
-            1, -2, 3,
-            4, -5, 6,
-            2, -2, 2,
-            7, 9, 11,
-        });
-
-        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
-    }
-
     SECTION("out of bounds - negative") {
         VT lowerIncl = -1;
         VT upperExcl = 1;
@@ -123,6 +110,39 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix", TAG_KERNELS, (DenseMatri
         VT upperExcl = 5;
 
         checkInsertRowThrow(arg, ins, lowerIncl, upperExcl);
+    }
+
+    DataObjectFactory::destroy(arg, ins);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix - FP specific", TAG_KERNELS, (DenseMatrix), (double)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+
+    auto arg = genGivenVals<DT>(4, {
+        1, -2, 3,
+        4, -5, 6,
+        7, -8, 9,
+        10, -11, VT(12.4),
+    });
+
+    auto ins = genGivenVals<DT>(2, {
+        2, -2, 2,
+        7, 9, 11,
+    });
+    
+    SECTION("multiple insertions, FP bounds") {
+        VT lowerIncl = 2.4;
+        VT upperExcl = 4.9;
+        DT * exp = genGivenVals<DT>(4, {
+            1, -2, 3,
+            4, -5, 6,
+            2, -2, 2,
+            7, 9, 11,
+        });
+
+        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
     }
 
     DataObjectFactory::destroy(arg, ins);
