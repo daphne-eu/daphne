@@ -65,8 +65,8 @@ void insertCol(
     if (colLowerInclRaw < 0 || colUpperExclRaw < colLowerInclRaw || numColsArg < colUpperExcl) { \
         std::ostringstream errMsg; \
         errMsg << "invalid arguments '" << colLowerInclRaw << ", " << colUpperExclRaw \
-                << "' passed to InsertCol: must be positive, colLowerIncl must be smaller than colUpperExcl " \
-                << "and both within columns of arg '" << numColsArg << "'"; \
+                << "' passed to InsertCol: must be positive, colLowerIncl must be smaller than or equal to " \
+                << "colUpperExcl and both within columns of arg '" << numColsArg << "'"; \
         throw std::out_of_range(errMsg.str()); \
     } \
     \

@@ -65,8 +65,8 @@ void insertRow(
     if (rowLowerInclRaw < 0 || rowUpperExclRaw < rowLowerInclRaw || numRowsArg < rowUpperExcl) { \
         std::ostringstream errMsg; \
         errMsg << "invalid arguments '" << rowLowerInclRaw << ", " << rowUpperExclRaw \
-                << "' passed to InsertRow: must be positive, rowLowerIncl must be smaller than rowUpperExcl " \
-                << "and both within rows of arg '" << numRowsArg << "'"; \
+                << "' passed to InsertRow: must be positive, rowLowerIncl must be smaller than or equal to " \
+                << "rowUpperExcl and both within rows of arg '" << numRowsArg << "'"; \
         throw std::out_of_range(errMsg.str()); \
     } \
     \
