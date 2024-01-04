@@ -93,8 +93,8 @@ class DenseMatrix : public Matrix<ValueType>
      * @param colLowerIncl Inclusive lower bound for the range of columns to extract.
      * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
      */
-    DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
-            size_t colUpperExcl);
+    DenseMatrix(const DenseMatrix<ValueType> * src, int64_t rowLowerIncl, int64_t rowUpperExcl, int64_t colLowerIncl,
+            int64_t colUpperExcl);
 
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
@@ -372,7 +372,7 @@ class DenseMatrix<const char*> : public Matrix<const char*>
     
     DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<const char*[]>& strings, size_t strBufCapacity = 1024, std::shared_ptr<const char*> cuda_ptr_ = nullptr);
 
-    DenseMatrix(const DenseMatrix<const char*> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
+    DenseMatrix(const DenseMatrix<const char*> * src, int64_t rowLowerIncl, int64_t rowUpperExcl, int64_t colLowerIncl, int64_t colUpperExcl);
 
     ~DenseMatrix() override = default;
     
