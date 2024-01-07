@@ -11,7 +11,7 @@ mat = reshape([
 
 # prevents compiler catching negative indexing and passes it to sliceOp
 # i = sum([-1.0]);
-# mat[i, :];
+print(mat[238, :]);
 
 // --------------------
 // positive examples
@@ -39,7 +39,7 @@ print("=====================");
 
 # slice
 # mat2 = mat[-1.2:2.0, ];
-mat2 = mat[ -3, ];
+# mat2 = mat[ -3, ];
 
 # insertRow
 # mat[8,] = reshape([2, 2, 2, 2, 2], 1, 5);

@@ -73,7 +73,7 @@ template<typename VTArg, typename VTSel>
 struct SliceCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
     static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
         VALIDATE_ARGS(lowerIncl, upperExcl, "dense matrix");
-        res = arg->sliceCol(static_cast<const size_t>(lowerIncl), static_cast<const size_t>(upperExcl));
+        res = arg->sliceCol(lowerIncl, upperExcl);
     }        
 };
 
@@ -85,7 +85,7 @@ template <typename VTSel>
 struct SliceCol<Frame, Frame, VTSel> {
     static void apply(Frame *& res, const Frame * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
         VALIDATE_ARGS(lowerIncl, upperExcl, "frame");
-        res = arg->sliceCol(static_cast<const size_t>(lowerIncl), static_cast<const size_t>(upperExcl));
+        res = arg->sliceCol(lowerIncl, upperExcl);
     }        
 };
 
