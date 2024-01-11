@@ -36,7 +36,7 @@
 
 template<class DTRes, class DTArg, typename VTSel>
 struct SliceCol {
-    static void apply(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -44,7 +44,7 @@ struct SliceCol {
 // ****************************************************************************
 
 template<class DTRes, class DTArg, typename VTSel>
-void sliceCol(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
+void sliceCol(DTRes *& res, const DTArg * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
     SliceCol<DTRes, DTArg, VTSel>::apply(res, arg, lowerIncl, upperExcl, ctx);
 }
 
@@ -52,12 +52,13 @@ void sliceCol(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl,
 // Boundary validation
 // ****************************************************************************
 
-// verifies 0 <= lowerIncl <= upperExcl <= numColsArg
-#define VALIDATE_ARGS(lowerIncl, upperExcl, DT) \
-    const size_t numColsArg = arg->getNumCols(); \
-    if (lowerIncl < 0 || upperExcl < lowerIncl || numColsArg < static_cast<const size_t>(upperExcl)) { \
+#define VALIDATE_ARGS(lowerIncl, upperExcl, numColsArg) \
+    if (lowerIncl < 0 || upperExcl < lowerIncl || numColsArg < static_cast<size_t>(upperExcl) \
+        || (static_cast<size_t>(lowerIncl) == numColsArg && lowerIncl != 0)) { \
             std::ostringstream errMsg; \
-            errMsg << "invalid arguments '[..., [" << lowerIncl << "," << upperExcl << "]]' passed to SliceCol on " << DT << " with column boundaries '[0, " << numColsArg << "]'"; \
+            errMsg << "invalid arguments '" << lowerIncl << ", " << upperExcl << "' passed to SliceCol: " \
+                    << "it must hold 0 <= lowerIncl <= upperExcl <= #columns " \
+                    << "and lowerIncl < #columns (unless both are zero) where #columns of arg is '" << numColsArg << "'"; \
             throw std::out_of_range(errMsg.str()); \
         }
 
@@ -71,8 +72,9 @@ void sliceCol(DTRes *& res, const DTArg * arg, VTSel lowerIncl, VTSel upperExcl,
 
 template<typename VTArg, typename VTSel>
 struct SliceCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
-    static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
-        VALIDATE_ARGS(lowerIncl, upperExcl, "dense matrix");
+    static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
+        const size_t numColsArg = arg->getNumCols();
+        VALIDATE_ARGS(lowerIncl, upperExcl, numColsArg);
         res = arg->sliceCol(lowerIncl, upperExcl);
     }        
 };
@@ -83,8 +85,9 @@ struct SliceCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
 
 template <typename VTSel>
 struct SliceCol<Frame, Frame, VTSel> {
-    static void apply(Frame *& res, const Frame * arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
-        VALIDATE_ARGS(lowerIncl, upperExcl, "frame");
+    static void apply(Frame *& res, const Frame * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
+        const size_t numColsArg = arg->getNumCols();
+        VALIDATE_ARGS(lowerIncl, upperExcl, numColsArg);
         res = arg->sliceCol(lowerIncl, upperExcl);
     }        
 };

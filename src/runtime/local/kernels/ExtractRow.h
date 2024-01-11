@@ -58,7 +58,7 @@ void extractRow(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel,
     if(numColsSel != 1) { \
         std::ostringstream errMsg; \
         errMsg << "invalid argument passed to ExtractRow: column selection must be given as column matrix but has '" \
-            << numColsSel << "' rows instead"; \
+            << numColsSel << "' columns instead of one"; \
         throw std::runtime_error(errMsg.str()); \
     } \
 
@@ -155,7 +155,7 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             errMsg << "invalid argument passed to ExtractRow on dense matrix: arg cannot be null";
             throw std::runtime_error(errMsg.str());
         }
-        if(sel== nullptr){
+        if(sel==nullptr){
             std::ostringstream errMsg;
             errMsg << "invalid argument passed to ExtractRow on dense matrix: rowIdxs sel cannot be null";
             throw std::runtime_error(errMsg.str());
@@ -164,15 +164,15 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
 
         const size_t numRowsSel = sel->getNumRows();
         const size_t numRowsArg = arg->getNumRows();
-        const size_t numCols = arg->getNumCols();
-        if(res ==nullptr){
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsSel, numCols, false);
+        const size_t numColsArg = arg->getNumCols();
+        if(res==nullptr){
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsSel, numColsArg, false);
         }
-        else if(res->getNumRows() != numRowsSel || res->getNumCols() != numCols){
+        else if(res->getNumRows() != numRowsSel || res->getNumCols() != numColsArg){
             // TODO what is the best strategy: throw a warning or just re-allocate?
             std::ostringstream errMsg;
             errMsg << "invalid argument passed to ExtractRow on dense matrix: res was not null, but given res has wrong dimensions "
-                        << res->getNumRows() << "x" << res->getNumCols() << " instead of " << numRowsSel << "x" << numCols;
+                        << res->getNumRows() << "x" << res->getNumCols() << " instead of " << numRowsSel << "x" << numColsArg;
             throw std::runtime_error(errMsg.str());
         }
         
@@ -197,7 +197,7 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             else
             {
                 const VT * allValues = arg->getValues()+static_cast<const size_t>(valSelectedRow)*arg->getRowSkip();
-                for(size_t c = 0; c < numCols; c++){
+                for(size_t c = 0; c < numColsArg; c++){
                     allUpdatedValues[c]=allValues[c];   
                 }   
                 allUpdatedValues += res->getRowSkip();                     

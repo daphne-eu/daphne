@@ -62,11 +62,12 @@ void insertRow(
 #define VALIDATE_ARGS(rowLowerIncl, rowLowerInclRaw, rowUpperExcl, rowUpperExclRaw, \
                     numRowsArg, numColsArg, numRowsIns, numColsIns) \
     \
-    if (rowLowerInclRaw < 0 || rowUpperExclRaw < rowLowerInclRaw || numRowsArg < rowUpperExcl) { \
+    if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || numRowsArg < rowUpperExcl \
+        || (rowLowerIncl == numRowsArg && rowLowerIncl != 0)) { \
         std::ostringstream errMsg; \
         errMsg << "invalid arguments '" << rowLowerInclRaw << ", " << rowUpperExclRaw \
-                << "' passed to InsertRow: must be positive, rowLowerIncl must be smaller than or equal to " \
-                << "rowUpperExcl and both within rows of arg '" << numRowsArg << "'"; \
+                << "' passed to InsertRow: it must hold 0 <= rowLowerIncl <= rowUpperExcl <= #rows " \
+                << "and rowLowerIncl < #rows (unless both are zero) where #rows of arg is '" << numRowsArg << "'"; \
         throw std::out_of_range(errMsg.str()); \
     } \
     \
@@ -106,7 +107,6 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
 
-        // VTSel enables better validation
         const size_t rowLowerIncl = static_cast<const size_t>(rowLowerInclRaw);
         const size_t rowUpperExcl = static_cast<const size_t>(rowUpperExclRaw);
         

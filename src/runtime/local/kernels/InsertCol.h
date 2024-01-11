@@ -62,19 +62,20 @@ void insertCol(
 #define VALIDATE_ARGS(colLowerIncl, colLowerInclRaw, colUpperExcl, colUpperExclRaw, \
                     numRowsArg, numColsArg, numRowsIns, numColsIns) \
     \
-    if (colLowerInclRaw < 0 || colUpperExclRaw < colLowerInclRaw || numColsArg < colUpperExcl) { \
+    if (colLowerIncl < 0 || colUpperExcl < colLowerIncl || numColsArg < colUpperExcl \
+        || (colLowerIncl == numColsArg && colLowerIncl != 0)) { \
         std::ostringstream errMsg; \
         errMsg << "invalid arguments '" << colLowerInclRaw << ", " << colUpperExclRaw \
-                << "' passed to InsertCol: must be positive, colLowerIncl must be smaller than or equal to " \
-                << "colUpperExcl and both within columns of arg '" << numColsArg << "'"; \
+                << "' passed to InsertCol: it must hold 0 <= colLowerIncl <= colUpperExcl <= #columns " \
+                << "and colLowerIncl < #columns (unless both are zero) where #columns of arg is '" << numColsArg << "'"; \
         throw std::out_of_range(errMsg.str()); \
     } \
     \
     if(numColsIns != colUpperExcl - colLowerIncl){ \
         std::ostringstream errMsg; \
         errMsg << "invalid arguments '" << colLowerInclRaw << ", " << colUpperExclRaw \
-                << "' passed to InsertCol: the number of addressed rows in arg '" << colUpperExcl - colLowerIncl \
-                << "' and the number of rows in ins '" << numColsIns << "' must match"; \
+                << "' passed to InsertCol: the number of addressed columns in arg '" << colUpperExcl - colLowerIncl \
+                << "' and the number of columns in ins '" << numColsIns << "' must match"; \
         throw std::runtime_error(errMsg.str()); \
     } \
     \
@@ -106,7 +107,6 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
 
-        // VTSel enables better validation
         const size_t colLowerIncl = static_cast<const size_t>(colLowerInclRaw);
         const size_t colUpperExcl = static_cast<const size_t>(colUpperExclRaw);
         

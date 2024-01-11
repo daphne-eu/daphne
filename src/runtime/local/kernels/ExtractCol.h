@@ -58,7 +58,7 @@ void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) {
     if(numColsSel != 1) { \
         std::ostringstream errMsg; \
         errMsg << "invalid argument passed to ExtractCol: column selection must be given as column matrix but has '" \
-            << numColsSel << "' rows instead"; \
+            << numColsSel << "' columns instead of one"; \
         throw std::runtime_error(errMsg.str()); \
     }
 

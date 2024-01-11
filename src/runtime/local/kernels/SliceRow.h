@@ -52,12 +52,13 @@ void sliceRow(DTRes *& res, const DTArg * arg, const VTSel lowerIncl, const VTSe
 // Boundary validation
 // ****************************************************************************
 
-// verifies 0 <= lowerIncl <= upperExcl <= numRowsArg
-#define VALIDATE_ARGS(lowerIncl, upperExcl, DT) \
-    const size_t numRowsArg = arg->getNumRows(); \
-    if (lowerIncl < 0 || upperExcl < lowerIncl || numRowsArg < static_cast<const size_t>(upperExcl)) { \
+#define VALIDATE_ARGS(lowerIncl, upperExcl, numRowsArg) \
+    if (lowerIncl < 0 || upperExcl < lowerIncl || numRowsArg < static_cast<size_t>(upperExcl) \
+        || (static_cast<size_t>(lowerIncl) == numRowsArg && lowerIncl != 0)) { \
             std::ostringstream errMsg; \
-            errMsg << "invalid arguments '[[" << lowerIncl << "," << upperExcl << "], ...]' passed to SliceRow on " << DT << " with row boundaries '[0, " << numRowsArg << "]'"; \
+            errMsg << "invalid arguments '" << lowerIncl << ", " << upperExcl << "' passed to SliceRow: " \
+                    << "it must hold 0 <= lowerIncl <= upperExcl <= #rows " \
+                    << "and lowerIncl < #rows (unless both are zero) where #rows of arg is '" << numRowsArg << "'"; \
             throw std::out_of_range(errMsg.str()); \
         }
 
@@ -72,7 +73,8 @@ void sliceRow(DTRes *& res, const DTArg * arg, const VTSel lowerIncl, const VTSe
 template<typename VTArg, typename VTSel>
 struct SliceRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
     static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
-        VALIDATE_ARGS(lowerIncl, upperExcl, "dense matrix");
+        const size_t numRowsArg = arg->getNumRows();
+        VALIDATE_ARGS(lowerIncl, upperExcl, numRowsArg);
         res = arg->sliceRow(lowerIncl, upperExcl);
     }        
 };
@@ -84,7 +86,8 @@ struct SliceRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
 template <typename VTSel>
 struct SliceRow<Frame, Frame, VTSel> {
     static void apply(Frame *& res, const Frame * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
-        VALIDATE_ARGS(lowerIncl, upperExcl, "frame");
+        const size_t numRowsArg = arg->getNumRows();
+        VALIDATE_ARGS(lowerIncl, upperExcl, numRowsArg);
         res = arg->sliceRow(lowerIncl, upperExcl);
     }        
 };

@@ -34,20 +34,22 @@
         throw std::runtime_error(errMsg.str()); \
     } \
     \
-    if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->numRows) < rowUpperExcl) { \
+    if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->numRows) < rowUpperExcl \
+        || (rowLowerIncl == static_cast<ssize_t>(src->numRows) && rowLowerIncl != 0)) { \
         std::ostringstream errMsg; \
         errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl \
-                << "' passed to dense matrix constructor: must be positive, rowLowerIncl must be smaller than or equal to " \
-                << "rowUpperExcl and both within rows of src '" << src->numRows << "'"; \
+                << "' passed to dense matrix constructor: it must hold 0 <= rowLowerIncl <= rowUpperExcl <= #rows " \
+                << "and rowLowerIncl < #rows (unless both are zero) where #rows of src is '" << src->numRows << "'"; \
         throw std::out_of_range(errMsg.str()); \
     } \
     \
-    if(colLowerIncl < 0 || colUpperExcl < colLowerIncl || static_cast<ssize_t>(src->numCols) < colUpperExcl){ \
+    if(colLowerIncl < 0 || colUpperExcl < colLowerIncl || static_cast<ssize_t>(src->numCols) < colUpperExcl \
+        || (colLowerIncl == static_cast<ssize_t>(src->numCols) && colLowerIncl != 0)) { \
         std::ostringstream errMsg; \
         errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl \
-                << "' passed to dense matrix constructor: must be positive, colLowerIncl must be smaller than or equal to " \
-                << "colUpperExcl and both within columns of src '" << src->numCols << "'"; \
-        throw std::runtime_error(errMsg.str()); \
+                << "' passed to dense matrix constructor: it must hold 0 <= colLowerIncl <= colUpperExcl <= #columns " \
+                << "and colLowerIncl < #columns (unless both are zero) where #columns of src is '" << src->numCols << "'"; \
+        throw std::out_of_range(errMsg.str()); \
     }
 
 // ****************************************************************************

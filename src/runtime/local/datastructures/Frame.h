@@ -267,11 +267,12 @@ class Frame : public Structure {
             throw std::runtime_error(errMsg.str());
         }
         
-        if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->numRows) < rowUpperExcl) {
+        if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->numRows) < rowUpperExcl
+            || (rowLowerIncl == static_cast<ssize_t>(src->numRows) && rowLowerIncl != 0)) {
             std::ostringstream errMsg;
             errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl
-                    << "' passed to frame constructor: must be positive, rowLowerIncl must be smaller than "
-                    << " or equal to rowUpperExcl and both within rows of src '" << src->numRows << "'";
+                    << "' passed to frame constructor: it must hold 0 <= rowLowerIncl <= rowUpperExcl <= #rows "
+                    << "and rowLowerIncl < #rows (unless both are zero) where #rows of src is '" << src->numRows << "'";
             throw std::out_of_range(errMsg.str());
         }
 
@@ -280,7 +281,7 @@ class Frame : public Structure {
             if (numColsSrc <= colIdxs[i]) {
                 std::ostringstream errMsg;
                 errMsg << "invalid argument '" << colIdxs[i] << "' passed to frame constructor: "
-                    "out of bounds for frame with column boundaries '[0, " << numColsSrc << ")'";
+                    "colIdx is out of bounds for frame with column boundaries '[0, " << numColsSrc << ")'";
                 throw std::out_of_range(errMsg.str());
             }
         }
