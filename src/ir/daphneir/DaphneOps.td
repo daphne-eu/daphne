@@ -600,7 +600,7 @@ def Daphne_SliceRowOp : Daphne_Op<"sliceRow", [
         positions in `[lowerIncl, upperExcl)` to the result.
     }];
 
-    let arguments = (ins MatrixOrFrame:$source, Size:$lowerIncl, Size:$upperExcl);
+    let arguments = (ins MatrixOrFrame:$source, SI64:$lowerIncl, SI64:$upperExcl);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -642,7 +642,7 @@ def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
         positions in `[lowerIncl, upperExcl)` to the result.
     }];
 
-    let arguments = (ins MatrixOrFrame:$source, Size:$lowerIncl, Size:$upperExcl);
+    let arguments = (ins MatrixOrFrame:$source, SI64:$lowerIncl, SI64:$upperExcl);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -652,7 +652,7 @@ def Daphne_InsertRowOp : Daphne_Op<"insertRow", [
     TypeFromFirstArg, // this is debatable
     ShapeFromArg
 ]> {
-    let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$rowLowerIncl, Size:$rowUpperExcl);
+    let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, SI64:$rowLowerIncl, SI64:$rowUpperExcl);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -660,7 +660,7 @@ def Daphne_InsertColOp : Daphne_Op<"insertCol", [
     TypeFromFirstArg, // this is debatable
     ShapeFromArg
 ]> {
-    let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$colLowerIncl, Size:$colUpperExcl);
+    let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, SI64:$colLowerIncl, SI64:$colUpperExcl);
     let results = (outs MatrixOrFrame:$res);
 }
 
