@@ -50,7 +50,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol on dense matrix", TAG_KERNELS, (DenseMatri
     auto arg = genGivenVals<DT>(3, {
         1, -2, 3, 4,
         -5, 6, 7, -8,
-        9, 10, -11, VT(12.4),
+        9, 10, -11, 12,
     });
 
     auto ins = genGivenVals<DT>(3, {
@@ -65,7 +65,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol on dense matrix", TAG_KERNELS, (DenseMatri
         DT * exp = genGivenVals<DT>(3, {
             1, -1, 3, 4,
             1, 1, 7, -8,
-            1, -1, -11, VT(12.4),
+            1, -1, -11, 12,
         });
 
         checkInsertCol(arg, ins, lowerIncl, upperExcl, exp);
@@ -77,7 +77,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol on dense matrix", TAG_KERNELS, (DenseMatri
         DT * exp = genGivenVals<DT>(3, {
             1, 1, -1, 4,
             -5, 1, 1, -8,
-            9, 1, -1, VT(12.4),
+            9, 1, -1, 12,
         });
 
         checkInsertCol(arg, ins, lowerIncl, upperExcl, exp);
@@ -119,7 +119,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol on dense matrix - FP specific", TAG_KERNEL
     auto arg = genGivenVals<DT>(3, {
         1, -2, 3, 4,
         -5, 6, 7, -8,
-        9, 10, -11, VT(12.4),
+        9, 10, -11, 12.4,
     });
 
     auto ins = genGivenVals<DT>(3, {

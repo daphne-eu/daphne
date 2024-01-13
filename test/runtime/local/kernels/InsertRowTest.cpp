@@ -51,7 +51,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix", TAG_KERNELS, (DenseMatri
         1, -2, 3,
         4, -5, 6,
         7, -8, 9,
-        10, -11, VT(12.4),
+        10, -11, 12,
     });
 
     auto ins = genGivenVals<DT>(2, {
@@ -66,7 +66,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix", TAG_KERNELS, (DenseMatri
             2, -2, 2,
             7, 9, 11,
             7, -8, 9,
-            10, -11, VT(12.4),
+            10, -11, 12,
         });
 
         checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
@@ -79,7 +79,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix", TAG_KERNELS, (DenseMatri
             1, -2, 3,
             2, -2, 2,
             7, 9, 11,
-            10, -11, VT(12.4),
+            10, -11, 12,
         });
 
         checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
@@ -124,7 +124,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix - FP specific", TAG_KERNEL
         1, -2, 3,
         4, -5, 6,
         7, -8, 9,
-        10, -11, VT(12.4),
+        10, -11, 12.4,
     });
 
     auto ins = genGivenVals<DT>(2, {
