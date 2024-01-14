@@ -239,7 +239,7 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
     mlir::ModuleOp module) {
     if (!module) return nullptr;
     // An optimization pipeline to use within the execution engine.
-    unsigned optLevel = 0;
+    unsigned optLevel = 3;
     unsigned sizeLevel = 0;
     llvm::TargetMachine *targetMachine = nullptr;
     auto optPipeline = mlir::makeOptimizingTransformer(optLevel, sizeLevel, targetMachine);
