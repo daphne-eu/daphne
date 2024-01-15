@@ -304,13 +304,13 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         pm.addPass(mlir::daphne::createMatMulOpLoweringPass());
     }
 
-    pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
-    pm.addPass(mlir::daphne::createMapOpLoweringPass());
+    // pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
+    // pm.addPass(mlir::daphne::createMapOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
 
-    pm.addPass(mlir::daphne::createEwOpLoweringPass());
+    // pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::createConvertMathToLLVMPass());
-    pm.addPass(mlir::daphne::createModOpLoweringPass());
+    // pm.addPass(mlir::daphne::createModOpLoweringPass());
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
