@@ -50,6 +50,7 @@
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/UseDefLists.h"
 #include "mlir/Pass/Pass.h"
@@ -61,8 +62,67 @@ using namespace mlir;
 
 static constexpr int ROW = 0;
 static constexpr int COL = 1;
+void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
+                  ConversionPatternRewriter &rewriter, mlir::Location loc,
+                  ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
+                  mlir::MLIRContext *ctx) {
+    SmallVector<Value, 4> loopIvs;
 
-llvm::SmallVector<AffineForOp, 3> affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
+    // row loop
+    auto rowLoop = rewriter.create<AffineForOp>(loc, 0, lhsShape[ROW], 1);
+    for (Operation &nested : *rowLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+
+    // row loop body
+    rewriter.setInsertionPointToStart(rowLoop.getBody());
+
+    // fma loop
+    auto innerLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[ROW], 1);
+    for (Operation &nested : *innerLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+    rewriter.setInsertionPointToStart(innerLoop.getBody());
+
+    // col loop
+    auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], 1);
+    for (Operation &nested : *colLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+
+    // col loop body
+    rewriter.setInsertionPointToStart(colLoop.getBody());
+
+    loopIvs.push_back(rowLoop.getInductionVar());
+    loopIvs.push_back(colLoop.getInductionVar());
+    loopIvs.push_back(innerLoop.getInductionVar());
+
+    // load
+    mlir::Value a = rewriter.create<memref::LoadOp>(
+        loc, lhs, ValueRange{loopIvs[0], loopIvs[2]});
+    mlir::Value b = rewriter.create<memref::LoadOp>(
+        loc, rhs, ValueRange{loopIvs[2], loopIvs[1]});
+    mlir::Value c = rewriter.create<memref::LoadOp>(
+        loc, output, ValueRange{loopIvs[0], loopIvs[1]});
+
+    // fma
+    mlir::Value fma = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
+
+    // store
+    rewriter.create<memref::StoreOp>(loc, fma, output,
+                                     ValueRange{loopIvs[0], loopIvs[1]});
+
+    // AffineYieldOp at end of loop blocks
+    rewriter.setInsertionPointToEnd(rowLoop.getBody());
+    rewriter.create<AffineYieldOp>(loc);
+    rewriter.setInsertionPointToEnd(colLoop.getBody());
+    rewriter.create<AffineYieldOp>(loc);
+    rewriter.setInsertionPointToEnd(innerLoop.getBody());
+    rewriter.create<AffineYieldOp>(loc);
+    rewriter.setInsertionPointAfter(rowLoop);
+}
+
+llvm::SmallVector<AffineForOp, 3> vectorizedAffineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
                   ConversionPatternRewriter &rewriter, mlir::Location loc,
                   ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
                   mlir::MLIRContext *ctx, Type elementType, int64_t vec_size) {
@@ -117,17 +177,93 @@ void print_assert(bool statement, std::string s) {
         std::cout << s << std::endl;
     }
 }
-
-
 class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
+   public:
+    using OpConversionPattern::OpConversionPattern;
+    explicit MatMulLowering(MLIRContext *context) 
+        : OpConversionPattern(context, PatternBenefit(1)) {} 
+
+    LogicalResult matchAndRewrite(
+        daphne::MatMulOp op, OpAdaptor adaptor,
+        ConversionPatternRewriter &rewriter) const override {
+        auto loc = op->getLoc();
+        mlir::daphne::MatrixType lhsMatrixType =
+            adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType rhsMatrixType =
+            adaptor.getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+
+        auto lhsRows = lhsMatrixType.getNumRows();
+        auto lhsCols = lhsMatrixType.getNumCols();
+
+        auto rhsRows = rhsMatrixType.getNumRows();
+        auto rhsCols = rhsMatrixType.getNumCols();
+
+        auto matrixElementType = lhsMatrixType.getElementType();
+
+        // TODO(phil): if shape is unknown, e.g., row/col = -1 we currently
+        // can't create a MemRefType
+        auto lhsMemRefType =
+            mlir::MemRefType::get({lhsRows, lhsCols}, matrixElementType);
+        auto rhsMemRefType =
+            mlir::MemRefType::get({rhsRows, rhsCols}, matrixElementType);
+
+        mlir::MemRefType outputMemRefType =
+            mlir::MemRefType::get({lhsRows, rhsCols}, matrixElementType);
+
+        // daphne::Matrix -> memref
+        mlir::Value lhs =
+            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+                op->getLoc(), lhsMemRefType, adaptor.getLhs());
+        mlir::Value rhs =
+            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+                op->getLoc(), rhsMemRefType, adaptor.getRhs());
+
+        // Alloc output memref
+        mlir::Value outputMemRef =
+            insertMemRefAlloc(outputMemRefType, loc, rewriter);
+
+        // Fill the output MemRef
+        affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
+                         op->getContext(), outputMemRef, matrixElementType);
+        // Do the actual MatMul with hand built codegen
+        affineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
+                     lhsMemRefType.getShape(), rhsMemRefType.getShape(),
+                     op->getContext());
+
+        mlir::Value DM = convertMemRefToDenseMatrix(loc, rewriter, outputMemRef,
+                                                    op.getType());
+
+        rewriter.replaceOp(op, DM);
+        return success();
+    }
+};
+
+class MatMulLoweringToVectorTile : public OpConversionPattern<daphne::MatMulOp> {
    public:
     using OpConversionPattern::OpConversionPattern;
     const DaphneUserConfig& cfg;
 
-    explicit MatMulLowering(MLIRContext *context, const DaphneUserConfig& cfg) 
+    explicit MatMulLoweringToVectorTile(MLIRContext *context, const DaphneUserConfig& cfg) 
         : OpConversionPattern(context, PatternBenefit(10)), cfg(cfg) {}
 
-    LogicalResult matchAndRewrite(
+    LogicalResult match(daphne::MatMulOp op) const {
+        if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
+            op->getOperandTypes()[1].isa<mlir::daphne::MatrixType>()) {
+            mlir::daphne::MatrixType lhs =
+                op->getOperandTypes()[0]
+                    .template dyn_cast<mlir::daphne::MatrixType>();
+            mlir::daphne::MatrixType rhs =
+                op->getOperandTypes()[1]
+                    .template dyn_cast<mlir::daphne::MatrixType>();
+            if (lhs.getNumCols() == rhs.getNumRows() &&
+                lhs.getNumCols() % cfg.vec_size == 0)
+                return success();
+            return failure();
+        }
+        return failure();
+    }
+
+    void rewrite(
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
         int64_t vec_size = cfg.vec_size;
@@ -171,7 +307,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
                          op->getContext(), outputMemRef, matrixElementType);
         // Do the actual MatMul with hand built codegen
-        auto loops = affineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
+        auto loops = vectorizedAffineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
                      lhsMemRefType.getShape(), rhsMemRefType.getShape(),
                      op->getContext(), matrixElementType, vec_size);
 
@@ -249,9 +385,8 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         
         mlir::Value DM = convertMemRefToDenseMatrix(loc, rewriter, outputMemRef,
                                                     op.getType());
-        std::cout << "Converted back to Dense Matrix" << std::endl;
         rewriter.replaceOp(op, DM);
-        return success();
+        
     }
 };
 
@@ -302,8 +437,8 @@ void MatMulLoweringPass::runOnOperation() {
         target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
         target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
         target.addLegalOp<mlir::daphne::DecRefOp>();
-        target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>([this](Operation *op) {
-        if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
+        /*target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>([this](Operation *op) {
+         if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
             op->getOperandTypes()[1].isa<mlir::daphne::MatrixType>()) {
             mlir::daphne::MatrixType lhs =
                 op->getOperandTypes()[0]
@@ -317,10 +452,11 @@ void MatMulLoweringPass::runOnOperation() {
             return false;
         }
         return false;
-        });
-        //target.addIllegalOp<mlir::daphne::MatMulOp>();
+        }); */
+        target.addIllegalOp<mlir::daphne::MatMulOp>();
 
-        patterns.insert<MatMulLowering>(&getContext(), userConfig);
+        patterns.insert<MatMulLoweringToVectorTile>(&getContext(), userConfig);
+        patterns.insert<MatMulLowering>(&getContext());
         
         if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
             signalPassFailure();
