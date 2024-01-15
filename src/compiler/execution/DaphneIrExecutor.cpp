@@ -301,7 +301,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createDaphneOptPass());
 
     if (!userConfig_.use_mlir_hybrid_codegen) {
-        pm.addPass(mlir::daphne::createMatMulOpLoweringPass());
+        pm.addPass(mlir::daphne::createMatMulOpLoweringPass(userConfig_));
     }
 
     // pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
