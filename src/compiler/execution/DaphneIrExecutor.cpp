@@ -32,6 +32,7 @@
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -239,7 +240,7 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
     mlir::ModuleOp module) {
     if (!module) return nullptr;
     // An optimization pipeline to use within the execution engine.
-    unsigned optLevel = 3;
+    unsigned optLevel = 0;
     unsigned sizeLevel = 0;
     llvm::TargetMachine *targetMachine = nullptr;
     auto optPipeline = mlir::makeOptimizingTransformer(optLevel, sizeLevel, targetMachine);
@@ -316,7 +317,10 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addNestedPass<mlir::func::FuncOp>(
         mlir::createAffineScalarReplacementPass());
     pm.addPass(mlir::createLowerAffinePass());
-
+    mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;
+    lowerVectorToLLVMOptions.enableX86Vector(true);
+    pm.addPass(mlir::createConvertVectorToLLVMPass(lowerVectorToLLVMOptions));
+    
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after codegen pipeline"));

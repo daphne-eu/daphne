@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -45,6 +46,7 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SCF/Utils/Utils.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/PatternMatch.h"
@@ -62,36 +64,40 @@ static constexpr int COL = 1;
 llvm::SmallVector<AffineForOp, 3> affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
                   ConversionPatternRewriter &rewriter, mlir::Location loc,
                   ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
-                  mlir::MLIRContext *ctx) {
+                  mlir::MLIRContext *ctx, Type elementType, int64_t vec_size) {
     llvm::SmallVector<AffineForOp, 3> loops;
-    
+    int64_t last_vec_size = rhsShape[COL] % vec_size;
+    auto vec_Type = mlir::VectorType::get({vec_size}, elementType);
+        
+    // TODO: We need an option to enable smaller vector sizes for the ends of each row.
     // row loop
     auto rowLoop = rewriter.create<AffineForOp>(loc, 0, lhsShape[ROW], 1);
     // row loop body
     rewriter.setInsertionPointToStart(rowLoop.getBody());
     // col loop
-    auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], 1);
+    auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL] - last_vec_size, vec_size);
     // col loop body
     rewriter.setInsertionPointToStart(colLoop.getBody());
     // fma loop
     auto fmaLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[ROW], 1);
     // inner loop body
     rewriter.setInsertionPointToStart(fmaLoop.getBody());
-
     
-        auto  a = rewriter.create<AffineLoadOp>(loc, lhs,
-                    ValueRange{rowLoop.getInductionVar(), fmaLoop.getInductionVar()});
-        auto  b = rewriter.create<AffineLoadOp>(
-                   loc, rhs,
+        auto a_single = rewriter.create<AffineLoadOp>(loc, lhs, 
+                                                    ValueRange{rowLoop.getInductionVar(), fmaLoop.getInductionVar()});
+        auto  a = rewriter.create<vector::SplatOp>(loc, a_single, vec_Type);
+        auto  b = rewriter.create<AffineVectorLoadOp>(
+                   loc, vec_Type, rhs,
                     ValueRange{fmaLoop.getInductionVar(), colLoop.getInductionVar()});
-        auto  c = rewriter.create<AffineLoadOp>(
-                    loc, output,
+        auto  c = rewriter.create<AffineVectorLoadOp>(
+                    loc, vec_Type, output,
                     ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
         
-        Value res = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
+        Value res = rewriter.create<vector::FMAOp>(loc, a, b, c);
        
-        rewriter.create<AffineStoreOp>(loc, res, output,
+        rewriter.create<AffineVectorStoreOp>(loc, res, output,
                                            ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+
 
     
     // AffineYieldOp at end of loop blocks
@@ -112,6 +118,7 @@ void print_assert(bool statement, std::string s) {
     }
 }
 
+
 class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
    public:
     using OpConversionPattern::OpConversionPattern;
@@ -119,6 +126,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     LogicalResult matchAndRewrite(
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
+        int64_t vec_size = 4;
         auto loc = op->getLoc();
         mlir::daphne::MatrixType lhsMatrixType =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
@@ -161,11 +169,12 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         // Do the actual MatMul with hand built codegen
         auto loops = affineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
                      lhsMemRefType.getShape(), rhsMemRefType.getShape(),
-                     op->getContext());
+                     op->getContext(), matrixElementType, vec_size);
+
         unsigned MC = 64;
         unsigned KC = 256;
         unsigned NC = 512;
-        unsigned NR = 4;
+        unsigned NR = std::max((int64_t)1, 4 / vec_size);
         unsigned MR = 4;
         unsigned KU = 4;
         llvm::SmallVector<AffineForOp> loopNest;
@@ -176,10 +185,10 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
             std::cout << "Failed to tile the Loop nest" << std::endl;
         };
         print_assert(tiledNest[0].getStep() == MC, "0 should have step size MC.");
-        print_assert(tiledNest[1].getStep() == NC, "1 should have step size NC.");
+        print_assert(tiledNest[1].getStep() == NC * vec_size, "1 should have step size NC * vec_size.");
         print_assert(tiledNest[2].getStep() == KC, "2 should have step size KC.");
         print_assert(tiledNest[3].getStep() == 1, "3 should have step size 1.");
-        print_assert(tiledNest[4].getStep() == 1, "4 should have step size 1.");
+        print_assert(tiledNest[4].getStep() == 1 * vec_size, "4 should have step size vec_size.");
         print_assert(tiledNest[5].getStep() == 1, "5 should have step size 1.");
 
         // Further tile the i mod MC loop with MR
@@ -188,19 +197,20 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         };
         
         // Further tile the j mod NC loop with NR
-        print_assert(tiledNest[4].getStep() == 1, "4 should have step size 1.");
+        print_assert(tiledNest[4].getStep() == 1 * vec_size, "4 should have step size vec_size.");
         if (failed(tilePerfectlyNested(tiledNest[4], {NR}))) {
             std::cout << "Failed to tile the second j Loop" << std::endl;
         };
+
 
         llvm::SmallVector<AffineForOp> twiceTiledNest;
         getPerfectlyNestedLoops(twiceTiledNest, tiledNest[0]);
         print_assert(twiceTiledNest[0].getStep() == MC, "tTN: 0 should have step size MC.");  // i loops
         print_assert(twiceTiledNest[3].getStep() == MR, "tTN: 3 should have step size MR.");
         print_assert(twiceTiledNest[4].getStep() == 1, "tTN: 4 should have step size 1.");
-        print_assert(twiceTiledNest[1].getStep() == NC, "tTN: 1 should have step size NC.");  // j loops
-        print_assert(twiceTiledNest[5].getStep() == NR, "tTN: 5 should have step size NR.");
-        print_assert(twiceTiledNest[6].getStep() == 1, "tTN: 6 should have step size 1.");
+        print_assert(twiceTiledNest[1].getStep() == NC * vec_size, "tTN: 1 should have step size NC * vec_size.");  // j loops
+        print_assert(twiceTiledNest[5].getStep() == NR * vec_size, "tTN: 5 should have step size NR.");
+        print_assert(twiceTiledNest[6].getStep() == 1 * vec_size, "tTN: 6 should have step size vec_size.");
         print_assert(twiceTiledNest[2].getStep() == KC, "tTN: 2 should have step size 1.");  // k loops
         print_assert(twiceTiledNest[7].getStep() == 1, "tTN: 7 should have step size 1."); 
 
@@ -217,9 +227,9 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         print_assert(blisTiledLoops[2].getStep() == MC, "blisTiled: 2 should have step size MC.");  // i loops
         print_assert(blisTiledLoops[4].getStep() == MR, "blisTiled: 4 should have step size MR.");
         print_assert(blisTiledLoops[7].getStep() == 1, "blisTiled: 7 should have step size 1.");
-        print_assert(blisTiledLoops[0].getStep() == NC, "blisTiled: 0 should have step size NC.");  // j loops
-        print_assert(blisTiledLoops[3].getStep() == NR, "blisTiled: 3 should have step size NR.");
-        print_assert(blisTiledLoops[6].getStep() == 1, "blisTiled: 6 should have step size 1.");
+        print_assert(blisTiledLoops[0].getStep() == NC * vec_size, "blisTiled: 0 should have step size NC * vec_size.");  // j loops
+        print_assert(blisTiledLoops[3].getStep() == NR * vec_size, "blisTiled: 3 should have step size NR * vec_size.");
+        print_assert(blisTiledLoops[6].getStep() == vec_size, "blisTiled: 6 should have step size vec_size.");
         print_assert(blisTiledLoops[1].getStep() == KC, "blisTiled: 1 should have step size 1.");  // k loops
         print_assert(blisTiledLoops[5].getStep() == 1, "blisTiled: 5 should have step size 1.");
         // TODO: This Matmul fails, if the last loops are not unrolled?
@@ -281,7 +291,8 @@ void MatMulLoweringPass::runOnOperation() {
         target.addLegalDialect<mlir::AffineDialect>();
         target.addLegalDialect<mlir::linalg::LinalgDialect>();
         target.addLegalDialect<mlir::LLVM::LLVMDialect>();
-
+        target.addLegalDialect<mlir::vector::VectorDialect>();
+        
         target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
         target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
         target.addLegalOp<mlir::daphne::DecRefOp>();
