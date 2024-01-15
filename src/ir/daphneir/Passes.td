@@ -59,10 +59,6 @@ def AggAllLoweringPass : Pass<"lower-agg", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createAggAllOpLoweringPass()";
 }
 
-def MatMulOpLoweringPass : Pass<"lower-mm", "::mlir::func::FuncOp"> {
-    let constructor = "mlir::daphne::createMatMulOpLoweringPass()";
-}
-
 def DaphneOpsOptPass : Pass<"opt-daphne", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createDaphneOptPass()";
 }

@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "api/cli/DaphneUserConfig.h"
 #include "compiler/utils/CompilerUtils.h"
 #include "compiler/utils/LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
@@ -121,11 +122,15 @@ void print_assert(bool statement, std::string s) {
 class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
    public:
     using OpConversionPattern::OpConversionPattern;
+    const DaphneUserConfig& cfg;
+
+    explicit MatMulLowering(MLIRContext *context, const DaphneUserConfig& cfg) 
+        : OpConversionPattern(context, PatternBenefit(10)), cfg(cfg) {}
 
     LogicalResult matchAndRewrite(
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
-        int64_t vec_size = 4;
+        int64_t vec_size = cfg.vec_size;
         auto loc = op->getLoc();
         mlir::daphne::MatrixType lhsMatrixType =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
@@ -261,18 +266,20 @@ namespace {
 struct MatMulLoweringPass
     : public mlir::PassWrapper<MatMulLoweringPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
-    explicit MatMulLoweringPass() {}
+    const DaphneUserConfig& userConfig;
+    public:
+        explicit MatMulLoweringPass(const DaphneUserConfig& cfg) : userConfig(cfg) {}
 
-    StringRef getArgument() const final { return "lower-mm"; }
-    StringRef getDescription() const final {
-        return "This pass lowers the MatMulOp to an affine loop structure.";
-    }
+        StringRef getArgument() const final { return "lower-mm"; }
+        StringRef getDescription() const final {
+            return "This pass lowers the MatMulOp to an affine loop structure.";
+        }
 
-    void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                        mlir::memref::MemRefDialect>();
-    }
-    void runOnOperation() final;
+        void getDependentDialects(mlir::DialectRegistry &registry) const override {
+            registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
+                            mlir::memref::MemRefDialect>();
+        }
+        void runOnOperation() final;
 };
 }  // end anonymous namespace
 
@@ -283,7 +290,7 @@ void MatMulLoweringPass::runOnOperation() {
         mlir::RewritePatternSet patterns(&getContext());
         LowerToLLVMOptions llvmOptions(&getContext());
         LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
-
+        
         target.addLegalDialect<mlir::memref::MemRefDialect>();
         target.addLegalDialect<mlir::arith::ArithDialect>();
         target.addLegalDialect<mlir::scf::SCFDialect>();
@@ -295,8 +302,7 @@ void MatMulLoweringPass::runOnOperation() {
         target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
         target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
         target.addLegalOp<mlir::daphne::DecRefOp>();
-        int64_t vec_size = 4;
-        target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>([&vec_size](Operation *op) {
+        target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>([this](Operation *op) {
         if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
             op->getOperandTypes()[1].isa<mlir::daphne::MatrixType>()) {
             mlir::daphne::MatrixType lhs =
@@ -306,7 +312,7 @@ void MatMulLoweringPass::runOnOperation() {
                 op->getOperandTypes()[1]
                     .template dyn_cast<mlir::daphne::MatrixType>();
             if (lhs.getNumCols() != rhs.getNumRows() ||
-                lhs.getNumCols() % vec_size != 0)
+                lhs.getNumCols() % userConfig.vec_size != 0)
                 return true;
             return false;
         }
@@ -314,7 +320,7 @@ void MatMulLoweringPass::runOnOperation() {
         });
         //target.addIllegalOp<mlir::daphne::MatMulOp>();
 
-        patterns.insert<MatMulLowering>(&getContext());
+        patterns.insert<MatMulLowering>(&getContext(), userConfig);
         
         if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
             signalPassFailure();
@@ -322,6 +328,6 @@ void MatMulLoweringPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createMatMulOpLoweringPass() {
-    return std::make_unique<MatMulLoweringPass>();
+std::unique_ptr<mlir::Pass> mlir::daphne::createMatMulOpLoweringPass(const DaphneUserConfig& cfg) {
+    return std::make_unique<MatMulLoweringPass>(cfg);
 }

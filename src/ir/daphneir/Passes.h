@@ -49,7 +49,7 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createDaphneOptPass();
-    std::unique_ptr<Pass> createMatMulOpLoweringPass();
+    std::unique_ptr<Pass> createMatMulOpLoweringPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createAggAllOpLoweringPass();
     std::unique_ptr<Pass> createMemRefTestPass();
     std::unique_ptr<Pass> createProfilingPass();

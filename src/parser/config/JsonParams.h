@@ -25,6 +25,7 @@
  * configuration.
  */
 struct DaphneConfigJsonParams {
+    inline static const std::string VEC_SIZE = "vec_size";
     inline static const std::string USE_CUDA_ = "use_cuda";
     inline static const std::string USE_VECTORIZED_EXEC = "use_vectorized_exec";
     inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
@@ -57,6 +58,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string LOGGING = "logging";
 
     inline static const std::string JSON_PARAMS[] = {
+            VEC_SIZE,
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,
