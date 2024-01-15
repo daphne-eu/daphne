@@ -66,7 +66,6 @@ llvm::SmallVector<AffineForOp, 3> affineMatMul(mlir::Value &lhs, mlir::Value &rh
                   ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
                   mlir::MLIRContext *ctx, Type elementType, int64_t vec_size) {
     llvm::SmallVector<AffineForOp, 3> loops;
-    int64_t last_vec_size = rhsShape[COL] % vec_size;
     auto vec_Type = mlir::VectorType::get({vec_size}, elementType);
         
     // TODO: We need an option to enable smaller vector sizes for the ends of each row.
@@ -75,14 +74,14 @@ llvm::SmallVector<AffineForOp, 3> affineMatMul(mlir::Value &lhs, mlir::Value &rh
     // row loop body
     rewriter.setInsertionPointToStart(rowLoop.getBody());
     // col loop
-    auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL] - last_vec_size, vec_size);
+    auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], vec_size);
     // col loop body
     rewriter.setInsertionPointToStart(colLoop.getBody());
     // fma loop
     auto fmaLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[ROW], 1);
     // inner loop body
     rewriter.setInsertionPointToStart(fmaLoop.getBody());
-    
+
         auto a_single = rewriter.create<AffineLoadOp>(loc, lhs, 
                                                     ValueRange{rowLoop.getInductionVar(), fmaLoop.getInductionVar()});
         auto  a = rewriter.create<vector::SplatOp>(loc, a_single, vec_Type);
@@ -296,8 +295,24 @@ void MatMulLoweringPass::runOnOperation() {
         target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
         target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
         target.addLegalOp<mlir::daphne::DecRefOp>();
-
-        target.addIllegalOp<mlir::daphne::MatMulOp>();
+        int64_t vec_size = 4;
+        target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>([&vec_size](Operation *op) {
+        if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
+            op->getOperandTypes()[1].isa<mlir::daphne::MatrixType>()) {
+            mlir::daphne::MatrixType lhs =
+                op->getOperandTypes()[0]
+                    .template dyn_cast<mlir::daphne::MatrixType>();
+            mlir::daphne::MatrixType rhs =
+                op->getOperandTypes()[1]
+                    .template dyn_cast<mlir::daphne::MatrixType>();
+            if (lhs.getNumCols() != rhs.getNumRows() ||
+                lhs.getNumCols() % vec_size != 0)
+                return true;
+            return false;
+        }
+        return false;
+        });
+        //target.addIllegalOp<mlir::daphne::MatMulOp>();
 
         patterns.insert<MatMulLowering>(&getContext());
         
