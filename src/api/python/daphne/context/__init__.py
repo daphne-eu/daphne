@@ -21,9 +21,9 @@
 #
 # -------------------------------------------------------------
 
-from api.python.context.daphne_context import DaphneContext
-from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.frame import Frame
-from api.python.operator.nodes.scalar import Scalar
+from daphne.context.daphne_context import DaphneContext
+from daphne.operator.nodes.matrix import Matrix
+from daphne.operator.nodes.frame import Frame
+from daphne.operator.nodes.scalar import Scalar
 
 __all__ = ["DaphneContext", "Matrix", "Frame", "Scalar"]
