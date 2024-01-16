@@ -23,15 +23,15 @@
 
 __all__ = ["DaphneContext", "Matrix", "Frame", "Scalar"]
 
-from api.python.operator.nodes.frame import Frame
-from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.scalar import Scalar
-from api.python.operator.nodes.for_loop import ForLoop
-from api.python.operator.nodes.cond import Cond
-from api.python.operator.nodes.while_loop import WhileLoop
-from api.python.operator.nodes.do_while_loop import DoWhileLoop
-from api.python.operator.nodes.multi_return import MultiReturn
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
+from daphne.operator.nodes.frame import Frame
+from daphne.operator.nodes.matrix import Matrix
+from daphne.operator.nodes.scalar import Scalar
+from daphne.operator.nodes.for_loop import ForLoop
+from daphne.operator.nodes.cond import Cond
+from daphne.operator.nodes.while_loop import WhileLoop
+from daphne.operator.nodes.do_while_loop import DoWhileLoop
+from daphne.operator.nodes.multi_return import MultiReturn
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd

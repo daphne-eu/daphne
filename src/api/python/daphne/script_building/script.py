@@ -21,9 +21,9 @@
 #
 # -------------------------------------------------------------
 
-from api.python.script_building.dag import DAGNode, OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
-from api.python.utils.daphnelib import DaphneLib
+from daphne.script_building.dag import DAGNode, OutputType
+from daphne.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
+from daphne.utils.daphnelib import DaphneLib
 
 import ctypes
 import os
