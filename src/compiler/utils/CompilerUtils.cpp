@@ -25,7 +25,7 @@
 // **************************************************************************************************
 
 template<>
-std::pair<bool, std::string> CompilerUtils::isConstantHelper<std::string, mlir::StringAttr>(mlir::Value v, std::function<std::string(const mlir::StringAttr&)> func) {
+std::pair<bool, std::string> CompilerUtils::isConstantHelper<std::string, mlir::StringAttr>(mlir::Value v, const std::function<std::string(const mlir::StringAttr&)>& func) {
     if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>()) {
         if(auto attr = co.getValue().dyn_cast<mlir::StringAttr>()) {
             return std::make_pair(true, func(attr));
@@ -56,7 +56,6 @@ std::pair<bool, int64_t> CompilerUtils::isConstant<int64_t>(mlir::Value v) {
             v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
     );
 }
-
 
 template<>
 std::pair<bool, uint64_t> CompilerUtils::isConstant<uint64_t>(mlir::Value v) {
@@ -139,7 +138,7 @@ bool CompilerUtils::constantOrThrow<bool>(mlir::Value v, const std::string & err
 template<>
 std::string CompilerUtils::constantOrDefault<std::string>(mlir::Value v, std::string d) {
     return constantOrDefaultHelper<std::string, mlir::StringAttr>(
-            v, d, [](mlir::StringAttr attr){return attr.getValue().str();}
+            v, std::move(d), [](mlir::StringAttr attr){return attr.getValue().str();}
     );
 }
 

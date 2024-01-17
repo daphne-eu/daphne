@@ -30,7 +30,7 @@ struct CompilerUtils {
 private:
 
     template<typename ValT, typename AttrT>
-    static std::pair<bool, ValT> isConstantHelper(mlir::Value v, std::function<ValT(const AttrT &)> func) {
+    static std::pair<bool, ValT> isConstantHelper(mlir::Value v, const std::function<ValT(const AttrT &)>& func) {
         if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>())
             if(auto attr = co.getValue().dyn_cast<AttrT>())
                 return std::make_pair(true, func(attr));
