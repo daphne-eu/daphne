@@ -38,7 +38,7 @@ VALID_COMPUTED_TYPES = Union['Matrix', 'Frame', 'Scalar']
 
 PYTHON_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-TMP_PATH = os.path.join(PYTHON_PATH, "tmp")
+TMP_PATH = os.path.join("/tmp/", "DaphneLib")
 os.makedirs(TMP_PATH, exist_ok=True)
 
 PROTOTYPE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(PYTHON_PATH)))
