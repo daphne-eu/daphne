@@ -15,8 +15,7 @@
 import ctypes
 import os
 
-PYTHON_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-PROTOTYPE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(PYTHON_PATH)))
+from daphne.utils.consts import PROTOTYPE_PATH
 
 # Python representation of the struct DaphneLibResult.
 class DaphneLibResult(ctypes.Structure):
