@@ -20,6 +20,3 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-from daphne import operator
-
-__all__ = ["operator"]
