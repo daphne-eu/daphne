@@ -32,9 +32,9 @@ extern "C" DaphneLibResult getResult() {
 /**
  * @brief Invokes DAPHNE with the specified DaphneDSL script and certain default arguments.
  */
-extern "C" int daphne(const char* scriptPath) {
+extern "C" int daphne(const char* libDirPath, const char* scriptPath) {
     // Assumes that python3 is invoked from the DAPHNE root directory.
-    const char * argv[] = {"daphne", "--libdir", "lib", scriptPath};
+    const char * argv[] = {"daphne", "--libdir", libDirPath, scriptPath};
     int argc = 4;
 
     return mainInternal(argc, argv, &daphneLibRes);

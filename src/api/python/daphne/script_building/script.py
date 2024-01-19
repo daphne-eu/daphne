@@ -88,7 +88,7 @@ class DaphneDSLScript:
         temp_out_file.close()
         
         #os.environ['OPENBLAS_NUM_THREADS'] = '1'
-        res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
+        res = DaphneLib.daphne(ctypes.c_char_p(PROTOTYPE_PATH, b"tmpdaphne.daphne"))
         #os.environ['OPENBLAS_NUM_THREADS'] = '32'
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
