@@ -35,7 +35,7 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 ## Installation
 
 - There are two options to install the Python package `daphne` (DaphneLib)
-  - Via github url: `pip install git+https://github.com/daphne-eu/daphne/tree/main/src/api/python` TODO try this
+  - Via github url: `pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python`
   - OR clone the DAPHNE repoistory and install from source files: `pip install daphne/src/api/python`
 - *Recommendation:* Use a virtual environment
 
