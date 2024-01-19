@@ -41,6 +41,7 @@ os.makedirs(TMP_PATH, exist_ok=True)
 
 _PROTOTYPE_PATH_ENV_VAR_NAME = "DAPHNELIB_DIR_PATH"
 PROTOTYPE_PATH = os.environ.get(_PROTOTYPE_PATH_ENV_VAR_NAME)
+DAPHNELIB_FILENAME = "libdaphnelib.so"
 
 # DAPHNE value type codes.
 # The values need to be updated according to the value type codes in ValueTypeCode.h as this is a 1:1 copy.
