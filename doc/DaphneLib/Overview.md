@@ -22,6 +22,29 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 
 **DaphneLib is still in an experimental stage, feedback and bug reports via GitHub issues are highly welcome.**
 
+## Prerequisites
+
+**Provide DAPHNE:**
+
+- `libdaphnelib.so` and `libAllKernels.so` must be present
+  - Building the project with `--target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
+  - OR use the `lib/` dir of a release
+- `LD_LIBRARY_PATH` must be set (eg. executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
+- Set the environment variable named `DAPHNELIB_DIR_PATH` to the path were the libraries (`*.so` files) are placed, eg. `path/to/daphne/lib/`
+
+## Installation
+
+- There are two options to install the Python package `daphne` (DaphneLib)
+  - Via github url: `pip install git+https://github.com/daphne-eu/daphne/tree/main/src/api/python` TODO try this
+  - OR clone the DAPHNE repoistory and install from source files: `pip install daphne/src/api/python`
+- *Recommendation:* Use a virtual environment
+
+    ```shell
+    python3 -m venv my_venv
+    source my_venv/bin/activate
+    pip install ...
+    ```
+
 ## Introductory Example
 
 The following simple example script generates a *5x3* matrix of random values in *[0, 1)* using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of *0* and a standard deviation of *1*.
@@ -66,15 +89,6 @@ The script above can be executed by:
 ```bash
 python3 scripts/examples/daphnelib/shift-and-scale.py
 ```
-
-Note that there are some **temporary limitations** (which will be fixed in the future):
-
-- `python3` must be executed from the DAPHNE base directory.
-- Before executing DaphneLib Python scripts, the environment variable `PYTHONPATH` must be updated by executing the following command once per session:
-
-  ```bash
-  export PYTHONPATH="$PYTHONPATH:$PWD/src/"
-  ```
 
 The remainder of this document presents the core features of DaphneLib *as they are right now*, but *note that DaphneLib is still under active development*.
 
