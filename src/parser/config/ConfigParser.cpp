@@ -41,10 +41,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 
     checkAnyUnexpectedKeys(jf, filename);   // raise an error if the config JSON file contains any unexpected keys
 
-    if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
+        if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
         config.use_cuda = jf.at(DaphneConfigJsonParams::USE_CUDA_).get<bool>();
-    if (keyExists(jf, DaphneConfigJsonParams::VEC_SIZE))
-        config.vec_size = jf.at(DaphneConfigJsonParams::VEC_SIZE).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_VECTORIZED_EXEC))
         config.use_vectorized_exec = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_EXEC).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_OBJ_REF_MGNT))
@@ -55,6 +53,10 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::USE_PHY_OP_SELECTION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_MLIR_CODEGEN))
         config.use_mlir_codegen = jf.at(DaphneConfigJsonParams::USE_MLIR_CODEGEN).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_VEC_SIZE))
+        config.matmul_vec_size = jf.at(DaphneConfigJsonParams::MATMUL_VEC_SIZE).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_TILE))
+        config.matmul_tile = jf.at(DaphneConfigJsonParams::MATMUL_TILE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
         config.cuda_fuse_any = jf.at(DaphneConfigJsonParams::CUDA_FUSE_ANY).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE))

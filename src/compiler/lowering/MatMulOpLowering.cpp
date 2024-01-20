@@ -53,6 +53,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/Types.h"
 #include "mlir/IR/UseDefLists.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LLVM.h"
@@ -66,9 +67,15 @@ static constexpr int COL = 1;
 
 struct LowerMatMulOpOptions {
     LowerMatMulOpOptions () {}
-    int vec_size{1};
+    int vec_size{0};
     bool vectorize{false};
     bool tile{false};
+    unsigned MC = 64;
+    unsigned KC = 256;
+    unsigned NC = 512;
+    unsigned NR = 4;
+    unsigned MR = 4;
+    unsigned KU = 4;
     LowerMatMulOpOptions &enableVectorization(bool b = true) {
         vectorize = b;
         return *this;
@@ -189,6 +196,17 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     explicit MatMulLowering(MLIRContext *context, LowerMatMulOpOptions const &options) 
         : OpConversionPattern(context, PatternBenefit(1)), options(options) {} 
 
+    bool is_vectorizable(ArrayRef<int64_t> const rhsShape, Type const matrixElementType) const {
+        if (rhsShape[COL] % options.vec_size != 0) {
+            return false;
+        }
+        if (!matrixElementType.isa<FloatType>()) {
+            return false;
+        }
+        return true;
+    }
+    //bool is_tileable(daphne::MatMulOp const &op);
+
     LogicalResult matchAndRewrite(
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
@@ -233,14 +251,14 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
                          op->getContext(), outputMemRef, matrixElementType);
         // Do the actual MatMul with hand built codegen
         SmallVector<AffineForOp, 3> loops;
-        if (!options.vectorize) {
-            affineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
-                     lhsMemRefType.getShape(), rhsMemRefType.getShape(),
-                     op->getContext(), loops);
-        } else {
+        if (options.vectorize && is_vectorizable(rhsMemRefType.getShape(), matrixElementType)) {
             vectorizedAffineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
                      lhsMemRefType.getShape(), rhsMemRefType.getShape(),
                      op->getContext(), loops, matrixElementType, options.vec_size);
+        } else {
+            affineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
+                     lhsMemRefType.getShape(), rhsMemRefType.getShape(),
+                     op->getContext(), loops);
         }
         if (options.tile) {
             tile_loops(loops);
@@ -254,12 +272,19 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     }
 
     void tile_loops(SmallVector<AffineForOp, 3> loops) const {
-        unsigned MC = 64;
-        unsigned KC = 256;
-        unsigned NC = 512;
-        unsigned NR = std::max(1, 4 / options.vec_size);
-        unsigned MR = 4;
-        unsigned KU = 4;
+        unsigned MC = options.MC;
+        unsigned KC = options.KC;
+        unsigned NC = options.NC;
+        unsigned NR = options.NR;
+        unsigned MR = options.MR;
+        unsigned KU = options.KU;
+        auto vec_size = loops[1].getStep();
+        if (vec_size > NR) {
+            // Cannot tile this loop with the given tile sizes
+            return;
+        } else {
+            NR = NR / vec_size;
+        }
         llvm::SmallVector<AffineForOp> loopNest;
         getPerfectlyNestedLoops(loopNest, loops.front());
         // tile i with MC, j with NC, k with KC
@@ -268,10 +293,10 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
             std::cout << "Failed to tile the Loop nest" << std::endl;
         };
         print_assert(tiledNest[0].getStep() == MC, "0 should have step size MC.");
-        print_assert(tiledNest[1].getStep() == NC * options.vec_size, "1 should have step size NC * vec_size.");
+        print_assert(tiledNest[1].getStep() == NC * vec_size, "1 should have step size NC * vec_size.");
         print_assert(tiledNest[2].getStep() == KC, "2 should have step size KC.");
         print_assert(tiledNest[3].getStep() == 1, "3 should have step size 1.");
-        print_assert(tiledNest[4].getStep() == 1 * options.vec_size, "4 should have step size vec_size.");
+        print_assert(tiledNest[4].getStep() == 1 * vec_size, "4 should have step size vec_size.");
         print_assert(tiledNest[5].getStep() == 1, "5 should have step size 1.");
 
         // Further tile the i mod MC loop with MR
@@ -280,7 +305,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         };
         
         // Further tile the j mod NC loop with NR
-        print_assert(tiledNest[4].getStep() == 1 * options.vec_size, "4 should have step size vec_size.");
+        print_assert(tiledNest[4].getStep() == 1 * vec_size, "4 should have step size vec_size.");
         if (failed(tilePerfectlyNested(tiledNest[4], {NR}))) {
             std::cout << "Failed to tile the second j Loop" << std::endl;
         };
@@ -291,9 +316,9 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         print_assert(twiceTiledNest[0].getStep() == MC, "tTN: 0 should have step size MC.");  // i loops
         print_assert(twiceTiledNest[3].getStep() == MR, "tTN: 3 should have step size MR.");
         print_assert(twiceTiledNest[4].getStep() == 1, "tTN: 4 should have step size 1.");
-        print_assert(twiceTiledNest[1].getStep() == NC * options.vec_size, "tTN: 1 should have step size NC * vec_size.");  // j loops
-        print_assert(twiceTiledNest[5].getStep() == NR * options.vec_size, "tTN: 5 should have step size NR.");
-        print_assert(twiceTiledNest[6].getStep() == 1 * options.vec_size, "tTN: 6 should have step size vec_size.");
+        print_assert(twiceTiledNest[1].getStep() == NC * vec_size, "tTN: 1 should have step size NC * vec_size.");  // j loops
+        print_assert(twiceTiledNest[5].getStep() == NR * vec_size, "tTN: 5 should have step size NR.");
+        print_assert(twiceTiledNest[6].getStep() == 1 * vec_size, "tTN: 6 should have step size vec_size.");
         print_assert(twiceTiledNest[2].getStep() == KC, "tTN: 2 should have step size 1.");  // k loops
         print_assert(twiceTiledNest[7].getStep() == 1, "tTN: 7 should have step size 1."); 
 
@@ -310,9 +335,9 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         print_assert(blisTiledLoops[2].getStep() == MC, "blisTiled: 2 should have step size MC.");  // i loops
         print_assert(blisTiledLoops[4].getStep() == MR, "blisTiled: 4 should have step size MR.");
         print_assert(blisTiledLoops[7].getStep() == 1, "blisTiled: 7 should have step size 1.");
-        print_assert(blisTiledLoops[0].getStep() == NC * options.vec_size, "blisTiled: 0 should have step size NC * vec_size.");  // j loops
-        print_assert(blisTiledLoops[3].getStep() == NR * options.vec_size, "blisTiled: 3 should have step size NR * vec_size.");
-        print_assert(blisTiledLoops[6].getStep() == options.vec_size, "blisTiled: 6 should have step size vec_size.");
+        print_assert(blisTiledLoops[0].getStep() == NC * vec_size, "blisTiled: 0 should have step size NC * vec_size.");  // j loops
+        print_assert(blisTiledLoops[3].getStep() == NR * vec_size, "blisTiled: 3 should have step size NR * vec_size.");
+        print_assert(blisTiledLoops[6].getStep() == vec_size, "blisTiled: 6 should have step size vec_size.");
         print_assert(blisTiledLoops[1].getStep() == KC, "blisTiled: 1 should have step size 1.");  // k loops
         print_assert(blisTiledLoops[5].getStep() == 1, "blisTiled: 5 should have step size 1.");
         // TODO: This Matmul fails, if the last loops are not unrolled?
@@ -328,7 +353,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     }
 };
 
-class MatMulLoweringToVectorTile : public OpConversionPattern<daphne::MatMulOp> {
+/* class MatMulLoweringToVectorTile : public OpConversionPattern<daphne::MatMulOp> {
    public:
     using OpConversionPattern::OpConversionPattern;
     const DaphneUserConfig& cfg;
@@ -479,7 +504,7 @@ class MatMulLoweringToVectorTile : public OpConversionPattern<daphne::MatMulOp> 
         rewriter.replaceOp(op, DM);
         
     }
-};
+}; */
 
 
 namespace {
@@ -546,10 +571,13 @@ void MatMulLoweringPass::runOnOperation() {
         }); */
         target.addIllegalOp<mlir::daphne::MatMulOp>();
 
-        //patterns.insert<MatMulLoweringToVectorTile>(&getContext(), userConfig);
         LowerMatMulOpOptions options;
-        options.enableTiling();
-        options.enableVectorization();
+        if (userConfig.matmul_tile) {options.enableTiling();}
+        if (userConfig.matmul_vec_size > 0) {
+            options.enableVectorization();
+            options.setVectorSize(userConfig.matmul_vec_size);
+            }
+        
         patterns.insert<MatMulLowering>(&getContext(), options);
         
         if (failed(applyPartialConversion(module, target, std::move(patterns)))) {

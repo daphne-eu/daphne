@@ -34,8 +34,7 @@ class DaphneLogger;
  * Container to pass around user configuration
  */
 struct DaphneUserConfig {
-    // Remember to update UserConfig.json accordingly!
-
+    // Remember to update UserConfig.json accordingly!    
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
@@ -43,6 +42,8 @@ struct DaphneUserConfig {
     bool use_ipa_const_propa = true;
     bool use_phy_op_selection = true;
     bool use_mlir_codegen = false;
+    int  matmul_vec_size = 0;
+    bool matmul_tile = false;
     bool use_mlir_hybrid_codegen = false;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
@@ -74,7 +75,7 @@ struct DaphneUserConfig {
     size_t max_distributed_serialization_chunk_size = std::numeric_limits<int>::max() - 1024; // 2GB (-1KB to make up for gRPC headers etc.) - which is the maximum size allowed by gRPC / MPI. TODO: Investigate what might be the optimal.
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
-    int vec_size = 2;
+    
     // minimum considered log level (e.g., no logging below ERROR (essentially suppressing WARN, INFO, DEBUG and TRACE)
     spdlog::level::level_enum log_level_limit = spdlog::level::err;
     std::vector<LogConfig> loggers;
