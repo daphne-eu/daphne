@@ -257,10 +257,20 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
+
     static opt<bool> mlirCodegen(
         "mlir-codegen", cat(daphneOptions),
         desc("Enables lowering of certain DaphneIR operations on DenseMatrix to low-level MLIR operations.")
     );
+    static opt<int> matmul_vec_size(
+        "matmul-vec-size", cat(daphneOptions),
+        desc("Set the vector size to be used in the lowering of the MatMul operation if possible. Value of 0 is interpreted as off switch.")
+    );
+    static opt<bool> matmul_tile(
+        "matmul-tile", cat(daphneOptions),
+        desc("Enables loop tiling in the lowering of the MatMul operation.")
+    );
+
     static opt<bool> performHybridCodegen(
         "mlir-hybrid-codegen", cat(daphneOptions),
         desc("Enables prototypical hybrid code generation combining pre-compiled kernels and MLIR code generation.")
@@ -379,6 +389,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
     user_config.use_mlir_codegen = mlirCodegen;
+    user_config.matmul_vec_size = matmul_vec_size;
+    user_config.matmul_tile = matmul_tile;
     user_config.use_mlir_hybrid_codegen = performHybridCodegen;
 
     if(!libDir.getValue().empty())
@@ -570,6 +582,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             spdlog::error("Execution error: Returning from signal {}", gSignalStatus);
             return StatusCode::EXECUTION_ERROR;
         }
+        engine->dumpToObjectFile("objdump.o");
     }
     catch (std::runtime_error& re) {
         spdlog::error("Execution error: {}", re.what());
