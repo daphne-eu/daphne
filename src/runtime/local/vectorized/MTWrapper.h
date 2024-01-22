@@ -85,14 +85,16 @@ protected:
     }
 
     void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
-	hwloc_topology_t topology;
+        hwloc_topology_t topology;
 
-	hwloc_topology_init(&topology);
-	hwloc_topology_load(topology);
+        hwloc_topology_init(&topology);
+        hwloc_topology_load(topology);
 
-	physicalIds.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PACKAGE));
-	uniqueThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE));
-	responsibleThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU));
+        physicalIds.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PACKAGE));
+        uniqueThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE));
+        responsibleThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU));
+
+        hwloc_topology_destroy(topology);
     }
 
     void initCPPWorkers(std::vector<TaskQueue *> &qvector, uint32_t batchSize, const bool verbose = false,
