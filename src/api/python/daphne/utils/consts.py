@@ -41,6 +41,8 @@ os.makedirs(TMP_PATH, exist_ok=True)
 
 _PROTOTYPE_PATH_ENV_VAR_NAME = "DAPHNELIB_DIR_PATH"
 PROTOTYPE_PATH = os.environ.get(_PROTOTYPE_PATH_ENV_VAR_NAME)
+if not PROTOTYPE_PATH:
+    raise ValueError(f"Environment variable '{_PROTOTYPE_PATH_ENV_VAR_NAME}' NOT SET")
 DAPHNELIB_FILENAME = "libdaphnelib.so"
 
 # DAPHNE value type codes.
