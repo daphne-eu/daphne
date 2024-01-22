@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING, Union, Dict, Iterable, Sequence, Callable, Tup
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
 
 class MultiReturn(OperationNode):
     _outputs: Iterable['OperationNode']

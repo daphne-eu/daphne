@@ -51,7 +51,7 @@ The following simple example script generates a *5x3* matrix of random values in
 
 ```python
 # (1) Import DaphneLib.
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import numpy as np
 
 # (2) Create DaphneContext.
@@ -205,7 +205,7 @@ Furthermore, we are working on making the data exchange more efficient in genera
 *Example:*
 
 ```python
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import numpy as np
 
 dc = DaphneContext()
@@ -251,7 +251,7 @@ Result of adding 100 to each value, back in Python:
 *Example:*
 
 ```python
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import pandas as pd
 
 dc = DaphneContext()

@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Tuple, Uni
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
 
 class Scalar(OperationNode):
     __assign: bool

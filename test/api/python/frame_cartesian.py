@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.python.daphne.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import pandas as pd
 
 dctx = DaphneContext()

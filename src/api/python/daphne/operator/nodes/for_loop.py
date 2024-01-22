@@ -35,7 +35,7 @@ import textwrap
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
 
 class ForLoop(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', callback: Callable,

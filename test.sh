@@ -68,7 +68,7 @@ if [ $BUILD_DAPHNE -gt 0 ]; then
 fi
 
 # Preparations for running DaphneLib (Python API) tests and MLIR codegen tests (LLVM LIT)
-export PYTHONPATH="$PYTHONPATH:$PWD/src/:/usr/lib/llvm-10/build/utils/lit/"
+export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/:/usr/lib/llvm-10/build/utils/lit/"
 export PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH
 export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH
 

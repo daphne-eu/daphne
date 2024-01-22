@@ -17,7 +17,7 @@
 # Data transfer from pandas to DAPHNE and back, via files.
 
 import pandas as pd
-from api.python.daphne.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 df = pd.DataFrame({"abc": [1, 2, 3], "def": [-1.1, -2.2, -3.3]})
 
