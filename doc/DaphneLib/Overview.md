@@ -306,5 +306,4 @@ We plan to fix all of these limitations in the future.
 - `import`ing DaphneLib is still unnecessarily verbose.
 - Using DAPHNE's command-line arguments to influence its behavior is not supported yet.
 - Many DaphneDSL built-in functions are not represented by DaphneLib methods yet.
-- Complex control flow (if-then-else, loops, functions) are not supported yet. Python control flow statements are of limited applicability for DaphneLib.
 - High-level primitives for integrated data analysis pipelines, which are implemented in DaphneDSL, cannot be called from DaphneLib yet.

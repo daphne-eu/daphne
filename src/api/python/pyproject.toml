@@ -14,6 +14,7 @@ license = {text = "Apache v2.0"}
 classifiers = [
     "License :: Apache v2.0",
     "Topic :: Software Development :: Libraries",
+    "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
     "pandas",
@@ -29,4 +30,3 @@ Changelog = "https://github.com/daphne-eu/daphne/releases"
 
 [tool.setuptools]
 license-files = ["LICENSE.txt"]
-#platforms = ["any"]
