@@ -36,7 +36,7 @@ from copy import copy
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
 
 class DoWhileLoop(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', cond: Callable, callback: Callable,

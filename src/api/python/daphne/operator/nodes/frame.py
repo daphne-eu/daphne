@@ -36,7 +36,7 @@ from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Lis
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
 
 class Frame(OperationNode):
     _pd_dataframe: pd.DataFrame

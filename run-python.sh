@@ -16,5 +16,5 @@
 
 DAPHNE_ROOT=$PWD
 export LD_LIBRARY_PATH=$DAPHNE_ROOT/lib:$DAPHNE_ROOT/thirdparty/installed/lib:$LD_LIBRARY_PATH
-export PYTHONPATH="$PYTHONPATH:$PWD/src/"
+export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/"
 python3 $@

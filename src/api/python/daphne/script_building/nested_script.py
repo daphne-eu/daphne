@@ -33,7 +33,7 @@ from typing import List, Dict, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
     
 class NestedDaphneDSLScript(DaphneDSLScript):
     var_prefix: str
