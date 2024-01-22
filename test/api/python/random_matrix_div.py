@@ -22,7 +22,7 @@
 # -------------------------------------------------------------
 
 
-from api.python.context.daphne_context import DaphneContext
+from api.python.daphne.context.daphne_context import DaphneContext
 
 
 daphne_context = DaphneContext()
