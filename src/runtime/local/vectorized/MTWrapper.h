@@ -84,15 +84,44 @@ protected:
         return false;
     }
 
+    void hwloc_recurse_topology(hwloc_topology_t topo, hwloc_obj_t obj, int parent_package_id, std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
+        if (obj->type != HWLOC_OBJ_CORE) {
+          for (unsigned int i = 0; i < obj->arity; i++) {
+              hwloc_recurse_topology(topo, obj->children[i], parent_package_id, physicalIds, uniqueThreads, responsibleThreads);
+          }
+        } else {
+          physicalIds.push_back(parent_package_id);
+          for (unsigned int i = 0; i < obj->arity; i++)
+            uniqueThreads.push_back(obj->children[i]->os_index);
+
+          switch (_ctx->getUserConfig().queueSetupScheme) {
+            case CENTRALIZED: {
+              responsibleThreads.push_back(0);
+            } break;
+            case PERGROUP: {
+              if (responsibleThreads.size() == parent_package_id)
+                responsibleThreads.push_back(obj->children[0]->os_index);
+            } break;
+            case PERCPU: {
+              responsibleThreads.push_back(obj->os_index);
+            } break;
+          }
+        }
+    }
+
     void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
         hwloc_topology_t topology;
 
         hwloc_topology_init(&topology);
         hwloc_topology_load(topology);
 
-        physicalIds.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PACKAGE));
-        uniqueThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE));
-        responsibleThreads.resize(hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU));
+        hwloc_obj_t package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, NULL);
+
+        while (package != NULL) {
+          int package_id = package->os_index;
+          hwloc_recurse_topology(topology, package, package_id, physicalIds, uniqueThreads, responsibleThreads);
+          package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, package);
+        }
 
         hwloc_topology_destroy(topology);
     }
