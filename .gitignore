@@ -34,6 +34,10 @@ tmpdaphne.daphne
 *.mlir
 *.log
 
+# cuda compiler
+compiler-debug-cuda.txt
+compiler-trace-cuda.txt
+
 # tags file
 tags
 tags.lock
@@ -47,7 +51,6 @@ tags.temp
 
 # compile commands
 compile_commands.json
-
 
 # release scripts output
 /artifacts

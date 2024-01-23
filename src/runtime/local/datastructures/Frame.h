@@ -24,6 +24,7 @@
 
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -257,19 +258,30 @@ class Frame : public Structure {
      * @param colIdxs An array of length `numCols` of the indexes of the
      * columns to extract from `src`.
      */
-    Frame(const Frame * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t numCols, const size_t * colIdxs) :
+    Frame(const Frame * src, int64_t rowLowerIncl, int64_t rowUpperExcl, size_t numCols, const size_t * colIdxs) :
             Structure(rowUpperExcl - rowLowerIncl, numCols)
     {
-        assert(src && "src must not be null");
+        if (src == nullptr)
+            throw std::runtime_error("invalid argument passed to frame constructor: src must not be null");
         
-        // Only check conditions, if input Frame has not zero rows and the expected output has not zero rows.
-        if(!(rowLowerIncl == rowUpperExcl && rowLowerIncl == 0 && src->numRows == 0)) {
-            assert(((rowLowerIncl < src->numRows) || rowLowerIncl == 0) && "rowLowerIncl is out of bounds");
-            assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
-            assert((rowLowerIncl <= rowUpperExcl) && "rowLowerIncl must be lower or equal than rowUpperExcl");
+        if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->numRows) < rowUpperExcl
+            || (rowLowerIncl == static_cast<ssize_t>(src->numRows) && rowLowerIncl != 0)) {
+            std::ostringstream errMsg;
+            errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl
+                    << "' passed to frame constructor: it must hold 0 <= rowLowerIncl <= rowUpperExcl <= #rows "
+                    << "and rowLowerIncl < #rows (unless both are zero) where #rows of src is '" << src->numRows << "'";
+            throw std::out_of_range(errMsg.str());
         }
-        for(size_t i = 0; i < numCols; i++)
-            assert((colIdxs[i] < src->numCols) && "some colIdx is out of bounds");
+
+        size_t numColsSrc = src->numCols;
+        for(size_t i = 0; i < numCols; i++) {
+            if (numColsSrc <= colIdxs[i]) {
+                std::ostringstream errMsg;
+                errMsg << "invalid argument '" << colIdxs[i] << "' passed to frame constructor: "
+                    "colIdx is out of bounds for frame with column boundaries '[0, " << numColsSrc << ")'";
+                throw std::out_of_range(errMsg.str());
+            }
+        }
         
         this->schema = new ValueTypeCode[numCols];
         this->labels = new std::string[numCols];

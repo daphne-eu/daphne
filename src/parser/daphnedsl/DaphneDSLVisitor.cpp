@@ -125,8 +125,8 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
             return utils.retValWithInferedType(
                     builder.create<SliceAxOp>(
                             loc, utils.unknownType, arg,
-                            utils.castSizeIf(axVal),
-                            utils.castSizeIf(
+                            utils.castSI64If(axVal),
+                            utils.castSI64If(
                                     builder.create<mlir::daphne::EwAddOp>(
                                             loc, builder.getIntegerType(64, false),
                                             utils.castSI64If(axVal),
@@ -152,8 +152,8 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
         return utils.retValWithInferedType(
                 builder.create<SliceAxOp>(
                         loc, utils.unknownType, arg,
-                        utils.castSizeIf(axLowerIncl),
-                        utils.castSizeIf(axUpperExcl)
+                        utils.castSI64If(axLowerIncl),
+                        utils.castSI64If(axUpperExcl)
                 )
         );
     }
@@ -187,8 +187,8 @@ mlir::Value DaphneDSLVisitor::applyLeftIndexing(mlir::Location loc, mlir::Value 
             return static_cast<mlir::Value>(
                     builder.create<InsertAxOp>(
                             loc, argType, arg, ins,
-                            utils.castSizeIf(axVal),
-                            utils.castSizeIf(
+                            utils.castSI64If(axVal),
+                            utils.castSI64If(
                                     builder.create<mlir::daphne::EwAddOp>(
                                             loc, builder.getIntegerType(64, false),
                                             utils.castSI64If(axVal),
@@ -214,8 +214,8 @@ mlir::Value DaphneDSLVisitor::applyLeftIndexing(mlir::Location loc, mlir::Value 
         return static_cast<mlir::Value>(
                 builder.create<InsertAxOp>(
                         loc, argType, arg, ins,
-                        utils.castSizeIf(axLowerIncl),
-                        utils.castSizeIf(axUpperExcl)
+                        utils.castSI64If(axLowerIncl),
+                        utils.castSI64If(axUpperExcl)
                 )
         );
     }

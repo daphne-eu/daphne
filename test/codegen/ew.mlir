@@ -53,17 +53,17 @@ func.func @div() {
 }
 
 func.func @sqrt() {
-  %0 = "daphne.constant"() {value = 0 : index} : () -> index
-  %1 = "daphne.constant"() {value = 1 : index} : () -> index
+  %0 = "daphne.constant"() {value = 0 : index} : () -> si64
+  %1 = "daphne.constant"() {value = 1 : index} : () -> si64
   %2 = "daphne.constant"() {value = 2 : index} : () -> index
   %3 = "daphne.constant"() {value = false} : () -> i1
   %4 = "daphne.constant"() {value = true} : () -> i1
   %5 = "daphne.constant"() {value = 4 : si64} : () -> si64
   %6 = "daphne.fill"(%5, %2, %2) : (si64, index, index) -> !daphne.Matrix<2x2xsi64>
-  %7 = "daphne.sliceRow"(%6, %0, %1) : (!daphne.Matrix<2x2xsi64>, index, index) -> !daphne.Matrix<?x?xsi64>
-  %8 = "daphne.sliceCol"(%7, %0, %1) : (!daphne.Matrix<?x?xsi64>, index, index) -> !daphne.Matrix<?x?xsi64>
-  %9 = "daphne.sliceRow"(%6, %0, %1) : (!daphne.Matrix<2x2xsi64>, index, index) -> !daphne.Matrix<?x?xsi64>
-  %10 = "daphne.sliceCol"(%9, %0, %1) : (!daphne.Matrix<?x?xsi64>, index, index) -> !daphne.Matrix<?x?xsi64>
+  %7 = "daphne.sliceRow"(%6, %0, %1) : (!daphne.Matrix<2x2xsi64>, si64, si64) -> !daphne.Matrix<?x?xsi64>
+  %8 = "daphne.sliceCol"(%7, %0, %1) : (!daphne.Matrix<?x?xsi64>, si64, si64) -> !daphne.Matrix<?x?xsi64>
+  %9 = "daphne.sliceRow"(%6, %0, %1) : (!daphne.Matrix<2x2xsi64>, si64, si64) -> !daphne.Matrix<?x?xsi64>
+  %10 = "daphne.sliceCol"(%9, %0, %1) : (!daphne.Matrix<?x?xsi64>, si64, si64) -> !daphne.Matrix<?x?xsi64>
   %11 = "daphne.cast"(%10) : (!daphne.Matrix<?x?xsi64>) -> si64
   %12 = "daphne.cast"(%11) : (si64) -> f64
   // CHECK-NOT: daphne.ewSqrt
@@ -85,17 +85,17 @@ func.func @abs() {
 }
 
 func.func @pow() {
-  %0 = "daphne.constant"() {value = 0 : index} : () -> index
-  %1 = "daphne.constant"() {value = 1 : index} : () -> index
+  %0 = "daphne.constant"() {value = 0 : index} : () -> si64
+  %1 = "daphne.constant"() {value = 1 : index} : () -> si64
   %2 = "daphne.constant"() {value = 2 : index} : () -> index
   %3 = "daphne.constant"() {value = false} : () -> i1
   %4 = "daphne.constant"() {value = true} : () -> i1
   %5 = "daphne.constant"() {value = 4.000000e+00 : f64} : () -> f64
   %6 = "daphne.fill"(%5, %2, %2) : (f64, index, index) -> !daphne.Matrix<2x2xf64>
-  %7 = "daphne.sliceRow"(%6, %0, %1) : (!daphne.Matrix<2x2xf64>, index, index) -> !daphne.Matrix<?x?xf64>
-  %8 = "daphne.sliceCol"(%7, %0, %1) : (!daphne.Matrix<?x?xf64>, index, index) -> !daphne.Matrix<?x?xf64>
-  %9 = "daphne.sliceRow"(%6, %0, %1) : (!daphne.Matrix<2x2xf64>, index, index) -> !daphne.Matrix<?x?xf64>
-  %10 = "daphne.sliceCol"(%9, %0, %1) : (!daphne.Matrix<?x?xf64>, index, index) -> !daphne.Matrix<?x?xf64>
+  %7 = "daphne.sliceRow"(%6, %0, %1) : (!daphne.Matrix<2x2xf64>, si64, si64) -> !daphne.Matrix<?x?xf64>
+  %8 = "daphne.sliceCol"(%7, %0, %1) : (!daphne.Matrix<?x?xf64>, si64, si64) -> !daphne.Matrix<?x?xf64>
+  %9 = "daphne.sliceRow"(%6, %0, %1) : (!daphne.Matrix<2x2xf64>, si64, si64) -> !daphne.Matrix<?x?xf64>
+  %10 = "daphne.sliceCol"(%9, %0, %1) : (!daphne.Matrix<?x?xf64>, si64, si64) -> !daphne.Matrix<?x?xf64>
   %11 = "daphne.cast"(%10) : (!daphne.Matrix<?x?xf64>) -> f64
   // CHECK-NOT: daphne.ewPow
   // CHECK: math.powf

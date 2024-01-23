@@ -48,9 +48,33 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceRow", TAG_KERNELS, DenseMatrix, (double, int64_
     sliceRow(res, arg, 1, 3, nullptr);
     CHECK(*res == *exp);
 
+    DataObjectFactory::destroy(arg, exp, res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("SliceRow - check throws", TAG_KERNELS, DenseMatrix, (double, int64_t)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(4, {
+        0, 0, 1, 0, 2, 0,
+        0, 0, 0, 0, 0, 0,
+        3, 4, 5, 0, 6, 7,
+        0, 8, 0, 0, 9, 0,
+    });
+
+    DT * res = nullptr;
+    
+    SECTION("lowerIncl out of bounds - negative") {
+        REQUIRE_THROWS_AS((sliceRow(res, arg, -0.1, 3.0, nullptr)), std::out_of_range);
+    }
+    SECTION("lowerIncl greater than upperExcl") {
+        REQUIRE_THROWS_AS((sliceRow(res, arg, 3, 2, nullptr)), std::out_of_range);
+    }
+    SECTION("upperExcl out of bounds - too high") {
+        REQUIRE_THROWS_AS((sliceRow(res, arg, VT(1), VT(5.5), nullptr)), std::out_of_range);
+    }
+
     DataObjectFactory::destroy(arg);
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(res);
 }
 
 TEMPLATE_TEST_CASE("SliceRow", TAG_KERNELS, (Frame)) {
@@ -72,7 +96,34 @@ TEMPLATE_TEST_CASE("SliceRow", TAG_KERNELS, (Frame)) {
     sliceRow(res, arg, 1, 3, nullptr);
     CHECK(*res == *exp);
 
+    DataObjectFactory::destroy(arg, exp, res);
+}
+
+TEMPLATE_TEST_CASE("SliceRow - check throws", TAG_KERNELS, (Frame)) {
+    using DT = TestType;
+    using DTArg = DenseMatrix<double>;
+
+    auto c0 = genGivenVals<DTArg>(4, {0.0, 1.1, 2.2, 3.3});
+    auto c1 = genGivenVals<DTArg>(4, {4.4, 5.5, 6.6, 7.7});
+    auto c2 = genGivenVals<DTArg>(4, {8.8, 9.9, 1.0, 2.0});
+    auto c3 = genGivenVals<DTArg>(4, {3.0, 4.0, 5.0, 6.0});
+    std::vector<Structure *> cols1 = {c0, c1, c2, c3};
+    auto arg = DataObjectFactory::create<Frame>(cols1, nullptr);
+
+    DT * res = nullptr;
+    
+    SECTION("lowerIncl out of bounds - negative") {
+        REQUIRE_THROWS_AS((sliceRow(res, arg, -0.1, 3.0, nullptr)), std::out_of_range);
+    }
+    SECTION("lowerIncl greater than upperExcl") {
+        REQUIRE_THROWS_AS((sliceRow(res, arg, 3, 2, nullptr)), std::out_of_range);
+    }
+    SECTION("upperExcl out of bounds - too high") {
+        REQUIRE_THROWS_AS((sliceRow(res, arg, 1, 5, nullptr)), std::out_of_range);
+    }
+    SECTION("upperExcl out of bounds - too high FP") {
+        REQUIRE_THROWS_AS((sliceRow(res, arg, 1.0, 5.1, nullptr)), std::out_of_range);
+    }
+
     DataObjectFactory::destroy(arg);
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(res);
 }

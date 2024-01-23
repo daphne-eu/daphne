@@ -30,6 +30,17 @@
 
 #include <cstdint>
 
+template<typename DT, typename DTSel>
+void checkExtractCol(DT * res, DT * arg, DTSel * sel, DT * exp) {
+    extractCol<DT, DT, DTSel>(res, arg, sel, nullptr);
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res, exp, sel);
+}
+
+template<typename DT, typename DTSel>
+void checkExtractColThrow(DT * res, DT * arg, DTSel * sel) {
+    REQUIRE_THROWS_AS((extractCol<DT, DT, DTSel>(res, arg, sel, nullptr)), std::out_of_range);
+}
 
 /**
  * @brief Runs the extractCol-kernel with small input data and performs various
@@ -61,6 +72,7 @@ TEMPLATE_TEST_CASE("ExtractCol - Frame", TAG_KERNELS, int64_t, size_t) { // NOLI
     SECTION("selecting nothing") {
         sel = DataObjectFactory::create<DTSel>(0, 1, false);
         exp = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 0, nullptr);
+        checkExtractCol(res, arg, sel, exp);
     }
     SECTION("selecting some, once, in-order") {
         numColExp = 2;
@@ -68,6 +80,7 @@ TEMPLATE_TEST_CASE("ExtractCol - Frame", TAG_KERNELS, int64_t, size_t) { // NOLI
         std::vector<Structure *> colMatsExp = {c0, c2};
         std::string labelsExp[] = {"aaa", "ccc"};
         exp = DataObjectFactory::create<Frame>(colMatsExp, labelsExp);
+        checkExtractCol(res, arg, sel, exp);
     }
     SECTION("selecting everything, once, in-order") {
         numColExp = 3;
@@ -75,6 +88,7 @@ TEMPLATE_TEST_CASE("ExtractCol - Frame", TAG_KERNELS, int64_t, size_t) { // NOLI
         std::vector<Structure *> colMatsExp = {c0, c1, c2};
         std::string labelsExp[] = {"aaa", "bbb", "ccc"};
         exp = DataObjectFactory::create<Frame>(colMatsExp, labelsExp);
+        checkExtractCol(res, arg, sel, exp);
     }
     SECTION("selecting everything, once, permuted") {
         numColExp = 3;
@@ -82,6 +96,7 @@ TEMPLATE_TEST_CASE("ExtractCol - Frame", TAG_KERNELS, int64_t, size_t) { // NOLI
         std::vector<Structure *> colMatsExp = {c2, c0, c1};
         std::string labelsExp[] = {"ccc", "aaa", "bbb"};
         exp = DataObjectFactory::create<Frame>(colMatsExp, labelsExp);
+        checkExtractCol(res, arg, sel, exp);
     }
     SECTION("selecting some, repeated") {
         numColExp = 8;
@@ -89,16 +104,128 @@ TEMPLATE_TEST_CASE("ExtractCol - Frame", TAG_KERNELS, int64_t, size_t) { // NOLI
         std::vector<Structure *> colMatsExp = {c1, c2, c2, c0, c1, c0, c1, c2};
         std::string labelsExp[] = {"bbb", "ccc", "col_2", "aaa", "col_4", "col_5", "col_6", "col_7"};
         exp = DataObjectFactory::create<Frame>(colMatsExp, labelsExp);
+        checkExtractCol(res, arg, sel, exp);
     }
-    
-    extractCol<Frame, Frame, DTSel>(res, arg, sel, nullptr);
 
-    CHECK(*res == *exp);
+    DataObjectFactory::destroy(c0, c1, c2, arg);
+}
+
+TEMPLATE_TEST_CASE("ExtractCol - Frame error handling", TAG_KERNELS, int64_t) { // NOLINT(cert-err58-cpp)
+    using VTSel = TestType;
+    using DTSel = DenseMatrix<VTSel>;
     
-    DataObjectFactory::destroy(c0);
-    DataObjectFactory::destroy(c1);
-    DataObjectFactory::destroy(c2);
+    using DT0 = DenseMatrix<double>;
+    using DT1 = DenseMatrix<int32_t>;
+    using DT2 = DenseMatrix<uint64_t>;
+    
+    const size_t numRows = 5;
+    
+    auto c0 = genGivenVals<DT0>(numRows, {0.0, 1.1, 2.2, 3.3, 4.4});
+    auto c1 = genGivenVals<DT1>(numRows, {0, -10, -20, -30, -40});
+    auto c2 = genGivenVals<DT2>(numRows, {0, 1, 2, 3, 4});
+
+    std::vector<Structure *> colMats = {c0, c1, c2};
+    std::string labels[] = {"aaa", "bbb", "ccc"};
+    auto arg = DataObjectFactory::create<Frame>(colMats, labels);
+    size_t numColExp;
+    
+    Frame* res{};
+    DTSel* sel{};
+
+    SECTION("selecting out of bounds, negative") {
+        numColExp = 2;
+        sel = genGivenVals<DTSel>(numColExp, {-1, 2});
+        checkExtractColThrow(res, arg, sel);
+    }
+    SECTION("selecting out of bounds, too high") {
+        numColExp = 2;
+        sel = genGivenVals<DTSel>(numColExp, {1, 3});
+        checkExtractColThrow(res, arg, sel);
+    }
+
+    DataObjectFactory::destroy(c0, c1, c2, arg, sel);
+}
+
+TEMPLATE_TEST_CASE("ExtractCol - Dense Matrix", TAG_KERNELS, int64_t, double) { // NOLINT(cert-err58-cpp)
+    using VT = TestType;
+    using DT = DenseMatrix<VT>;
+    
+    DT * arg = genGivenVals<DT>(3, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9,
+    });
+
+    DT * res{};
+    DT * exp{};
+    DT * sel{};
+
+    SECTION("selecting nothing") {
+        sel = DataObjectFactory::create<DT>(0, 1, false);
+        exp = genGivenVals<DT>(3, {});
+        checkExtractCol(res, arg, sel, exp);
+    }
+    SECTION("selecting some, once, in-order") {
+        sel = genGivenVals<DT>(2, {0, 2});
+        exp = genGivenVals<DT>(3, {
+            1, 3,
+            4, 6,
+            7, 9,
+        });
+        checkExtractCol(res, arg, sel, exp);
+    }
+    SECTION("selecting everything, once, in-order") {
+        sel = genGivenVals<DT>(3, {0, 1, 2});
+        exp = genGivenVals<DT>(3, {
+            1, 2, 3,
+            4, 5, 6,
+            7, 8, 9,
+        });
+        checkExtractCol(res, arg, sel, exp);
+    }
+    SECTION("selecting everything, once, permuted") {
+        sel = genGivenVals<DT>(3, {2, 0, 1});
+        exp = genGivenVals<DT>(3, {
+            3, 1, 2,
+            6, 4, 5,
+            9, 7, 8,
+        });
+        checkExtractCol(res, arg, sel, exp);
+    }
+    SECTION("selecting some, repeated") {
+        sel = genGivenVals<DT>(8, {1, 2, 2, 0, 1, 0, 1, 2});
+        exp = genGivenVals<DT>(3, {
+            2, 3, 3, 1, 2, 1, 2, 3,
+            5, 6, 6, 4, 5, 4, 5, 6,
+            8, 9, 9, 7, 8, 7, 8, 9,
+        });
+        checkExtractCol(res, arg, sel, exp);
+    }
+
     DataObjectFactory::destroy(arg);
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(res);
+}
+
+TEMPLATE_TEST_CASE("ExtractCol - Dense Matrix error handling", TAG_KERNELS, int64_t) { // NOLINT(cert-err58-cpp)
+    using VT = TestType;
+    using DT = DenseMatrix<VT>;
+    
+    DT * arg = genGivenVals<DT>(3, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9,
+    });
+
+    DT * res{};
+    DT * sel{};
+
+    SECTION("selecting out of bounds, negative") {
+        sel = genGivenVals<DT>(2, {-1, 2});
+        checkExtractColThrow(res, arg, sel);
+    }
+    SECTION("selecting out of bounds, too high") {
+        sel = genGivenVals<DT>(2, {1, 3});
+        checkExtractColThrow(res, arg, sel);
+    }
+
+    DataObjectFactory::destroy(arg, sel);
 }
