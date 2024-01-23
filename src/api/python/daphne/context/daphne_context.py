@@ -95,7 +95,8 @@ class DaphneContext(object):
             return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0], mat.shape[1], vtc], local_data=mat)
         else:
             # Data transfer via a file.
-            unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+            data_path_param = "\"" + TMP_PATH + "/{file_name}.csv\""
+            unnamed_params = [data_path_param]
             named_params = []
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
         
@@ -108,7 +109,8 @@ class DaphneContext(object):
         """
 
         # Data transfer via files.
-        unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+        data_path_param = "\"" + TMP_PATH + "/{file_name}.csv\""
+        unnamed_params = [data_path_param]
         named_params = []
         return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df)
     
