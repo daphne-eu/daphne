@@ -150,16 +150,10 @@ template<typename VT, typename VTSel>
 struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
         // input validation
-        if(arg==nullptr){
-            std::ostringstream errMsg;
-            errMsg << "invalid argument passed to ExtractRow on dense matrix: arg cannot be null";
-            throw std::runtime_error(errMsg.str());
-        }
-        if(sel==nullptr){
-            std::ostringstream errMsg;
-            errMsg << "invalid argument passed to ExtractRow on dense matrix: rowIdxs sel cannot be null";
-            throw std::runtime_error(errMsg.str());
-        }
+        if(arg==nullptr)
+            throw std::runtime_error("invalid argument passed to ExtractRow on dense matrix: arg cannot be null");
+        if(sel==nullptr)
+            throw std::runtime_error("invalid argument passed to ExtractRow on dense matrix: rowIdxs sel cannot be null");
         VALIDATE_ARGS(sel->getNumCols());
 
         const size_t numRowsSel = sel->getNumRows();

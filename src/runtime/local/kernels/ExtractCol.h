@@ -78,11 +78,11 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
         // left as VTSel to enable more boundary validation, converted to size_t later
         const VTSel * VTcolIdxs = sel->getValues();
         const size_t numColsRes = sel->getNumRows();
-        const size_t numRowsRes = arg->getNumRows();
+        const size_t numRows = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsRes, numColsRes, false);
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, numColsRes, false);
 
         const VTArg * valuesArg = arg->getValues();
         VTArg * valuesRes = res->getValues();
@@ -90,7 +90,7 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
         const size_t rowSkipArg = arg->getRowSkip();
         const size_t rowSkipRes = res->getRowSkip();
         
-        for (size_t r = 0; r < numRowsRes; r++) {
+        for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numColsRes; c++) {
                 const VTSel VTcolIdx = VTcolIdxs[c];
                 const size_t colIdx = static_cast<const size_t>(VTcolIdx);

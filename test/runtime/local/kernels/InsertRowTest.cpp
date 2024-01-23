@@ -16,9 +16,7 @@
 
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/datagen/GenGivenVals.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/kernels/InsertRow.h>
 
 #include <tags.h>
@@ -42,7 +40,7 @@ void checkInsertRowThrow(const DTArg * arg, const DTArg * ins, const VTSel lower
     REQUIRE_THROWS_AS((insertRow<DTArg, DTArg, VTSel>(res, arg, ins, lowerIncl, upperExcl, nullptr)), std::out_of_range);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("InsertRow", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -115,7 +113,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix", TAG_KERNELS, (DenseMatri
     DataObjectFactory::destroy(arg, ins);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("InsertRow on dense matrix - FP specific", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("InsertRow - FP specific", TAG_KERNELS, (DenseMatrix), (double)) {
     using DT = TestType;
     using VT = typename DT::VT;
 

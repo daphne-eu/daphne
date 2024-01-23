@@ -52,15 +52,17 @@ void sliceRow(DTRes *& res, const DTArg * arg, const VTSel lowerIncl, const VTSe
 // Boundary validation
 // ****************************************************************************
 
-#define VALIDATE_ARGS(lowerIncl, upperExcl, numRowsArg) \
-    if (lowerIncl < 0 || upperExcl < lowerIncl || numRowsArg < static_cast<size_t>(upperExcl) \
-        || (static_cast<size_t>(lowerIncl) == numRowsArg && lowerIncl != 0)) { \
-            std::ostringstream errMsg; \
-            errMsg << "invalid arguments '" << lowerIncl << ", " << upperExcl << "' passed to SliceRow: " \
-                    << "it must hold 0 <= lowerIncl <= upperExcl <= #rows " \
-                    << "and lowerIncl < #rows (unless both are zero) where #rows of arg is '" << numRowsArg << "'"; \
-            throw std::out_of_range(errMsg.str()); \
+template<typename VTSel>
+void validateArgsSliceRow(VTSel lowerIncl, VTSel upperExcl, size_t numRowsArg) {
+    if (lowerIncl < 0 || upperExcl < lowerIncl || numRowsArg < static_cast<size_t>(upperExcl)
+        || (static_cast<size_t>(lowerIncl) == numRowsArg && lowerIncl != 0)) {
+            std::ostringstream errMsg;
+            errMsg << "invalid arguments '" << lowerIncl << ", " << upperExcl << "' passed to SliceRow: "
+                    << "it must hold 0 <= lowerIncl <= upperExcl <= #rows "
+                    << "and lowerIncl < #rows (unless both are zero) where #rows of arg is '" << numRowsArg << "'";
+            throw std::out_of_range(errMsg.str());
         }
+}
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -74,7 +76,7 @@ template<typename VTArg, typename VTSel>
 struct SliceRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
     static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
-        VALIDATE_ARGS(lowerIncl, upperExcl, numRowsArg);
+        validateArgsSliceRow(lowerIncl, upperExcl, numRowsArg);
         res = arg->sliceRow(lowerIncl, upperExcl);
     }        
 };
@@ -87,11 +89,9 @@ template <typename VTSel>
 struct SliceRow<Frame, Frame, VTSel> {
     static void apply(Frame *& res, const Frame * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
-        VALIDATE_ARGS(lowerIncl, upperExcl, numRowsArg);
+        validateArgsSliceRow(lowerIncl, upperExcl, numRowsArg);
         res = arg->sliceRow(lowerIncl, upperExcl);
     }        
 };
-
-#undef VALIDATE_ARGS
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SLICEROW_H

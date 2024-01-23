@@ -59,32 +59,34 @@ void insertCol(
 // Boundary validation
 // ****************************************************************************
 
-#define VALIDATE_ARGS(colLowerIncl, colLowerInclRaw, colUpperExcl, colUpperExclRaw, \
-                    numRowsArg, numColsArg, numRowsIns, numColsIns) \
-    \
-    if (colLowerIncl < 0 || colUpperExcl < colLowerIncl || numColsArg < colUpperExcl \
-        || (colLowerIncl == numColsArg && colLowerIncl != 0)) { \
-        std::ostringstream errMsg; \
-        errMsg << "invalid arguments '" << colLowerInclRaw << ", " << colUpperExclRaw \
-                << "' passed to InsertCol: it must hold 0 <= colLowerIncl <= colUpperExcl <= #columns " \
-                << "and colLowerIncl < #columns (unless both are zero) where #columns of arg is '" << numColsArg << "'"; \
-        throw std::out_of_range(errMsg.str()); \
-    } \
-    \
-    if(numColsIns != colUpperExcl - colLowerIncl){ \
-        std::ostringstream errMsg; \
-        errMsg << "invalid arguments '" << colLowerInclRaw << ", " << colUpperExclRaw \
-                << "' passed to InsertCol: the number of addressed columns in arg '" << colUpperExcl - colLowerIncl \
-                << "' and the number of columns in ins '" << numColsIns << "' must match"; \
-        throw std::runtime_error(errMsg.str()); \
-    } \
-    \
-    if(numRowsIns != numRowsArg) { \
-        std::ostringstream errMsg; \
-        errMsg << "invalid arguments passed to InsertCol: the number of rows in arg '" << numRowsArg \
-                << "' and ins '" << numRowsIns << "' must match"; \
-        throw std::runtime_error(errMsg.str()); \
+template<typename VTSel>
+void validateArgsInsertCol(size_t colLowerIncl_Size, VTSel colLowerIncl, size_t colUpperExcl_Size, VTSel colUpperExcl,
+                    size_t numRowsArg, size_t numColsArg, size_t numRowsIns, size_t numColsIns) {
+    
+    if (colLowerIncl_Size < 0 || colUpperExcl_Size < colLowerIncl_Size || numColsArg < colUpperExcl_Size
+        || (colLowerIncl_Size == numColsArg && colLowerIncl_Size != 0)) {
+        std::ostringstream errMsg;
+        errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
+                << "' passed to InsertCol: it must hold 0 <= colLowerIncl <= colUpperExcl <= #columns "
+                << "and colLowerIncl < #columns (unless both are zero) where #columns of arg is '" << numColsArg << "'";
+        throw std::out_of_range(errMsg.str());
     }
+    
+    if(numColsIns != colUpperExcl_Size - colLowerIncl_Size){
+        std::ostringstream errMsg;
+        errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
+                << "' passed to InsertCol: the number of addressed columns in arg '" << colUpperExcl_Size - colLowerIncl_Size
+                << "' and the number of columns in ins '" << numColsIns << "' must match";
+        throw std::runtime_error(errMsg.str());
+    }
+    
+    if(numRowsIns != numRowsArg) {
+        std::ostringstream errMsg;
+        errMsg << "invalid arguments passed to InsertCol: the number of rows in arg '" << numRowsArg
+                << "' and ins '" << numRowsIns << "' must match";
+        throw std::runtime_error(errMsg.str());
+    }
+}
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -99,7 +101,7 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
     static void apply(
             DenseMatrix<VTArg> *& res,
             const DenseMatrix<VTArg> * arg, const DenseMatrix<VTArg> * ins,
-            VTSel colLowerInclRaw, VTSel colUpperExclRaw,
+            VTSel colLowerIncl, VTSel colUpperExcl,
             DCTX(ctx)
     ) {
         const size_t numRowsArg = arg->getNumRows();
@@ -107,10 +109,10 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
 
-        const size_t colLowerIncl = static_cast<const size_t>(colLowerInclRaw);
-        const size_t colUpperExcl = static_cast<const size_t>(colUpperExclRaw);
+        const size_t colLowerIncl_Size = static_cast<const size_t>(colLowerIncl);
+        const size_t colUpperExcl_Size = static_cast<const size_t>(colUpperExcl);
         
-        VALIDATE_ARGS(colLowerIncl, colLowerInclRaw, colUpperExcl, colUpperExclRaw,
+        validateArgsInsertCol(colLowerIncl_Size, colLowerIncl, colUpperExcl_Size, colUpperExcl,
                     numRowsArg, numColsArg, numRowsIns, numColsIns);
 
         if(res == nullptr)
@@ -125,16 +127,14 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
         
         // TODO Can be simplified/more efficient in certain cases.
         for(size_t r = 0; r < numRowsArg; r++) {
-            memcpy(valuesRes, valuesArg, colLowerIncl * sizeof(VTArg));
-            memcpy(valuesRes + colLowerIncl, valuesIns, numColsIns * sizeof(VTArg));
-            memcpy(valuesRes + colUpperExcl, valuesArg + colUpperExcl, (numColsArg - colUpperExcl) * sizeof(VTArg));
+            memcpy(valuesRes, valuesArg, colLowerIncl_Size * sizeof(VTArg));
+            memcpy(valuesRes + colLowerIncl_Size, valuesIns, numColsIns * sizeof(VTArg));
+            memcpy(valuesRes + colUpperExcl_Size, valuesArg + colUpperExcl_Size, (numColsArg - colUpperExcl_Size) * sizeof(VTArg));
             valuesRes += rowSkipRes;
             valuesArg += rowSkipArg;
             valuesIns += rowSkipIns;
         }
     }
 };
-
-#undef VALIDATE_ARGS
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H

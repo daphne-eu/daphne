@@ -382,11 +382,12 @@ public:
     }
 
     CSRMatrix* sliceCol(size_t cl, size_t cu) const override {
+        // TODO add boundary validation when implementing
         throw std::runtime_error("CSRMatrix does not support sliceCol yet");
     }
 
     CSRMatrix* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
-        // add boundary validation when implementing
+        // TODO add boundary validation when implementing
         throw std::runtime_error("CSRMatrix does not support slice yet");
     }
 

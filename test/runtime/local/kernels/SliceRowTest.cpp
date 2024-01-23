@@ -29,7 +29,7 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("SliceRow - DenseMatrix", TAG_KERNELS, DenseMatrix, (double, int64_t, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("SliceRow", TAG_KERNELS, DenseMatrix, (double, int64_t, uint32_t)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -51,7 +51,7 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceRow - DenseMatrix", TAG_KERNELS, DenseMatrix, (
     DataObjectFactory::destroy(arg, exp, res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("SliceRow - DenseMatrix - check throws", TAG_KERNELS, DenseMatrix, (double, int64_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("SliceRow - check throws", TAG_KERNELS, DenseMatrix, (double, int64_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -67,7 +67,7 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceRow - DenseMatrix - check throws", TAG_KERNELS,
     SECTION("lowerIncl out of bounds - negative") {
         REQUIRE_THROWS_AS((sliceRow(res, arg, -0.1, 3.0, nullptr)), std::out_of_range);
     }
-    SECTION("lowerIncl out of bounds - bigger than upperExcl") {
+    SECTION("lowerIncl greater than upperExcl") {
         REQUIRE_THROWS_AS((sliceRow(res, arg, 3, 2, nullptr)), std::out_of_range);
     }
     SECTION("upperExcl out of bounds - too high") {
@@ -77,7 +77,7 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceRow - DenseMatrix - check throws", TAG_KERNELS,
     DataObjectFactory::destroy(arg);
 }
 
-TEMPLATE_TEST_CASE("SliceRow - Frame", TAG_KERNELS, (Frame)) {
+TEMPLATE_TEST_CASE("SliceRow", TAG_KERNELS, (Frame)) {
     using VT = double;
 
     auto c0 = genGivenVals<DenseMatrix<VT>>(4, {0.0, 1.1, 2.2, 3.3});
@@ -99,7 +99,7 @@ TEMPLATE_TEST_CASE("SliceRow - Frame", TAG_KERNELS, (Frame)) {
     DataObjectFactory::destroy(arg, exp, res);
 }
 
-TEMPLATE_TEST_CASE("SliceRow - Frame - check throws", TAG_KERNELS, (Frame)) {
+TEMPLATE_TEST_CASE("SliceRow - check throws", TAG_KERNELS, (Frame)) {
     using DT = TestType;
     using DTArg = DenseMatrix<double>;
 
@@ -115,7 +115,7 @@ TEMPLATE_TEST_CASE("SliceRow - Frame - check throws", TAG_KERNELS, (Frame)) {
     SECTION("lowerIncl out of bounds - negative") {
         REQUIRE_THROWS_AS((sliceRow(res, arg, -0.1, 3.0, nullptr)), std::out_of_range);
     }
-    SECTION("lowerIncl out of bounds - bigger than upperExcl") {
+    SECTION("lowerIncl greater than upperExcl") {
         REQUIRE_THROWS_AS((sliceRow(res, arg, 3, 2, nullptr)), std::out_of_range);
     }
     SECTION("upperExcl out of bounds - too high") {

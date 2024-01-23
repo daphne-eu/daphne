@@ -26,31 +26,29 @@
 // Boundary Validation
 // ****************************************************************************
 
-#define VALIDATE_ARGS(src, rowLowerIncl, rowUpperExcl, colLowerIncl, colUpperExcl) \
-    \
-    if (src == nullptr) { \
-        std::ostringstream errMsg; \
-        errMsg << "invalid argument passed to dense matrix constructor: src must not be null"; \
-        throw std::runtime_error(errMsg.str()); \
-    } \
-    \
-    if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->numRows) < rowUpperExcl \
-        || (rowLowerIncl == static_cast<ssize_t>(src->numRows) && rowLowerIncl != 0)) { \
-        std::ostringstream errMsg; \
-        errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl \
-                << "' passed to dense matrix constructor: it must hold 0 <= rowLowerIncl <= rowUpperExcl <= #rows " \
-                << "and rowLowerIncl < #rows (unless both are zero) where #rows of src is '" << src->numRows << "'"; \
-        throw std::out_of_range(errMsg.str()); \
-    } \
-    \
-    if(colLowerIncl < 0 || colUpperExcl < colLowerIncl || static_cast<ssize_t>(src->numCols) < colUpperExcl \
-        || (colLowerIncl == static_cast<ssize_t>(src->numCols) && colLowerIncl != 0)) { \
-        std::ostringstream errMsg; \
-        errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl \
-                << "' passed to dense matrix constructor: it must hold 0 <= colLowerIncl <= colUpperExcl <= #columns " \
-                << "and colLowerIncl < #columns (unless both are zero) where #columns of src is '" << src->numCols << "'"; \
-        throw std::out_of_range(errMsg.str()); \
+template<typename ValueType>
+void validateArgs(const DenseMatrix<ValueType> * src, int64_t rowLowerIncl, int64_t rowUpperExcl, int64_t colLowerIncl, int64_t colUpperExcl) {
+    if (src == nullptr)
+        throw std::runtime_error("invalid argument passed to dense matrix constructor: src must not be null");
+    
+    if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->getNumRows()) < rowUpperExcl
+        || (rowLowerIncl == static_cast<ssize_t>(src->getNumRows()) && rowLowerIncl != 0)) {
+        std::ostringstream errMsg;
+        errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl
+                << "' passed to dense matrix constructor: it must hold 0 <= rowLowerIncl <= rowUpperExcl <= #rows "
+                << "and rowLowerIncl < #rows (unless both are zero) where #rows of src is '" << src->getNumRows() << "'";
+        throw std::out_of_range(errMsg.str());
     }
+
+    if(colLowerIncl < 0 || colUpperExcl < colLowerIncl || static_cast<ssize_t>(src->getNumCols()) < colUpperExcl
+        || (colLowerIncl == static_cast<ssize_t>(src->getNumCols()) && colLowerIncl != 0)) {
+        std::ostringstream errMsg;
+        errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
+                << "' passed to dense matrix constructor: it must hold 0 <= colLowerIncl <= colUpperExcl <= #columns "
+                << "and colLowerIncl < #columns (unless both are zero) where #columns of src is '" << src->getNumCols() << "'";
+        throw std::out_of_range(errMsg.str());
+    }
+}
 
 // ****************************************************************************
 // 
@@ -95,7 +93,7 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, int64_t 
         colUpperExcl - colLowerIncl),  is_view(true), bufferSize(numRows*numCols*sizeof(ValueType)),
         lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
-    VALIDATE_ARGS(src, rowLowerIncl, rowUpperExcl, colLowerIncl, colUpperExcl);
+    validateArgs(src, rowLowerIncl, rowUpperExcl, colLowerIncl, colUpperExcl);
     
     this->row_offset = rowLowerIncl;
     this->col_offset = colLowerIncl;
@@ -288,7 +286,7 @@ DenseMatrix<const char*>::DenseMatrix(size_t numRows, size_t numCols, std::share
 DenseMatrix<const char*>::DenseMatrix(const DenseMatrix<const char*> * src, int64_t rowLowerIncl, int64_t rowUpperExcl, int64_t colLowerIncl,
         int64_t colUpperExcl) : Matrix<const char*>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl), lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
-    VALIDATE_ARGS(src, rowLowerIncl, rowUpperExcl, colLowerIncl, colUpperExcl);
+    validateArgs(src, rowLowerIncl, rowUpperExcl, colLowerIncl, colUpperExcl);
 
     rowSkip = src->rowSkip;
     auto offset = rowLowerIncl * src->rowSkip + colLowerIncl;
@@ -323,8 +321,6 @@ void DenseMatrix<const char*>::alloc_shared_strings(std::shared_ptr<CharBuf> src
         appendZerosRange(&values[0], getNumItems());
     }
 }
-
-#undef VALIDATE_ARGS
 
 // explicitly instantiate to satisfy linker
 template class DenseMatrix<double>;

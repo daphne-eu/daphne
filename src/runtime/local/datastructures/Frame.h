@@ -261,11 +261,8 @@ class Frame : public Structure {
     Frame(const Frame * src, int64_t rowLowerIncl, int64_t rowUpperExcl, size_t numCols, const size_t * colIdxs) :
             Structure(rowUpperExcl - rowLowerIncl, numCols)
     {
-        if (src == nullptr) {
-            std::ostringstream errMsg;
-            errMsg << "invalid argument passed to frame constructor: src must not be null";
-            throw std::runtime_error(errMsg.str());
-        }
+        if (src == nullptr)
+            throw std::runtime_error("invalid argument passed to frame constructor: src must not be null");
         
         if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->numRows) < rowUpperExcl
             || (rowLowerIncl == static_cast<ssize_t>(src->numRows) && rowLowerIncl != 0)) {
