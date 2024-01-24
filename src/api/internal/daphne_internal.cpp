@@ -265,8 +265,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         "mlir-codegen", cat(daphneOptions),
         desc("Enables lowering of certain DaphneIR operations on DenseMatrix to low-level MLIR operations.")
     );
-    static opt<int> matmul_vec_size(
-        "matmul-vec-size", cat(daphneOptions),
+    static opt<int> matmul_vec_size_bits(
+        "matmul-vec-size-bits", cat(daphneOptions),
         desc("Set the vector size to be used in the lowering of the MatMul operation if possible. Value of 0 is interpreted as off switch.")
     );
     static opt<bool> matmul_tile(
@@ -392,7 +392,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
     user_config.use_mlir_codegen = mlirCodegen;
-    user_config.matmul_vec_size = matmul_vec_size;
+    user_config.matmul_vec_size_bits = matmul_vec_size_bits;
     user_config.matmul_tile = matmul_tile;
     user_config.use_mlir_hybrid_codegen = performHybridCodegen;
 
