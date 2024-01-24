@@ -99,4 +99,42 @@ struct Gemv<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
     }
 };
 
+template<typename VT>
+struct Gemv<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *& res, const CSRMatrix<VT> * mat, const DenseMatrix<VT> * vec, DCTX(ctx)) {
+        const size_t nr1 = mat->getNumRows();
+        [[maybe_unused]] const size_t nc1 = mat->getNumCols();
+
+        [[maybe_unused]] const size_t nr2 = vec->getNumRows();
+        const size_t nc2 = vec->getNumCols();
+
+        assert(nc1 == nr2 && "#cols of mat and #rows of vec must be the same");
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false);
+
+        const VT * valuesRhs = vec->getValues();
+        VT * valuesRes = res->getValues();
+
+        const size_t rowSkipRhs = vec->getRowSkip();
+        const size_t rowSkipRes = res->getRowSkip();
+
+        memset(valuesRes, VT(0), sizeof(VT) * nr1 * nc2);
+        for(size_t r = 0; r < nr1; r++) {
+            const size_t rowNumNonZeros = mat->getNumNonZeros(r);
+            const size_t * rowColIdxs = mat->getColIdxs(r);
+            const VT * rowValues = mat->getValues(r);
+
+            const size_t rowIdxRes = r * rowSkipRes;
+            for(size_t i = 0; i < rowNumNonZeros; i++) {
+                const size_t c = rowColIdxs[i];
+                const size_t rowIdxRhs = c * rowSkipRhs;
+
+                for(size_t j = 0; j < nc2; j++) {
+		    valuesRes[rowIdxRes + j] += rowValues[i] * valuesRhs[rowIdxRhs + j];
+                }
+            }
+        }
+    }
+};
 #endif //SRC_RUNTIME_LOCAL_KERNELS_GEMV_H
