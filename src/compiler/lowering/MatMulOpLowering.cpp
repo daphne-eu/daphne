@@ -24,18 +24,16 @@
 #include <vector>
 
 #include "api/cli/DaphneUserConfig.h"
-#include "compiler/utils/CompilerUtils.h"
 #include "compiler/utils/LoweringUtils.h"
+#include "hwloc.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
-#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
-#include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
@@ -43,16 +41,15 @@
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/LoopUtils.h"
+#include "mlir/Dialect/Affine/Utils.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SCF/Utils/Utils.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
-#include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/PatternMatch.h"
@@ -320,7 +317,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         return tile_sizes;
     }
 
-    SmallVector<unsigned, 5> getTileSizesFromCache(Type const matrixElementType, int64_t vec_size, int64_t max_loop_length) const {
+    SmallVector<unsigned, 5> getTileSizesFromCache(Type const matrixElementType, int64_t vec_size, int64_t loop_length) const {
         SmallVector<unsigned, 5> tile_sizes;
         int bitwidth = matrixElementType.getIntOrFloatBitWidth();
         tile_sizes.push_back(std::max(1, (int)(std::sqrt(options.register_size / bitwidth))));
@@ -333,7 +330,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
             }
         }
         while (tile_sizes.size() < 5) {
-            tile_sizes.push_back(max_loop_length);
+            tile_sizes.push_back(loop_length);
         }
         // If vector size is longer than 1, we need to keep that in mind for the NR loop
         if (vec_size > 1) tile_sizes[1] = std::max(1, (int)(tile_sizes[1] / vec_size));
@@ -411,11 +408,14 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         if (failed(loopUnrollJamUpToFactor(blisTiledLoops[6], NR))) {
             std::cout << "Could not unroll the second to last loop" << std::endl;
         }
-        if (failed(loopUnrollUpToFactor(blisTiledLoops[5], KU))) {
+        llvm::SmallVector<AffineForOp> lastNest;
+        getPerfectlyNestedLoops(lastNest, blisTiledLoops.front()); 
+        
+        if (failed(loopUnrollUpToFactor(lastNest.back(), KU))) {
             std::cout << "Could not unroll the K loop" << std::endl;
         }
         int64_t i = 0;
-        while (succeeded(promoteIfSingleIteration(blisTiledLoops[i])) && i < 4) {
+        while (succeeded(promoteIfSingleIteration(lastNest[i])) && i < 4) {
             i++;
         }
     }
@@ -599,6 +599,31 @@ struct MatMulLoweringPass
                             mlir::memref::MemRefDialect>();
         }
         void runOnOperation() final;
+    private:
+        // Get the L1, L2 and L3 cache sizes to adapt tile sizes.
+        // So far assumes process is executed on a single processing unit.
+        // See example: https://www.open-mpi.org/projects/hwloc/doc/v2.2.0/a00324.php#cli_examples
+        SmallVector<int> get_cache_sizes() const {
+            hwloc_topology_t topology;
+            hwloc_obj_t obj;
+            int64_t levels;
+            SmallVector<int> sizes;
+        
+            // Allocate and initialize topology object
+            hwloc_topology_init(&topology);
+            // Perform topology detection
+            hwloc_topology_load(topology);
+        
+            levels = 0;
+            
+            for (obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, 0); obj; obj = obj->parent)
+                if (hwloc_obj_type_is_cache(obj->type)) {
+                    levels++;
+                    sizes.push_back(obj->attr->cache.size);
+                    std::cout << "Level " << levels << ": " << *sizes.end() / 1024  << "KB" << std::endl;
+                }            
+            return sizes;       
+        } 
 };
 }  // end anonymous namespace
 
@@ -649,6 +674,8 @@ void MatMulLoweringPass::runOnOperation() {
                 options.useFixedTileSizes = true;
                 options.setTileSizes(userConfig.matmul_fixed_tile_sizes);
                 options.setUnrollFactor(userConfig.matmul_unroll_factor);
+            } else {
+                options.setCacheSizes(get_cache_sizes());
             }
             }
         if (userConfig.matmul_vec_size_bits > 0) {
