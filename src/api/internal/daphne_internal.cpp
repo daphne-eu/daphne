@@ -15,6 +15,7 @@
  */
 
 #include "runtime/local/datastructures/IAllocationDescriptor.h"
+#include <vector>
 #ifdef USE_MPI
     #include "runtime/distributed/worker/MPIWorker.h"
 #endif
@@ -264,12 +265,24 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     );
     static opt<int> matmul_vec_size_bits(
         "matmul-vec-size-bits", cat(daphneOptions),
-        desc("Set the vector size to be used in the lowering of the MatMul operation if possible. Value of 0 is interpreted as off switch.")
+        desc("Set the vector size to be used in the lowering of the MatMul operation if possible. Value of 0 is interpreted as off switch."),
+        init(0)
     );
     static opt<bool> matmul_tile(
         "matmul-tile", cat(daphneOptions),
         desc("Enables loop tiling in the lowering of the MatMul operation.")
     );
+    static opt<int> matmul_unroll_factor(
+        "matmul-unroll-factor", cat(daphneOptions),
+        desc("Factor by which to unroll the inner most loop in the lowered MatMul if tiling is used."),
+        init(1)
+    );
+    static llvm::cl::list<unsigned> matmul_fixed_tile_sizes(
+        "matmul-fixed-tile-sizes", cat(daphneOptions),
+        desc("Set fixed tile sizes to be used for the lowering of MatMul if tiling is used. This also enables tiling."),
+        CommaSeparated
+    );
+    
 
     static opt<bool> performHybridCodegen(
         "mlir-hybrid-codegen", cat(daphneOptions),
@@ -391,6 +404,13 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_mlir_codegen = mlirCodegen;
     user_config.matmul_vec_size_bits = matmul_vec_size_bits;
     user_config.matmul_tile = matmul_tile;
+    user_config.matmul_unroll_factor = matmul_unroll_factor;
+    if (matmul_fixed_tile_sizes.size() > 0) {
+        user_config.matmul_use_fixed_tile_sizes = true;
+        user_config.matmul_fixed_tile_sizes = matmul_fixed_tile_sizes;
+        // Specifying a fixed tile size will be interpreted as wanting to use tiling.
+        user_config.matmul_tile = true;
+    }
     user_config.use_mlir_hybrid_codegen = performHybridCodegen;
 
     if(!libDir.getValue().empty())

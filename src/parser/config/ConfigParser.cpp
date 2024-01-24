@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 int readLogLevel(const std::string& level) {
     std::string level_lowercase(level);
@@ -57,6 +58,12 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.matmul_vec_size_bits = jf.at(DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_TILE))
         config.matmul_tile = jf.at(DaphneConfigJsonParams::MATMUL_TILE).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_USE_FIXED_TILE_SIZES))
+        config.matmul_use_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_USE_FIXED_TILE_SIZES).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES))
+        config.matmul_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES).get<std::vector<unsigned>>(); 
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR))
+        config.matmul_unroll_factor = jf.at(DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
         config.cuda_fuse_any = jf.at(DaphneConfigJsonParams::CUDA_FUSE_ANY).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE))
