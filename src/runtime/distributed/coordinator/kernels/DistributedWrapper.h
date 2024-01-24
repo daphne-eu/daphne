@@ -184,19 +184,18 @@ public:
 
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
-            assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
             if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
 #ifdef USE_MPI 
-                distributedCollect<ALLOCATION_TYPE::DIST_MPI>(*res[o], _dctx);      
+                distributedCollect<ALLOCATION_TYPE::DIST_MPI>(*res[o], combines[o], _dctx);      
 #endif
             }
             else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) 
             { 
-                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(*res[o], _dctx);
+                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(*res[o], combines[o], _dctx);
             }
             else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) 
             { 
-                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC>(*res[o], _dctx);
+                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC>(*res[o], combines[o], _dctx);
             }
         }      
     }

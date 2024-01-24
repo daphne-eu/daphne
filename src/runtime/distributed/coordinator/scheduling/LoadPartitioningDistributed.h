@@ -176,6 +176,11 @@ public:
                     k = (*outputs[i])->getNumCols() / workersSize;
                     m = (*outputs[i])->getNumCols() % workersSize;
                 }
+                else if (combineType == VectorCombine::ADD)
+                {
+                    k = (*outputs[i])->getNumCols() / workersSize;
+                    m = (*outputs[i])->getNumCols() % workersSize;
+                }
                 else
                     assert(!"Only Rows/Cols combineType supported atm");
 
@@ -196,7 +201,7 @@ public:
                     range.c_start = 0;
                     range.c_len = (*outputs[i])->getNumCols();
                 }
-                if (vectorCombine[i] == VectorCombine::COLS)
+                if (vectorCombine[i] == VectorCombine::COLS || vectorCombine[i] == VectorCombine::ADD)
                 {
                     ix[i] = DistributedIndex(ix[i].getRow(), ix[i].getCol() + 1);
 

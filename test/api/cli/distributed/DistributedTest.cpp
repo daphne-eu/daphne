@@ -123,7 +123,7 @@ TEST_CASE("Distributed runtime tests using MPI", TAG_DISTRIBUTED)
     SECTION("Execution of scripts using distributed runtime (MPI)"){
         // TODO Make these script individual DYNAMIC_SECTIONs.
 
-        for (auto i = 1u; i < 4; ++i) {
+        for (auto i = 1u; i <= 4; ++i) {
             auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
            
             std::stringstream outLocal;
