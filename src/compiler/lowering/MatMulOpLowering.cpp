@@ -82,8 +82,20 @@ struct LowerMatMulOpOptions {
     unsigned KU = 1;
     int register_size{4*4*64};
     llvm::SmallVector<int, 3> cache_sizes{256*4*64, 64*256*64, 64*512*64};
-    llvm::SmallVector<unsigned, 6> tile_sizes{1, 4, 4, 256, 64, 512};
+    llvm::SmallVector<unsigned, 5> tile_sizes{4, 4, 1024, 1024, 1024};//{1, 4, 4, 256, 64, 512};
+    int unroll_factor{1};
 
+    LowerMatMulOpOptions &setTileSizes(std::vector<unsigned> sizes) {
+        tile_sizes.clear();
+        for (auto s : sizes) {
+            tile_sizes.push_back(s);
+        }  
+        return *this;
+    }
+    LowerMatMulOpOptions &setUnrollFactor(int f) {
+        unroll_factor = f;
+        return *this;
+    }
     LowerMatMulOpOptions &setCacheSizes(llvm::SmallVector<int> caches) {
         cache_sizes.clear();
         for (auto c:caches) {
@@ -285,9 +297,9 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
                      op->getContext(), loops);
         }
         if (options.tile) {
-                auto tile_sizes = options.tile_sizes;
+                auto tile_sizes = extendTileSizes(lhsRows);
             if (!options.useFixedTileSizes) {
-                tile_sizes = getTileSizesFromCache(matrixElementType, loops[1].getStep(), 1, lhsRows);
+                tile_sizes = getTileSizesFromCache(matrixElementType, loops[1].getStep(), lhsRows);
             }
             tile_loops(loops, tile_sizes);
         }
@@ -299,10 +311,18 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         return success();
     }
 
-    SmallVector<unsigned, 6> getTileSizesFromCache(Type const matrixElementType, int64_t vec_size, unsigned unroll_factor, int64_t max_loop_length) const {
-        SmallVector<unsigned, 6> tile_sizes;
+    SmallVector<unsigned, 5> extendTileSizes(int64_t max_loop_length) const {
+        SmallVector<unsigned, 5> tile_sizes = options.tile_sizes;
+        while (tile_sizes.size() < 5) {
+            tile_sizes.push_back(max_loop_length);
+        }
+        for (auto v:tile_sizes) std::cout << v << std::endl;
+        return tile_sizes;
+    }
+
+    SmallVector<unsigned, 5> getTileSizesFromCache(Type const matrixElementType, int64_t vec_size, int64_t max_loop_length) const {
+        SmallVector<unsigned, 5> tile_sizes;
         int bitwidth = matrixElementType.getIntOrFloatBitWidth();
-        tile_sizes.push_back(unroll_factor);
         tile_sizes.push_back(std::max(1, (int)(std::sqrt(options.register_size / bitwidth))));
         tile_sizes.push_back(tile_sizes.back());
         if (options.cache_sizes.size() > 0) {
@@ -312,22 +332,22 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
                 std::cout << "Calculated a tile size of " << *(std::prev(std::prev(tile_sizes.end()))) << "and " << tile_sizes.back() << std::endl;
             }
         }
-        while (tile_sizes.size() < 6) {
+        while (tile_sizes.size() < 5) {
             tile_sizes.push_back(max_loop_length);
         }
-        // If vector size is longer than 1, we need to keep that in mind
-        if (vec_size > 1) tile_sizes[2] = std::max(1, (int)(tile_sizes[2] / vec_size));
+        // If vector size is longer than 1, we need to keep that in mind for the NR loop
+        if (vec_size > 1) tile_sizes[1] = std::max(1, (int)(tile_sizes[1] / vec_size));
         for (auto v:tile_sizes) std::cout << v << std::endl;
         return tile_sizes;
     }
 
-    void tile_loops(SmallVector<AffineForOp, 3> loops, SmallVector<unsigned, 6> tile_sizes) const {
-        unsigned NC = tile_sizes[5];
-        unsigned MC = tile_sizes[4];
-        unsigned KC = tile_sizes[3];
-        unsigned NR = tile_sizes[2];
-        unsigned MR = tile_sizes[1];
-        unsigned KU = tile_sizes[0];
+    void tile_loops(SmallVector<AffineForOp, 3> loops, SmallVector<unsigned, 5> tile_sizes) const {
+        unsigned NC = tile_sizes[4];
+        unsigned MC = tile_sizes[3];
+        unsigned KC = tile_sizes[2];
+        unsigned NR = tile_sizes[1];
+        unsigned MR = tile_sizes[0];
+        unsigned KU = options.unroll_factor;
         auto vec_size = loops[1].getStep();
         llvm::SmallVector<AffineForOp> loopNest;
         getPerfectlyNestedLoops(loopNest, loops.front());
@@ -622,6 +642,14 @@ void MatMulLoweringPass::runOnOperation() {
         LowerMatMulOpOptions options;
         if (userConfig.matmul_tile) {
             options.enableTiling();
+            std::cout << userConfig.matmul_use_fixed_tile_sizes << std::endl;
+
+            std::cout << userConfig.matmul_unroll_factor << std::endl;
+            if (userConfig.matmul_use_fixed_tile_sizes) {
+                options.useFixedTileSizes = true;
+                options.setTileSizes(userConfig.matmul_fixed_tile_sizes);
+                options.setUnrollFactor(userConfig.matmul_unroll_factor);
+            }
             }
         if (userConfig.matmul_vec_size_bits > 0) {
             options.enableVectorization();

@@ -32,7 +32,10 @@ struct DaphneConfigJsonParams {
     inline static const std::string USE_PHY_OP_SELECTION = "use_phy_op_selection";
     inline static const std::string USE_MLIR_CODEGEN = "use_mlir_codegen";
     inline static const std::string MATMUL_VEC_SIZE_BITS = "matmul_vec_size_bits";
-    inline static const std::string MATMUL_TILE = "matmul_tile";    
+    inline static const std::string MATMUL_TILE = "matmul_tile"; 
+    inline static const std::string MATMUL_FIXED_TILE_SIZES = "matmul_fixed_tile_sizes";
+    inline static const std::string MATMUL_USE_FIXED_TILE_SIZES = "matmul_use_fixed_tile_sizes"; 
+    inline static const std::string MATMUL_UNROLL_FACTOR = "matmul_unroll_factor";    
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
@@ -61,6 +64,9 @@ struct DaphneConfigJsonParams {
     inline static const std::string JSON_PARAMS[] = {
             MATMUL_VEC_SIZE_BITS,
             MATMUL_TILE,
+            MATMUL_FIXED_TILE_SIZES,
+            MATMUL_USE_FIXED_TILE_SIZES,
+            MATMUL_UNROLL_FACTOR,
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,
