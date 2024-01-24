@@ -67,7 +67,7 @@ static constexpr int COL = 1;
 
 struct LowerMatMulOpOptions {
     LowerMatMulOpOptions () {}
-    int vec_size{0};
+    int vec_size_bits{0};
     bool vectorize{false};
     bool tile{false};
     unsigned MC = 64;
@@ -75,18 +75,26 @@ struct LowerMatMulOpOptions {
     unsigned NC = 512;
     unsigned NR = 4;
     unsigned MR = 4;
-    unsigned KU = 4;
+    unsigned KU = 1;
     LowerMatMulOpOptions &enableVectorization(bool b = true) {
         vectorize = b;
         return *this;
     }
-    LowerMatMulOpOptions &setVectorSize(int s) {
-        vec_size = s;
+    LowerMatMulOpOptions &setVectorSizeBits(int s) {
+        vec_size_bits = s;
         return *this;
     }
     LowerMatMulOpOptions &enableTiling(bool b = true) {
         tile = b;
         return *this;
+    }
+    int getVecSize(int bitwidth) const {
+        if (vec_size_bits > 0) {
+            return std::max(1, vec_size_bits / bitwidth);
+        }
+        else {
+            return 1;
+        }
     }
 };
 
@@ -197,7 +205,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         : OpConversionPattern(context, PatternBenefit(1)), options(options) {} 
 
     bool is_vectorizable(ArrayRef<int64_t> const rhsShape, Type const matrixElementType) const {
-        if (rhsShape[COL] % options.vec_size != 0) {
+        if (rhsShape[COL] % options.getVecSize(matrixElementType.getIntOrFloatBitWidth()) != 0) {
             return false;
         }
         if (!matrixElementType.isa<FloatType>()) {
@@ -254,7 +262,8 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         if (options.vectorize && is_vectorizable(rhsMemRefType.getShape(), matrixElementType)) {
             vectorizedAffineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
                      lhsMemRefType.getShape(), rhsMemRefType.getShape(),
-                     op->getContext(), loops, matrixElementType, options.vec_size);
+                     op->getContext(), loops, matrixElementType, 
+                     options.getVecSize(matrixElementType.getIntOrFloatBitWidth()));
         } else {
             affineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
                      lhsMemRefType.getShape(), rhsMemRefType.getShape(),
@@ -573,9 +582,9 @@ void MatMulLoweringPass::runOnOperation() {
 
         LowerMatMulOpOptions options;
         if (userConfig.matmul_tile) {options.enableTiling();}
-        if (userConfig.matmul_vec_size > 0) {
+        if (userConfig.matmul_vec_size_bits > 0) {
             options.enableVectorization();
-            options.setVectorSize(userConfig.matmul_vec_size);
+            options.setVectorSizeBits(userConfig.matmul_vec_size_bits);
             }
         
         patterns.insert<MatMulLowering>(&getContext(), options);

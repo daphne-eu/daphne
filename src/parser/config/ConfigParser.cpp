@@ -53,8 +53,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::USE_PHY_OP_SELECTION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_MLIR_CODEGEN))
         config.use_mlir_codegen = jf.at(DaphneConfigJsonParams::USE_MLIR_CODEGEN).get<bool>();
-    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_VEC_SIZE))
-        config.matmul_vec_size = jf.at(DaphneConfigJsonParams::MATMUL_VEC_SIZE).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS))
+        config.matmul_vec_size_bits = jf.at(DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_TILE))
         config.matmul_tile = jf.at(DaphneConfigJsonParams::MATMUL_TILE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
