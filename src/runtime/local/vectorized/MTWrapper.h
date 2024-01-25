@@ -73,18 +73,11 @@ protected:
         return std::make_pair(len, mem_required);
     }
 
-    bool _parseStringLine(const std::string& input, const std::string& keyword, int *val ) {
-        auto seperatorLocation = input.find(':');
-        if(seperatorLocation != std::string::npos) {
-            if(input.find(keyword) == 0) {
-                *val = stoi(input.substr(seperatorLocation + 1));
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void hwloc_recurse_topology(hwloc_topology_t topo, hwloc_obj_t obj, int parent_package_id, std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
+    void hwloc_recurse_topology(hwloc_topology_t topo, hwloc_obj_t obj,
+                                unsigned int parent_package_id,
+                                std::vector<int>& physicalIds,
+                                std::vector<int>& uniqueThreads,
+                                std::vector<int>& responsibleThreads) {
         if (obj->type != HWLOC_OBJ_CORE) {
           for (unsigned int i = 0; i < obj->arity; i++) {
               hwloc_recurse_topology(topo, obj->children[i], parent_package_id, physicalIds, uniqueThreads, responsibleThreads);
@@ -118,7 +111,7 @@ protected:
         hwloc_obj_t package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, NULL);
 
         while (package != NULL) {
-          int package_id = package->os_index;
+          auto package_id = package->os_index;
           hwloc_recurse_topology(topology, package, package_id, physicalIds, uniqueThreads, responsibleThreads);
           package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, package);
         }
