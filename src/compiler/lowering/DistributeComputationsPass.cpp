@@ -41,7 +41,7 @@ struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
         for (auto zipIt : llvm::zip(operands, op.getOperandDistrPrimitives())) {
             Value operand = std::get<0>(zipIt);
             bool isBroadcast = std::get<1>(zipIt);
-            if (operand.getType().isa<daphne::HandleType>())
+            if (llvm::isa<daphne::HandleType>(operand.getType()))
                 // The operand is already distributed/broadcasted, we can
                 // directly use it.
                 // TODO Check if it is distributed the way we need it here
@@ -81,7 +81,7 @@ struct DistributeComputationsPass
 
 bool onlyMatrixOperands(Operation * op) {
     return llvm::all_of(op->getOperandTypes(), [](Type t) {
-        return t.isa<daphne::MatrixType>();
+        return llvm::isa<daphne::MatrixType>(t);
     });
 }
 

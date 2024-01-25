@@ -79,7 +79,7 @@ void processValue(OpBuilder builder, Value v) {
     if (defOp && llvm::isa<daphne::ConvertDenseMatrixToMemRef>(defOp))
         processMemRefInterop(builder, v);
 
-    if(!v.getType().isa<daphne::MatrixType, daphne::FrameType>())
+    if(!llvm::isa<daphne::MatrixType, daphne::FrameType>(v.getType()))
         return;
 
     Operation* decRefAfterOp = nullptr;
@@ -119,7 +119,7 @@ void processValue(OpBuilder builder, Value v) {
         // Don't insert a DecRefOp if there is already one. Currently, this can
         // happen only on the distributed worker, since the IR it gets already
         // contains
-        if(isa<daphne::DecRefOp>(decRefAfterOp))
+        if(llvm::isa<daphne::DecRefOp>(decRefAfterOp))
             return;
 
         builder.setInsertionPointAfter(decRefAfterOp);
@@ -154,9 +154,9 @@ void processValue(OpBuilder builder, Value v) {
  */
 void incRefIfObj(Value v, OpBuilder & b) {
     Type t = v.getType();
-    if(t.isa<daphne::MatrixType, daphne::FrameType>())
+    if(llvm::isa<daphne::MatrixType, daphne::FrameType>(t))
         b.create<daphne::IncRefOp>(b.getUnknownLoc(), v);
-    else if(t.isa<daphne::UnknownType>())
+    else if(llvm::isa<daphne::UnknownType>(t))
         throw std::runtime_error(
                 "ManageObjRefsPass encountered a value of unknown type, so it "
                 "cannot know if it is a data object"
@@ -201,10 +201,10 @@ void processBlock(OpBuilder builder, Block * b) {
                 incRefArgs(op, builder);
         }
         // Loops and function calls.
-        else if(isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp>(op))
+        else if(llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp>(op))
             incRefArgs(op, builder);
         // YieldOp of IfOp.
-        else if(isa<scf::YieldOp>(op) && isa<scf::IfOp>(op.getParentOp())) {
+        else if(llvm::isa<scf::YieldOp>(op) && llvm::isa<scf::IfOp>(op.getParentOp())) {
             // Increase the reference counters of data objects that already
             // existed before the IfOp, because yielding them creates a new
             // SSA value referring to them.

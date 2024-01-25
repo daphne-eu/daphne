@@ -181,7 +181,7 @@ bool CompilerUtils::constantOrDefault<bool>(mlir::Value v, bool d) {
 
 bool CompilerUtils::isMatrixComputation(mlir::Operation *v) {
     return
-            llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty){ return ty.isa<mlir::daphne::MatrixType>(); })
+            llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty){ return llvm::isa<mlir::daphne::MatrixType>(ty); })
             ||
-            llvm::any_of(v->getResultTypes(), [&](mlir::Type ty){ return ty.isa<mlir::daphne::MatrixType>(); });
+            llvm::any_of(v->getResultTypes(), [&](mlir::Type ty){ return llvm::isa<mlir::daphne::MatrixType>(ty); });
 }

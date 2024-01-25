@@ -158,25 +158,25 @@ public:
                     return "CSRMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
                 }
             }
-        else if(t.isa<mlir::daphne::FrameType>())
+        else if(llvm::isa<mlir::daphne::FrameType>(t))
             if(generalizeToStructure)
                 return "Structure";
             else
                 return "Frame";
-        else if(t.isa<mlir::daphne::StringType>())
+        else if(llvm::isa<mlir::daphne::StringType>(t))
             // This becomes "const char *" (which makes perfect sense for
             // strings) when inserted into the typical "const DT *" template of
             // kernel input parameters.
             return "char";
-        else if(t.isa<mlir::daphne::DaphneContextType>())
+        else if(llvm::isa<mlir::daphne::DaphneContextType>(t))
             return "DaphneContext";
         else if(auto handleTy = t.dyn_cast<mlir::daphne::HandleType>())
             return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
-        else if(t.isa<mlir::daphne::FileType>())
+        else if(llvm::isa<mlir::daphne::FileType>(t))
             return "File";
-        else if(t.isa<mlir::daphne::DescriptorType>())
+        else if(llvm::isa<mlir::daphne::DescriptorType>(t))
             return "Descriptor";
-        else if(t.isa<mlir::daphne::TargetType>())
+        else if(llvm::isa<mlir::daphne::TargetType>(t))
             return "Target";
         else if(auto memRefType = t.dyn_cast<mlir::MemRefType>()) {
             return "StridedMemRefType_" + mlirTypeToCppTypeName(memRefType.getElementType(), false) + "_2";
@@ -219,7 +219,7 @@ public:
     }
     
     [[maybe_unused]] static bool isObjType(mlir::Type t) {
-        return t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
+        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(t);
     }
     
     [[maybe_unused]] static bool hasObjType(mlir::Value v) {

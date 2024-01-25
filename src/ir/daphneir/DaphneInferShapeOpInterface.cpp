@@ -269,7 +269,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
     Type condTy = getCond().getType();
-    if(condTy.isa<daphne::UnknownType>())
+    if(llvm::isa<daphne::UnknownType>(condTy))
         // Actually, this should not happen, because if the type of the
         // condition is unknown, the type of the result should be unknown
         // too per type inference, such that shape inference should not

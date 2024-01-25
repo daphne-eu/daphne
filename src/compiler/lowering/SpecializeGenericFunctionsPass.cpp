@@ -47,8 +47,8 @@ namespace {
                 [&](Type ty) {
                     auto matTy = ty.dyn_cast<daphne::MatrixType>();
                     return
-                        ty.isa<daphne::UnknownType>() ||
-                        (matTy && (matTy.getElementType().isa<daphne::UnknownType>()));
+                        llvm::isa<daphne::UnknownType>(ty) ||
+                        (matTy && (llvm::isa<daphne::UnknownType>(matTy.getElementType())));
                 }
         );
     }
@@ -70,9 +70,9 @@ namespace {
                 [&](Type ty) {
                     auto matTy = ty.dyn_cast<daphne::MatrixType>();
                     return
-                        ty.isa<daphne::UnknownType>() ||
+                        llvm::isa<daphne::UnknownType>(ty) ||
                         (matTy && (
-                            matTy.getElementType().isa<daphne::UnknownType>() ||
+                            llvm::isa<daphne::UnknownType>(matTy.getElementType()) ||
                             (matTy.getNumRows() == -1 && matTy.getNumCols() == -1 && matTy.getSparsity() == -1)
                         ));
                 }

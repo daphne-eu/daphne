@@ -342,7 +342,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 colTypes.push_back(mt.getElementType());
                 cols.push_back(arg);
             }
-            else if(t.isa<mlir::daphne::StringType>()) {
+            else if(llvm::isa<mlir::daphne::StringType>(t)) {
                 expectCol = false;
                 labels.push_back(arg);
             }

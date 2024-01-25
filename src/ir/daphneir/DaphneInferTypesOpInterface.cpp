@@ -75,7 +75,7 @@ std::vector<Type> daphne::CastOp::inferTypes() {
 
     // If the result type is a matrix with so far unknown value type, then we
     // infer the value type from the argument.
-    if(mtRes && mtRes.getElementType().isa<daphne::UnknownType>()) {
+    if(mtRes && llvm::isa<daphne::UnknownType>(mtRes.getElementType())) {
         Type resVt;
 
         if(mtArg)
@@ -431,13 +431,13 @@ std::vector<Type> daphne::SliceColOp::inferTypes() {
 
 std::vector<Type> daphne::CondOp::inferTypes() {
     Type condTy = getCond().getType();
-    if(condTy.isa<daphne::UnknownType>())
+    if(llvm::isa<daphne::UnknownType>(condTy))
         return {daphne::UnknownType::get(getContext())};
     if(auto condMatTy = condTy.dyn_cast<daphne::MatrixType>()) {
         Type thenTy = getThenVal().getType();
         Type elseTy = getElseVal().getType();
 
-        if(thenTy.isa<daphne::FrameType>() || elseTy.isa<daphne::FrameType>())
+        if(llvm::isa<daphne::FrameType>(thenTy) || llvm::isa<daphne::FrameType>(elseTy))
             throw std::runtime_error(
                  "CondOp does not support frames for the then-value or else-value if "
                  "the condition is a matrix"
@@ -537,7 +537,7 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
         );
     // Set the inferred types on all results of this operation.
     for(size_t i = 0; i < numRes; i++) {
-        if (types[i].isa<daphne::UnknownType>() && !partialInferenceAllowed)
+        if (llvm::isa<daphne::UnknownType>(types[i]) && !partialInferenceAllowed)
             // TODO As soon as the run-time can handle unknown
             // data/value types, we do not need to throw here anymore.
             throw std::runtime_error(

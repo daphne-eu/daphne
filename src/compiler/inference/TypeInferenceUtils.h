@@ -108,7 +108,7 @@ mlir::Type inferTypeByTraits(O * op) {
     std::vector<DataTypeCode> argDtc;
     std::vector<std::vector<Type>> argVts;
     for(Type t : op->getOperandTypes()) {
-        if(t.isa<daphne::UnknownType>()) {
+        if(llvm::isa<daphne::UnknownType>(t)) {
             argDtc.push_back(DataTypeCode::UNKNOWN);
             argVts.push_back({u});
         }
@@ -209,7 +209,7 @@ mlir::Type inferTypeByTraits(O * op) {
         // ...and replace them by the most general floating-point type where
         // necessary.
         for(size_t i = 0; i < resVts.size(); i++)
-            if(!resVts[i].isa<FloatType>() && !resVts[i].isa<daphne::UnknownType>())
+            if(!llvm::isa<FloatType>(resVts[i]) && !llvm::isa<daphne::UnknownType>(resVts[i]))
                 resVts[i] = FloatType::getF64(ctx);
     }
     else if(op->template hasTrait<ValueTypeFromArgsInt>()) {
@@ -219,7 +219,7 @@ mlir::Type inferTypeByTraits(O * op) {
         // ...and replace them by the most general integer type where
         // necessary.
         for(size_t i = 0; i < resVts.size(); i++)
-            if(!resVts[i].isa<IntegerType>() && !resVts[i].isa<daphne::UnknownType>())
+            if(!llvm::isa<IntegerType>(resVts[i]) && !llvm::isa<daphne::UnknownType>(resVts[i]))
                 resVts[i] = IntegerType::get(
                         ctx, 64, IntegerType::SignednessSemantics::Unsigned
                 );

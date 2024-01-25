@@ -71,9 +71,9 @@ void AdaptTypesToKernelsPass::runOnOperation()
             // Skip pure frame ops, since we cannot easily cast the column types of frames anyway.
             // TODO Adapt this to use operandIdxs.
             if(!(
-                resTy.isa<daphne::FrameType>() &&
+                llvm::isa<daphne::FrameType>(resTy) &&
                 llvm::all_of(op->getOperands(), [](Value operand){
-                    return operand.getType().isa<daphne::FrameType>();
+                    return llvm::isa<daphne::FrameType>(operand.getType());
                 })
             )) {
                 // Insert casts where necessary.

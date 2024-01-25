@@ -179,7 +179,7 @@ mlir::Value SQLVisitor::createStringConstant(std::string str){
 mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast){
     mlir::Location loc = builder.getUnknownLoc();
 
-    if(toCast.getType().isa<mlir::daphne::MatrixType>()){
+    if(llvm::isa<mlir::daphne::MatrixType>(toCast.getType())){
         return toCast;
     }else{
         mlir::Value numRow = static_cast<mlir::Value>(
@@ -227,7 +227,7 @@ mlir::Value SQLVisitor::matrixToFrame(
 )
 {
     mlir::Location loc = builder.getUnknownLoc();
-    if(matrix.getType().isa<mlir::daphne::MatrixType>()){
+    if(llvm::isa<mlir::daphne::MatrixType>(matrix.getType())){
         //make a Frame from the Matrix.
         std::vector<mlir::Type> colTypes;
         std::vector<mlir::Value> cols;
@@ -255,7 +255,7 @@ mlir::Value SQLVisitor::addMatrixToCurrentFrame(
 {
     mlir::Location loc = builder.getUnknownLoc();
 
-    if(matrix.getType().isa<mlir::daphne::MatrixType>()){
+    if(llvm::isa<mlir::daphne::MatrixType>(matrix.getType())){
         mlir::Value add = matrixToFrame(matrix, newColumnName);
 
         //ADD new Frame to currentFrame
@@ -560,7 +560,7 @@ antlrcpp::Any SQLVisitor::visitSelectExpr(
     //we get a Matrix or int/float value. From this we generate a Matrix.
     mlir::Value expr = utils.valueOrError(vExpr);
 
-    if(expr.getType().isa<mlir::daphne::FrameType>()){
+    if(llvm::isa<mlir::daphne::FrameType>(expr.getType())){
         return expr;
     }
 

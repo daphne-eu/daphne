@@ -97,7 +97,7 @@ class EwModOpLowering
 
                 // this is enough since divisor will be casted to float if
                 // matrix is float
-                if (divisor.getType().isa<mlir::FloatType>()) {
+                if (llvm::isa<mlir::FloatType>(divisor.getType())) {
                     res =
                         nestedBuilder.create<arith::RemFOp>(loc, load, divisor);
                     nestedBuilder.create<AffineStoreOp>(loc, res, memRef, ivs);

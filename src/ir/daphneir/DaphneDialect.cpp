@@ -289,19 +289,19 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
     else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
         os << "Handle<" << handle.getDataType() << ">";
     }
-    else if (type.isa<mlir::daphne::StringType>())
+    else if (isa<mlir::daphne::StringType>(type))
         os << "String";
     else if (auto t = type.dyn_cast<mlir::daphne::VariadicPackType>())
         os << "VariadicPack<" << t.getContainedType() << '>';
-    else if (type.isa<mlir::daphne::DaphneContextType>())
+    else if (isa<mlir::daphne::DaphneContextType>(type))
         os << "DaphneContext";
-    else if (type.isa<mlir::daphne::FileType>())
+    else if (isa<mlir::daphne::FileType>(type))
         os << "File";
-    else if (type.isa<mlir::daphne::DescriptorType>())
+    else if (isa<mlir::daphne::DescriptorType>(type))
         os << "Descriptor";
-    else if (type.isa<mlir::daphne::TargetType>())
+    else if (isa<mlir::daphne::TargetType>(type))
         os << "Target";
-    else if (type.isa<mlir::daphne::UnknownType>())
+    else if (isa<mlir::daphne::UnknownType>(type))
         os << "Unknown";
 }
 
@@ -406,7 +406,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
     if (
         (
             // Value type is unknown.
-            elementType.isa<mlir::daphne::UnknownType>()
+            llvm::isa<mlir::daphne::UnknownType>(elementType)
             // Value type is known.
             || elementType.isSignedInteger(64)
             || elementType.isUnsignedInteger(8)
@@ -415,7 +415,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
             || elementType.isF64()
             || elementType.isIndex()
             || elementType.isInteger(1)
-            || elementType.isa<mlir::daphne::StringType>()
+            || llvm::isa<mlir::daphne::StringType>(elementType)
             || elementType.isUnsignedInteger(64)
             || elementType.isUnsignedInteger(32)
             || elementType.isSignedInteger(32)
@@ -459,7 +459,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
 ::mlir::LogicalResult mlir::daphne::HandleType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
                                                        Type dataType)
 {
-    if (dataType.isa<MatrixType>()) {
+    if (llvm::isa<MatrixType>(dataType)) {
         return mlir::success();
     }
     else
@@ -558,7 +558,7 @@ mlir::Attribute constFoldBinaryOp(mlir::Type resultType, llvm::ArrayRef<mlir::At
     if(!operands[0] || !operands[1])
         return {};
 
-    if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
+    if(llvm::isa<AttrElementT>(operands[0]) && llvm::isa<AttrElementT>(operands[1])) {
         auto lhs = operands[0].cast<AttrElementT>();
         auto rhs = operands[1].cast<AttrElementT>();
 
@@ -575,7 +575,7 @@ mlir::Attribute constFoldBinaryCmpOp(llvm::ArrayRef<mlir::Attribute> operands,
     if(!operands[0] || !operands[1])
         return {};
 
-    if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
+    if(llvm::isa<AttrElementT>(operands[0]) && llvm::isa<AttrElementT>(operands[1])) {
         auto lhs = operands[0].cast<AttrElementT>();
         auto rhs = operands[1].cast<AttrElementT>();
         return mlir::BoolAttr::get(lhs.getContext(), calculate(lhs.getValue(), rhs.getValue()));
@@ -868,7 +868,7 @@ mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(FoldAdaptor adaptor) {
     if(!operands[0] || !operands[1])
         return {};
 
-    if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
+    if(llvm::isa<StringAttr>(operands[0]) && isa<StringAttr>(operands[1])) {
         auto lhs = operands[0].cast<StringAttr>();
         auto rhs = operands[1].cast<StringAttr>();
 
@@ -886,7 +886,7 @@ mlir::OpFoldResult mlir::daphne::ConcatOp::fold(FoldAdaptor adaptor) {
     if(!operands[0] || !operands[1])
         return {};
 
-    if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
+    if(llvm::isa<StringAttr>(operands[0]) && isa<StringAttr>(operands[1])) {
         auto lhs = operands[0].cast<StringAttr>();
         auto rhs = operands[1].cast<StringAttr>();
 
@@ -1172,8 +1172,8 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
 
-    const bool lhsIsStr = lhs.getType().isa<mlir::daphne::StringType>();
-    const bool rhsIsStr = rhs.getType().isa<mlir::daphne::StringType>();
+    const bool lhsIsStr = llvm::isa<mlir::daphne::StringType>(lhs.getType());
+    const bool rhsIsStr = llvm::isa<mlir::daphne::StringType>(rhs.getType());
     if(lhsIsStr || rhsIsStr) {
         mlir::Type strTy = mlir::daphne::StringType::get(rewriter.getContext());
         if(!lhsIsStr)
@@ -1184,8 +1184,8 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(
         return mlir::success();
     }
     else {
-        const bool lhsIsSca = !lhs.getType().isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
-        const bool rhsIsSca = !rhs.getType().isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
+        const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
+        const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
         if(lhsIsSca && !rhsIsSca) {
             rewriter.replaceOpWithNewOp<mlir::daphne::EwAddOp>(op, op.getResult().getType(), rhs, lhs);
             return mlir::success();
@@ -1211,8 +1211,8 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(
 ) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !lhs.getType().isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
-    const bool rhsIsSca = !rhs.getType().isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
+    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
+    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
     if(lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwAddOp>(
                 op,
@@ -1245,8 +1245,8 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(
 ) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !lhs.getType().isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
-    const bool rhsIsSca = !rhs.getType().isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
+    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
+    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
     if(lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(op, op.getResult().getType(), rhs, lhs);
         return mlir::success();
@@ -1272,9 +1272,9 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(
 ) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !lhs.getType().isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
-    const bool rhsIsSca = !rhs.getType().isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
-    const bool rhsIsFP = CompilerUtils::getValueType(rhs.getType()).isa<mlir::FloatType>();
+    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
+    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+    const bool rhsIsFP = llvm::isa<mlir::FloatType>(CompilerUtils::getValueType(rhs.getType()));
     if(lhsIsSca && !rhsIsSca && rhsIsFP) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(
                 op,
@@ -1302,7 +1302,7 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
                                                        mlir::PatternRewriter &rewriter)
 {
     mlir::Value cond = op.getCond();
-    if(cond.getType().isa<mlir::daphne::UnknownType, mlir::daphne::MatrixType, mlir::daphne::FrameType>())
+    if(llvm::isa<mlir::daphne::UnknownType, mlir::daphne::MatrixType, mlir::daphne::FrameType>(cond.getType()))
         // If the condition is not a scalar, we cannot rewrite the operation here.
         return mlir::failure();
     else {
@@ -1331,7 +1331,7 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
         
         // Check if the types of the then-value and the else-value are the same.
         if(thenVal.getType() != elseVal.getType()) {
-            if(thenVal.getType().isa<daphne::UnknownType>() || elseVal.getType().isa<daphne::UnknownType>())
+            if(llvm::isa<daphne::UnknownType>(thenVal.getType()) || llvm::isa<daphne::UnknownType>(elseVal.getType()))
                 // If one of them is unknown, we abort the rewrite (but this is not an error).
                 // The type may become known later, this rewrite will be triggered again.
                 return mlir::failure();

@@ -59,10 +59,10 @@ struct UnaryOpLowering : public mlir::OpConversionPattern<UnaryOp> {
         mlir::ConversionPatternRewriter &rewriter) const override {
         mlir::Type type = op.getType();
 
-        if (type.isa<mlir::IntegerType>()) {
+        if (llvm::isa<mlir::IntegerType>(type)) {
             rewriter.replaceOpWithNewOp<IOp>(op.getOperation(),
                                              adaptor.getOperands());
-        } else if (type.isa<mlir::FloatType>()) {
+        } else if (llvm::isa<mlir::FloatType>(type)) {
             rewriter.replaceOpWithNewOp<FOp>(op.getOperation(),
                                              adaptor.getOperands());
         } else {
@@ -301,14 +301,14 @@ void EwOpLoweringPass::runOnOperation() {
 
     target.addDynamicallyLegalOp<mlir::daphne::EwSqrtOp, mlir::daphne::EwAbsOp>(
         [](Operation *op) {
-            return op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>();
+            return llvm::isa<mlir::daphne::MatrixType>(op->getOperandTypes()[0]);
         });
 
     target.addDynamicallyLegalOp<mlir::daphne::EwAddOp, mlir::daphne::EwSubOp,
                                  mlir::daphne::EwMulOp, mlir::daphne::EwPowOp,
                                  mlir::daphne::EwDivOp>([](Operation *op) {
-        if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
-            op->getOperandTypes()[1].isa<mlir::daphne::MatrixType>()) {
+        if (llvm::isa<mlir::daphne::MatrixType>(op->getOperandTypes()[0]) &&
+            llvm::isa<mlir::daphne::MatrixType>(op->getOperandTypes()[1])) {
             mlir::daphne::MatrixType lhs =
                 op->getOperandTypes()[0]
                     .template dyn_cast<mlir::daphne::MatrixType>();
@@ -323,7 +323,7 @@ void EwOpLoweringPass::runOnOperation() {
             return false;
         }
 
-        if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>()) {
+        if (llvm::isa<mlir::daphne::MatrixType>(op->getOperandTypes()[0])) {
             mlir::daphne::MatrixType lhsMatrixType =
                 op->getOperandTypes()[0].dyn_cast<mlir::daphne::MatrixType>();
             return lhsMatrixType.getNumRows() == -1 || lhsMatrixType.getNumCols() == -1;

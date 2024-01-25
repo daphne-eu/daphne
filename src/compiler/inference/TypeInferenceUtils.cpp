@@ -23,8 +23,8 @@ int generality(mlir::Type t) {
     // int of the same bit width.
     
     // The greater the number, the more general the type.
-    if(t.isa<daphne::UnknownType>()) return 11;
-    if(t.isa<daphne::StringType>()) return 10;
+    if(llvm::isa<daphne::UnknownType>(t)) return 11;
+    if(llvm::isa<daphne::StringType>(t)) return 10;
     if(t.isF64()) return 9;
     if(t.isF32()) return 8;
     if(t.isUnsignedInteger(64)) return 7;

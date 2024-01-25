@@ -104,7 +104,7 @@ def Matrix : Daphne_Type<"Matrix"> {
          * @return true if this type has more information, false otherwise
          */
         bool isSpecializationOf(::mlir::daphne::MatrixType other) {
-            if (!other.getElementType().isa<mlir::daphne::UnknownType>() && getElementType() != other.getElementType())
+            if (!llvm::isa<mlir::daphne::UnknownType>(other.getElementType()) && getElementType() != other.getElementType())
                 return false;
 
             if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())
@@ -195,7 +195,7 @@ def Frame : Daphne_Type<"Frame"> {
             if (columnTypes.size() != otherColumnTypes.size())
                 return false;
             for (size_t i = 0; i < columnTypes.size(); i++)
-                if(!otherColumnTypes[i].isa<mlir::daphne::UnknownType>() && columnTypes[i] != otherColumnTypes[i])
+                if(!llvm::isa<mlir::daphne::UnknownType>(otherColumnTypes[i]) && columnTypes[i] != otherColumnTypes[i])
                     return false;
 
             if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())

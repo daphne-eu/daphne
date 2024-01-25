@@ -378,7 +378,7 @@ private:
             // (i.e. when it represents a scalar), initialization is not
             // required.
             Type elType = inputOutputTypes[0].dyn_cast<LLVM::LLVMPointerType>().getElementType();
-            if(elType.isa<LLVM::LLVMPointerType>()) {
+            if(llvm::isa<LLVM::LLVMPointerType>(elType)) {
                 for(size_t i = 0; i < numRes; i++) {
                     std::vector<Value> indices = {
                         rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))
@@ -408,7 +408,7 @@ private:
                 // (i.e. when it represents a scalar), initialization is not
                 // required.
                 Type elType = inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType();
-                if(elType.isa<LLVM::LLVMPointerType>()) {
+                if(llvm::isa<LLVM::LLVMPointerType>(elType)) {
                     rewriter.create<LLVM::StoreOp>(
                         loc,
                         rewriter.create<LLVM::NullOp>(loc, elType),
@@ -484,12 +484,12 @@ public:
         );
         Type itemType = item.getType();
         if (itemType != elementType) {
-            if (elementType.isa<LLVM::LLVMPointerType>()) {
+            if (llvm::isa<LLVM::LLVMPointerType>(elementType)) {
                 if(itemType.isSignedInteger())
                     item = rewriter.create<LLVM::SExtOp>(loc, rewriter.getI64Type(), item);
                 else if(itemType.isUnsignedInteger() || itemType.isSignlessInteger())
                     item = rewriter.create<LLVM::ZExtOp>(loc, rewriter.getI64Type(), item);
-                else if(itemType.isa<FloatType>()) {
+                else if(llvm::isa<FloatType>(itemType)) {
                     item = rewriter.create<LLVM::FPExtOp>(loc, rewriter.getF64Type(), item);
                     item = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getI64Type(), item);
                 }
@@ -621,9 +621,9 @@ public:
                 if (expTy != val.getType()) {
                     // casting for scalars
                     val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getI64Type(), val);
-                    if(expTy.isa<IntegerType>())
+                    if(llvm::isa<IntegerType>(expTy))
                         val = rewriter.create<LLVM::TruncOp>(loc, expTy, val);
-                    else if(expTy.isa<FloatType>()) {
+                    else if(llvm::isa<FloatType>(expTy)) {
                         val = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getF64Type(), val);
                         val = rewriter.create<LLVM::FPTruncOp>(loc, expTy, val);
                     }
@@ -791,7 +791,7 @@ public:
                             loc,
                             // We assume this input to be a scalar if its type
                             // has not been converted to a pointer type.
-                            !adaptor.getOperands()[k].getType().isa<LLVM::LLVMPointerType>()
+                            !llvm::isa<LLVM::LLVMPointerType>(adaptor.getOperands()[k].getType())
                     ),
                     attrK
             );

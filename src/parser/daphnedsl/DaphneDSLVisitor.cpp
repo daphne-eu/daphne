@@ -78,7 +78,7 @@ void DaphneDSLVisitor::handleAssignmentPart(
             rowSeg = applyLeftIndexing<
                     mlir::daphne::InsertColOp,
                     mlir::daphne::NumColsOp
-            >(utils.getLoc(idxCtx->start), rowSeg, val, cols.second, obj.getType().isa<mlir::daphne::FrameType>());
+            >(utils.getLoc(idxCtx->start), rowSeg, val, cols.second, llvm::isa<mlir::daphne::FrameType>(obj.getType()));
             obj = applyLeftIndexing<
                     mlir::daphne::InsertRowOp,
                     mlir::daphne::NumRowsOp
@@ -93,7 +93,7 @@ void DaphneDSLVisitor::handleAssignmentPart(
             obj = applyLeftIndexing<
                     mlir::daphne::InsertColOp,
                     mlir::daphne::NumColsOp
-            >(utils.getLoc(idxCtx->start), obj, val, cols.second, obj.getType().isa<mlir::daphne::FrameType>());
+            >(utils.getLoc(idxCtx->start), obj, val, cols.second, llvm::isa<mlir::daphne::FrameType>(obj.getType()));
         else
             obj = val;
 
@@ -111,7 +111,7 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
             return utils.retValWithInferedType(
                     builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal)
             );
-        else if(axVal.getType().isa<mlir::daphne::StringType>()) { // string
+        else if(llvm::isa<mlir::daphne::StringType>(axVal.getType())) { // string
             if(allowLabel)
                 return utils.retValWithInferedType(
                         builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal)
@@ -171,7 +171,7 @@ mlir::Value DaphneDSLVisitor::applyLeftIndexing(mlir::Location loc, mlir::Value 
             throw std::runtime_error(
                     "left indexing with positions as a data object is not supported (yet)"
             );
-        else if(axVal.getType().isa<mlir::daphne::StringType>()) { // string
+        else if(llvm::isa<mlir::daphne::StringType>(axVal.getType())) { // string
             if(allowLabel)
                 // TODO Support this (#239).
                 throw std::runtime_error("left indexing by label is not supported yet");
@@ -959,12 +959,12 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
             else
             {
                 vt = utils.valueOrError(visit(ctx->expr())).getType();
-                if(vt.isa<mlir::daphne::FrameType>())
+                if(llvm::isa<mlir::daphne::FrameType>(vt))
                     // TODO Instead of using the value type of the first frame
                     // column as the value type of the matrix, we should better
                     // use the most general of all column types.
                     vt = vt.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
-                if(vt.isa<mlir::daphne::MatrixType>())
+                if(llvm::isa<mlir::daphne::MatrixType>(vt))
                     vt = vt.dyn_cast<mlir::daphne::MatrixType>().getElementType();
             }
             resType = utils.matrixOf(vt);
@@ -981,9 +981,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                 // TODO This fragment should be factored out, such that we can
                 // reuse it for matrix/frame/scalar.
                 mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
-                if(argType.isa<mlir::daphne::MatrixType>())
+                if(llvm::isa<mlir::daphne::MatrixType>(argType))
                     colTypes = {argType.dyn_cast<mlir::daphne::MatrixType>().getElementType()};
-                else if(argType.isa<mlir::daphne::FrameType>())
+                else if(llvm::isa<mlir::daphne::FrameType>(argType))
                     // TODO Instead of using the value type of the first frame
                     // column as the value type of the matrix, we should better
                     // use the most general of all column types.
@@ -1001,9 +1001,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                 // TODO This fragment should be factored out, such that we can
                 // reuse it for matrix/frame/scalar.
                 mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
-                if(argType.isa<mlir::daphne::MatrixType>())
+                if(llvm::isa<mlir::daphne::MatrixType>(argType))
                     resType = argType.dyn_cast<mlir::daphne::MatrixType>().getElementType();
-                else if(argType.isa<mlir::daphne::FrameType>())
+                else if(llvm::isa<mlir::daphne::FrameType>(argType))
                     // TODO Instead of using the value type of the first frame
                     // column as the value type of the matrix, we should better
                     // use the most general of all column types.
@@ -1021,9 +1021,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
     { // Data type shall be retained
         mlir::Type vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
         mlir::Type argTy = utils.valueOrError(visit(ctx->expr())).getType();
-        if(argTy.isa<mlir::daphne::MatrixType>())
+        if(llvm::isa<mlir::daphne::MatrixType>(argTy))
             resType = utils.matrixOf(vt);
-        else if(argTy.isa<mlir::daphne::FrameType>())
+        else if(llvm::isa<mlir::daphne::FrameType>(argTy))
         {
             throw std::runtime_error("casting to a frame with particular column types is not supported yet");
             //size_t numCols = argTy.dyn_cast<mlir::daphne::FrameType>().getColumnTypes().size();
@@ -1097,7 +1097,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser:
                 mlir::daphne::ExtractColOp,
                 mlir::daphne::SliceColOp,
                 mlir::daphne::NumColsOp
-        >(utils.getLoc(ctx->idx->start), obj, cols.second, obj.getType().isa<mlir::daphne::FrameType>());
+        >(utils.getLoc(ctx->idx->start), obj, cols.second, llvm::isa<mlir::daphne::FrameType>(obj.getType()));
 
     // Note: If rows and cols are specified, we create two extraction steps.
     // This can be inefficient, but it is simpler for now.

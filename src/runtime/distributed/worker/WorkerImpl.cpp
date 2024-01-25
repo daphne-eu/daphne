@@ -108,7 +108,7 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     for(size_t i = 0; i < inputsObj.size(); i++)
         // TODO Use CompilerUtils::isObjType() once this branch has been rebased.
         // if(CompilerUtils::isObjType(distFuncTy.getInput(i)))
-        if(distFuncTy.getInput(i).isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>())
+        if(llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(distFuncTy.getInput(i)))
             reinterpret_cast<Structure*>(inputsObj[i])->increaseRefCounter();
 
     // Execution
@@ -210,10 +210,10 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput)
     bool isSparse = false;
     bool isFloat = false;
     bool isScalar = false;
-    if (mlirType.isa<mlir::daphne::MatrixType>()){
+    if (llvm::isa<mlir::daphne::MatrixType>(mlirType)){
         auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();        
         isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;       
-        isFloat = matTy.getElementType().isa<mlir::Float64Type>();
+        isFloat = llvm::isa<mlir::Float64Type>(matTy.getElementType());
     }
     else
         isScalar = true;

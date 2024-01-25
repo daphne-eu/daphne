@@ -189,8 +189,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     // Set the infered shapes on all results of this operation.
                     for(size_t i = 0 ; i < numRes ; i++) {
                         if(
-                            op->getResultTypes()[i].isa<mlir::daphne::MatrixType>() ||
-                            op->getResultTypes()[i].isa<mlir::daphne::FrameType>()
+                            llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
+                            llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])
                         ) {
                             const ssize_t numRows = shapes[i].first;
                             const ssize_t numCols = shapes[i].second;
@@ -225,8 +225,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     for(size_t i = 0 ; i < numRes ; i++) {
                         const double sparsity = sparsities[i];
                         if(
-                            op->getResultTypes()[i].isa<mlir::daphne::MatrixType>() ||
-                            op->getResultTypes()[i].isa<mlir::daphne::FrameType>()
+                            llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
+                            llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])
                         ) {
                             Value rv = op->getResult(i);
                             const Type rt = rv.getType();
@@ -483,13 +483,13 @@ public:
 
     static bool returnsUnknownType(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type resType) {
-            if(resType.isa<daphne::UnknownType>())
+            if(llvm::isa<daphne::UnknownType>(resType))
                 return true;
             if(auto mt = resType.dyn_cast<daphne::MatrixType>())
-                return mt.getElementType().isa<daphne::UnknownType>();
+                return llvm::isa<daphne::UnknownType>(mt.getElementType());
             if(auto ft = resType.dyn_cast<daphne::FrameType>())
                 for(Type ct : ft.getColumnTypes())
-                    if(ct.isa<daphne::UnknownType>())
+                    if(llvm::isa<daphne::UnknownType>(ct))
                         return true;
             return false;
         });
