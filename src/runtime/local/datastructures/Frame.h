@@ -415,11 +415,15 @@ public:
     }
 
     Frame* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
-        size_t colIdxs[cu-cl];
+        if(cl > cu)
+            throw std::runtime_error("Frame::slice(): cl must not be greater than cu");
+        size_t * colIdxs = new size_t[cu-cl];
         size_t i = 0;
         for(size_t c = cl; c < cu; c++, i++)
             colIdxs[i] = c;
-        return DataObjectFactory::create<Frame>(this, rl, ru, cu-cl, colIdxs);
+        auto res = DataObjectFactory::create<Frame>(this, rl, ru, cu-cl, colIdxs);
+        delete[] colIdxs;
+        return res;
     }
     size_t serialize(std::vector<char> &buf) const override;
 };
