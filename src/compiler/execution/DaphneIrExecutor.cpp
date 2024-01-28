@@ -18,6 +18,7 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+#include <ir/daphneir/Passes.h.inc>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 
@@ -301,7 +302,12 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createDaphneOptPass());
 
     if (!userConfig_.use_mlir_hybrid_codegen) {
-        pm.addPass(mlir::daphne::createMatMulOpLoweringPass(userConfig_));
+        pm.addPass(mlir::daphne::createMatMulOpLoweringPass(
+        userConfig_.matmul_tile,
+        userConfig_.matmul_vec_size_bits,
+        userConfig_.matmul_fixed_tile_sizes,
+        userConfig_.matmul_use_fixed_tile_sizes,
+        userConfig_.matmul_unroll_factor));
         if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR directly after lowering MatMulOp."));

@@ -49,6 +49,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SCF/Utils/Utils.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/PatternMatch.h"
@@ -58,6 +59,12 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
+
+namespace mlir {
+#define GEN_PASS_DECL_MATMULOPLOWERINGPASS
+#define GEN_PASS_DEF_MATMULOPLOWERINGPASS
+#include "ir/daphneir/Passes.h.inc"
+} // namespace mlir
 
 using namespace mlir;
 
@@ -71,8 +78,8 @@ struct LowerMatMulOpOptions {
     bool tile{false};
     bool useFixedTileSizes{false};
     int register_size{4*4*64};
-    llvm::SmallVector<int, 3> cache_sizes;//{256*4*64, 64*256*64, 64*512*64};
-    llvm::SmallVector<unsigned, 5> tile_sizes;//{4, 4, 1024, 1024, 1024};//{1, 4, 4, 256, 64, 512};
+    llvm::SmallVector<int, 3> cache_sizes;
+    llvm::SmallVector<unsigned, 5> tile_sizes;
     int unroll_factor{1};
 
     LowerMatMulOpOptions &setTileSizes(std::vector<unsigned> sizes) {
@@ -311,7 +318,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     // sophisticated strategy.
     // Assuming cache sizes are in Bytes not KB or other units.
     // Register size is currently hard coded in the MatMulLoweringOptions.
-    // Target:  MR * NR ~ Register size & NR ~ 2 * MR
+    // Target:  MR * NR ~ Register size
     //          KC * NR ~ L1,
     //          MC * KC ~ L2,
     //          NC * MC ~ L3 
@@ -333,6 +340,8 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         return tile_sizes;
     }
 
+    // Tile the affine loop nest generated from MatMulOp with the specified tile sizes.
+    // Includes asserts to follow the movement and creation of the tile loops.
     void tile_loops(SmallVector<AffineForOp, 3> loops, SmallVector<unsigned, 5> tile_sizes) const {
         unsigned NC = tile_sizes[4];
         unsigned MC = tile_sizes[3];
@@ -447,24 +456,22 @@ namespace {
  *  - tiling
  * The vector size is specifies in bits and then adapted to the value type in the Operation, 
  * but stores at least one element. The tile sizes can be fixed or attempted to be generated automatically.
+ * The pass options are specified and have descriptions in Passes.td. 
  */
 struct MatMulLoweringPass
-    : public mlir::PassWrapper<MatMulLoweringPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
-    const DaphneUserConfig& userConfig;
+        : public impl::MatMulOpLoweringPassBase<MatMulLoweringPass> {
+    MatMulLoweringPass() = default;
     public:
-        explicit MatMulLoweringPass(const DaphneUserConfig& cfg) : userConfig(cfg) {}
-
-        StringRef getArgument() const final { return "lower-mm"; }
-        StringRef getDescription() const final {
-            return "This pass lowers the MatMulOp to an affine loop structure.";
+        explicit MatMulLoweringPass(bool matmul_tile, int matmul_vec_size_bits, std::vector<unsigned> matmul_fixed_tile_sizes,
+        bool matmul_use_fixed_tile_sizes, int matmul_unroll_factor) : impl::MatMulOpLoweringPassBase<MatMulLoweringPass>() {
+            this->matmul_tile = matmul_tile;
+            this->matmul_vec_size_bits = matmul_vec_size_bits;
+            this->matmul_fixed_tile_sizes = matmul_fixed_tile_sizes;
+            this->matmul_use_fixed_tile_sizes = matmul_use_fixed_tile_sizes;
+            this->matmul_unroll_factor = matmul_unroll_factor;
         }
-
-        void getDependentDialects(mlir::DialectRegistry &registry) const override {
-            registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                            mlir::memref::MemRefDialect>();
-        }
-        void runOnOperation() final;
+        
+        void runOnOperation() override;
 
     private:
         // Get the L1, L2 and L3 cache sizes to adapt tile sizes.
@@ -511,19 +518,19 @@ void MatMulLoweringPass::runOnOperation() {
         target.addIllegalOp<mlir::daphne::MatMulOp>();
 
         LowerMatMulOpOptions options;
-        if (userConfig.matmul_tile) {
+        if (matmul_tile) {
             options.enableTiling();
-            if (userConfig.matmul_use_fixed_tile_sizes) {
+            if (matmul_use_fixed_tile_sizes) {
                 options.useFixedTileSizes = true;
-                options.setTileSizes(userConfig.matmul_fixed_tile_sizes);
+                options.setTileSizes(matmul_fixed_tile_sizes);
             } else {
                 options.setCacheSizes(get_cache_sizes());
             }
-            options.setUnrollFactor(userConfig.matmul_unroll_factor);
+            options.setUnrollFactor(matmul_unroll_factor);
             }
-        if (userConfig.matmul_vec_size_bits > 0) {
+        if (matmul_vec_size_bits > 0) {
             options.enableVectorization();
-            options.setVectorSizeBits(userConfig.matmul_vec_size_bits);
+            options.setVectorSizeBits(matmul_vec_size_bits);
             }
         
         patterns.insert<MatMulLowering>(&getContext(), options);
@@ -534,6 +541,19 @@ void MatMulLoweringPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createMatMulOpLoweringPass(const DaphneUserConfig& cfg) {
-    return std::make_unique<MatMulLoweringPass>(cfg);
+std::unique_ptr<OperationPass<ModuleOp>> mlir::daphne::createMatMulOpLoweringPass(bool matmul_tile,
+        int matmul_vec_size_bits,
+        std::vector<unsigned> matmul_fixed_tile_sizes,
+        bool matmul_use_fixed_tile_sizes,
+        int matmul_unroll_factor) {
+    return std::make_unique<MatMulLoweringPass>(matmul_tile,
+        matmul_vec_size_bits,
+        matmul_fixed_tile_sizes,
+        matmul_use_fixed_tile_sizes,
+        matmul_unroll_factor);
+}
+
+// This is used by daphne-opt and automatically inserts the options provided on the command line into the pass.
+std::unique_ptr<OperationPass<ModuleOp>>  mlir::daphne::createMatMulOpLoweringPass() {
+    return std::make_unique<MatMulLoweringPass>();
 }

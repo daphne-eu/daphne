@@ -67,6 +67,34 @@ def MapOpLoweringPass: Pass<"lower-map", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createMapOpLoweringPass()";
 }
 
+def MatMulOpLoweringPass: Pass<"lower-mm", "::mlir::ModuleOp"> {
+  let summary = "Lower the MatMulOp acting on Daphne matrices to an affine loop structure.";
+  let dependentDialects = ["vector::VectorDialect", "mlir::LLVM::LLVMDialect", "mlir::AffineDialect",
+                            "mlir::memref::MemRefDialect"];
+  let constructor = "mlir::daphne::createMatMulOpLoweringPass()";
+  let options = [
+    ListOption<"matmul_fixed_tile_sizes", "matmul_fixed_tile_sizes", "unsigned",
+               "Specify up to 5 tile sizes to use when tiling loops in the matrix multipliation. Tiling needs to be enabled separately.">,
+    Option<"matmul_tile", "matmul_tile", "bool",
+           /*default=*/"false",
+           "Enable tiling of the loops in the matrix multiplication. "
+           "Switched off by default.">,
+    Option<"matmul_use_fixed_tile_sizes", "matmul_use_fixed_tile_sizes", "bool",
+           /*default=*/"false",
+           "Enable tiling of the loops in the matrix multiplication with separately specified fixed tile sizes. "
+           "Switched off by default. In daphne (not daphne-opt) is activated by simply providing fixed sizes.">,
+    Option<"matmul_vec_size_bits", "matmul_vec_size_bits", "int",
+           /*default=*/"0",
+           "Set the maximum bit size of the vector instructions to use during matrix multiplication if their use is possible. 0 disables vectorization. "
+           "Switched off by default.">,
+    Option<"matmul_unroll_factor", "matmul_unroll_factor", "int",
+           /*default=*/"1",
+           "Set the factor by which to unroll the inner most loop inside the lowered matrix multiplication. "
+           "No unrolling by default.">
+           
+  ];
+}
+
 def LowerEwOpPass: Pass<"lower-ew", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createEwOpLoweringPass()";
 }

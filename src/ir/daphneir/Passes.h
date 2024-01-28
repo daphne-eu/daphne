@@ -17,6 +17,8 @@
 #ifndef SRC_IR_DAPHNEIR_PASSES_H
 #define SRC_IR_DAPHNEIR_PASSES_H
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/BuiltinOps.h"
 #pragma once
 
 #include <api/cli/DaphneUserConfig.h>
@@ -49,7 +51,12 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createDaphneOptPass();
-    std::unique_ptr<Pass> createMatMulOpLoweringPass(const DaphneUserConfig& cfg);
+    std::unique_ptr<OperationPass<ModuleOp>> createMatMulOpLoweringPass(bool matmul_tile,
+        int matmul_vec_size_bits = 0,
+        std::vector<unsigned> matmul_fixed_tile_sizes = {},
+        bool matmul_use_fixed_tile_sizes = false,
+        int matmul_unroll_factor = 1);
+    std::unique_ptr<OperationPass<ModuleOp>>  createMatMulOpLoweringPass();
     std::unique_ptr<Pass> createAggAllOpLoweringPass();
     std::unique_ptr<Pass> createMemRefTestPass();
     std::unique_ptr<Pass> createProfilingPass();
