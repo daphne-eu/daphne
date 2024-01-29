@@ -74,7 +74,7 @@ def MatMulOpLoweringPass: Pass<"lower-mm", "::mlir::ModuleOp"> {
   let constructor = "mlir::daphne::createMatMulOpLoweringPass()";
   let options = [
     ListOption<"matmul_fixed_tile_sizes", "matmul_fixed_tile_sizes", "unsigned",
-               "Specify up to 5 tile sizes to use when tiling loops in the matrix multipliation. Tiling needs to be enabled separately.">,
+               "Specify up to 5 tile sizes (MR, NR, KC, MC, NC) to use when tiling loops in the matrix multipliation. Tiling needs to be enabled separately. The resulting tiling is (j / NC, k / KC, i / MC, j / NR, i / MR, k mod KC, j mod NR, i mod MR), where the innermost two loops are unrolled jammed by a factor of up to 4.">,
     Option<"matmul_tile", "matmul_tile", "bool",
            /*default=*/"false",
            "Enable tiling of the loops in the matrix multiplication. "

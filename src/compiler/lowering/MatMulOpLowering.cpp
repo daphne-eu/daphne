@@ -28,6 +28,7 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
@@ -40,6 +41,7 @@
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/LoopUtils.h"
+#include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Affine/Utils.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
@@ -51,7 +53,9 @@
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/Dominance.h"
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/UseDefLists.h"
@@ -235,6 +239,15 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         return true;
     }
 
+    // TODO: Test why not
+    // Cannot tile non square matmul.
+    bool is_tileable(ArrayRef<int64_t> const rhsShape) const {
+        if (rhsShape[COL] != rhsShape[ROW]) {
+            return false;
+        }
+        return true;
+    }
+    
     LogicalResult matchAndRewrite(
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
@@ -251,6 +264,8 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         auto rhsCols = rhsMatrixType.getNumCols();
 
         auto matrixElementType = lhsMatrixType.getElementType();
+        // Cannot lower integer matmul, because we cannot create Memrefs with integer type at the moment.
+        if (matrixElementType.isIntOrIndex()) return failure();
 
         // TODO(phil): if shape is unknown, e.g., row/col = -1 we currently
         // can't create a MemRefType
@@ -289,7 +304,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
                      lhsMemRefType.getShape(), rhsMemRefType.getShape(),
                      op->getContext(), loops);
         }
-        if (options.tile) {
+        if (options.tile && is_tileable(rhsMemRefType.getShape())) {
                 auto tile_sizes = extendTileSizes(lhsRows);
             if (!options.useFixedTileSizes) {
                 tile_sizes = getTileSizesFromCache(matrixElementType, loops[1].getStep(), lhsRows);
@@ -416,20 +431,21 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         assert(blisTiledLoops[6].getStep() == vec_size && "blisTiled: 6 should have step size vec_size.");
         assert(blisTiledLoops[1].getStep() == KC && "blisTiled: 1 should have step size 1.");  // k loops
         assert(blisTiledLoops[5].getStep() == 1 && "blisTiled: 5 should have step size 1.");
-        // TODO: This Matmul fails, if the last loops are not unrolled?
-        if (failed(loopUnrollJamUpToFactor(blisTiledLoops[7], MR))) {
+        // 4 is the default unroll factor in the affine dialect.
+        if (failed(loopUnrollJamUpToFactor(blisTiledLoops[5], 4))) {
             if(logger->should_log(spdlog::level::debug)) {
                 std::string s;
                 llvm::raw_string_ostream stream(s);
-                logger->debug("Could not unroll the last loop in MatMulLowering", s);
+                logger->debug("Could not unroll jam the second to last loop in MatMulLowering", s);
             }
-        } else if (failed(loopUnrollJamUpToFactor(blisTiledLoops[6], NR))) {
+        } else if (failed(loopUnrollJamUpToFactor(blisTiledLoops[6], 4))) {
             if(logger->should_log(spdlog::level::debug)) {
                 std::string s;
                 llvm::raw_string_ostream stream(s);
                 logger->debug("Could not unroll the second to last loop in MatMulLowering", s);
             }
         }
+        
         llvm::SmallVector<AffineForOp> lastNest;
         getPerfectlyNestedLoops(lastNest, blisTiledLoops.front()); 
         
@@ -515,7 +531,10 @@ void MatMulLoweringPass::runOnOperation() {
         target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
         target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
         target.addLegalOp<mlir::daphne::DecRefOp>();
-        target.addIllegalOp<mlir::daphne::MatMulOp>();
+        target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>(
+        [](Operation *op) {
+            return op->getOperandTypes()[0].dyn_cast<mlir::daphne::MatrixType>().getElementType().isIntOrIndex();
+        });
 
         LowerMatMulOpOptions options;
         if (matmul_tile) {
