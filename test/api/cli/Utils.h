@@ -313,6 +313,54 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
 }
 
 /**
+ * @brief Compares the numerical values in the standard output of the given DaphneDSL script
+ * run with the command line interface of the DAPHNE Prototype to a reference text.
+ * 
+ * Also checks that the status code indicates a successful execution and that
+ * nothing was printed to standard error.
+ * 
+ * @param exp The expected output on stdout.
+ * @param scriptFilePath The path to the DaphneDSL script file to execute.
+ * output.
+ * @param args The arguments to pass in addition to the script's path. Note
+ * that script arguments must be passed via the `--args` option for this
+ * utility function. Despite the variadic template, each element should be of
+ * type `char *`. The last one does *not* need to be a null pointer.
+ */
+template<typename... Args>
+void compareDaphneToStringNumerically(const std::string & exp, const std::string & scriptFilePath, int ignore_lines, Args ... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphne(out, err, args..., scriptFilePath.c_str());
+
+    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
+    // checks of out and err still run and provide useful messages. For err,
+    // don't check empty(), because then catch2 doesn't display the error
+    // output.
+    CHECK(status == StatusCode::SUCCESS);
+    std::stringstream exp_ss(exp);
+    std::stringstream out_ss(out.str());
+    std::string s_exp;
+    std::string s_out;
+    float f_exp;
+    float f_out;
+    for (auto i = 0; i != ignore_lines; i++) {
+        std::getline(exp_ss, s_exp);
+        std::getline(out_ss, s_out);
+    } 
+    while (std::getline(exp_ss, s_exp, ' ') && std::getline(out_ss, s_out, ' ')) {
+        try {
+            f_exp = std::stof(s_exp);
+            f_out = std::stof(s_out);
+        } catch (std::invalid_argument) {
+            FAIL("The result does not have the right number of outputs.");
+        }
+        REQUIRE_THAT(f_exp, Catch::Matchers::WithinRel(f_out));
+    }
+    CHECK(err.str() == "");
+}
+
+/**
  * @brief Compares the standard output of executing the given DaphneDSL script
  * with the command line interface of the DAPHNE Prototype to a reference text
  * file.
