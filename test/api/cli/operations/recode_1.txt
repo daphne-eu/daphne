@@ -1,0 +1,5 @@
+DenseMatrix(0x1, int64_t)
+DenseMatrix(0x1, double)
+
+DenseMatrix(0x1, int64_t)
+DenseMatrix(0x1, double)

@@ -484,6 +484,64 @@ std::vector<Type> daphne::CondOp::inferTypes() {
     }
 }
 
+std::vector<Type> daphne::RecodeOp::inferTypes() {
+    // Intuition:
+    // - The (data) result has the same data type as the argument.
+    // - The (data) result has the value type si64.
+    // - The (dict) result has the data type matrix.
+    // - The (dict) result has the value type of the argument.
+    //   - If the argument is a frame, all its columns must have the same
+    //     value type (alternatively, one could take the most general one).
+
+    MLIRContext * ctx = getContext();
+
+    Type argTy = getArg().getType();
+    Type si64 = IntegerType::get(ctx, 64, IntegerType::SignednessSemantics::Signed);
+    Type u = daphne::UnknownType::get(ctx);
+
+    Type resTy;
+    Type dictValTy;
+    if(auto argMatTy = llvm::dyn_cast<daphne::MatrixType>(argTy)) {
+        resTy = daphne::MatrixType::get(ctx, si64);
+        dictValTy = argMatTy.getElementType();
+    }
+    else if(auto argFrmTy = llvm::dyn_cast<daphne::FrameType>(argTy)) {
+        std::vector<Type> argColTys = argFrmTy.getColumnTypes();
+        if(argColTys.size() == 0) {
+            resTy = daphne::FrameType::get(ctx, {});
+            dictValTy = u;
+        }
+        else {
+            std::vector<Type> resColTys(argColTys.size(), si64);
+            resTy = daphne::FrameType::get(ctx, resColTys);
+            dictValTy = nullptr;
+            bool hasUnknownColTy = false;
+            for(Type argColTy : argColTys) {
+                if(llvm::isa<daphne::UnknownType>(argColTy))
+                    hasUnknownColTy = true;
+                else {
+                    if(!dictValTy)
+                        dictValTy = argColTy;
+                    else if(argColTy != dictValTy)
+                        throw std::runtime_error(
+                            "when a frame is used as the argument to recode, "
+                            "all its columns must have the same value type"
+                        );
+                }
+            }
+            if(!dictValTy || hasUnknownColTy)
+                dictValTy = u;
+        }
+    }
+    else if(llvm::isa<daphne::UnknownType>(argTy))
+        resTy = u;
+    else
+        throw std::runtime_error("the argument to recode has an invalid type");
+
+    Type dictTy = daphne::MatrixType::get(ctx, dictValTy);
+    return {resTy, dictTy};
+}
+
 // ****************************************************************************
 // Type inference function
 // ****************************************************************************

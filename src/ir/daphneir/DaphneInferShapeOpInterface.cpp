@@ -466,6 +466,38 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::EigenOp::inferShape() {
     return {{shape.first, 1}, {shape.first, shape.first}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::RecodeOp::inferShape() {
+    // Intuition:
+    // - The (data) result has the same shape as the argument.
+    // - The (dict) result has an unknown number of rows and one column.
+
+    Type argTy = getArg().getType();
+
+    ssize_t resNumRows;
+    ssize_t resNumCols;
+    if(auto argMatTy = llvm::dyn_cast<daphne::MatrixType>(argTy)) {
+        resNumRows = argMatTy.getNumRows();
+        resNumCols = argMatTy.getNumCols();
+    }
+    else if(auto argFrmTy = llvm::dyn_cast<daphne::FrameType>(argTy)) {
+        resNumRows = argFrmTy.getNumRows();
+        resNumCols = argFrmTy.getNumCols();
+    }
+    else if(llvm::isa<daphne::UnknownType>(argTy)) {
+        resNumRows = -1;
+        resNumCols = -1;
+    }
+    else
+        throw std::runtime_error("the argument to recode has an invalid type");
+
+    // TODO We could infer (or estimate) the number of rows of the dictionary result
+    // if we knew the number of distinct values in the argument (or could estimate it).
+    const ssize_t dictNumRows = -1;
+    const ssize_t dictNumCols = 1;
+
+    return {{resNumRows, resNumCols}, {dictNumRows, dictNumCols}};
+}
+
 // ****************************************************************************
 // Shape inference trait implementations
 // ****************************************************************************

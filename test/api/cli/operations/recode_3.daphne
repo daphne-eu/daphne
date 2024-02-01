@@ -1,0 +1,8 @@
+# Recoding and decoding.
+
+data = [10, 5, 20, 5, 20];
+codes, dict = recode(data, false);
+print(codes);
+print(dict);
+decoded = dict[codes, ];
+print(decoded);

@@ -1,0 +1,13 @@
+# Recoding a non-empty matrix (non-order-preserving and order-preserving).
+
+X = [33.3, 22.2, 55.5, 22.2, 22.2, 11.1, 44.4, 55.5];
+
+codes, dict = recode(X, false);
+print(codes);
+print(dict);
+
+print("");
+
+codes, dict = recode(X, true);
+print(codes);
+print(dict);

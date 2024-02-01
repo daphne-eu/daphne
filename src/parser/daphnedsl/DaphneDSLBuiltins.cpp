@@ -1135,6 +1135,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, arg.getType(), arg, info
         ));
     }
+    if(func == "recode") {
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value arg = args[0];
+        mlir::Value orderPreserving = args[1];
+        return utils.retValsWithInferedTypes(builder.create<RecodeOp>(
+                loc, utils.unknownType, utils.unknownType, arg, orderPreserving
+        ));
+    }
 
     // ********************************************************************
     // Measurements

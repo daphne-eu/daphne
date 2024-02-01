@@ -1,0 +1,16 @@
+DenseMatrix(5x1, int64_t)
+0
+1
+2
+1
+2
+DenseMatrix(3x1, int64_t)
+10
+5
+20
+DenseMatrix(5x1, int64_t)
+10
+5
+20
+5
+20

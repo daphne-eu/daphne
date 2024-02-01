@@ -555,6 +555,53 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
         More precisely, the *j*-th column of `arg` must contain only integral values in the range *[0, d[j] - 1]*, and will be replaced by *d[j]* columns containing only zeros and ones.
         For each row *i* in `arg`, the value in the `as.scalar(arg[i, j])`-th of those columns is set to 1, while all others are set to 0.
 
+- **`recode`**`(arg:matrix, orderPreserving:bool)`
+
+    Applies dictionary encoding to the given *(n x 1)* matrix `arg`, i.e., assigns an integral code to each distinct value in `arg`.
+    The codes start at *0*.
+    Iff the parameter `orderPreserving` is `true`, then the distinct values are sorted in ascending order before assigning codes.
+    That way, range predicates are possible on the encoded output.
+    Otherwise, new codes are assigned to distinct values are they are encountered.
+    That way, only point predicates are possible on the encoded output.
+
+    There are two results:
+    - The first result is the encoded data, a *(n x 1)* matrix of the codes for each element in the input `arg`.
+    - The second result is the decoding dictionary, a *(#distinct(`arg`) x 1)* matrix of the distinct values in `arg`.
+        The value at position *i* is the value that is mapped to the code *i*.
+
+    The encoded data can be decoded by right indexing on the dictionary using the codes as positions.
+
+    Example:
+
+    ```
+    data = [10, 5, 20, 5, 20];
+    codes, dict = recode(data, false);
+    print(codes);
+    print(dict);
+    decoded = dict[codes, ];
+    print(decoded);
+    ```
+
+    ```
+    DenseMatrix(5x1, int64_t)
+    0
+    1
+    2
+    1
+    2
+    DenseMatrix(3x1, int64_t)
+    10
+    5
+    20
+    DenseMatrix(5x1, int64_t)
+    10
+    5
+    20
+    5
+    20
+    ```
+
+
 ## Measurements
 
 - **`now`**`()`

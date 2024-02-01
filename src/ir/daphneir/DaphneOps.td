@@ -1398,6 +1398,14 @@ def Daphne_OneHotOp : Daphne_Op<"oneHot", [
     let results = (outs MatrixOrFrame:$res);
 }
 
+def Daphne_RecodeOp : Daphne_Op<"recode", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
+]> {
+    let arguments = (ins MatrixOrFrame:$arg, BoolScalar:$orderPreserving);
+    let results = (outs MatrixOrFrame:$res, MatrixOrFrame:$dict);
+}
+
 // ****************************************************************************
 // Measurements
 // ****************************************************************************
