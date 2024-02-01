@@ -601,6 +601,29 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
     20
     ```
 
+- **`bin`**`(arg:matrix, numBins:size[, min:scalar, max:scalar])`
+
+    Applies binning to the given matrix `arg`, i.e., each value is mapped to the number of its bin (counting starts at zero).
+    The bin boundaries are determined by splitting the interval *[`min`, `max`]* into `numBins` equi-width bins.
+    The number of bins `numBins` is required.
+    Specifying `min` and `max` is optional; if they are omitted, they are automatically calculated, whereby NaNs in `arg` are not taken into account.
+
+    Example:
+
+    ```
+    print(bin(t([10, 20, 30, 40, 50, 60, 70]), 3));
+    print(bin(t([10, 20, 30, 40, 50, 60, 70]), 3, 10, 70));
+    print(bin(t([5.0, 20.0, nan, 40.0, inf, 60.0, 100.0]), 3, 10.0, 70.0));
+    ```
+
+    ```
+    DenseMatrix(1x7, int64_t)
+    0 0 0 1 1 2 2
+    DenseMatrix(1x7, int64_t)
+    0 0 0 1 1 2 2
+    DenseMatrix(1x7, double)
+    0 0 nan 1 2 2 2
+    ```
 
 ## Measurements
 

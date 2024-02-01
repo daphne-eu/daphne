@@ -36,6 +36,7 @@ const std::string dirPath = "test/api/cli/operations/";
 
 MAKE_TEST_CASE("aggMax", 1)
 MAKE_TEST_CASE("aggMin", 1)
+MAKE_TEST_CASE("bin", 2)
 MAKE_TEST_CASE("cbind", 1)
 MAKE_TEST_CASE("createFrame", 1)
 MAKE_TEST_CASE("ctable", 1)

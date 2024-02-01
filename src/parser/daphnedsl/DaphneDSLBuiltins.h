@@ -54,6 +54,8 @@ class DaphneDSLBuiltins {
     static void checkNumArgsExact(const std::string & func, size_t numArgs, size_t numArgsExact);
     
     static void checkNumArgsBetween(const std::string & func, size_t numArgs, size_t numArgsMin, size_t numArgsMax);
+
+    static void checkNumArgsIn(const std::string & func, size_t numArgs, std::vector<size_t> numArgsChoice);
     
     static void checkNumArgsMin(const std::string & func, size_t numArgs, size_t numArgsMin);
     

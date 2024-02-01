@@ -22,6 +22,8 @@
 
 #include "antlr4-runtime.h"
 
+#include <algorithm>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -48,6 +50,22 @@ void DaphneDSLBuiltins::checkNumArgsBetween(const std::string & func, size_t num
                 std::to_string(numArgsMin) + " and " + std::to_string(numArgsMax) +
                 " argument(s), but got " + std::to_string(numArgs)
         );
+}
+
+void DaphneDSLBuiltins::checkNumArgsIn(const std::string & func, size_t numArgs, std::vector<size_t> numArgsChoice) {
+    if(numArgsChoice.empty())
+        throw std::runtime_error(
+            "error while parsing built-in function '" + func +
+            "': expecting at least one option for the permitted number of arguments"
+        );
+    if(std::find(numArgsChoice.begin(), numArgsChoice.end(), numArgs) == numArgsChoice.end()) {
+        std::stringstream msg;
+        msg << "built-in function '" << func << "' expects exactly " << numArgsChoice[0];
+        for(size_t i = 1; i < numArgsChoice.size(); i++)
+            msg << " or " << numArgsChoice[i];
+        msg << " argument(s), but got " << numArgs;
+        throw std::runtime_error(msg.str());
+    }
 }
 
 void DaphneDSLBuiltins::checkNumArgsMin(const std::string & func, size_t numArgs, size_t numArgsMin) {
@@ -1141,6 +1159,28 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value orderPreserving = args[1];
         return utils.retValsWithInferedTypes(builder.create<RecodeOp>(
                 loc, utils.unknownType, utils.unknownType, arg, orderPreserving
+        ));
+    }
+    if(func == "bin") {
+        checkNumArgsIn(func, numArgs, {2, 4});
+        mlir::Value arg = args[0];
+        mlir::Value numBins = args[1];
+        mlir::Value min;
+        mlir::Value max;
+        if(numArgs == 2) {
+            min = utils.retValWithInferedType(
+                    builder.create<AllAggMinOp>(loc, utils.unknownType, arg)
+            );
+            max = utils.retValWithInferedType
+                    (builder.create<AllAggMaxOp>(loc, utils.unknownType, arg)
+            );
+        }
+        else {
+            min = args[2];
+            max = args[3];
+        }
+        return utils.retValWithInferedType(builder.create<BinOp>(
+                loc, utils.unknownType, arg, utils.castSI64If(numBins), min, max
         ));
     }
 

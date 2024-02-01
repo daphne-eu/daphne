@@ -2136,6 +2136,50 @@
     },
     {
         "kernelTemplate": {
+            "header": "Bin.h",
+            "opName": "bin",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numBins"
+                },
+                {
+                    "type": "typename DTArg::VT",
+                    "name": "min"
+                },
+                {
+                    "type": "typename DTArg::VT",
+                    "name": "max"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "PrintSca.h",
             "opName": "printSca",
             "returnType": "void",

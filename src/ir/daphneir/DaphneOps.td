@@ -1406,6 +1406,14 @@ def Daphne_RecodeOp : Daphne_Op<"recode", [
     let results = (outs MatrixOrFrame:$res, MatrixOrFrame:$dict);
 }
 
+def Daphne_BinOp : Daphne_Op<"bin", [
+    TypeFromFirstArg,
+    ShapeFromArg
+]> {
+    let arguments = (ins MatrixOrFrame:$arg, NumScalar:$numBins, NumScalar:$min, NumScalar:$max);
+    let results = (outs MatrixOrFrame:$res);
+}
+
 // ****************************************************************************
 // Measurements
 // ****************************************************************************

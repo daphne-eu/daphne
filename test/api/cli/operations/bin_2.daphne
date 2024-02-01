@@ -1,0 +1,20 @@
+# Binning on non-empty matrices.
+
+# numBins > 1, min/max not given
+print(bin([10, 20, 30, 40, 50, 60, 70], 3));
+
+# numBins > 1, min < max, wo/ out-of-bins values
+print(bin([10, 20, 30, 40, 50, 60, 70], 3, 10, 70));
+
+# numBins > 1, min < max, w/ out-of-bins values
+print(bin([5, 20, 30, 40, 50, 60, 100], 3, 10, 70));
+
+# numBins > 1, min < max, nan/inf/-inf values
+print(bin([nan, inf, -inf], 3, 10.0, 70.0));
+
+# numBins > 1, min/max not given, nan values
+# (nans should not affect automatically determined min/max)
+print(bin([10.0, nan, 20.0, nan, 30.0], 3));
+
+# numBins == 1, min == max, wo/ out-of-bounds values
+print(bin([20, 20, 20], 1, 20, 20));
