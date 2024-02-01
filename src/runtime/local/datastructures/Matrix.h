@@ -45,6 +45,9 @@ protected:
     };
 
 public:
+
+    template<typename NewValueType>
+    using WithValueType = Matrix<NewValueType>;
     
     /**
      * @brief The common type of all values in this matrix.

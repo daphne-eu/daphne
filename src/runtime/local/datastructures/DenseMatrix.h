@@ -172,6 +172,10 @@ class DenseMatrix : public Matrix<ValueType>
     ValueType* startAddress() const { return isPartialBuffer() ?  values.get() + offset() : values.get(); }
 
 public:
+
+    template<typename NewValueType>
+    using WithValueType = DenseMatrix<NewValueType>;
+    
     [[nodiscard]] bool isPartialBuffer() const { return bufferSize != this->getNumRows() * this->getRowSkip() * sizeof(ValueType); }
 
     void shrinkNumRows(size_t numRows) {

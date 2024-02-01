@@ -146,6 +146,9 @@ class CSRMatrix : public Matrix<ValueType> {
     }
     
 public:
+
+    template<typename NewValueType>
+    using WithValueType = CSRMatrix<NewValueType>;
     
     void shrinkNumRows(size_t numRows) {
         assert((numRows <= this->numRows) && "numRows can only the shrinked");
