@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/logo_small.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.5">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.6">
     
     
       
@@ -2771,6 +2771,45 @@ For each row <em>i</em> in <code>arg</code>, the value in the <code>as.scalar(ar
 </li>
 </ul>
 </li>
+<li>
+<p><strong><code>recode</code></strong><code>(arg:matrix, orderPreserving:bool)</code></p>
+<p>Applies dictionary encoding to the given <em>(n x 1)</em> matrix <code>arg</code>, i.e., assigns an integral code to each distinct value in <code>arg</code>.
+The codes start at <em>0</em>.
+Iff the parameter <code>orderPreserving</code> is <code>true</code>, then the distinct values are sorted in ascending order before assigning codes.
+That way, range predicates are possible on the encoded output.
+Otherwise, new codes are assigned to distinct values are they are encountered.
+That way, only point predicates are possible on the encoded output.</p>
+<p>There are two results:
+- The first result is the encoded data, a <em>(n x 1)</em> matrix of the codes for each element in the input <code>arg</code>.
+- The second result is the decoding dictionary, a <em>(#distinct(<code>arg</code>) x 1)</em> matrix of the distinct values in <code>arg</code>.
+    The value at position <em>i</em> is the value that is mapped to the code <em>i</em>.</p>
+<p>The encoded data can be decoded by right indexing on the dictionary using the codes as positions.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>data = [10, 5, 20, 5, 20];
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>codes, dict = recode(data, false);
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>print(codes);
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>print(dict);
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>decoded = dict[codes, ];
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>print(decoded);
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>DenseMatrix(5x1, int64_t)
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>0
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>1
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>2
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>1
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>2
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>DenseMatrix(3x1, int64_t)
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>10
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>5
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>20
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>DenseMatrix(5x1, int64_t)
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>10
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>5
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>20
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>5
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>20
+</code></pre></div>
+</li>
 </ul>
 <h2 id="measurements">Measurements</h2>
 <ul>
@@ -2828,7 +2867,7 @@ For each row <em>i</em> in <code>arg</code>, the value in the <code>as.scalar(ar
     <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.c18c5fb9.min.js"></script>
+      <script src="../../assets/javascripts/bundle.e1c3ead8.min.js"></script>
       
     
   </body>
