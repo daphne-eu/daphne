@@ -229,11 +229,24 @@ public:
      * @brief Infers and sets the result type of the given operation and returns the result as an `mlir::Value`.
      * 
      * Works only for operations with exactly one result.
+     * For operations with more than one result, use `retValsWithInferedTypes()`.
      */
     template<class Op>
     mlir::Value retValWithInferedType(Op op) {
         mlir::daphne::setInferedTypes(op.getOperation());
         return static_cast<mlir::Value>(op);
+    }
+
+    /**
+     * @brief Infers and sets the result types of the given operation and returns the results as an `mlir::ResultRange`.
+     * 
+     * Works for operations with any number of results.
+     * For operations with exactly one result, using `retValWithInferedType()` can be more convenient.
+     */
+    template<class Op>
+    mlir::ResultRange retValsWithInferedTypes(Op op) {
+        mlir::daphne::setInferedTypes(op.getOperation());
+        return op.getResults();
     }
 };
 
