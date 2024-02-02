@@ -2810,6 +2810,25 @@ That way, only point predicates are possible on the encoded output.</p>
 <a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>20
 </code></pre></div>
 </li>
+<li>
+<p><strong><code>bin</code></strong><code>(arg:matrix, numBins:size[, min:scalar, max:scalar])</code></p>
+<p>Applies binning to the given matrix <code>arg</code>, i.e., each value is mapped to the number of its bin (counting starts at zero).
+The bin boundaries are determined by splitting the interval <em>[<code>min</code>, <code>max</code>]</em> into <code>numBins</code> equi-width bins.
+The number of bins <code>numBins</code> is required.
+Specifying <code>min</code> and <code>max</code> is optional; if they are omitted, they are automatically calculated, whereby NaNs in <code>arg</code> are not taken into account.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>print(bin(t([10, 20, 30, 40, 50, 60, 70]), 3));
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>print(bin(t([10, 20, 30, 40, 50, 60, 70]), 3, 10, 70));
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>print(bin(t([5.0, 20.0, nan, 40.0, inf, 60.0, 100.0]), 3, 10.0, 70.0));
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>DenseMatrix(1x7, int64_t)
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>0 0 0 1 1 2 2
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>DenseMatrix(1x7, int64_t)
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>0 0 0 1 1 2 2
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>DenseMatrix(1x7, double)
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>0 0 nan 1 2 2 2
+</code></pre></div>
+</li>
 </ul>
 <h2 id="measurements">Measurements</h2>
 <ul>
