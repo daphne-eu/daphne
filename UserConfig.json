@@ -11,7 +11,7 @@
     "cuda_fuse_any": false,
     "use_mlir_codegen": false,
     "vectorized_single_queue": false,
-    "debug_llvm": true,
+    "debug_llvm": false,
     "explain_kernels": false,
     "explain_llvm": false,
     "explain_parsing": false,
@@ -28,7 +28,7 @@
     "library_paths": [],
     "daphnedsl_import_paths": {},
     "logging": [
-        { "log-level-limit": "DEBUG" },
+        { "log-level-limit": "ERROR" },
         {
             "comment": "This configuration controls logging in the GPU compiler pass only",
             "name": "compiler::cuda",

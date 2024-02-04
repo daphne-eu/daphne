@@ -32,7 +32,6 @@
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Pass/PassManager.h"
 #include "llvm/Support/CommandLine.h"
 
 #ifdef USE_CUDA
@@ -614,7 +613,6 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             spdlog::error("Execution error: Returning from signal {}", gSignalStatus);
             return StatusCode::EXECUTION_ERROR;
         }
-        engine->dumpToObjectFile("objdump.o");
     }
     catch (std::runtime_error& re) {
         spdlog::error("Execution error: {}", re.what());

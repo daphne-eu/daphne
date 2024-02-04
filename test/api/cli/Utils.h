@@ -29,7 +29,6 @@
 
 #include <grpcpp/server.h>
 
-#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>

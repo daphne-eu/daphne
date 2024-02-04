@@ -18,10 +18,8 @@
 #include <tags.h>
 
 #include <catch.hpp>
-#include <sstream>
 #include <string>
 
-#include "api/cli/StatusCode.h"
 
 const std::string dirPath = "test/api/cli/codegen/";
 
