@@ -25,7 +25,7 @@
 
 const std::string dirPath = "test/api/cli/codegen/";
 
-TEST_CASE("matmul", "[codegen][matmul]") {
+TEST_CASE("matmul", TAG_CODEGEN TAG_MATMUL) {
     std::string result =
         "DenseMatrix(3x3, double)\n"
         "45 45 45\n"
@@ -35,7 +35,7 @@ TEST_CASE("matmul", "[codegen][matmul]") {
     compareDaphneToStr(result, dirPath + "matmul.daphne");
     compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen");
 }
-TEST_CASE("matmul vectorized", "[codegen][matmul]") {
+TEST_CASE("matmul vectorized", TAG_CODEGEN TAG_MATMUL) {
     std::string result =
         "DenseMatrix(3x3, double)\n"
         "45 45 45\n"
@@ -46,16 +46,16 @@ TEST_CASE("matmul vectorized", "[codegen][matmul]") {
     compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen", "--no-obj-ref-mgnt", 
     "--matmul-vec-size-bits=128");
 }
-TEST_CASE("matmul tiled", "[codegen][matmul]") {
+TEST_CASE("matmul tiled", TAG_CODEGEN TAG_MATMUL) {
     std::string result =
         "DenseMatrix(3x3, double)\n"
         "45 45 45\n"
         "45 45 45\n"
         "45 45 45\n";
 
-    compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen", "--matmul-fixed-tile-sizes=1,1,1");
+    compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen", "--matmul-fixed-tile-sizes=2,2,2");
 }
-TEST_CASE("matmul tiled and vectorized", "[codegen][matmul]") {
+TEST_CASE("matmul tiled and vectorized", TAG_CODEGEN TAG_MATMUL) {
     std::string result =
         "DenseMatrix(3x3, double)\n"
         "45 45 45\n"
@@ -63,11 +63,11 @@ TEST_CASE("matmul tiled and vectorized", "[codegen][matmul]") {
         "45 45 45\n";
 
     compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen", "--matmul-vec-size-bits=64", 
-    "--matmul-fixed-tile-sizes=1,1,1");
+    "--matmul-fixed-tile-sizes=2,2,2");
 }
-TEST_CASE("matmul single", "[codegen][matmul]") {
+TEST_CASE("matmul single", TAG_CODEGEN TAG_MATMUL) {
     std::string result =
-        "DenseMatrix(3x3, single)\n"
+        "DenseMatrix(3x3, float)\n"
         "45 45 45\n"
         "45 45 45\n"
         "45 45 45\n";
@@ -75,7 +75,7 @@ TEST_CASE("matmul single", "[codegen][matmul]") {
     compareDaphneToStr(result, dirPath + "matmul_single.daphne");
     compareDaphneToStr(result, dirPath + "matmul_single.daphne", "--mlir-codegen");
 }
-TEST_CASE("matmul non square", "[codegen][matmul]") {
+TEST_CASE("matmul non square", TAG_CODEGEN TAG_MATMUL) {
     std::string result =
         "DenseMatrix(3x3, double)\n"
         "60 60 60\n"
@@ -85,16 +85,6 @@ TEST_CASE("matmul non square", "[codegen][matmul]") {
     compareDaphneToStr(result, dirPath + "matmul_non_square.daphne");
     compareDaphneToStr(result, dirPath + "matmul_non_square.daphne", "--mlir-codegen");
 }
-/* TEST_CASE("slightly larger matmul", "[codegen][matmul]") {
-    std::string result = readTextFile(dirPath + "matmul128.result");
-    
-    compareDaphneToStr(result, dirPath + "matmul128.daphne");
-    compareDaphneToStr(result, dirPath + "matmul128.daphne", "--mlir-codegen");
-    compareDaphneToStr(result, dirPath + "matmul128.daphne", "--mlir-codegen", "-matmul-fixed-tile-sizes=2,3,4,5,6");
-    compareDaphneToStr(result, dirPath + "matmul128.daphne", "--mlir-codegen", "-matmul-fixed-tile-sizes=2,3,4,5");
-    compareDaphneToStr(result, dirPath + "matmul128.daphne", "--mlir-codegen", "-matmul-fixed-tile-sizes=2,3,4");
-}
- */
 
 
 TEST_CASE("matvec", TAG_CODEGEN) {

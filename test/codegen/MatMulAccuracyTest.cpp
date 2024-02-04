@@ -23,3 +23,16 @@ std::string result = readTextFile(dirPath + "matmul128.result");
     compareDaphneToStringNumerically(result, dirPath + "matmul128.daphne", 1, epsilon, "--mlir-codegen", "--matmul-vec-size-bits=64");
     compareDaphneToStringNumerically(result, dirPath + "matmul128.daphne", 1, epsilon, "--mlir-codegen", "--matmul-fixed-tile-sizes=2,3,4", "--matmul-vec-size-bits=64");
 }
+
+TEST_CASE("matmul accuracy 576", "[codegen][matmul]") {
+    double epsilon = std::numeric_limits<double>().epsilon();
+    std::stringstream kernel;
+    std::stringstream err_kernel;
+    std::stringstream codegen;
+    std::stringstream err_codegen;
+    int status = runDaphne(kernel, err_kernel, (dirPath + "matmul576.daphne").c_str());
+    CHECK(status == StatusCode::SUCCESS);
+    status = runDaphne(codegen, err_codegen, "--mlir-codegen", "--matmul-fixed-tile-sizes=2,3,4,5,6", (dirPath + "matmul576.daphne").c_str());
+    CHECK(status == StatusCode::SUCCESS);
+    compareDaphneRunsNumerically(kernel, codegen, 1, epsilon);   
+}

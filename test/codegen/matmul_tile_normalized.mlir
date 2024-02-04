@@ -1,11 +1,11 @@
-// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2,2,2,2 matmul_use_fixed_tile_sizes=true" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT5,NT,NTL
-// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2,2,2 matmul_use_fixed_tile_sizes=true" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT4,NT,NTL
-// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2,2 matmul_use_fixed_tile_sizes=true" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT3,NT,NTL
-// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2 matmul_use_fixed_tile_sizes=true" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT2,NT,NTS
-// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2 matmul_use_fixed_tile_sizes=true" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT1,NT,NTS
+// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2,2,2,2 matmul_use_fixed_tile_sizes=true matmul_unroll_jam_factor=4" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT5,NT,NTL
+// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2,2,2 matmul_use_fixed_tile_sizes=true matmul_unroll_jam_factor=4" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT4,NT,NTL
+// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2,2 matmul_use_fixed_tile_sizes=true matmul_unroll_jam_factor=4" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT3,NT,NTL
+// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2 matmul_use_fixed_tile_sizes=true matmul_unroll_jam_factor=4" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT2,NT,NTS
+// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2 matmul_use_fixed_tile_sizes=true matmul_unroll_jam_factor=4" --affine-loop-normalize %s | FileCheck %s --check-prefixes=NT1,NT,NTS
 
-// Non specified tile sizes are filled in by the matrix size and the two inner most loops (j mod NR, i mod MR) are unroll jammed by NR/2  and MR/2 respectively.
-// --> large innermost loop, when only specifying one or two tile sizes.
+// Non specified tile sizes are filled in by the matrix size.
+// The innermost loop has many instruction, when one of the unroll factors > 1.
 // Here we test normalized loops with step size 1 in all loops.
 module {
   func.func @main() {

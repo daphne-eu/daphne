@@ -36,6 +36,11 @@ module {
     // THREE2-SAME: vector<1xf64>
     // THREE2-NEXT: {{.*}}affine.vector_store
 
+    // COM: If enabled always at least one element is packed into a vector.
+    // ONE: {{.*}}vector.fma
+    // ONE-SAME: vector<1xf64>
+    // ONE-NEXT: {{.*}}affine.vector_store
+
     // ONE28: %13 = vector.fma
     // ONE28-SAME: vector<2xf64>
     // ONE28-NEXT: {{.*}}affine.vector_store
@@ -44,7 +49,8 @@ module {
   }
 }
 
-// single
+// Value type single
+// See 128 bit vector, that vectorization does not happen, if vector size does not divide the matrix size.
 module {
   func.func @main() {
     // CHECK: {{.*}}memref.alloc

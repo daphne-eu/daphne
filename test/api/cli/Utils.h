@@ -353,13 +353,47 @@ void compareDaphneToStringNumerically(const std::string & exp, const std::string
             // Long double just to be sure
             f_exp = std::stold(s_exp);
             f_out = std::stold(s_out);
-        } catch (std::invalid_argument) {
+        } catch (std::invalid_argument const&) {
             FAIL("The result does not have the right number of outputs.");
         }
         correct_so_far = std::norm(f_exp - f_out) < epsilon * std::norm(f_exp);
     }
     CHECK(correct_so_far == true);
     CHECK(err.str() == "");
+}
+
+/**
+ * @brief Checks if the numerical values in the standard output of the two given DaphneDSL script
+ * runs are within a relative distance to a reference text.
+ * 
+ * @param left The output from a runDaphne().
+ * @param right The output from a runDaphne().
+ * @param ignore_lines How many lines in the beginning of the DaphneDSL output do contain numerical values to compare.
+ * @param epsilon The relative error that is acceptable.  
+ */
+template<typename... Args>
+void compareDaphneRunsNumerically(std::stringstream & left, std::stringstream & right, const int ignore_lines, const long double epsilon) {
+    std::string s_left;
+    std::string s_right;
+    float f_left;
+    float f_right;
+    for (auto i = 0; i != ignore_lines; i++) {
+        std::getline(left, s_left);
+        std::getline(right, s_right);
+    } 
+    bool correct_so_far = true;
+    
+    while (std::getline(left, s_left, ' ') && std::getline(right, s_right, ' ') && correct_so_far) {
+        try {
+            // Long double just to be sure
+            f_left = std::stold(s_left);
+            f_right = std::stold(s_right);
+        } catch (std::invalid_argument const&) {
+            FAIL("The result does not have the right number of outputs.");
+        }
+        correct_so_far = std::norm(f_left - f_right) < epsilon * std::norm(f_left);
+    }
+    CHECK(correct_so_far == true);
 }
 
 /**

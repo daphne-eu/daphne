@@ -23,13 +23,11 @@
 #include <utility>
 #include <vector>
 
-#include "api/cli/DaphneUserConfig.h"
 #include "compiler/utils/LoweringUtils.h"
 #include "hwloc.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
@@ -52,7 +50,6 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SCF/Utils/Utils.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
-#include "mlir/IR/Block.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dominance.h"
@@ -93,6 +90,7 @@ struct LowerMatMulOpOptions {
     LowerMatMulOpOptions &setTileSizes(std::vector<unsigned> sizes) {
         tile_sizes.clear();
         for (auto s : sizes) {
+            if (s <= 1) throw std::invalid_argument("Tile sizes must be an integer larger than 1.");
             tile_sizes.push_back(s);
         }  
         return *this;
@@ -232,12 +230,10 @@ llvm::SmallVector<AffineForOp, 3> vectorizedAffineMatMul(mlir::Value &lhs, mlir:
 
 class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     const LowerMatMulOpOptions options;
-    std::shared_ptr<spdlog::logger> logger;
    public:
     using OpConversionPattern::OpConversionPattern;
     explicit MatMulLowering(MLIRContext *context, LowerMatMulOpOptions const &options) 
         : OpConversionPattern(context, PatternBenefit(1)), options(options) {
-            logger = spdlog::get("compiler");
         } 
 
     bool is_vectorizable(ArrayRef<int64_t> const rhsShape, Type const matrixElementType) const {
@@ -348,14 +344,20 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     //          KC * NR ~ L1,
     //          MC * KC ~ L2,
     //          NC * MC ~ L3 
+    //          & NR divides NC & MR divides MC
     SmallVector<unsigned, 5> getTileSizesFromCache(Type const matrixElementType, int64_t vec_size, int64_t loop_length) const {
         SmallVector<unsigned, 5> tile_sizes;
         int bitwidth = matrixElementType.getIntOrFloatBitWidth();
         tile_sizes.push_back(std::max(1, (int)(std::sqrt(options.register_size / bitwidth))));
         tile_sizes.push_back(tile_sizes.back());
         if (options.cache_sizes.size() > 0) {
+            int idx = 0;
             for (auto cache_size=options.cache_sizes.begin(); cache_size != options.cache_sizes.end(); cache_size++) {
-                tile_sizes.push_back(std::max(1, (int)(*cache_size / tile_sizes.back() / bitwidth)));
+                unsigned candidate = std::max(1, (int)(*cache_size / tile_sizes.back() / bitwidth));
+                if (idx == 3) candidate = candidate - (candidate % tile_sizes[0]);
+                if (idx == 4) candidate = candidate - (candidate % tile_sizes[1]);
+                tile_sizes.push_back(candidate);
+                idx++;
             }
         }
         while (tile_sizes.size() < 5) {
@@ -381,11 +383,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         // tile i with MC, j with NC, k with KC
         llvm::SmallVector<AffineForOp> tiledNest;
         if (failed(tilePerfectlyNested(loopNest, {MC, NC, KC}, &tiledNest))) {
-            if(logger->should_log(spdlog::level::debug)) {
-                std::string s;
-                llvm::raw_string_ostream stream(s);
-                logger->debug("Could not tile the loop nest in MatMulLowering", s);
-            }
+            spdlog::warn("Could not tile the loop nest in MatMulLowering");
         };
         assert(tiledNest[0].getStep() == MC && "0 should have step size MC.");
         assert(tiledNest[1].getStep() == NC * vec_size && "1 should have step size NC * vec_size.");
@@ -396,21 +394,13 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
 
         // Further tile the i mod MC loop with MR
         if (failed(tilePerfectlyNested(tiledNest[3], {MR}))) {
-            if(logger->should_log(spdlog::level::debug)) {
-                std::string s;
-                llvm::raw_string_ostream stream(s);
-                logger->debug("Could not tile the second i loop in MatMulLowering", s);
-            }
+            spdlog::warn("Could not tile the second i loop in MatMulLowering");
         };
         
         // Further tile the j mod NC loop with NR
         assert(tiledNest[4].getStep() == 1 * vec_size && "4 should have step size vec_size.");
         if (failed(tilePerfectlyNested(tiledNest[4], {NR}))) {
-            if(logger->should_log(spdlog::level::debug)) {
-                std::string s;
-                llvm::raw_string_ostream stream(s);
-                logger->debug("Could not tile the second j loop in MatMulLowering", s);
-            }
+            spdlog::warn("Could not tile the second j loop in MatMulLowering");
         };
 
 
@@ -443,26 +433,21 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         assert(blisTiledLoops[1].getStep() == KC && "blisTiled: 1 should have step size 1.");  // k loops
         assert(blisTiledLoops[5].getStep() == 1 && "blisTiled: 5 should have step size 1.");
         // Unroll jam causes Segfault, if called in a way where the loop is not cleanly divided.
-        if (blisTiledLoops[5].getUpperBound().getMap().getNumResults() == 1) {
-            (void)loopUnrollJamUpToFactor(blisTiledLoops[5], options.unroll_jam_factor);
-            Block &block = blisTiledLoops[5].getRegion().front();
-            auto itForOp = block.getOps<AffineForOp>();
-            for (auto f : itForOp) {
-                if (f.getUpperBound().getMap().getNumResults() == 1) {
-                    (void)loopUnrollJamUpToFactor(f,options.unroll_jam_factor);
+        if (blisTiledLoops[5].getUpperBound().getMap().getNumResults() == 1 &&
+            succeeded(loopUnrollJamUpToFactor(blisTiledLoops[5], options.unroll_jam_factor))) {
+                if (blisTiledLoops[6].getUpperBound().getMap().getNumResults() != 1 || 
+                failed(loopUnrollJamUpToFactor(blisTiledLoops[6],options.unroll_jam_factor))) {                     
+                    spdlog::warn("Could not unroll the (j mod NC) mod NR loop in MatMulLowering");
                 }
-            }
+        } else {
+            spdlog::warn("Could not unroll the (i mod MC) mod MR loop in MatMulLowering");
         }
         
         llvm::SmallVector<AffineForOp> lastNest;
         getPerfectlyNestedLoops(lastNest, blisTiledLoops.front()); 
         
         if (failed(loopUnrollUpToFactor(lastNest.back(), KU))) {
-            if(logger->should_log(spdlog::level::debug)) {
-                std::string s;
-                llvm::raw_string_ostream stream(s);
-                logger->debug("Could not unroll the K loop in MatMulLowering", s);
-            }
+            spdlog::warn("Could not unroll the K loop in MatMulLowering");
         }
         int64_t i = 0;
         while (succeeded(promoteIfSingleIteration(lastNest[i])) && i < 4) {
