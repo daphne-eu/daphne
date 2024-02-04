@@ -277,8 +277,13 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     );
     static opt<int> matmul_unroll_factor(
         "matmul-unroll-factor", cat(daphneOptions),
-        desc("Factor by which to unroll the inner most loop in the lowered MatMul if tiling is used."),
+        desc("Factor by which to unroll the finally resulting inner most loop in the lowered MatMul if tiling is used."),
         init(1)
+    );
+    static opt<int> matmul_unroll_jam_factor(
+        "matmul-unroll-jam-factor", cat(daphneOptions),
+        desc("Factor by which to unroll jam the two inner most loop in the lowered MatMul if tiling is used."),
+        init(4)
     );
     static llvm::cl::list<unsigned> matmul_fixed_tile_sizes(
         "matmul-fixed-tile-sizes", cat(daphneOptions),
@@ -408,6 +413,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.matmul_vec_size_bits = matmul_vec_size_bits;
     user_config.matmul_tile = matmul_tile;
     user_config.matmul_unroll_factor = matmul_unroll_factor;
+    user_config.matmul_unroll_jam_factor = matmul_unroll_jam_factor;
     if (matmul_fixed_tile_sizes.size() > 0) {
         user_config.matmul_use_fixed_tile_sizes = true;
         user_config.matmul_fixed_tile_sizes = matmul_fixed_tile_sizes;

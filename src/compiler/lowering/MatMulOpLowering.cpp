@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -51,6 +52,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SCF/Utils/Utils.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/IR/Block.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dominance.h"
@@ -85,6 +87,8 @@ struct LowerMatMulOpOptions {
     llvm::SmallVector<int, 3> cache_sizes;
     llvm::SmallVector<unsigned, 5> tile_sizes;
     int unroll_factor{1};
+    // 4 is the default value for the affine unroll jam
+    int unroll_jam_factor{4};
 
     LowerMatMulOpOptions &setTileSizes(std::vector<unsigned> sizes) {
         tile_sizes.clear();
@@ -94,7 +98,13 @@ struct LowerMatMulOpOptions {
         return *this;
     }
     LowerMatMulOpOptions &setUnrollFactor(int f) {
+        if (f < 1) throw std::invalid_argument("Unroll factor must be an integer larger than 0.");
         unroll_factor = f;
+        return *this;
+    }
+    LowerMatMulOpOptions &setUnrollJamFactor(int f) {
+        if (f < 1) throw std::invalid_argument("Unroll jam factor must be an integer larger than 0.");
+        unroll_jam_factor = f;
         return *this;
     }
     LowerMatMulOpOptions &setCacheSizes(llvm::SmallVector<int> caches) {
@@ -109,6 +119,7 @@ struct LowerMatMulOpOptions {
         return *this;
     }
     LowerMatMulOpOptions &setVectorSizeBits(int s) {
+        if (s < 0) throw std::invalid_argument("Vector size bits must be larger or equal to 0.");
         vec_size_bits = s;
         return *this;
     }
@@ -431,18 +442,15 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         assert(blisTiledLoops[6].getStep() == vec_size && "blisTiled: 6 should have step size vec_size.");
         assert(blisTiledLoops[1].getStep() == KC && "blisTiled: 1 should have step size 1.");  // k loops
         assert(blisTiledLoops[5].getStep() == 1 && "blisTiled: 5 should have step size 1.");
-        // 4 is the default unroll factor in the affine dialect.
-        if (failed(loopUnrollJamUpToFactor(blisTiledLoops[5], 4))) {
-            if(logger->should_log(spdlog::level::debug)) {
-                std::string s;
-                llvm::raw_string_ostream stream(s);
-                logger->debug("Could not unroll jam the second to last loop in MatMulLowering", s);
-            }
-        } else if (failed(loopUnrollJamUpToFactor(blisTiledLoops[6], 4))) {
-            if(logger->should_log(spdlog::level::debug)) {
-                std::string s;
-                llvm::raw_string_ostream stream(s);
-                logger->debug("Could not unroll the second to last loop in MatMulLowering", s);
+        // Unroll jam causes Segfault, if called in a way where the loop is not cleanly divided.
+        if (blisTiledLoops[5].getUpperBound().getMap().getNumResults() == 1) {
+            (void)loopUnrollJamUpToFactor(blisTiledLoops[5], options.unroll_jam_factor);
+            Block &block = blisTiledLoops[5].getRegion().front();
+            auto itForOp = block.getOps<AffineForOp>();
+            for (auto f : itForOp) {
+                if (f.getUpperBound().getMap().getNumResults() == 1) {
+                    (void)loopUnrollJamUpToFactor(f,options.unroll_jam_factor);
+                }
             }
         }
         
@@ -473,18 +481,21 @@ namespace {
  * The vector size is specifies in bits and then adapted to the value type in the Operation, 
  * but stores at least one element. The tile sizes can be fixed or attempted to be generated automatically.
  * The pass options are specified and have descriptions in Passes.td. 
+ *
+ * A more detailed description can be found in 'daphneir/Passes.td'.
  */
 struct MatMulLoweringPass
         : public impl::MatMulOpLoweringPassBase<MatMulLoweringPass> {
     MatMulLoweringPass() = default;
     public:
         explicit MatMulLoweringPass(bool matmul_tile, int matmul_vec_size_bits, std::vector<unsigned> matmul_fixed_tile_sizes,
-        bool matmul_use_fixed_tile_sizes, int matmul_unroll_factor) : impl::MatMulOpLoweringPassBase<MatMulLoweringPass>() {
+        bool matmul_use_fixed_tile_sizes, int matmul_unroll_factor, int matmul_unroll_jam_factor) : impl::MatMulOpLoweringPassBase<MatMulLoweringPass>() {
             this->matmul_tile = matmul_tile;
             this->matmul_vec_size_bits = matmul_vec_size_bits;
             this->matmul_fixed_tile_sizes = matmul_fixed_tile_sizes;
             this->matmul_use_fixed_tile_sizes = matmul_use_fixed_tile_sizes;
             this->matmul_unroll_factor = matmul_unroll_factor;
+            this->matmul_unroll_jam_factor = matmul_unroll_jam_factor;
         }
         
         void runOnOperation() override;
@@ -546,6 +557,7 @@ void MatMulLoweringPass::runOnOperation() {
                 options.setCacheSizes(get_cache_sizes());
             }
             options.setUnrollFactor(matmul_unroll_factor);
+            options.setUnrollJamFactor(matmul_unroll_jam_factor);
             }
         if (matmul_vec_size_bits > 0) {
             options.enableVectorization();
@@ -564,12 +576,14 @@ std::unique_ptr<OperationPass<ModuleOp>> mlir::daphne::createMatMulOpLoweringPas
         int matmul_vec_size_bits,
         std::vector<unsigned> matmul_fixed_tile_sizes,
         bool matmul_use_fixed_tile_sizes,
-        int matmul_unroll_factor) {
+        int matmul_unroll_factor,
+        int matmul_unroll_jam_factor) {
     return std::make_unique<MatMulLoweringPass>(matmul_tile,
         matmul_vec_size_bits,
         matmul_fixed_tile_sizes,
         matmul_use_fixed_tile_sizes,
-        matmul_unroll_factor);
+        matmul_unroll_factor,
+        matmul_unroll_jam_factor);
 }
 
 // This is used by daphne-opt and automatically inserts the options provided on the command line into the pass.

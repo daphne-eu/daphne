@@ -45,6 +45,7 @@ struct DaphneUserConfig {
     int  matmul_vec_size_bits = 0;
     bool matmul_tile = false;
     int matmul_unroll_factor = 1;
+    int matmul_unroll_jam_factor=4;
     bool matmul_use_fixed_tile_sizes = false;
     std::vector<unsigned> matmul_fixed_tile_sizes = {4, 4};
     bool use_mlir_hybrid_codegen = false;

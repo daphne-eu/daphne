@@ -36,6 +36,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string MATMUL_FIXED_TILE_SIZES = "matmul_fixed_tile_sizes";
     inline static const std::string MATMUL_USE_FIXED_TILE_SIZES = "matmul_use_fixed_tile_sizes"; 
     inline static const std::string MATMUL_UNROLL_FACTOR = "matmul_unroll_factor";    
+    inline static const std::string MATMUL_UNROLL_JAM_FACTOR = "matmul_unroll_jam_factor";    
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
@@ -67,6 +68,7 @@ struct DaphneConfigJsonParams {
             MATMUL_FIXED_TILE_SIZES,
             MATMUL_USE_FIXED_TILE_SIZES,
             MATMUL_UNROLL_FACTOR,
+            MATMUL_UNROLL_JAM_FACTOR,
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,

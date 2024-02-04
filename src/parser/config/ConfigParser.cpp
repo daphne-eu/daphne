@@ -64,6 +64,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.matmul_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES).get<std::vector<unsigned>>(); 
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR))
         config.matmul_unroll_factor = jf.at(DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_JAM_FACTOR))
+        config.matmul_unroll_jam_factor = jf.at(DaphneConfigJsonParams::MATMUL_UNROLL_JAM_FACTOR).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
         config.cuda_fuse_any = jf.at(DaphneConfigJsonParams::CUDA_FUSE_ANY).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE))

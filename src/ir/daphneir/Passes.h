@@ -55,7 +55,8 @@ namespace mlir::daphne {
         int matmul_vec_size_bits = 0,
         std::vector<unsigned> matmul_fixed_tile_sizes = {},
         bool matmul_use_fixed_tile_sizes = false,
-        int matmul_unroll_factor = 1);
+        int matmul_unroll_factor = 1,
+        int matmul_unroll_jam_factor = 4);
     std::unique_ptr<OperationPass<ModuleOp>>  createMatMulOpLoweringPass();
     std::unique_ptr<Pass> createAggAllOpLoweringPass();
     std::unique_ptr<Pass> createMemRefTestPass();

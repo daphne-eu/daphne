@@ -4,6 +4,7 @@
     "matmul_use_fixed_tile_sizes": true,
     "matmul_fixed_tile_sizes": [4, 4, 4, 4, 4],
     "matmul_unroll_factor": 1,
+    "matmul_unroll_jam_factor": 4,
     "use_cuda": false,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
@@ -27,7 +28,7 @@
     "library_paths": [],
     "daphnedsl_import_paths": {},
     "logging": [
-        { "log-level-limit": "ERROR" },
+        { "log-level-limit": "DEBUG" },
         {
             "comment": "This configuration controls logging in the GPU compiler pass only",
             "name": "compiler::cuda",
