@@ -18,6 +18,7 @@
 #define TEST_API_CLI_UTILS_H
 
 #include <api/cli/StatusCode.h>
+#include <complex>
 #include <runtime/distributed/worker/WorkerImpl.h>
 
 #include <catch.hpp>
@@ -313,8 +314,8 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
 }
 
 /**
- * @brief Compares the numerical values in the standard output of the given DaphneDSL script
- * run with the command line interface of the DAPHNE Prototype to a reference text.
+ * @brief Checks if the numerical values in the standard output of the given DaphneDSL script
+ * run with the command line interface of the DAPHNE Prototype are within a relative distance to a reference text.
  * 
  * Also checks that the status code indicates a successful execution and that
  * nothing was printed to standard error.
@@ -322,21 +323,18 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
  * @param exp The expected output on stdout.
  * @param scriptFilePath The path to the DaphneDSL script file to execute.
  * output.
+ * @param ignore_lines How many lines in the beginning of the DaphneDSL output do contain numerical values to compare.
+ * @param epsilon The relative error that is acceptable.  
  * @param args The arguments to pass in addition to the script's path. Note
  * that script arguments must be passed via the `--args` option for this
  * utility function. Despite the variadic template, each element should be of
  * type `char *`. The last one does *not* need to be a null pointer.
  */
 template<typename... Args>
-void compareDaphneToStringNumerically(const std::string & exp, const std::string & scriptFilePath, int ignore_lines, Args ... args) {
+void compareDaphneToStringNumerically(const std::string & exp, const std::string & scriptFilePath, int ignore_lines, long double epsilon, Args ... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
-
-    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
-    // checks of out and err still run and provide useful messages. For err,
-    // don't check empty(), because then catch2 doesn't display the error
-    // output.
     CHECK(status == StatusCode::SUCCESS);
     std::stringstream exp_ss(exp);
     std::stringstream out_ss(out.str());
@@ -348,15 +346,19 @@ void compareDaphneToStringNumerically(const std::string & exp, const std::string
         std::getline(exp_ss, s_exp);
         std::getline(out_ss, s_out);
     } 
-    while (std::getline(exp_ss, s_exp, ' ') && std::getline(out_ss, s_out, ' ')) {
+    bool correct_so_far = true;
+    
+    while (std::getline(exp_ss, s_exp, ' ') && std::getline(out_ss, s_out, ' ') && correct_so_far) {
         try {
-            f_exp = std::stof(s_exp);
-            f_out = std::stof(s_out);
+            // Long double just to be sure
+            f_exp = std::stold(s_exp);
+            f_out = std::stold(s_out);
         } catch (std::invalid_argument) {
             FAIL("The result does not have the right number of outputs.");
         }
-        REQUIRE_THAT(f_exp, Catch::Matchers::WithinRel(f_out));
+        correct_so_far = std::norm(f_exp - f_out) < epsilon * std::norm(f_exp);
     }
+    CHECK(correct_so_far == true);
     CHECK(err.str() == "");
 }
 

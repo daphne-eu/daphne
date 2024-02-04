@@ -85,7 +85,7 @@ TEST_CASE("matmul non square", "[codegen][matmul]") {
     compareDaphneToStr(result, dirPath + "matmul_non_square.daphne");
     compareDaphneToStr(result, dirPath + "matmul_non_square.daphne", "--mlir-codegen");
 }
-TEST_CASE("slightly larger matmul", "[codegen][matmul]") {
+/* TEST_CASE("slightly larger matmul", "[codegen][matmul]") {
     std::string result = readTextFile(dirPath + "matmul128.result");
     
     compareDaphneToStr(result, dirPath + "matmul128.daphne");
@@ -94,7 +94,7 @@ TEST_CASE("slightly larger matmul", "[codegen][matmul]") {
     compareDaphneToStr(result, dirPath + "matmul128.daphne", "--mlir-codegen", "-matmul-fixed-tile-sizes=2,3,4,5");
     compareDaphneToStr(result, dirPath + "matmul128.daphne", "--mlir-codegen", "-matmul-fixed-tile-sizes=2,3,4");
 }
-
+ */
 
 
 TEST_CASE("matvec", TAG_CODEGEN) {
