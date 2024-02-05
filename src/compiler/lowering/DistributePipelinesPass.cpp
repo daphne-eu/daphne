@@ -48,15 +48,42 @@ struct DistributePipelines : public OpConversionPattern<daphne::VectorizedPipeli
         IRMapping mapper;
         op.getBody().cloneInto(&funcOp.getRegion(), mapper);
 
+        tempBuilder.setInsertionPointToStart(&funcOp.getBody().front());
+
+        // Copy constant operations into IR fragment.
+        std::vector<Value> newInputs;
+        std::vector<Attribute> newSplits;
+        llvm::BitVector eraseVector(funcOp.getNumArguments());
+
+        for (size_t idx = 0; idx < op.getBody().getNumArguments(); ++idx) {
+            // Find operand from argument
+            auto vecOperand = op.getInputs()[idx];
+
+            if (auto constantOp = vecOperand.getDefiningOp<daphne::ConstantOp>()) {
+                // Add constant operation and remove argument
+                auto newConOp = constantOp.clone();
+                tempBuilder.insert(newConOp);
+                funcOp.getArgument(idx).replaceAllUsesWith(newConOp);
+                // Erase vector
+                eraseVector[idx] = true;
+
+            } else {
+                // Else add to input/splits array.
+                newInputs.push_back(op.getInputs()[idx]);
+                newSplits.push_back(op.getSplits()[idx]);
+            }            
+        }
+        funcOp.eraseArguments(eraseVector);
+        
         std::string s;
         llvm::raw_string_ostream stream(s);
         funcOp.print(stream);
         Value irStr = rewriter.create<daphne::ConstantOp>(op.getLoc(), stream.str());
-        
+
         rewriter.replaceOpWithNewOp<daphne::DistributedPipelineOp>(
                 op.getOperation(),
-                op.getOutputs().getTypes(), irStr, op.getInputs(),
-                op.getOutRows(), op.getOutCols(), op.getSplits(), op.getCombines()
+                op.getOutputs().getTypes(), irStr, newInputs,
+                op.getOutRows(), op.getOutCols(), rewriter.getArrayAttr(newSplits), op.getCombines()
         );
         
         return success();
