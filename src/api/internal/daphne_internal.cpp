@@ -41,10 +41,9 @@
 #include <chrono>
 #include <exception>
 #include <iostream>
-#include <string>
-#include <unordered_map>
 #include <csignal>
 #include <csetjmp>
+#include <execinfo.h>
 
 // global logger handle for this executable
 static std::unique_ptr<DaphneLogger> logger;
@@ -79,8 +78,11 @@ namespace
     jmp_buf return_from_handler;
 }
 
-void handle_sig_abort(int signal) {
-    spdlog::error("Got an abort signal from the execution engine. Most likely an exception in a shared library. Check logs!");
+void handleSignals(int signal) {
+    constexpr int callstackMaxSize = 25;
+    void* callstack[callstackMaxSize];
+    auto callstacksReturned = backtrace(callstack, callstackMaxSize);
+    backtrace_symbols_fd(callstack, callstacksReturned, STDOUT_FILENO);
     gSignalStatus = signal;
     longjmp(return_from_handler, gSignalStatus);
 }
@@ -90,7 +92,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     clock::time_point tpBeg = clock::now();
 
     // install signal handler to catch information from shared libraries (for exception handling)
-    std::signal(SIGABRT, handle_sig_abort);
+    std::signal(SIGABRT, handleSignals);
+    std::signal(SIGSEGV, handleSignals);
 
     // ************************************************************************
     // Parse command line arguments
@@ -567,6 +570,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             }
         }
         else {
+            spdlog::error(
+                "Got an abort signal from the execution engine. Most likely an "
+                "exception in a shared library. Check logs!");
             spdlog::error("Execution error: Returning from signal {}", gSignalStatus);
             return StatusCode::EXECUTION_ERROR;
         }
@@ -599,10 +605,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         std::cerr << "}" << std::endl;
     }
 
-    if(gSignalStatus != 0)
-        return StatusCode::EXECUTION_ERROR;
-    else
-        return StatusCode::SUCCESS;
+    return StatusCode::SUCCESS;
 }
 
 
