@@ -69,7 +69,9 @@ struct Write<DenseMatrix<VT>> {
         FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
         MetaDataParser::writeMetaData(filename, metaData);
 		writeDaphne(arg, filename);
-	}
+    } else {
+      throw std::runtime_error( "[Write.h] - unsupported file extension in write kernel.");
+    }
     }
 };
 
