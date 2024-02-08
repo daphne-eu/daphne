@@ -922,25 +922,29 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
 
     // Parse arguments.
     std::vector<mlir::Value> args_vec;
-    for(unsigned i = 0; i < ctx->expr().size(); i++)
-        args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
+    for(unsigned i = 0; i < ctx->expr().size(); i++) {
+        auto a = visit(ctx->expr(i));
+        if(a.isNotNull()) {
+            auto b = utils.valueOrError(a);
+            args_vec.push_back(b);
+        }
+    }
 
     auto maybeUDF = findMatchingUDF(func, args_vec);
-
     if (maybeUDF) {
+        logger->debug("maybeUDF: {}", maybeUDF->getBody().getParentOp()->getName().getStringRef().str());
+
         auto funcTy = maybeUDF->getFunctionType();
-        auto co = builder
-            .create<mlir::daphne::GenericCallOp>(loc,
-                maybeUDF->getSymName(),
-                args_vec,
-                funcTy.getResults());
+        auto co = builder.create<mlir::daphne::GenericCallOp>(loc, maybeUDF->getSymName(), args_vec, funcTy.getResults());
         if(funcTy.getNumResults() > 1)
             return co.getResults();
+        else if(funcTy.getNumResults() == 1)
+            return co.getResult(0);
         else
             // If the UDF has no return values, the value returned here
             // is invalid. But that seems to be okay, since it is never
             // used as a mlir::Value in that case.
-            return co.getResult(0);
+            return nullptr;
     }
 
     // Create DaphneIR operation for the built-in function.
@@ -1687,8 +1691,10 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     visitBlockStatement(ctx->bodyStmt);
 
     rectifyEarlyReturns(funcBlock);
-    if(funcBlock->getOperations().empty()
-        || !funcBlock->getOperations().back().hasTrait<mlir::OpTrait::IsTerminator>()) {
+    if(funcBlock->getOperations().empty())
+       throw std::runtime_error("Function " + functionName + " is empty");
+
+    if(!funcBlock->getOperations().back().hasTrait<mlir::OpTrait::IsTerminator>()) {
         builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));
     }
 
