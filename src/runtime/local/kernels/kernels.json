@@ -698,6 +698,31 @@
     },
     {
         "kernelTemplate": {
+            "header": "StringEq.h",
+            "opName": "stringEq",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "bool *",
+                    "name": "res"
+                },
+                {
+                    "type": "const char *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const char *",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Concat.h",
             "opName": "concat",
             "returnType": "void",

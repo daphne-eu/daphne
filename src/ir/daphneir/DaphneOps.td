@@ -326,6 +326,12 @@ def Daphne_ConcatOp : Daphne_Op<"concat", [DataTypeSca, ValueTypeStr]> {
     let hasFolder = 1;
 }
 
+def Daphne_StringEqOp : Daphne_Op<"stringEq", [ValueTypeStr]> {
+    let arguments = (ins StrScalar:$lhs, StrScalar:$rhs);
+    let results = (outs BoolScalar:$res);
+    let hasFolder = 1;
+}
+
 // ----------------------------------------------------------------------------
 // Comparisons
 // ----------------------------------------------------------------------------
@@ -337,7 +343,9 @@ class Daphne_EwCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar, Unknown]>:$res);
 }
 
-def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, [Commutative]>;
+def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, [Commutative]> {
+    let hasCanonicalizeMethod = 1;
+}
 def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar, [Commutative, CUDASupport]>;
 def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar>;
 def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;

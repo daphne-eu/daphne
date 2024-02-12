@@ -896,6 +896,20 @@ mlir::OpFoldResult mlir::daphne::ConcatOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
+mlir::OpFoldResult mlir::daphne::StringEqOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
+    assert(operands.size() == 2 && "binary op takes two operands");
+    if (!operands[0] || !operands[1] || !llvm::isa<StringAttr>(operands[0]) ||
+        !isa<StringAttr>(operands[1])) {
+        return {};
+    }
+
+    auto lhs = operands[0].cast<StringAttr>();
+    auto rhs = operands[1].cast<StringAttr>();
+
+    return mlir::BoolAttr::get(getContext(), lhs.getValue() == rhs.getValue());
+}
+
 mlir::OpFoldResult mlir::daphne::EwEqOp::fold(FoldAdaptor adaptor) {
     ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
@@ -1150,6 +1164,30 @@ struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::Dist
         return mlir::success();
     }
 };
+
+// The EwBinarySca kernel does not handle string types in any way. In order to
+// support simple string equivalence checks this canonicalizer rewrites the
+// EwEqOp to the StringEqOp if one of the operands is of daphne::StringType.
+mlir::LogicalResult mlir::daphne::EwEqOp::canonicalize(
+    mlir::daphne::EwEqOp op, PatternRewriter &rewriter) {
+    mlir::Value lhs = op.getLhs();
+    mlir::Value rhs = op.getRhs();
+
+    const bool lhsIsStr = llvm::isa<mlir::daphne::StringType>(lhs.getType());
+    const bool rhsIsStr = llvm::isa<mlir::daphne::StringType>(rhs.getType());
+
+    if (!lhsIsStr && !rhsIsStr) return mlir::failure();
+
+    mlir::Type strTy = mlir::daphne::StringType::get(rewriter.getContext());
+    if (!lhsIsStr)
+        lhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, lhs);
+    if (!rhsIsStr)
+        rhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, rhs);
+
+    rewriter.replaceOpWithNewOp<mlir::daphne::StringEqOp>(
+        op, rewriter.getI1Type(), lhs, rhs);
+    return mlir::success();
+}
 
 /**
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
