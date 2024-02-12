@@ -22,7 +22,10 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#pragma GCC diagnostic pop
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Location.h"
 #include "mlir/IR/Visitors.h"
