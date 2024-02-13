@@ -209,7 +209,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     );
                 // Set the infered shapes on all results of this operation.
                 for(size_t i = 0 ; i < numRes ; i++) {
-                    if(op->getResultTypes()[i].isa<mlir::daphne::MatrixType>()) {
+                    if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i])) {
                         const ssize_t numRows = shapes[i].first;
                         const ssize_t numCols = shapes[i].second;
                         Value rv = op->getResult(i);
@@ -242,7 +242,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 // Set the inferred sparsities on all results of this operation.
                 for(size_t i = 0 ; i < numRes ; i++) {
                     const double sparsity = sparsities[i];
-                    if(op->getResultTypes()[i].isa<mlir::daphne::MatrixType>()) {
+                    if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i])) {
                         Value rv = op->getResult(i);
                         const Type rt = rv.getType();
                         auto mt = rt.dyn_cast<daphne::MatrixType>();

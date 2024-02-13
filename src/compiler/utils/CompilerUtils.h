@@ -274,12 +274,12 @@ public:
             // ...but none of the following "excuses" holds
             && !(
                 // at least one of the types is unknown
-                t1.isa<UnknownType>() || t2.isa<UnknownType>() ||
+                llvm::isa<UnknownType>(t1) || llvm::isa<UnknownType>(t2) ||
                 // both types are matrices and at least one of them
                 // has an unknown value type
                 (matT1 && matT2 && (
-                    matT1.getElementType().isa<UnknownType>() ||
-                    matT2.getElementType().isa<UnknownType>()
+                    llvm::isa<UnknownType>(matT1.getElementType()) ||
+                    llvm::isa<UnknownType>(matT2.getElementType())
                 ))
             )
         );
