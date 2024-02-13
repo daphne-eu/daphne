@@ -75,11 +75,12 @@
 
 import "decisionTree.daph";
 
+# TODO Support impurity as a string (hinges on decisionTree()).
 def randomForest(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
     num_trees:si64 /*= 16*/, sample_frac:f64 /*= 0.1*/, feature_frac:f64 /*= 1.0*/,
     max_depth:si64 /*= 10*/, min_leaf:si64 /*= 20*/, min_split:si64 /*= 50*/,
     max_features:f64 /*= 0.5*/, max_values:f64 /*= 1.0*/,
-    impurity:str /*= "gini"*/, seed:si64 /*= -1*/, verbose:bool /*= false*/)
+    impurity:/*str*/si64 /*= "gini"*/, seed:si64 /*= -1*/, verbose:bool /*= false*/)
   -> matrix<f64>
 {
   t1 = now();
@@ -122,6 +123,7 @@ def randomForest(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
       I1 = rand(nrow(X), 1, 0.0, 1.0, 1, si1) <= sample_frac;
       Xi = X[[I1, ]];
       yi = y[[I1, ]];
+      # TODO problem: Xi/yi can have zero rows now
     }
 
     # step 2: sample features
@@ -130,6 +132,7 @@ def randomForest(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
       I2 = rand(ncol(X), 1, 0.0, 1.0, 1, si2) <= feature_frac;
       Xi = Xi[[, I2]];
       F[i - 1,] = t(I2);
+      # TODO problem: Xi can have zero rows now
     }
 
     if( verbose )

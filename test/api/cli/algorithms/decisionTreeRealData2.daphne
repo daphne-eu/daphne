@@ -1,0 +1,75 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications 2024 The DAPHNE Consortium.
+#
+#-------------------------------------------------------------
+
+# This script has been manually translated from Apache SystemDS.
+
+# For the Wine dataset.
+
+import "../../../../scripts/algorithms/decisionTree.daph";
+import "../../../../scripts/algorithms/decisionTreePredict.daph";
+
+F = readFrame($data);
+
+recoded12, dict12 = recode(as.matrix(F[, 12]), false);
+# TODO Support n-ary cbind/rbind.
+# TODO all the +1 should not be necessary, it's due to SystemDS 1-based recode/bin and DAPHNE 0-based
+X = cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(
+    bin(as.matrix(F[,  0]), 10)+1,
+    bin(as.matrix(F[,  1]), 10)+1),
+    bin(as.matrix(F[,  2]), 10)+1),
+    bin(as.matrix(F[,  3]), 10)+1),
+    bin(as.matrix(F[,  4]), 10)+1),
+    bin(as.matrix(F[,  5]), 10)+1),
+    bin(as.matrix(F[,  6]), 10)+1),
+    bin(as.matrix(F[,  7]), 10)+1),
+    bin(as.matrix(F[,  8]), 10)+1),
+    bin(as.matrix(F[,  9]), 10)+1),
+    bin(as.matrix(F[, 10]), 50)+1),
+    bin(as.matrix(F[, 11]), 10)+1),
+    recoded12+1
+);
+
+R = reshape(as.f64([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]), 1, 13);
+
+Y = X[,   ncol(X) - 1];
+X = X[, 0:ncol(X) - 1];
+X = replace(X, nan, 5); # 1 val
+
+# TODO Support the case for random forests.
+#if( $dt==1 ) {
+  M = decisionTree.decisionTree(/*X=*/X, /*y=*/Y, /*ctypes=*/R,
+    /*max_depth=*/10, /*min_leaf=*/4, /*min_split=*/10,
+    /*max_features=*/1.0, /*max_values=*/$maxV,
+    /*impurity=*/0, /*seed=*/7, /*verbose=*/false);
+  yhat = decisionTreePredict.decisionTreePredict(/*X=*/X, /*y=*/Y, /*ctypes=*/R, /*M=*/M, /*strategy=*/0, /*verbose=*/false);
+#}
+#else {
+#  sf = 1.0/($3-1);
+#  M = randomForest(X=X, y=Y, ctypes=R, sample_frac=sf, num_trees=$3-1,
+#                   max_features=1, max_values=$4,
+#                   min_split=10, min_leaf=4, seed=7, verbose=TRUE);
+#  yhat = randomForestPredict(X=X, y=Y, ctypes=R,  M=M)
+#}
+
+acc = mean(yhat == Y);
+print(acc);

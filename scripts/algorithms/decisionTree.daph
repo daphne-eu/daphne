@@ -65,30 +65,44 @@
 # ------------------------------------------------------------------------------
 
 # TODO allow spec of return type (fails cause type mismatch)
-def computeLeafLabel(y2:matrix<f64>, I:matrix<f64>, classify:bool, verbose:bool) #-> f64
+def computeLeafLabel(y2:matrix<f64>, I:matrix<f64>, classify:bool, verbose:bool) -> f64
 {
+  # TODO ops in this function seem to get duplicated (e.g., print happens twice)
+
   f = (I @ y2) / sum(I);
   # TODO as.f64() should not be necessary.
-  label = as.scalar(classify ? as.f64(idxMax(f, 0)) : (f @ seq(1,ncol(f),1)));
+  # TODO <f64> should not be necessary.
+  # TODO When we use ?: here, some access is out of bounds, thus we rewrite it to if-then-else.
+  #label = as.scalar<f64>(classify ? as.f64(idxMax(f, 0) + 1) : (f @ seq(1,ncol(f),1)));
+
+  label = 0.0;
+  if(classify)
+    label = as.f64(idxMax(f, 0)) + 1;
+  else
+    label = f @ seq(1,ncol(f),1);
+  label = as.scalar(label);
+
   if(verbose)
     print("-- leaf node label: " + label +" ("+sum(I)*aggMax(f)+"/"+sum(I)+")");
 
   return label;
 }
 
-def computeImpurity(y2:matrix<f64>, I:matrix<f64>, impurity:str) -> matrix<f64>
+# TODO Support impurity as str (see also todos below) (see #581).
+# impurity: 0="gini", 1="entropy", 2="rss"
+def computeImpurity(y2:matrix<f64>, I:matrix<f64>, impurity:/*str*/si64) -> matrix<f64>
 {
   f = (I @ y2) / sum(I, 0); # rel. freq. per category/bin
   # TODO The value should be allowed to be `0`, but that results in an error later on.
   score = fill(0.0, nrow(I), 1);
-  if( impurity == "gini" )
+  if( impurity == /*"gini"*/0 )
     score = 1 - sum(f^2, 0); # sum(f*(1-f));
-  else if( impurity == "entropy" )
+  else if( impurity == /*"entropy"*/1 )
     # TODO Unary "-".
     score = sum((0-f) * log(f, 2), 0);
-  else if( impurity == "rss" ) { # residual sum of squares
+  else if( impurity == /*"rss"*/2 ) { # residual sum of squares
     yhat = f @ seq(1,ncol(f),1);             # yhat
-    res = outerSub(yhat, t(idxMax(y2, 0)));  # yhat-y
+    res = outerSub(yhat, t(idxMax(y2, 0) + 1));  # yhat-y
     score = sum((I * res)^2, 0);             # sum((yhat-y)^2)
   }
   else
@@ -98,8 +112,10 @@ def computeImpurity(y2:matrix<f64>, I:matrix<f64>, impurity:str) -> matrix<f64>
   return score;
 }
 
+# TODO Support impurity as str.
+# impurity: 0="gini", 1="entropy", 2="rss"
 def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matrix<f64>,
-    ID:si64, I:matrix<f64>, min_leaf:si64, max_features:f64, max_values:f64, impurity:str, seed:si64)
+    ID:si64, I:matrix<f64>, min_leaf:si64, max_features:f64, max_values:f64, impurity:/*str*/si64, seed:si64)
     -> si64, si64, si64, matrix<f64>, si64, matrix<f64>
 {
   # sample features iff max_features < 1
@@ -109,12 +125,14 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
   if( max_features < 1.0 ) {
     rI = rand(n, 1, 0.0, 1.0, 1, seed) <= (n^max_features/n);
     feat = feat[[rI, ]];
+    # TODO problem: feat can have zero rows now -> what would SystemDS do
   }
 
   # evaluate features and feature splits
   # (both categorical and numerical are treated similarly by
   # finding a cutoff point in the recoded/binned representation)
-  R = fill(0, 3, nrow(feat));
+  # TODO .0 should not be necessary, omiting it requires special instantiation of insertCol.
+  R = fill(0.0, 3, nrow(feat));
   # TODO Support for parfor-loops (see #515).
   for( i in 1:nrow(feat) ) {
     f = as.scalar(feat[i - 1, ]);      # feature
@@ -149,12 +167,12 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
     valid = (sum(Ileft, 0)>=min_leaf) && (sum(Iright, 0)>=min_leaf);
     bestig = aggMax(valid*ig);
     # TODO .0 should not be necessary.
-    bestv = (bestig>0) ? nrow(valid)-as.scalar(idxMax(t(reverse(valid*ig)), 0))+beg : -1.0;
+    bestv = (bestig>0) ? nrow(valid)-as.scalar(idxMax(t(reverse(valid*ig)), 0) + 1)+beg  : -1.0;
     if( bestv >= 0 )
       bestv = as.scalar(vI[bestv - beg,0])+beg - 1;
-    R[,i - 1] = cbind(cbind(as.matrix(f), as.matrix(bestig)), as.matrix(bestv));
+    R[,i - 1] = rbind(rbind(as.matrix(f), as.matrix(bestig)), as.matrix(bestv));
   }
-  ix = as.scalar(idxMax(R[1,], 0));
+  ix = as.scalar(idxMax(R[1,], 0) + 1);
 
   # extract indicators and IDs
   IDleft = 2 * ID;
@@ -162,26 +180,29 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
   f = as.scalar<si64>(feat[ix - 1,0]);
   beg = as.scalar(foffb[0,f - 1]);
   v = as.si64(as.scalar(R[2,ix - 1])-beg);
-  Ileft = [0]; # TODO this should not be necessary
-  Iright = [0]; # TODO this should not be necessary
+  Ileft = [0.0]; # TODO this should not be necessary
+  Iright = [0.0]; # TODO this should not be necessary
   if( aggMax(R[1,]) > 0 ) {
-    p = ctable(seq(beg+1, beg+v, 1), fill(1, v, 1), ncol(X2), 1);
+    # TODO .0 in fill() shouldn't be necessary, omiting it requires special ctable instantiation.
+    p = ctable(seq(beg+1, beg+v, 1) - 1, fill(1.0, v, 1) - 1, ncol(X2), 1);
     Ileft = (t(X2 @ p) * I) != 0;
     Iright = I * (Ileft==0);
   }
   else { # no information gain
-    Ileft = [0];
-    Iright = [0];
+    Ileft = [0.0];
+    Iright = [0.0];
   }
 
   return f, v, IDleft, Ileft, IDright, Iright;
 }
 
 // TODO Support optional parameters with defaults (see #548).
+# TODO Support impurity as str.
+# impurity: 0="gini", 1="entropy", 2="rss"
 def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
     max_depth:si64 /*= 10*/, min_leaf:si64 /*= 20*/, min_split:si64 /*= 50*/,
     max_features:f64 /*= 0.5*/, max_values:f64 /*= 1.0*/,
-    impurity:str /*= "gini"*/, seed:si64 /*= -1*/, verbose:bool /*= false*/)
+    impurity:/*str*/si64 /*= "gini"*/, seed:si64 /*= -1*/, verbose:bool /*= false*/)
     -> matrix<f64>
 {
   t1 = now();
@@ -201,6 +222,11 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
   if( sum(y<=0) != 0 )
     # TODO Support stop()-function (#XXX).
     print("decisionTree: label vector y is not properly recoded/binned: "+sum(y<=0));
+  # TODO Check if shapes are valid, e.g., if ctypes is a row vector.
+
+  if(ncol(X) + 1 != ncol(ctypes))
+    # TODO Support stop()-function (#XXX).
+    print("decisionTree: ncol(X) + 1 != ncol(ctypes) does not hold");
 
   # initialize input data and basic statistics
   # (we keep y2 and the indicates I in transposed form for sparsity exploitation)
@@ -213,9 +239,10 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
   rix = reshape(seq(1.0,m,1)@fill(1,1,n), m*n, 1); # TODO correct??? # TODO ; missing in DML
   cix = reshape(X + foffb, m*n, 1); # TODO correct???
   # TODO Almost impossible for users to understand that the weight must be 1.0 (not 1) to make it a matrix<f64>.
-  X2 = ctable(rix, cix, 1.0, m, as.scalar(foffe[0,n - 1])); #one-hot encoded # TODO correct to omit last param?
+  X2 = ctable(rix - 1, cix - 1, 1.0, m, as.scalar(foffe[,n - 1])); #one-hot encoded # TODO correct to omit last param?
   # TODO Cast should not be necessary.
-  y2 = as.matrix<f64>(ctable(seq(1,m,1), y));
+  # TODO .0 in seq() should not be necessary, omiting it requires special ctable instantiation.
+  y2 = as.matrix<f64>(ctable(seq(0.0,m - 1,1), y - 1));
   cnt = sum(X2, 1);
   # TODO Ideally, this should work with 1 instead of 1.0.
   I = fill(1.0, 1, nrow(X));
@@ -236,13 +263,21 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
   #queue = list(list(1,I)); # node IDs / data indicators
   queue_nID = as.matrix(1);
   queue_nI = I;
-  maxPath = 1;
+  # TODO .0 should not be necessary.
+  maxPath = 1.0;
   while( nrow(queue_nID) > 0 ) {
     # pop next node from queue for splitting
     nID = as.scalar(queue_nID[0, ]);
     nI = queue_nI[0, ];
-    queue_nID = queue_nID[1:, ];
-    queue_nI = queue_nI[1:, ];
+    # TODO instead of this if-then-else, it should be valid to slice rows 1:1 on 1 row, result should be 0 rows
+    if(nrow(queue_nID) > 1) {
+      queue_nID = queue_nID[1:, ];
+      queue_nI = queue_nI[1:, ];
+    }
+    else {
+      queue_nID = fill(1, 0, 1);
+      queue_nI = fill(1.0, 0, nrow(X));
+    }
     if(verbose)
       print("decisionTree: attempting split of node "+nID+" ("+sum(nI)+" rows)");
 
@@ -253,11 +288,15 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
     validSplit = sum(Ileft) >= min_leaf && sum(Iright) >= min_leaf;
     if(verbose)
       print("-- best split: f"+f+" <= "+v+" --> valid="+validSplit);
-    if( validSplit )
-      M[, 2*nID - 2:2*nID] = t(cbind(as.matrix(f), as.matrix(v)));
-    else
+    if( validSplit ) {
+      # TODO as.f64() should not be necessary, omiting it requires special instantiation of insertCol.
+      M[, 2*nID - 2:2*nID] = as.f64(t(rbind(as.matrix(f), as.matrix(v))));
+    }
+    else {
       # TODO as.bool() should not be necessary, should be casted automatically
-      M[, 2*nID - 2] = computeLeafLabel(y2, nI, as.bool(classify), verbose);
+      # TODO as.matrix() should not be necessary.
+      M[, 2*nID - 1] = as.matrix(computeLeafLabel(y2, nI, as.bool(classify), verbose));
+    }
     maxPath = max(maxPath, floor(log(nID,2)+1));
 
     # split data, finalize or recurse
@@ -266,16 +305,20 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
         queue_nID = rbind(queue_nID, as.matrix(IDleft));
         queue_nI = rbind(queue_nI, Ileft);
       }
-      else
+      else {
         # TODO as.bool() should not be necessary, should be casted automatically
-        M[,2*IDleft - 1] = computeLeafLabel(y2, Ileft, as.bool(classify), verbose); # TODO ; was missing in DML
+        # TODO as.matrix() should not be necessary.
+        M[,2*IDleft - 1] = as.matrix(computeLeafLabel(y2, Ileft, as.bool(classify), verbose)); # TODO ; was missing in DML
+      }
       if( sum(Iright) >= min_split && floor(log(IDright,2))+2 < max_depth ) {
         queue_nID = rbind(queue_nID, as.matrix(IDright));
         queue_nI = rbind(queue_nI, Iright);
       }
-      else
+      else {
         # TODO as.bool() should not be necessary, should be casted automatically
-        M[,2*IDright - 1] = computeLeafLabel(y2, Iright, as.bool(classify), verbose); # TODO ; was missing in DML
+        # TODO as.matrix() should not be necessary.
+        M[,2*IDright - 1] = as.matrix(computeLeafLabel(y2, Iright, as.bool(classify), verbose)); # TODO ; was missing in DML
+      }
       maxPath = max(maxPath, floor(log(IDleft,2)+1));
     }
   }

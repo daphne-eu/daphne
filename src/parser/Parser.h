@@ -55,7 +55,10 @@ struct Parser {
         // Open the given DSL file.
         std::ifstream ifs(filename, std::ios::in);
         if (!ifs.good())
-            throw std::runtime_error("could not open file '" + filename + "' for parsing");
+            // It's important to say "DaphneDSL" here, because the error message could be confused
+            // with some data file to read, especially when the path to a data file was passed
+            // by accident.
+            throw std::runtime_error("could not open DaphneDSL file '" + filename + "' for parsing");
 
         // Parse the file contents.
         parseStream(builder, ifs, filename);

@@ -129,7 +129,7 @@ namespace {
                     llvm::raw_string_ostream stream(s);
                     // TODO funcName has cryptic suffix from overloading/specialization, not fully suitable for users.
                     // TODO This can happen even for typed functions which are no "templates", which is confusing for a user.
-                    // TODO The index seems to be off by 1 (too large)...
+                    // TODO The index seems to be off by 1 (too large)... (or not, simply 0-based counting)
                     stream << "call to function template `" << funcName << "` with invalid types for argument " << index
                            << ": expected `" << funcInTy << "`, got `" << specializedTy << "`";
                     CompilerUtils::throwError(callLoc, stream.str());
