@@ -157,8 +157,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
      * @brief Triggers the inference of all properties on the given operation.
      */
     std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
-        // Inference of types and interesting properties.
         const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
+        
         // ----------------------------------------------------------------
         // Handle all non-control-flow (non-SCF) operations
         // ----------------------------------------------------------------
@@ -168,7 +168,6 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 op->getOperand(2).getType()
             );
             if(!typeWithCommonInfo) {
-                // TODO Shouldn't Unknown (!= nullptr) be the fall-back common type?
                 throw std::runtime_error(
                         "a variable must not be assigned values of "
                         "different data types (matrix, frame, scalar) "
@@ -183,10 +182,6 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
         else if(!isScfOp) {
             if (cfg.typeInference && returnsUnknownType(op)) {
                 // Try to infer the types of all results of this operation.
-                // TODO surround by original try-catch?
-#if 0
-                daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
-#else
                 try {
                     daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
                 }
@@ -194,7 +189,6 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
                     signalPassFailure();
                 }
-#endif
             }
             if (cfg.shapeInference && returnsUnknownShape(op)) {
                 // Try to infer the shapes of all results of this operation.
@@ -209,7 +203,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     );
                 // Set the infered shapes on all results of this operation.
                 for(size_t i = 0 ; i < numRes ; i++) {
-                    if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i])) {
+                    if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
+                       llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])) {
                         const ssize_t numRows = shapes[i].first;
                         const ssize_t numCols = shapes[i].second;
                         Value rv = op->getResult(i);
@@ -242,7 +237,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 // Set the inferred sparsities on all results of this operation.
                 for(size_t i = 0 ; i < numRes ; i++) {
                     const double sparsity = sparsities[i];
-                    if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i])) {
+                    if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
+                       llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])) {
                         Value rv = op->getResult(i);
                         const Type rt = rv.getType();
                         auto mt = rt.dyn_cast<daphne::MatrixType>();
@@ -447,6 +443,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
             ifOp.thenBlock()->walk<WalkOrder::PreOrder>(walkOp);
             if(ifOp.elseBlock()) {
                 ifOp.elseBlock()->walk<WalkOrder::PreOrder>(walkOp);
+
                 // For all pairs of corresponding values yielded in the
                 // then- and else-branch, determine a common type with
                 // mismatching properties set to unknown, to make the
@@ -459,14 +456,12 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         thenYield->getOperand(i).getType(),
                         elseYield->getOperand(i).getType()
                     );
-                    if(!typeWithCommonInfo) {
-                        // TODO Shouldn't Unknown (!= nullptr) be the fall-back common type?
+                    if(!typeWithCommonInfo)
                         throw std::runtime_error(
                                 "a variable must not be assigned values of "
                                 "different data types (matrix, frame, scalar) "
                                 "in then/else branches"
                         );
-                    }
                     castOperandIf(builder, thenYield, i, typeWithCommonInfo);
                     castOperandIf(builder, elseYield, i, typeWithCommonInfo);
                     ifOp.getResult(i).setType(typeWithCommonInfo);
