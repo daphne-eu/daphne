@@ -160,17 +160,15 @@ def predict_GEMM(M:matrix<f64>, X:matrix<f64>) -> matrix<f64>
 }
 */
 
-# TODO Support strategy as str.
-# strategy: 0="TT", 1="GEMM"
 def decisionTreePredict(X:matrix<f64>, y:matrix<f64> /*= fill(0.0,0,0)*/,
-    ctypes:matrix<f64>, M:matrix<f64>, strategy:/*str*/si64/*="TT"*/, verbose:bool /*= false*/)
+    ctypes:matrix<f64>, M:matrix<f64>, strategy:str /*="TT"*/, verbose:bool /*= false*/)
   -> matrix<f64>
 {
   # TODO This should not be necessary.
   yhat = [0.0];
-  if( strategy == 0 )
+  if( strategy == "TT" )
     yhat = predict_TT(M, X);
-  #else if( strategy == 1 )
+  #else if( strategy == "GEMM" )
   #  yhat = predict_GEMM(M, X);
   else {
     print ("No such strategy" + strategy); # TODO no ; in DML
