@@ -343,7 +343,11 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
     Type srcTy = getSource().getType();
     ssize_t srcNumRows;
     ssize_t srcNumCols;
-    if(auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
+    if(llvm::isa<daphne::UnknownType>(srcTy)) {
+        srcNumRows = -1;
+        srcNumCols = -1;
+    }
+    else if(auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
         srcNumRows = srcMatTy.getNumRows();
         srcNumCols = srcMatTy.getNumCols();
     }
@@ -354,7 +358,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
     else
         // If this is the case, shape inference shouldn't have been called.
         throw std::runtime_error(
-                "SliceRowOp shape inference does only support matrix and frame inputs"
+                "SliceRowOp shape inference does only support unknown, matrix, and frame inputs"
         );
     
     auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
