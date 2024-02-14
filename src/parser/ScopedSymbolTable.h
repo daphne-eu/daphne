@@ -137,6 +137,48 @@ public:
     }
     
     /**
+     * @brief Returns the symbol (variable name) associated with the given SSA value,
+     * or throws an exception if the SSA value is unknown.
+     * 
+     * Starting at the current scope, all hierarchy levels are searched until
+     * the first occurrence of the SSA value is found.
+     * 
+     * Note that an SSA value can be known by more than one variable name, even in a
+     * single scope. This method simply returns the first name it finds.
+     * 
+     * @param val The SSA value to look for.
+     * @return The associated variable name.
+     */
+    std::string getSymbol(mlir::Value val) const {
+        for(int i = scopes.size() - 1; i >= 0; i--)
+            for(auto it = scopes[i].begin(); it != scopes[i].end(); it++)
+                if(it->second.value == val)
+                    return it->first;
+        throw std::runtime_error("no symbol found for the given value");
+    }
+
+    /**
+     * Like the other `getSymbol` method, but only tries to find the SSA value
+     * in the given single-level symbol table.
+     * 
+     * Note that an SSA value can be known by more than one variable name, even in a
+     * single scope. This method simply returns the first name it finds.
+     * 
+     * @param val The SSA value to look for.
+     * @param tab A single-level symbol table from outside of this
+     * `ScopedSymbolTable`.
+     * @return The associated variable name.
+     */
+    std::string getSymbol(mlir::Value val, const SymbolTable & tab) const {
+        for(auto it = tab.begin(); it != tab.end(); it++)
+            if(it->second.value == val)
+                return it->first;
+        // Unlike get(symbol, tab), we don't want to search in the scopes of
+        // this ScopedSymbolTable.
+        throw std::runtime_error("no symbol found for the given value");
+    }
+    
+    /**
      * @brief Associates the given symbol information (including an SSA value)
      * with the given symbol in the current scope.
      * 

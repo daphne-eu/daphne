@@ -264,4 +264,32 @@ public:
             return vt;
     }
 
+    /**
+     * @brief Creates an exception with a message that contains the given location (in
+     * a uniformly formatted way) and the given message.
+     * 
+     * This function should be used for consistent error message formatting.
+     * 
+     * @param loc The location information
+     * @param msg The original error message (without the location information)
+     * @return An exception instance to be thrown at the call-site
+     */
+    static std::exception makeError(mlir::Location loc, const std::string & msg) {
+        // Note: We return an exception rather than throwing it here for the following reason:
+        // If this function threw the exception, we would use this function like a replacement
+        // for a C++ throw statement. However, that would be hard to understand for the C++
+        // compiler in some cases. For instance, assume a function f() with non-void return value
+        // contains only an if-then-else statement, whose then-branch returns a value and
+        // whose else-branch throws an exception. The C++ compiler could complain about
+        // reaching the end of control flow without a return or throw statement in f().
+        // By returning the exception, the caller can simply throw it as in `throw makeError(...);`,
+        // and that will look fine for the C++ compiler.
+
+        // TODO Support different sub-classes of Location.
+        auto flcLoc = loc.dyn_cast<mlir::FileLineColLoc>();
+        std::stringstream s;
+        s << flcLoc.getFilename().str() << ':' << flcLoc.getLine() << ':' << flcLoc.getColumn() << ' ' << msg;
+        return std::runtime_error(s.str());
+    }
+
 };

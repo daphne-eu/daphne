@@ -1376,9 +1376,9 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
             else
                 // If both types are known, but different, this is an error.
                 // TODO We could try to cast the types.
-                throw std::runtime_error(
-                        "the then/else-values of CondOp must have the same type if "
-                        "the condition is a scalar 1"
+                throw CompilerUtils::makeError(
+                        op.getLoc(),
+                        "the then/else-values of CondOp must have the same value type"
                 );
         }
             

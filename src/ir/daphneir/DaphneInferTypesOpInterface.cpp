@@ -447,7 +447,8 @@ std::vector<Type> daphne::CondOp::inferTypes() {
         Type elseValTy = CompilerUtils::getValueType(elseTy);
 
         if(thenValTy != elseValTy)
-            throw std::runtime_error(
+            throw CompilerUtils::makeError(
+                    getLoc(),
                     "the then/else-values of CondOp must have the same value type"
             );
 
