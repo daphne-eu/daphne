@@ -265,6 +265,42 @@ public:
     }
 
     /**
+     * @brief Checks if the two given types are the same, whereby
+     * DaphneIR's unknown type acts as a wildcard.
+     * 
+     * The two types are considered equal, iff they are exactly the same
+     * type, or one of the following "excuses" holds:
+     * - at least one of the types is unknown
+     * - both types are matrices and at least one of them has an unknown
+     *   value type
+     * 
+     * @param t1 The first type
+     * @param t2 The second type
+     * @result `true` if the two types are considered equal, `false` otherwise
+     */
+    static bool equalUnknownAware(mlir::Type t1, mlir::Type t2) {
+        using mlir::daphne::UnknownType;
+        auto matT1 = t1.dyn_cast<mlir::daphne::MatrixType>();
+        auto matT2 = t2.dyn_cast<mlir::daphne::MatrixType>();
+        // The two given types are considered equal, iff:
+        return (
+            // The two types are exactly the same...
+            t1 == t2
+            // ...or one of the following "excuses" holds:
+            || (
+                // at least one of the types is unknown
+                llvm::isa<UnknownType>(t1) || llvm::isa<UnknownType>(t2) ||
+                // both types are matrices and at least one of them
+                // has an unknown value type
+                (matT1 && matT2 && (
+                    llvm::isa<UnknownType>(matT1.getElementType()) ||
+                    llvm::isa<UnknownType>(matT2.getElementType())
+                ))
+            )
+        );
+    }
+
+    /**
      * @brief Creates an exception with a message that contains the given location (in
      * a uniformly formatted way) and the given message.
      * 

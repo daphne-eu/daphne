@@ -474,7 +474,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         mlir::Type tyThen = valThen.getType();
         mlir::Type tyElse = valElse.getType();
         // TODO These checks should happen after type inference.
-        if(tyThen != tyElse) {
+        if(!CompilerUtils::equalUnknownAware(tyThen, tyElse)) {
             // TODO We could try to cast the types.
             // TODO Use DaphneDSL types (not MLIR types) in error message.
             // TODO Adapt to the case of no else-branch in DaphneDSL (when there is no else in DaphneDSL,
@@ -1745,9 +1745,8 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
             throw CompilerUtils::makeError(terminator->getLoc(), s.str());
         }
         for(size_t i = 0; i < returnTypes.size(); i++)
-            // TODO Allow unknown type in return (could be subject to type inference).
             // TODO These checks should happen after type inference.
-            if(returnOpTypes[i] != returnTypes[i]) {
+            if(!CompilerUtils::equalUnknownAware(returnOpTypes[i], returnTypes[i])) {
                 std::stringstream s;
                 s << "function `" << functionName
                     << "` returns a different type for return value #"
