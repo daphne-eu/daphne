@@ -1030,6 +1030,8 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
             //std::vector<mlir::Type> colTypes(numCols, vt);
             //resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
         }
+        else if(llvm::isa<mlir::daphne::UnknownType>(argTy))
+            resType = utils.unknownType;
         else
             resType = vt;
     }
