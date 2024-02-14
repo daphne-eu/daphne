@@ -75,7 +75,7 @@ private:
      * direct parent, and so on.
      * @return `true` if the symbol is found, `false` otherwise.
      */
-    bool has(const std::string & sym, int parent) {
+    bool has(const std::string & sym, int parent) const {
         for(int i = scopes.size() - 1 - parent; i >= 0; i--)
             if(scopes[i].count(sym))
                 return true;
@@ -97,7 +97,7 @@ public:
      * @param sym The symbol (variable name) to look for.
      * @return `true` if the symbol is found, `false` otherwise.
      */
-    bool has(const std::string & sym) {
+    bool has(const std::string & sym) const {
         return has(sym, 0);
     }
     
@@ -111,7 +111,7 @@ public:
      * @param sym The symbol (variable name) to look for.
      * @return Information on the symbol, including the associated SSA value.
      */
-    SymbolInfo get(const std::string & sym) {
+    SymbolInfo get(const std::string & sym) const {
         for(int i = scopes.size() - 1; i >= 0; i--) {
             auto it = scopes[i].find(sym);
             if(it != scopes[i].end())
@@ -129,7 +129,7 @@ public:
      * `ScopedSymbolTable`.
      * @return Information on the symbol, including the associated SSA value.
      */
-    SymbolInfo get(const std::string & sym, const SymbolTable & tab) {
+    SymbolInfo get(const std::string & sym, const SymbolTable & tab) const {
         auto it = tab.find(sym);
         if(it != tab.end())
             return it->second;
@@ -221,7 +221,7 @@ public:
      *
      * @return Number of nested scopes
      */
-    size_t getNumScopes() {
+    size_t getNumScopes() const {
         return scopes.size();
     }
 
@@ -259,7 +259,7 @@ public:
      * 
      * @param os The stream to print to. Could be `std::cout`.
      */
-    void dump(std::ostream & os) {
+    void dump(std::ostream & os) const {
         for(size_t i = 0; i < scopes.size(); i++) {
             os << "scope #" << i << ':' << std::endl;
             for(auto it = scopes[i].begin(); it != scopes[i].end(); it++)
