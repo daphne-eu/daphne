@@ -1324,7 +1324,7 @@
 <p>The release.sh script will call pack.sh which will call build.sh and test.sh. Only if testing completes successfully, the artifact, a gzipped tar archive (format open for discussion) is created. The command after <code>--githash</code> fetches the git hash of the current commit. The script checks out this git hash and restores the current commit after successful completion. This is a bit of a shortcoming as you have to issue a manual <code>git checkout -</code> if the script fails and terminates early.</p>
 <h2 id="signing">Signing</h2>
 <p>The release manager will have to sign the artifacts to verify that the provided software has been created by that person.
-To create an appropriate GPG key, <a href="https://downloads.apache.org/systemds/KEYS">these instructions</a> can be adapted to our needs. The
+To create an appropriate GPG key, <a href="../GPG-signing-keys/">these instructions</a> can be adapted to our needs. The
 keys of Daphne release managers will be provided in <a href="https://github.com/daphne-eu/daphne/tree/main/KEYS.txt">this file</a>. Ideally, future release managers sign each others keys. Key signing is a form of showing
 that the one key owner trusts the other.</p>
 <h2 id="the-procedure-preliminary-for-v01">The Procedure (Preliminary for v0.1)</h2>
