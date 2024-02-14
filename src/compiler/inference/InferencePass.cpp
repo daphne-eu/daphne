@@ -17,6 +17,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/Operation.h>
 #include <mlir/Pass/Pass.h>
@@ -156,280 +157,291 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
      * @brief Triggers the inference of all properties on the given operation.
      */
     std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
-        // Type inference.
-        try {
-            if (returnsUnknownType(op))
-                daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
+        const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
+        
+        // ----------------------------------------------------------------
+        // Handle all non-control-flow (non-SCF) operations
+        // ----------------------------------------------------------------
+        if(llvm::isa<arith::SelectOp>(op)) {
+            Type typeWithCommonInfo = getTypeWithCommonInfo(
+                op->getOperand(1).getType(),
+                op->getOperand(2).getType()
+            );
+            if(!typeWithCommonInfo) {
+                throw std::runtime_error(
+                        "a variable must not be assigned values of "
+                        "different data types (matrix, frame, scalar) "
+                        "in then/else branches (arith.select)"
+                );
+            }
+            OpBuilder builder(op->getContext());
+            castOperandIf(builder, op, 1, typeWithCommonInfo);
+            castOperandIf(builder, op, 2, typeWithCommonInfo);
+            op->getResult(0).setType(typeWithCommonInfo);
         }
-        catch (std::runtime_error& re) {
-            spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
-            signalPassFailure();
+        else if(!isScfOp) {
+            if (cfg.typeInference && returnsUnknownType(op)) {
+                // Try to infer the types of all results of this operation.
+                try {
+                    daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
+                }
+                catch (std::runtime_error& re) {
+                    spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+                    signalPassFailure();
+                }
+            }
+            if (cfg.shapeInference && returnsUnknownShape(op)) {
+                // Try to infer the shapes of all results of this operation.
+                std::vector<std::pair<ssize_t, ssize_t>> shapes = daphne::tryInferShape(op);
+                const size_t numRes = op->getNumResults();
+                if(shapes.size() != numRes)
+                    throw std::runtime_error(
+                        "shape inference for op " +
+                            op->getName().getStringRef().str() + " returned " +
+                            std::to_string(shapes.size()) + " shapes, but the "
+                                                            "op has " + std::to_string(numRes) + " results"
+                    );
+                // Set the infered shapes on all results of this operation.
+                for(size_t i = 0 ; i < numRes ; i++) {
+                    if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
+                       llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])) {
+                        const ssize_t numRows = shapes[i].first;
+                        const ssize_t numCols = shapes[i].second;
+                        Value rv = op->getResult(i);
+                        const Type rt = rv.getType();
+                        if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+                            rv.setType(mt.withShape(numRows, numCols));
+                        else if (auto ft = rt.dyn_cast<daphne::FrameType>())
+                            rv.setType(ft.withShape(numRows, numCols));
+                        else
+                            throw std::runtime_error(
+                                    "shape inference cannot set the shape of op " +
+                                    op->getName().getStringRef().str() +
+                                    " operand " + std::to_string(i) + ", since it "
+                                                                        "is neither a matrix nor a frame"
+                            );
+                    }
+                }
+            }
+            if (cfg.sparsityInference && returnsUnknownSparsity(op)) {
+                // Try to infer the sparsity of all results of this operation.
+                std::vector<double> sparsities = daphne::tryInferSparsity(op);
+                const size_t numRes = op->getNumResults();
+                if(sparsities.size() != numRes)
+                    throw std::runtime_error(
+                        "sparsity inference for op " +
+                            op->getName().getStringRef().str() + " returned " +
+                            std::to_string(sparsities.size()) + " shapes, but the "
+                                                            "op has " + std::to_string(numRes) + " results"
+                    );
+                // Set the inferred sparsities on all results of this operation.
+                for(size_t i = 0 ; i < numRes ; i++) {
+                    const double sparsity = sparsities[i];
+                    if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
+                       llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])) {
+                        Value rv = op->getResult(i);
+                        const Type rt = rv.getType();
+                        auto mt = rt.dyn_cast<daphne::MatrixType>();
+                        auto ft = rt.dyn_cast<daphne::FrameType>();
+                        if (mt)
+                            rv.setType(mt.withSparsity(sparsity));
+                        else if ((ft && sparsity != -1) || !ft)
+                            // We do not support sparsity for frames, but if the
+                            // sparsity for a frame result is provided as
+                            // unknown (-1) that's okay.
+                            throw std::runtime_error(
+                                    "sparsity inference cannot set the shape of op " +
+                                    op->getName().getStringRef().str() +
+                                    " operand " + std::to_string(i) + ", since it "
+                                                                        "is not a matrix"
+                            );
+                    }
+                }
+            }
+            if (cfg.frameLabelInference && returnsFrameWithUnknownLabels(op)) {
+                if(auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
+                    inferFrameLabelsOp.inferFrameLabels();
+                // Else: Not a problem, since currently we use the frame labels
+                // only to aid type inference, and for this purpose, we don't
+                // need the labels in all cases.
+            }
         }
-        // Inference of interesting properties.
-        bool doShapeInference = cfg.shapeInference && returnsUnknownShape(op);
-        bool doSparsityInference = cfg.sparsityInference && returnsUnknownSparsity(op);
-        bool doFrameLabelInference = cfg.frameLabelInference && returnsFrameWithUnknownLabels(op);
-        if(doShapeInference || doSparsityInference || doFrameLabelInference) {
-            const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
-            // ----------------------------------------------------------------
-            // Handle all non-control-flow (non-SCF) operations
-            // ----------------------------------------------------------------
-            if(!isScfOp) {
-                if (doShapeInference) {
-                    // Try to infer the shapes of all results of this operation.
-                    std::vector<std::pair<ssize_t, ssize_t>> shapes = daphne::tryInferShape(op);
-                    const size_t numRes = op->getNumResults();
-                    if(shapes.size() != numRes)
-                        throw std::runtime_error(
-                            "shape inference for op " +
-                                op->getName().getStringRef().str() + " returned " +
-                                std::to_string(shapes.size()) + " shapes, but the "
-                                                                "op has " + std::to_string(numRes) + " results"
-                        );
-                    // Set the infered shapes on all results of this operation.
-                    for(size_t i = 0 ; i < numRes ; i++) {
-                        if(
-                            llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
-                            llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])
-                        ) {
-                            const ssize_t numRows = shapes[i].first;
-                            const ssize_t numCols = shapes[i].second;
-                            Value rv = op->getResult(i);
-                            const Type rt = rv.getType();
-                            if (auto mt = rt.dyn_cast<daphne::MatrixType>())
-                                rv.setType(mt.withShape(numRows, numCols));
-                            else if (auto ft = rt.dyn_cast<daphne::FrameType>())
-                                rv.setType(ft.withShape(numRows, numCols));
-                            else
-                                throw std::runtime_error(
-                                        "shape inference cannot set the shape of op " +
-                                        op->getName().getStringRef().str() +
-                                        " operand " + std::to_string(i) + ", since it "
-                                                                          "is neither a matrix nor a frame"
-                                );
+        // ----------------------------------------------------------------
+        // Special treatment for some control-flow (SCF) operations
+        // ----------------------------------------------------------------
+        // The following control-flow operations require that certain SSA values
+        // have the same MLIR type. For instance, for IfOp, the value yielded in
+        // the then-branch and the value yielded in the else-branch must have the
+        // same type in MLIR.
+        // At the same time, we encode interesting data properties (such as those
+        // inferred by this pass) as MLIR type parameters. As a consequence, e.g.,
+        // a matrix with two rows and a matrix with three rows are technically
+        // different MLIR types. Thus, e.g., an IfOp cannot simply yield matrices
+        // of different shapes from the then- and else-branches.
+        // To solve this general problem, and to allow control-flow operations to
+        // change all properties of a data object, we generally set mismatching
+        // properties to unknown. The details depend on the specific SCF operation.
+        else if(auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
+            Block & beforeBlock = whileOp.getBefore().front();
+            Block & afterBlock = whileOp.getAfter().front();
+            OpBuilder builder(whileOp.getContext());
+            // Infer the types/properties inside the loop body. If some property
+            // of some argument is changed inside the loop body, this property is
+            // set to unknown for both the argument and the yielded value. If that
+            // is the case, we need to do the inference anew, with the new set of
+            // arguments' properties.
+            // This loop searches a fix-point and always terminates, since we only
+            // set properties to unknown and in the extreme case, after a finite
+            // number of iterations all of the arguments' properties will have
+            // become unknown.
+            while(true) {
+                bool repeat = false;
+
+                // Transfer the WhileOp's operand types to the block arguments
+                // of the before-block to fulfill constraints on the WhileOp.
+                for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
+                    Type t = whileOp->getOperand(i).getType();
+                    beforeBlock.getArgument(i).setType(t);
+                }
+
+                // Continue the walk in the before-block, to infer the operand
+                // types of the ConditionOp.
+                beforeBlock.walk<WalkOrder::PreOrder>(walkOp);
+
+                // Get the ConditionOp.
+                Operation * condOp = beforeBlock.getTerminator();
+                // TODO Make this an assertion?
+                if(!llvm::isa<scf::ConditionOp>(condOp))
+                    throw std::runtime_error("WhileOp terminator is not a ConditionOp");
+
+                // Transfer the ConditionOp's operand types to the block arguments
+                // of the after-block and the results of the WhileOp to fulfill
+                // constraints on the WhileOp.
+                // Note that the first operand of the ConditionOp is skipped, since it
+                // is the condition value itself.
+                for(size_t i = 1; i < condOp->getNumOperands(); i++) {
+                    Type t = condOp->getOperand(i).getType();
+                    afterBlock.getArgument(i - 1).setType(t);
+                    whileOp.getResult(i - 1).setType(t);
+                }
+
+                // Continue the walk in the after-block, to infer the operand
+                // types of the YieldOp.
+                afterBlock.walk<WalkOrder::PreOrder>(walkOp);
+
+                // Get the YieldOp.
+                Operation * yieldOp = afterBlock.getTerminator();
+                // TODO Make this an assertion?
+                if(whileOp->getNumOperands() != yieldOp->getNumOperands())
+                    throw std::runtime_error("WhileOp and YieldOp must have the same number of operands");
+
+                // Check if the inferred MLIR types match the result MLIR types.
+                // If any interesting properties were changed inside the loop body,
+                // we set them to unknown to make the type comparison pass.
+                for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
+                    Type yieldedTy = yieldOp->getOperand(i).getType();
+                    Type operandTy = op->getOperand(i).getType();
+                    if(yieldedTy != operandTy) {
+                        // Get a type with the conflicting properties set to unknown.
+                        Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, operandTy);
+                        if(!typeWithCommonInfo) {
+                            throw std::runtime_error(
+                                    "the data type (matrix, frame, scalar) of a variable "
+                                    "must not be changed within the body of a while-loop"
+                            );
                         }
+                        // Use casts to remove those properties accordingly.
+                        castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
+                        castOperandIf(builder, whileOp, i, typeWithCommonInfo);
+                        // Since the WhileOp's argument types/properties have changed,
+                        // we must repeat the inference for the loop body.
+                        repeat = true;
                     }
                 }
-                if (doSparsityInference) {
-                    // Try to infer the sparsity of all results of this operation.
-                    std::vector<double> sparsities = daphne::tryInferSparsity(op);
-                    const size_t numRes = op->getNumResults();
-                    if(sparsities.size() != numRes)
-                        throw std::runtime_error(
-                            "sparsity inference for op " +
-                                op->getName().getStringRef().str() + " returned " +
-                                std::to_string(sparsities.size()) + " shapes, but the "
-                                                                "op has " + std::to_string(numRes) + " results"
-                        );
-                    // Set the inferred sparsities on all results of this operation.
-                    for(size_t i = 0 ; i < numRes ; i++) {
-                        const double sparsity = sparsities[i];
-                        if(
-                            llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
-                            llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])
-                        ) {
-                            Value rv = op->getResult(i);
-                            const Type rt = rv.getType();
-                            auto mt = rt.dyn_cast<daphne::MatrixType>();
-                            auto ft = rt.dyn_cast<daphne::FrameType>();
-                            if (mt)
-                                rv.setType(mt.withSparsity(sparsity));
-                            else if ((ft && sparsity != -1) || !ft)
-                                // We do not support sparsity for frames, but if the
-                                // sparsity for a frame result is provided as
-                                // unknown (-1) that's okay.
-                                throw std::runtime_error(
-                                        "sparsity inference cannot set the shape of op " +
-                                        op->getName().getStringRef().str() +
-                                        " operand " + std::to_string(i) + ", since it "
-                                                                          "is not a matrix"
-                                );
-                        }
-                    }
+                if(repeat) {
+                    // Before we can repeat the inference, we reset all information
+                    // inferred so far to unknown (in the loop body).
+                    beforeBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
+                    afterBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
                 }
-                if (doFrameLabelInference) {
-                    if(auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
-                        inferFrameLabelsOp.inferFrameLabels();
-                    // Else: Not a problem, since currently we use the frame labels
-                    // only to aid type inference, and for this purpose, we don't
-                    // need the labels in all cases.
-                }
+                else
+                    // If all types matched, we are done.
+                    break;
             }
-            // ----------------------------------------------------------------
-            // Special treatment for some control-flow (SCF) operations
-            // ----------------------------------------------------------------
-            // The following control-flow operations require that certain SSA values
-            // have the same MLIR type. For instance, for IfOp, the value yielded in
-            // the then-branch and the value yielded in the else-branch must have the
-            // same type in MLIR.
-            // At the same time, we encode interesting data properties (such as those
-            // inferred by this pass) as MLIR type parameters. As a consequence, e.g.,
-            // a matrix with two rows and a matrix with three rows are technically
-            // different MLIR types. Thus, e.g., an IfOp cannot simply yield matrices
-            // of different shapes from the then- and else-branches.
-            // To solve this general problem, and to allow control-flow operations to
-            // change all properties of a data object, we generally set mismatching
-            // properties to unknown. The details depend on the specific SCF operation.
-            else if(auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
-                Block & beforeBlock = whileOp.getBefore().front();
-                Block & afterBlock = whileOp.getAfter().front();
-                OpBuilder builder(whileOp.getContext());
-                // Infer the types/properties inside the loop body. If some property
-                // of some argument is changed inside the loop body, this property is
-                // set to unknown for both the argument and the yielded value. If that
-                // is the case, we need to do the inference anew, with the new set of
-                // arguments' properties.
-                // This loop searches a fix-point and always terminates, since we only
-                // set properties to unknown and in the extreme case, after a finite
-                // number of iterations all of the arguments properties will have
-                // become unknown.
-                while(true) {
-                    bool repeat = false;
+            // Tell the walker to skip the descendants of the WhileOp, we
+            // have already triggered a walk on them explicitly.
+            return WalkResult::skip();
+        }
+        else if(auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
+            Block & block = forOp.getRegion().front();
+            const size_t numIndVars = forOp.getNumInductionVars();
+            OpBuilder builder(forOp.getContext());
+            // Infer the types/properties inside the loop body. If some property
+            // of some argument is changed inside the loop body, this property is
+            // set to unknown for both the argument and the yielded value. If that
+            // is the case, we need to do the inference anew, with the new set of
+            // arguments' properties.
+            // This loop searches a fix-point and always terminates, since we only
+            // set properties to unknown and in the extreme case, after a finite
+            // number of iterations all of the arguments' properties will have
+            // become unknown.
+            while(true) {
+                bool repeat = false;
 
-                    // Transfer the WhileOp's operand types to the block arguments
-                    // of the before-block to fulfill constraints on the WhileOp.
-                    for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
-                        Type t = whileOp->getOperand(i).getType();
-                        beforeBlock.getArgument(i).setType(t);
-                    }
-
-                    // Continue the walk in the before-block, to infer the operand
-                    // types of the ConditionOp.
-                    beforeBlock.walk<WalkOrder::PreOrder>(walkOp);
-
-                    // Get the ConditionOp.
-                    Operation * condOp = beforeBlock.getTerminator();
-                    // TODO Make this an assertion?
-                    if(!llvm::isa<scf::ConditionOp>(condOp))
-                        throw std::runtime_error("WhileOp terminator is not a ConditionOp");
-
-                    // Transfer the ConditionOp's operand types to the block arguments
-                    // of the after-block and the results of the WhileOp to fulfill
-                    // constraints on the WhileOp.
-                    // Note that the first operand of the ConditionOp is skipped, since it
-                    // is the condition value itself.
-                    for(size_t i = 1; i < condOp->getNumOperands(); i++) {
-                        Type t = condOp->getOperand(i).getType();
-                        afterBlock.getArgument(i - 1).setType(t);
-                        whileOp.getResult(i - 1).setType(t);
-                    }
-
-                    // Continue the walk in the after-block, to infer the operand
-                    // types of the YieldOp.
-                    afterBlock.walk<WalkOrder::PreOrder>(walkOp);
-
-                    // Get the YieldOp.
-                    Operation * yieldOp = afterBlock.getTerminator();
-                    // TODO Make this an assertion?
-                    if(whileOp->getNumOperands() != yieldOp->getNumOperands())
-                        throw std::runtime_error("WhileOp and YieldOp must have the same number of operands");
-
-                    // Check if the inferred MLIR types match the result MLIR types.
-                    // If any interesting properties were changed inside the loop body,
-                    // we set them to unknown to make the type comparison pass.
-                    for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
-                        Type yieldedTy = yieldOp->getOperand(i).getType();
-                        Type operandTy = op->getOperand(i).getType();
-                        if(yieldedTy != operandTy) {
-                            // Get a type with the conflicting properties set to unknown.
-                            Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, operandTy);
-                            if(!typeWithCommonInfo) {
-                                throw std::runtime_error(
-                                        "the data type (matrix, frame, scalar) of a variable "
-                                        "must not be changed within the body of a while-loop"
-                                );
-                            }
-                            // Use casts to remove those properties accordingly.
-                            castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
-                            castOperandIf(builder, whileOp, i, typeWithCommonInfo);
-                            // Since the WhileOp's argument types/properties have changed,
-                            // we must repeat the inference for the loop body.
-                            repeat = true;
-                        }
-                    }
-                    if(repeat) {
-                        // Before we can repeat the inference, we reset all information
-                        // inferred so far to unknown (in the loop body).
-                        beforeBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
-                        afterBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
-                    }
-                    else
-                        // If all types matched, we are done.
-                        break;
+                // Transfer the ForOp's operand types to the block arguments
+                // and results to fulfill constraints on the ForOp.
+                for(size_t i = 0; i < forOp.getNumIterOperands(); i++) {
+                    Type t = forOp.getIterOpOperands()[i].get().getType();
+                    block.getArgument(i + numIndVars).setType(t);
+                    forOp.getResult(i).setType(t);
                 }
-                // Tell the walker to skip the descendants of the WhileOp, we
-                // have already triggered a walk on them explicitly.
-                return WalkResult::skip();
-            }
-            else if(auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
-                Block & block = forOp.getRegion().front();
-                const size_t numIndVars = forOp.getNumInductionVars();
-                OpBuilder builder(forOp.getContext());
-                // Infer the types/properties inside the loop body. If some property
-                // of some argument is changed inside the loop body, this property is
-                // set to unknown for both the argument and the yielded value. If that
-                // is the case, we need to do the inference anew, with the new set of
-                // arguments' properties.
-                // This loop searches a fix-point and always terminates, since we only
-                // set properties to unknown and in the extreme case, after a finite
-                // number of iterations all of the arguments properties will have
-                // become unknown.
-                while(true) {
-                    bool repeat = false;
 
-                    // Transfer the ForOp's operand types to the block arguments
-                    // and results to fulfill constraints on the ForOp.
-                    for(size_t i = 0; i < forOp.getNumIterOperands(); i++) {
-                        Type t = forOp.getIterOpOperands()[i].get().getType();
-                        block.getArgument(i + numIndVars).setType(t);
-                        forOp.getResult(i).setType(t);
+                // Continue the walk on the body block of the ForOp. We trigger
+                // this explicitly, since we need to do something afterwards.
+                block.walk<WalkOrder::PreOrder>(walkOp);
+
+                // Get the YieldOp.
+                Operation * yieldOp = block.getTerminator();
+
+                // Check if the inferred MLIR types match the result MLIR types.
+                // If any interesting properties were changed inside the loop body,
+                // we set them to unknown to make the type comparison pass.
+                for(size_t i = 0; i < forOp.getNumIterOperands(); i++) {
+                    Type yieldedTy = yieldOp->getOperand(i).getType();
+                    Type resultTy = op->getResult(i).getType();
+                    if(yieldedTy != resultTy) {
+                        // Get a type with the conflicting properties set to unknown.
+                        Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, resultTy);
+                        if(!typeWithCommonInfo)
+                            throw std::runtime_error(
+                                    "the data type (matrix, frame, scalar) of a variable "
+                                    "must not be changed within the body of a for-loop"
+                            );
+                        // Use casts to remove those properties accordingly.
+                        castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
+                        castOperandIf(builder, forOp, forOp.getNumControlOperands() + i, typeWithCommonInfo);
+                        // Since the WhileOp's argument types/properties have changed,
+                        // we must repeat the inference for the loop body.
+                        repeat = true;
                     }
-
-                    // Continue the walk on the body block of the ForOp. We trigger
-                    // this explicitly, since we need to do something afterwards.
-                    block.walk<WalkOrder::PreOrder>(walkOp);
-
-                    // Get the YieldOp.
-                    Operation * yieldOp = block.getTerminator();
-
-                    // Check if the inferred MLIR types match the result MLIR types.
-                    // If any interesting properties were changed inside the loop body,
-                    // we set them to unknown to make the type comparison pass.
-                    for(size_t i = 0; i < forOp.getNumIterOperands(); i++) {
-                        Type yieldedTy = yieldOp->getOperand(i).getType();
-                        Type resultTy = op->getResult(i).getType();
-                        if(yieldedTy != resultTy) {
-                            // Get a type with the conflicting properties set to unknown.
-                            Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, resultTy);
-                            if(!typeWithCommonInfo)
-                                throw std::runtime_error(
-                                        "the data type (matrix, frame, scalar) of a variable "
-                                        "must not be changed within the body of a for-loop"
-                                );
-                            // Use casts to remove those properties accordingly.
-                            castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
-                            castOperandIf(builder, forOp, forOp.getNumControlOperands() + i, typeWithCommonInfo);
-                            // Since the WhileOp's argument types/properties have changed,
-                            // we must repeat the inference for the loop body.
-                            repeat = true;
-                        }
-                    }
-                    if(repeat)
-                        // Before we can repeat the inference, we reset all information
-                        // inferred so far to unknown (in the loop body).
-                        block.walk<WalkOrder::PreOrder>(walkSetUnknown);
-                    else
-                        // If all types matched, we are done.
-                        break;
                 }
-                // Tell the walker to skip the descendants of the ForOp, we
-                // have already triggered a walk on them explicitly.
-                return WalkResult::skip();
+                if(repeat)
+                    // Before we can repeat the inference, we reset all information
+                    // inferred so far to unknown (in the loop body).
+                    block.walk<WalkOrder::PreOrder>(walkSetUnknown);
+                else
+                    // If all types matched, we are done.
+                    break;
             }
-            else if(auto ifOp = llvm::dyn_cast<scf::IfOp>(op)) {
-                // Walk the then/else blocks first. We need the inference on
-                // them before we can do anything about the IfOp itself.
-                ifOp.thenBlock()->walk<WalkOrder::PreOrder>(walkOp);
+            // Tell the walker to skip the descendants of the ForOp, we
+            // have already triggered a walk on them explicitly.
+            return WalkResult::skip();
+        }
+        else if(auto ifOp = llvm::dyn_cast<scf::IfOp>(op)) {
+            // Walk the then/else blocks first. We need the inference on
+            // them before we can do anything about the IfOp itself.
+            ifOp.thenBlock()->walk<WalkOrder::PreOrder>(walkOp);
+            if(ifOp.elseBlock()) {
                 ifOp.elseBlock()->walk<WalkOrder::PreOrder>(walkOp);
 
                 // For all pairs of corresponding values yielded in the
@@ -454,11 +466,12 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     castOperandIf(builder, elseYield, i, typeWithCommonInfo);
                     ifOp.getResult(i).setType(typeWithCommonInfo);
                 }
-                // Tell the walker to skip the descendants of the IfOp, we
-                // have already triggered a walk on them explicitly.
-                return WalkResult::skip();
             }
+            // Tell the walker to skip the descendants of the IfOp, we
+            // have already triggered a walk on them explicitly.
+            return WalkResult::skip();
         }
+
         // Continue the walk normally.
         return WalkResult::advance();
     };
