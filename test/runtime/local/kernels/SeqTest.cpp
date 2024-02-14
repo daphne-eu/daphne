@@ -226,3 +226,21 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-end is not in the sequence", TAG_KERNELS, (DATA_
     DataObjectFactory::destroy(targetMatrix);
     DataObjectFactory::destroy(inputMatrix);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE("Seq-inc-does-not-lead-to-end", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+
+    DT * res = nullptr;
+    DT * targetMatrix = DataObjectFactory::create<DT>(0, 1, false);
+
+    SECTION("positive inc") {
+        checkSeq(res, 4, 0, 1, targetMatrix);
+    }
+    SECTION("negative inc") {
+        checkSeq(res, 0, 4, -1, targetMatrix);
+    }
+    // TODO Test that zero increment yields an exception.
+
+    DataObjectFactory::destroy(targetMatrix);
+    DataObjectFactory::destroy(res);
+}

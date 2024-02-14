@@ -80,8 +80,9 @@ DaphneDSL's built-in functions can be categorized as follows:
   
 - **`seq`**`(from:scalar, to:scalar, inc:scalar)`
 
-    Generates a column matrix containing an arithmetic sequence of values starting at `from`, going through `to`, in increments of `inc`.
+    Generates a column *(n x 1)* matrix containing an arithmetic sequence of values starting at `from`, going through `to`, in increments of `inc`.
     Note that `from` may be greater than `to`, and `inc` may be negative.
+    If `inc` does not lead from `from` to `to`, the result will be an empty column matrix; however, `inc` must not be zero or NaN.
 
 ## Matrix/frame dimensions
 

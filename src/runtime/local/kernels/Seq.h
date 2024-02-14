@@ -56,8 +56,10 @@ struct Seq<DenseMatrix<VT>> {
             assert(start == start && "start cannot be NaN");
             assert(end == end && "end cannot be NaN");
             assert(inc != 0 && "inc should not be zero"); // setp 0 can not make any progress to any given boundary
-        if( (start<end && inc<0) || (start>end && inc>0)){// error
-           throw std::runtime_error("The inc cannot lead to the boundary of the sequence"); 
+        if( (start<end && inc<0) || (start>end && inc>0)){
+           // Return matrix with zero rows.
+           res = DataObjectFactory::create<DenseMatrix<VT>>(0, 1, false);
+           return;
         }
             
         VT initialDistanceToEnd= abs(end-start);
