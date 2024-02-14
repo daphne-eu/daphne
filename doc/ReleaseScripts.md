@@ -25,7 +25,7 @@ The release.sh script will call pack.sh which will call build.sh and test.sh. On
 ## Signing
 
 The release manager will have to sign the artifacts to verify that the provided software has been created by that person.
-To create an appropriate GPG key, [these instructions](https://downloads.apache.org/systemds/KEYS) can be adapted to our needs. The
+To create an appropriate GPG key, [these instructions](GPG-signing-keys.md) can be adapted to our needs. The
 keys of Daphne release managers will be provided in [this file](/KEYS.txt). Ideally, future release managers sign each others keys. Key signing is a form of showing
 that the one key owner trusts the other.
 

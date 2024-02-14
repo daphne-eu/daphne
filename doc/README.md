@@ -20,6 +20,9 @@
 
 ## Developer Documentation
 
+* [Creating release artifacts](ReleaseScripts.md)
+* [Maintaining GPG signing keys](GPG-signing-keys.md)
+
 ### How-tos and Guidelines
 
 - [Handling a Pull Request](/doc/development/HandlingPRs.md)
