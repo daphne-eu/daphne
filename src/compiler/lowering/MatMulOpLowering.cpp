@@ -146,7 +146,8 @@ llvm::SmallVector<AffineForOp, 3>
 affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
              ConversionPatternRewriter &rewriter, mlir::Location loc,
              ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
-             mlir::MLIRContext *ctx, SmallVector<AffineForOp, 3> &loops) {
+             mlir::MLIRContext *ctx, SmallVector<AffineForOp, 3> &loops,
+             Type elementType) {
   // row loop
   auto rowLoop = rewriter.create<AffineForOp>(loc, 0, lhsShape[ROW], 1);
   // row loop body
@@ -169,12 +170,18 @@ affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
   auto c = rewriter.create<AffineLoadOp>(
       loc, output,
       ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
-  // split out into add and multiply
-  Value res = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
-
-  rewriter.create<AffineStoreOp>(
+  if (elementType.isIntOrIndex()) {
+    Value added = rewriter.create<arith::MulIOp>(loc, a, b);
+    Value res = rewriter.create<arith::AddIOp>(loc, added, c);
+    rewriter.create<AffineStoreOp>(
       loc, res, output,
       ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+  } else {
+    Value res = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
+    rewriter.create<AffineStoreOp>(
+      loc, res, output,
+      ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+  }
 
   // AffineYieldOp at end of loop blocks
   rewriter.setInsertionPointAfter(fmaLoop);
@@ -196,8 +203,7 @@ vectorizedAffineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
                        Type elementType, int64_t vec_size) {
   auto vec_Type = mlir::VectorType::get({vec_size}, elementType);
 
-  // TODO: We need an option to enable smaller vector sizes for the ends of each
-  // row. row loop
+  // row loop
   auto rowLoop = rewriter.create<AffineForOp>(loc, 0, lhsShape[ROW], 1);
   // row loop body
   rewriter.setInsertionPointToStart(rowLoop.getBody());
@@ -220,12 +226,19 @@ vectorizedAffineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
   auto c = rewriter.create<AffineVectorLoadOp>(
       loc, vec_Type, output,
       ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
-
-  Value res = rewriter.create<vector::FMAOp>(loc, a, b, c);
-
-  rewriter.create<AffineVectorStoreOp>(
+  
+  if (elementType.isIntOrIndex()) {
+    Value added = rewriter.create<arith::MulIOp>(loc, a, b);
+    Value res = rewriter.create<arith::AddIOp>(loc, added, c);
+    rewriter.create<AffineVectorStoreOp>(
       loc, res, output,
       ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+  } else {
+    Value res = rewriter.create<vector::FMAOp>(loc, a, b, c);
+    rewriter.create<AffineVectorStoreOp>(
+      loc, res, output,
+      ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+  }
 
   // AffineYieldOp at end of loop blocks
   rewriter.setInsertionPointAfter(fmaLoop);
@@ -324,7 +337,7 @@ public:
     } else {
       affineMatMul(lhs, rhs, outputMemRef, rewriter, loc,
                    lhsMemRefType.getShape(), rhsMemRefType.getShape(),
-                   op->getContext(), loops);
+                   op->getContext(), loops, matrixElementType);
     }
     if (options.tile && is_tileable(rhsMemRefType.getShape())) {
       auto tile_sizes = extendTileSizes(lhsRows);
