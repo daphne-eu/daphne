@@ -584,52 +584,50 @@ private:
 
 void MatMulLoweringPass::runOnOperation() {
   auto module = getOperation();
-  {
-    mlir::ConversionTarget target(getContext());
-    mlir::RewritePatternSet patterns(&getContext());
-    LowerToLLVMOptions llvmOptions(&getContext());
-    LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
+  mlir::ConversionTarget target(getContext());
+  mlir::RewritePatternSet patterns(&getContext());
+  LowerToLLVMOptions llvmOptions(&getContext());
+  LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
 
-    target.addLegalDialect<mlir::memref::MemRefDialect>();
-    target.addLegalDialect<mlir::arith::ArithDialect>();
-    target.addLegalDialect<mlir::scf::SCFDialect>();
-    target.addLegalDialect<mlir::AffineDialect>();
-    target.addLegalDialect<mlir::linalg::LinalgDialect>();
-    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
-    target.addLegalDialect<mlir::vector::VectorDialect>();
+  target.addLegalDialect<mlir::memref::MemRefDialect>();
+  target.addLegalDialect<mlir::arith::ArithDialect>();
+  target.addLegalDialect<mlir::scf::SCFDialect>();
+  target.addLegalDialect<mlir::AffineDialect>();
+  target.addLegalDialect<mlir::linalg::LinalgDialect>();
+  target.addLegalDialect<mlir::LLVM::LLVMDialect>();
+  target.addLegalDialect<mlir::vector::VectorDialect>();
 
-    target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
-    target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
-    target.addLegalOp<mlir::daphne::DecRefOp>();
-    target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>([](Operation *op) {
-      return op->getOperandTypes()[0]
-          .dyn_cast<mlir::daphne::MatrixType>()
-          .getElementType()
-          .isIntOrIndex();
-    });
+  target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
+  target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
+  target.addLegalOp<mlir::daphne::DecRefOp>();
+  target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>([](Operation *op) {
+    return op->getOperandTypes()[0]
+        .dyn_cast<mlir::daphne::MatrixType>()
+        .getElementType()
+        .isIntOrIndex();
+  });
 
-    LowerMatMulOpOptions options;
-    if (matmul_tile) {
-      options.enableTiling();
-      if (matmul_use_fixed_tile_sizes) {
-        options.useFixedTileSizes = true;
-        options.setTileSizes(matmul_fixed_tile_sizes);
-      } else {
-        options.setCacheSizes(get_cache_sizes());
-      }
-      options.setUnrollFactor(matmul_unroll_factor);
-      options.setUnrollJamFactor(matmul_unroll_jam_factor);
+  LowerMatMulOpOptions options;
+  if (matmul_tile) {
+    options.enableTiling();
+    if (matmul_use_fixed_tile_sizes) {
+      options.useFixedTileSizes = true;
+      options.setTileSizes(matmul_fixed_tile_sizes);
+    } else {
+      options.setCacheSizes(get_cache_sizes());
     }
-    if (matmul_vec_size_bits > 0) {
-      options.enableVectorization();
-      options.setVectorSizeBits(matmul_vec_size_bits);
-    }
+    options.setUnrollFactor(matmul_unroll_factor);
+    options.setUnrollJamFactor(matmul_unroll_jam_factor);
+  }
+  if (matmul_vec_size_bits > 0) {
+    options.enableVectorization();
+    options.setVectorSizeBits(matmul_vec_size_bits);
+  }
 
-    patterns.insert<MatMulLowering>(&getContext(), options);
+  patterns.insert<MatMulLowering>(&getContext(), options);
 
-    if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
-      signalPassFailure();
-    }
+  if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
+    signalPassFailure();
   }
 }
 
