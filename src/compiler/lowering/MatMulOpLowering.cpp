@@ -469,9 +469,6 @@ public:
     // / NR, j mod NR, k mod KC) ->
     //                              (j / NC, k / KC, i / MC, j / NR, i / MR, k
     //                              mod KC, j mod NR, i mod MR)
-    // TODO: This assert only fails in debug mode?!
-    // assert(isValidLoopInterchangePermutation(twiceTiledNest, {2, 0, 1, 4, 7,
-    // 3, 6, 5}));
     unsigned root_idx = permuteLoops(twiceTiledNest, {2, 0, 1, 4, 7, 3, 6, 5});
 
     // Unroll and jam
