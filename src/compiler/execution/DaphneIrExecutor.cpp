@@ -327,7 +327,6 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         mlir::createAffineScalarReplacementPass());
     pm.addPass(mlir::createLowerAffinePass());
     mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;
-    lowerVectorToLLVMOptions.enableX86Vector(true);
     pm.addPass(mlir::createConvertVectorToLLVMPass(lowerVectorToLLVMOptions));
     
     if (userConfig_.explain_mlir_codegen)
