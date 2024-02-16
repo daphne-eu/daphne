@@ -1,0 +1,8 @@
+# To be imported by "import_success_5.daphne".
+
+import "import_success_5_a.daphne" as "aa";
+
+def ab() {
+    aa.a();
+    print("b");
+}

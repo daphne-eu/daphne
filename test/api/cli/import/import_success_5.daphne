@@ -1,0 +1,7 @@
+// Importing two scripts, whereby one of them internally imports the other one.
+
+import "import_success_5_a.daphne" as "aa";
+import "import_success_5_b.daphne" as "bb";
+
+aa.a();
+bb.ab();

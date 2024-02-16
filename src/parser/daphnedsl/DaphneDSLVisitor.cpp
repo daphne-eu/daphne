@@ -366,6 +366,9 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
         std::multimap<std::string, mlir::func::FuncOp> origFuncMap = functionsSymbolMap;
         functionsSymbolMap.clear();
 
+        std::vector<std::string> origImportedFiles = importedFiles;
+        importedFiles.clear();
+
         symbolTable.pushScope();
         scriptPaths.push(path);
         res = visitScript(importCtx);
@@ -379,6 +382,8 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
                 origScope[finalPrefix + symbol.first] = symbol.second;
 
         symbolTable.put(origScope);
+        
+        importedFiles = origImportedFiles;
         
         for(std::pair<std::string, mlir::func::FuncOp> funcSymbol : functionsSymbolMap)
             if(funcSymbol.first.find('.') == std::string::npos)
