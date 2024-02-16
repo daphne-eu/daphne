@@ -599,11 +599,12 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
         if (llvm::isa<daphne::UnknownType>(types[i]) && !partialInferenceAllowed)
             // TODO As soon as the run-time can handle unknown
             // data/value types, we do not need to throw here anymore.
-            throw std::runtime_error(
+            throw CompilerUtils::makeError(
+                    op->getLoc(),
                     "type inference returned an unknown result type "
                     "for some op, but partial inference is not allowed "
                     "at this point: " + op->getName().getStringRef().str()
-        );
+            );
         op->getResult(i).setType(types[i]);
     }
 }
