@@ -310,7 +310,7 @@ public:
      * @param msg The original error message (without the location information)
      * @return An exception instance to be thrown at the call-site
      */
-    static std::exception makeError(mlir::Location loc, const std::string & msg) {
+    static std::runtime_error makeError(mlir::Location loc, const std::string & msg) {
         // Note: We return an exception rather than throwing it here for the following reason:
         // If this function threw the exception, we would use this function like a replacement
         // for a C++ throw statement. However, that would be hard to understand for the C++
