@@ -1,0 +1,171 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications 2024 The DAPHNE Consortium.
+#
+#-------------------------------------------------------------
+
+# This script has been manually translated from Apache SystemDS (https://github.com/apache/systemds).
+# Original file: scripts/builtin/decisionTreePredict.dml @ d52e0f1342f4ed6ddb76ea7acbf0f6509a1e0eea.
+
+# This script implements random forest prediction for recoded and binned
+# categorical and numerical input features.
+# Hummingbird paper (https://www.usenix.org/system/files/osdi20-nakandala.pdf).
+#
+# INPUT:
+# ------------------------------------------------------------------------------
+# X               Feature matrix in recoded/binned representation
+# y               Label matrix in recoded/binned representation,
+#                 optional for accuracy evaluation
+# ctypes          Row-Vector of column types [1 scale/ordinal, 2 categorical]
+# M               Matrix M holding the learned tree in linearized form
+#                 see decisionTree() for the detailed tree representation.
+# strategy        Prediction strategy, can be one of ["GEMM", "TT", "PTT"],
+#                 referring to "Generic matrix multiplication",
+#                 "Tree traversal", and "Perfect tree traversal", respectively
+# verbose         Flag indicating verbose debug output
+# ------------------------------------------------------------------------------
+#
+# OUTPUT:
+# ------------------------------------------------------------------------------
+# yhat            Label vector of predictions
+# ------------------------------------------------------------------------------
+
+def createTTNodeTensors( M:matrix<f64> )
+  -> matrix<f64>, matrix<f64>, matrix<f64>, matrix<f64>, matrix<f64>, matrix<f64>
+{
+  # all tree nodes (inner and leaf nodes)
+  M2 = reshape(M, ncol(M)/2, 2);
+  # TODO .0 should not be necessary.
+  NID = seq(1.0, nrow(M2), 1);
+  nI = (M2[,0]!=0 || M2[,1]!=0);
+  cnI = cumSum(nI);
+  N = t(NID[[nI, ]]);
+  n_nodes = ncol(N);
+
+  # left/right child node ids, default self-id
+  N_L = t(((M2[,0]!=0) ? 2*NID : NID)[[nI, ]]);
+  N_R = t(((M2[,0]!=0) ? 2*NID+1 : NID)[[nI, ]]);
+
+  # recoding to node vector positions (removed non-existing nodes)
+  N_L = t(ctable(seq(0.0,n_nodes - 1,1), t(N_L) - 1, n_nodes, nrow(M2)) @ cnI);
+  N_R = t(ctable(seq(0.0,n_nodes - 1,1), t(N_R) - 1, n_nodes, nrow(M2)) @ cnI);
+
+  # node feature IDs (positions) and threshold values
+  # TODO .0 should not be necessary.
+  N_F = t(((M2[,0]!=0) ? M2[,0] : 1.0)[[nI, ]]);
+  N_T = t(((M2[,0]!=0) ? M2[,1] : 0.0)[[nI, ]]);
+
+  C = M2[,1][[nI, ]];
+
+  return N, N_L, N_R, N_F, N_T, C;
+}
+
+def predict_TT (M:matrix<f64>, X:matrix<f64>) -> matrix<f64>
+{
+  # initialization of model tensors and parameters
+  N, N_L, N_R, N_F, N_T, C = createTTNodeTensors(M);
+  nr = nrow(X); n = ncol(N_L);
+  tree_depth = ceil(log(aggMax(N)+1,2)); # max depth
+
+
+  # TODO .0 should not be necessary, but if we write just 1, then inference pass
+  # does not terminate for the WhileOp.
+  Ti = fill(1.0, nr, 1); # current nodes (start at root)
+  # TODO as.f64 should not be necessary, but otherwise, this input to the while-loop is set to unknown
+  # due to mismatching types (see the line below where noChange is set in the loop).
+  noChange = as.f64(false); i = 1;
+  # TODO as.si64 should not be necessary, but ewAndOp does not support i1 operands yet.
+  while( as.si64((noChange == false)) && i <= tree_depth) {
+    P = ctable(seq(0.0,nr - 1,1), Ti - 1, nr, n);
+    TF = P @ t(N_F); # get node feature indexes
+    Tv = sum(X * ctable(seq(0.0,nr - 1,1),TF - 1,nr,ncol(X)), 0); # get feature values
+    Tt = P @ t(N_T); # get node thresholds
+    TL = P @ t(N_L); # get node left paths
+    TR = P @ t(N_R); # get node right paths
+    # pick left or right path for each record separately
+    Ti_new = (Tv <= Tt) ? TL : TR;
+    noChange = (sum(Ti != Ti_new) == 0);
+    i = i + 1;
+    Ti = Ti_new;
+  }
+
+  # extract classes
+  yhat = ctable(seq(0.0,nr - 1,1), Ti - 1, nr, n) @  C;
+
+  return yhat;
+}
+
+def createGEMMNodeTensors( M:matrix<f64>, m:si64 )
+  -> matrix<f64>, matrix<f64>, matrix<f64>, matrix<f64>, matrix<f64>
+{
+  #TODO update for new model layout and generalize
+  # TODO Support stop() in DaphneDSL (see #658).
+  print("GEMM not fully supported yet");
+
+  nin = sum(M[1,]!=0); # num inner nodes
+
+  # predicate map [#feat x #inodes] and values [1 x #inodes]
+  I1 = M[2,][[, sum(M[2,]!=0, 1)>0]];
+  A = ctable(I1 - 1, seq(0,nin - 1,1), m, nin);
+  B = M[5,][[, M[1,]!=0]];
+
+  # bucket paths [#inodes x #paths] and path sums
+  I2 = (M[1,] == 0);
+  np = ncol(M) - nin;
+  C = reshape([1.0, -1.0], 1, 2); # TODO general case
+  D = sum(max(C, 0), 1);
+
+  # class map [#paths x #classes]
+  E = ctable(seq(1.0,ncol(C),1) - 1, t(M[3,(ncol(M)-ncol(C)):ncol(M)]) - 1);
+
+  return A, B, C, D, E;
+}
+
+def predict_GEMM(M:matrix<f64>, X:matrix<f64>) -> matrix<f64>
+{
+  # initialization of model tensors and parameters
+  # TODO The cast to si64 should happen automatically (see #661).
+  A, B, C, D, E = createGEMMNodeTensors(M, as.si64(ncol(X)));
+
+  # scoring pipline, evaluating all nodes in parallel
+  # TODO The necessity of the cast to f64 is debatable.
+  Y = as.f64(idxMax(((((X @ A) < B) @ C) == D) @ E, 0) + 1);
+
+  return Y;
+}
+
+# TODO Support optional parameters with defaults (see #548).
+def decisionTreePredict(X:matrix<f64>/*, y:matrix<f64> *//*= fill(0.0,0,0)*/,
+    ctypes:matrix<f64>, M:matrix<f64>, strategy:str /*="TT"*/, verbose:bool /*= false*/)
+  -> matrix<f64>
+{
+  # TODO Initializing yhat before the if-then-else should not be necessary.
+  yhat = [0.0];
+  if( strategy == "TT" )
+    yhat = predict_TT(M, X);
+  else if( strategy == "GEMM" )
+    yhat = predict_GEMM(M, X);
+  else {
+    print ("No such strategy " + strategy);
+    yhat = fill(0.0, 0, 0);
+  }
+
+  return yhat;
+}
