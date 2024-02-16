@@ -82,19 +82,19 @@ TEST_CASE("decisionTree_Wine_MaxV1", TAG_ALGORITHMS) {
     runDecisionTree(2, WINE_DATA, 0.989, 1, 1.0);
 }
 
-// TEST_CASE("randomForestWine_MaxV1", TAG_ALGORITHMS) {
-//     runDecisionTree(2, WINE_DATA, 0.989, 2, 1.0);
-// }
+TEST_CASE("randomForestWine_MaxV1", TAG_ALGORITHMS) {
+    runDecisionTree(2, WINE_DATA, 0.989, 2, 1.0);
+}
 
 TEST_CASE("decisionTree_WineReg_MaxV1", TAG_ALGORITHMS) {
     //for regression we compare R2 and use rss to optimize
     runDecisionTree(3, WINE_DATA, 0.364, 1, 1.0);
 }
 
-// TEST_CASE("randomForestWineReg_MaxV1", TAG_ALGORITHMS) {
-//     //for regression we compare R2 and use rss to optimize
-//     runDecisionTree(3, WINE_DATA, 0.369, 2, 1.0);
-// }
+TEST_CASE("randomForestWineReg_MaxV1", TAG_ALGORITHMS) {
+    //for regression we compare R2 and use rss to optimize
+    runDecisionTree(3, WINE_DATA, 0.364, 2, 1.0);
+}
 
 // TEST_CASE("decisionTreeEEG_MaxV1", TAG_ALGORITHMS) {
 //     //for regression we compare R2 and use rss to optimize

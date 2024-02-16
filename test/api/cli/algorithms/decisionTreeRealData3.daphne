@@ -29,6 +29,8 @@
 import "../../../../scripts/algorithms/decisionTree_.daph";
 import "../../../../scripts/algorithms/decisionTreePredict_.daph";
 import "../../../../scripts/algorithms/lmPredictStats_.daph";
+import "../../../../scripts/algorithms/randomForest_.daph";
+import "../../../../scripts/algorithms/randomForestPredict_.daph";
 
 F = readFrame($data);
 
@@ -59,8 +61,9 @@ Y = X[,ncol(X) - 2];
 X = cbind(X[,0:ncol(X) - 2], X[,ncol(X) - 1]);
 X = replace(X, nan, 5); # 1 val
 
-# TODO Support the case for random forests.
-#if( $dt==1 ) {
+# TODO Initializing yhat before the if-then-else should not be necessary.
+yhat = fill(0.0, 0, 0);
+if( $dt==1 ) {
   M = decisionTree_.decisionTree(
     /*X=*/X, /*y=*/Y, /*ctypes=*/R,
     /*max_depth=*/10, /*min_leaf=*/4, /*min_split=*/10,
@@ -71,14 +74,21 @@ X = replace(X, nan, 5); # 1 val
     /*X=*/X, /*ctypes=*/R, /*M=*/M,
     /*strategy=*/"TT", /*verbose=*/false
   );
-#}
-#else {
-#  sf = 1.0/($3-1);
-#  M = randomForest(X=X, y=Y, ctypes=R, sample_frac=sf, num_trees=$3-1,
-#        impurity="rss", max_features=1, max_values=$4,
-#        min_split=10, min_leaf=4, seed=7, verbose=TRUE);
-#  yhat = randomForestPredict_(X=X, ctypes=R,  M=M)
-#}
+}
+else {
+  sf = 1.0/($dt - 1);
+  M = randomForest_.randomForest(
+    /*X=*/X, /*y=*/Y, /*ctypes=*/R,
+    /*num_trees=*/$dt - 1, /*sample_frac=*/sf,
+    /*feature_frac=*/1.0, /*max_depth=*/10, /*min_leaf=*/4, /*min_split=*/10,
+    /*max_features=*/1.0, /*max_values=*/$maxV,
+    /*impurity=*/"rss", /*seed=*/7, /*verbose=*/false
+  );
+  # TODO how to handle Y give it or not
+  yhat = randomForestPredict_.randomForestPredict(
+    /*X=*/X, /*y=*/fill(0.0, 0, 0), /*ctypes=*/R, /*M=*/M, /*verbose=*/false
+  );
+}
 
 mn = aggMin(as.matrix<f64>(F[,ncol(F) - 2]));
 mx = aggMax(as.matrix<f64>(F[,ncol(F) - 2]));
