@@ -223,6 +223,8 @@ public:
     antlrcpp::Any visitCondExpr(DaphneDSLGrammarParser::CondExprContext * ctx) override;
 
     antlrcpp::Any visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) override;
+
+    // antlrcpp::Any visitFrameLiteralExpr(DaphneDSLGrammarParser::FrameLiteralExprContext * ctx) override;
     
     antlrcpp::Any visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) override;
     

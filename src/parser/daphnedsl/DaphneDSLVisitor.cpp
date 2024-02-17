@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/inference/TypeInferenceUtils.h>
 #include <compiler/utils/CompilerUtils.h>
 #include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
@@ -1280,12 +1281,40 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
         throw std::runtime_error("can't infer type from an empty matrix");
 
     mlir::Location loc = utils.getLoc(ctx->start);
-    mlir::Value currentValue = utils.valueOrError(visitLiteral(ctx->literal(0)));
+    std::vector<mlir::Type> valueTypes;
+    valueTypes.reserve(ctx->literal().size());
     mlir::Value result;
-    mlir::Type valueType = currentValue.getType();
+
+    for(size_t i=0; i < ctx->literal().size(); ++i) {
+        valueTypes.emplace_back(utils.valueOrError(visitLiteral(ctx->literal(i))).getType());
+    }
+    
+    mlir::Type valueType = mostGeneralVt(valueTypes);
+    mlir::Value currentValue;
+
+    // debugging
+    std::cout << "most general type: ";
+    switch (generality(valueType)) {
+        case 9:
+            std::cout << "double" << std::endl;
+            break;
+        case 6:
+            std::cout << "int64_t" << std::endl;
+            break;
+        case 0:
+            std::cout << "bool" << std::endl;
+            break;
+        default:
+            std::cout << "unknown" << std::endl;
+            break;
+    }
+    std::cout << ctx->literal(0)->getText() << std::endl;   
+
+   size_t rows = ctx->rows ? std::stoul(ctx->rows->getText()) : static_cast<size_t>(ctx->literal().size());
+   size_t cols = ctx->cols ? std::stoul(ctx->cols->getText()) : 1;
 
     // TODO Reduce the code duplication in these cases.
-    if(currentValue.getType().isSignedInteger(64)){
+    if(valueType.isSignedInteger(64)){
         std::shared_ptr<int64_t[]> vals = std::shared_ptr<int64_t[]>(new int64_t[ctx->literal().size()]);
         for(unsigned i = 0; i < ctx->literal().size(); i++)
         {
@@ -1296,32 +1325,43 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
                     currentValue, "elements of matrix literals must be parse-time constants"
             );
         }
-        auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(ctx->literal().size(), 1, vals);
+        auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(rows, cols, vals);
         result = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
                         builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
                 )
         );
     }
-    else if(currentValue.getType().isF64()){
+    else if(valueType.isF64()){
         std::shared_ptr<double[]> vals = std::shared_ptr<double[]>(new double[ctx->literal().size()]);
         for(unsigned i = 0; i < ctx->literal().size(); i++)
         {
             currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
-            if(currentValue.getType() != valueType)
-                throw std::runtime_error("matrix of elements of different types");
-            vals.get()[i] = CompilerUtils::constantOrThrow<double>(
-                    currentValue, "elements of matrix literals must be parse-time constants"
-            );
+            // currentValue.dump();
+            if (valueTypes[i].isSignedInteger(64)) {
+                vals.get()[i] = static_cast<double>(CompilerUtils::constantOrThrow<int64_t>
+                    (currentValue, "elements of matrix literals must be parse-time constants"));
+            }
+            else if (valueTypes[i].isF64()) {
+                vals.get()[i] = CompilerUtils::constantOrThrow<double>
+                    (currentValue, "elements of matrix literals must be parse-time constants");
+            }
+            else if (valueTypes[i].isSignlessInteger()) {
+                vals.get()[i] = static_cast<double>(CompilerUtils::constantOrThrow<bool>
+                    (currentValue, "elements of matrix literals must be parse-time constants"));
+            }
+            else {
+                throw std::runtime_error("invalid value type for matrix literal");
+            }
         }
-        auto mat = DataObjectFactory::create<DenseMatrix<double>>(ctx->literal().size(), 1, vals);
+        auto mat = DataObjectFactory::create<DenseMatrix<double>>(rows, cols, vals);
         result = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
                         builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
                 )
         );
     }
-    else if(currentValue.getType().isSignlessInteger()){
+    else if(valueType.isSignlessInteger()){
         std::shared_ptr<bool[]> vals = std::shared_ptr<bool[]>(new bool[ctx->literal().size()]);
         for(unsigned i = 0; i < ctx->literal().size(); i++)
         {
@@ -1332,7 +1372,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
                     currentValue, "elements of matrix literals must be parse-time constants"
             );
         }
-        auto mat = DataObjectFactory::create<DenseMatrix<bool>>(ctx->literal().size(), 1, vals);
+        auto mat = DataObjectFactory::create<DenseMatrix<bool>>(rows, cols, vals);
         result = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
                         builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
@@ -1344,6 +1384,12 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
 
     return result;
 }
+
+/*
+antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::FrameLiteralExprContext * ctx) {
+    // let matrixLiteralExpr handle matrices in frame parsing
+}
+*/
 
 antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) {
     auto rows = ctx->rows
