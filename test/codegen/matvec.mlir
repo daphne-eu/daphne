@@ -1,8 +1,8 @@
-// RUN: daphne-opt --lower-mm %s | FileCheck %s 
-// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2,2,2,2 matmul_use_fixed_tile_sizes=true" %s | FileCheck %s
+// RUN: daphne-opt --lower-mm %s | FileCheck %s --check-prefixes=NT,B
+// RUN: daphne-opt --lower-mm="matmul_tile=true matmul_fixed_tile_sizes=2,2,2,2,2 matmul_use_fixed_tile_sizes=true" %s | FileCheck %s --check-prefixes=T5,B
 
 
-// Matrix Vector products are lowered but not tiled
+// Matrix Vector products are lowered
 module {
   func.func @main() {
     // CHECK: {{.*}}memref.alloc
@@ -16,19 +16,24 @@ module {
     // CHECK-NEXT: {{.*}}"daphne.convertDenseMatrixToMemRef"{{.*}}
 
     // Initialize alloced memref to 0
-    // CHECK: affine.for
-    // CHECK-NEXT: {{ *}}affine.for
-    // CHECK-NEXT: {{ *}}affine.store
+    // B: affine.for
+    // B-NEXT: {{ *}}affine.for
+    // B-NEXT: {{ *}}affine.store
 
     // MatMul
-    // CHECK: affine.for
-    // CHECK-NEXT: affine.for
-    // CHECK-NEXT: affine.for
-    // CHECK-NEXT: {{.*}}affine.load
-    // CHECK-NEXT: {{.*}}affine.load
-    // CHECK-NEXT: {{.*}}affine.load
-    // CHECK-NEXT: {{.*}}llvm.intr.fma
-    // CHECK-NEXT: {{.*}}affine.store
+    // NT: affine.for
+    // NT-NEXT: affine.for
+    // NT-NEXT: affine.for
+    // NT-NEXT: {{.*}}affine.load
+    // NT-NEXT: {{.*}}affine.load
+    // NT-NEXT: {{.*}}affine.load
+    // NT-NEXT: {{.*}}llvm.intr.fma
+    // NT-NEXT: {{.*}}affine.store
+    // T5: affine.for
+    // T5-NEXT: affine.for
+    // T5-NEXT: affine.for
+    // T5-NEXT: affine.for
+    // T5-NEXT: affine.for
     %6 = "daphne.matMul"(%4, %5, %1, %1) : (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x1xf64>, i1, i1) -> !daphne.Matrix<10x1xf64>
     "daphne.return"() : () -> ()
   }
