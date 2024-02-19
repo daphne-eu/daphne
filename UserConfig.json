@@ -5,6 +5,7 @@
     "matmul_fixed_tile_sizes": [4, 4, 4, 4, 4],
     "matmul_unroll_factor": 1,
     "matmul_unroll_jam_factor": 4,
+    "matmul_num_vec_registers": 16,
     "use_cuda": false,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,

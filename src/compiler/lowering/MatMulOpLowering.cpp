@@ -18,9 +18,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
-#include <iostream>
 #include <memory>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -82,10 +80,11 @@ static constexpr int COL = 1;
 struct LowerMatMulOpOptions {
   LowerMatMulOpOptions() {}
   int vec_size_bits{0};
+  int num_vec_registers{0};
   bool vectorize{false};
   bool tile{false};
   bool useFixedTileSizes{false};
-  int register_size{4 * 4 * 64};
+  // int register_size{0};
   llvm::SmallVector<int, 3> cache_sizes;
   llvm::SmallVector<unsigned, 5> tile_sizes;
   int unroll_factor{1};
@@ -122,6 +121,10 @@ struct LowerMatMulOpOptions {
     vec_size_bits = s;
     return *this;
   }
+  LowerMatMulOpOptions &setNumberOfVectorRegisters(int s) {
+    num_vec_registers = s;
+    return *this;
+  }
   LowerMatMulOpOptions &enableTiling(bool b = true) {
     tile = b;
     return *this;
@@ -133,22 +136,35 @@ struct LowerMatMulOpOptions {
       return 1;
     }
   }
+  int getRegisterSize() const {
+    // if (register_size != 0) {
+    //   return register_size;
+    // }
+    if (num_vec_registers != 0 && vec_size_bits != 0) {
+      return std::max(1, num_vec_registers * vec_size_bits);
+    }
+    return 1;
+  }
 };
 
 bool is_valid_options(LowerMatMulOpOptions const options) {
   for (auto s : options.tile_sizes)
-    if (s <= 1)
+    if (s <= 1) {
       spdlog::warn("Tile sizes must be an integer larger than 1.");
-  return false;
-  if (options.unroll_factor < 1)
+      return false;
+    }
+  if (options.unroll_factor < 1) {
     spdlog::warn("Unroll factor must be an integer larger than 0.");
-  return false;
-  if (options.unroll_jam_factor < 1)
+    return false;
+  }
+  if (options.unroll_jam_factor < 1) {
     spdlog::warn("Unroll jam factor must be an integer larger than 0.");
-  return false;
-  if (options.vec_size_bits < 0)
+    return false;
+  }
+  if (options.vec_size_bits < 0) {
     spdlog::warn("Vector size bits must be larger or equal to 0.");
-  return false;
+    return false;
+  }
   return true;
 }
 
@@ -179,14 +195,7 @@ public:
     return true;
   }
 
-  // TODO: Test why not
-  // Cannot tile non square matmul.
-  bool is_tileable(ArrayRef<int64_t> const rhsShape) const {
-    if (rhsShape[COL] != rhsShape[ROW]) {
-      return false;
-    }
-    return true;
-  }
+  bool is_tileable(ArrayRef<int64_t> const rhsShape) const { return true; }
 
   llvm::SmallVector<AffineForOp, 3>
   affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
@@ -408,8 +417,12 @@ public:
 
   // Choose tile sizes so that reuse is happening across the cache levels. This
   // is just a proof of concept and not a very sophisticated strategy. Assuming
-  // cache sizes are in Bytes not KB or other units. Register size is currently
-  // hard coded in the MatMulLoweringOptions. Target:  MR * NR ~ Register size
+  // cache sizes are in Bytes not KB or other units. Assume square matmul of
+  // length loop_length. The target below is laid out assuming there are a
+  // number of vector registers available. If not all cache sizes "move down" a
+  // slot if set. If there are also no cache sizes available, set MR and NR to
+  // 2, since otherwise the tiling breaks. Target:  MR * NR ~ Register size * 3
+  // / 4
   //          KC * NR ~ L1,
   //          MC * KC ~ L2,
   //          NC * MC ~ L3
@@ -419,12 +432,26 @@ public:
                                                  int64_t loop_length) const {
     SmallVector<unsigned, 5> tile_sizes;
     int bitwidth = matrixElementType.getIntOrFloatBitWidth();
-    tile_sizes.push_back(
-        std::max(1, (int)(std::sqrt(options.register_size / bitwidth))));
-    tile_sizes.push_back(tile_sizes.back());
+    int register_size = options.getRegisterSize();
+    int no_register = 0;
+    if (register_size == 1) {
+      if (options.cache_sizes.size() > 0) {
+        tile_sizes.push_back(
+            std::max(2, (int)(std::sqrt(register_size / bitwidth))));
+        tile_sizes.push_back(tile_sizes.back());
+        no_register++;
+      } else {
+        tile_sizes.push_back(2);
+        tile_sizes.push_back(2);
+      }
+    } else {
+      tile_sizes.push_back(
+          std::max(2, (int)(std::sqrt(register_size / bitwidth * 3 / 4))));
+      tile_sizes.push_back(tile_sizes.back());
+    }
     if (options.cache_sizes.size() > 0) {
       int idx = 0;
-      for (auto cache_size = options.cache_sizes.begin();
+      for (auto cache_size = options.cache_sizes.begin() + no_register;
            cache_size != options.cache_sizes.end(); cache_size++) {
         unsigned candidate =
             std::max(1, (int)(*cache_size / tile_sizes.back() / bitwidth));
@@ -582,7 +609,8 @@ public:
                               std::vector<unsigned> matmul_fixed_tile_sizes,
                               bool matmul_use_fixed_tile_sizes,
                               int matmul_unroll_factor,
-                              int matmul_unroll_jam_factor)
+                              int matmul_unroll_jam_factor,
+                              int matmul_num_vec_registers)
       : impl::MatMulOpLoweringPassBase<MatMulLoweringPass>() {
     this->matmul_tile = matmul_tile;
     this->matmul_vec_size_bits = matmul_vec_size_bits;
@@ -590,6 +618,7 @@ public:
     this->matmul_use_fixed_tile_sizes = matmul_use_fixed_tile_sizes;
     this->matmul_unroll_factor = matmul_unroll_factor;
     this->matmul_unroll_jam_factor = matmul_unroll_jam_factor;
+    this->matmul_num_vec_registers = matmul_num_vec_registers;
   }
 
   void runOnOperation() override;
@@ -663,8 +692,9 @@ void MatMulLoweringPass::runOnOperation() {
     options.enableVectorization();
     options.setVectorSizeBits(matmul_vec_size_bits);
   }
+  options.setNumberOfVectorRegisters(matmul_num_vec_registers);
   target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>(
-      [options](Operation *op) { return is_valid_options(options); });
+      [options](Operation *op) { return !is_valid_options(options); });
 
   patterns.insert<MatMulLowering>(typeConverter, &getContext(), options);
 
@@ -678,11 +708,11 @@ mlir::daphne::createMatMulOpLoweringPass(
     bool matmul_tile, int matmul_vec_size_bits,
     std::vector<unsigned> matmul_fixed_tile_sizes,
     bool matmul_use_fixed_tile_sizes, int matmul_unroll_factor,
-    int matmul_unroll_jam_factor) {
+    int matmul_unroll_jam_factor, int matmul_num_vec_registers) {
   return std::make_unique<MatMulLoweringPass>(
       matmul_tile, matmul_vec_size_bits, matmul_fixed_tile_sizes,
       matmul_use_fixed_tile_sizes, matmul_unroll_factor,
-      matmul_unroll_jam_factor);
+      matmul_unroll_jam_factor, matmul_num_vec_registers);
 }
 
 // This is used by daphne-opt and automatically inserts the options provided on
