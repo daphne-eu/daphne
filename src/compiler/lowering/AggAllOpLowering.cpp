@@ -242,10 +242,7 @@ void AggAllLoweringPass::runOnOperation() {
   patterns.insert<SumAllOpLowering>(typeConverter, &getContext());
   auto module = getOperation();
   if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
-    std::cout << "Failed to lower sumAll." << std::endl;
     signalPassFailure();
-  } else {
-    std::cout << "Successfully lowered sumAll." << std::endl;
   }
 }
 
