@@ -23,6 +23,7 @@
 #include <parser/CancelingErrorListener.h>
 #include <parser/ScopedSymbolTable.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarLexer.h"
@@ -1277,20 +1278,55 @@ antlrcpp::Any DaphneDSLVisitor::visitCondExpr(DaphneDSLGrammarParser::CondExprCo
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {
+    
+    /*
+    // needs to be declared out of scope for template param, but also needs to initialize ParserUtils somehow
+    // T is double, int64_t or bool
+    template<typename T>
+    void populateMat(std::vector<mlir::Type> valueTypes, std::shared_ptr<T[]> vals, ??? * ctx) { // needs to work with matrix and frame ctx
+        mlir::Value currentValue;
+        for (unsigned i=0; i < ctx->literal().size(); ++i) {
+            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+            // currentValue.dump();
+            if (valueTypes[i].isSignedInteger(64)) {
+                vals.get()[i] = static_cast<T>(CompilerUtils::constantOrThrow<int64_t>
+                    (currentValue, "elements of matrix literals must be parse-time constants"));
+            }
+            else if (valueTypes[i].isF64()) {
+                vals.get()[i] = static_cast<T>(CompilerUtils::constantOrThrow<double>
+                    (currentValue, "elements of matrix literals must be parse-time constants"));
+            }
+            else if (valueTypes[i].isSignlessInteger()) {
+                vals.get()[i] = static_cast<T>(CompilerUtils::constantOrThrow<bool>
+                    (currentValue, "elements of matrix literals must be parse-time constants"));
+            }
+            else {
+                throw std::runtime_error("invalid value type for matrix literal");
+            }
+        }
+    }
+    */
+    
+
     if(!ctx->literal().size())
         throw std::runtime_error("can't infer type from an empty matrix");
 
     mlir::Location loc = utils.getLoc(ctx->start);
-    std::vector<mlir::Type> valueTypes;
-    valueTypes.reserve(ctx->literal().size());
+    mlir::Value currentValue;
     mlir::Value result;
 
-    for(size_t i=0; i < ctx->literal().size(); ++i) {
-        valueTypes.emplace_back(utils.valueOrError(visitLiteral(ctx->literal(i))).getType());
+    std::vector<mlir::Type> valueTypes;
+    valueTypes.reserve(ctx->literal().size());
+
+    // for(size_t i=0; i < ctx->literal().size(); ++i)
+    //     valueTypes.emplace_back(utils.valueOrError(visitLiteral(ctx->literal(i))).getType());
+
+    for (DaphneDSLGrammarParser::LiteralContext * literalValue : ctx->literal()) {
+        valueTypes.emplace_back(utils.valueOrError(visitLiteral(literalValue)).getType());
     }
-    
+
+
     mlir::Type valueType = mostGeneralVt(valueTypes);
-    mlir::Value currentValue;
 
     // debugging
     std::cout << "most general type: ";
@@ -1308,10 +1344,10 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             std::cout << "unknown" << std::endl;
             break;
     }
-    std::cout << ctx->literal(0)->getText() << std::endl;   
+    // std::cout << ctx->literal(0)->getText() << std::endl;   
 
-   size_t rows = ctx->rows ? std::stoul(ctx->rows->getText()) : static_cast<size_t>(ctx->literal().size());
-   size_t cols = ctx->cols ? std::stoul(ctx->cols->getText()) : 1;
+    size_t rows = ctx->rows ? std::stoul(ctx->rows->getText()) : static_cast<size_t>(ctx->literal().size());
+    size_t cols = ctx->cols ? std::stoul(ctx->cols->getText()) : 1;
 
     // TODO Reduce the code duplication in these cases.
     if(valueType.isSignedInteger(64)){
@@ -1385,11 +1421,34 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     return result;
 }
 
-/*
 antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::FrameLiteralExprContext * ctx) {
     // let matrixLiteralExpr handle matrices in frame parsing
+    // '{' (STRING_LITERAL ':' '[' literal (',' literal)* ']' (',' STRING_LITERAL ':' '[' literal (',' literal)* ']' )*)? '}'
+    size_t rows = ctx->STRING_LITERAL().size();
+    size_t cols = ctx->literal().size();
+    
+    if (cols % rows != 0) {
+        throw std::runtime_error("columns in frame must have equal length");
+    }
+
+    // create col matrices with visitMatrixLiteralExpr ?
+    // use most general VT
+    std::vector<std::string> labels;
+    labels.reserve(rows);
+
+    for (size_t i=0; i<rows; ++i) {
+        std::string label = ctx->STRING_LITERAL(i)->getText();
+        // remove quotation marks
+        labels.emplace_back(label.substr(1, label.size() - 2));
+    }
+
+    // for (auto label : labels) {
+    //     std::cout << label << std::endl;
+    // }
+
+    mlir::Value test;
+    return test;
 }
-*/
 
 antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) {
     auto rows = ctx->rows
