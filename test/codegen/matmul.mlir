@@ -2,7 +2,7 @@
 
 // double
 module {
-  func.func @main() {
+  func.func @double() {
     // CHECK: {{.*}}memref.alloc
     %0 = "daphne.constant"() {value = 10 : index} : () -> index
     %1 = "daphne.constant"() {value = false} : () -> i1
@@ -35,7 +35,7 @@ module {
 
 // single
 module {
-  func.func @main() {
+  func.func @single() {
     // CHECK: {{.*}}memref.alloc
     %0 = "daphne.constant"() {value = 10 : index} : () -> index
     %1 = "daphne.constant"() {value = false} : () -> i1
@@ -66,9 +66,9 @@ module {
   }
 }
 
-// integer matmul is not lowered
+// integer
 module {
-  func.func @main() {
+  func.func @signedInteger() {
     
     %0 = "daphne.constant"() {value = 10 : index} : () -> index
     %1 = "daphne.constant"() {value = false} : () -> i1
@@ -76,10 +76,55 @@ module {
     %3 = "daphne.constant"() {value = 5 : si32} : () -> si32
     %4 = "daphne.fill"(%3, %0, %0) : (si32, index, index) -> !daphne.Matrix<10x10xsi32>
     %5 = "daphne.fill"(%2, %0, %0) : (si32, index, index) -> !daphne.Matrix<10x10xsi32>
-    // CHECK: {{.*}}"daphne.constant"
-    // CHECK-NOT: affine
-    // CHECK: "daphne.return"
+    // CHECK: {{.*}}"daphne.convertDenseMatrixToMemRef"{{.*}}
+    // CHECK-NEXT: {{.*}}"daphne.convertDenseMatrixToMemRef"{{.*}}
+
+    // Initialize alloced memref to 0
+    // CHECK: affine.for
+    // CHECK-NEXT: {{ *}}affine.for
+    // CHECK-NEXT: {{ *}}affine.store
+
+    // MatMul
+    // CHECK: affine.for
+    // CHECK-NEXT: affine.for
+    // CHECK-NEXT: affine.for
+    // CHECK-NEXT: {{.*}}affine.load
+    // CHECK-NEXT: {{.*}}affine.load
+    // CHECK-NEXT: {{.*}}affine.load
+    // CHECK: {{.*}}affine.store
+    // CHECK-SAME: memref<10x10xsi32>
     %6 = "daphne.matMul"(%4, %5, %1, %1) : (!daphne.Matrix<10x10xsi32>, !daphne.Matrix<10x10xsi32>, i1, i1) -> !daphne.Matrix<10x10xsi32>
+    "daphne.return"() : () -> ()
+  }
+}
+
+module {
+  func.func @unsignedInteger() {
+    
+    %0 = "daphne.constant"() {value = 10 : index} : () -> index
+    %1 = "daphne.constant"() {value = false} : () -> i1
+    %2 = "daphne.constant"() {value = 3 : ui32} : () -> ui32
+    %3 = "daphne.constant"() {value = 5 : ui32} : () -> ui32
+    %4 = "daphne.fill"(%3, %0, %0) : (ui32, index, index) -> !daphne.Matrix<10x10xui32>
+    %5 = "daphne.fill"(%2, %0, %0) : (ui32, index, index) -> !daphne.Matrix<10x10xui32>
+    // CHECK: {{.*}}"daphne.convertDenseMatrixToMemRef"{{.*}}
+    // CHECK-NEXT: {{.*}}"daphne.convertDenseMatrixToMemRef"{{.*}}
+
+    // Initialize alloced memref to 0
+    // CHECK: affine.for
+    // CHECK-NEXT: {{ *}}affine.for
+    // CHECK-NEXT: {{ *}}affine.store
+
+    // MatMul
+    // CHECK: affine.for
+    // CHECK-NEXT: affine.for
+    // CHECK-NEXT: affine.for
+    // CHECK-NEXT: {{.*}}affine.load
+    // CHECK-NEXT: {{.*}}affine.load
+    // CHECK-NEXT: {{.*}}affine.load
+    // CHECK: {{.*}}affine.store
+    // CHECK-SAME: memref<10x10xui32>
+    %6 = "daphne.matMul"(%4, %5, %1, %1) : (!daphne.Matrix<10x10xui32>, !daphne.Matrix<10x10xui32>, i1, i1) -> !daphne.Matrix<10x10xui32>
     "daphne.return"() : () -> ()
   }
 }
