@@ -74,11 +74,14 @@ def MatMulOpLoweringPass: Pass<"lower-mm", "::mlir::ModuleOp"> {
   let constructor = "mlir::daphne::createMatMulOpLoweringPass()";
   let description = [{
         This pass lowers the daphne::MatMulOp to an affine loop structure instead of using pre-compiled Kernels.
-        The pass only operates on floating point valued Matrices. Square and non-square matrices can be lowered, but in the latter case tiling is not available.
+        Square and non-square matrices can be lowered.
         The default result is the naive loop nest over lhs rows, rhs columns and a body loop.
         If a vector size is specified, MatMuls on sizes that are cleanly divided by the vector size use affine vector instructions.
-        If tiling is enabled a tiling scheme inspired by https://github.com/bondhugula/llvm-project/blob/hop/mlir/docs/HighPerfCodeGen.md is employed. The general scheme turns the (i, j, k) loops into an affine schedule of eight loops (j / NC, k / KC, i / MC, (j mod NC) / NR, (i mod MC) / MR, k mod KC, (j mod NC) mod NR, (i mod MC) mod MR) specified by five tile sizes.
-        Optionally the last two loops (j mod NR, i mod MR) are partially unrolled and 'jammed' into their parent loops, if NR and MR cleanly divide the matrix size. Finally an optional unroll factor is applied to the resulting inner most loop.
+        If tiling is enabled a tiling scheme inspired by https://github.com/bondhugula/llvm-project/blob/hop/mlir/docs/HighPerfCodeGen.md 
+        is employed. The general scheme turns the (i, j, k) loops into an affine schedule of eight loops 
+        (j / NC, k / KC, i / MC, (j mod NC) / NR, (i mod MC) / MR, k mod KC, (j mod NC) mod NR, (i mod MC) mod MR) specified by five tile sizes.
+        Optionally the last two loops (j mod NR, i mod MR) are partially unrolled and 'jammed' into their parent loops, if NR and MR 
+        cleanly divide the matrix size. Finally an optional unroll factor is applied to the resulting inner most loop.
 
         Example 1: daphne-opt --lower-mm
         Input:
@@ -236,6 +239,10 @@ def MatMulOpLoweringPass: Pass<"lower-mm", "::mlir::ModuleOp"> {
     Option<"matmul_unroll_jam_factor", "matmul_unroll_jam_factor", "int",
            /*default=*/"4",
            "Set the factor by which to unroll jam the two inner most loop inside the lowered matrix multiplication."
+           "The default value is affines default value.">,
+    Option<"matmul_num_vec_registers", "matmul_num_vec_registers", "int",
+           /*default=*/"16",
+           "Set the number of vector registers, used during automatic tiling when lowering matrix multiplication."
            "The default value is affines default value.">
            
   ];
