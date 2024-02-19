@@ -143,6 +143,18 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      */
     antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx);
 
+    /**
+     * @brief Populates row matrix with given values or composes it of operations
+     *  if values are not parse-time constants
+     * @tparam VT Template parameter with value type of result
+     * @param valueTypes pointer to vector with type of corresponding i-th value
+     * @param ctx Context of the call expression
+     * @return `std::shared_ptr<VT[]>` vector with values of type VT,
+     *  values default to 0 if they are not parse-time constants
+    */
+    template<typename VT>
+    std::shared_ptr<VT[]> buildVectorFromValues(std::vector<mlir::Type> * valueTypes, DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx);
+
     std::shared_ptr<spdlog::logger> logger;
 
 public:

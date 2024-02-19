@@ -32,6 +32,7 @@
 #include <mlir/Dialect/SCF/IR/SCF.h>
 
 #include <limits>
+#include <memory>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -1277,36 +1278,42 @@ antlrcpp::Any DaphneDSLVisitor::visitCondExpr(DaphneDSLGrammarParser::CondExprCo
     ));
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {
-    
-    /*
-    // needs to be declared out of scope for template param, but also needs to initialize ParserUtils somehow
-    // T is double, int64_t or bool
-    template<typename T>
-    void populateMat(std::vector<mlir::Type> valueTypes, std::shared_ptr<T[]> vals, ??? * ctx) { // needs to work with matrix and frame ctx
-        mlir::Value currentValue;
-        for (unsigned i=0; i < ctx->literal().size(); ++i) {
-            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
-            // currentValue.dump();
-            if (valueTypes[i].isSignedInteger(64)) {
-                vals.get()[i] = static_cast<T>(CompilerUtils::constantOrThrow<int64_t>
+/*
+template<typename VT>
+std::shared_ptr<VT[]> DaphneDSLVisitor::buildVectorFromValues(std::vector<mlir::Type> * valueTypes, DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {
+    mlir::Value currentValue;
+    std::shared_ptr<VT[]> res = std::shared_ptr<VT[]>(new VT[ctx->literal()->size()]);
+
+    for (size_t i=0; i < ctx->literal().size(); ++i) {
+        currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+        mlir::Type currentType = valueTypes[i];
+
+        if (CompilerUtils::isConstant(currentValue))
+            if (currentType.isSignedInteger(64)) {
+                res.get()[i] = static_cast<VT>(CompilerUtils::constantOrThrow<int64_t>
                     (currentValue, "elements of matrix literals must be parse-time constants"));
             }
-            else if (valueTypes[i].isF64()) {
-                vals.get()[i] = static_cast<T>(CompilerUtils::constantOrThrow<double>
+            else if (currentType.isF64()) {
+                res.get()[i] = static_cast<VT>(CompilerUtils::constantOrThrow<double>
                     (currentValue, "elements of matrix literals must be parse-time constants"));
             }
-            else if (valueTypes[i].isSignlessInteger()) {
-                vals.get()[i] = static_cast<T>(CompilerUtils::constantOrThrow<bool>
+            else if (currentType.isSignlessInteger()) {
+                res.get()[i] = static_cast<VT>(CompilerUtils::constantOrThrow<bool>
                     (currentValue, "elements of matrix literals must be parse-time constants"));
             }
             else {
                 throw std::runtime_error("invalid value type for matrix literal");
             }
+        else {
+            res.get()[i] = 0;
         }
     }
-    */
-    
+
+    return res;
+}
+*/
+
+antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {    
 
     if(!ctx->literal().size())
         throw std::runtime_error("can't infer type from an empty matrix");
@@ -1346,8 +1353,12 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     }
     // std::cout << ctx->literal(0)->getText() << std::endl;   
 
+    // [1, 2, sqrt(9), 3.2]
+
     size_t rows = ctx->rows ? std::stoul(ctx->rows->getText()) : static_cast<size_t>(ctx->literal().size());
     size_t cols = ctx->cols ? std::stoul(ctx->cols->getText()) : 1;
+
+    // std::variant<DenseMatrix<int64_t>, DenseMatrix<double>, DenseMatrix<bool>> mat;
 
     // TODO Reduce the code duplication in these cases.
     if(valueType.isSignedInteger(64)){
@@ -1422,6 +1433,23 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::FrameLiteralExprContext * ctx) {
+    /*
+    template Funktion "Vektor" für value fill Teil in MatrixVisitor
+
+    erstelle builder.create ops für Matrizen und ggf Constante Werte,
+    welche dann weiter im Compiler behandelt werden
+
+    erstelle reshape operation um DenseMatrix herum (so werden auch row/col expr zugelassen)
+
+    nutze ggf cbind/rowbind um Matrizen aus kleineren Matrizen zu erstellen
+    i.e. [1, 2, sqrt(3)] wird zu cbind [1, 2], [sqrt(3)]
+
+    oder:
+    erstelle Matrix/Frame mit "Füllwerten" und erstelle Operationen die mit
+    InsertOp später unbekannte Werte einfügen
+    i.e. [1, 2, sqrt(9)] -> x:=[1, 2, 0], x[0,2]=sqrt(9)
+    */
+    
     // let matrixLiteralExpr handle matrices in frame parsing
     // '{' (STRING_LITERAL ':' '[' literal (',' literal)* ']' (',' STRING_LITERAL ':' '[' literal (',' literal)* ']' )*)? '}'
     size_t rows = ctx->STRING_LITERAL().size();
@@ -1445,6 +1473,8 @@ antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::Fr
     // for (auto label : labels) {
     //     std::cout << label << std::endl;
     // }
+
+    // {"a" : []}, {[], [], "a", "b"}
 
     mlir::Value test;
     return test;
