@@ -73,6 +73,25 @@ TEST_CASE("matmul single", TAG_CODEGEN TAG_MATMUL) {
     compareDaphneToStr(result, dirPath + "matmul_single.daphne");
     compareDaphneToStr(result, dirPath + "matmul_single.daphne", "--mlir-codegen");
 }
+TEST_CASE("matmul si64", TAG_CODEGEN TAG_MATMUL) {
+    std::string result =
+        "DenseMatrix(3x3, int64_t)\n"
+        "45 45 45\n"
+        "45 45 45\n"
+        "45 45 45\n";
+
+    compareDaphneToStr(result, dirPath + "matmul_si64.daphne");
+    compareDaphneToStr(result, dirPath + "matmul_si64.daphne", "--mlir-codegen");
+}
+TEST_CASE("matmul ui64", TAG_CODEGEN TAG_MATMUL) {
+    std::string result =
+        "DenseMatrix(3x3, uint64_t)\n"
+        "45 45 45\n"
+        "45 45 45\n"
+        "45 45 45\n";
+
+    compareDaphneToStr(result, dirPath + "matmul_ui64.daphne", "--mlir-codegen");
+}
 TEST_CASE("matmul non square", TAG_CODEGEN TAG_MATMUL) {
     std::string result =
         "DenseMatrix(3x3, double)\n"

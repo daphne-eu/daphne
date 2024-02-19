@@ -18,6 +18,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -44,10 +45,12 @@
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SCF/Utils/Utils.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dominance.h"
@@ -56,10 +59,12 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/UseDefLists.h"
+#include "mlir/IR/ValueRange.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "spdlog/spdlog.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 
@@ -90,24 +95,15 @@ struct LowerMatMulOpOptions {
   LowerMatMulOpOptions &setTileSizes(std::vector<unsigned> sizes) {
     tile_sizes.clear();
     for (auto s : sizes) {
-      if (s <= 1)
-        throw std::invalid_argument(
-            "Tile sizes must be an integer larger than 1.");
       tile_sizes.push_back(s);
     }
     return *this;
   }
   LowerMatMulOpOptions &setUnrollFactor(int f) {
-    if (f < 1)
-      throw std::invalid_argument(
-          "Unroll factor must be an integer larger than 0.");
     unroll_factor = f;
     return *this;
   }
   LowerMatMulOpOptions &setUnrollJamFactor(int f) {
-    if (f < 1)
-      throw std::invalid_argument(
-          "Unroll jam factor must be an integer larger than 0.");
     unroll_jam_factor = f;
     return *this;
   }
@@ -123,9 +119,6 @@ struct LowerMatMulOpOptions {
     return *this;
   }
   LowerMatMulOpOptions &setVectorSizeBits(int s) {
-    if (s < 0)
-      throw std::invalid_argument(
-          "Vector size bits must be larger or equal to 0.");
     vec_size_bits = s;
     return *this;
   }
@@ -142,113 +135,21 @@ struct LowerMatMulOpOptions {
   }
 };
 
-llvm::SmallVector<AffineForOp, 3>
-affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
-             ConversionPatternRewriter &rewriter, mlir::Location loc,
-             ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
-             mlir::MLIRContext *ctx, SmallVector<AffineForOp, 3> &loops,
-             Type elementType) {
-  // row loop
-  auto rowLoop = rewriter.create<AffineForOp>(loc, 0, lhsShape[ROW], 1);
-  // row loop body
-  rewriter.setInsertionPointToStart(rowLoop.getBody());
-  // col loop
-  auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], 1);
-  // col loop body
-  rewriter.setInsertionPointToStart(colLoop.getBody());
-  // fma loop
-  auto fmaLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[ROW], 1);
-  // inner loop body
-  rewriter.setInsertionPointToStart(fmaLoop.getBody());
-
-  auto a = rewriter.create<AffineLoadOp>(
-      loc, lhs,
-      ValueRange{rowLoop.getInductionVar(), fmaLoop.getInductionVar()});
-  auto b = rewriter.create<AffineLoadOp>(
-      loc, rhs,
-      ValueRange{fmaLoop.getInductionVar(), colLoop.getInductionVar()});
-  auto c = rewriter.create<AffineLoadOp>(
-      loc, output,
-      ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
-  if (elementType.isIntOrIndex()) {
-    Value added = rewriter.create<arith::MulIOp>(loc, a, b);
-    Value res = rewriter.create<arith::AddIOp>(loc, added, c);
-    rewriter.create<AffineStoreOp>(
-      loc, res, output,
-      ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
-  } else {
-    Value res = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
-    rewriter.create<AffineStoreOp>(
-      loc, res, output,
-      ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
-  }
-
-  // AffineYieldOp at end of loop blocks
-  rewriter.setInsertionPointAfter(fmaLoop);
-  rewriter.setInsertionPointAfter(colLoop);
-  rewriter.setInsertionPointAfter(rowLoop);
-
-  loops.push_back(rowLoop);
-  loops.push_back(colLoop);
-  loops.push_back(fmaLoop);
-  return loops;
-}
-
-llvm::SmallVector<AffineForOp, 3>
-vectorizedAffineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
-                       ConversionPatternRewriter &rewriter, mlir::Location loc,
-                       ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
-                       mlir::MLIRContext *ctx,
-                       llvm::SmallVector<AffineForOp, 3> &loops,
-                       Type elementType, int64_t vec_size) {
-  auto vec_Type = mlir::VectorType::get({vec_size}, elementType);
-
-  // row loop
-  auto rowLoop = rewriter.create<AffineForOp>(loc, 0, lhsShape[ROW], 1);
-  // row loop body
-  rewriter.setInsertionPointToStart(rowLoop.getBody());
-  // col loop
-  auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], vec_size);
-  // col loop body
-  rewriter.setInsertionPointToStart(colLoop.getBody());
-  // fma loop
-  auto fmaLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[ROW], 1);
-  // inner loop body
-  rewriter.setInsertionPointToStart(fmaLoop.getBody());
-
-  auto a_single = rewriter.create<AffineLoadOp>(
-      loc, lhs,
-      ValueRange{rowLoop.getInductionVar(), fmaLoop.getInductionVar()});
-  auto a = rewriter.create<vector::SplatOp>(loc, a_single, vec_Type);
-  auto b = rewriter.create<AffineVectorLoadOp>(
-      loc, vec_Type, rhs,
-      ValueRange{fmaLoop.getInductionVar(), colLoop.getInductionVar()});
-  auto c = rewriter.create<AffineVectorLoadOp>(
-      loc, vec_Type, output,
-      ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
-  
-  if (elementType.isIntOrIndex()) {
-    Value added = rewriter.create<arith::MulIOp>(loc, a, b);
-    Value res = rewriter.create<arith::AddIOp>(loc, added, c);
-    rewriter.create<AffineVectorStoreOp>(
-      loc, res, output,
-      ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
-  } else {
-    Value res = rewriter.create<vector::FMAOp>(loc, a, b, c);
-    rewriter.create<AffineVectorStoreOp>(
-      loc, res, output,
-      ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
-  }
-
-  // AffineYieldOp at end of loop blocks
-  rewriter.setInsertionPointAfter(fmaLoop);
-  rewriter.setInsertionPointAfter(colLoop);
-  rewriter.setInsertionPointAfter(rowLoop);
-
-  loops.push_back(rowLoop);
-  loops.push_back(colLoop);
-  loops.push_back(fmaLoop);
-  return loops;
+bool is_valid_options(LowerMatMulOpOptions const options) {
+  for (auto s : options.tile_sizes)
+    if (s <= 1)
+      spdlog::warn("Tile sizes must be an integer larger than 1.");
+  return false;
+  if (options.unroll_factor < 1)
+    spdlog::warn("Unroll factor must be an integer larger than 0.");
+  return false;
+  if (options.unroll_jam_factor < 1)
+    spdlog::warn("Unroll jam factor must be an integer larger than 0.");
+  return false;
+  if (options.vec_size_bits < 0)
+    spdlog::warn("Vector size bits must be larger or equal to 0.");
+  return false;
+  return true;
 }
 
 class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
@@ -256,9 +157,14 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
 
 public:
   using OpConversionPattern::OpConversionPattern;
-  explicit MatMulLowering(MLIRContext *context,
+  explicit MatMulLowering(mlir::TypeConverter &typeConverter,
+                          MLIRContext *context,
                           LowerMatMulOpOptions const &options)
-      : OpConversionPattern(context, PatternBenefit(1)), options(options) {}
+      : OpConversionPattern<daphne::MatMulOp>(typeConverter, context,
+                                              PatternBenefit(1)),
+        options(options) {
+    this->setDebugName("MatMulLowering");
+  }
 
   bool is_vectorizable(ArrayRef<int64_t> const rhsShape,
                        Type const matrixElementType) const {
@@ -282,6 +188,133 @@ public:
     return true;
   }
 
+  llvm::SmallVector<AffineForOp, 3>
+  affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
+               ConversionPatternRewriter &rewriter, mlir::Location loc,
+               ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
+               mlir::MLIRContext *ctx, SmallVector<AffineForOp, 3> &loops,
+               Type elementType) const {
+    // row loop
+    auto rowLoop = rewriter.create<AffineForOp>(loc, 0, lhsShape[ROW], 1);
+    // row loop body
+    rewriter.setInsertionPointToStart(rowLoop.getBody());
+    // col loop
+    auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], 1);
+    // col loop body
+    rewriter.setInsertionPointToStart(colLoop.getBody());
+    // fma loop
+    auto fmaLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[ROW], 1);
+    // inner loop body
+    rewriter.setInsertionPointToStart(fmaLoop.getBody());
+
+    auto a = rewriter.create<AffineLoadOp>(
+        loc, lhs,
+        ValueRange{rowLoop.getInductionVar(), fmaLoop.getInductionVar()});
+    auto b = rewriter.create<AffineLoadOp>(
+        loc, rhs,
+        ValueRange{fmaLoop.getInductionVar(), colLoop.getInductionVar()});
+    auto c = rewriter.create<AffineLoadOp>(
+        loc, output,
+        ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+    if (elementType.isIntOrIndex()) {
+      // Arith operates on MLIR signless integers, while Daphne uses (un)signed
+      // integers.
+      Value castedA = this->typeConverter->materializeTargetConversion(
+          rewriter, loc,
+          rewriter.getIntegerType(elementType.getIntOrFloatBitWidth()),
+          ValueRange{a});
+      Value castedB = this->typeConverter->materializeTargetConversion(
+          rewriter, loc,
+          rewriter.getIntegerType(elementType.getIntOrFloatBitWidth()),
+          ValueRange{b});
+      Value castedC = this->typeConverter->materializeTargetConversion(
+          rewriter, loc,
+          rewriter.getIntegerType(elementType.getIntOrFloatBitWidth()),
+          ValueRange{c});
+      Value added = rewriter.create<arith::MulIOp>(loc, castedA, castedB);
+      Value res = rewriter.create<arith::AddIOp>(loc, added, castedC);
+      Value castedRes = this->typeConverter->materializeSourceConversion(
+          rewriter, loc, elementType, ValueRange{res});
+      rewriter.create<AffineStoreOp>(
+          loc, castedRes, output,
+          ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+    } else {
+      Value res = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
+      rewriter.create<AffineStoreOp>(
+          loc, res, output,
+          ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+    }
+
+    // AffineYieldOp at end of loop blocks
+    rewriter.setInsertionPointAfter(fmaLoop);
+    rewriter.setInsertionPointAfter(colLoop);
+    rewriter.setInsertionPointAfter(rowLoop);
+
+    loops.push_back(rowLoop);
+    loops.push_back(colLoop);
+    loops.push_back(fmaLoop);
+    return loops;
+  }
+
+  llvm::SmallVector<AffineForOp, 3> vectorizedAffineMatMul(
+      mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
+      ConversionPatternRewriter &rewriter, mlir::Location loc,
+      ArrayRef<int64_t> lhsShape, ArrayRef<int64_t> rhsShape,
+      mlir::MLIRContext *ctx, llvm::SmallVector<AffineForOp, 3> &loops,
+      Type elementType, int64_t vec_size) const {
+    auto vec_Type = mlir::VectorType::get({vec_size}, elementType);
+
+    // row loop
+    auto rowLoop = rewriter.create<AffineForOp>(loc, 0, lhsShape[ROW], 1);
+    // row loop body
+    rewriter.setInsertionPointToStart(rowLoop.getBody());
+    // col loop
+    auto colLoop =
+        rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], vec_size);
+    // col loop body
+    rewriter.setInsertionPointToStart(colLoop.getBody());
+    // fma loop
+    auto fmaLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[ROW], 1);
+    // inner loop body
+    rewriter.setInsertionPointToStart(fmaLoop.getBody());
+
+    auto a_single = rewriter.create<AffineLoadOp>(
+        loc, lhs,
+        ValueRange{rowLoop.getInductionVar(), fmaLoop.getInductionVar()});
+    auto a = rewriter.create<vector::SplatOp>(loc, a_single, vec_Type);
+    auto b = rewriter.create<AffineVectorLoadOp>(
+        loc, vec_Type, rhs,
+        ValueRange{fmaLoop.getInductionVar(), colLoop.getInductionVar()});
+    auto c = rewriter.create<AffineVectorLoadOp>(
+        loc, vec_Type, output,
+        ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+
+    // TODO: Integer doesn't actually work yet, so is disabled in
+    // is_vectorizable.
+    if (elementType.isIntOrIndex()) {
+      Value added = rewriter.create<arith::MulIOp>(loc, a, b);
+      Value res = rewriter.create<arith::AddIOp>(loc, added, c);
+      rewriter.create<AffineVectorStoreOp>(
+          loc, res, output,
+          ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+    } else {
+      Value res = rewriter.create<vector::FMAOp>(loc, a, b, c);
+      rewriter.create<AffineVectorStoreOp>(
+          loc, res, output,
+          ValueRange{rowLoop.getInductionVar(), colLoop.getInductionVar()});
+    }
+
+    // AffineYieldOp at end of loop blocks
+    rewriter.setInsertionPointAfter(fmaLoop);
+    rewriter.setInsertionPointAfter(colLoop);
+    rewriter.setInsertionPointAfter(rowLoop);
+
+    loops.push_back(rowLoop);
+    loops.push_back(colLoop);
+    loops.push_back(fmaLoop);
+    return loops;
+  }
+
   LogicalResult
   matchAndRewrite(daphne::MatMulOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
@@ -298,10 +331,6 @@ public:
     auto rhsCols = rhsMatrixType.getNumCols();
 
     auto matrixElementType = lhsMatrixType.getElementType();
-    // Cannot lower integer matmul, because we cannot create Memrefs with
-    // integer type at the moment.
-    if (matrixElementType.isIntOrIndex())
-      return failure();
 
     // TODO(phil): if shape is unknown, e.g., row/col = -1 we currently
     // can't create a MemRefType
@@ -324,8 +353,20 @@ public:
         insertMemRefAlloc(outputMemRefType, loc, rewriter);
 
     // Fill the output MemRef
-    affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
-                     op->getContext(), outputMemRef, matrixElementType);
+    if (matrixElementType.isIntOrIndex()) {
+      auto signless_type =
+          rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth());
+      auto fillValue = rewriter.create<arith::ConstantOp>(
+          loc, signless_type, rewriter.getIntegerAttr(signless_type, 0));
+      auto castedFillValue = this->typeConverter->materializeTargetConversion(
+          rewriter, loc, matrixElementType, mlir::ValueRange{fillValue});
+      affineFillMemRefInt(castedFillValue, rewriter, loc,
+                          outputMemRefType.getShape(), op->getContext(),
+                          outputMemRef);
+    } else {
+      affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
+                       op->getContext(), outputMemRef, matrixElementType);
+    }
     // Do the actual MatMul with hand built codegen
     SmallVector<AffineForOp, 3> loops;
     if (options.vectorize &&
@@ -347,7 +388,6 @@ public:
       }
       tile_loops(loops, tile_sizes);
     }
-
     mlir::Value DM =
         convertMemRefToDenseMatrix(loc, rewriter, outputMemRef, op.getType());
 
@@ -586,6 +626,13 @@ void MatMulLoweringPass::runOnOperation() {
   LowerToLLVMOptions llvmOptions(&getContext());
   LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
 
+  typeConverter.addConversion(convertInteger);
+  typeConverter.addConversion(convertFloat);
+  typeConverter.addConversion([](Type type) { return type; });
+  typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
+  typeConverter.addSourceMaterialization(materializeCastToIllegal);
+  typeConverter.addTargetMaterialization(materializeCastFromIllegal);
+
   target.addLegalDialect<mlir::memref::MemRefDialect>();
   target.addLegalDialect<mlir::arith::ArithDialect>();
   target.addLegalDialect<mlir::scf::SCFDialect>();
@@ -593,17 +640,13 @@ void MatMulLoweringPass::runOnOperation() {
   target.addLegalDialect<mlir::linalg::LinalgDialect>();
   target.addLegalDialect<mlir::LLVM::LLVMDialect>();
   target.addLegalDialect<mlir::vector::VectorDialect>();
+  target.addLegalDialect<daphne::DaphneDialect>();
+  target.addLegalDialect<BuiltinDialect>();
+  target.addLegalDialect<math::MathDialect>();
 
   target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
   target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
   target.addLegalOp<mlir::daphne::DecRefOp>();
-  target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>([](Operation *op) {
-    return op->getOperandTypes()[0]
-        .dyn_cast<mlir::daphne::MatrixType>()
-        .getElementType()
-        .isIntOrIndex();
-  });
-
   LowerMatMulOpOptions options;
   if (matmul_tile) {
     options.enableTiling();
@@ -620,8 +663,10 @@ void MatMulLoweringPass::runOnOperation() {
     options.enableVectorization();
     options.setVectorSizeBits(matmul_vec_size_bits);
   }
+  target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>(
+      [options](Operation *op) { return is_valid_options(options); });
 
-  patterns.insert<MatMulLowering>(&getContext(), options);
+  patterns.insert<MatMulLowering>(typeConverter, &getContext(), options);
 
   if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
     signalPassFailure();
