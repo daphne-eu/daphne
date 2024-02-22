@@ -575,13 +575,13 @@ public:
 
     llvm::SmallVector<AffineForOp> lastNest;
     getPerfectlyNestedLoops(lastNest, blisTiledLoops.front());
-
-    if (failed(loopUnrollUpToFactor(lastNest.back(), KU))) {
-      spdlog::warn("Could not unroll the K loop in MatMulLowering");
-    }
     int64_t i = 0;
     while (succeeded(promoteIfSingleIteration(lastNest[i])) && i < 4) {
       i++;
+    }
+
+    if (failed(loopUnrollUpToFactor(lastNest.back(), KU))) {
+      spdlog::warn("Could not unroll the K loop in MatMulLowering");
     }
   }
 };
