@@ -309,11 +309,11 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
 
     if (!userConfig_.use_mlir_hybrid_codegen) {
         pm.addPass(mlir::daphne::createMatMulOpLoweringPass(
-        userConfig_.matmul_tile,
-        userConfig_.matmul_vec_size_bits,
+        userConfig_.matmul_tile, userConfig_.matmul_vec_size_bits,
         userConfig_.matmul_fixed_tile_sizes,
         userConfig_.matmul_use_fixed_tile_sizes,
-        userConfig_.matmul_unroll_factor));
+        userConfig_.matmul_unroll_factor, userConfig_.matmul_unroll_jam_factor,
+        userConfig_.matmul_num_vec_registers));
         if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR directly after lowering MatMulOp."));
