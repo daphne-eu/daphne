@@ -84,12 +84,10 @@ struct LowerMatMulOpOptions {
   bool vectorize{false};
   bool tile{false};
   bool useFixedTileSizes{false};
-  // int register_size{0};
   llvm::SmallVector<int, 3> cache_sizes;
   llvm::SmallVector<unsigned, 5> tile_sizes;
-  int unroll_factor{1};
-  // 4 is the default value for the affine unroll jam
-  int unroll_jam_factor{4};
+  int unroll_factor{0};
+  int unroll_jam_factor{0};
 
   LowerMatMulOpOptions &setTileSizes(std::vector<unsigned> sizes) {
     tile_sizes.clear();
@@ -137,9 +135,6 @@ struct LowerMatMulOpOptions {
     }
   }
   int getRegisterSize() const {
-    // if (register_size != 0) {
-    //   return register_size;
-    // }
     if (num_vec_registers != 0 && vec_size_bits != 0) {
       return std::max(1, num_vec_registers * vec_size_bits);
     }
@@ -153,16 +148,16 @@ bool is_valid_options(LowerMatMulOpOptions const options) {
       spdlog::warn("Tile sizes must be an integer larger than 1.");
       return false;
     }
-  if (options.unroll_factor < 1) {
-    spdlog::warn("Unroll factor must be an integer larger than 0.");
+  if (options.unroll_factor < 0) {
+    spdlog::warn("Unroll factor must be an integer >= 0.");
     return false;
   }
-  if (options.unroll_jam_factor < 1) {
-    spdlog::warn("Unroll jam factor must be an integer larger than 0.");
+  if (options.unroll_jam_factor < 0) {
+    spdlog::warn("Unroll jam factor must be an integer >= 0.");
     return false;
   }
   if (options.vec_size_bits < 0) {
-    spdlog::warn("Vector size bits must be larger or equal to 0.");
+    spdlog::warn("Vector size bits must be an integer >= 0.");
     return false;
   }
   return true;
@@ -559,7 +554,8 @@ public:
            "blisTiled: 5 should have step size 1.");
     // Unroll jam causes Segfault, if called in a way where the loop is not
     // cleanly divided.
-    if (blisTiledLoops[5].getUpperBound().getMap().getNumResults() == 1 &&
+    if (options.unroll_jam_factor > 0 &&
+        blisTiledLoops[5].getUpperBound().getMap().getNumResults() == 1 &&
         succeeded(loopUnrollJamUpToFactor(blisTiledLoops[5],
                                           options.unroll_jam_factor))) {
       if (blisTiledLoops[6].getUpperBound().getMap().getNumResults() != 1 ||
@@ -580,7 +576,7 @@ public:
       i++;
     }
 
-    if (failed(loopUnrollUpToFactor(lastNest.back(), KU))) {
+    if (KU > 0 && failed(loopUnrollUpToFactor(lastNest.back(), KU))) {
       spdlog::warn("Could not unroll the K loop in MatMulLowering");
     }
   }
