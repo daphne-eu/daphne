@@ -135,7 +135,7 @@ public:
       return success();
     } else {
       Value sum = rewriter.create<mlir::arith::ConstantOp>(
-          loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
+          loc, matrixElementType, rewriter.getFloatAttr(matrixElementType, 0));
 
       SmallVector<Value, 4> loopIvs;
       SmallVector<AffineForOp, 2> forOps;
@@ -148,7 +148,7 @@ public:
       // outer loop body
       rewriter.setInsertionPointToStart(outerLoop.getBody());
       Value sum_iter = rewriter.create<mlir::arith::ConstantOp>(
-          loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
+          loc, matrixElementType, rewriter.getFloatAttr(matrixElementType, 0));
       // inner loop
       auto innerLoop =
           rewriter.create<AffineForOp>(loc, 0, nC, 1, ValueRange{sum_iter});
