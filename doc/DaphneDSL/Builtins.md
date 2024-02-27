@@ -80,9 +80,8 @@ DaphneDSL's built-in functions can be categorized as follows:
   
 - **`seq`**`(from:scalar, to:scalar, inc:scalar)`
 
-    Generates a column *(n x 1)* matrix containing an arithmetic sequence of values starting at `from`, going through `to`, in increments of `inc`.
+    Generates a column matrix containing an arithmetic sequence of values starting at `from`, going through `to`, in increments of `inc`.
     Note that `from` may be greater than `to`, and `inc` may be negative.
-    If `inc` does not lead from `from` to `to`, the result will be an empty column matrix; however, `inc` must not be zero or NaN.
 
 ## Matrix/frame dimensions
 
@@ -145,7 +144,7 @@ The following built-in functions all follow the same scheme:
 ## Elementwise binary
 
 DaphneDSL supports various elementwise binary operations.
-Some of those can be used through *operators in infix notation*, e.g., `+`; and some through *built-in functions*.
+Some of those can be used through *operators in infix notation*, e.g., `+`; and some through *built-in functions*, e.g., `log()`.
 Some operations even support both, e.g., `pow(a, b)` and `a^b` have the same semantics.
 
 The built-in functions all follow the same scheme:
