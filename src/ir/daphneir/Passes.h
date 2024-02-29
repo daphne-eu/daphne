@@ -57,7 +57,8 @@ namespace mlir::daphne {
         bool matmul_use_fixed_tile_sizes = false,
         int matmul_unroll_factor = 1,
         int matmul_unroll_jam_factor = 4,
-        int matmul_num_vec_registers = 16);
+        int matmul_num_vec_registers = 16,
+        bool matmul_invert_loops = false);
     std::unique_ptr<OperationPass<ModuleOp>>  createMatMulOpLoweringPass();
     std::unique_ptr<Pass> createAggAllOpLoweringPass();
     std::unique_ptr<Pass> createMemRefTestPass();

@@ -294,6 +294,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         desc("Set fixed tile sizes to be used for the lowering of MatMul if tiling is used. This also enables tiling."),
         CommaSeparated
     );
+    static opt<bool> matmul_invert_loops(
+        "matmul-invert-loops", cat(daphneOptions),
+        desc("Enable inverting of the inner two loops in the matrix multiplication as a fallback option, if tiling is not possible or deactivated.")
+    );
     
 
     static opt<bool> performHybridCodegen(
@@ -419,6 +423,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.matmul_unroll_factor = matmul_unroll_factor;
     user_config.matmul_unroll_jam_factor = matmul_unroll_jam_factor;
     user_config.matmul_num_vec_registers = matmul_num_vec_registers;
+    user_config.matmul_invert_loops = matmul_invert_loops;
     if (matmul_fixed_tile_sizes.size() > 0) {
         user_config.matmul_use_fixed_tile_sizes = true;
         user_config.matmul_fixed_tile_sizes = matmul_fixed_tile_sizes;
