@@ -243,7 +243,11 @@ def MatMulOpLoweringPass: Pass<"lower-mm", "::mlir::ModuleOp"> {
     Option<"matmul_num_vec_registers", "matmul_num_vec_registers", "int",
            /*default=*/"16",
            "Set the number of vector registers, used during automatic tiling when lowering matrix multiplication."
-           "The default value is affines default value.">
+           "The default value is affines default value.">,
+    Option<"matmul_invert_loops", "matmul_invert_loops", "bool",
+           /*default=*/"false",
+           "Enable inverting of the inner two loops in the matrix multiplication as a fallback option, if tiling is not possible or deactivated. "
+           "Switched off by default.">,
            
   ];
 }

@@ -83,6 +83,7 @@ struct LowerMatMulOpOptions {
   int num_vec_registers{0};
   bool vectorize{false};
   bool tile{false};
+  bool invert_loops{false};
   bool useFixedTileSizes{false};
   llvm::SmallVector<int, 3> cache_sizes;
   llvm::SmallVector<unsigned, 5> tile_sizes;
@@ -125,6 +126,10 @@ struct LowerMatMulOpOptions {
   }
   LowerMatMulOpOptions &enableTiling(bool b = true) {
     tile = b;
+    return *this;
+  }
+  LowerMatMulOpOptions &enableLoopInversion(bool b = true) {
+    invert_loops = b;
     return *this;
   }
   int getVecSize(int bitwidth) const {
@@ -391,6 +396,8 @@ public:
                                            loops[1].getStep(), lhsRows);
       }
       tile_loops(loops, tile_sizes);
+    } else if (options.invert_loops){
+      permuteLoops(loops, {0, 2, 1});
     }
     mlir::Value DM =
         convertMemRefToDenseMatrix(loc, rewriter, outputMemRef, op.getType());
@@ -606,7 +613,8 @@ public:
                               bool matmul_use_fixed_tile_sizes,
                               int matmul_unroll_factor,
                               int matmul_unroll_jam_factor,
-                              int matmul_num_vec_registers)
+                              int matmul_num_vec_registers,
+                              bool matmul_invert_loops)
       : impl::MatMulOpLoweringPassBase<MatMulLoweringPass>() {
     this->matmul_tile = matmul_tile;
     this->matmul_vec_size_bits = matmul_vec_size_bits;
@@ -615,6 +623,7 @@ public:
     this->matmul_unroll_factor = matmul_unroll_factor;
     this->matmul_unroll_jam_factor = matmul_unroll_jam_factor;
     this->matmul_num_vec_registers = matmul_num_vec_registers;
+    this->matmul_invert_loops = matmul_invert_loops;
   }
 
   void runOnOperation() override;
@@ -688,6 +697,7 @@ void MatMulLoweringPass::runOnOperation() {
     options.enableVectorization();
     options.setVectorSizeBits(matmul_vec_size_bits);
   }
+  options.enableLoopInversion(matmul_invert_loops);
   options.setNumberOfVectorRegisters(matmul_num_vec_registers);
   target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>(
       [options](Operation *op) { return !is_valid_options(options); });
@@ -704,11 +714,13 @@ mlir::daphne::createMatMulOpLoweringPass(
     bool matmul_tile, int matmul_vec_size_bits,
     std::vector<unsigned> matmul_fixed_tile_sizes,
     bool matmul_use_fixed_tile_sizes, int matmul_unroll_factor,
-    int matmul_unroll_jam_factor, int matmul_num_vec_registers) {
+    int matmul_unroll_jam_factor, int matmul_num_vec_registers,
+    bool matmul_invert_loops) {
   return std::make_unique<MatMulLoweringPass>(
       matmul_tile, matmul_vec_size_bits, matmul_fixed_tile_sizes,
       matmul_use_fixed_tile_sizes, matmul_unroll_factor,
-      matmul_unroll_jam_factor, matmul_num_vec_registers);
+      matmul_unroll_jam_factor, matmul_num_vec_registers,
+      matmul_invert_loops);
 }
 
 // This is used by daphne-opt and automatically inserts the options provided on
