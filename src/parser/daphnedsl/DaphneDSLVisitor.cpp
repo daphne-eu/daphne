@@ -1324,19 +1324,40 @@ mlir::Value DaphneDSLVisitor::buildRowMatrixFromValues(std::vector<mlir::Value> 
 
     auto mat = DataObjectFactory::create<DenseMatrix<VT>>(values->size(), 1, castedValues);
 
-    for (size_t idx : nonConstValsIdx) {
-        std::cout << idx << std::endl;
-        // TODO: this could be fused to a single insertOp in some cases of neighbouring non-constants
-        // is there a better way than creating matrices?
-        builder.create<mlir::daphne::InsertColOp>(loc, mat, 
-                                DataObjectFactory::create<DenseMatrix<VT>>(1, 1, fillValue),
-                                idx, idx+1);
-    }
+    // DEBUG
+    // std::cout << *mat << std::endl;
 
     result = static_cast<mlir::Value>(
         builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(vectorVt),
         builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat)))
     );
+    
+    for (size_t idx : nonConstValsIdx) {
+        std::cout << idx << std::endl;
+        // TODO: this could be fused to a single insertOp in some cases of neighbouring non-constants
+        // is there a better way than creating matrices?
+
+        // ins mlir::daphne::ConvertMemRefToDenseMatrix
+
+        // mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(vectorVt),
+        //                         utils.castUI64If((*values)[idx])));
+
+        // mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::FillOp>(loc, utils.matrixOf(vectorVt), (*values)[idx], 
+        //         utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, 1)),
+        //         utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, 1))));
+
+        // mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::ConvertMemRefToDenseMatrix>(loc,
+        //             (*values)[idx],
+        //             utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, 1.0)),
+        //             utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, 1.0))
+        //             ));
+
+        // builder.create<mlir::daphne::InsertColOp>(loc, utils.matrixOf(vectorVt), result, 
+        //                         ins,
+        //                         utils.castSI64If(builder.create<mlir::daphne::ConstantOp>(loc, idx)), utils.castSI64If(builder.create<mlir::daphne::ConstantOp>(loc, idx+1)));
+        // applyLeftIndexing<mlir::daphne::InsertColOp, mlir::daphne::NumColsOp>(loc, result, (*values)[idx], 
+        //                     static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, idx)), false); // false - llvm::isa<mlir::daphne::FrameType>(obj.getType()) ?
+    }
 
     return result;
 }
@@ -1352,18 +1373,27 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     // dimensions are not checked for plausability
     // defaults to row matrix if no dimensions are specified
     if (!ctx->rows && !ctx->cols) {
+        numMatElems = ctx->expr().size();
         cols = builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1));
         rows = builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(ctx->expr().size()));
-        numMatElems = ctx->expr().size();
     }
-    else {
-        // infers other dimension if only 1 dimension was given
-        cols = ctx->cols ? utils.valueOrError(visit(ctx->cols)) : builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1));
-        // cast result of rows to size_t ?
-        rows = ctx->rows ? utils.valueOrError(visit(ctx->rows)) : 
-                            builder.create<mlir::daphne::EwDivOp>(loc, builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1)), cols);
+    else { // infers other dimension if only 1 dimension was given
         numMatElems = (ctx->rows && ctx->cols) ? ctx->expr().size() - 2 : ctx->expr().size() - 1; 
+        if (ctx->cols && ctx->rows) {
+            cols = utils.valueOrError(visit(ctx->cols));
+            rows = utils.valueOrError(visit(ctx->rows));
+        }
+        if (ctx->cols) {
+            cols = utils.valueOrError(visit(ctx->cols));
+            rows = builder.create<mlir::daphne::EwDivOp>(loc, builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(numMatElems)), cols);
+        }
+        else {
+            rows = utils.valueOrError(visit(ctx->rows));
+            cols = builder.create<mlir::daphne::EwDivOp>(loc, builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(numMatElems)), rows);
+        }
     }
+    cols = utils.castSizeIf(cols);
+    rows = utils.castSizeIf(rows);
 
     if (numMatElems == 0)
         throw std::runtime_error("can't infer type from an empty matrix");
@@ -1418,90 +1448,17 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     }
     
     // filter out case where col=1 in compiler ?
-    mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::ReshapeOp>(loc, valueType, rowMatrix, rows, cols));
+    mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::ReshapeOp>(loc, utils.matrixOf(valueType), rowMatrix, rows, cols));
 
-    /*
-
-    mlir::Value currentValue;
-    mlir::Value result;
-
-    
-    // std::cout << ctx->literal(0)->getText() << std::endl;
-
-
-    // TODO Reduce the code duplication in these cases.
-    if(valueType.isSignedInteger(64)){
-        std::shared_ptr<int64_t[]> vals = std::shared_ptr<int64_t[]>(new int64_t[ctx->literal().size()]);
-        for(unsigned i = 0; i < ctx->literal().size(); i++)
-        {
-            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
-            if(currentValue.getType() != valueType)
-                throw std::runtime_error("matrix of elements of different types");
-            vals.get()[i] = CompilerUtils::constantOrThrow<int64_t>(
-                    currentValue, "elements of matrix literals must be parse-time constants"
-            );
-        }
-        auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(rows, cols, vals);
-        result = static_cast<mlir::Value>(
-                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
-                        builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
-                )
-        );
-    }
-    else if(valueType.isF64()){
-        std::shared_ptr<double[]> vals = std::shared_ptr<double[]>(new double[ctx->literal().size()]);
-        for(unsigned i = 0; i < ctx->literal().size(); i++)
-        {
-            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
-            // currentValue.dump();
-            if (valueTypes[i].isSignedInteger(64)) {
-                vals.get()[i] = static_cast<double>(CompilerUtils::constantOrThrow<int64_t>
-                    (currentValue, "elements of matrix literals must be parse-time constants"));
-            }
-            else if (valueTypes[i].isF64()) {
-                vals.get()[i] = CompilerUtils::constantOrThrow<double>
-                    (currentValue, "elements of matrix literals must be parse-time constants");
-            }
-            else if (valueTypes[i].isSignlessInteger()) {
-                vals.get()[i] = static_cast<double>(CompilerUtils::constantOrThrow<bool>
-                    (currentValue, "elements of matrix literals must be parse-time constants"));
-            }
-            else {
-                throw std::runtime_error("invalid value type for matrix literal");
-            }
-        }
-        auto mat = DataObjectFactory::create<DenseMatrix<double>>(rows, cols, vals);
-        result = static_cast<mlir::Value>(
-                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
-                        builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
-                )
-        );
-    }
-    else if(valueType.isSignlessInteger()){
-        std::shared_ptr<bool[]> vals = std::shared_ptr<bool[]>(new bool[ctx->literal().size()]);
-        for(unsigned i = 0; i < ctx->literal().size(); i++)
-        {
-            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
-            if(currentValue.getType() != valueType)
-                throw std::runtime_error("matrix of elements of different types");
-            vals.get()[i] = CompilerUtils::constantOrThrow<bool>(
-                    currentValue, "elements of matrix literals must be parse-time constants"
-            );
-        }
-        auto mat = DataObjectFactory::create<DenseMatrix<bool>>(rows, cols, vals);
-        result = static_cast<mlir::Value>(
-                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
-                        builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
-                )
-        );
-    }
-    else
-        throw std::runtime_error("invalid value type for matrix literal");
+    // std::shared_ptr<double[]> valsTest = std::shared_ptr<double[]>(new double[4]);
+    // for (int i=0; i<4; ++i)
+    //     valsTest.get()[i] = i;
+    // auto mat = DataObjectFactory::create<DenseMatrix<double>>(4, 1, valsTest);
+    // mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
+    //                                 builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))));
+    // result = static_cast<mlir::Value>(builder.create<mlir::daphne::ReshapeOp>(loc, utils.matrixOf(valueType), result, rows, cols));
 
     return result;
-    */
-
-   return result;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::FrameLiteralExprContext * ctx) {
@@ -1524,30 +1481,140 @@ antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::Fr
     
     // let matrixLiteralExpr handle matrices in frame parsing
     // '{' (STRING_LITERAL ':' '[' literal (',' literal)* ']' (',' STRING_LITERAL ':' '[' literal (',' literal)* ']' )*)? '}'
-    size_t rows = ctx->STRING_LITERAL().size();
-    size_t cols = ctx->literal().size();
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    size_t elementCount = ctx->expr().size();
+    size_t cols = ctx->STRING_LITERAL().size();
+    size_t rows = elementCount / cols;
     
-    if (cols % rows != 0) {
+    if (elementCount % cols != 0)
         throw std::runtime_error("columns in frame must have equal length");
+
+    std::vector<mlir::Value> labels;
+    labels.reserve(cols);
+
+    for (size_t i=0; i<cols; ++i) {
+        // replace with more general approach ?
+        // visit(ctx->literal(i)) ?
+        std::string val = ctx->STRING_LITERAL(i)->getText();
+        val = val.substr(1, val.size() - 2);
+
+        labels.emplace_back(static_cast<mlir::Value>(
+                builder.create<mlir::daphne::ConstantOp>(loc, val)
+                ));
     }
 
-    // create col matrices with visitMatrixLiteralExpr ?
-    // use most general VT
-    std::vector<std::string> labels;
-    labels.reserve(rows);
-
-    for (size_t i=0; i<rows; ++i) {
-        std::string label = ctx->STRING_LITERAL(i)->getText();
-        // remove quotation marks
-        labels.emplace_back(label.substr(1, label.size() - 2));
+    std::vector<std::vector<mlir::Value>> valuesVec;
+    std::vector<std::vector<mlir::Type>> valueTypesVec;
+    valuesVec.resize(cols);
+    valueTypesVec.resize(cols);
+    for (size_t i=0; i<elementCount; ++i) {
+        if (i % rows == 0) {
+            valuesVec[i / rows].reserve(rows);
+            valueTypesVec[i / rows].reserve(rows);
+        }
+        mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
+        valuesVec[i / rows].emplace_back(currentValue);
+        valueTypesVec[i / rows].emplace_back(currentValue.getType());
     }
 
-    // for (auto label : labels) {
-    //     std::cout << label << std::endl;
-    // }
+    std::vector<mlir::Value> colValues;
+    std::vector<mlir::Type> colTypes;
+    colValues.reserve(cols);
+    colTypes.reserve(cols);
+    for (size_t i=0; i<cols; ++i) {
+        colTypes.emplace_back(mostGeneralVt(valueTypesVec[i]));
 
-    mlir::Value test;
-    return test;
+        if (colTypes[i].isSignedInteger(64)) {
+            colValues.emplace_back(DaphneDSLVisitor::buildRowMatrixFromValues<int64_t>(& valuesVec[i], & valueTypesVec[i], colTypes[i], loc));
+        }
+        else if (colTypes[i].isF64()) {
+            colValues.emplace_back(DaphneDSLVisitor::buildRowMatrixFromValues<double>(& valuesVec[i], & valueTypesVec[i], colTypes[i], loc));
+        }
+        else if (colTypes[i].isSignlessInteger()) {
+            colValues.emplace_back(DaphneDSLVisitor::buildRowMatrixFromValues<bool>(& valuesVec[i], & valueTypesVec[i], colTypes[i], loc));
+        }
+        else {
+            throw std::runtime_error("invalid value type for matrix literal. "
+                        "accepted types are signed integers, FP numbers and bools");
+        }
+    }
+
+    mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+    mlir::Value result;
+    
+    result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, colValues, labels));
+
+    return result;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext * ctx) {
+    // reduce redundance with normal frame literal visitor ?
+
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    size_t elementCount = ctx->expr().size();
+    size_t cols = ctx->STRING_LITERAL().size();
+    size_t rows = elementCount / cols;
+    
+    if (elementCount % cols != 0)
+        throw std::runtime_error("columns in frame must have equal length");
+
+    std::vector<mlir::Value> labels;
+    labels.reserve(cols);
+
+    for (size_t i=0; i<cols; ++i) {
+        // replace with more general approach ?
+        std::string val = ctx->STRING_LITERAL(i)->getText();
+        val = val.substr(1, val.size() - 2);
+
+        labels.emplace_back(static_cast<mlir::Value>(
+                builder.create<mlir::daphne::ConstantOp>(loc, val)
+                ));
+    }
+
+    std::vector<std::vector<mlir::Value>> valuesVec;
+    std::vector<std::vector<mlir::Type>> valueTypesVec;
+    valuesVec.resize(cols);
+    valueTypesVec.resize(cols);
+    for (size_t i=0; i<elementCount; ++i) {
+        if (i < cols) {
+            valuesVec[i].reserve(rows);
+            valueTypesVec[i].reserve(rows);
+        }
+        mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
+        valuesVec[i % cols].emplace_back(currentValue);
+        valueTypesVec[i % cols].emplace_back(currentValue.getType());
+    }
+
+    std::vector<mlir::Value> colValues;
+    std::vector<mlir::Type> colTypes;
+    colValues.reserve(cols);
+    colTypes.reserve(cols);
+    for (size_t i=0; i<cols; ++i) {
+        colTypes.emplace_back(mostGeneralVt(valueTypesVec[i]));
+
+        if (colTypes[i].isSignedInteger(64)) {
+            colValues.emplace_back(DaphneDSLVisitor::buildRowMatrixFromValues<int64_t>(& valuesVec[i], & valueTypesVec[i], colTypes[i], loc));
+        }
+        else if (colTypes[i].isF64()) {
+            colValues.emplace_back(DaphneDSLVisitor::buildRowMatrixFromValues<double>(& valuesVec[i], & valueTypesVec[i], colTypes[i], loc));
+        }
+        else if (colTypes[i].isSignlessInteger()) {
+            colValues.emplace_back(DaphneDSLVisitor::buildRowMatrixFromValues<bool>(& valuesVec[i], & valueTypesVec[i], colTypes[i], loc));
+        }
+        else {
+            throw std::runtime_error("invalid value type for matrix literal. "
+                        "accepted types are signed integers, FP numbers and bools");
+        }
+    }
+
+    mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+    mlir::Value result;
+    
+    result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, colValues, labels));
+
+    return result;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) {

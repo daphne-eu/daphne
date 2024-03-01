@@ -97,7 +97,8 @@ expr:
     | lhs=expr op='||' rhs=expr # disjExpr
     | cond=expr '?' thenExpr=expr ':' elseExpr=expr # condExpr
     | '[' (expr (',' expr)*)? ']' ('(' rows=expr? ',' cols=expr? ')')? # matrixLiteralExpr
-    | '{' (STRING_LITERAL ':' '[' literal (',' literal)* ']' (',' STRING_LITERAL ':' '[' literal (',' literal)* ']' )*)? '}' # frameLiteralExpr
+    | '{' (STRING_LITERAL ':' '[' expr (',' expr)* ']' (',' STRING_LITERAL ':' '[' expr (',' expr)* ']' )*)? '}' # frameLiteralExpr
+    | '{' '[' (STRING_LITERAL (',' STRING_LITERAL)*)? ']' (',' '[' (expr (',' expr)*)? ']')* '}' # rowMajorFrameLiteralExpr
     ;
 
 indexing:
