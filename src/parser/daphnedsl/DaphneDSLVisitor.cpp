@@ -1325,7 +1325,7 @@ mlir::Value DaphneDSLVisitor::buildRowMatrixFromValues(std::vector<mlir::Value> 
     auto mat = DataObjectFactory::create<DenseMatrix<VT>>(values->size(), 1, castedValues);
 
     // DEBUG
-    // std::cout << *mat << std::endl;
+    std::cout << *mat << std::endl;
 
     result = static_cast<mlir::Value>(
         builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(vectorVt),
@@ -1333,7 +1333,7 @@ mlir::Value DaphneDSLVisitor::buildRowMatrixFromValues(std::vector<mlir::Value> 
     );
     
     for (size_t idx : nonConstValsIdx) {
-        std::cout << idx << std::endl;
+        std::cout << "non-const idx: " << idx << std::endl;
         // TODO: this could be fused to a single insertOp in some cases of neighbouring non-constants
         // is there a better way than creating matrices?
 
@@ -1342,19 +1342,34 @@ mlir::Value DaphneDSLVisitor::buildRowMatrixFromValues(std::vector<mlir::Value> 
         // mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(vectorVt),
         //                         utils.castUI64If((*values)[idx])));
 
-        // mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::FillOp>(loc, utils.matrixOf(vectorVt), (*values)[idx], 
-        //         utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, 1)),
-        //         utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, 1))));
+        mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::FillOp>(loc, utils.matrixOf(vectorVt), (*values)[idx], 
+                utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1))),
+                utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1)))));
 
+
+        // DEBUG
+        std::cout << "ins: " << std::endl;
+        builder.create<mlir::daphne::PrintOp>(
+                loc, ins,
+                builder.create<mlir::daphne::ConstantOp>(loc, true),
+                builder.create<mlir::daphne::ConstantOp>(loc, false)
+        );
+        std::cout << "res before insert: " << std::endl;
+        builder.create<mlir::daphne::PrintOp>(
+                loc, result,
+                builder.create<mlir::daphne::ConstantOp>(loc, true),
+                builder.create<mlir::daphne::ConstantOp>(loc, false)
+        );
         // mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::ConvertMemRefToDenseMatrix>(loc,
         //             (*values)[idx],
         //             utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, 1.0)),
         //             utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, 1.0))
         //             ));
 
-        // builder.create<mlir::daphne::InsertColOp>(loc, utils.matrixOf(vectorVt), result, 
-        //                         ins,
-        //                         utils.castSI64If(builder.create<mlir::daphne::ConstantOp>(loc, idx)), utils.castSI64If(builder.create<mlir::daphne::ConstantOp>(loc, idx+1)));
+        builder.create<mlir::daphne::InsertRowOp>(loc, utils.matrixOf(vectorVt), result, 
+                                ins,
+                                builder.create<mlir::daphne::ConstantOp>(loc, static_cast<int64_t>(idx)),
+                                builder.create<mlir::daphne::ConstantOp>(loc, static_cast<int64_t>(idx+1)));
         // applyLeftIndexing<mlir::daphne::InsertColOp, mlir::daphne::NumColsOp>(loc, result, (*values)[idx], 
         //                     static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, idx)), false); // false - llvm::isa<mlir::daphne::FrameType>(obj.getType()) ?
     }
@@ -1383,7 +1398,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             cols = utils.valueOrError(visit(ctx->cols));
             rows = utils.valueOrError(visit(ctx->rows));
         }
-        if (ctx->cols) {
+        else if (ctx->cols) {
             cols = utils.valueOrError(visit(ctx->cols));
             rows = builder.create<mlir::daphne::EwDivOp>(loc, builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(numMatElems)), cols);
         }
@@ -1410,22 +1425,22 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     
     mlir::Type valueType = mostGeneralVt(valueTypes);
 
-    // debugging
-    std::cout << "most general type: ";
-    switch (generality(valueType)) {
-        case 9:
-            std::cout << "double" << std::endl;
-            break;
-        case 6:
-            std::cout << "int64_t" << std::endl;
-            break;
-        case 0:
-            std::cout << "bool" << std::endl;
-            break;
-        default:
-            std::cout << "unknown" << std::endl;
-            break;
-    }
+    // DEBUG
+    // std::cout << "most general type: ";
+    // switch (generality(valueType)) {
+    //     case 9:
+    //         std::cout << "double" << std::endl;
+    //         break;
+    //     case 6:
+    //         std::cout << "int64_t" << std::endl;
+    //         break;
+    //     case 0:
+    //         std::cout << "bool" << std::endl;
+    //         break;
+    //     default:
+    //         std::cout << "unknown" << std::endl;
+    //         break;
+    // }
     
     // std::cout << numMatElems << std::endl;
     // rows.dump();
