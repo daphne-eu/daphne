@@ -64,7 +64,7 @@ LABEL "org.opencontainers.image.version"="$TIMESTAMP"
 LABEL "org.opencontainers.image.created"="${CREATION_DATE}"
 LABEL "org.opencontainers.image.revision"="${GIT_HASH}"
 RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recommends install  \
-    libtinfo6 libssl1.1 zlib1g python3-numpy python3-pandas\
+    libtinfo6 libssl1.1 zlib1g python3-numpy python3-pandas libxml2 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=daphne-build $DAPHNE_DIR/bin/* /usr/local/bin
 COPY --from=daphne-build $DAPHNE_DIR/lib/* /usr/local/lib
