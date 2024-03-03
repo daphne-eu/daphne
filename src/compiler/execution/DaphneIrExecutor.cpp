@@ -18,6 +18,7 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+#include <ir/daphneir/Passes.h.inc>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 
@@ -32,6 +33,7 @@
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -298,25 +300,36 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
             mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
 
     pm.addPass(mlir::daphne::createDaphneOptPass());
-
-    if (!userConfig_.use_mlir_hybrid_codegen) {
-        pm.addPass(mlir::daphne::createMatMulOpLoweringPass());
-    }
-
+    pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
 
-    pm.addPass(mlir::daphne::createEwOpLoweringPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
+
+    if (!userConfig_.use_mlir_hybrid_codegen) {
+        pm.addPass(mlir::daphne::createMatMulOpLoweringPass(
+        userConfig_.matmul_tile, userConfig_.matmul_vec_size_bits,
+        userConfig_.matmul_fixed_tile_sizes,
+        userConfig_.matmul_use_fixed_tile_sizes,
+        userConfig_.matmul_unroll_factor, userConfig_.matmul_unroll_jam_factor,
+        userConfig_.matmul_num_vec_registers,
+        userConfig_.matmul_invert_loops));
+        if (userConfig_.explain_mlir_codegen)
+        pm.addPass(
+            mlir::daphne::createPrintIRPass("IR directly after lowering MatMulOp."));
+    }
+
     pm.addPass(mlir::createConvertMathToLLVMPass());
     pm.addPass(mlir::daphne::createModOpLoweringPass());
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
     pm.addNestedPass<mlir::func::FuncOp>(
         mlir::createAffineScalarReplacementPass());
     pm.addPass(mlir::createLowerAffinePass());
-
+    mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;
+    pm.addPass(mlir::createConvertVectorToLLVMPass(lowerVectorToLLVMOptions));
+    
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after codegen pipeline"));

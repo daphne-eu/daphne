@@ -19,7 +19,6 @@
 #include <utility>
 #include <vector>
 
-#include "llvm/ADT/ArrayRef.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #pragma GCC diagnostic push
@@ -27,9 +26,12 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #pragma GCC diagnostic pop
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/Location.h"
+#include "mlir/IR/Value.h"
 #include "mlir/IR/Visitors.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/ADT/ArrayRef.h"
 
 mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc,
                               mlir::PatternRewriter &rewriter);
@@ -41,6 +43,11 @@ void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
                          mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                          mlir::MLIRContext *ctx, mlir::Value memRef,
                          mlir::Type elemType);
+
+void affineFillMemRefInt(mlir::Value value,
+                         mlir::ConversionPatternRewriter &rewriter,
+                         mlir::Location loc, mlir::ArrayRef<int64_t> shape,
+                         mlir::MLIRContext *ctx, mlir::Value memRef);
 
 void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
                       mlir::Location loc, mlir::ArrayRef<int64_t> shape,

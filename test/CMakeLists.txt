@@ -57,6 +57,7 @@ set(TEST_SOURCES
         api/cli/codegen/AggAllTest.cpp
         api/cli/codegen/MapOpTest.cpp
         codegen/CodegenTest.cpp
+        codegen/MatMulAccuracyTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
 
