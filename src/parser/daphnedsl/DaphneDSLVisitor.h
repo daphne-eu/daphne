@@ -144,18 +144,27 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx);
 
     /**
-     * @brief Populates row matrix with given values or composes it of operations
-     *  if values are not parse-time constants
-     * @tparam VT Value type of result
-     * @param values pointer to vector of parsed mlir values
-     * @param valueTypes pointer to vector with type of corresponding i-th value
-     * @param loc 
-     * @return `std::shared_ptr<VT[]>` vector with values of type VT,
-     *  values default to 0 if they are not parse-time constants
+     * @brief Creates a column matrix from a vector of mlir values and
+     *  generates mlir operations to fill in non parse-time constants if present
+     * @tparam VT (built-in) value type of the result (e.g. int64_t)
+     * @param loc Location of where the matrix is beeing constructed
+     * @param values Pointer to a vector of mlir values
+     * @param valueTypes Pointer to matching vector with mlir types of given values
+     * @return Mlir value containing the built dense matrix
     */
     template<typename VT>
-    mlir::Value buildRowMatrixFromValues(std::vector<mlir::Value> * values, std::vector<mlir::Type> * valueTypes,
-                                    mlir::Type vectorVt, mlir::Location loc);
+    mlir::Value buildColMatrixFromValues(mlir::Location loc, std::vector<mlir::Value> * values,
+                                    std::vector<mlir::Type> * valueTypes, mlir::Type matrixVt);
+
+    /**
+     * @brief Handles the parsing for column-/ and row-major frames
+     * @tparam CTX Type of DaphneDSLGrammar context
+     * @param rowMajor True for row-major and False for column-major input
+     * @param ctx Pointer to DaphneDSLGrammar context of the frame expression
+     * @return Mlir Value containing the built frame
+    */
+    template<typename CTX>
+    mlir::Value buildFrameHelper(bool rowMajor, CTX * ctx);
 
     std::shared_ptr<spdlog::logger> logger;
 
