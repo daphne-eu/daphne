@@ -70,7 +70,7 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
     std::unique_ptr<Pass> createRewriteSqlOpPass();
     std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg, std::unordered_map<std::string, bool> & usedLibPaths);
-    std::unique_ptr<Pass> createSelectMatrixRepresentationsPass();
+    std::unique_ptr<Pass> createSelectMatrixRepresentationsPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();

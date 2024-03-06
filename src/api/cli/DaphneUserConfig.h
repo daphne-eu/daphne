@@ -91,7 +91,8 @@ struct DaphneUserConfig {
     spdlog::level::level_enum log_level_limit = spdlog::level::err;
     std::vector<LogConfig> loggers;
     DaphneLogger* log_ptr{};
-    
+    float sparsity_threshold = 0.25;
+
 #ifdef USE_CUDA
     // User config holds once context atm for convenience until we have proper system infrastructure
 
