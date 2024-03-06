@@ -50,6 +50,20 @@ namespace CUDA {
                                  ldb, reinterpret_cast<double *>(C), ldc));
     }
 
+    template<>
+    [[maybe_unused]] void launch_cublas_geam<uint64_t>(const CUDAContext &ctx, size_t m, size_t n, const uint64_t *alpha,
+                                                      const uint64_t *beta, const uint64_t *A, uint64_t *C) {
+        auto lda = n;
+        auto ldb = n;
+        auto ldc = m;
+        auto alpha_ = static_cast<double>(*alpha);
+        auto beta_ = static_cast<double>(*beta);
+        CHECK_CUBLAS(cublasDgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m, n, &alpha_,
+                                 reinterpret_cast<const double *>(A), lda, &beta_, reinterpret_cast<const double *>(A),
+                                 ldb, reinterpret_cast<double *>(C), ldc));
+
+    }
+
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
@@ -81,4 +95,5 @@ namespace CUDA {
     template struct Transpose<DenseMatrix<double>, DenseMatrix<double>>;
     template struct Transpose<DenseMatrix<float>, DenseMatrix<float>>;
     template struct Transpose<DenseMatrix<int64_t>, DenseMatrix<int64_t>>;
+    template struct Transpose<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>>;
 }

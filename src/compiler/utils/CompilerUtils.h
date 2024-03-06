@@ -30,7 +30,7 @@ struct CompilerUtils {
 private:
 
     template<typename ValT, typename AttrT>
-    static std::pair<bool, ValT> isConstantHelper(mlir::Value v, std::function<ValT(const AttrT &)> func) {
+    static std::pair<bool, ValT> isConstantHelper(mlir::Value v, const std::function<ValT(const AttrT &)>& func) {
         if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>())
             if(auto attr = co.getValue().dyn_cast<AttrT>())
                 return std::make_pair(true, func(attr));
@@ -310,7 +310,7 @@ public:
      * @param msg The original error message (without the location information)
      * @return An exception instance to be thrown at the call-site
      */
-    static std::exception makeError(mlir::Location loc, const std::string & msg) {
+    static std::runtime_error makeError(mlir::Location loc, const std::string & msg) {
         // Note: We return an exception rather than throwing it here for the following reason:
         // If this function threw the exception, we would use this function like a replacement
         // for a C++ throw statement. However, that would be hard to understand for the C++

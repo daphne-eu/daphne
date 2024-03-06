@@ -1223,5 +1223,5 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
     // ********************************************************************
 
-    throw std::runtime_error("unknown built-in function: '" + func + "'");
+    throw CompilerUtils::makeError(loc, "unknown built-in function: `" + func + "`");
 }

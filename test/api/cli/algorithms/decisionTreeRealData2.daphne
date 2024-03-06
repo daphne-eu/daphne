@@ -1,0 +1,92 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications 2024 The DAPHNE Consortium.
+#
+#-------------------------------------------------------------
+
+# This script has been manually translated from Apache SystemDS (https://github.com/apache/systemds).
+# Original file: src/test/scripts/functions/builtin/decisionTreeRealData2.dml @ 8d4c3feaa84f58e0ce7e305a0e93a1f1bafbd502.
+
+# Test case using the Wine dataset.
+
+import "../../../../scripts/algorithms/decisionTree_.daph";
+import "../../../../scripts/algorithms/decisionTreePredict_.daph";
+import "../../../../scripts/algorithms/randomForest_.daph";
+import "../../../../scripts/algorithms/randomForestPredict_.daph";
+
+F = readFrame($data);
+
+recoded12, dict12 = recode(as.matrix(F[, 12]), false);
+# TODO Support n-ary cbind/rbind (see #207).
+X = cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(cbind(
+    bin(as.matrix(F[,  0]), 10),
+    bin(as.matrix(F[,  1]), 10)),
+    bin(as.matrix(F[,  2]), 10)),
+    bin(as.matrix(F[,  3]), 10)),
+    bin(as.matrix(F[,  4]), 10)),
+    bin(as.matrix(F[,  5]), 10)),
+    bin(as.matrix(F[,  6]), 10)),
+    bin(as.matrix(F[,  7]), 10)),
+    bin(as.matrix(F[,  8]), 10)),
+    bin(as.matrix(F[,  9]), 10)),
+    bin(as.matrix(F[, 10]), 50)),
+    bin(as.matrix(F[, 11]), 10)),
+    recoded12
+);
+# Switch from DAPHNE'S 0-based indexing to SystemDS's 1-based indexing.
+X = X + 1;
+
+# TODO as.f64 should not be necessary.
+R = reshape(as.f64([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]), 1, 13);
+
+Y = X[,ncol(X) - 1];
+X = X[,0:ncol(X) - 1];
+X = replace(X, nan, 5); # 1 val
+
+# TODO Initializing yhat before the if-then-else should not be necessary.
+yhat = fill(0.0, 0, 0);
+if( $dt==1 ) {
+  M = decisionTree_.decisionTree(
+    /*X=*/X, /*y=*/Y, /*ctypes=*/R,
+    /*max_depth=*/10, /*min_leaf=*/4, /*min_split=*/10,
+    /*max_features=*/1.0, /*max_values=*/$maxV,
+    /*impurity=*/"gini", /*seed=*/7, /*verbose=*/false
+  );
+  yhat = decisionTreePredict_.decisionTreePredict(
+    /*X=*/X, /*ctypes=*/R, /*M=*/M,
+    /*strategy=*/"TT", /*verbose=*/false
+  );
+}
+else {
+  sf = 1.0/($dt - 1);
+  M = randomForest_.randomForest(
+    /*X=*/X, /*y=*/Y, /*ctypes=*/R,
+    /*num_trees=*/$dt - 1, /*sample_frac=*/sf,
+    /*feature_frac=*/1.0, /*max_depth=*/10, /*min_leaf=*/4, /*min_split=*/10,
+    /*max_features=*/1.0, /*max_values=*/$maxV,
+    /*impurity=*/"gini", /*seed=*/7, /*verbose=*/false
+  );
+  yhat = randomForestPredict_.randomForestPredict(
+    /*X=*/X, /*y=*/fill(0.0, 0, 0), /*ctypes=*/R, /*M=*/M, /*verbose=*/false
+  );
+}
+
+acc = mean(yhat == Y);
+print(acc);

@@ -368,6 +368,9 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
         std::multimap<std::string, mlir::func::FuncOp> origFuncMap = functionsSymbolMap;
         functionsSymbolMap.clear();
 
+        std::vector<std::string> origImportedFiles = importedFiles;
+        importedFiles.clear();
+
         symbolTable.pushScope();
         scriptPaths.push(path);
         res = visitScript(importCtx);
@@ -381,6 +384,8 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
                 origScope[finalPrefix + symbol.first] = symbol.second;
 
         symbolTable.put(origScope);
+        
+        importedFiles = origImportedFiles;
         
         for(std::pair<std::string, mlir::func::FuncOp> funcSymbol : functionsSymbolMap)
             if(funcSymbol.first.find('.') == std::string::npos)
@@ -582,6 +587,7 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
     for(auto it = ow.begin(); it != ow.end(); it++) {
         mlir::Value owVal = it->second.value;
         mlir::Type type = owVal.getType();
+        auto owLoc = owVal.getLoc();
 
         owVals.push_back(owVal);
         resultTypes.push_back(type);
@@ -589,8 +595,8 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         mlir::Value oldVal = symbolTable.get(it->first).value;
         whileOperands.push_back(oldVal);
 
-        beforeBlock->addArgument(type, builder.getUnknownLoc());
-        afterBlock->addArgument(type, builder.getUnknownLoc());
+        beforeBlock->addArgument(type, owLoc);
+        afterBlock->addArgument(type, owLoc);
     }
 
     // Create the ConditionOp of the "before" block.
@@ -615,7 +621,7 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
     whileOp.getAfter().push_back(afterBlock);
 
     size_t i = 0;
-    for(auto it = ow.begin(); it != ow.end(); it++) {
+    for(auto & it : ow) {
         // Replace usages of the variables updated in the loop's body by the
         // corresponding block arguments.
         whileOperands[i].replaceUsesWithIf(beforeBlock->getArgument(i), [&](mlir::OpOperand & operand) {
@@ -628,7 +634,7 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         });
 
         // Rewire the results of the WhileOp to their variable names.
-        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(whileOp.getResults()[i++], false));
+        symbolTable.put(it.first, ScopedSymbolTable::SymbolInfo(whileOp.getResults()[i++], false));
     }
 
     return nullptr;

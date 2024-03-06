@@ -41,5 +41,5 @@ const char* configFilePath = "test/api/cli/import/UserConfig.json";
         } \
     }
 
-MAKE_SUCCESS_TEST_CASE("import", 4)
+MAKE_SUCCESS_TEST_CASE("import", 5)
 MAKE_FAILURE_TEST_CASE("import", 5)

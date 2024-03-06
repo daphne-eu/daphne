@@ -1,0 +1,161 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications 2024 The DAPHNE Consortium.
+#
+#-------------------------------------------------------------
+
+# This script has been manually translated from Apache SystemDS (https://github.com/apache/systemds).
+# Original file: scripts/builtin/decisionTree.dml @ 4c97c1c376727f552a80c60217648c37d76fcb4e.
+
+# This script implements random forest for recoded and binned categorical and
+# numerical input features. In detail, we train multiple CART (classification
+# and regression trees) decision trees in parallel and use them as an ensemble.
+# classifier/regressor. Each tree is trained on a sample of observations (rows)
+# and optionally subset of features (columns). During tree construction, split
+# candidates are additionally chosen on a sample of remaining features.
+#
+# INPUT:
+# ------------------------------------------------------------------------------
+# X               Feature matrix in recoded/binned representation
+# y               Label matrix in recoded/binned representation
+# ctypes          Row-Vector of column types [1 scale/ordinal, 2 categorical]
+#                 of shape 1-by-(ncol(X)+1), where the last entry is the y type
+# num_trees       Number of trees to be learned in the random forest model
+# sample_frac     Sample fraction of examples for each tree in the forest
+# feature_frac    Sample fraction of features for each tree in the forest
+# max_depth       Maximum depth of the learned tree (stopping criterion)
+# min_leaf        Minimum number of samples in leaf nodes (stopping criterion)
+# min_split       Minimum number of samples in leaf for attempting a split
+# max_features    Parameter controlling the number of features used as split
+#                 candidates at tree nodes: m = ceil(num_features^max_features)
+# max_values      Parameter controlling the number of values per feature used
+#                 as split candidates: nb = ceil(num_values^max_values)
+# impurity        Impurity measure: entropy, gini (default), rss (regression)
+# seed            Fixed seed for randomization of samples and split candidates
+# verbose         Flag indicating verbose debug output
+# ------------------------------------------------------------------------------
+#
+# OUTPUT:
+# ------------------------------------------------------------------------------
+# M              Matrix M containing the learned trees, in linearized form
+#                For example, give a feature matrix with features [a,b,c,d]
+#                and the following two trees, M would look as follows:
+#
+#                (L1)          |a<7|                   |d<5|
+#                             /     \                 /     \
+#                (L2)     |c<3|     |b<4|         |a<7|     P3:2
+#                         /   \     /   \         /   \
+#                (L3)   P1:2 P2:1 P3:1 P4:2     P1:2 P2:1
+#
+#                --> M :=
+#                [[1, 7, 3, 3, 2, 4, 0, 2, 0, 1, 0, 1, 0, 2],  (1st tree)
+#                 [4, 5, 1, 7, 0, 2, 0, 2, 0, 1, 0, 0, 0, 0]]  (2nd tree)
+#                 |(L1)| |  (L2)   | |        (L3)         |
+#
+#                With feature sampling (feature_frac < 1), each tree is
+#                prefixed by a one-hot vector of sampled features
+#                (e.g., [1,1,1,0] if we sampled a,b,c of the four features)
+# ------------------------------------------------------------------------------
+
+import "decisionTree_.daph";
+
+# TODO Support optional parameters with defaults (see #548).
+def randomForest(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
+    num_trees:si64 /*= 16*/, sample_frac:f64 /*= 0.1*/, feature_frac:f64 /*= 1.0*/,
+    max_depth:si64 /*= 10*/, min_leaf:si64 /*= 20*/, min_split:si64 /*= 50*/,
+    max_features:f64 /*= 0.5*/, max_values:f64 /*= 1.0*/,
+    impurity:str /*= "gini"*/, seed:si64 /*= -1*/, verbose:bool /*= false*/) -> matrix<f64>
+{
+  t1 = now();
+
+  # validation and initialization of reproducible seeds
+  if(verbose) {
+    print("randomForest: initialize with num_trees=" + num_trees + ", sample_frac=" + sample_frac
+      + ", feature_frac=" + feature_frac + ", impurity=" + impurity + ", seed=" + seed + ".");
+  }
+  if(ncol(ctypes) != ncol(X)+1)
+    # TODO Support stop()-function (see #658).
+    print("randomForest: inconsistent num features (incl. label) and col types: "+ncol(X)+" vs "+ncol(ctypes)+".");
+  if( sum(X<=0) != 0 )
+    # TODO Support stop()-function (see #658).
+    print("randomForest: feature matrix X is not properly recoded/binned: "+sum(X<=0));
+  if(sum(y <= 0) != 0)
+    # TODO Support stop()-function (see #658).
+    print("randomForest: y is not properly recoded and binned (contiguous positive integers).");
+  if(aggMax(y) == 1)
+    # TODO Support stop()-function (see #658).
+    print("randomForest: y contains only one class label.");
+
+  # TODO Support float literals in scientific notation (see #659).
+  lseed = as.scalar<si64>(seed!=-1 ? seed : as.scalar(rand(1,1,0,1000000000/*1e9*/,1,-1)));
+  # TODO Support float literals in scientific notation (see #659).
+  randSeeds = rand(3 * num_trees, 1, 0, 1000000000/*1e9*/, 1, lseed);
+
+  # training of num_tree decision trees
+  M = fill(0.0, num_trees, 2*(2^max_depth - 1));
+  F = fill(1.0, num_trees, ncol(X));
+  # TODO Support parfor-loops (see #515).
+  for(i in 1:num_trees) {
+    if( verbose )
+      print("randomForest: start training tree "+i+"/"+num_trees+".");
+
+    # step 1: sample data
+    Xi = X; yi = y;
+    if( sample_frac < 1.0 ) {
+      si1 = as.si64(as.scalar(randSeeds[3*(i - 1),0]));
+      I1 = rand(nrow(X), 1, 0.0, 1.0, 1, si1) <= sample_frac;
+      Xi = X[[I1,]];
+      yi = y[[I1,]];
+    }
+
+    # step 2: sample features
+    if( feature_frac < 1.0 ) {
+      si2 = as.si64(as.scalar(randSeeds[3*(i - 1)+1,0]));
+      I2 = rand(ncol(X), 1, 0.0, 1.0, 1, si2) <= feature_frac;
+      Xi = Xi[[, I2]];
+      F[i - 1,] = t(I2);
+    }
+
+    if( verbose )
+      print("-- ["+i+"] sampled "+nrow(Xi)+"/"+nrow(X)+" rows and "+ncol(Xi)+"/"+ncol(X)+" cols.");
+
+    # step 3: train decision tree
+    t2 = now();
+    si3 = as.si64(as.scalar(randSeeds[3*(i - 1)+2,0]));
+
+
+    Mtemp = decisionTree_.decisionTree(Xi, yi, ctypes, max_depth, min_leaf, min_split,
+      max_features, max_values,
+      impurity, si3, verbose);
+
+    M[i - 1, 0:ncol(Mtemp)] = reshape(Mtemp, 1, ncol(Mtemp));
+    if( verbose )
+      # TODO Support float literals in scientific notation (see #659).
+      print("-- ["+i+"] trained decision tree in "+(as.f64(now()-t2)/1000000000/*1e9*/)+" seconds.");
+  }
+  M = cbind(F, M);
+
+  if(verbose) {
+    # TODO Support float literals in scientific notation (see #659).
+    print("randomForest: trained ensemble with num_trees="+num_trees+" in "+(as.f64(now()-t1)/1000000000/*1e9*/)+" seconds.");
+  }
+
+  return M;
+}

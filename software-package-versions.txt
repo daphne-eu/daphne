@@ -15,7 +15,7 @@
 # alphabetically ordered version information for third party dependencies of DAPHNE
 # used in shell scripts like build.sh, publish.sh, etc
 
-abslVersion=20211102.0
+abslVersion=20230802.1
 antlrVersion=4.9.2
 arrowVersion=13.0.0
 catch2Version=2.13.8

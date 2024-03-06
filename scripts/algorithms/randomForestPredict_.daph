@@ -1,0 +1,112 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications 2024 The DAPHNE Consortium.
+#
+#-------------------------------------------------------------
+
+# This script has been manually translated from Apache SystemDS (https://github.com/apache/systemds).
+# Original file: scripts/builtin/decisionTree.dml @ 4c97c1c376727f552a80c60217648c37d76fcb4e.
+
+# This script implements random forest prediction for recoded and binned
+# categorical and numerical input features.
+#
+# INPUT:
+# ------------------------------------------------------------------------------
+# X               Feature matrix in recoded/binned representation
+# y               Label matrix in recoded/binned representation,
+#                 optional for accuracy evaluation
+# ctypes          Row-Vector of column types [1 scale/ordinal, 2 categorical]
+# M               Matrix M holding the learned trees (one tree per row),
+#                 see randomForest() for the detailed tree representation.
+# verbose         Flag indicating verbose debug output
+# ------------------------------------------------------------------------------
+#
+# OUTPUT:
+# ------------------------------------------------------------------------------
+# yhat            Label vector of predictions
+# ------------------------------------------------------------------------------
+
+import "decisionTreePredict_.daph";
+import "lmPredictStats_.daph";
+
+# TODO Support optional parameters with defaults (see #548).
+def randomForestPredict(X:matrix<f64>, y:matrix<f64> /*= fill(0.0,0,0)*/,
+    ctypes:matrix<f64>, M:matrix<f64>, verbose:bool /*= false*/) -> matrix<f64>
+{
+  t1 = now();
+  classify = as.scalar(ctypes[0,ncol(X)]) == 2;
+  yExists = (nrow(X)==nrow(y));
+
+  if(verbose) {
+    print("randomForestPredict: called for batch of "+nrow(X)+" rows, model of "
+      +nrow(M)+" trees, and with labels-provided "+yExists+".");
+  }
+
+  # scoring of num_tree decision trees
+  Ytmp = fill(0.0, nrow(M), nrow(X));
+  # TODO Support parfor-loops (see #515).
+  for(i in 1:nrow(M)) {
+    if( verbose )
+      print("randomForestPredict: start scoring tree "+i+"/"+nrow(M)+".");
+
+    # step 1: sample features (consistent with training)
+    I2 = M[i - 1, 0:ncol(X)];
+    Xi = X[[, t(I2)]];
+
+    # step 2: score decision tree
+    t2 = now();
+    
+    ret = decisionTreePredict_.decisionTreePredict(Xi, ctypes, M[i - 1,ncol(X):ncol(M)], "TT", false);
+
+    #decisionTreePredict(X:matrix<f64>, y:matrix<f64> /*= fill(0.0,0,0)*/,
+    #ctypes:matrix<f64>, M:matrix<f64>, strategy:str /*="TT"*/, verbose:bool /*= false*/)
+
+    Ytmp[i - 1,0:nrow(ret)] = t(ret);
+    if( verbose )
+      # TODO Support float literals in scientific notation (see #659).
+      print("-- ["+i+"] scored decision tree in "+as.f64(now()-t2)/1000000000/*1e9*/+" seconds.");
+  }
+
+  # label aggregation (majority voting / average)
+  yhat = fill(0.0, nrow(X), 1);
+  if( classify ) {
+    # TODO Support parfor-loops (see #515).
+    for(i in 1:nrow(X))
+      yhat[i - 1,0] = as.f64(idxMax(t(ctable(Ytmp[,i - 1] - 1, fill(0.0, nrow(Ytmp), 1))), 0) + 1);
+  }
+  else {
+    yhat = t(sum(Ytmp, 1)/nrow(M));
+  }
+
+  # summary statistics
+  if( yExists && verbose ) {
+    if( classify )
+      print("Accuracy (%): " + (sum(yhat == y) / nrow(y) * 100));
+    else
+      lmPredictStats_.lmPredictStats(yhat, y, false, verbose);
+  }
+
+  if(verbose) {
+    # TODO Support float literals in scientific notation (see #659).
+    print("randomForestPredict: scored batch of "+nrow(X)+" rows with "+nrow(M)+" trees in "+as.f64(now()-t1)/1000000000/*1e9*/+" seconds.");
+  }
+
+  return yhat;
+}

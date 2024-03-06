@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H
-#define SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -255,4 +254,33 @@ public:
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H
+// ----------------------------------------------------------------------------
+//  CSRMatrix  <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VTres, typename VTarg>
+class CastObj<CSRMatrix<VTres>, CSRMatrix<VTarg>> {
+
+public:
+    static void apply(CSRMatrix<VTres> *& res, const CSRMatrix<VTarg> * arg, DCTX(ctx)) {
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VTres>>(arg->getNumCols(), arg->getNumRows(), arg->getNumNonZeros(), true);
+
+        auto res_val = res->getValues();
+        auto res_cidx = res->getColIdxs();
+        auto res_roff = res->getRowOffsets();
+
+        auto arg_val = arg->getValues();
+        auto arg_cidx = arg->getColIdxs();
+        auto arg_roff = arg->getRowOffsets();
+
+        for (size_t nz=0; nz<arg->getNumNonZeros(); nz++){
+            res_val[nz] = static_cast<VTres>(arg_val[nz]);
+            res_cidx[nz] = arg_cidx[nz];
+        }
+
+        for(size_t r = 0; r < arg->getNumRows()+1; r++) {
+            res_roff[r] = arg_roff[r];
+        }
+    }
+};

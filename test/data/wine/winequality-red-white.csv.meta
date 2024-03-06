@@ -1,0 +1,58 @@
+{
+  "numRows": 6497,
+  "numCols": 13,
+  "schema": [
+    {
+      "label": "fixed acidity",
+      "valueType": "f64"
+    },
+    {
+      "label": "volatile acidity",
+      "valueType": "f64"
+    },
+    {
+      "label": "citric acid",
+      "valueType": "f64"
+    },
+    {
+      "label": "residual sugar",
+      "valueType": "f64"
+    },
+    {
+      "label": "chlorides",
+      "valueType": "f64"
+    },
+    {
+      "label": "free sulfur dioxide",
+      "valueType": "f64"
+    },
+    {
+      "label": "total sulfur dioxide",
+      "valueType": "f64"
+    },
+    {
+      "label": "density",
+      "valueType": "f64"
+    },
+    {
+      "label": "pH",
+      "valueType": "f64"
+    },
+    {
+      "label": "sulphates",
+      "valueType": "f64"
+    },
+    {
+      "label": "alcohol",
+      "valueType": "f64"
+    },
+    {
+      "label": "quality",
+      "valueType": "si64"
+    },
+    {
+      "label": "class",
+      "valueType": "si64"
+    }
+  ]
+}
