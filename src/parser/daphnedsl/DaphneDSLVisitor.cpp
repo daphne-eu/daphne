@@ -1431,8 +1431,45 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     return result;
 }
 
-template<typename CTX>
-mlir::Value DaphneDSLVisitor::buildFrameHelper(bool rowMajor, CTX * ctx) {
+antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::FrameLiteralExprContext * ctx) {
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    size_t elementCount = ctx->expr().size();
+    size_t cols = elementCount / 2;
+    
+    if (elementCount % 2 != 0)
+        throw std::runtime_error("frame must have equal amount of labels and matrices");
+
+    std::vector<mlir::Value> labels;
+    std::vector<mlir::Value> columnMatrices;
+    std::vector<mlir::Type> columnMatElemType;
+    labels.reserve(cols);
+    columnMatrices.reserve(cols);
+    columnMatElemType.reserve(cols);
+
+    for (size_t i=0; i<elementCount; i=i+2) {
+        mlir::Value label = utils.valueOrError(visit(ctx->expr(i)));
+        mlir::Value mat = utils.valueOrError(visit(ctx->expr(i+1)));
+
+        if (label.getType() != utils.strType)
+            throw std::runtime_error("column labels in frames must be strings");
+        if (!(mat.getType().template isa<mlir::daphne::MatrixType>()))
+            throw std::runtime_error("columns in frames must be matrices");
+
+        labels.emplace_back(label);
+        columnMatrices.emplace_back(mat);
+        columnMatElemType.emplace_back(mat.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
+    }
+
+    mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), columnMatElemType);
+    mlir::Value result;
+    
+    result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, columnMatrices, labels));
+
+    return result;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext * ctx) {
     mlir::Location loc = utils.getLoc(ctx->start);
 
     size_t elementCount = ctx->expr().size();
@@ -1461,27 +1498,14 @@ mlir::Value DaphneDSLVisitor::buildFrameHelper(bool rowMajor, CTX * ctx) {
     valuesVec.resize(cols);
     valueTypesVec.resize(cols);
 
-    if (rowMajor) {
-        for (size_t i=0; i<elementCount; ++i) {
-            if (i < cols) {
-                valuesVec[i].reserve(rows);
-                valueTypesVec[i].reserve(rows);
-            }
-            mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
-            valuesVec[i % cols].emplace_back(currentValue);
-            valueTypesVec[i % cols].emplace_back(currentValue.getType());
+    for (size_t i=0; i<elementCount; ++i) {
+        if (i < cols) {
+            valuesVec[i].reserve(rows);
+            valueTypesVec[i].reserve(rows);
         }
-    }
-    else {
-        for (size_t i=0; i<elementCount; ++i) {
-            if (i % rows == 0) {
-                valuesVec[i / rows].reserve(rows);
-                valueTypesVec[i / rows].reserve(rows);
-            }
-            mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
-            valuesVec[i / rows].emplace_back(currentValue);
-            valueTypesVec[i / rows].emplace_back(currentValue.getType());
-        }
+        mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
+        valuesVec[i % cols].emplace_back(currentValue);
+        valueTypesVec[i % cols].emplace_back(currentValue.getType());
     }
 
     std::vector<mlir::Value> colValues;
@@ -1514,16 +1538,6 @@ mlir::Value DaphneDSLVisitor::buildFrameHelper(bool rowMajor, CTX * ctx) {
     
     result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, colValues, labels));
 
-    return result;
-}
-
-antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::FrameLiteralExprContext * ctx) {
-    mlir::Value result = DaphneDSLVisitor::buildFrameHelper<DaphneDSLGrammarParser::FrameLiteralExprContext>(false, ctx);
-    return result;
-}
-
-antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext * ctx) {
-    mlir::Value result = DaphneDSLVisitor::buildFrameHelper<DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext>(true, ctx);
     return result;
 }
 

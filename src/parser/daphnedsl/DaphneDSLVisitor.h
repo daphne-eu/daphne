@@ -156,16 +156,6 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     mlir::Value buildColMatrixFromValues(mlir::Location loc, std::vector<mlir::Value> * values,
                                     std::vector<mlir::Type> * valueTypes, mlir::Type matrixVt);
 
-    /**
-     * @brief Handles the parsing for column-/ and row-major frames
-     * @tparam CTX Type of DaphneDSLGrammar context
-     * @param rowMajor True for row-major and False for column-major input
-     * @param ctx Pointer to DaphneDSLGrammar context of the frame expression
-     * @return Mlir Value containing the built frame
-    */
-    template<typename CTX>
-    mlir::Value buildFrameHelper(bool rowMajor, CTX * ctx);
-
     std::shared_ptr<spdlog::logger> logger;
 
 public:
