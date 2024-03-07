@@ -1479,7 +1479,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     mlir::Location loc = utils.getLoc(ctx->start);
 
     size_t elementCount = ctx->expr().size();
-    size_t cols = ctx->STRING_LITERAL().size();
+    size_t cols = ctx->literal().size();
     size_t rows = elementCount / cols;
     
     if (elementCount % cols != 0)
@@ -1489,14 +1489,10 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     labels.reserve(cols);
 
     for (size_t i=0; i<cols; ++i) {
-        // replace with more general approach ?
-        // visit(ctx->literal(i)) ?
-        std::string val = ctx->STRING_LITERAL(i)->getText();
-        val = val.substr(1, val.size() - 2);
-
-        labels.emplace_back(static_cast<mlir::Value>(
-                builder.create<mlir::daphne::ConstantOp>(loc, val)
-                ));
+        mlir::Value label = utils.valueOrError(visit(ctx->literal(i)));
+        if (label.getType() != utils.strType)
+            throw std::runtime_error("frame labels must be strings");
+        labels.emplace_back(label);
     }
 
     std::vector<std::vector<mlir::Value>> valuesVec;
