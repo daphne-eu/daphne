@@ -139,12 +139,12 @@ Special characters must be escaped using a backslash:
 
 ##### Matrix literals
 
-A matrix literal consists of a comma-separated list of expressions, enclosed in square brackets
-and optionally followed by parentheses with a comma separated pair of expressions defining its dimensions.
+A matrix literal consists of a comma-separated list of expressions enclosed in square brackets,
+optionally followed by parentheses with a comma separated pair of expressions which define its dimensions.
 Its elements can be the product of complex expressions such as built-in and user defined functions
 as well as variables or literals.
 The matrix's value type is the most general value type among its elements and currently supports
-`f64`, `si64`, `bool` types (in order of generality).
+`f64`, `si64`, and `bool` types (in order of generality).
 Matrix literals are by default column matrices if no dimensions have been specified.
 If only one dimension has been declared, the other one will be inferred automatically to match it.
 Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can also be used to modify the shape of matrices.
@@ -164,7 +164,7 @@ and are enclosed in curly brackets.
 
 **Column-major frame literals** consist of comma separated pairs of labels (of `str` type)
 and flat matrices which make up the corresponding columns in the form of `label : matrix`.
-Both labels and matrices can be expressions, variables or literals.
+Both labels and matrices can be expressions, variables, or literals.
 
 *Examples:*
 

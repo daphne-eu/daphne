@@ -146,10 +146,10 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     /**
      * @brief Creates a column matrix from a vector of mlir values and
      *  generates mlir operations to fill in non parse-time constants if present
-     * @tparam VT (built-in) value type of the result (e.g. int64_t)
+     * @tparam VT value type of the result (e.g. int64_t)
      * @param loc Location of where the matrix is beeing constructed
      * @param values Pointer to a vector of mlir values
-     * @param valueTypes Pointer to matching vector with mlir types of given values
+     * @param valueTypes Pointer to matching vector with mlir type of given values
      * @return Mlir value containing the built dense matrix
     */
     template<typename VT>

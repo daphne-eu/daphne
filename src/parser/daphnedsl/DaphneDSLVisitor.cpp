@@ -1338,25 +1338,24 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, std::
         // maybe later these insertOps can be fused into a single one
         // or replaced with insertOps that support scalar input
 
-        mlir::Value ins;
+        mlir::Value insValue = (*values)[idx];
 
-        // TODO FillOp currently only supports arg and res of the same type
-        // either cast them to match or add needed instantiations in kernels.json and modify Fill.h kernel slightly
-        //
-        // Problem occurs when value type of result is more general than result of a composing operation
-        // i.e. [1+1, 2.0] - the most general value type is double but 1+1 returns an integer
-        if (matrixVt == (*values)[idx].getType()) {
-            ins = static_cast<mlir::Value>(builder.create<mlir::daphne::FillOp>(loc, utils.matrixOf(matrixVt),
-                (*values)[idx], 
-                utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1))),
-                utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1)))));
+        // FillOp currently only supports arguments with equal type
+        // so values need to be casted first if the result of an expr
+        // is less general than the value type of `result`
+        if (matrixVt == builder.getF64Type()
+                && insValue.getType() != builder.getF64Type()) {
+            insValue = utils.castF64If(insValue);
         }
-        else {
-            ins = static_cast<mlir::Value>(builder.create<mlir::daphne::FillOp>(loc, utils.matrixOf(matrixVt),
-                utils.castIf(builder.getF64Type(), (*values)[idx]), 
-                utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1))),
-                utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1)))));
+        else if (matrixVt == builder.getIntegerType(64, true)
+                && insValue.getType() != builder.getIntegerType(64, true)) {
+            insValue = utils.castSI64If(insValue);
         }
+
+        mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::FillOp>(loc, utils.matrixOf(matrixVt),
+                            insValue, 
+                            utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1))),
+                            utils.castSizeIf(builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(1)))));
 
         result = static_cast<mlir::Value>(builder.create<mlir::daphne::InsertRowOp>(loc, utils.matrixOf(matrixVt),
                                 result, 
@@ -1369,14 +1368,13 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, std::
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {    
-
     mlir::Location loc = utils.getLoc(ctx->start);
     mlir::Value rows;
     mlir::Value cols;
 
     size_t numMatElems;
 
-    // validity of dimensions is left to reshape kernel
+    // validation of dimensions is left to reshape kernel
     // missing dimensions are inferred (defaults to column matrix)
     if (!ctx->rows && !ctx->cols) {
         numMatElems = ctx->expr().size();
@@ -1428,10 +1426,10 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     }
     else {
         throw std::runtime_error("invalid value type for matrix literal. "
-                    "accepted types are signed integers, FP numbers and bools");
+                    "accepted types are signed 64-bit integers, doubles and bools");
     }
     
-    // should case row=1 be filtered out in compiler or reshape kernel?
+    // TODO: omit reshapeOp if rows=1 (not always known at parse-time)
     mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::ReshapeOp>(loc, utils.matrixOf(valueType), colMatrix, rows, cols));
 
     return result;
@@ -1444,7 +1442,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::Fr
     size_t cols = elementCount / 2;
     
     if (elementCount % 2 != 0)
-        throw std::runtime_error("frame must have equal amount of labels and matrices");
+        throw std::runtime_error("frame literals must have equal amount of labels and matrices");
 
     std::vector<mlir::Value> labels;
     std::vector<mlir::Value> columnMatrices;
@@ -1458,9 +1456,9 @@ antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::Fr
         mlir::Value mat = utils.valueOrError(visit(ctx->expr(i+1)));
 
         if (label.getType() != utils.strType)
-            throw std::runtime_error("column labels in frames must be strings");
+            throw std::runtime_error("labels for frame literals must be strings");
         if (!(mat.getType().template isa<mlir::daphne::MatrixType>()))
-            throw std::runtime_error("columns in frames must be matrices");
+            throw std::runtime_error("columns for frame literals must be matrices");
 
         labels.emplace_back(label);
         columnMatrices.emplace_back(mat);
@@ -1483,7 +1481,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     size_t rows = elementCount / cols;
     
     if (elementCount % cols != 0)
-        throw std::runtime_error("columns in frame must have equal length");
+        throw std::runtime_error("columns in frame literals must have equal length");
 
     std::vector<mlir::Value> labels;
     labels.reserve(cols);
@@ -1491,10 +1489,11 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     for (size_t i=0; i<cols; ++i) {
         mlir::Value label = utils.valueOrError(visit(ctx->literal(i)));
         if (label.getType() != utils.strType)
-            throw std::runtime_error("frame labels must be strings");
+            throw std::runtime_error("labels for frame literals must be strings");
         labels.emplace_back(label);
     }
 
+    // row-major matrices are converted to column-major format
     std::vector<std::vector<mlir::Value>> valuesVec;
     std::vector<std::vector<mlir::Type>> valueTypesVec;
     valuesVec.resize(cols);
@@ -1517,9 +1516,6 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     for (size_t i=0; i<cols; ++i) {
         colTypes.emplace_back(mostGeneralVt(valueTypesVec[i]));
 
-        // could be turned into switch statement with `case: generality(builder.get...Type())`
-        // if it was constexpr (avoids using indexes directly which might change)
-
         if (colTypes[i].isSignedInteger(64)) {
             colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<int64_t>(loc, & valuesVec[i], & valueTypesVec[i], colTypes[i]));
         }
@@ -1531,7 +1527,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
         }
         else {
             throw std::runtime_error("invalid value type for matrix literal. "
-                        "accepted types are signed integers, FP numbers and bools");
+                    "accepted types are signed 64-bit integers, doubles and bools");
         }
     }
 
