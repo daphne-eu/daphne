@@ -139,14 +139,14 @@ Special characters must be escaped using a backslash:
 
 ##### Matrix literals
 
-A matrix literal consists of a comma-separated list of expressions, enclosed in square braces
-and optionally followed by a comma separated pair of expressions defining its dimensions.
-The value type of all elements within a matrix is determined to be the most general value type among them.
-Currently, matrix literals support the following value types `f64`, `si64`, `bool` (in order of generality).
-Each element can be the product of a complex expression itself.
-This includes user defined as well as built-in functions.
-Matrix literals are column matrices by default if no dimensions have been specified.
-If only one dimension has been given, the other one will be inferred automatically.
+A matrix literal consists of a comma-separated list of expressions, enclosed in square brackets
+and optionally followed by parentheses with a comma separated pair of expressions defining its dimensions.
+Its elements can be the product of complex expressions such as built-in and user defined functions
+as well as variables or literals.
+The matrix's value type is the most general value type among its elements and currently supports
+`f64`, `si64`, `bool` types (in order of generality).
+Matrix literals are by default column matrices if no dimensions have been specified.
+If only one dimension has been declared, the other one will be inferred automatically to match it.
 Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can also be used to modify the shape of matrices.
 
 *Examples:*
@@ -160,11 +160,11 @@ Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can also
 ##### Frame literals
 
 Frame literals can be defined using either column-major, or row-major notation
-and are enclosed in curly braces.
+and are enclosed in curly brackets.
 
 **Column-major frame literals** consist of comma separated pairs of labels (of `str` type)
-and flat matrices containing all values within a column in the form of `label : matrix`.
-Both labels and matrices can be expressions or variables.
+and flat matrices which make up the corresponding columns in the form of `label : matrix`.
+Both labels and matrices can be expressions, variables or literals.
 
 *Examples:*
 
@@ -173,9 +173,9 @@ Both labels and matrices can be expressions or variables.
 {"col 1" : [1, 2, 3], "col 2" : [1.1, -2.2, 3.3]}       # frame with "col 1" of type si64 and "col 2" of type f64
 ```
 
-**Row-major frame literals** consist of comma separated matrices where the first matrix
+**Row-major frame literals** consist of comma separated matrices, where the first matrix
 contains the labels (of `str` type) whereas all other matrices represent each row of the frame.
-Currently, matrices within a row-major frame cannot be passed through variables.
+Currently, matrices within a row-major frame cannot be passed through variables but support other expressions.
 <!--TODO support full matrix literal support for row-major frame literals-->
 
 *Examples:*
