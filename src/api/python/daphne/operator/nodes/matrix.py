@@ -23,10 +23,10 @@
 
 __all__ = ["Matrix"]
 
-from api.python.operator.operation_node import OperationNode
-from api.python.operator.nodes.scalar import Scalar
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
+from daphne.operator.operation_node import OperationNode
+from daphne.operator.nodes.scalar import Scalar
+from daphne.script_building.dag import OutputType
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
 
 import numpy as np
 
@@ -36,7 +36,7 @@ from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Lis
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
     
 class Matrix(OperationNode):
     _np_array: np.array

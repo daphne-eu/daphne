@@ -1,4 +1,4 @@
-from api.python.context.daphne_context import DaphneContext, Scalar
+from daphne.context.daphne_context import DaphneContext, Scalar
 
 dctx = DaphneContext()
 X = dctx.fill(2.5, 2, 2).sum()

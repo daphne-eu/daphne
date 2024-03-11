@@ -21,11 +21,11 @@
 #
 # -------------------------------------------------------------
 
-from api.python.script_building.dag import DAGNode, OutputType
-from api.python.operator.operation_node import OperationNode
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
-from api.python.utils.daphnelib import DaphneLib
-from api.python.script_building.script import DaphneDSLScript
+from daphne.script_building.dag import DAGNode, OutputType
+from daphne.operator.operation_node import OperationNode
+from daphne.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
+from daphne.utils.daphnelib import DaphneLib
+from daphne.script_building.script import DaphneDSLScript
 
 import ctypes
 import os
@@ -33,7 +33,7 @@ from typing import List, Dict, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
     
 class NestedDaphneDSLScript(DaphneDSLScript):
     var_prefix: str

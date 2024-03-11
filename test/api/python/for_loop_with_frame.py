@@ -1,4 +1,4 @@
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import pandas as pd
 
 dctx = DaphneContext()

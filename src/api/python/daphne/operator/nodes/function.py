@@ -23,12 +23,12 @@
 
 __all__ = ["Function"]
 
-from api.python.operator.operation_node import OperationNode
-from api.python.operator.nodes.matrix import Matrix
-from api.python.script_building.dag import OutputType
-from api.python.script_building.nested_script import NestedDaphneDSLScript
-from api.python.utils import analyzer
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
+from daphne.operator.operation_node import OperationNode
+from daphne.operator.nodes.matrix import Matrix
+from daphne.script_building.dag import OutputType
+from daphne.script_building.nested_script import NestedDaphneDSLScript
+from daphne.utils import analyzer
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
 
 import numpy as np
 from copy import copy
@@ -39,7 +39,7 @@ from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Cal
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
     
 class Function(OperationNode):
     __num_args: int

@@ -21,9 +21,9 @@
 #
 # -------------------------------------------------------------
 
-from api.python.operator.operation_node import OperationNode
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
+from daphne.operator.operation_node import OperationNode
+from daphne.script_building.dag import OutputType
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
 
 import numpy as np
 
@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Tuple, Uni
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
 
 class Scalar(OperationNode):
     __assign: bool

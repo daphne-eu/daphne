@@ -1,5 +1,5 @@
 import pandas as pd
-from api.python.context.daphne_context import DaphneContext, Scalar, Matrix, Frame
+from daphne.context.daphne_context import DaphneContext, Scalar, Matrix, Frame
 
 dctx = DaphneContext()
 S = dctx.fill(1.0, 1, 1).sum()

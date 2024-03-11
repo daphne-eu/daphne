@@ -21,9 +21,10 @@
 #
 # -------------------------------------------------------------
 
-from api.python.context.daphne_context import DaphneContext
-from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.frame import Frame
-from api.python.operator.nodes.scalar import Scalar
+from itertools import chain
+from typing import Dict, Iterable, Sequence
+from daphne.utils.consts import VALID_INPUT_TYPES
 
-__all__ = ["DaphneContext", "Matrix", "Frame", "Scalar"]
+def create_params_string(unnamed_parameters: Iterable[str], named_parameters:Dict[str,str])->str:
+    named_input_strs=(f'{v}'for (k,v) in named_parameters.items())
+    return ','.join(chain(unnamed_parameters, named_input_strs))

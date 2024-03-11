@@ -20,6 +20,5 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-from api.python import operator
-
-__all__ = ["operator"]
+from daphne.script_building.dag import *
+from daphne.script_building.script import *

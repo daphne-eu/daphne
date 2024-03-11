@@ -45,9 +45,7 @@ jobs:
       shell: bash
 
     - name: Testing
-      run: |
-        mkdir --parents src/api/python/tmp
-        LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH PYTHONPATH="$PYTHONPATH:$PWD/src/:/usr/lib/llvm-10/build/utils/lit/" bin/run_tests
+      run: LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH DAPHNELIB_DIR_PATH=$PWD/lib PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/:/usr/lib/llvm-10/build/utils/lit/" bin/run_tests
 
     - name: "List generated files"
       run: |
