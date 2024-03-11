@@ -1,0 +1,10 @@
+// Expressions as matrix elements
+
+testVarExpr = 10;
+
+def testFunc() -> f64 {
+    return 1.1;
+}
+
+testExprMat = [testVarExpr, testFunc(), sqrt(3), 2+2];
+print(testExprMat);

@@ -1,0 +1,7 @@
+// Type inference from matrix elements
+
+checkIntMat = [true, 10];
+print(checkIntMat);
+
+checkFloatMat = [true, 10, 5.5];
+print(checkFloatMat);

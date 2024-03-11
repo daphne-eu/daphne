@@ -14,3 +14,7 @@ checkMatBool = [true,true,false,true];
 print(checkMatBool);
 checkMatBool = reshape(checkMatBool, 2, 2);
 print(checkMatBool);
+
+// Defining matrix dimensions at creation.
+ReshapeMatInt = [1,2,3,4](2,2);
+print(ReshapeMatInt);
