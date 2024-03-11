@@ -1,0 +1,4 @@
+Frame(3x2, [col 1:int64_t, col 2:double])
+1 1.1
+2 2.2
+3 3.3

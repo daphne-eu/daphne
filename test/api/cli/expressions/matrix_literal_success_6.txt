@@ -1,0 +1,5 @@
+DenseMatrix(4x1, double)
+10
+1.1
+1.73205
+4

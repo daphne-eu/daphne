@@ -1,0 +1,9 @@
+// Row-major frame literals
+
+testFrame = {["col 1", "col 2"], [1, 1.1], [2, 2.2], [3, 3.3]};
+print(testFrame);
+
+// Type inference from column elements
+
+testFrameMixedVal = {["int col", "double col"], [true, false], [2, 1], [3, 3.3]};
+print(testFrameMixedVal);

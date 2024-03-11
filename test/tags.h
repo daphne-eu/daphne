@@ -30,6 +30,7 @@
 #define TAG_DATASTRUCTURES "[datastructures]"
 #define TAG_DISTRIBUTED "[distributed]"
 #define TAG_MATRIX_LITERAL "[matrixliterals]"
+#define TAG_FRAME_LITERAL "[frameliterals]"
 #define TAG_TERNARY "[ternary]"
 #define TAG_FUNCTIONS "[functions]"
 #define TAG_INDEXING "[indexing]"

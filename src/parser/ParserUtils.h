@@ -170,6 +170,10 @@ public:
         return castIf(builder.getIntegerType(64, true), v);
     }
 
+    mlir::Value castF64If(mlir::Value v) {
+        return castIf(builder.getF64Type(), v);
+    }
+
     // ************************************************************************
     // Type parsing
     // ************************************************************************
