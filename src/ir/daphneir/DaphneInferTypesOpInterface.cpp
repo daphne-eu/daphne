@@ -100,6 +100,10 @@ std::vector<Type> daphne::CastOp::inferTypes() {
          
         return {daphne::MatrixType::get(getContext(), resVt)};
     }
+//    else if (!argTy.isa<daphne::UnknownType>() && resTy.isa<daphne::UnknownType>()) {
+//         propagate known input type to output
+//        resTy = argTy;
+//    }
 
     // Otherwise, we leave the result type as it is. We do not reset it to
     // unknown, since this could drop information that was explicitly
@@ -608,7 +612,7 @@ std::vector<Type> daphne::MaxPoolForwardOp::inferTypes() {
 // Type inference function
 // ****************************************************************************
 
-std::vector<Type> daphne::tryInferType(Operation* op) {
+std::vector<Type> daphne::tryInferType(Operation* op, spdlog::logger* logger) {
     if(auto inferTypeOp = llvm::dyn_cast<daphne::InferTypes>(op))
         // If the operation implements the type inference interface,
         // we apply that.
@@ -626,6 +630,59 @@ std::vector<Type> daphne::tryInferType(Operation* op) {
         }
         return {resTy};
     }
+    else if (auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
+        // resolve whileOp's region arguments that might have been set to unknown
+        // and are not updated anymore during type inference
+
+//        op->getRegion(0).getArgument(1).setType(op->getOperand(1).getType());
+//        op->getRegion(0).getArgument(2).setType(op->getOperand(2).getType());
+//        op->getRegion(1).getArgument(1).setType(op->getOperand(2).getType());
+
+        Block & beforeBlock = whileOp.getBefore().front();
+        logger->debug("Setting types on beforeBlock");
+        Block & afterBlock = whileOp.getAfter().front();
+        // Get the ConditionOp.
+        Operation * condOp = beforeBlock.getTerminator();
+        Operation * yieldOp = afterBlock.getTerminator();
+        if(!llvm::isa<scf::ConditionOp>(condOp))
+            throw std::runtime_error("WhileOp terminator is not a ConditionOp");
+
+        // Transfer the WhileOp's operand types to the block arguments
+        // of the before-block to fulfill constraints on the WhileOp.
+        for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
+            Type t = whileOp->getOperand(i).getType();
+            t.dump();
+            beforeBlock.getArgument(i).setType(t);
+//            yieldOp->getResult(i).setType(t);
+        }
+
+        // Transfer the ConditionOp's operand types to the block arguments
+        // of the after-block and the results of the WhileOp to fulfill
+        // constraints on the WhileOp.
+        // Note that the first operand of the ConditionOp is skipped, since it
+        // is the condition value itself.
+        std::vector<Type> res;
+
+//        condOp->dump();
+//        yieldOp->dump();
+        logger->debug("Setting whileOp result types");
+        for (size_t i = 1; i < whileOp->getNumOperands(); ++i) {
+            auto t = whileOp->getOperand(i).getType();
+            t.dump();
+//        for(size_t i = 1; i < condOp->getNumOperands(); i++) {
+//            Type t = condOp->getOperand(i).getType();
+//            yieldOp->dump();
+            afterBlock.getArgument(i - 1).setType(t);
+            whileOp.getResult(i - 1).setType(t);
+//            yieldOp->getResult(i-1).setType(t);
+//            auto bla = yieldOp->getNumResults();
+            res.push_back(t);
+//            res.back().dump();
+        }
+
+//        return {op->getOperand(0).getType(), op->getOperand(2).getType()};
+        return res;
+    }
     else {
         // If the operation does not implement the type inference interface
         // and has zero or more than one results, we return unknowns.
@@ -636,11 +693,11 @@ std::vector<Type> daphne::tryInferType(Operation* op) {
     }
 }
 
-void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
+void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed, spdlog::logger* logger) {
     // Try to infer the types of all results of this operation.
     std::vector<Type> types;
     try {
-        types = daphne::tryInferType(op);
+        types = daphne::tryInferType(op, logger);
     }
     catch (std::runtime_error& re) {
         throw ErrorHandler::rethrowError(
@@ -660,15 +717,14 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
                 " results");
     // Set the inferred types on all results of this operation.
     for(size_t i = 0; i < numRes; i++) {
-        if (llvm::isa<daphne::UnknownType>(types[i]) && !partialInferenceAllowed)
+        if (llvm::isa<daphne::UnknownType>(types[i]) && !partialInferenceAllowed) {// && !llvm::dyn_cast<scf::WhileOp>(op)) {
             // TODO As soon as the run-time can handle unknown
             // data/value types, we do not need to throw here anymore.
             throw ErrorHandler::compilerError(
                 op->getLoc(), "InferTypesOpInterface",
-                "type inference returned an unknown result type "
-                "for some op, but partial inference is not allowed "
-                "at this point: " +
-                    op->getName().getStringRef().str());
+                "type inference returned an unknown result type for some op, but partial inference"
+                    " is not allowed at this point: " + op->getName().getStringRef().str());
+            }
         op->getResult(i).setType(types[i]);
     }
 }

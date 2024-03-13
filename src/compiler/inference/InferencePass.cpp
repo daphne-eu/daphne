@@ -134,6 +134,7 @@ namespace {
  */
 class InferencePass : public PassWrapper<InferencePass, OperationPass<func::FuncOp>> {
     daphne::InferenceConfig cfg;
+    std::shared_ptr<spdlog::logger> logger;
 
     /**
      * @brief Sets all properties of all results of the given operation to unknown
@@ -341,57 +342,88 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         "WhileOp and YieldOp must have the same number of "
                         "operands");
 
-                // Check if the inferred MLIR types match the result MLIR types.
-                // If any interesting properties were changed inside the loop body,
-                // we set them to unknown to make the type comparison pass.
-                for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
-                    Type yieldedTy = yieldOp->getOperand(i).getType();
-                    Type operandTy = op->getOperand(i).getType();
-                    if(yieldedTy != operandTy) {
-                        // Get a type with the conflicting properties set to unknown.
-                        Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, operandTy);
-                        if(!typeWithCommonInfo) {
-                            throw ErrorHandler::compilerError(
+                    // Check if the inferred MLIR types match the result MLIR types.
+                    // If any interesting properties were changed inside the loop body,
+                    // we set them to unknown to make the type comparison pass.
+                    for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
+                        Type yieldedTy = yieldOp->getOperand(i).getType();
+                        Type operandTy = op->getOperand(i).getType();
+//                        double a = 2.0, b = 2.0;
+//                        if(yieldedTy.dyn_cast<daphne::MatrixType>()) {
+//                            a = yieldedTy.dyn_cast<daphne::MatrixType>().getSparsity();
+//                            if (a == -1.0) {
+//                                yieldOp->getOperand(i).setType(yieldedTy.dyn_cast<daphne::MatrixType>().withSparsity(1.0));
+//                                yieldedTy = yieldOp->getOperand(i).getType();
+//                                yieldedTy.dump();
+//                            }
+//                        }
+//                        if(operandTy.dyn_cast<daphne::MatrixType>()) {
+//                            b = operandTy.dyn_cast<daphne::MatrixType>().getSparsity();
+//                            if (b == -1.0) {
+//                                operandTy.dyn_cast<daphne::MatrixType>().withSparsity(-1.0);
+//                                operandTy = op->getOperand(i).getType();
+//                                operandTy.dump();
+//                            }
+//                        }
+
+//yieldedTy.dump(); operandTy.dump();
+                        if(yieldedTy != operandTy) {
+                            // Get a type with the conflicting properties set to unknown.
+                            Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, operandTy);
+//                            typeWithCommonInfo.dump();
+
+                            if(!typeWithCommonInfo) {
+                                throw ErrorHandler::compilerError(
                                 op, "InferencePass",
-                                "the data type (matrix, frame, scalar) of a "
+                                        "the data type (matrix, frame, scalar) of a "
                                 "variable "
-                                "must not be changed within the body of a "
-                                "while-loop");
+                                        "must not be changed within the body of a "
+                                "while-loop"
+                                );
+                            }
+
+                            if(!typeWithCommonInfo.isa<daphne::UnknownType>()) {
+                                // Use casts to remove those properties accordingly.
+                                castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
+                                castOperandIf(builder, whileOp, i, typeWithCommonInfo);
+                                // Since the WhileOp's argument types/properties have changed,
+                                // we must repeat the inference for the loop body.
+//                                repeat++;
+                                repeat = true;
+                            }
+                            else
+                                castOperandIf(builder, yieldOp, i, operandTy);
                         }
-                        // Use casts to remove those properties accordingly.
-                        castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
-                        castOperandIf(builder, whileOp, i, typeWithCommonInfo);
-                        // Since the WhileOp's argument types/properties have changed,
-                        // we must repeat the inference for the loop body.
-                        repeat = true;
                     }
+//                    if(old_repeat != repeat) {
+                    if(repeat) {
+                        // Before we can repeat the inference, we reset all information
+                        // inferred so far to unknown (in the loop body).
+                        beforeBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
+                        afterBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
+//                        logger->debug("op {} after reset to unknown:", op->getName().getStringRef().str());
+//                        op->dump();
+                    }
+                    else
+                        // If all types matched, we are done.
+                        break;
                 }
-                if(repeat) {
-                    // Before we can repeat the inference, we reset all information
-                    // inferred so far to unknown (in the loop body).
-                    beforeBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
-                    afterBlock.walk<WalkOrder::PreOrder>(walkSetUnknown);
-                }
-                else
-                    // If all types matched, we are done.
-                    break;
+                // Tell the walker to skip the descendants of the WhileOp, we
+                // have already triggered a walk on them explicitly.
+                return WalkResult::skip();
             }
-            // Tell the walker to skip the descendants of the WhileOp, we
-            // have already triggered a walk on them explicitly.
-            return WalkResult::skip();
-        }
-        else if(auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
-            Block & block = forOp.getRegion().front();
-            const size_t numIndVars = forOp.getNumInductionVars();
-            OpBuilder builder(forOp.getContext());
-            // Infer the types/properties inside the loop body. If some property
-            // of some argument is changed inside the loop body, this property is
-            // set to unknown for both the argument and the yielded value. If that
-            // is the case, we need to do the inference anew, with the new set of
-            // arguments' properties.
-            // This loop searches a fix-point and always terminates, since we only
-            // set properties to unknown and in the extreme case, after a finite
-            // number of iterations all of the arguments' properties will have
+            else if(auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
+                Block & block = forOp.getRegion().front();
+                const size_t numIndVars = forOp.getNumInductionVars();
+                OpBuilder builder(forOp.getContext());
+                // Infer the types/properties inside the loop body. If some property
+                // of some argument is changed inside the loop body, this property is
+                // set to unknown for both the argument and the yielded value. If that
+                // is the case, we need to do the inference anew, with the new set of
+                // arguments' properties.
+                // This loop searches a fix-point and always terminates, since we only
+                // set properties to unknown and in the extreme case, after a finite
+                // number of iterations all the arguments' properties will have
             // become unknown.
             while(true) {
                 bool repeat = false;
@@ -487,7 +519,9 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
     };
 
 public:
-    InferencePass(daphne::InferenceConfig cfg) : cfg(cfg) {}
+    explicit InferencePass(daphne::InferenceConfig cfg) : cfg(cfg) {
+        logger = spdlog::get("compiler");
+    }
 
     void runOnOperation() override {
         func::FuncOp f = getOperation();
