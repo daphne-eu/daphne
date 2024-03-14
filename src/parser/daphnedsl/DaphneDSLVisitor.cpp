@@ -1387,8 +1387,9 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
 //            spdlog::debug("stringview: {}", ss);
 //            spdlog::debug("substringview: {}", ss.substr(litStr.length() - 3));
 //        }
-        litStr = std::regex_replace(litStr, std::regex("_"), "");
-        litStr = std::regex_replace(litStr, std::regex("'"), "");
+
+        // remove digit separators
+        litStr = std::regex_replace(litStr, std::regex("_|'"), "");
 
         if (litStr.back() == 'u')
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, std::stoul(litStr)));
@@ -1423,14 +1424,14 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         else if(litStr == "-inff")
             val = -std::numeric_limits<float>::infinity();
         else if (litStr.back() == 'f') {
-            litStr = std::regex_replace(litStr, std::regex("_"), "");
-            litStr = std::regex_replace(litStr, std::regex("'"), "");
+            // remove digit separators
+            litStr = std::regex_replace(litStr, std::regex("_|'"), "");
             auto fval = std::stof(litStr.c_str());
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, fval));
         }
         else {
-            litStr = std::regex_replace(litStr, std::regex("_"), "");
-            litStr = std::regex_replace(litStr, std::regex("'"), "");
+            // remove digit separators
+            litStr = std::regex_replace(litStr, std::regex("_|'"), "");
             val = std::atof(litStr.c_str());
         }
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val)
