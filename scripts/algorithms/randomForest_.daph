@@ -103,10 +103,8 @@ def randomForest(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
     # TODO Support stop()-function (see #658).
     print("randomForest: y contains only one class label.");
 
-  # TODO Support float literals in scientific notation (see #659).
-  lseed = as.scalar<si64>(seed!=-1 ? seed : as.scalar(rand(1,1,0,1000000000/*1e9*/,1,-1)));
-  # TODO Support float literals in scientific notation (see #659).
-  randSeeds = rand(3 * num_trees, 1, 0, 1000000000/*1e9*/, 1, lseed);
+  lseed = as.scalar<si64>(seed!=-1 ? seed : as.scalar(rand(1,1,0,as.si64(1e9),1,-1)));
+  randSeeds = rand(3 * num_trees, 1, 0, as.si64(1e9), 1, lseed);
 
   # training of num_tree decision trees
   M = fill(0.0, num_trees, 2*(2^max_depth - 1));
@@ -147,14 +145,12 @@ def randomForest(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
 
     M[i - 1, 0:ncol(Mtemp)] = reshape(Mtemp, 1, ncol(Mtemp));
     if( verbose )
-      # TODO Support float literals in scientific notation (see #659).
-      print("-- ["+i+"] trained decision tree in "+(as.f64(now()-t2)/1000000000/*1e9*/)+" seconds.");
+      print("-- ["+i+"] trained decision tree in "+(as.f64(now()-t2)/1e9)+" seconds.");
   }
   M = cbind(F, M);
 
   if(verbose) {
-    # TODO Support float literals in scientific notation (see #659).
-    print("randomForest: trained ensemble with num_trees="+num_trees+" in "+(as.f64(now()-t1)/1000000000/*1e9*/)+" seconds.");
+    print("randomForest: trained ensemble with num_trees="+num_trees+" in "+(as.f64(now()-t1)/1e9)+" seconds.");
   }
 
   return M;

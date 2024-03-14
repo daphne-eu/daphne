@@ -213,11 +213,9 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
   if( sum(X<=0) != 0 )
     # TODO Support stop()-function (see #658).
     print("decisionTree: feature matrix X is not properly recoded/binned (values <= 0): "+sum(X<=0));
-  # TODO Support float literals in scientific notation (see #659).
-  if( sum(abs(X-round(X))>0.00000000000001) != 0 ) # 1e-14
+  if( sum(abs(X-round(X))>1e-14) != 0 )
     # TODO Support stop()-function (see #658).
-    # TODO Support float literals in scientific notation (see #659).
-    print("decisionTree: feature matrix X is not properly recoded/binned (non-integer): "+sum(abs(X-round(X))>0.00000000000001)); # 1e-14
+    print("decisionTree: feature matrix X is not properly recoded/binned (non-integer): "+sum(abs(X-round(X))>1e-14));
   if( sum(y<=0) != 0 )
     # TODO Support stop()-function (see #658).
     print("decisionTree: label vector y is not properly recoded/binned: "+sum(y<=0));
