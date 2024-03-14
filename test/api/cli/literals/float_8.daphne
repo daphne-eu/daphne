@@ -1,0 +1,9 @@
+// (lower case) E notation for floats
+print(1e10);
+print(1e-10);
+print(1.2e5);
+print(1.2e-5);
+print(1e0);
+
+// upper case E
+print(1E5);

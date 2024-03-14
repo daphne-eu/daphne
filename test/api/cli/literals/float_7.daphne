@@ -1,0 +1,5 @@
+// Delimiters _ and '
+print(1_234.5f);
+print(1_234.5);
+print(1'234.5f);
+print(1'234.5);

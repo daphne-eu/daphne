@@ -1380,13 +1380,16 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
     // primitive C++ data types.
     mlir::Location loc = utils.getLoc(ctx->start);
     if(auto lit = ctx->INT_LITERAL()) {
-        const std::string litStr = lit->getText();
-        auto ss = std::string_view(litStr);
+        std::string litStr = lit->getText();
+//        auto ss = std::string_view(litStr);
 //        if(litStr.length() > 2) {
 //            spdlog::debug("litstr: {} len: {}", litStr, litStr.length());
 //            spdlog::debug("stringview: {}", ss);
 //            spdlog::debug("substringview: {}", ss.substr(litStr.length() - 3));
 //        }
+        litStr = std::regex_replace(litStr, std::regex("_"), "");
+        litStr = std::regex_replace(litStr, std::regex("'"), "");
+
         if (litStr.back() == 'u')
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, std::stoul(litStr)));
         else if (litStr.back() == 'l')
@@ -1395,7 +1398,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
                     static_cast<std::size_t>(std::stoll(litStr))));
         }
-        else if ((ss.length() > 2) && std::string_view(litStr).substr(litStr.length()-3) == "ull") {
+        else if ((litStr.length() > 2) && std::string_view(litStr).substr(litStr.length()-3) == "ull") {
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
                     static_cast<int64_t>(std::stoull(litStr))));
         }
@@ -1405,7 +1408,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         }
     }
     if(auto lit = ctx->FLOAT_LITERAL()) {
-        const std::string litStr = lit->getText();
+        std::string litStr = lit->getText();
         double val;
         if(litStr == "nan")
             val = std::numeric_limits<double>::quiet_NaN();
@@ -1420,11 +1423,16 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         else if(litStr == "-inff")
             val = -std::numeric_limits<float>::infinity();
         else if (litStr.back() == 'f') {
+            litStr = std::regex_replace(litStr, std::regex("_"), "");
+            litStr = std::regex_replace(litStr, std::regex("'"), "");
             auto fval = std::stof(litStr.c_str());
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, fval));
         }
-        else
+        else {
+            litStr = std::regex_replace(litStr, std::regex("_"), "");
+            litStr = std::regex_replace(litStr, std::regex("'"), "");
             val = std::atof(litStr.c_str());
+        }
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val)
         );
     }
