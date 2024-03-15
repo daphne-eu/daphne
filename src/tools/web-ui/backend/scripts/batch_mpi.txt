@@ -1,0 +1,26 @@
+#!/bin/bash
+#SBATCH --job-name=DaphneCoordinator
+#SBATCH --nodes={distributed_nodes}
+#SBATVH --ntasks={distributed_nodes}
+#SBATCH --cpus-per-task={coresPerTask}
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=100G
+#SBATCH --time=01:00:00
+#SBATCH --partition=cpu
+#SBATCH -o {out_f}
+#SBATCH -e {err_f}
+
+export UCX_TLS=self,sm
+export OMPI_MCA_PML="ucx"
+export PMIX_MCA_gds="hash"
+export PATH=/cvmfs/sling.si/modules/el7/software/OpenMPI/4.1.4-NVHPC-22.7-CUDA-11.7.0/bin:${{PATH}}
+export LD_LIBRARY_PATH=/cvmfs/sling.si/modules/el7/software/OpenMPI/4.1.4-NVHPC-22.7-CUDA-11.7.0/lib:${{LD_LIBRARY_PATH}}
+CUDA_PATH=/usr/local/cuda
+LD_LIBRARY_PATH=$CUDA_PATH/lib64:$DAPHNE_ROOT/lib:/usr/local/lib:$LD_LIBRARY_PATH
+PATH=$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
+
+cd {daphne_dir}
+
+module load OpenMPI/4.1.4-NVHPC-22.7-CUDA-11.7.0
+
+srun --mpi=pmix_v3 singularity exec --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/lib:`pwd`/thirdparty/installed/lib -B /cvmfs/sling.si/modules/el7/software/OpenMPI/4.1.4-NVHPC-22.7-CUDA-11.7.0 ./daphne.sif ./bin/daphne {daphneParams} {daphneArgs};
