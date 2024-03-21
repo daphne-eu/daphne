@@ -214,3 +214,28 @@ template <> struct CheckEq<Frame> {
         return true;
     }
 };
+
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CheckEq<Matrix<VT>> {
+    static bool apply(const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
+        if(lhs == rhs)
+            return true;
+        
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        
+        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+            return false;
+        
+        for (size_t r=0; r < numRows; ++r)
+            for (size_t c=0; c < numCols; ++c)
+                if (lhs->get(r, c) != rhs->get(r, c))
+                    return false;
+        
+        return true;
+    }
+};

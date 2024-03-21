@@ -338,7 +338,7 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         res->prepareAppend();
         for(size_t r = 0; r < numRows; r++)
             for(size_t c = 0; c < numCols; c++)
-                res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c), ctx);
+                res->append(r, c, func(lhs->get(r, c), rhs->get(r, c), ctx));
         res->finishAppend();
     }
 };

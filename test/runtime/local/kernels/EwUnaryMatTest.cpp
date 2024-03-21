@@ -18,6 +18,7 @@
 #include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/EwUnaryMat.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 
@@ -40,6 +41,14 @@ void checkEwUnaryMat(UnaryOpCode opCode, const DTArg * arg, const DTRes * exp) {
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
+
+// template<typename DTRes, typename VT>
+// void checkEwUnaryMatMATRIX(UnaryOpCode opCode, const DenseMatrix<VT> * arg, const DTRes * exp) {
+//     Matrix<VT> * res = nullptr;
+//     ewUnaryMat<Matrix<VT>, Matrix<VT>>(opCode, res, arg, nullptr);
+//     CHECK(*res == *exp);
+//     DataObjectFactory::destroy(res);
+// }
 
 template<typename DTRes, typename DTArg>
 void checkEwUnaryMatApprox(UnaryOpCode opCode, const DTArg * arg, const DTRes * exp) {
@@ -77,6 +86,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     });
 
     checkEwUnaryMat(UnaryOpCode::ABS, arg, dense_exp);
+    // checkEwUnaryMatMATRIX(UnaryOpCode::ABS, arg, dense_exp);
 
     DataObjectFactory::destroy(arg, dense_exp);
 }
