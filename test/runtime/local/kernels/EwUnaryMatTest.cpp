@@ -42,13 +42,13 @@ void checkEwUnaryMat(UnaryOpCode opCode, const DTArg * arg, const DTRes * exp) {
     DataObjectFactory::destroy(res);
 }
 
-// template<typename DTRes, typename VT>
-// void checkEwUnaryMatMATRIX(UnaryOpCode opCode, const DenseMatrix<VT> * arg, const DTRes * exp) {
-//     Matrix<VT> * res = nullptr;
-//     ewUnaryMat<Matrix<VT>, Matrix<VT>>(opCode, res, arg, nullptr);
-//     CHECK(*res == *exp);
-//     DataObjectFactory::destroy(res);
-// }
+template<typename DTRes, typename VT>
+void checkEwUnaryMatGeneric(UnaryOpCode opCode, const DenseMatrix<VT> * arg, const DTRes * exp) {
+    Matrix<VT> * res = nullptr;
+    ewUnaryMat<Matrix<VT>, Matrix<VT>>(opCode, res, arg, nullptr);
+    CHECK(checkEq<Matrix<VT>>(res, exp, nullptr));
+    // DataObjectFactory::destroy(res);
+}
 
 template<typename DTRes, typename DTArg>
 void checkEwUnaryMatApprox(UnaryOpCode opCode, const DTArg * arg, const DTRes * exp) {
@@ -86,7 +86,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     });
 
     checkEwUnaryMat(UnaryOpCode::ABS, arg, dense_exp);
-    // checkEwUnaryMatMATRIX(UnaryOpCode::ABS, arg, dense_exp);
+    checkEwUnaryMatGeneric(UnaryOpCode::ABS, arg, dense_exp);
 
     DataObjectFactory::destroy(arg, dense_exp);
 }
@@ -106,6 +106,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     });
 
     checkEwUnaryMat(UnaryOpCode::SIGN, arg, dense_exp);
+    checkEwUnaryMatGeneric(UnaryOpCode::SIGN, arg, dense_exp);
 
     DataObjectFactory::destroy(arg, dense_exp);
 }
@@ -125,6 +126,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNE
     });
 
     checkEwUnaryMat(UnaryOpCode::SIGN, arg, dense_exp);
+    checkEwUnaryMatGeneric(UnaryOpCode::SIGN, arg, dense_exp);
 
     DataObjectFactory::destroy(arg, dense_exp);
 }
@@ -146,6 +148,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     });
 
     checkEwUnaryMat(UnaryOpCode::SQRT, arg, dense_exp);
+    checkEwUnaryMatGeneric(UnaryOpCode::SQRT, arg, dense_exp);
 
     DataObjectFactory::destroy(arg, dense_exp);
 }

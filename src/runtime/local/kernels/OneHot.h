@@ -21,6 +21,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
+#include <stdexcept>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -100,6 +102,57 @@ struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
             valuesArg += rowSkipArg;
             valuesRes += rowSkipRes;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct OneHot<Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+        const size_t numColsArg = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        
+        if (info->getNumRows() != 1)
+            throw std::runtime_error("OneHot: parameter info must be a row matrix");
+        if (numColsArg != info->getNumCols())
+            throw std::runtime_error("OneHot: parameter info must provide information for each column of parameter arg");
+        
+        size_t numColsRes = 0;
+        const int64_t * valuesInfo = info->getValues();
+        for(size_t c = 0; c < numColsArg; c++) {
+            const int64_t numDistinct = valuesInfo[c];
+            if(numDistinct == -1)
+                numColsRes++;
+            else if(numDistinct > 0)
+                numColsRes += numDistinct;
+            else
+                throw std::runtime_error("OneHot: parameter info values must be -1, 0, or positive signed integer");
+        }
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
+
+        res->prepareAppend();
+        for(size_t r=0; r < numRows; ++r) {
+            size_t cRes = 0;
+            for(size_t cArg=0; cArg < numColsArg; ++cArg) {
+                const int64_t numDistinct = valuesInfo[cArg];
+                if(numDistinct == -1)
+                    // retain value from argument matrix
+                    res->append(r, cRes++, arg->get(r, cArg));
+                else {
+                    // one-hot encode value from argument matrix
+                    for(int64_t d=0; d < numDistinct; ++d)
+                        res->append(r, cRes + d, 0);
+                    res->append(r, cRes + static_cast<size_t>(arg->get(r, cArg)), 1);
+                    cRes += numDistinct;
+                }
+            }
+        }
+        res->finishAppend();
     }
 };
 
