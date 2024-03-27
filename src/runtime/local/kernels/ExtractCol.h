@@ -163,4 +163,39 @@ struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, Matrix (positions)
+// ----------------------------------------------------------------------------
+
+template<typename VTArg, typename VTSel>
+struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
+    static void apply(Matrix<VTArg> *& res, const Matrix<VTArg> * arg, const Matrix<VTSel> * sel, DCTX(ctx)) {
+        VALIDATE_ARGS(sel->getNumCols());
+
+        const size_t numColsRes = sel->getNumRows();
+        const size_t numRows = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, numColsRes, false);
+        
+        res->prepareAppend();
+        for (size_t r=0; r < numRows; ++r) {
+            for (size_t c=0; c < numColsRes; ++c) {
+                const VTSel VTcolIdx = sel->get(c, 0);
+                const size_t colIdx = static_cast<const size_t>(VTcolIdx);
+                if (VTcolIdx < 0 || numColsArg <= colIdx) {
+                    std::ostringstream errMsg;
+                    errMsg << "invalid argument '" << VTcolIdx << "' passed to ExtractCol: out of bounds "
+                        "for dense matrix with column boundaries '[0, " << numColsArg << ")'";
+                    throw std::out_of_range(errMsg.str());
+                }
+
+                res->append(r, c, arg->get(r, colIdx));
+            }
+        }
+        res->finishAppend();
+    }
+};
+
 #undef VALIDATE_ARGS

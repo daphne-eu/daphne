@@ -137,4 +137,44 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTArg, typename VTSel>
+struct InsertCol<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
+    static void apply(
+            DenseMatrix<VTArg> *& res,
+            const Matrix<VTArg> * arg, const Matrix<VTArg> * ins,
+            VTSel colLowerIncl, VTSel colUpperExcl,
+            DCTX(ctx)
+    ) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+        const size_t numRowsIns = ins->getNumRows();
+        const size_t numColsIns = ins->getNumCols();
+
+        const size_t colLowerIncl_Size = static_cast<const size_t>(colLowerIncl);
+        const size_t colUpperExcl_Size = static_cast<const size_t>(colUpperExcl);
+        
+        validateArgsInsertCol(colLowerIncl_Size, colLowerIncl, colUpperExcl_Size, colUpperExcl,
+                    numRowsArg, numColsArg, numRowsIns, numColsIns);
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsArg, false);
+        
+        res->prepareAppend();
+        for (size_t r=0; r < numRowsArg; ++r) {
+            // fill values left of insertion, then between and lastly to its right
+            for (size_t c=0; c < colLowerIncl_Size; ++c)
+                res->append(r, c, arg->get(r, c));
+            for (size_t c=colLowerIncl_Size; c < colUpperExcl_Size; ++c)
+                res->append(r, c, ins->get(r, c - colLowerIncl_Size));
+            for (size_t c=colUpperExcl_Size; c < numColsArg; ++c)
+                res->append(r, c, arg->get(r, c));
+        }
+        res->finishAppend();
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H

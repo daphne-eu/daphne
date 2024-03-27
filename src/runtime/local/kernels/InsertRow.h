@@ -145,4 +145,47 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT, typename VTSel>
+struct InsertRow<Matrix<VT>, Matrix<VT>, VTSel> {
+    static void apply(
+            Matrix<VT> *& res,
+            const Matrix<VT> * arg, const Matrix<VT> * ins,
+            VTSel rowLowerIncl, VTSel rowUpperExcl,
+            DCTX(ctx)
+    ) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+        const size_t numRowsIns = ins->getNumRows();
+        const size_t numColsIns = ins->getNumCols();
+
+        const size_t rowLowerIncl_Size = static_cast<const size_t>(rowLowerIncl);
+        const size_t rowUpperExcl_Size = static_cast<const size_t>(rowUpperExcl);
+        
+        validateArgsInsertRow(rowLowerIncl_Size, rowLowerIncl, rowUpperExcl_Size, rowUpperExcl,
+                    numRowsArg, numColsArg, numRowsIns, numColsIns);
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsArg, numColsArg, false);
+        
+        // fill values above insertion, then between and lastly below
+        res->prepareAppend();
+        for (size_t r=0; r < rowLowerIncl_Size; ++r)
+            for (size_t c=0; c < numColsArg; ++c)
+                append(r, c, arg->get(r, c));
+
+        for (size_t r=rowLowerIncl_Size; r < rowUpperExcl_Size; ++r)
+            for (size_t c=0; c < numColsArg; ++c)
+                append(r, c, ins->get(r - rowLowerIncl_Size, c));
+                
+        for (size_t r=rowUpperExcl_Size; r < numRowsArg; ++r)
+            for (size_t c=0; c < numColsArg; ++c)
+                append(r, c, arg->get(r, c));
+        res->finishAppend();
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H

@@ -143,4 +143,27 @@ struct DiagMatrix<CSRMatrix<VT>, CSRMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct DiagMatrix<Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {
+        if (arg->getNumCols() != 1)
+            throw std::runtime_error("DiagMatrix: parameter arg must be a column-matrix");
+        
+        const size_t numRowsCols = arg->getNumRows();
+        
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsCols, numRowsCols, false);
+        
+        res->prepareAppend();
+        for (size_t r=0; r < numRowsCols; ++r) {
+            res->append(r, r, arg->get(r, 0));
+        }
+        res->finishAppend();
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_DIAGMATRIX_H

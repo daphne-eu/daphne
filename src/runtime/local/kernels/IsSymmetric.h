@@ -39,6 +39,10 @@ template <class DTArg> bool isSymmetric(const DTArg *arg, DCTX(ctx)) {
 // (Partial) template specializations for different DataTypes
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// Bool <- DenseMatrix
+// ----------------------------------------------------------------------------
+
 /**
  * @brief Checks for symmetrie of a `DenseMatrix`.
  *
@@ -75,6 +79,10 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
         return true;
     }
 };
+
+// ----------------------------------------------------------------------------
+// Bool <- CSRMatrix
+// ----------------------------------------------------------------------------
 
 template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
     static bool apply(const CSRMatrix<VT> *arg, DCTX(ctx)) {
@@ -134,6 +142,36 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
 
             if (rowLastPos == static_cast<size_t>(-1) && numNonZerosA != 0) { // Not all elements of this row were iterated over, not sym!
                 return false;
+            }
+        }
+        return true;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Bool <- Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct IsSymmetric<Matrix<VT>> {
+    static bool apply(const Matrix<VT> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (numRows != numCols) {
+            throw std::runtime_error("Provided matrix is not square.");
+        }
+
+        // singular matrix is considered symmetric.
+        if (numRows <= 1 || numCols <= 1) {
+            return true;
+        }
+
+        // TODO add cache-conscious operations
+        for (size_t rowIdx=0; rowIdx < numRows; ++rowIdx) {
+            for (size_t colIdx = rowIdx + 1; colIdx < numCols; ++colIdx) {
+                if (arg->get(rowIdx, colIdx) != arg->get(colIdx, rowIdx)) {
+                    return false;
+                }
             }
         }
         return true;

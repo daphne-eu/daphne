@@ -24,6 +24,7 @@
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
+#include <numeric>
 #include <stdexcept>
 
 #include <cstddef>
@@ -66,9 +67,7 @@ struct FilterRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         if(sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
-        size_t numRowsRes = 0;
-        for(size_t r = 0; r < numRowsArg; r++)
-            numRowsRes += sel->get(r, 0);
+        size_t numRowsRes = std::accumulate(sel->getValues(), sel->getValues() + sel->getNumRows(), 0);
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
@@ -162,5 +161,41 @@ struct FilterRow<Frame, Frame, VTSel> {
 };
 
 #undef FILTERROW_FRAME_MODE
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT, typename VTSel>
+struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, const Matrix<VTSel> * sel, DCTX(ctx)) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if(sel->getNumRows() != numRowsArg)
+            throw std::runtime_error("sel must have exactly one entry (row) for each row in arg");
+        if(sel->getNumCols() != 1)
+            throw std::runtime_error("sel must be a single-column matrix");
+
+        size_t numRowsRes = 0;
+        for (size_t r=0; r < numRowsArg; ++r)
+            numRowsRes += sel->get(r, 0);
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
+
+        const VT * valuesArg = arg->getValues();
+        VT * valuesRes = res->getValues();
+        const size_t rowSkipArg = arg->getRowSkip();
+        const size_t rowSkipRes = res->getRowSkip();
+        for(size_t r = 0; r < numRowsArg; r++) {
+            if(sel->get(r, 0)) {
+                memcpy(valuesRes, valuesArg, numCols * sizeof(VT));
+                valuesRes += rowSkipRes;
+            }
+            valuesArg += rowSkipArg;
+        }
+    }
+};
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_FILTERROW_H
