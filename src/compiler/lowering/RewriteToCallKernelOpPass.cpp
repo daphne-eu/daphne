@@ -268,7 +268,7 @@ namespace
                     }
                     else
                         // Non-variadic operand.
-                        newOperands.push_back(op->getOperand(i));
+                        newOperands.push_back(op->getOperand(idx));
                 }
             }
             else
