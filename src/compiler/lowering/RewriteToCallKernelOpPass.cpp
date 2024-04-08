@@ -181,12 +181,12 @@ namespace
             for(size_t i = 0; i < resultTypes.size(); i++)
                 callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[i], false);
 
-            // Append names of operand types to the kernel name. Variadic
+            // Append names of operand types to the kernel name. Variadic ODS
             // operands, which can have an arbitrary number of occurrences, are
             // treated specially.
             Operation::operand_type_range operandTypes = op->getOperandTypes();
             // The operands of the CallKernelOp may differ from the operands
-            // of the given operation, if it has a variadic operand.
+            // of the given operation, if it has a variadic ODS operand.
             std::vector<Value> newOperands;
 
             if(
@@ -197,40 +197,51 @@ namespace
                 op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>() ||
                 op->hasTrait<OpTrait::AtLeastNOperands<2>::Impl>()
             ) {
-                // For operations with variadic operands, we replace all
-                // occurrences of a variadic operand by a single operand of
+                // For operations with variadic ODS operands, we replace all
+                // occurrences of a variadic ODS operand by a single operand of
                 // type VariadicPack as well as an operand for the number of
-                // occurrences. All occurrences of the variadic operand are
+                // occurrences. All occurrences of the variadic ODS operand are
                 // stored in the VariadicPack.
+                // Note that a variadic ODS operand may have zero occurrences.
+                // In that case, there is no operand corresponding to the
+                // variadic ODS operand.
                 const size_t numODSOperands = getNumODSOperands(op);
                 for(size_t i = 0; i < numODSOperands; i++) {
                     auto odsOpInfo = getODSOperandInfo(op, i);
                     const unsigned idx = std::get<0>(odsOpInfo);
                     const unsigned len = std::get<1>(odsOpInfo);
                     const bool isVariadic = std::get<2>(odsOpInfo);
-                    
-                    // TODO The group operation currently expects at least four inputs due to the
-                    // expectation of a aggregation. To make the group operation possible without aggregations,
-                    // we have to use this workaround to create the correct name and skip the creation
-                    // of the variadic pack ops. Should be changed when reworking the lowering to kernels.
-                    if(llvm::dyn_cast<daphne::GroupOp>(op) && idx >= operandTypes.size()) {
-                        callee << "__char_variadic__size_t";
-                        auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
-                                loc,
-                                daphne::VariadicPackType::get(
-                                        rewriter.getContext(),
-                                        daphne::StringType::get(rewriter.getContext())
-                                ),
-                                rewriter.getI64IntegerAttr(0)
-                        );
-                        newOperands.push_back(cvpOp);
-                        newOperands.push_back(rewriter.create<daphne::ConstantOp>(
-                                loc, rewriter.getIndexType(), rewriter.getIndexAttr(0))
-                        );
-                        continue;
-                    } else {
-                        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);
+
+                    // Determine the MLIR type of the current ODS operand.
+                    Type odsOperandTy;
+                    if(len > 0) {
+                        // If the current ODS operand has occurrences, then
+                        // we use the type of the first operand belonging to
+                        // the current ODS operand.
+                        odsOperandTy = operandTypes[idx];
                     }
+                    else { // len == 0
+                        // If the current ODS operand does not have any occurrences
+                        // (e.g., a variadic ODS operand with zero concrete operands
+                        // provided), then we cannot derive the type of the
+                        // current ODS operand from any given operand. Instead,
+                        // we use a default type depending on which ODS operand of
+                        // which operation it is.
+                        // Note that we cannot simply omit the type, since the
+                        // underlying kernel expects an "empty list" (represented
+                        // in the DAPHNE compiler by an empty VariadicPack).
+                        if(llvm::dyn_cast<daphne::GroupOp>(op) && i == 2)
+                            // A GroupOp may have zero aggregation column names.
+                            odsOperandTy = daphne::StringType::get(rewriter.getContext());
+                        else
+                            throw std::runtime_error(
+                                "RewriteToCallKernelOpPass encountered a variadic ODS operand with zero occurrences, "
+                                "but does not know how to handle it: ODS operand " + std::to_string(i) +
+                                " of operation " + op->getName().getStringRef().str()
+                            );
+                    }
+
+                    callee << "__" << CompilerUtils::mlirTypeToCppTypeName(odsOperandTy, generalizeInputTypes);
 
                     if(isVariadic) {
                         // Variadic operand.
@@ -239,7 +250,7 @@ namespace
                                 loc,
                                 daphne::VariadicPackType::get(
                                         rewriter.getContext(),
-                                        op->getOperand(idx).getType()
+                                        odsOperandTy
                                 ),
                                 rewriter.getI64IntegerAttr(len)
                         );
