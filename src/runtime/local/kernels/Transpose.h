@@ -118,3 +118,24 @@ struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
         delete[] curRowOffsets;
     }
 };
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct Transpose<Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        
+        if (res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
+        
+        res->prepareAppend();
+        for (size_t r=0; r < numCols; ++r)
+            for (size_t c=0; c < numRows; ++c)
+                res->append(r, c, arg->get(c, r));
+        res->finishAppend();
+    }
+};

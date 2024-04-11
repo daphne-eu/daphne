@@ -22,6 +22,8 @@
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
+#include <stdexcept>
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -74,5 +76,33 @@ struct OuterBinary<DenseMatrix<VTRes>, DenseMatrix<VTLhs>, DenseMatrix<VTRhs>> {
             valuesLhs += lhs->getRowSkip();
             valuesRes += res->getRowSkip();
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTLhs, typename VTRhs>
+struct OuterBinary<Matrix<VTRes>, Matrix<VTLhs>, Matrix<VTRhs>> {
+    static void apply(BinaryOpCode opCode, Matrix<VTRes> *& res, const Matrix<VTLhs> * lhs, const Matrix<VTRhs> * rhs, DCTX(ctx)) {
+        if(lhs->getNumCols() != 1)
+            throw std::runtime_error("outerBinary: lhs must be a column (mx1) matrix");
+        if(rhs->getNumRows() != 1)
+            throw std::runtime_error("outerBinary: rhs must be a row (1xn) matrix");
+
+        const size_t numRowsLhs = lhs->getNumRows();
+        const size_t numColsRhs = rhs->getNumCols();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRowsLhs, numColsRhs, false);
+        
+        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
+        
+        res->prepareAppend();
+        for (size_t r=0; r < numRowsLhs; ++r)
+            for (size_t c=0; c < numColsRhs; ++c)
+                res->append(r, c, func(lhs->get(r, 0), rhs->get(0, c), ctx));
+        res->finishAppend();
     }
 };

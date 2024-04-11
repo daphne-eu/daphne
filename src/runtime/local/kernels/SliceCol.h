@@ -94,4 +94,27 @@ struct SliceCol<Frame, Frame, VTSel> {
     }        
 };
 
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTArg, typename VTSel>
+struct SliceCol<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
+    static void apply(Matrix<VTArg> *& res, const Matrix<VTArg> * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+        const size_t numColsRes = static_cast<size_t>(upperExcl - lowerIncl);
+        validateArgsSliceCol(lowerIncl, upperExcl, numColsArg);
+        
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsRes, false)
+
+        res->prepareAppend();
+        for (size_t r=0; r < numRowsArg; ++r)
+            for (size_t c=0; c < numColsRes; ++c)
+                res->append(r, c, arg->get(r, static_cast<const size_t>(lowerIncl) + c));
+        res->finishAppend();
+    }        
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SLICECOL_H

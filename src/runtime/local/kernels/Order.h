@@ -237,3 +237,47 @@ struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
     }
 };
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+// template <typename VTRes, typename VTArg>
+// struct Order<Matrix<VTRes>, Matrix<VTArg>> {
+//     static void apply(Matrix<VTRes> *& res, const Matrix<VTArg> * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
+//         size_t numRows = arg->getNumRows();
+//         if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr ||
+//             (returnIdx == false && !std::is_same<VTRes, VTArg>::value) ||
+//             (returnIdx == true && !std::is_same<VTRes, size_t>::value)
+//         ) {
+//             throw std::runtime_error("order-kernel called with invalid arguments");
+//         }
+
+//         auto idx = DataObjectFactory::create<DenseMatrix<size_t>>(numRows, 1, false);
+//         auto indices = idx->getValues();
+//         std::iota(indices, indices+numRows, 0);
+//         std::vector<std::pair<size_t, size_t>> groups;
+//         groups.push_back(std::make_pair(0, numRows));
+
+//         if (numColIdxs > 1) {
+//             for (size_t i = 0; i < numColIdxs-1; i++) {
+//                 multiColumnIDSort(idx, arg, colIdxs[i], groups, ascending[i], ctx);
+//             }
+//         }
+
+//         if (groupsRes == nullptr) {
+//             columnIDSort(idx, arg, colIdxs[numColIdxs-1], groups, ascending[numColIdxs-1], ctx);
+//         } else {
+//             multiColumnIDSort(idx, arg, colIdxs[numColIdxs-1], groups, ascending[numColIdxs-1], ctx);
+//             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
+//         }
+
+//         if (returnIdx)
+//         {
+//            res = (DenseMatrix<VTRes>*) idx;
+//         } else {
+//             extractRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, size_t>((DenseMatrix<VTArg>*&) res, arg, idx, ctx);
+//             DataObjectFactory::destroy(idx);
+//         }
+//     }
+// };

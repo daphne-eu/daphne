@@ -158,4 +158,34 @@ struct GenGivenVals<CSRMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct GenGivenVals<Matrix<VT>> {
+    static Matrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
+        if(numRows == 0)
+            throw std::runtime_error("genGivenVals(): numRows must not be zero");
+
+        const size_t numCells = elements.size();
+        if(numCells % numRows)
+            throw std::runtime_error(
+                    "genGivenVals(): the number of given data elements must be "
+                    "divisible by given number of rows"
+            );
+
+        const size_t numCols = numCells / numRows;
+        auto res = DataObjectFactory::create<Matrix<VT>>(numRows, numCols);
+        
+        res->prepareAppend();
+        for (size_t r=0; r<numRows; ++r)
+            for (size_t c=0; c<numCols; ++c)
+                res->append(r, c, elements[r*numRows + c]);
+        res->finishAppend();
+        
+        return res;
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_DATAGEN_GENGIVENVALS_H

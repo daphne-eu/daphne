@@ -170,4 +170,35 @@ struct RowBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct RowBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * ups, const Matrix<VT> * lows, DCTX(ctx)) {
+        const size_t numRowsUps = ups->getNumRows();
+        const size_t numColsUps = ups->getNumCols();
+        const size_t numRowsLows = lows->getNumRows();
+        const size_t numColsLows = lows->getNumCols();
+        
+        if (numColsUps != numColsLows)
+            throw std::runtime_error("RowBind: ups and lows must have the same number of columns");
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsUps + numRowsLows, numCols, false);
+        
+        res->prepareAppend();
+        for (size_t r=0; r < numRowsUps; ++r)
+            for (size_t c=0; c < numColsUps, ++c)
+                res->append(r, c, ups->get(r, c));
+
+        for (size_t r=0; r < numRowsUps; ++r)
+            for (size_t c=0; c < numColsUps, ++c)
+                res->append(numRowsUps + r, c, lows->get(r, c));
+        res->finishAppend();
+        
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_ROWBIND_H

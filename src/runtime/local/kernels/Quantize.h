@@ -20,8 +20,11 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
+#include <stdexcept>
+
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -106,5 +109,36 @@ struct Quantize<DenseMatrix<uint8_t>, DenseMatrix<float>> {
                 res->set(i,j, quantize_value(arg->get(i,j), scale, q_zero));
             }
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<>
+struct Quantize<Matrix<uint8_t>, Matrix<float>> {
+    static void apply(Matrix<uint8_t> *& res, const Matrix<float> * arg, float min, float max, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (res == nullptr) {
+            res = DataObjectFactory::create<DenseMatrix<uint8_t>>(numRows, numCols, false);
+        }
+        else if (numRows != res->getNumRows() || numCols != res->getNumCols()) {
+            throw std::runtime_error("Quantize: res must have the same shape as arg");
+        }
+
+        float scale = 0;
+        uint8_t q_zero = 0;
+        calc_quantization_params(min, max, scale, q_zero);
+
+        res->prepareAppend();
+        for (size_t i=0; i < numRows; ++i) {
+            for (size_t j=0; j < numCols; ++j) {
+                res->append(i, j, quantize_value(arg->get(i, j), scale, q_zero));
+            }
+        }
+        res->finishAppend();
     }
 };

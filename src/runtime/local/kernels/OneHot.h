@@ -95,6 +95,8 @@ struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
                     // one-hot encode value from argument matrix
                     for(int64_t d = 0; d < numDistinct; d++)
                         valuesRes[cRes + d] = 0;
+                    // throw error or log issue?
+                    // if (static_cast<size_t>(valuesArg[cArg]) < numDistinct)
                     valuesRes[cRes + static_cast<size_t>(valuesArg[cArg])] = 1;
                     cRes += numDistinct;
                 }
@@ -111,7 +113,7 @@ struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
 
 template<typename VT>
 struct OneHot<Matrix<VT>, Matrix<VT>> {
-    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, const Matrix<int64_t> * info, DCTX(ctx)) {
         const size_t numColsArg = arg->getNumCols();
         const size_t numRows = arg->getNumRows();
         
@@ -121,12 +123,11 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
             throw std::runtime_error("OneHot: parameter info must provide information for each column of parameter arg");
         
         size_t numColsRes = 0;
-        const int64_t * valuesInfo = info->getValues();
-        for(size_t c = 0; c < numColsArg; c++) {
-            const int64_t numDistinct = valuesInfo[c];
-            if(numDistinct == -1)
+        for (size_t c=0; c < numColsArg; c++) {
+            const int64_t numDistinct = info->get(0, c);
+            if (numDistinct == -1)
                 numColsRes++;
-            else if(numDistinct > 0)
+            else if (numDistinct > 0)
                 numColsRes += numDistinct;
             else
                 throw std::runtime_error("OneHot: parameter info values must be -1, 0, or positive signed integer");
@@ -139,15 +140,18 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
         for(size_t r=0; r < numRows; ++r) {
             size_t cRes = 0;
             for(size_t cArg=0; cArg < numColsArg; ++cArg) {
-                const int64_t numDistinct = valuesInfo[cArg];
+                const int64_t numDistinct = info->get(0, cArg);
                 if(numDistinct == -1)
                     // retain value from argument matrix
                     res->append(r, cRes++, arg->get(r, cArg));
                 else {
                     // one-hot encode value from argument matrix
-                    for(int64_t d=0; d < numDistinct; ++d)
-                        res->append(r, cRes + d, 0);
-                    res->append(r, cRes + static_cast<size_t>(arg->get(r, cArg)), 1);
+                    // skipped values are assumed 0, perform bounds check
+                    size_t argVal = static_cast<size_t>(arg->get(r, cArg));
+                    if (argVal < numDistinct)
+                        res->append(r, cRes + argVal, 1);
+                    else
+                        throw std::out_of_range("OneHot: encoded values in arg must be smaller than respective vector length");
                     cRes += numDistinct;
                 }
             }

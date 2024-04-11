@@ -76,4 +76,27 @@ struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct Reshape<Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+
+        if (numRows * numCols != numRowsArg * numColsArg)
+            throw std::runtime_error("Reshape: new shape must retain the number of cells");
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+        res->prepareAppend();
+        for (size_t cell=0; cell < numRows * numCols; ++cell)
+            res->append(cell / numRows, cell % numRows, arg->get(cell / numRowsArg, cell % numRowsArg));
+        res->finishAppend();
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_RESHAPE_H
