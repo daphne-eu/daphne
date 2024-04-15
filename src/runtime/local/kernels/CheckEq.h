@@ -222,13 +222,13 @@ template <> struct CheckEq<Frame> {
 template<typename VT>
 struct CheckEq<Matrix<VT>> {
     static bool apply(const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
-        if(lhs == rhs)
+        if (lhs == rhs)
             return true;
         
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         
-        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
         
         for (size_t r=0; r < numRows; ++r)

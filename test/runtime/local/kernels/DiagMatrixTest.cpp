@@ -25,6 +25,7 @@
 #include <catch.hpp>
 
 #define TEST_NAME(opName) "DiagMatrix (" opName ")"
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int32_t, float
 
 template<class DTRes, class DTArg>
@@ -58,9 +59,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-dense"), TAG_KERNELS, (DenseMatrix), 
     checkDiagMatrix(arg, dense_exp);
     checkDiagMatrix(arg, csr_exp);
 
-    DataObjectFactory::destroy(csr_exp);
-    DataObjectFactory::destroy(dense_exp);
-    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(csr_exp, dense_exp, arg);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-csr"), TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
@@ -99,6 +98,5 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-csr"), TAG_KERNELS, (CSRMatrix), (VAL
 
     checkDiagMatrix(arg, exp);
 
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(exp, arg);
 }

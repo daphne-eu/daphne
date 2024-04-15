@@ -92,8 +92,8 @@ struct Map<Matrix<VTRes>, Matrix<VTArg>> {
         auto udf = reinterpret_cast<VTRes(*)(VTArg)>(func);
 
         res->prepareAppend();
-        for(size_t r=0; r < numRows; ++r)
-            for(size_t c=0; c < numCols; ++c)
+        for (size_t r=0; r < numRows; ++r)
+            for (size_t c=0; c < numCols; ++c)
                 res->append(r, c, udf(arg->get(r, c)));
         res->finishAppend();
     }

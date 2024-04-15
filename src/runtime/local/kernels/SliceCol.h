@@ -107,7 +107,7 @@ struct SliceCol<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
         validateArgsSliceCol(lowerIncl, upperExcl, numColsArg);
         
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsRes, false)
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsRes, false);
 
         res->prepareAppend();
         for (size_t r=0; r < numRowsArg; ++r)

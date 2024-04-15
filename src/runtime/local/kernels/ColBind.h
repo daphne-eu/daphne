@@ -159,11 +159,11 @@ struct ColBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numColsRhs = rhs->getNumCols();
         
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsLhs + numColsRhs, false);
         
         res->prepareAppend();
-        for(size_t r = 0; r < numRows; ++r) {
+        for (size_t r = 0; r < numRows; ++r) {
             for (size_t c=0; c < numColsLhs; ++c)
                 res->append(r, c, lhs->get(r, c));
             for (size_t c=0; c < numColsRhs; ++c)

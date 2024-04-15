@@ -90,7 +90,7 @@ struct Reverse<Matrix<VT>, Matrix<VT>> {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         
         res->prepareAppend();

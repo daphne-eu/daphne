@@ -28,7 +28,10 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, original matrices", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define VALUE_TYPES double, uint32_t
+
+TEMPLATE_PRODUCT_TEST_CASE("CheckEq, original matrices", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -69,7 +72,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEq, original matrices", TAG_KERNELS, (DenseMatr
     }
 }
     
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -118,7 +121,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (DenseMatr
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -170,7 +173,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (CSRMatrix
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -196,7 +199,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (DenseMatrix)
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {

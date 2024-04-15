@@ -30,7 +30,10 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+#define DATA_TYPES DenseMatrix, Matrix
+#define VALUE_TYPES double, uint32_t
+
+TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m0 = genGivenVals<DT>(3, {
@@ -54,10 +57,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (DenseMatrix), (double, uint3
     colBind<DT, DT, DT>(res, m0, m1, nullptr);
     CHECK(*res == *exp);
     
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(m0, m1, exp, res);
 }
 
 TEST_CASE("ColBind - Frame", TAG_KERNELS) {
@@ -117,16 +117,10 @@ TEST_CASE("ColBind - Frame", TAG_KERNELS) {
         CHECK_THROWS(colBind<Frame, Frame, Frame>(res, f01, f234, nullptr));
     }
     
-    DataObjectFactory::destroy(c0);
-    DataObjectFactory::destroy(c1);
-    DataObjectFactory::destroy(c2);
-    DataObjectFactory::destroy(c3);
-    DataObjectFactory::destroy(c4);
-    DataObjectFactory::destroy(f01);
-    DataObjectFactory::destroy(f234);
+    DataObjectFactory::destroy(c0, c1, c2, c3, c4, f01, f234);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -216,10 +210,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (CSRMatrix), (double, uint32_
         colBind<DT, DT, DT>(res, m1, m2, nullptr);
         CHECK(*res == *exp);
 
-        DataObjectFactory::destroy(m1);
-        DataObjectFactory::destroy(m2);
-        DataObjectFactory::destroy(exp);
-        DataObjectFactory::destroy(res);
+        DataObjectFactory::destroy(m1, m2, exp, res);
     }
 
     DataObjectFactory::destroy(m0);

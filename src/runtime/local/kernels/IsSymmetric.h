@@ -158,7 +158,7 @@ template <typename VT> struct IsSymmetric<Matrix<VT>> {
         const size_t numCols = arg->getNumCols();
 
         if (numRows != numCols) {
-            throw std::runtime_error("Provided matrix is not square.");
+            throw std::runtime_error("isSymmetric: Provided matrix is not square.");
         }
 
         // singular matrix is considered symmetric.

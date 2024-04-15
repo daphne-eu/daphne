@@ -89,7 +89,7 @@ struct Reshape<Matrix<VT>, Matrix<VT>> {
         if (numRows * numCols != numRowsArg * numColsArg)
             throw std::runtime_error("Reshape: new shape must retain the number of cells");
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         res->prepareAppend();

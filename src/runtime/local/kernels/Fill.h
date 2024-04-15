@@ -71,10 +71,10 @@ template<typename VT>
 struct Fill<Matrix<VT>, VT> {
     static void apply(Matrix<VT> *& res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
 
-        if(arg != 0) {
+        if (arg != 0) {
             size_t numRows = res->getNumRows();
             size_t numCols = res->getNumCols();
 

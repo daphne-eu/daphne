@@ -186,15 +186,15 @@ struct RowBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
             throw std::runtime_error("RowBind: ups and lows must have the same number of columns");
         
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsUps + numRowsLows, numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsUps + numRowsLows, numColsUps, false);
         
         res->prepareAppend();
         for (size_t r=0; r < numRowsUps; ++r)
-            for (size_t c=0; c < numColsUps, ++c)
+            for (size_t c=0; c < numColsUps; ++c)
                 res->append(r, c, ups->get(r, c));
 
         for (size_t r=0; r < numRowsUps; ++r)
-            for (size_t c=0; c < numColsUps, ++c)
+            for (size_t c=0; c < numColsUps; ++c)
                 res->append(numRowsUps + r, c, lows->get(r, c));
         res->finishAppend();
         

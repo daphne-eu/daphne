@@ -137,9 +137,9 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
 
         res->prepareAppend();
-        for(size_t r=0; r < numRows; ++r) {
+        for (size_t r=0; r < numRows; ++r) {
             size_t cRes = 0;
-            for(size_t cArg=0; cArg < numColsArg; ++cArg) {
+            for (size_t cArg=0; cArg < numColsArg; ++cArg) {
                 const int64_t numDistinct = info->get(0, cArg);
                 if(numDistinct == -1)
                     // retain value from argument matrix

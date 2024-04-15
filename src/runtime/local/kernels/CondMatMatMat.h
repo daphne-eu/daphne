@@ -109,7 +109,7 @@ struct CondMatMatMat<Matrix<VTVal>, Matrix<VTCond>, Matrix<VTVal>, Matrix<VTVal>
         const size_t numRows = cond->getNumRows();
         const size_t numCols = cond->getNumCols();
 
-        if( numRows != thenVal->getNumRows() || numRows != elseVal->getNumRows() ||
+        if (numRows != thenVal->getNumRows() || numRows != elseVal->getNumRows() ||
             numCols != thenVal->getNumCols() || numCols != elseVal->getNumCols() ) {
             std::ostringstream errMsg;
             errMsg << "CondMatMatMat: condition/then/else matrices must have the same shape but have ("
@@ -118,12 +118,12 @@ struct CondMatMatMat<Matrix<VTVal>, Matrix<VTCond>, Matrix<VTVal>, Matrix<VTVal>
             throw std::runtime_error(errMsg.str());
         }
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
 
         res->prepareAppend();
-        for(size_t r=0; r < numRows; ++r)
-            for(size_t c=0; c < numCols; ++c)
+        for (size_t r=0; r < numRows; ++r)
+            for (size_t c=0; c < numCols; ++c)
                 res->append(r, c, static_cast<bool>(cond->get(r, c)) ? thenVal->get(r, c) : elseVal->get(r, c));
         res->finishAppend();
     }

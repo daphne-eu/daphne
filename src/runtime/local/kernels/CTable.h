@@ -240,7 +240,7 @@ struct CTable<Matrix<VTWeight>, Matrix<VTCoord>, Matrix<VTCoord>, VTWeight> {
             // The number of rows and columns of the result were derived from the
             // left-hand-side and right-hand-side arguments. Thus, all positions
             // are in-bounds.
-            for (size_t i = 0; i < lhsNumRows; i++) {
+            for (size_t i=0; i < lhsNumRows; ++i) {
                 const ssize_t r = lhs->get(i, 0);
                 const ssize_t c = rhs->get(i, 0);
                 res->set(r, c, res->get(r, c) + weight);
@@ -250,10 +250,10 @@ struct CTable<Matrix<VTWeight>, Matrix<VTCoord>, Matrix<VTCoord>, VTWeight> {
             // The number of rows and/or columns of the result were given by the
             // caller. Thus, positions might be out-of-bounds. If that is the
             // case, they shall be silently ignored.
-            for (size_t i = 0; i < lhsNumRows; i++) {
+            for (size_t i=0; i < lhsNumRows; ++i) {
                 const ssize_t r = lhs->get(i, 0);
                 const ssize_t c = rhs->get(i, 0);
-                if(r < resNumRows && c < resNumCols)
+                if (r < resNumRows && c < resNumCols)
                     res->set(r, c, res->get(r, c) + weight);
             }
         }

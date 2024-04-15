@@ -25,7 +25,10 @@
 #include <vector>
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int64_t, int32_t, double)) {
+#define DATA_TYPES DenseMatrix, CSRMatrix
+#define VALUE_TYPES int64_t, int32_t, double
+
+TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTRes = TestType;
     using VT = typename DTRes::VT;
 
@@ -123,8 +126,5 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int
     ctable(res, ys, xs, weight, resNumRows, resNumCols, nullptr);
     CHECK(*res == *exp);
 
-    DataObjectFactory::destroy(ys);
-    DataObjectFactory::destroy(xs);
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(ys, xs, exp, res);
 }

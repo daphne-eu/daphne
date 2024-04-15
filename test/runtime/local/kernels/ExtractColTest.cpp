@@ -30,11 +30,14 @@
 
 #include <cstdint>
 
+#define TEST_NAME(name) "ExtractCol - (" name ")"
+#define DATA_TYPES DenseMatrix, Matrix
+
 template<typename DT, typename DTSel>
 void checkExtractCol(DT * res, DT * arg, DTSel * sel, DT * exp) {
     extractCol<DT, DT, DTSel>(res, arg, sel, nullptr);
     CHECK(*res == *exp);
-    DataObjectFactory::destroy(res, exp, sel);
+    DataObjectFactory::destroy(res, exp);
 }
 
 template<typename DT, typename DTSel>
@@ -46,7 +49,7 @@ void checkExtractColThrow(DT * res, DT * arg, DTSel * sel) {
  * @brief Runs the extractCol-kernel with small input data and performs various
  * checks.
  */
-TEMPLATE_TEST_CASE("ExtractCol - Frame", TAG_KERNELS, int64_t, size_t) { // NOLINT(cert-err58-cpp)
+TEMPLATE_TEST_CASE(TEST_NAME("Frame"), TAG_KERNELS, int64_t, size_t) { // NOLINT(cert-err58-cpp)
     using VTSel = TestType;
     using DTSel = DenseMatrix<VTSel>;
     
@@ -107,10 +110,10 @@ TEMPLATE_TEST_CASE("ExtractCol - Frame", TAG_KERNELS, int64_t, size_t) { // NOLI
         checkExtractCol(res, arg, sel, exp);
     }
 
-    DataObjectFactory::destroy(c0, c1, c2, arg);
+    DataObjectFactory::destroy(c0, c1, c2, arg, sel);
 }
 
-TEMPLATE_TEST_CASE("ExtractCol - Frame error handling", TAG_KERNELS, int64_t) { // NOLINT(cert-err58-cpp)
+TEMPLATE_TEST_CASE(TEST_NAME("Frame error handling"), TAG_KERNELS, int64_t) { // NOLINT(cert-err58-cpp)
     using VTSel = TestType;
     using DTSel = DenseMatrix<VTSel>;
     
@@ -146,9 +149,8 @@ TEMPLATE_TEST_CASE("ExtractCol - Frame error handling", TAG_KERNELS, int64_t) { 
     DataObjectFactory::destroy(c0, c1, c2, arg, sel);
 }
 
-TEMPLATE_TEST_CASE("ExtractCol - Dense Matrix", TAG_KERNELS, int64_t, double) { // NOLINT(cert-err58-cpp)
-    using VT = TestType;
-    using DT = DenseMatrix<VT>;
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense Matrix"), TAG_KERNELS, (DenseMatrix), (int64_t, double)) { // NOLINT(cert-err58-cpp)
+    using DT = TestType;
     
     DT * arg = genGivenVals<DT>(3, {
         1, 2, 3,
@@ -201,23 +203,6 @@ TEMPLATE_TEST_CASE("ExtractCol - Dense Matrix", TAG_KERNELS, int64_t, double) { 
         });
         checkExtractCol(res, arg, sel, exp);
     }
-
-    DataObjectFactory::destroy(arg);
-}
-
-TEMPLATE_TEST_CASE("ExtractCol - Dense Matrix error handling", TAG_KERNELS, int64_t) { // NOLINT(cert-err58-cpp)
-    using VT = TestType;
-    using DT = DenseMatrix<VT>;
-    
-    DT * arg = genGivenVals<DT>(3, {
-        1, 2, 3,
-        4, 5, 6,
-        7, 8, 9,
-    });
-
-    DT * res{};
-    DT * sel{};
-
     SECTION("selecting out of bounds, negative") {
         sel = genGivenVals<DT>(2, {-1, 2});
         checkExtractColThrow(res, arg, sel);

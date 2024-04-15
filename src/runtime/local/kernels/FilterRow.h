@@ -172,29 +172,26 @@ struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        if(sel->getNumRows() != numRowsArg)
+        if (sel->getNumRows() != numRowsArg)
             throw std::runtime_error("sel must have exactly one entry (row) for each row in arg");
-        if(sel->getNumCols() != 1)
+        if (sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
         size_t numRowsRes = 0;
         for (size_t r=0; r < numRowsArg; ++r)
             numRowsRes += sel->get(r, 0);
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
 
-        const VT * valuesArg = arg->getValues();
-        VT * valuesRes = res->getValues();
-        const size_t rowSkipArg = arg->getRowSkip();
-        const size_t rowSkipRes = res->getRowSkip();
-        for(size_t r = 0; r < numRowsArg; r++) {
-            if(sel->get(r, 0)) {
-                memcpy(valuesRes, valuesArg, numCols * sizeof(VT));
-                valuesRes += rowSkipRes;
+        res->prepareAppend();
+        for (size_t r=0; r < numRowsArg; ++r) {
+            if (sel->get(r, 0)) {
+                for (size_t c=0; c < numCols; ++c)
+                    res->append(r, c, arg->get(r, c));
             }
-            valuesArg += rowSkipArg;
         }
+        res->finishAppend();
     }
 };
 
