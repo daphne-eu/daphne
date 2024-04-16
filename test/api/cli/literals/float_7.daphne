@@ -1,5 +1,28 @@
 // Delimiters _ and '
-print(1_234.5f);
-print(1_234.5);
-print(1'234.5f);
-print(1'234.5);
+
+// Before the decimal point.
+print(1_234.56f);
+print(1_234.56);
+print(1'234.56f);
+print(1'234.56);
+print("");
+
+// After the decimal point.
+print(1234.5_6f);
+print(1234.5_6);
+print(1234.5'6f);
+print(1234.5'6);
+print("");
+
+// Before and after the decimal point.
+print(1_234.5_6f);
+print(1_234.5_6);
+print(1'234.5'6f);
+print(1'234.5'6);
+print("");
+
+// Before and after the decimal point, with different delimiter characters.
+print(1_23'4.5'6f);
+print(1_23'4.5'6);
+print(1'23_4.5_6f);
+print(1'23_4.5_6);

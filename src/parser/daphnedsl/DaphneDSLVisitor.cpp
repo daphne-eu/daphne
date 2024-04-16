@@ -1381,12 +1381,6 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
     mlir::Location loc = utils.getLoc(ctx->start);
     if(auto lit = ctx->INT_LITERAL()) {
         std::string litStr = lit->getText();
-//        auto ss = std::string_view(litStr);
-//        if(litStr.length() > 2) {
-//            spdlog::debug("litstr: {} len: {}", litStr, litStr.length());
-//            spdlog::debug("stringview: {}", ss);
-//            spdlog::debug("substringview: {}", ss.substr(litStr.length() - 3));
-//        }
 
         // remove digit separators
         litStr = std::regex_replace(litStr, std::regex("_|'"), "");

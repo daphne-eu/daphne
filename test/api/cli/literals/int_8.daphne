@@ -1,3 +1,4 @@
 // Delimiters _ and '
 print(1_234_567);
 print(1'234'567);
+print(1_23'45_67);
