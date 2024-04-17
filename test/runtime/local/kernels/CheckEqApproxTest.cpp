@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 
 #include <tags.h>
@@ -31,7 +32,7 @@
 // TODO Extend tests to integral value types, they should be handled
 // gracefully, too.
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (DenseMatrix, CSRMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (DenseMatrix, CSRMatrix, COOMatrix), (float, double)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {

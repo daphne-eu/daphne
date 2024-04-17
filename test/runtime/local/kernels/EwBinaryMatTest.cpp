@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -29,7 +30,7 @@
 #include <cstdint>
 
 #define TEST_NAME(opName) "EwBinaryMat (" opName ")"
-#define DATA_TYPES DenseMatrix, CSRMatrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix
 #define VALUE_TYPES double, uint32_t
 
 template<class DT>
@@ -126,10 +127,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m3);
 }
 
-TEMPLATE_TEST_CASE(TEST_NAME("mul_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul_sparse_dense"), TAG_KERNELS, (CSRMatrix, COOMatrix), (VALUE_TYPES)) {
     // TODO: all Dense - CSR combinations
-    using VT = TestType;
-    using SparseDT = CSRMatrix<VT>;
+    using SparseDT = TestType;
+    using VT = typename SparseDT::VT;
     using DT = DenseMatrix<VT>;
 
     auto m0 = genGivenVals<SparseDT>(4, {

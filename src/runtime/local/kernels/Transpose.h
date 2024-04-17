@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -116,5 +117,51 @@ struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
         }
         
         delete[] curRowOffsets;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// COOMatrix <- COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct Transpose<COOMatrix<VT>, COOMatrix<VT>> {
+    static void apply(COOMatrix<VT> *& res, const COOMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<COOMatrix<VT>>(numCols, numRows, arg->getMaxNumNonZeros(), false);
+
+        // (re)initialize the matrix for consecutive set calls (because the row,col pairs are not in the correct order
+        VT * valuesRes = res->getValues();
+        size_t * colIdxsRes = res->getColIdxs();
+        size_t * rowIdxsRes = res->getRowIdxs();
+
+        const VT * valuesArg = arg->getValues();
+        const size_t * colIdxsArg = arg->getColIdxs();
+        const size_t * rowIdxsArg = arg->getRowIdxs();
+
+        std::vector<std::pair<size_t, size_t>> result;
+
+        size_t size = 0;
+        for (size_t i = 0; colIdxsArg[i] != size_t(-1); ++i) {
+            result.emplace_back(colIdxsArg[i], i);
+            size++;
+        }
+
+        std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
+            return a.first < b.first;
+        });
+
+        for (size_t i = 0; i < size; ++i) {
+            valuesRes[i] = valuesArg[result[i].second];
+            colIdxsRes[i] = rowIdxsArg[result[i].second];
+            rowIdxsRes[i] = result[i].first;
+        }
+
+        valuesRes[size] = int(0);
+        colIdxsRes[size] = size_t(-1);
+        rowIdxsRes[size] = size_t(-1);
     }
 };

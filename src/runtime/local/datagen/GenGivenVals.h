@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 
 #include <algorithm>
 #include <vector>
@@ -154,6 +155,49 @@ struct GenGivenVals<CSRMatrix<VT>> {
                 rowOffsets[rowIdx++ + 1] = pos;
             }
         }
+        return res;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct GenGivenVals<COOMatrix<VT>> {
+    static COOMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
+        const size_t numCells = elements.size();
+        assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
+        const size_t numCols = numCells / numRows;
+        size_t numNonZeros = 0;
+        for(VT v : elements)
+            if(v != VT(0))
+                numNonZeros++;
+        auto res = DataObjectFactory::create<COOMatrix<VT>>(numRows, numCols, std::max(numNonZeros, minNumNonZeros), false);
+        VT * values = res->getValues();
+        size_t * colIdxs = res->getColIdxs();
+        size_t * rowIdxs = res->getRowIdxs();
+        size_t pos = 0;
+        size_t colIdx = -1;
+        size_t rowIdx = -1;
+        for(size_t i = 0; i < numCells; i++) {
+            if (i % numCols == 0) {
+                rowIdx ++;
+                colIdx = 0;
+            } else {
+                colIdx ++;
+            }
+            VT v = elements[i];
+            if(v != VT(0)) {
+                values[pos] = v;
+                colIdxs[pos] = colIdx;
+                rowIdxs[pos] = rowIdx;
+                pos++;
+            }
+        }
+        values[pos] = VT(0);
+        colIdxs[pos] = size_t(-1);
+        rowIdxs[pos] = size_t(-1);
         return res;
     }
 };

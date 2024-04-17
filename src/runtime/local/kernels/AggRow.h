@@ -19,6 +19,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/AggAll.h>
@@ -244,5 +245,81 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// DenseMatrix <- COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct AggRow<DenseMatrix<VTRes>, COOMatrix<VTArg>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const COOMatrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
+
+        VTRes * valuesRes = res->getValues();
+
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
+
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
+
+            const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
+            const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
+
+            for(size_t r = 0; r < numRows; r++) {
+                *valuesRes = AggAll<VTRes, COOMatrix<VTArg>>::aggArray(
+                        arg->getValues(r),
+                        arg->getNumNonZerosRow(r),
+                        numCols,
+                        func,
+                        isSparseSafe,
+                        neutral,
+                        ctx
+                );
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else { // The op-code is either MEAN or STDDEV or VAR
+            // get sum for each row
+            size_t ctr = 0 ;
+            const VTRes neutral = VTRes(0);
+            const bool isSparseSafe = true;
+            auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
+            VTRes * valuesT = tmp->getValues();
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            for (size_t r = 0; r < numRows; r++){
+                *valuesRes = AggAll<VTRes, COOMatrix<VTArg>>::aggArray(
+                        arg->getValues(r),
+                        arg->getNumNonZerosRow(r),
+                        numCols,
+                        func,
+                        isSparseSafe,
+                        neutral,
+                        ctx
+                );
+                const VTArg * valuesArg = arg->getValues(0);
+                const size_t numNonZeros = arg->getNumNonZerosRow(r);
+                *valuesRes = *valuesRes / numCols;
+                if (opCode != AggOpCode::MEAN){
+                    for(size_t i = ctr; i < ctr+numNonZeros; i++) {
+                        VTRes val = static_cast<VTRes>((valuesArg[i])) - (*valuesRes);
+                        valuesT[r] = valuesT[r] + val * val;
+                    }
+
+                    ctr+=numNonZeros;
+                    valuesT[r] += (numCols - numNonZeros) * (*valuesRes)*(*valuesRes);
+                    valuesT[r] /= numCols;
+                    if(opCode == AggOpCode::STDDEV)
+                        *valuesRes = sqrt(valuesT[r]);
+                    else
+                        *valuesRes = valuesT[r];
+                }
+                valuesRes += res->getRowSkip();
+            }
+            DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
+        }
+    }
+};
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H

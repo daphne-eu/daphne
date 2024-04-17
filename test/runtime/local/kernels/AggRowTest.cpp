@@ -16,6 +16,7 @@
 
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/AggRow.h>
@@ -28,7 +29,7 @@
 #include <vector>
 
 #define TEST_NAME(opName) "AggRow (" opName ")"
-#define DATA_TYPES DenseMatrix, CSRMatrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix
 #define VALUE_TYPES double, uint32_t
 
 template<class DTRes, class DTArg>

@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/kernels/EwUnarySca.h>
 
@@ -70,6 +71,47 @@ struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] = func(valuesArg[c], ctx);
             valuesArg += arg->getRowSkip();
+            valuesRes += res->getRowSkip();
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwUnaryMat<DenseMatrix<VT>, COOMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, DenseMatrix<VT> *& res, const COOMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+        VT * valuesRes = res->getValues();
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        const size_t * rowsArg = arg->getRowIdxs();
+        const size_t * colsArg = arg->getColIdxs();
+        const VT * valuesArg = arg->getValues();
+        size_t index = 0;
+        size_t argRow = rowsArg[index];
+        size_t argCol = colsArg[index];
+        VT argVal = valuesArg[index];
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numCols; c++) {
+                if (r == argRow && c == argCol) {
+                    valuesRes[c] = func(argVal, ctx);
+                    index ++;
+                    argRow = rowsArg[index];
+                    argCol = colsArg[index];
+                    argVal = valuesArg[index];
+                } else {
+                    valuesRes[c] = func(VT(0), ctx);
+                }
+            }
             valuesRes += res->getRowSkip();
         }
     }
