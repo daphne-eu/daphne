@@ -25,7 +25,6 @@
 #include <type_traits>
 #include <vector>
 #include <optional>
-#include <limits>
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Tensor.h>
@@ -55,7 +54,7 @@ class ContiguousTensor : public Tensor<ValueType> {
 
     ContiguousTensor(const std::vector<size_t> &tensor_shape, InitCode init_code)
         : Tensor<ValueType>::Tensor(tensor_shape),
-          data(new ValueType[this->total_element_count], std::default_delete<ValueType[]>()) {
+          data(std::make_shared<ValueType[]>(this->total_element_count)) {
         strides.resize(this->rank);
         if (this->rank > 0) {
             strides[0] = 1;
@@ -70,9 +69,6 @@ class ContiguousTensor : public Tensor<ValueType> {
         for (size_t i = 1; i < this->rank; i++) {
             strides[i] = strides[i - 1] * this->tensor_shape[i - 1];
         }
-
-        // No C++20 sigh*
-        // data = std::make_shared<ValueType[]>(this->total_element_count);
 
         switch (init_code) {
             case InitCode::NONE:
@@ -112,8 +108,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         if constexpr (std::is_same<VTArg, ValueType>::value) { 
             data = other->data;
         } else {
-            data = std::shared_ptr<ValueType[]>(new ValueType[this->total_element_count], std::default_delete<ValueType[]>());
-            //data = std::make_shared<ValueType[]>(this->total_element_count);
+            data = std::make_shared<ValueType[]>(this->total_element_count);
          for(size_t i=0; i<this->total_element_count; i++) {
             data[i] = static_cast<ValueType>(other->data[i]);
          }

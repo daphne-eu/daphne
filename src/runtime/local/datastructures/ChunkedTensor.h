@@ -19,13 +19,11 @@
 #include <atomic>
 #include <cstddef>
 #include <cstring>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <utility>
 #include <vector>
-#include <sstream>
 
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -143,9 +141,7 @@ class ChunkedTensor : public Tensor<ValueType> {
 
         total_size_in_elements = total_chunk_count * chunk_element_count;
 
-        // No C++20 sigh*
-        // data = std::make_shared<ValueType[]>(total_size_in_elements);
-        data = std::shared_ptr<ValueType[]>(new ValueType[total_size_in_elements], std::default_delete<ValueType[]>());
+        data = std::make_shared<ValueType[]>(total_size_in_elements);
 
         chunk_materialization_flags = std::make_unique<std::atomic<bool>[]>(total_chunk_count);
         chunk_io_futures            = std::make_unique<AsyncIOInfo[]>(total_chunk_count);
@@ -225,8 +221,7 @@ class ChunkedTensor : public Tensor<ValueType> {
           intra_chunk_strides(other->intra_chunk_strides), chunks_per_dim(other->chunks_per_dim),
           total_size_in_elements(other->total_size_in_elements), total_chunk_count(other->total_chunk_count),
           chunk_materialization_flags(std::make_unique<std::atomic<bool>[]>(total_chunk_count)) {
-        data = std::shared_ptr<ValueType[]>(new ValueType[total_size_in_elements], std::default_delete<ValueType[]>());
-        //data = std::make_shared<ValueType[]>(total_size_in_elements);
+        data = std::make_shared<ValueType[]>(total_size_in_elements);
         for (size_t i = 0; i < total_chunk_count; i++) {
             chunk_materialization_flags[i] = static_cast<bool>(other->chunk_materialization_flags[i]);
         }
@@ -239,27 +234,6 @@ class ChunkedTensor : public Tensor<ValueType> {
             data[i] = static_cast<ValueType>(other->data[i]);
         }
     }
-
-    // disabled for now due to gcc template specialization bug
-    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85282
-    // template<>
-    // explicit ChunkedTensor(const ChunkedTensor<ValueType> *other)
-    //     : Tensor<ValueType>::Tensor(other->tensor_shape), chunk_shape(other->chunk_shape),
-    //       chunk_element_count(other->chunk_element_count), chunk_strides(other->chunk_strides),
-    //       intra_chunk_strides(other->intra_chunk_strides), chunks_per_dim(other->chunks_per_dim),
-    //       total_size_in_elements(other->total_size_in_elements), total_chunk_count(other->total_chunk_count),
-    //       chunk_materialization_flags(std::make_unique<std::atomic<bool>[]>(total_chunk_count)),
-    //       data(new ValueType[total_size_in_elements], std::default_delete<ValueType[]>()) {
-    //     for (size_t i = 0; i < total_chunk_count; i++) {
-    //         chunk_materialization_flags[i] = static_cast<bool>(other->chunk_materialization_flags[i]);
-    //     }
-    //     chunk_io_futures = std::make_unique<AsyncIOInfo[]>(total_chunk_count);
-    //     for (size_t i = 0; i < total_chunk_count; i++) {
-    //         chunk_io_futures[i].needs_byte_reversal = false;
-    //         chunk_io_futures[i].status              = IO_STATUS::PRE_SUBMISSION;
-    //     }
-    //     std::memcpy(data.get(), other->data.get(), total_size_in_elements * sizeof(ValueType));
-    // }
 
     ChunkedTensor(const DenseMatrix<ValueType> *matrix, size_t chunk_size_x, size_t chunk_size_y)
         : Tensor<ValueType>::Tensor(matrix->getNumRows(), matrix->getNumCols()) {
@@ -960,11 +934,6 @@ class ChunkedTensor : public Tensor<ValueType> {
             }
 
             if (!IsChunkMaterialized(current_chunk_ids)) {
-                // std::stringstream ss;
-                // for (const auto& e : current_chunk_ids) {
-                //     ss << "(" << e.first << "," << e.second << ")";
-                // }
-                // logger->debug("Chunk [{}] not materialized.", ss.str());
                 return nullptr;
             }
         }
