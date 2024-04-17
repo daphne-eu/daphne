@@ -180,7 +180,7 @@ public:
     static std::string getName() {
         return "DenseMatrix";
     }
-    
+
     [[nodiscard]] bool isPartialBuffer() const { return bufferSize != this->getNumRows() * this->getRowSkip() * sizeof(ValueType); }
 
     void shrinkNumRows(size_t numRows) {
@@ -308,25 +308,25 @@ public:
         // Note that we do not use the generic `get` interface to matrices here since
         // this operator is meant to be used for writing tests for, besides others,
         // those generic interfaces.
-        
+
         if(this == &rhs)
             return true;
-        
+
         const size_t numRows = this->getNumRows();
         const size_t numCols = this->getNumCols();
-        
+
         if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
             return false;
-        
+
         const ValueType* valuesLhs = this->getValues();
         const ValueType* valuesRhs = rhs.getValues();
-        
+
         const size_t rowSkipLhs = this->getRowSkip();
         const size_t rowSkipRhs = rhs.getRowSkip();
-        
+
         if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
             return true;
-        
+
         if(rowSkipLhs == numCols && rowSkipRhs == numCols)
             return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
         else {
