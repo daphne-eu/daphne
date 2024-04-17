@@ -433,6 +433,77 @@ public:
         return res;
     }
     size_t serialize(std::vector<char> &buf) const override;
+
+    bool operator==(const Frame & rhs) const {
+        if(this == &rhs)
+            return true;
+
+        const size_t numRows = this->getNumRows();
+        const size_t numCols = this->getNumCols();
+
+        if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+            return false;
+
+        if(memcmp(this->getSchema(), rhs.getSchema(), numCols * sizeof(ValueTypeCode)))
+            return false;
+
+        const std::string * labelsLhs = this->getLabels();
+        const std::string * labelsRhs = rhs.getLabels();
+        for (size_t c = 0; c < numCols; c++) {
+            if(labelsLhs[c] != labelsRhs[c])
+                return false;
+        }
+        
+        for (size_t c = 0; c < numCols; c++)
+        {
+            switch(this->getColumnType(c)) {
+                // For all value types:
+                case ValueTypeCode::F64:
+                    if (!(*(this->getColumn<double>(c)) == *(rhs.getColumn<double>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::F32:
+                    if (!(*(this->getColumn<float>(c)) == *(rhs.getColumn<float>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::SI64:
+                    if (!(*(this->getColumn<int64_t>(c)) == *(rhs.getColumn<int64_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::SI32:
+                    if (!(*(this->getColumn<int32_t>(c)) == *(rhs.getColumn<int32_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::SI8 :
+                    if (!(*(this->getColumn<int8_t>(c)) == *(rhs.getColumn<int8_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::UI64:
+                    if (!(*(this->getColumn<uint64_t>(c)) == *(rhs.getColumn<uint64_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::UI32:
+                    if (!(*(this->getColumn<uint32_t>(c)) == *(rhs.getColumn<uint32_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::UI8 :
+                    if (!(*(this->getColumn<uint8_t>(c)) == *(rhs.getColumn<uint8_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                default:
+                    throw std::runtime_error("CheckEq::apply: unknown value type code");
+            }
+        }   
+        return true;
+    }
 };
 
 std::ostream & operator<<(std::ostream & os, const Frame & obj);
