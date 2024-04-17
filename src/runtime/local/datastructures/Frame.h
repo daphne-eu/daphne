@@ -31,7 +31,6 @@
 #include <vector>
 
 #include <cassert>
-#include <cinttypes>
 #include <cstddef>
 #include <cstring>
 
@@ -383,6 +382,14 @@ public:
     
     const void * getColumnRaw(size_t idx) const {
         return const_cast<Frame *>(this)->getColumnRaw(idx);
+    }
+
+    size_t getNumDims() const override {
+        return 2;
+    }
+
+    size_t getNumItems() const override {
+        return this->numRows * this->numCols;
     }
     
     void print(std::ostream & os) const override {

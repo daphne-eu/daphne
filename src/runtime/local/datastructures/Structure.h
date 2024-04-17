@@ -20,9 +20,7 @@
 #include <runtime/local/datastructures/MetaDataObject.h>
 
 #include <cstddef>
-#include <map>
 #include <mutex>
-#include <array>
 
 /**
  * @brief The base class of all data structure implementations.
@@ -97,6 +95,8 @@ public:
     // reference counter becoming zero triggers the deletion of the data
     // object. Thus, we cannot handle it here.
 
+    [[nodiscard]] virtual size_t getNumDims() const = 0;
+
     [[nodiscard]] size_t getNumRows() const
     {
         return numRows;
@@ -107,10 +107,7 @@ public:
         return numCols;
     }
 
-    [[nodiscard]] size_t getNumItems() const
-    {
-        return numRows * numCols;
-    }
+    [[nodiscard]] virtual size_t getNumItems() const = 0;
 
     /**
      * @brief Prints a human-readable representation of this data object to the

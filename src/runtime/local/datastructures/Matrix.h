@@ -147,6 +147,13 @@ public:
      */
     virtual void finishAppend() = 0;
 
+    size_t getNumDims() const override {
+        return 2;
+    }
+
+    size_t getNumItems() const override {
+        return this->numCols * this->numRows;
+    }
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
