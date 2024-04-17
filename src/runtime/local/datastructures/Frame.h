@@ -388,7 +388,7 @@ public:
     size_t getNumItems() const override {
         return this->numRows * this->numCols;
     }
-    
+
     void print(std::ostream & os) const override {
         os << "Frame(" << numRows << 'x' << numCols << ", [";
         for(size_t c = 0; c < numCols; c++) {
@@ -450,7 +450,7 @@ public:
             if(labelsLhs[c] != labelsRhs[c])
                 return false;
         }
-        
+
         for (size_t c = 0; c < numCols; c++)
         {
             switch(this->getColumnType(c)) {
@@ -498,7 +498,7 @@ public:
                 default:
                     throw std::runtime_error("CheckEq::apply: unknown value type code");
             }
-        }   
+        }
         return true;
     }
 };

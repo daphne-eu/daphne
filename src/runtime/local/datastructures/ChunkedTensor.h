@@ -19,11 +19,13 @@
 #include <atomic>
 #include <cstddef>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <utility>
 #include <vector>
+#include <sstream>
 
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -54,26 +56,26 @@ void ReverseArray(VT *data, uint64_t element_count) {
 * chunks with its own, typically much smaller chunk_shape. In this implementation all chunks have the same chunk_shape.
 * Within the chunks the contained elements are arranged in the "higher dimensional equivalent of row-major" order, i.e.
 * in the same order as a equivalent ContiguosTensor with shape==chunk_shape.
-* The chunks themselves are then also arranged in "row-major" order. An alternative view of this memory layout is to 
+* The chunks themselves are then also arranged in "row-major" order. An alternative view of this memory layout is to
 * interpret the initially rank N tensor as a 2N-1 rank tensor arranged in "row-major" order (with the "last" N
 * dimensions given by the chunk_shape and the first N-1 dimensions reduced in size by the corresponding factor).
 *
 * The two main advantages of this memory layout are:
-* 
+*
 * 1. Fine grained and flexible control over the memory layout of the data structure by initially choosing a specific
 * chunk_shape or later on choosing to "rechunk" the tensor to a new chunk_shape.
 *
 * This allows the data structure layout to be adapted to the access pattern of specific kernels making their access
 * patterns potentially significantly more cache friendly, which is especially relevant for larger tensors. Typical
 * examples here are e.g. image processing kernels operating on 2D slices of a tensor with N >= 2 (smoothing, gradients,
-* lvl adjustments, etc.), reduce operations over dimensions that are not the primary dimension (a common example would 
+* lvl adjustments, etc.), reduce operations over dimensions that are not the primary dimension (a common example would
 * be an averaging step over the time dimension) or e.g. solving higher dim differential equations over a grid.
 *
 * 2. Provides a convenient point to sensibly integrate async I/O and ideally also async processing, by loading individual
 *    chunks asynchronously and ideally starting to process them asynchronously as well, immediately after a chunk has
 *    been read rather than waiting for all chunks to arrive, i.e. block.
 *
-* While this implementation is already an improvement in respect to memory layout and the options for partial and/or 
+* While this implementation is already an improvement in respect to memory layout and the options for partial and/or
 * async I/O and/or processing, the choice here to use a single allocation rather than individual allocations per chunk
 * limit its use to tensors that fit into memory and is potentially wasteful even for those which do.
 */
@@ -141,6 +143,8 @@ class ChunkedTensor : public Tensor<ValueType> {
 
         total_size_in_elements = total_chunk_count * chunk_element_count;
 
+        // No C++20 sigh*
+        // data = std::make_shared<ValueType[]>(total_size_in_elements);
         data = std::shared_ptr<ValueType[]>(new ValueType[total_size_in_elements], std::default_delete<ValueType[]>());
 
         chunk_materialization_flags = std::make_unique<std::atomic<bool>[]>(total_chunk_count);
@@ -222,6 +226,7 @@ class ChunkedTensor : public Tensor<ValueType> {
           total_size_in_elements(other->total_size_in_elements), total_chunk_count(other->total_chunk_count),
           chunk_materialization_flags(std::make_unique<std::atomic<bool>[]>(total_chunk_count)) {
         data = std::shared_ptr<ValueType[]>(new ValueType[total_size_in_elements], std::default_delete<ValueType[]>());
+        //data = std::make_shared<ValueType[]>(total_size_in_elements);
         for (size_t i = 0; i < total_chunk_count; i++) {
             chunk_materialization_flags[i] = static_cast<bool>(other->chunk_materialization_flags[i]);
         }
@@ -234,6 +239,27 @@ class ChunkedTensor : public Tensor<ValueType> {
             data[i] = static_cast<ValueType>(other->data[i]);
         }
     }
+
+    // disabled for now due to gcc template specialization bug
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85282
+    // template<>
+    // explicit ChunkedTensor(const ChunkedTensor<ValueType> *other)
+    //     : Tensor<ValueType>::Tensor(other->tensor_shape), chunk_shape(other->chunk_shape),
+    //       chunk_element_count(other->chunk_element_count), chunk_strides(other->chunk_strides),
+    //       intra_chunk_strides(other->intra_chunk_strides), chunks_per_dim(other->chunks_per_dim),
+    //       total_size_in_elements(other->total_size_in_elements), total_chunk_count(other->total_chunk_count),
+    //       chunk_materialization_flags(std::make_unique<std::atomic<bool>[]>(total_chunk_count)),
+    //       data(new ValueType[total_size_in_elements], std::default_delete<ValueType[]>()) {
+    //     for (size_t i = 0; i < total_chunk_count; i++) {
+    //         chunk_materialization_flags[i] = static_cast<bool>(other->chunk_materialization_flags[i]);
+    //     }
+    //     chunk_io_futures = std::make_unique<AsyncIOInfo[]>(total_chunk_count);
+    //     for (size_t i = 0; i < total_chunk_count; i++) {
+    //         chunk_io_futures[i].needs_byte_reversal = false;
+    //         chunk_io_futures[i].status              = IO_STATUS::PRE_SUBMISSION;
+    //     }
+    //     std::memcpy(data.get(), other->data.get(), total_size_in_elements * sizeof(ValueType));
+    // }
 
     ChunkedTensor(const DenseMatrix<ValueType> *matrix, size_t chunk_size_x, size_t chunk_size_y)
         : Tensor<ValueType>::Tensor(matrix->getNumRows(), matrix->getNumCols()) {
@@ -323,7 +349,7 @@ class ChunkedTensor : public Tensor<ValueType> {
     ~ChunkedTensor() override {};
 
     void printValue(std::ostream &os, ValueType val) const;
-    
+
     public:
 
     bool operator==(const ChunkedTensor<ValueType> &rhs) const {
@@ -934,6 +960,11 @@ class ChunkedTensor : public Tensor<ValueType> {
             }
 
             if (!IsChunkMaterialized(current_chunk_ids)) {
+                // std::stringstream ss;
+                // for (const auto& e : current_chunk_ids) {
+                //     ss << "(" << e.first << "," << e.second << ")";
+                // }
+                // logger->debug("Chunk [{}] not materialized.", ss.str());
                 return nullptr;
             }
         }

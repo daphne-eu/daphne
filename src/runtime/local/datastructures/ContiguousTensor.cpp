@@ -16,6 +16,8 @@
 
 #include "ContiguousTensor.h"
 
+#include <spdlog/spdlog.h>
+
 template<typename ValueType>
 void ContiguousTensor<ValueType>::printValue(std::ostream& os, ValueType val) const {
     os << val;
