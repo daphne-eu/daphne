@@ -23,11 +23,6 @@
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/ChunkedTensor.h>
 
-// this include file is placed here to solve a compilation issue with spdlog and catch2
-#include <spdlog/spdlog.h>
-
-#include <cstring>
-
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
