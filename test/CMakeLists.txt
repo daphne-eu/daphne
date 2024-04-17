@@ -30,6 +30,7 @@ set(TEST_SOURCES
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/io/ReadTest.cpp
+        api/cli/io/WriteTest.cpp
         api/cli/import/ImportTest.cpp
         api/cli/indexing/IndexingTest.cpp
         api/cli/inference/InferenceTest.cpp
