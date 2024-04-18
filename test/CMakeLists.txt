@@ -115,6 +115,7 @@ set(TEST_SOURCES
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MapTest.cpp
         runtime/local/kernels/MatMulTest.cpp
+        runtime/local/kernels/OneHotTest.cpp
         runtime/local/kernels/OrderTest.cpp
         runtime/local/kernels/OuterBinaryTest.cpp
         runtime/local/kernels/QuantizeTest.cpp

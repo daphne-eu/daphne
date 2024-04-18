@@ -550,9 +550,10 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
     The *(1 x m)* row-matrix `info` specifies the details (in the following, *d[j]* is short for `info[0, j]`):
 
     - If *d[j]* == -1, then the *j*-th column of `arg` will remain as it is.
-    - If *d[j]* >= 0, then the *j*-th column of `arg` will be encoded.
+    - If *d[j]* == 0, then the *j*-th column of `arg` will be omitted in the output.
+    - If *d[j]* > 0, then the *j*-th column of `arg` will be encoded to a vector of length *d[j]*.
 
-        More precisely, the *j*-th column of `arg` must contain only integral values in the range *[0, d[j] - 1]*, and will be replaced by *d[j]* columns containing only zeros and ones.
+        More precisely, if *d[j]* > 0 the *j*-th column of `arg` must contain only integral values in the range *[0, d[j] - 1]*, and will be replaced by *d[j]* columns containing only zeros and ones.
         For each row *i* in `arg`, the value in the `as.scalar(arg[i, j])`-th of those columns is set to 1, while all others are set to 0.
 
 - **`recode`**`(arg:matrix, orderPreserving:bool)`
