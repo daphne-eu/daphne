@@ -292,8 +292,6 @@ struct AggCol<Matrix<VTRes>, Matrix<VTArg>> {
     static void apply(AggOpCode opCode, Matrix<VTRes> *& res, const Matrix<VTArg> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-
-        std::cout << "agg matrix kernel" << std::endl;
         
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, false);
@@ -367,7 +365,7 @@ struct AggCol<Matrix<VTRes>, Matrix<VTArg>> {
             if (opCode == AggOpCode::MEAN)
                 return;
 
-            std::vector<VTArg> tmp(numCols);
+            std::vector<VTRes> tmp(numCols);
             
             for (size_t r=0; r < numRows; ++r) {
                 for (size_t c=0; c < numCols; ++c) {

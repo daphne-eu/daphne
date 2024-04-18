@@ -22,8 +22,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 
-#include <limits>
-
 #include <cstdint>
 
 // ****************************************************************************
@@ -214,24 +212,21 @@ struct CTable<Matrix<VTWeight>, Matrix<VTCoord>, Matrix<VTCoord>, VTWeight> {
         const bool isResNumRowsFromLhs = resNumRows < 0;
         const bool isResNumColsFromRhs = resNumCols < 0;
         if (res == nullptr) {
-            if (isResNumRowsFromLhs) {
-                int64_t maxVal = std::numeric_limits<int64_t>::min();
-                for (size_t r=0; r < lhsNumRows; ++r) {
-                    int64_t val = lhs->get(r, 0);
+            // Utility
+            auto getMaxVal = [](const Matrix<VTCoord> * mat) {
+                VTCoord maxVal = mat->get(0, 0);
+                for (size_t r=1; r < mat->getNumRows(); ++r) {
+                    VTCoord val = mat->get(r, 0);
                     if (val > maxVal)
-                        resNumRows = val;
+                        maxVal = val;
                 }
-                resNumRows = maxVal + 1;
-            }
-            if (isResNumColsFromRhs) {
-                int64_t maxVal = std::numeric_limits<int64_t>::min();
-                for (size_t r=0; r < rhsNumRows; ++r) {
-                    int64_t val = rhs->get(r, 0);
-                    if (val > maxVal)
-                        resNumRows = val;
-                }
-                resNumCols = maxVal + 1;
-            }
+                return maxVal;
+            };
+
+            if (isResNumRowsFromLhs)
+                resNumRows = static_cast<int64_t>(getMaxVal(lhs)) + 1;
+            if (isResNumColsFromRhs)
+                resNumCols = static_cast<int64_t>(getMaxVal(rhs)) + 1;
             res = DataObjectFactory::create<DenseMatrix<VTWeight>>(resNumRows, resNumCols, true);
         }
 

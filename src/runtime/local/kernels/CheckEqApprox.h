@@ -23,7 +23,6 @@
 
 #include <iostream>
 
-#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -242,7 +241,8 @@ struct CheckEqApprox<Matrix<VT>> {
 
         for (size_t r=0; r < numRows; ++r) {
             for (size_t c=0; c < numCols; ++c) {
-                if (std::abs(lhs->get(r, c) - rhs->get(r, c)) > eps)
+                double diff = lhs->get(r, c) - rhs->get(r, c);
+                if (std::abs(diff) > eps)
                     return false;
             }
         }        

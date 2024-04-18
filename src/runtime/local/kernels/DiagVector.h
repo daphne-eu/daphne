@@ -128,12 +128,8 @@ struct DiagVector<Matrix<VT>, Matrix<VT>> {
         if (numRows == 0)
             throw std::runtime_error("DiagVector: arg matrix cannot be empty");
 
-        if (res==nullptr) {
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
-        }
-
-        const VT * allValues = arg->getValues();
-        VT * allUpdatedValues = res->getValues();
 
         res->prepareAppend();
         for (size_t r=0; r < numRows; ++r)

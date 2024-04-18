@@ -241,7 +241,9 @@ public:
     }
     
     void prepareAppend() override {
-        values.get()[0] = ValueType(0);
+        // the matrix might be empty
+        if (numRows * numCols != 0)
+            values.get()[0] = ValueType(0);
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
     }
@@ -257,7 +259,8 @@ public:
     }
     
     void finishAppend() override {
-        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+        // numRows/numCols are unsigned and can underflow
+        if ((lastAppendedRowIdx + 1 < numRows) || (lastAppendedColIdx + 1 < numCols))
             append(numRows - 1, numCols - 1, ValueType(0));
     }
 
@@ -514,7 +517,9 @@ public:
     }
     
     void prepareAppend() override {
-        values.get()[0] = "\0";
+        // the matrix might be empty
+        if (numRows * numCols != 0)
+            values.get()[0] = "\0";
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
         strBuf->currentTop = strBuf.get()->strings;
@@ -541,7 +546,8 @@ public:
     }
     
     void finishAppend() override {
-        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+        // numRows/numCols are unsigned and can underflow
+        if ((lastAppendedRowIdx + 1 < numRows) || (lastAppendedColIdx + 1 < numCols))
             append(numRows - 1, numCols - 1, "\0");
     }
 

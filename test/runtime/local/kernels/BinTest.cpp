@@ -25,6 +25,7 @@
 #include <catch.hpp>
 
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
@@ -51,27 +52,33 @@ TEMPLATE_PRODUCT_TEST_CASE("Bin", TAG_KERNELS, (DATA_TYPES), (double, float, int
     using DTArg = TestType;
     using VTArg = typename DTArg::VT;
     using DTRes = DTArg;
+    using DTEmpty = typename std::conditional<
+                        std::is_same<TestType, Matrix<VTArg>>::value,
+                        DenseMatrix<VTArg>,
+                        TestType
+                    >::type;
+    
     
     DTArg * arg = nullptr;
     DTRes * exp = nullptr;
 
     // fp spec: nan among normal values
 
-    // SECTION("(0x0) arg") {
-    //     arg = DataObjectFactory::create<DTArg>(0, 0, false);
-    //     exp = DataObjectFactory::create<DTRes>(0, 0, false);
-    //     checkBin(arg, 42, 100, 200, exp);
-    // }
-    // SECTION("(0xn) arg") {
-    //     arg = DataObjectFactory::create<DTArg>(0, 3, false);
-    //     exp = DataObjectFactory::create<DTRes>(0, 3, false);
-    //     checkBin(arg, 42, 100, 200, exp);
-    // }
-    // SECTION("(mx0) arg") {
-    //     arg = DataObjectFactory::create<DTArg>(3, 0, false);
-    //     exp = DataObjectFactory::create<DTRes>(3, 0, false);
-    //     checkBin(arg, 42, 100, 200, exp);
-    // }
+    SECTION("(0x0) arg") {
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
+        checkBin(arg, 42, 100, 200, exp);
+    }
+    SECTION("(0xn) arg") {
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(0, 3, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(0, 3, false));
+        checkBin(arg, 42, 100, 200, exp);
+    }
+    SECTION("(mx0) arg") {
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
+        checkBin(arg, 42, 100, 200, exp);
+    }
     SECTION("numBins > 1, min < max, wo/ out-of-bins values, 1d") {
         arg = genGivenVals<DTArg>(7, {10, 20, 30, 40, 50, 60, 70});
         exp = genGivenVals<DTRes>(7, { 0,  0,  0,  1,  1,  2,  2});

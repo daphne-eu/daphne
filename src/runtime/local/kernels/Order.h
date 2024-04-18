@@ -276,7 +276,7 @@ struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 //         {
 //            res = (DenseMatrix<VTRes>*) idx;
 //         } else {
-//             extractRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, size_t>((DenseMatrix<VTArg>*&) res, arg, idx, ctx);
+//             extractRow<Matrix<VTArg>, Matrix<VTArg>, size_t>((Matrix<VTArg>*&) res, arg, idx, ctx);
 //             DataObjectFactory::destroy(idx);
 //         }
 //     }
