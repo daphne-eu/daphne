@@ -16,8 +16,6 @@
 
 #include "ChunkedTensor.h"
 
-#include <spdlog/spdlog.h>
-
 template<typename ValueType>
 void ChunkedTensor<ValueType>::printValue(std::ostream& os, ValueType val) const {
     os << val;
