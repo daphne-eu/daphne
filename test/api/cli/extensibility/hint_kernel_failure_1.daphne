@@ -1,0 +1,4 @@
+// Hint to use a non-existing pre-compiled kernel.
+
+res = sum::nonExistingKernel([42]);
+print(res);

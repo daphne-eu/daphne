@@ -758,6 +758,27 @@ At call sites, a value of any type, or any value type, can be passed to an untyp
 As a consequence, an untyped function is compiled and specialized on demand according to the types at a call site.
 Consistently, the types of untyped return values are infered from the parameter types and operations.
 
+## Compiler Hints
+
+One of DAPHNE's strengths is its (WIP) ability to make various decisions on its own, e.g., regarding physical data representation (such as dense/sparse), physical operators (kernels), and data/operator placement (such as local/distributed, CPU/GPU/FPGA, computational storage).
+However, expert users may optionally provide hints to influence compiler decisions.
+This feature is useful for experimentation and in the context of DAPHNE's extensibility.
+For instance, a user could force the use of a certain custom kernel at a certain point in a larger DaphneDSL script to measure the impact of that custom kernel, even if the DAPHNE compiler would normally not choose that kernel in that situation.
+
+*The support for compiler hints is still experimental and it is currently not guaranteed that the DAPHNE compiler respects these hints.*
+
+### Kernel Hints
+
+Users can provide hints on the physical kernel that should be used for a specific occurrence of a DaphneDSL operation.
+So far, kernel hints are only supported for DaphneDSL built-in functions.
+Here, the name of the pre-compiled kernel function can optionally be attached to the name of the built-in function, separated by `::`.
+
+*Examples:*
+
+```r
+res = sum::my_custom_sum_kernel(X);
+```
+
 ## Example Scripts
 
 A few example DaphneDSL scripts can be found in:

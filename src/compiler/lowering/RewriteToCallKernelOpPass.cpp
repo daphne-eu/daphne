@@ -444,64 +444,94 @@ namespace
             const std::string opMnemonic = op->getName().stripDialect().data();
             std::vector<KernelInfo> kernelInfos = kc.getKernelInfos(opMnemonic);
 
-            if(kernelInfos.empty())
-                throw ErrorHandler::compilerError(
-                    loc,
-                    "RewriteToCallKernelOpPass",
-                    "no kernels registered for operation `" + opMnemonic + "`"
-                );
+            std::string libPath;
+            std::string kernelFuncName;
+            // TODO Don't hardcode the attribute name, put it in a central place.
+            if(op->hasAttr("kernel_hint")) {
+                // The operation has a kernel hint. Lower to the hinted kernel if possible.
 
-            std::string backend;
-            if(op->hasAttr("cuda_device"))
-                backend = "CUDA";
-            else if(op->hasAttr("fpgaopencl_device"))
-                backend = "FPGAOPENCL";
-            else
-                backend = "CPP";
-
-            const size_t numArgs = lookupArgTys.size();
-            const size_t numRess = lookupResTys.size();
-            int chosenKernelIdx = -1;
-            for(size_t i = 0; i < kernelInfos.size() && chosenKernelIdx == -1; i++) {
-                auto ki = kernelInfos[i];
-                if(ki.backend != backend)
-                    continue;
-                if(numArgs != ki.argTypes.size())
-                    continue;
-                if(numRess != ki.resTypes.size())
-                    continue;
-
-                bool mismatch = false;
-                for(size_t i = 0; i < numArgs && !mismatch; i++)
-                    if(lookupArgTys[i] != ki.argTypes[i])
-                        mismatch = true;
-                for(size_t i = 0; i < numRess && !mismatch; i++)
-                    if(lookupResTys[i] != ki.resTypes[i])
-                        mismatch = true;
-                if(!mismatch)
-                    chosenKernelIdx = i;
-            }
-            if(chosenKernelIdx == -1) {
-                std::stringstream s;
-                s << "no kernel for operation `" << opMnemonic
-                    << "` available for the required input types `(";
-                for(size_t i = 0; i < numArgs; i++) {
-                    s << lookupArgTys[i];
-                    if(i < numArgs - 1)
-                        s << ", ";
+                // TODO Check if the attribute has the right type.
+                kernelFuncName = op->getAttrOfType<mlir::StringAttr>("kernel_hint").getValue().str();
+                bool found = false;
+                for(size_t i = 0; i < kernelInfos.size() && !found; i++) {
+                    auto ki = kernelInfos[i];
+                    if(ki.kernelFuncName == kernelFuncName) {
+                        libPath = ki.libPath;
+                        found = true;
+                    }
                 }
-                s << + ")` and output types `(";
-                for(size_t i = 0; i < numRess; i++) {
-                    s << lookupResTys[i];
-                    if(i < numRess - 1)
-                        s << ", ";
-                }
-                s << ")` for backend `" << backend << "`, registered kernels for this op:" << std::endl;
-                kc.dump(opMnemonic, s);
-                throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass", s.str());
+                if(!found)
+                    throw ErrorHandler::compilerError(
+                        loc,
+                        "RewriteToCallKernelOpPass",
+                        "no kernel found for operation `" + opMnemonic +
+                        "` with hinted name `" + kernelFuncName + "`"
+                    );
             }
-            KernelInfo chosenKI = kernelInfos[chosenKernelIdx];
-            std::string libPath = chosenKI.libPath;
+            else {
+                // The operation does not have a kernel hint. Search for a kernel
+                // for this operation and the given result/argument types and backend.
+
+                if(kernelInfos.empty())
+                    throw ErrorHandler::compilerError(
+                        loc,
+                        "RewriteToCallKernelOpPass",
+                        "no kernels registered for operation `" + opMnemonic + "`"
+                    );
+
+                std::string backend;
+                if(op->hasAttr("cuda_device"))
+                    backend = "CUDA";
+                else if(op->hasAttr("fpgaopencl_device"))
+                    backend = "FPGAOPENCL";
+                else
+                    backend = "CPP";
+
+                const size_t numArgs = lookupArgTys.size();
+                const size_t numRess = lookupResTys.size();
+                int chosenKernelIdx = -1;
+                for(size_t i = 0; i < kernelInfos.size() && chosenKernelIdx == -1; i++) {
+                    auto ki = kernelInfos[i];
+                    if(ki.backend != backend)
+                        continue;
+                    if(numArgs != ki.argTypes.size())
+                        continue;
+                    if(numRess != ki.resTypes.size())
+                        continue;
+
+                    bool mismatch = false;
+                    for(size_t i = 0; i < numArgs && !mismatch; i++)
+                        if(lookupArgTys[i] != ki.argTypes[i])
+                            mismatch = true;
+                    for(size_t i = 0; i < numRess && !mismatch; i++)
+                        if(lookupResTys[i] != ki.resTypes[i])
+                            mismatch = true;
+                    if(!mismatch)
+                        chosenKernelIdx = i;
+                }
+                if(chosenKernelIdx == -1) {
+                    std::stringstream s;
+                    s << "no kernel for operation `" << opMnemonic
+                        << "` available for the required input types `(";
+                    for(size_t i = 0; i < numArgs; i++) {
+                        s << lookupArgTys[i];
+                        if(i < numArgs - 1)
+                            s << ", ";
+                    }
+                    s << + ")` and output types `(";
+                    for(size_t i = 0; i < numRess; i++) {
+                        s << lookupResTys[i];
+                        if(i < numRess - 1)
+                            s << ", ";
+                    }
+                    s << ")` for backend `" << backend << "`, registered kernels for this op:" << std::endl;
+                    kc.dump(opMnemonic, s);
+                    throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass", s.str());
+                }
+                KernelInfo chosenKI = kernelInfos[chosenKernelIdx];
+                libPath = chosenKI.libPath;
+                kernelFuncName = chosenKI.kernelFuncName;
+            }
 
             // *****************************************************************************
             // Add kernel id and DAPHNE context as arguments
@@ -510,7 +540,7 @@ namespace
             auto kId = rewriter.create<mlir::arith::ConstantOp>(
                 loc, rewriter.getI32IntegerAttr(
                          KernelDispatchMapping::instance().registerKernel(
-                             chosenKI.kernelFuncName, op)));
+                             kernelFuncName, op)));
 
             // NOTE: kId has to be added before CreateDaphneContextOp because
             // there is an assumption that the CTX is the last argument
@@ -534,7 +564,7 @@ namespace
             // Create a CallKernelOp for the kernel function to call and return success().
             auto kernel = rewriter.create<daphne::CallKernelOp>(
                     loc,
-                    chosenKI.kernelFuncName,
+                    kernelFuncName,
                     kernelArgs,
                     opResTys
             );

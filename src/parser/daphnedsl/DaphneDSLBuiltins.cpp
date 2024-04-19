@@ -710,7 +710,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
     if( func == "eigen" ) {
         checkNumArgsExact(loc, func, numArgs, 1);
-        //TODO JIT-Engine invocation failed: Failed to materialize symbols
         return builder.create<EigenOp>(loc,
             args[0].getType(), args[0].getType(), args[0]).getResults();
     }
@@ -882,7 +881,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc,
                 builder.getStringAttr(viewName),
                 view
-        );
+        ).getOperation();
     }
 
     // --------------------------------------------------------------------
@@ -1027,7 +1026,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 : utils.castBoolIf(args[2]);
         return builder.create<PrintOp>(
                 loc, arg, newline, err
-        );
+        ).getOperation();
     }
 
     if (func == "readMatrix") {
@@ -1048,7 +1047,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value arg = args[0];
         mlir::Value filename = args[1];
-        return builder.create<WriteOp>(loc, arg, filename);
+        return builder.create<WriteOp>(loc, arg, filename).getOperation();
     }
     if(func == "receiveFromNumpy") {
         checkNumArgsExact(loc, func, numArgs, 5);
@@ -1091,7 +1090,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "saveDaphneLibResult") {
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value arg = args[0];
-        return builder.create<SaveDaphneLibResultOp>(loc, arg);
+        return builder.create<SaveDaphneLibResultOp>(loc, arg).getOperation();
     }
 
     // --------------------------------------------------------------------
@@ -1125,7 +1124,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value fileOrTarget = args[0];
         return builder.create<CloseOp>(
                 loc, fileOrTarget
-        );
+        ).getOperation();
     }
     if(func == "readCsv") {
         checkNumArgsExact(loc, func, numArgs, 4);
