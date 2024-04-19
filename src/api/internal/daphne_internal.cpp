@@ -264,7 +264,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     );
     static opt<string> libDir(
             "libdir", cat(daphneOptions),
-            desc("The directory containing kernel libraries")
+            desc(
+                "The directory containing the kernel catalog files "
+                "(typically, but not necessarily, along with the kernel shared libraries)"
+            )
     );
 
     static opt<bool> mlirCodegen(
@@ -440,7 +443,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     if(!libDir.getValue().empty())
         user_config.libdir = libDir.getValue();
-    user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
+    user_config.resolveLibDir();
+
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.queueSetupScheme = queueSetupScheme;
 	user_config.victimSelection = victimSelection;
@@ -544,10 +548,6 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         user_config.enable_profiling = true;
     }
 
-    // add this after the cli args loop to work around args order
-    if(!user_config.libdir.empty() && user_config.use_cuda)
-            user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
-
     // For DaphneLib (Python API).
     user_config.result_struct = daphneLibRes;
 
@@ -577,9 +577,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     KernelCatalog & kc = executor.getUserConfig().kernelCatalog;
     // kc.dump();
     KernelCatalogParser kcp(mctx);
-    kcp.parseKernelCatalog("build/src/runtime/local/kernels/catalog.json", kc);
+    kcp.parseKernelCatalog(user_config.libdir + "/catalog.json", kc);
     if(user_config.use_cuda)
-        kcp.parseKernelCatalog("build/src/runtime/local/kernels/CUDAcatalog.json", kc);
+        kcp.parseKernelCatalog(user_config.libdir + "/CUDAcatalog.json", kc);
     // kc.dump();
 
     // ************************************************************************

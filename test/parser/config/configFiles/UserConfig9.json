@@ -14,9 +14,5 @@
     "explain_obj_ref_mgnt": false,
     "taskPartitioningScheme": 0,
     "numberOfThreads": -1,
-    "minimumTaskSize": 1,
-    "library_paths": [
-        "my\\path",
-        "my\\second\\path"
-    ]
+    "minimumTaskSize": 1
 }

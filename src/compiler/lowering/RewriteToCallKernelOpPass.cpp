@@ -40,6 +40,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 using namespace mlir;
@@ -143,6 +144,7 @@ namespace
         Value dctx;
 
         const DaphneUserConfig & userConfig;
+        std::unordered_map<std::string, bool> & usedLibPaths;
 
         mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
             MLIRContext * mctx = t.getContext();
@@ -167,8 +169,15 @@ namespace
          * @param userConfig The user config.
          * @param benefit
          */
-        KernelReplacement(MLIRContext * mctx, Value dctx, const DaphneUserConfig & userConfig, PatternBenefit benefit = 1)
-        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx), dctx(dctx), userConfig(userConfig)
+        KernelReplacement(
+            MLIRContext * mctx,
+            Value dctx,
+            const DaphneUserConfig & userConfig,
+            std::unordered_map<std::string, bool> & usedLibPaths,
+            PatternBenefit benefit = 1
+        )
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx),
+        dctx(dctx), userConfig(userConfig), usedLibPaths(usedLibPaths)
         {
         }
 
@@ -492,6 +501,7 @@ namespace
                 throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass", s.str());
             }
             KernelInfo chosenKI = kernelInfos[chosenKernelIdx];
+            std::string libPath = chosenKI.libPath;
 
             // *****************************************************************************
             // Add kernel id and DAPHNE context as arguments
@@ -517,6 +527,10 @@ namespace
             // Create the CallKernelOp
             // *****************************************************************************
             
+            // Mark the shared library the chosen kernel comes from as used. This means we
+            // will link this library into the JIT-compiled program later.
+            usedLibPaths.at(libPath) = true;
+
             // Create a CallKernelOp for the kernel function to call and return success().
             auto kernel = rewriter.create<daphne::CallKernelOp>(
                     loc,
@@ -532,11 +546,19 @@ namespace
     class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::DistributedPipelineOp> {
         Value dctx;
         const DaphneUserConfig & userConfig;
+        std::unordered_map<std::string, bool> & usedLibPaths;
         
     public:
         using OpConversionPattern::OpConversionPattern;
-        DistributedPipelineKernelReplacement(MLIRContext * mctx, Value dctx, const DaphneUserConfig & userConfig, PatternBenefit benefit = 2)
-        : OpConversionPattern(mctx, benefit), dctx(dctx), userConfig(userConfig)
+        DistributedPipelineKernelReplacement(
+            MLIRContext * mctx,
+            Value dctx,
+            const DaphneUserConfig & userConfig,
+            std::unordered_map<std::string, bool> & usedLibPaths,
+            PatternBenefit benefit = 2
+        )
+        : OpConversionPattern(mctx, benefit),
+        dctx(dctx), userConfig(userConfig), usedLibPaths(usedLibPaths)
         {
         }
 
@@ -631,7 +653,12 @@ namespace
     : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<func::FuncOp>>
     {
         const DaphneUserConfig& userConfig;
-        explicit RewriteToCallKernelOpPass(const DaphneUserConfig& cfg) : userConfig(cfg) {}
+        std::unordered_map<std::string, bool> & usedLibPaths;
+
+        explicit RewriteToCallKernelOpPass(
+            const DaphneUserConfig& cfg, std::unordered_map<std::string, bool> & usedLibPaths
+        ) : userConfig(cfg), usedLibPaths(usedLibPaths) {}
+
         void runOnOperation() final;
     };
 }
@@ -679,13 +706,13 @@ void RewriteToCallKernelOpPass::runOnOperation()
     patterns.insert<
             KernelReplacement,
             DistributedPipelineKernelReplacement
-    >(&getContext(), dctx, userConfig);
+    >(&getContext(), dctx, userConfig, usedLibPaths);
     if (failed(applyPartialConversion(func, target, std::move(patterns))))
         signalPassFailure();
 
 }
 
-std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg)
+std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg, std::unordered_map<std::string, bool> & usedLibPaths)
 {
-    return std::make_unique<RewriteToCallKernelOpPass>(cfg);
+    return std::make_unique<RewriteToCallKernelOpPass>(cfg, usedLibPaths);
 }

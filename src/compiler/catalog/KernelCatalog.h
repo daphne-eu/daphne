@@ -53,14 +53,21 @@ struct KernelInfo {
      */
     const std::string backend;
 
+    /**
+     * @brief The path to the shared library containing the pre-compiled kernel.
+     *
+     * This path can be absolute or relative to the present working directory.
+     */
+    const std::string libPath;
+
     KernelInfo(
         const std::string kernelFuncName,
         const std::vector<mlir::Type> resTypes,
         const std::vector<mlir::Type> argTypes,
-        const std::string backend
-        // TODO Add the path to the shared library containing the kernel function.
+        const std::string backend,
+        const std::string libPath
     ) :
-        kernelFuncName(kernelFuncName), resTypes(resTypes), argTypes(argTypes), backend(backend)
+        kernelFuncName(kernelFuncName), resTypes(resTypes), argTypes(argTypes), backend(backend), libPath(libPath)
     {
         //
     }
@@ -100,7 +107,7 @@ class KernelCatalog {
                 if(i < ki.resTypes.size() - 1)
                     os << ", ";
             }
-            os << ") for backend `" << ki.backend  << '`' << std::endl;
+            os << ") for backend `" << ki.backend  << "` (in `" << ki.libPath << "`)" << std::endl;
         }
     }
 
@@ -180,5 +187,23 @@ public:
         else
             // Print info on specified op only.
             dumpKernelInfos(opMnemonic, getKernelInfos(opMnemonic), os);
+    }
+
+    /**
+     * @brief Returns all distinct kernel libraries in the form of a mapping from
+     * the library path to the constant `false`.
+     *
+     * @return A mapping from each distict kernel library path to the constant `false`.
+     */
+    std::unordered_map<std::string, bool> getLibPaths() const {
+        std::unordered_map<std::string, bool> res;
+
+        for(auto it : kernelInfosByOp) {
+            const std::vector<KernelInfo> & kis = it.second;
+            for(auto it2 : kis)
+                res[it2.libPath] = false;
+        }
+
+        return res;
     }
 };

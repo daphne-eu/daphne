@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -102,6 +103,7 @@ void KernelCatalogParser::mapTypes(
 }
 
 void KernelCatalogParser::parseKernelCatalog(const std::string & filePath, KernelCatalog & kc) const {
+    std::filesystem::path dirPath = std::filesystem::path(filePath).parent_path();
     try {
         std::ifstream kernelsConfigFile(filePath);
         if(!kernelsConfigFile.good())
@@ -115,11 +117,12 @@ void KernelCatalogParser::parseKernelCatalog(const std::string & filePath, Kerne
                 continue;
             const std::string kernelFuncName = kernelData["kernelFuncName"].get<std::string>();
             const std::string backend = kernelData["backend"].get<std::string>();
+            const std::string libPath = dirPath / kernelData["libPath"].get<std::string>();
             std::vector<mlir::Type> resTypes;
             mapTypes(kernelData["resTypes"], resTypes, "result", kernelFuncName, opMnemonic, backend);
             std::vector<mlir::Type> argTypes;
             mapTypes(kernelData["argTypes"], argTypes, "argument", kernelFuncName, opMnemonic, backend);
-            kc.registerKernel(opMnemonic, KernelInfo(kernelFuncName, resTypes, argTypes, backend));
+            kc.registerKernel(opMnemonic, KernelInfo(kernelFuncName, resTypes, argTypes, backend, libPath));
         }
     }
     catch(std::exception& e) {
