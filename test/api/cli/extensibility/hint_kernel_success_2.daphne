@@ -1,0 +1,4 @@
+// Hint to use an existing pre-compiled kernel for a DaphneIR op with exactly one result.
+
+res = sum::_sumAll__int64_t__DenseMatrix_int64_t([21, 21]);
+print(res);

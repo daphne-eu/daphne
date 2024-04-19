@@ -964,12 +964,13 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
     return builtins.build(loc, func, args);
 }
 
-
 antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
     std::string func;
     const auto& identifierVec = ctx->IDENTIFIER();
-    for(size_t s = 0; s < identifierVec.size(); s++)
-        func += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
+    bool hasKernelHint = ctx->kernel != nullptr;
+    for(size_t s = 0; s < identifierVec.size() - 1 - hasKernelHint; s++)
+        func += identifierVec[s]->getText() + '.';
+    func += ctx->func->getText();
     mlir::Location loc = utils.getLoc(ctx->start);
  
     if (func == "map") 
@@ -983,6 +984,13 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     auto maybeUDF = findMatchingUDF(func, args_vec, loc);
 
     if (maybeUDF) {
+        if(hasKernelHint)
+            throw ErrorHandler::compilerError(
+                loc,
+                "DSLVisitor",
+                "kernel hints are not supported for calls to user-defined functions"
+            );
+
         auto funcTy = maybeUDF->getFunctionType();
         auto co = builder
             .create<mlir::daphne::GenericCallOp>(loc,
@@ -999,7 +1007,49 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     }
 
     // Create DaphneIR operation for the built-in function.
-    return builtins.build(loc, func, args_vec);
+    antlrcpp::Any res = builtins.build(loc, func, args_vec);
+
+    if(hasKernelHint) {
+        std::string kernel = ctx->kernel->getText();
+        
+        // We deliberately don't check if the specified kernel
+        // is registered for the created kind of operation,
+        // since this is checked in RewriteToCallKernelOpPass.
+
+        mlir::Operation* op;
+        if(res.is<mlir::Operation*>()) // DaphneIR ops with exactly zero results
+            op = res.as<mlir::Operation*>();
+        else if(res.is<mlir::Value>()) // DaphneIR ops with exactly one result
+            op = res.as<mlir::Value>().getDefiningOp();
+        else if(res.is<mlir::ResultRange>()) { // DaphneIR ops with more than one results
+            auto rr = res.as<mlir::ResultRange>();
+            op = rr[0].getDefiningOp();
+            // Normally, all values in the ResultRange should be results of
+            // the same op, but we check it nevertheless, just to be sure.
+            for(size_t i = 1; i < rr.size(); i++)
+                if(rr[i].getDefiningOp() != op)
+                    throw ErrorHandler::compilerError(
+                        loc,
+                        "DSLVisitor",
+                        "the given kernel hint `" + kernel +
+                        "` cannot be applied since the DaphneIR operation created for the built-in function `" +
+                        func + "` is ambiguous"
+                    );
+        }
+        else // unexpected case
+            throw ErrorHandler::compilerError(
+                loc,
+                "DSLVisitor",
+                "the given kernel hint `" + kernel +
+                "` cannot be applied since the DaphneIR operation created for the built-in function `" +
+                func + "` was not returned in a supported way"
+            );
+
+        // TODO Don't hardcode the attribute name.
+        op->setAttr("kernel_hint", builder.getStringAttr(kernel));
+    }
+
+    return res;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprContext * ctx) {

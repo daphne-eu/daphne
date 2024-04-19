@@ -1,0 +1,4 @@
+// Hint to use an existing pre-compiled kernel of another operation.
+
+res = aggMin::_sumAll__int64_t__DenseMatrix_int64_t([42]);
+print(res);
