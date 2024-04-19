@@ -227,6 +227,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             "resTypes": resTypes,
             "argTypes": argTypes,
             "backend": API,
+            # Assumes that the generated catalog file is saved in
+            # the same directory as the kernels libraries.
+            "libPath": "libAllKernels.so" if API == "CPP" else f"lib{API}Kernels.so"
         })
 
     # Generate the function(s).

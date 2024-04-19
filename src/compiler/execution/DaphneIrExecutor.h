@@ -21,6 +21,8 @@
 #include <api/cli/DaphneUserConfig.h>
 #include "mlir/Pass/PassManager.h"
 
+#include <unordered_map>
+
 class DaphneIrExecutor
 {
 public:
@@ -46,6 +48,18 @@ private:
     bool selectMatrixRepresentations_;
     // Storage for lib paths needed for StringRefs
     std::vector<std::string> sharedLibRefPaths;
+
+    /**
+     * @brief A map indicating which of the distinct kernels libraries known to the
+     * kernel catalog are actually used in the MLIR module.
+     *
+     * This map gets pre-populated with `false` for each distinct library. The values
+     * are set to `true` when a call to a pre-compiled kernel from that library is
+     * created by this pass. This approach is thread-safe, since the structure of the
+     * map does not change anymore. Thus, it can be used by multiple concurrent
+     * instances of this pass.
+     */
+    std::unordered_map<std::string, bool> usedLibPaths;
 
     void buildCodegenPipeline(mlir::PassManager &);
 };

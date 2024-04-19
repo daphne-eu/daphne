@@ -26,7 +26,7 @@
     "taskPartitioningScheme": "STATIC",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
-    "library_paths": [],
+    "libdir": "{exedir}/../lib",
     "daphnedsl_import_paths": {},
     "logging": [
         { "log-level-limit": "ERROR" },

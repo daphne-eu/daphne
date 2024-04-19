@@ -21,6 +21,7 @@
 
 #include <mlir/IR/BuiltinTypes.h>
 
+#include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 class WorkerImpl  
