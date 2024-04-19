@@ -18,6 +18,7 @@
 #pragma once
 
 #include <api/daphnelib/DaphneLibResult.h>
+#include <compiler/catalog/KernelCatalog.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include <runtime/local/datastructures/IAllocationDescriptor.h>
 #include <util/LogConfig.h>
@@ -109,4 +110,6 @@ struct DaphneUserConfig {
     // TODO Maybe the DaphneLib result should better reside in the DaphneContext,
     // but having it here is simpler for now.
     DaphneLibResult* result_struct = nullptr;
+    
+    KernelCatalog kernelCatalog;
 };

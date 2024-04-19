@@ -31,6 +31,15 @@ public:
 
     mlir::MLIRContext *getContext()
     { return &context_; }
+
+    DaphneUserConfig & getUserConfig() {
+        return userConfig_;
+    }
+
+    const DaphneUserConfig & getUserConfig() const {
+        return userConfig_;
+    }
+
 private:
     mlir::MLIRContext context_;
     DaphneUserConfig userConfig_;
