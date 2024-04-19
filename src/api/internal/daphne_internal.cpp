@@ -313,6 +313,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         "mlir-hybrid-codegen", cat(daphneOptions),
         desc("Enables prototypical hybrid code generation combining pre-compiled kernels and MLIR code generation.")
     );
+    static opt<string> kernelExt(
+        "kernel-ext", cat(daphneOptions),
+        desc("Additional kernel extension to register (path to a kernel catalog JSON file).")
+    );
 
     enum ExplainArgs {
       kernels,
@@ -581,6 +585,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     if(user_config.use_cuda)
         kcp.parseKernelCatalog(user_config.libdir + "/CUDAcatalog.json", kc);
     // kc.dump();
+    if(!kernelExt.empty())
+        kcp.parseKernelCatalog(kernelExt, kc);
 
     // ************************************************************************
     // Parse, compile and execute DaphneDSL script
