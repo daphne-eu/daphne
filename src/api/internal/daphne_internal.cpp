@@ -26,6 +26,7 @@
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
+#include <parser/catalog/KernelCatalogParser.h>
 #include <parser/config/ConfigParser.h>
 #include <util/DaphneLogger.h>
 
@@ -41,8 +42,13 @@
 #include <chrono>
 #include <exception>
 #include <iostream>
+#include <string>
+#include <unordered_map>
+
 #include <csignal>
 #include <csetjmp>
+#include <cstdlib>
+#include <cstring>
 #include <execinfo.h>
 
 // global logger handle for this executable
@@ -557,18 +563,35 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     }
 
     // ************************************************************************
+    // Create DaphneIrExecutor and get MLIR context
+    // ************************************************************************
+
+    // Creates an MLIR context and loads the required MLIR dialects.
+    DaphneIrExecutor executor(selectMatrixRepr, user_config);
+    mlir::MLIRContext * mctx = executor.getContext();
+
+    // ************************************************************************
+    // Populate kernel extension catalog
+    // ************************************************************************
+
+    KernelCatalog & kc = executor.getUserConfig().kernelCatalog;
+    // kc.dump();
+    KernelCatalogParser kcp(mctx);
+    kcp.parseKernelCatalog("build/src/runtime/local/kernels/catalog.json", kc);
+    if(user_config.use_cuda)
+        kcp.parseKernelCatalog("build/src/runtime/local/kernels/CUDAcatalog.json", kc);
+    // kc.dump();
+
+    // ************************************************************************
     // Parse, compile and execute DaphneDSL script
     // ************************************************************************
 
     clock::time_point tpBegPars = clock::now();
 
-    // Creates an MLIR context and loads the required MLIR dialects.
-    DaphneIrExecutor executor(selectMatrixRepr, user_config);
-
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR
     // operations are inserted into the module.
-    OpBuilder builder(executor.getContext());
+    OpBuilder builder(mctx);
     auto loc = mlir::FileLineColLoc::get(builder.getStringAttr(inputFile), 0, 0);
     auto moduleOp = ModuleOp::create(loc);
     auto * body = moduleOp.getBody();
