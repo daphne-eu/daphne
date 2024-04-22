@@ -17,6 +17,7 @@
 - [A Few Early Example Algorithms in DaphneDSL](/scripts/algorithms/)
 - [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
 - [Profiling DAPHNE using PAPI](/doc/Profiling.md)
+- [Custom Extensions to DAPHNE](/doc/Extensions.md)
 
 ## Developer Documentation
 
