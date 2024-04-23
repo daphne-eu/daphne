@@ -21,22 +21,22 @@
 #
 # -------------------------------------------------------------
 
-from api.python.operator.operation_node import OperationNode
-from api.python.operator.nodes.frame import Frame
-from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.scalar import Scalar
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES
-from api.python.utils.helpers import create_params_string
-from api.python.utils.analyzer import get_argument_types
-from api.python.script_building.nested_script import NestedDaphneDSLScript
+from daphne.operator.operation_node import OperationNode
+from daphne.operator.nodes.frame import Frame
+from daphne.operator.nodes.matrix import Matrix
+from daphne.operator.nodes.scalar import Scalar
+from daphne.script_building.dag import OutputType
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES
+from daphne.utils.helpers import create_params_string
+from daphne.utils.analyzer import get_argument_types
+from daphne.script_building.nested_script import NestedDaphneDSLScript
 
 import textwrap
 from typing import TYPE_CHECKING, Union, Dict, Iterable, Sequence, Callable, Tuple, get_type_hints
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
 
 class MultiReturn(OperationNode):
     _outputs: Iterable['OperationNode']

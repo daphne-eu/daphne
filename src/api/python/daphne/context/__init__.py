@@ -20,5 +20,10 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-from api.python.script_building.dag import *
-from api.python.script_building.script import *
+
+from daphne.context.daphne_context import DaphneContext
+from daphne.operator.nodes.matrix import Matrix
+from daphne.operator.nodes.frame import Frame
+from daphne.operator.nodes.scalar import Scalar
+
+__all__ = ["DaphneContext", "Matrix", "Frame", "Scalar"]

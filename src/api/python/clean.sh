@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/bin/bash
 
-# Copyright 2021 The DAPHNE Consortium
+# Copyright 2024 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Data transfer from pandas to DAPHNE and back, via files.
-
-import pandas as pd
-from daphne.context.daphne_context import DaphneContext
-
-df = pd.DataFrame({"abc": [1, 2, 3], "def": [-1.1, -2.2, -3.3]})
-
-dctx = DaphneContext()
-
-(dctx.from_pandas(df)).print().compute()
+rm -rf build
+rm -rf dist

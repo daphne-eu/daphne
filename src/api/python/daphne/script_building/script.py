@@ -21,9 +21,9 @@
 #
 # -------------------------------------------------------------
 
-from api.python.script_building.dag import DAGNode, OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
-from api.python.utils.daphnelib import DaphneLib
+from daphne.script_building.dag import DAGNode, OutputType
+from daphne.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
+from daphne.utils.daphnelib import DaphneLib
 
 import ctypes
 import os
@@ -31,7 +31,7 @@ from typing import List, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
 
 class DaphneDSLScript:
     daphnedsl_script :str
@@ -83,12 +83,13 @@ class DaphneDSLScript:
         self._variable_counter = 0
 
     def execute(self):
-        temp_out_file = open("tmpdaphne.daphne", "w")
+        temp_out_path = os.path.join(TMP_PATH, "tmpdaphne.daphne")
+        temp_out_file = open(temp_out_path, "w")
         temp_out_file.writelines(self.daphnedsl_script)
         temp_out_file.close()
         
         #os.environ['OPENBLAS_NUM_THREADS'] = '1'
-        res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
+        res = DaphneLib.daphne(ctypes.c_char_p(str.encode(PROTOTYPE_PATH)), ctypes.c_char_p(str.encode(temp_out_path)))
         #os.environ['OPENBLAS_NUM_THREADS'] = '32'
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:

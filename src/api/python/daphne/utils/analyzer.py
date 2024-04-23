@@ -14,7 +14,7 @@
 
 import inspect
 from typing import Callable, get_type_hints
-from api.python.operator.operation_node import OperationNode
+from daphne.operator.operation_node import OperationNode
 
 def get_outer_scope_variables(function: Callable):
     free_vars = inspect.getclosurevars(function).nonlocals
