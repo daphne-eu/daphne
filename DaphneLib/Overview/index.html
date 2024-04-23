@@ -706,6 +706,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-without-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Without Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#introductory-example" class="md-nav__link">
     <span class="md-ellipsis">
       Introductory Example
@@ -1369,6 +1396,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-without-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Without Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#introductory-example" class="md-nav__link">
     <span class="md-ellipsis">
       Introductory Example
@@ -1493,26 +1547,54 @@
 The overall design follows similar abstractions like PySpark and Dask by using lazy evaluation. When the evaluation is triggered, DaphneLib assembles and executes a <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL</a> script that uses the entire DAPHNE compilation and runtime stack, including all optimizations.
 Users can easily mix and match DAPHNE computations with other Python libraries and plotting functionality.</p>
 <p><strong>DaphneLib is still in an experimental stage, feedback and bug reports via GitHub issues are highly welcome.</strong></p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p><strong>Provide DAPHNE:</strong></p>
+<ul>
+<li><code>libdaphnelib.so</code> and <code>libAllKernels.so</code> must be present</li>
+<li>Building the project with <code>./build.sh --target daphnelib</code> achieves this (this creates a <code>lib</code> dir in the <code>daphne</code> project root)</li>
+<li>OR use the <code>lib/</code> dir of a release</li>
+<li><code>LD_LIBRARY_PATH</code> must be set (e.g., executed from <code>daphne/</code>: <code>export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH</code>)</li>
+<li>Set the environment variable <code>DAPHNELIB_DIR_PATH</code> to the path were the libraries (<code>*.so</code> files) are placed, e.g., <code>path/to/daphne/lib/</code></li>
+</ul>
+<h2 id="installation">Installation</h2>
+<ul>
+<li>There are two options to install the Python package <code>daphne</code> (DaphneLib)</li>
+<li>Via github url: <code>pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python</code></li>
+<li>OR clone the DAPHNE repository and install from source files: <code>pip install daphne/src/api/python</code></li>
+<li>
+<p><em>Recommendation:</em> Use a virtual environment</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>my_venv
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">source</span><span class="w"> </span>my_venv/bin/activate
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pip<span class="w"> </span>install<span class="w"> </span>...
+</code></pre></div>
+</li>
+</ul>
+<h2 id="use-without-installation">Use Without Installation</h2>
+<ul>
+<li>In a cloned DAPHNE repository, DaphneLib can also be used without installing the Python package <code>daphne</code></li>
+<li>To this end, <code>python3</code> must be told where to find the package by adding the respective directory to the Python path</li>
+<li>From the DAPHNE root directory, execute: <code>export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/"</code></li>
+<li>OR execute the script <code>run_python.sh</code> (instead of <code>python3</code>) from the DAPHNE root directory, e.g., <code>./run_python.sh myScript.py</code></li>
+</ul>
 <h2 id="introductory-example">Introductory Example</h2>
 <p>The following simple example script generates a <em>5x3</em> matrix of random values in <em>[0, 1)</em> using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of <em>0</em> and a standard deviation of <em>1</em>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># (1) Import DaphneLib.</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">api.python.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># (2) Create DaphneContext.</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># (3) Obtain a DAPHNE matrix.</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">X</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># (4) Define calculations in DAPHNE.</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">Y</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="n">X</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">X</span><span class="o">.</span><span class="n">stddev</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># (5) Compute result in DAPHNE.</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nb">print</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># (1) Import DaphneLib.</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># (2) Create DaphneContext.</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># (3) Obtain a DAPHNE matrix.</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">X</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># (4) Define calculations in DAPHNE.</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">Y</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="n">X</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">X</span><span class="o">.</span><span class="n">stddev</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># (5) Compute result in DAPHNE.</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="nb">print</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
 </code></pre></div>
-<p>First, DAPHNE's Python library must be imported <strong>(1)</strong>.
-We plan to make this as simple as <code>import daphne</code> in the future.</p>
+<p>First, DAPHNE's Python library must be imported <strong>(1)</strong>.</p>
 <p>Then, a <code>DaphneContext</code> must be created <strong>(2)</strong>.
 The <code>DaphneContext</code> offers means to obtain DAPHNE matrices and frames, which serve as the starting point for defining complex computations.
 Here, we generate some random data in numpy and import it to DAPHNE <strong>(3)</strong>.</p>
@@ -1525,14 +1607,7 @@ This principle is known as <em>lazy evaluation</em>.
 (Internally, a <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL</a> script is created, which is sent through the entire DAPHNE compiler and runtime stack, thereby profiting from all optimizations in DAPHNE.)
 The result is returned as a <code>numpy.ndarray</code> (for DAPHNE matrices), as a <code>pandas.DataFrame</code> (for DAPHNE frames), or as a plain Python scalar (for DAPHNE scalars), and can then be further used in Python.</p>
 <p>The script above can be executed by:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/shift-and-scale.py
-</code></pre></div>
-<p>Note that there are some <strong>temporary limitations</strong> (which will be fixed in the future):</p>
-<ul>
-<li><code>python3</code> must be executed from the DAPHNE base directory.</li>
-<li>Before executing DaphneLib Python scripts, the environment variable <code>PYTHONPATH</code> must be updated by executing the following command once per session:</li>
-</ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$PYTHONPATH</span><span class="s2">:</span><span class="nv">$PWD</span><span class="s2">/src/&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/shift-and-scale.py
 </code></pre></div>
 <p>The remainder of this document presents the core features of DaphneLib <em>as they are right now</em>, but <em>note that DaphneLib is still under active development</em>.</p>
 <h2 id="data-and-value-types">Data and Value Types</h2>
@@ -1554,7 +1629,7 @@ The result is returned as a <code>numpy.ndarray</code> (for DAPHNE matrices), as
 <ul>
 <li><code>matrix&lt;f64&gt;</code> is a matrix of double-precision floating point values</li>
 </ul>
-<p>In DaphneLib, each node of the computation DAG has one of the types <code>api.python.operator.nodes.matrix.Matrix</code>, <code>api.python.operator.nodes.frame.Frame</code>, or <code>api.python.operator.nodes.scalar.Scalar</code>.
+<p>In DaphneLib, each node of the computation DAG has one of the types <code>daphne.operator.nodes.matrix.Matrix</code>, <code>daphne.operator.nodes.frame.Frame</code>, or <code>daphne.operator.nodes.scalar.Scalar</code>.
 The type of a node determines which methods can be invoked on it (see <a href="/daphne/DaphneLib/APIRef">DaphneLib API reference</a>).</p>
 <h2 id="obtaining-daphne-matrices-and-frames">Obtaining DAPHNE Matrices and Frames</h2>
 <p>The <code>DaphneContext</code> offers means to obtain DAPHNE matrices and frames, which serve as the starting point for defining complex computations.
@@ -1681,7 +1756,7 @@ Enabling data exchange with TensorFlow and PyTorch is on our agenda.
 Furthermore, we are working on making the data exchange more efficient in general.</p>
 <h3 id="data-exchange-with-numpy">Data Exchange with numpy</h3>
 <p><em>Example:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span> <span class="nn">api.python.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
@@ -1717,7 +1792,7 @@ Furthermore, we are working on making the data exchange more efficient in genera
 </code></pre></div>
 <h3 id="data-exchange-with-pandas">Data Exchange with pandas</h3>
 <p><em>Example:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span> <span class="nn">api.python.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
@@ -1761,10 +1836,8 @@ Furthermore, we are working on making the data exchange more efficient in genera
 Thus, there are a few limitations that users should be aware of.
 We plan to fix all of these limitations in the future.</p>
 <ul>
-<li><code>import</code>ing DaphneLib is still unnecessarily verbose.</li>
 <li>Using DAPHNE's command-line arguments to influence its behavior is not supported yet.</li>
-<li>Many DaphneDSL built-in functions are not represented by DaphneLib methods yet.</li>
-<li>Complex control flow (if-then-else, loops, functions) are not supported yet. Python control flow statements are of limited applicability for DaphneLib.</li>
+<li>Some DaphneDSL built-in functions are not represented by DaphneLib methods yet.</li>
 <li>High-level primitives for integrated data analysis pipelines, which are implemented in DaphneDSL, cannot be called from DaphneLib yet.</li>
 </ul>
 
