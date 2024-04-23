@@ -7,7 +7,7 @@ name = "daphne"
 authors = [
     {name = "The DAPHNE Consortium", email = "daphne_dev@know-center.at"},
 ]
-description = "DaphneLib: Python api for DAPHNE"
+description = "DaphneLib: Python API for DAPHNE"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Apache v2.0"}
@@ -19,7 +19,7 @@ classifiers = [
 dependencies = [
     "pandas",
 ]
-version = "0.1.0"
+version = "0.2.0"
 
 [project.urls]
 Homepage = "https://daphne-eu.eu/"

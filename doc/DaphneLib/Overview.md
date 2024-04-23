@@ -27,16 +27,16 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 **Provide DAPHNE:**
 
 - `libdaphnelib.so` and `libAllKernels.so` must be present
-  - Building the project with `--target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
+  - Building the project with `./build.sh --target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
   - OR use the `lib/` dir of a release
-- `LD_LIBRARY_PATH` must be set (eg. executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
-- Set the environment variable named `DAPHNELIB_DIR_PATH` to the path were the libraries (`*.so` files) are placed, eg. `path/to/daphne/lib/`
+- `LD_LIBRARY_PATH` must be set (e.g., executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
+- Set the environment variable `DAPHNELIB_DIR_PATH` to the path were the libraries (`*.so` files) are placed, e.g., `path/to/daphne/lib/`
 
 ## Installation
 
 - There are two options to install the Python package `daphne` (DaphneLib)
   - Via github url: `pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python`
-  - OR clone the DAPHNE repoistory and install from source files: `pip install daphne/src/api/python`
+  - OR clone the DAPHNE repository and install from source files: `pip install daphne/src/api/python`
 - *Recommendation:* Use a virtual environment
 
     ```shell
@@ -44,6 +44,13 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
     source my_venv/bin/activate
     pip install ...
     ```
+
+## Use Without Installation
+
+- In a cloned DAPHNE repository, DaphneLib can also be used without installing the Python package `daphne`
+- To this end, `python3` must be told where to find the package by adding the respective directory to the Python path
+- From the DAPHNE root directory, execute: `export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/"`
+- OR execute the script `run_python.sh` (instead of `python3`) from the DAPHNE root directory, e.g., `./run_python.sh myScript.py`
 
 ## Introductory Example
 
@@ -68,7 +75,6 @@ print(Y.compute())
 ```
 
 First, DAPHNE's Python library must be imported **(1)**.
-We plan to make this as simple as `import daphne` in the future.
 
 Then, a `DaphneContext` must be created **(2)**.
 The `DaphneContext` offers means to obtain DAPHNE matrices and frames, which serve as the starting point for defining complex computations.
@@ -113,7 +119,7 @@ Data types and value types can be combined, e.g.:
 
 - `matrix<f64>` is a matrix of double-precision floating point values
 
-In DaphneLib, each node of the computation DAG has one of the types `api.python.operator.nodes.matrix.Matrix`, `api.python.operator.nodes.frame.Frame`, or `api.python.operator.nodes.scalar.Scalar`.
+In DaphneLib, each node of the computation DAG has one of the types `daphne.operator.nodes.matrix.Matrix`, `daphne.operator.nodes.frame.Frame`, or `daphne.operator.nodes.scalar.Scalar`.
 The type of a node determines which methods can be invoked on it (see [DaphneLib API reference](/doc/DaphneLib/APIRef.md)).
 
 ## Obtaining DAPHNE Matrices and Frames
@@ -303,7 +309,6 @@ DaphneLib is still in an early development stage.
 Thus, there are a few limitations that users should be aware of.
 We plan to fix all of these limitations in the future.
 
-- `import`ing DaphneLib is still unnecessarily verbose.
 - Using DAPHNE's command-line arguments to influence its behavior is not supported yet.
-- Many DaphneDSL built-in functions are not represented by DaphneLib methods yet.
+- Some DaphneDSL built-in functions are not represented by DaphneLib methods yet.
 - High-level primitives for integrated data analysis pipelines, which are implemented in DaphneDSL, cannot be called from DaphneLib yet.

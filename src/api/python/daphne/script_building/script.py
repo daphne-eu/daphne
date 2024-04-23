@@ -83,12 +83,13 @@ class DaphneDSLScript:
         self._variable_counter = 0
 
     def execute(self):
-        temp_out_file = open("tmpdaphne.daphne", "w")
+        temp_out_path = os.path.join(TMP_PATH, "tmpdaphne.daphne")
+        temp_out_file = open(temp_out_path, "w")
         temp_out_file.writelines(self.daphnedsl_script)
         temp_out_file.close()
         
         #os.environ['OPENBLAS_NUM_THREADS'] = '1'
-        res = DaphneLib.daphne(ctypes.c_char_p(str.encode(PROTOTYPE_PATH)), ctypes.c_char_p(b"tmpdaphne.daphne"))
+        res = DaphneLib.daphne(ctypes.c_char_p(str.encode(PROTOTYPE_PATH)), ctypes.c_char_p(str.encode(temp_out_path)))
         #os.environ['OPENBLAS_NUM_THREADS'] = '32'
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
