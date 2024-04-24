@@ -31,7 +31,12 @@ from api.python.utils.helpers import create_params_string
 
 import numpy as np
 import pandas as pd
+
+import os
+# TODO Check what messages it actually prints, maybe some of that is important.
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow as tf
+tf.get_logger().setLevel("ERROR")
 
 import time
 

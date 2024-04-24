@@ -17,7 +17,11 @@
 # Data transfer from pandas to DAPHNE and back, via shared memory.
 
 import torch 
+import os
+# TODO Check what messages it actually prints, maybe some of that is important.
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow as tf
+tf.get_logger().setLevel("ERROR")
 from api.python.context.daphne_context import DaphneContext
 
 tensor = tf.constant([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=tf.int64)

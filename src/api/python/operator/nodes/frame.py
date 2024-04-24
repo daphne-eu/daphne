@@ -61,8 +61,9 @@ class Frame(OperationNode):
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
-        if self.__copy:
-            return f'{var_name}={unnamed_input_vars[0]};'
+        # TODO Unclear what became of __copy.
+        # if self.__copy:
+        #     return f'{var_name}={unnamed_input_vars[0]};'
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH) 
         
         #Save temporary csv file, if the operation is "readFrame"

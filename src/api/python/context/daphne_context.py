@@ -41,12 +41,17 @@ from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64,
 import numpy as np
 import pandas as pd
 import csv
+
+import os
+# TODO Check what messages it actually prints, maybe some of that is important.
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow as tf
+tf.get_logger().setLevel("ERROR")
 
 import time
 from itertools import repeat
 
-from typing import Sequence, Dict, Union
+from typing import Sequence, Dict, Union, List, Iterable, Callable, Optional, Tuple
 
 class DaphneContext(object):
     _functions: dict
