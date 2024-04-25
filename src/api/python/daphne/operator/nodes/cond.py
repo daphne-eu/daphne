@@ -21,14 +21,14 @@
 #
 # -------------------------------------------------------------
 
-from api.python.operator.operation_node import OperationNode
-from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.frame import Frame
-from api.python.operator.nodes.scalar import Scalar
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES
-from api.python.script_building.nested_script import NestedDaphneDSLScript
-from api.python.utils import analyzer
+from daphne.operator.operation_node import OperationNode
+from daphne.operator.nodes.matrix import Matrix
+from daphne.operator.nodes.frame import Frame
+from daphne.operator.nodes.scalar import Scalar
+from daphne.script_building.dag import OutputType
+from daphne.utils.consts import VALID_INPUT_TYPES
+from daphne.script_building.nested_script import NestedDaphneDSLScript
+from daphne.utils import analyzer
 
 from typing import TYPE_CHECKING, Dict, Iterable, Sequence, Tuple, Callable
 import textwrap

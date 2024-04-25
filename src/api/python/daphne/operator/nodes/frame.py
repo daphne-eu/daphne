@@ -23,11 +23,11 @@
 
 __all__ = ["Frame"]
 
-from api.python.operator.operation_node import OperationNode
-from api.python.operator.nodes.scalar import Scalar
-from api.python.operator.nodes.matrix import Matrix
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
+from daphne.operator.operation_node import OperationNode
+from daphne.operator.nodes.scalar import Scalar
+from daphne.operator.nodes.matrix import Matrix
+from daphne.script_building.dag import OutputType
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
 
 import pandas as pd
 
