@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import numpy as np 
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 m = np.array([1, 2, 3, 0, 0, 0, 7, 8, 9], dtype=np.int64)
 m.shape = (3, 3)

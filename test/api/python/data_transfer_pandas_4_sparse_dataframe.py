@@ -18,7 +18,7 @@
 # pd.DataFrame with sparse data 
 
 import pandas as pd
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 sdf = pd.DataFrame({
     "A": pd.arrays.SparseArray([1, 0, 0]),

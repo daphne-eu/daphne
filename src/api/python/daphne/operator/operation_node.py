@@ -40,7 +40,7 @@ from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
-    from context.daphne_context import DaphneContext
+    from daphne.context.daphne_context import DaphneContext
     
 class OperationNode(DAGNode):  
     _result_var:Optional[Union[float,np.array]]

@@ -68,7 +68,7 @@ class DaphneContext(object):
         """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
         :param mat: The numpy array.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
-	:param verbose: Whether to print timing information (True) or not (False).
+        :param verbose: Whether to print timing information (True) or not (False).
         :return: The data from numpy as a Matrix.
         """
 
@@ -121,7 +121,8 @@ class DaphneContext(object):
             res = Matrix(self, 'receiveFromNumpy', [upper, lower, rows, cols, vtc], local_data=mat)
         else:
             # Data transfer via a file.
-            unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+            data_path_param = "\"" + TMP_PATH + "/{file_name}.csv\""
+            unnamed_params = [data_path_param]
             named_params = []
 
             res = Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
@@ -234,7 +235,8 @@ class DaphneContext(object):
             return Frame(self, 'createFrame', unnamed_input_nodes=args, local_data=df)
         
         else: # data transfer via files
-            unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+            data_path_param = "\"" + TMP_PATH + "/{file_name}.csv\""
+            unnamed_params = [data_path_param]
             named_params = []
 
             if verbose:

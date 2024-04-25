@@ -22,13 +22,43 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 
 **DaphneLib is still in an experimental stage, feedback and bug reports via GitHub issues are highly welcome.**
 
+## Prerequisites
+
+**Provide DAPHNE:**
+
+- `libdaphnelib.so` and `libAllKernels.so` must be present
+  - Building the project with `./build.sh --target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
+  - OR use the `lib/` dir of a release
+- `LD_LIBRARY_PATH` must be set (e.g., executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
+- Set the environment variable `DAPHNELIB_DIR_PATH` to the path were the libraries (`*.so` files) are placed, e.g., `path/to/daphne/lib/`
+
+## Installation
+
+- There are two options to install the Python package `daphne` (DaphneLib)
+  - Via github url: `pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python`
+  - OR clone the DAPHNE repository and install from source files: `pip install daphne/src/api/python`
+- *Recommendation:* Use a virtual environment
+
+    ```shell
+    python3 -m venv my_venv
+    source my_venv/bin/activate
+    pip install ...
+    ```
+
+## Use Without Installation
+
+- In a cloned DAPHNE repository, DaphneLib can also be used without installing the Python package `daphne`
+- To this end, `python3` must be told where to find the package by adding the respective directory to the Python path
+- From the DAPHNE root directory, execute: `export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/"`
+- OR execute the script `run_python.sh` (instead of `python3`) from the DAPHNE root directory, e.g., `./run_python.sh myScript.py`
+
 ## Introductory Example
 
 The following simple example script generates a *5x3* matrix of random values in *[0, 1)* using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of *0* and a standard deviation of *1*.
 
 ```python
 # (1) Import DaphneLib.
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import numpy as np
 
 # (2) Create DaphneContext.
@@ -45,7 +75,6 @@ print(Y.compute())
 ```
 
 First, DAPHNE's Python library must be imported **(1)**.
-We plan to make this as simple as `import daphne` in the future.
 
 Then, a `DaphneContext` must be created **(2)**.
 The `DaphneContext` offers means to obtain DAPHNE matrices and frames, which serve as the starting point for defining complex computations.
@@ -66,15 +95,6 @@ The script above can be executed by:
 ```bash
 python3 scripts/examples/daphnelib/shift-and-scale.py
 ```
-
-Note that there are some **temporary limitations** (which will be fixed in the future):
-
-- `python3` must be executed from the DAPHNE base directory.
-- Before executing DaphneLib Python scripts, the environment variable `PYTHONPATH` must be updated by executing the following command once per session:
-
-  ```bash
-  export PYTHONPATH="$PYTHONPATH:$PWD/src/"
-  ```
 
 The remainder of this document presents the core features of DaphneLib *as they are right now*, but *note that DaphneLib is still under active development*.
 
@@ -99,7 +119,7 @@ Data types and value types can be combined, e.g.:
 
 - `matrix<f64>` is a matrix of double-precision floating point values
 
-In DaphneLib, each node of the computation DAG has one of the types `api.python.operator.nodes.matrix.Matrix`, `api.python.operator.nodes.frame.Frame`, or `api.python.operator.nodes.scalar.Scalar`.
+In DaphneLib, each node of the computation DAG has one of the types `daphne.operator.nodes.matrix.Matrix`, `daphne.operator.nodes.frame.Frame`, or `daphne.operator.nodes.scalar.Scalar`.
 The type of a node determines which methods can be invoked on it (see [DaphneLib API reference](/doc/DaphneLib/APIRef.md)).
 
 ## Obtaining DAPHNE Matrices and Frames
@@ -190,7 +210,7 @@ By default, the data transfer is via shared memory (and in many cases zero-copy)
 *Example:*
 
 ```python
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import numpy as np
 
 dc = DaphneContext()
@@ -236,7 +256,7 @@ Result of adding 100 to each value, back in Python:
 *Example:*
 
 ```python
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import pandas as pd
 
 dc = DaphneContext()
@@ -287,7 +307,7 @@ Result of appending the frame to itself, back in Python:
 *Example:*
 
 ```python
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import tensorflow as tf
 import numpy as np
 
@@ -398,7 +418,7 @@ tf.Tensor(
 *Example:*
 
 ```python
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import torch
 import numpy as np
 
@@ -505,8 +525,6 @@ DaphneLib is still in an early development stage.
 Thus, there are a few limitations that users should be aware of.
 We plan to fix all of these limitations in the future.
 
-- `import`ing DaphneLib is still unnecessarily verbose.
 - Using DAPHNE's command-line arguments to influence its behavior is not supported yet.
-- Many DaphneDSL built-in functions are not represented by DaphneLib methods yet.
-- Complex control flow (if-then-else, loops, functions) are not supported yet. Python control flow statements are of limited applicability for DaphneLib.
+- Some DaphneDSL built-in functions are not represented by DaphneLib methods yet.
 - High-level primitives for integrated data analysis pipelines, which are implemented in DaphneDSL, cannot be called from DaphneLib yet.

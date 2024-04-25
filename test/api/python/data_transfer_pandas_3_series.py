@@ -18,7 +18,7 @@
 # pd.Series 
 
 import pandas as pd
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 ser = pd.Series([10, 20, 30, 40, 50])
 

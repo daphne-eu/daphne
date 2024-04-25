@@ -17,7 +17,7 @@
 # Data transfer from PyTorch to DAPHNE and back, via shared memory.
 
 import torch
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 tensor = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 

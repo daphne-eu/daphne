@@ -36,12 +36,14 @@ BINARY_OPERATIONS = ['+', '-', '/', '*', '^', '%', '<', '<=', '>', '>=', '==', '
 VALID_ARITHMETIC_TYPES = Union['DAGNode', int, float]
 VALID_COMPUTED_TYPES = Union['Matrix', 'Frame', 'Scalar']
 
-PYTHON_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-
-TMP_PATH = os.path.join(PYTHON_PATH, "tmp")
+TMP_PATH = os.path.join("/tmp/", "DaphneLib")
 os.makedirs(TMP_PATH, exist_ok=True)
 
-PROTOTYPE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(PYTHON_PATH)))
+_PROTOTYPE_PATH_ENV_VAR_NAME = "DAPHNELIB_DIR_PATH"
+PROTOTYPE_PATH = os.environ.get(_PROTOTYPE_PATH_ENV_VAR_NAME)
+if not PROTOTYPE_PATH:
+    raise ValueError(f"Environment variable '{_PROTOTYPE_PATH_ENV_VAR_NAME}' NOT SET")
+DAPHNELIB_FILENAME = "libdaphnelib.so"
 
 # DAPHNE value type codes.
 # The values need to be updated according to the value type codes in ValueTypeCode.h as this is a 1:1 copy.

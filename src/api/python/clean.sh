@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/bin/bash
 
-# Copyright 2023 The DAPHNE Consortium
+# Copyright 2024 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from daphne.context.daphne_context import DaphneContext
-import pandas as pd
-
-dctx = DaphneContext()
-
-df1 = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
-
-f1 = dctx.from_pandas(df1)
-
-f1.setColLabelsPrefix("c").print().compute()
+rm -rf build
+rm -rf dist

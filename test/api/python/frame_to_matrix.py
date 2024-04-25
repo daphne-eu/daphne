@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import pandas as pd
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 df = pd.DataFrame({"ab": [1, 2], "cd": [3, 4]})
 
