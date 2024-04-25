@@ -39,11 +39,6 @@ void saveDaphneLibResult(const DTArg * arg, DCTX(ctx)) {
     SaveDaphneLibResult<DTArg>::apply(arg, ctx);
 }
 
-template<class DTArg>
-void freeDaphneLibResult(const DTArg * arg, DCTX(ctx)) {
-    SaveDaphneLibResult<DTArg>::free(arg, ctx);
-}
-
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
@@ -70,10 +65,6 @@ struct SaveDaphneLibResult<DenseMatrix<VT>> {
         daphneLibRes->rows = arg->getNumRows();
         daphneLibRes->vtc = (int64_t)ValueTypeUtils::codeFor<VT>;
     }
-    static void free(const DenseMatrix<VT> * arg,  DCTX(ctx)) {
-        // Decrease the Reference Counter to allow for the Daphne garbage collection
-        DataObjectFactory::destroy(arg);
-    }
 };
 
 // ----------------------------------------------------------------------------
@@ -86,7 +77,6 @@ struct SaveDaphneLibResult<Frame> {
         // Increase the reference counter of the data object to be transferred
         // to python, such that the data is not garbage collected by DAPHNE.
         // TODO But who will free the memory in the end?
-
         arg->increaseRefCounter();
 
         DaphneLibResult* daphneLibRes = ctx->getUserConfig().result_struct;
@@ -94,37 +84,23 @@ struct SaveDaphneLibResult<Frame> {
         if(!daphneLibRes)
             throw std::runtime_error("saveDaphneLibRes(): daphneLibRes is nullptr");
 
-        std::vector<ValueTypeCode> vtcs_tmp;    // The tmp arrays do not need to be deleted manually
-        std::vector<std::string> labels_tmp;    // They are local dynamic arrays and the destructor is called automatically
+        const size_t numCols = arg->getNumCols();
 
-        for(size_t i = 0; i < arg->getNumCols(); i++) {
-            vtcs_tmp.push_back(arg->getSchema()[i]);
-            labels_tmp.push_back(arg->getLabels()[i]);
-        }
-
-        // Create C-Type arrays for vtcs, labels and columns
-        int64_t* vtcs = new int64_t[arg->getNumCols()];
-        char** labels = new char*[arg->getNumCols()];
-        void** columns = new void*[arg->getNumCols()];
-
-        // Assign the Frame Information to the C-Type Arrays
-        for(size_t i = 0; i < arg->getNumCols(); i++) {
-            vtcs[i] = static_cast<int64_t>(vtcs_tmp[i]);
-            labels[i] = new char[labels_tmp[i].size() + 1];
-            strcpy(labels[i], labels_tmp[i].c_str());
-
+        // Create fresh arrays for vtcs, labels and columns.
+        int64_t* vtcs = new int64_t[numCols];
+        char** labels = new char*[numCols];
+        void** columns = new void*[numCols];
+        for(size_t i = 0; i < numCols; i++) {
+            vtcs[i] = static_cast<int64_t>(arg->getSchema()[i]);
+            labels[i] = const_cast<char*>(arg->getLabels()[i].c_str());
             columns[i] = const_cast<void*>(reinterpret_cast<const void*>(arg->getColumnRaw(i)));
         }
 
-        daphneLibRes->cols = arg->getNumCols();
+        daphneLibRes->cols = numCols;
         daphneLibRes->rows = arg->getNumRows();
         daphneLibRes->vtcs = vtcs;
         daphneLibRes->labels = labels;
         daphneLibRes->columns = columns; 
-    }
-    static void free(const Frame * arg,  DCTX(ctx)) {
-        // Decrease the Reference Counter to allow for the Daphne garbage collection
-        DataObjectFactory::destroy(arg);
     }
 };
 

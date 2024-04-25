@@ -39,35 +39,3 @@ extern "C" int daphne(const char* scriptPath) {
 
     return mainInternal(argc, argv, &daphneLibRes);
 }
-
-extern "C" void freeDaphneMemory(DaphneLibResult* result) {
-    if (!result) return;
-
-    // For frame data
-    if (result->columns) {
-        for (int i = 0; i < result->cols; i++) {
-            delete[] result->columns[i];
-        }
-        delete[] result->columns;
-        result->columns = nullptr;
-    }
-
-    if (result->labels) {
-        for (int i = 0; i < result->cols; i++) {
-            delete[] result->labels[i];
-        }
-        delete[] result->labels;
-        result->labels = nullptr;
-    }
-
-    if (result->vtcs) {
-        delete[] result->vtcs;
-        result->vtcs = nullptr;
-    }
-
-    // For matrix or scalar data
-    if (result->address) {
-        delete result->address;
-        result->address = nullptr;
-    }
-}

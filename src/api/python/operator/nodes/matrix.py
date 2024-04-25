@@ -54,7 +54,7 @@ class Matrix(OperationNode):
         else:
             self._np_array = None
         super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets)
-    
+
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
         if self.__copy:
@@ -99,8 +99,8 @@ class Matrix(OperationNode):
     def _is_numpy(self) -> bool:
         return self._np_array is not None
     
-    def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None) -> Union[np.array]:
-        return super().compute(type=type, verbose=verbose, isTensorflow=isTensorflow, isPytorch=isPytorch, shape=shape)
+    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None) -> Union[np.array]:
+        return super().compute(type=type, verbose=verbose, asTensorFlow=asTensorFlow, asPyTorch=asPyTorch, shape=shape)
 
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '+', [self, other])
@@ -404,9 +404,3 @@ class Matrix(OperationNode):
     
     def print(self):
         return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)
-    
-    """ Eigen is not Working yet, as the MultiReturn Type is not Working yet
-    def eigen(self, eValues: 'Matrix', eVectors: 'Matrix') -> 'Matrix': 
-
-        return MultiReturn(self.daphne_context, 'eigen', unnamed_input_nodes=[self], output_nodes=[eValues, eVectors])
-    """

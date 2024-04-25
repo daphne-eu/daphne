@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2023 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,10 @@ f1 = createFrame(
     [1, 2], [3, 4],
     "a", "b"
 );
-
 f2 = createFrame(
     [3, 4, 5], [6, 7, 8],
-    "b", "d"
+    "c", "d"
 );
 
-f1 = setColLabelsPrefix(f1, "l");
-f2 = setColLabelsPrefix(f2, "r");
-
-f3 = innerJoin(f1, f2, "l.b", "r.b");
+f3 = innerJoin(f1, f2, "b", "c");
 print(f3);

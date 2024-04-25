@@ -46,7 +46,7 @@ class Scalar(OperationNode):
         self.__copy = copy
         super().__init__(daphne_context, operation, unnamed_input_nodes=unnamed_input_nodes,
                          named_input_nodes=named_input_nodes, output_type=output_type)
-    
+
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
         if self.__assign:

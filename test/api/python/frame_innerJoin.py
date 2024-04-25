@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright 2021 The DAPHNE Consortium
+# Copyright 2023 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@ import pandas as pd
 dctx = DaphneContext()
 
 df1 = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
-
-df2 = pd.DataFrame({"b": [3, 4, 5], "d": [6, 7, 8]})
+df2 = pd.DataFrame({"c": [3, 4, 5], "d": [6, 7, 8]})
 
 f1 = dctx.from_pandas(df1)
 f2 = dctx.from_pandas(df2)
 
-f1.innerJoin(f2, "b", "b").print().compute()
+f1.innerJoin(f2, "b", "c").print().compute()

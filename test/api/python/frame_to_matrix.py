@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright 2022 The DAPHNE Consortium
+# Copyright 2023 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Data transfer from pandas to DAPHNE and back, via shared memory.
-
 import pandas as pd
 from api.python.context.daphne_context import DaphneContext
 
@@ -23,5 +21,5 @@ df = pd.DataFrame({"ab": [1, 2], "cd": [3, 4]})
 
 dctx = DaphneContext()
 
-F = dctx.from_pandas(df, shared_memory=True)
-F.toMatrix(data_type="si64").print().compute()
+F = dctx.from_pandas(df)
+F.toMatrix(value_type="si64").print().compute()

@@ -31,6 +31,3 @@ class DaphneLibResult(ctypes.Structure):
 
 DaphneLib = ctypes.CDLL(os.path.join(PROTOTYPE_PATH, "lib", "libdaphnelib.so"))
 DaphneLib.getResult.restype = DaphneLibResult
-
-DaphneLib.freeDaphneMemory.argtypes = [ctypes.POINTER(DaphneLibResult)]
-DaphneLib.freeDaphneMemory.restype = None

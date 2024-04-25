@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright 2022 The DAPHNE Consortium
+# Copyright 2023 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,13 +15,17 @@
 # limitations under the License.
 
 # Data transfer from pandas to DAPHNE and back, via shared memory.
-# Series 
+# pd.DataFrame with sparse data 
 
 import pandas as pd
 from api.python.context.daphne_context import DaphneContext
 
-sdf = pd.DataFrame({"A": pd.arrays.SparseArray([1, 0, 0]), "B": pd.arrays.SparseArray([0, 2, 0]), "C": pd.arrays.SparseArray([0, 0, 3])})
+sdf = pd.DataFrame({
+    "A": pd.arrays.SparseArray([1, 0, 0]),
+    "B": pd.arrays.SparseArray([0, 2, 0]),
+    "C": pd.arrays.SparseArray([0, 0, 3])
+})
 
 dctx = DaphneContext()
 
-dctx.from_pandas(sdf, shared_memory=True).print().compute()
+dctx.from_pandas(sdf, shared_memory=True).print().compute(type="shared memory")

@@ -2544,36 +2544,6 @@
     },
     {
         "kernelTemplate": {
-            "header": "SaveDaphneLibResult.h",
-            "opName": "freeDaphneLibResult",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTArg",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "const DTArg *",
-                    "name": "arg"
-                }
-            ]
-        },
-        "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "float"]],
-            [["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "int32_t"]],
-            [["DenseMatrix", "int8_t"]],
-            [["DenseMatrix", "uint64_t"]],
-            [["DenseMatrix", "uint32_t"]],
-            [["DenseMatrix", "uint8_t"]],
-            ["Frame"]
-        ]
-    },
-    {
-        "kernelTemplate": {
             "header": "ReceiveFromNumpy.h",
             "opName": "receiveFromNumpy",
             "returnType": "void",

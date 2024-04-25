@@ -45,12 +45,15 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 - **`createFrame`**`(columns: List[Matrix], labels: List[str] = None) -> 'Frame'`
 - **`diagMatrix`**`(self, arg: Matrix) -> 'Matrix'`
 - **`sample`**`(range, size, withReplacement: bool, seed = -1) -> 'Matrix'`
-- **`sql`**`(query) -> Frame`
 
 **Reading files using DAPHNE's readers:**
 
 - **`readMatrix`**`(file:str) -> Matrix`
 - **`readFrame`**`(file:str) -> Frame`
+
+**Extended relational algebra:**
+
+- **`sql`**`(query) -> Frame`
 
 ## Building Complex Computations
 
@@ -163,7 +166,7 @@ In the following, we describe only the latter.
 - **`ncol`**`()`
 - **`ncell`**`()`
 
-**Frame labels:**
+**Frame label manipulation:**
 
 - **`setColLabels`**`(labels)`
 - **`setColLabelsPrefix`**`(prefix)`
@@ -173,21 +176,21 @@ In the following, we describe only the latter.
 - **`cbind`**`(other)`
 - **`rbind`**`(other)`
 - **`order`**`(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)`
-- **`innerJoin`**`(right_frame, left_on, right_on)`
 
 **Extended relational algebra:**
 
+- **`registerView`**`(table_name: str)`
 - **`cartesian`**`(other)`
-
-**Enable SQL:**
-
-- **`registerView`**`(table_name)`
+- **`innerJoin`**`(right_frame, left_on, right_on)`
 
 **Input/output:**
 
 - **`print`**`()`
 - **`write`**`(file: str)`
-- **`toMatrix`**`(data_type="f64") -> Matrix`
+
+**Conversions, casts, and copying:**
+
+- **`toMatrix`**`(value_type="f64") -> Matrix`
 
 ### `Scalar` API Reference
 

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright 2022 The DAPHNE Consortium
+# Copyright 2023 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 # Data transfer from pandas to DAPHNE and back, via shared memory.
 
-import torch 
 import os
 # TODO Check what messages it actually prints, maybe some of that is important.
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -28,4 +27,4 @@ tensor = tf.constant([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=tf.int64)
 
 dctx = DaphneContext()
 
-dctx.from_tensorflow(tensor, shared_memory=True).print().compute()
+dctx.from_tensorflow(tensor, shared_memory=True).print().compute(type="shared memory")

@@ -61,12 +61,9 @@ class Frame(OperationNode):
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
-        # TODO Unclear what became of __copy.
-        # if self.__copy:
-        #     return f'{var_name}={unnamed_input_vars[0]};'
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH) 
         
-        #Save temporary csv file, if the operation is "readFrame"
+        # Save temporary CSV file, if the operation is "readFrame".
         if self._is_pandas() and self.operation == "readFrame":
             self._pd_dataframe.to_csv(TMP_PATH+"/"+var_name+".csv", header=False, index=False)
             with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
@@ -127,101 +124,19 @@ class Frame(OperationNode):
     
     def innerJoin(self, right_frame, left_on, right_on) -> 'Frame':
         """
-        Creates an Inner Join between the object (left) and another frame (right)
-        :param right_frame: Frame to join with the object
-        :param left_on: Left Key (with left_on == right_on)
-        :param right_on: Right Key (with left_on == right_on)
-        :return: A Frame containing the Inner Join of both Frames.
+        Creates an Inner Join between this object (left) and another frame (right)
+        :param right_frame: Frame to join this object with
+        :param left_on: Left key
+        :param right_on: Right key
+        :return: A Frame containing the inner join of both Frames.
         """
-        self = self.setColLabelsPrefix("l")
-        right_frame = right_frame.setColLabelsPrefix("r")
-
-        args = [self, right_frame]
-
-        left_on_str = f'"l.{left_on}"'
-        args.append(left_on_str)
-
-        right_on_str = f'"r.{right_on}"'
-        args.append(right_on_str)        
-
+        args = [self, right_frame, f'"{left_on}"', f'"{right_on}"']   
         return Frame(self.daphne_context, "innerJoin", args)
-    
-    """ Both Semi Join and Group Join are not working in Daphne yet. 
-    This can be reproduced in the file "issue-with-joins.daph"
-    They Return two values: 
-
-    Returned Value 1: 
-        Frame(3x3, [CustomerID:int64_t, CompanyName:int64_t, ContactName:int64_t])
-        101 1 1
-        102 2 2
-        103 3 3
-        Frame(3x3, [OrderID:int64_t, CustomerID:int64_t, OrderDate:int64_t])
-        10643 101 20230715
-        10692 102 20230722
-        10702 103 20230725
-        Frame(3x2, [l.CustomerID:int64_t, SUM(r.OrderID):int64_t])
-        103 10702
-        102 10692
-        101 10643
-
-    Returned Value 2: 
-        DenseMatrix(3x1, uint64_t)
-        2
-        1
-        0
-
-    def semiJoin(self, right_frame, left_on, right_on) -> 'Frame':
-        """"""
-        Creates a Semi Join between the object (left) and another frame (right)
-        :param right_frame: Frame to join with the object
-        :param left_on: Left Key (with left_on == right_on)
-        :param right_on: Right Key (with left_on == right_on)
-        :return: A Frame containing the Semi Join of both Frames.
-        """"""
-        self = self.setColLabelsPrefix("l")
-        right_frame = right_frame.setColLabelsPrefix("r")
-
-        args = [self, right_frame]
-
-        left_on_str = f'"l.{left_on}"'
-        args.append(left_on_str)
-
-        right_on_str = f'"r.{right_on}"'
-        args.append(right_on_str)        
-
-        return Frame(self.daphne_context, "semiJoin", args)
-    
-    def groupJoin(self, right_frame, left_on, right_on, right_Agg) -> 'Frame':
-        """"""
-        Creates a Group Join between the object (left) and another frame (right)
-        :param right_frame: Frame to join with the object
-        :param left_on: Left Key (with left_on == right_on)
-        :param right_on: Right Key (with left_on == right_on)
-        :param right_Agg: Aggregation Argument
-        :return: A Frame containing the Group Join of both Frames.
-        """"""
-        self = self.setColLabelsPrefix("l")
-        right_frame = right_frame.setColLabelsPrefix("r")
-
-        args = [self, right_frame]
-
-        left_on_str = f'"l.{left_on}"'
-        args.append(left_on_str)
-
-        right_on_str = f'"r.{right_on}"'
-        args.append(right_on_str)     
-
-        right_Agg_str = f'"r.{right_Agg}"'
-        args.append(right_Agg_str)      
-
-        return Frame(self.daphne_context, "groupJoin", args)
-
-    """
     
     def setColLabels(self, labels) -> 'Frame':
         """
-        Changes the Column labels to the handed over labels.
-        There must be as many labels as columns!
+        Changes the column labels to the given labels.
+        There must be as many labels as columns.
         :param labels: List of new labels
         :return: A Frame with the new labels
         """
@@ -236,37 +151,34 @@ class Frame(OperationNode):
 
             return Frame(self.daphne_context, "setColLabels", args)
         else: 
-            raise ValueError(f"Number of labels is not equal to the number of columns! \nExpected labels for {numCols} columns, but received {len(labels)} labels.")
+            raise ValueError(f"the number of given labels is not equal to the number of columns, expected {numCols}, but received {len(labels)}")
     
     def setColLabelsPrefix(self, prefix) -> 'Frame':
         """
-        Adds a Prefix to the labels of all columns
+        Adds a prefix to the labels of all columns.
         :param prefix: Prefix to be added to every label
         :return: A Frame with updated labels
         """
         prefix_str=f'"{prefix}"'
-
         return Frame(self.daphne_context, "setColLabelsPrefix", [self, prefix_str])
     
     def registerView(self, table_name:str):
         """
-        Registers the frame for sql operation under the specified table name. 
-        This is needed, before the sql statements can be executed
+        Registers this frame for SQL queries under the specified table name. 
+        This is needed before the SQL queries can be executed.
         :param table_name: Name for the registered Table
         :param frame: Frame to create a table
         """
         table_name_str = f'"{table_name}"'
-        #print(f'Registered as {table_name_str}: \n{self}')
-
         return OperationNode(self.daphne_context, 'registerView', [table_name_str, self], output_type=OutputType.NONE)
     
-    def toMatrix(self, data_type="f64") -> 'Matrix': 
+    def toMatrix(self, value_type="f64") -> 'Matrix': 
         """
-        Transforms the Frame to a Matrix of the type: data_type
-        :param data_type: Data Type for the Matrix
-        :return: A Matrix with the values of the datatype
+        Transforms the Frame to a Matrix of the given value type
+        :param value_type: The value type for the Matrix
+        :return: A Matrix of the specified value type
         """
-        return Matrix(self.daphne_context, f"as.matrix<{data_type}>", [self])
+        return Matrix(self.daphne_context, f"as.matrix<{value_type}>", [self])
 
     def nrow(self) -> 'Scalar':
         """

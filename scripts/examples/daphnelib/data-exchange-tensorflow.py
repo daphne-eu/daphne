@@ -13,23 +13,23 @@
 # limitations under the License.
 
 from api.python.context.daphne_context import DaphneContext
-import torch
+import tensorflow as tf
 import numpy as np
 
 dc = DaphneContext()
 
 print("========== 2D TENSOR EXAMPLE ==========\n")
 
-# Create data in PyTorch/numpy.
-t2d = torch.tensor(np.random.random(size=(2, 4)))
+# Create data in TensorFlow/numpy.
+t2d = tf.constant(np.random.random(size=(2, 4)))
 
-print("Original 2d tensor in PyTorch:")
+print("Original 2d tensor in TensorFlow:")
 print(t2d)
 
 # Transfer data to DaphneLib (lazily evaluated).
-T2D = dc.from_pytorch(t2d)
+T2D = dc.from_tensorflow(t2d)
 
-print("\nHow DAPHNE sees the 2d tensor from PyTorch:")
+print("\nHow DAPHNE sees the 2d tensor from TensorFlow:")
 T2D.print().compute()
 
 # Add 100 to each value in T2D.
@@ -37,20 +37,20 @@ T2D = T2D + 100.0
 
 # Compute in DAPHNE, transfer result back to Python.
 print("\nResult of adding 100, back in Python:")
-print(T2D.compute(asPyTorch=True))
+print(T2D.compute(asTensorFlow=True))
 
 print("\n========== 3D TENSOR EXAMPLE ==========\n")
 
-# Create data in PyTorch/numpy.
-t3d = torch.tensor(np.random.random(size=(2, 2, 2)))
+# Create data in TensorFlow/numpy.
+t3d = tf.constant(np.random.random(size=(2, 2, 2)))
 
-print("Original 3d tensor in PyTorch:")
+print("Original 3d tensor in TensorFlow:")
 print(t3d)
 
 # Transfer data to DaphneLib (lazily evaluated).
-T3D, T3D_shape = dc.from_pytorch(t3d, return_shape=True)
+T3D, T3D_shape = dc.from_tensorflow(t3d, return_shape=True)
 
-print("\nHow DAPHNE sees the 3d tensor from PyTorch:")
+print("\nHow DAPHNE sees the 3d tensor from TensorFlow:")
 T3D.print().compute()
 
 # Add 100 to each value in T3D.
@@ -58,6 +58,6 @@ T3D = T3D + 100.0
 
 # Compute in DAPHNE, transfer result back to Python.
 print("\nResult of adding 100, back in Python:")
-print(T3D.compute(asPyTorch=True))
+print(T3D.compute(asTensorFlow=True))
 print("\nResult of adding 100, back in Python (with original shape):")
-print(T3D.compute(asPyTorch=True, shape=T3D_shape))
+print(T3D.compute(asTensorFlow=True, shape=T3D_shape))

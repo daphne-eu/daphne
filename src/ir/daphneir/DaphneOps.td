@@ -1359,11 +1359,6 @@ def Daphne_SaveDaphneLibResultOp : Daphne_Op<"saveDaphneLibResult"> {
     let results = (outs); // no results
 }
 
-def Daphne_FreeDaphneLibResultOp : Daphne_Op<"freeDaphneLibResult"> {
-    let arguments = (ins MatrixOrFrame:$arg);
-    let results = (outs); // no results
-}
-
 // ----------------------------------------------------------------------------
 // Low-level
 // ----------------------------------------------------------------------------

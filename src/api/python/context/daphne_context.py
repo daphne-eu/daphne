@@ -23,8 +23,6 @@
 
 __all__ = ["DaphneContext", "Matrix", "Frame", "Scalar"]
 
-import torch as torch 
-
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.nodes.scalar import Scalar
@@ -33,25 +31,16 @@ from api.python.operator.nodes.cond import Cond
 from api.python.operator.nodes.while_loop import WhileLoop
 from api.python.operator.nodes.do_while_loop import DoWhileLoop
 from api.python.operator.nodes.multi_return import MultiReturn
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 from api.python.operator.operation_node import OperationNode
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd
-import csv
-
-import os
-# TODO Check what messages it actually prints, maybe some of that is important.
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+import torch as torch
 import tensorflow as tf
-tf.get_logger().setLevel("ERROR")
 
 import time
-from itertools import repeat
-
-from typing import Sequence, Dict, Union, List, Iterable, Callable, Optional, Tuple
+from typing import Sequence, Dict, Union, List, Callable, Tuple, Optional, Iterable
 
 class DaphneContext(object):
     _functions: dict
@@ -79,20 +68,21 @@ class DaphneContext(object):
         """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
         :param mat: The numpy array.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+	:param verbose: Whether to print timing information (True) or not (False).
         :return: The data from numpy as a Matrix.
         """
-        if(verbose):
-            # Time the execution for the whole processing
+
+        if verbose:
             start_time = time.time()
         
-        # Handle the dimensionality of the matrix
+        # Handle the dimensionality of the matrix.
         if mat.ndim == 1:
             rows = mat.shape[0]
             cols = 1
         elif mat.ndim == 2:
             rows, cols = mat.shape
         else:
-            raise ValueError("Input numpy array should be 1D or 2D.")
+            raise ValueError("input numpy array should be 1d or 2d")
 
         if shared_memory:
             # Data transfer via shared memory.
@@ -100,7 +90,8 @@ class DaphneContext(object):
             upper = (address & 0xFFFFFFFF00000000) >> 32
             lower = (address & 0xFFFFFFFF)
 
-            # Change the Data type, if int16 or uint16 is handed over
+            # Change the data type, if int16 or uint16 is handed over.
+            # TODO This could change the input DataFrame.
             if mat.dtype == np.int16:
                 mat = mat.astype(np.int32, copy=False)
             elif mat.dtype == np.uint16:
@@ -124,95 +115,82 @@ class DaphneContext(object):
             elif d_type == np.uint64:
                 vtc = UI64
             else:
+                # TODO Raise an error here?
                 print("unsupported numpy dtype")
-            
-            if(verbose):
-                # Print the overall timing
-                end_time = time.time()
-                print(f"Numpy Execution time: \n{(end_time - start_time):.10f} seconds\n")
 
-            return Matrix(self, 'receiveFromNumpy', [upper, lower, rows, cols, vtc], local_data=mat)
+            res = Matrix(self, 'receiveFromNumpy', [upper, lower, rows, cols, vtc], local_data=mat)
         else:
             # Data transfer via a file.
             unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
             named_params = []
 
-            if(verbose):
-                # Print the overall timing
-                end_time = time.time()
-                print(f"Numpy Execution time: \n{(end_time - start_time):.10f} seconds\n")
+            res = Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
 
-            return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
+        if verbose:
+            print(f"from_numpy(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
+
+        return res
 
     def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame:
         """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
         :param df: The pandas DataFrame.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
         :param verbose: Whether the execution time and further information should be output to the console.
-        :param keepIndex: Whether the frame should keep it's index from pandas within Daphne
+        :param keepIndex: Whether the frame should keep its index from pandas within DAPHNE
         :return: A Frame
         """
 
-        if(verbose):
-            # Time the execution for the whole processing
+        if verbose:
             start_time = time.time()
-            # Time the execution for the Pandas Frame Type Checks
-            typeCheck_start_time = time.time()
         
         if keepIndex:
-            # Reset the index, moving it to a new column. 
+            # Reset the index, moving it to a new column.
+            # TODO We should not modify the input data frame here.
             df.reset_index(drop=False, inplace=True)
 
-        # Check for a Series and convert to DataFrame
+        # Check for various special kinds of pandas data objects
+        # and handle them accordingly.
         if isinstance(df, pd.Series):
-            # print("Handling of pandas Series is not implemented yet. Converting to a standard DataFrame.")
+            # Convert Series to standard DataFrame.
             df = df.to_frame()
-
-        # Check for MultiIndex and convert to standard DataFrame
         elif isinstance(df, pd.MultiIndex):
-            raise TypeError("Handling of pandas MultiIndex DataFrame is not implemented yet. \nConverting to a standard DataFrame is not possible...")
-
-        # Check for sparse DataFrame and convert to standard DataFrame
+            # MultiIndex cannot be converted to standard DataFrame.
+            raise TypeError("handling of pandas MultiIndex DataFrame is not implemented yet")
+        # TODO Does isinstance work on a list like dtypes?
         elif isinstance(df.dtypes, pd.SparseDtype) or any(isinstance(item, pd.SparseDtype) for item in df.dtypes):
-            # print("Handling of pandas Sparse DataFrame is not implemented yet. Converting to a standard DataFrame.")
+            # Convert sparse DataFrame to standard DataFrame.
             df = df.sparse.to_dense()
-
-        # Check for Categorical data and convert to standard DataFrame
         elif df.select_dtypes(include=["category"]).shape[1] > 0:
-            # print("Handling of pandas Categorical DataFrame is not implemented yet. Converting to a standard DataFrame.")
-            df = df.apply(lambda x: x.cat.codes if x.dtype.name == 'category' else x)
+            # Convert categorical DataFrame to standard DataFrame.
+            df = df.apply(lambda x: x.cat.codes if x.dtype.name == "category" else x)
 
-        if(verbose):
-            # Print the Type Check timing
-            typeCheck_end_time = time.time()
-            print(f"Frame Type Check Execution time: \n{(typeCheck_end_time - typeCheck_start_time):.10f} seconds\n")
+        if verbose:
+            print(f"from_pandas(): Python-side type-check execution time: {(time.time() - start_time):.10f} seconds")
            
-        if shared_memory:
-         
-           # Convert dataframe and labels to column arrays and label arrays
-            mats = []
+        if shared_memory: # data transfer via shared memory
+            # Convert DataFrame and labels to column arrays and label arrays.
+            args = []
 
-            if(verbose):
-                # Time the execution for all columns
+            if verbose:
                 frame_start_time = time.time()
 
             for idx, column in enumerate(df):
-                
-                if(verbose):
-                    # Time the execution for each column
+                if verbose:
                     col_start_time = time.time()
 
                 mat = df[column].values
                 
-                # Change the Data type, if int16 or uint16 is handed over
+                # Change the data type, if int16 or uint16 is handed over.
+                # TODO This could change the input DataFrame.
                 if mat.dtype == np.int16:
                     mat = mat.astype(np.int32, copy=False)
                 elif mat.dtype == np.uint16:
                     mat = mat.astype(np.uint32, copy=False)
 
-                if(verbose):
-                    #Check if this step was zero copy
-                    print(f'\nOriginal df column "{column}" ({idx}) shares memory with new numpy array: \n{np.shares_memory(mat, df[column].values)}\n')
+                if verbose:
+                    # Check if this step was zero copy.
+                    print(f"from_pandas(): original DataFrame column `{column}` (#{idx}) shares memory with new numpy array: {np.shares_memory(mat, df[column].values)}")
+
                 address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
                 upper = (address & 0xFFFFFFFF00000000) >> 32
                 lower = (address & 0xFFFFFFFF)
@@ -236,117 +214,120 @@ class DaphneContext(object):
                 else:
                     raise TypeError(f'Unsupported numpy dtype in column "{column}" ({idx})')
                 
-                mats.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1 , vtc], local_data=mat))
+                args.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1 , vtc], local_data=mat))
 
-                if(verbose):
-                    # Print out timing
-                    col_end_time = time.time()
-                    print(f'Execution time for column "{column}" ({idx}): \n{(col_end_time - col_start_time):.10f} seconds\n')
+                if verbose:
+                    print(f"from_pandas(): Python-side execution time for column `{column}` (#{idx}): {(time.time() - col_start_time):.10f} seconds")
             
-            if(verbose):
-                # Print out frame timing
-                frame_end_time = time.time()
-                print(f"Execution time for all columns: \n{(frame_end_time - frame_start_time):.10f} seconds\n")
+            if verbose:
+                print(f"from_pandas(): Python-side execution time for all columns: {(time.time() - frame_start_time):.10f} seconds")
 
             labels = df.columns
             for label in labels: 
                 labelstr = f'"{label}"'
-                mats.append(labelstr)
+                args.append(labelstr)
             
-            if(verbose):
-                # Print the overall timing
-                end_time = time.time()
-                print(f"Overall Execution time: \n{(end_time - start_time):.10f} seconds\n")
+            if verbose:
+                print(f"from_pandas(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
 
-            # Return the Frame
-            return Frame(self, 'createFrame', unnamed_input_nodes=mats, local_data = df)
+            # Return the Frame.
+            return Frame(self, 'createFrame', unnamed_input_nodes=args, local_data=df)
         
-        else:
-            # Data transfer via files.
+        else: # data transfer via files
             unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
             named_params = []
 
-            if(verbose):
-                # Print the overall timing
-                end_time = time.time()
-                print(f"Overall Execution time: \n{(end_time - start_time)::.10f} seconds\n")
+            if verbose:
+                print(f"from_pandas(): total Python-side execution time: {(time.time() - start_time)::.10f} seconds")
 
+            # Return the Frame.
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
     
     def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False):
-        # Store the original shape for later use
+        """Generates a `DAGNode` representing a matrix with data given by a TensorFlow `Tensor`.
+        :param tensor: The TensorFlow Tensor.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether the execution time and further information should be output to the console.
+        :param return_shape: Whether the original shape of the input tensor shall be returned.
+        :return: A Matrix or a tuple of a Matrix and the original tensor shape (if `return_shape == True`).
+        """
+
+        # Store the original shape for later use.
         original_shape = tensor.shape
         
-        # If verbose mode is on, start timing the total and reshape operations
         if verbose:
-            total_start_time = time.time()
-            reshape_start_time = time.time()
+            start_time = time.time()
 
-        # Check if the tensor is 2D or higher dimensional
+        # Check if the tensor is 2d or higher dimensional.
         if len(original_shape) == 2:
-            # If 2D, handle as a matrix, convert to numpy array
-            mat = tensor.numpy() # This function is only zero copy, if the tensor is shared within the CPU
-            matrix = self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method for 2D arrays
+            # If 2d, handle as a matrix, convert to numpy array.
+            # This function is only zero copy, if the tensor is shared within the CPU.
+            mat = tensor.numpy()
+            # Using the existing from_numpy method for 2d arrays.
+            matrix = self.from_numpy(mat, shared_memory, verbose)
         else:
-            # If higher dimensional, reshape to 2D and handle as a matrix
-            original_tensor = tensor.numpy()  # Store the original numpy representation
-            reshaped_tensor = original_tensor.reshape((original_shape[0], -1))  # Reshape to 2D using NumPy's zero copy reshape
+            # If higher dimensional, reshape to 2d and handle as a matrix.
+            # Store the original numpy representation.
+            original_tensor = tensor.numpy()
+            # Reshape to 2d using numpy's zero copy reshape.
+            reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
 
-            #reshaped_tensor = tf.reshape(tensor, (original_shape[0], -1))
-
-            # If verbose, check if the original and reshaped tensors share memory and print the result
             if verbose:
+                # Check if the original and reshaped tensors share memory.
                 shares_memory = np.shares_memory(tensor, reshaped_tensor)
-                print(f"Original and reshaped tensors share memory: {shares_memory}\n")
+                print(f"from_tensorflow(): original and reshaped tensors share memory: {shares_memory}")
 
             # Use the existing from_numpy method for the reshaped 2D array
             matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
 
-        # If verbose, print the reshape and total execution times
         if verbose:
-            reshape_end_time = time.time()
-            print(f"TensorFlow Tensor Reshape Execution time: \n{(reshape_end_time - reshape_start_time):.10f} seconds\n")
-            total_end_time = time.time()
-            print(f"Total Execution time: \n{(total_end_time - total_start_time):.10f} seconds\n")
+            print(f"from_tensorflow(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
 
-        # Return the matrix, and the original shape if return_shape is set to True
+        # Return the matrix, and the original shape if return_shape is set to True.
         return (matrix, original_shape) if return_shape else matrix
 
     def from_pytorch(self, tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False):
-        # Store the original shape for later use
+        """Generates a `DAGNode` representing a matrix with data given by a PyTorch `Tensor`.
+        :param tensor: The PyTorch Tensor.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether the execution time and further information should be output to the console.
+        :param return_shape: Whether the original shape of the input tensor shall be returned.
+        :return: A Matrix or a tuple of a Matrix and the original tensor shape (if `return_shape == True`).
+        """
+
+        # Store the original shape for later use.
         original_shape = tensor.size()
         
-        # If verbose mode is on, start timing the total and reshape operations
         if verbose:
-            total_start_time = time.time()
-            reshape_start_time = time.time()
+            start_time = time.time()
 
-        # Check if the tensor is 2D or higher dimensional
+        # Check if the tensor is 2d or higher dimensional.
         if tensor.dim() == 2:
-            # If 2D, handle as a matrix, convert to numpy array
-            mat = tensor.numpy() # If the Tensor is stored on the CPU, mat = tensor.numpy(force=True) can speed up the performance
-            matrix = self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method for 2D arrays
+            # If 2d, handle as a matrix, convert to numpy array.
+            # If the Tensor is stored on the CPU, mat = tensor.numpy(force=True) can speed up the performance.
+            mat = tensor.numpy()
+            # Using the existing from_numpy method for 2d arrays.
+            matrix = self.from_numpy(mat, shared_memory, verbose)
         else:
-            # If higher dimensional, reshape to 2D and handle as a matrix
-            original_tensor = tensor.numpy(force=True)  # Store the original numpy representation
-            reshaped_tensor = original_tensor.reshape((original_shape[0], -1)) # Reshape to 2D
+            # If higher dimensional, reshape to 2d and handle as a matrix.
+            # Store the original numpy representation.
+            original_tensor = tensor.numpy(force=True)
+            # Reshape to 2d
+            # TODO Does this change the input tensor?
+            reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
 
-            # If verbose, check if the original and reshaped tensors share memory and print the result
             if verbose:
+                # Check if the original and reshaped tensors share memory and print the result.
                 shares_memory = np.shares_memory(original_tensor, reshaped_tensor)
-                print(f"Original and reshaped tensors share memory: {shares_memory}\n")
+                print(f"from_pytorch(): original and reshaped tensors share memory: {shares_memory}")
 
-            # Use the existing from_numpy method for the reshaped 2D array
+            # Use the existing from_numpy method for the reshaped 2d array.
             matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
 
-        # If verbose, print the reshape and total execution times
         if verbose:
-            reshape_end_time = time.time()
-            print(f"PyTorch Tensor Reshape Execution time: \n{(reshape_end_time - reshape_start_time):.10f} seconds\n")
-            total_end_time = time.time()
-            print(f"Total Execution time: \n{(total_end_time - total_start_time):.10f} seconds\n")
+            print(f"from_pytorch(): total execution time: {(time.time() - start_time):.10f} seconds")
 
-        # Return the matrix, and the original shape if return_shape is set to True
+        # Return the matrix, and the original shape if return_shape is set to True.
         return (matrix, original_shape) if return_shape else matrix
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
@@ -503,17 +484,6 @@ class DaphneContext(object):
             return tuple(MultiReturn(self, function_name, output_nodes, args))
         
         return dctx_function
-    
-    def sqlRegisterView(self, table_name:str, frame: Frame): 
-        """
-        Registers a frame for sql operation under the specified table name
-        :param table_name: Name for the registered Table
-        :param frame: Frame to create a table
-        """
-        table_name_str = f'"{table_name}"'
-
-        print(f'Registered as {table_name_str}: \n{frame}')
-        return OperationNode(self, 'registerView', [table_name_str, frame])
     
     def sql(self, query) -> Frame: 
         """

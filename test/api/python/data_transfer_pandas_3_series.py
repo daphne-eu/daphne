@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright 2022 The DAPHNE Consortium
+# Copyright 2023 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Data transfer from pandas to DAPHNE and back, via shared memory.
-# Series 
+# pd.Series 
 
 import pandas as pd
 from api.python.context.daphne_context import DaphneContext
@@ -24,4 +24,4 @@ ser = pd.Series([10, 20, 30, 40, 50])
 
 dctx = DaphneContext()
 
-dctx.from_pandas(ser, shared_memory=True).print().compute()
+dctx.from_pandas(ser, shared_memory=True).print().compute(type="shared memory")
