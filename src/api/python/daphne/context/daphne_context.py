@@ -157,7 +157,6 @@ class DaphneContext(object):
         elif isinstance(df, pd.MultiIndex):
             # MultiIndex cannot be converted to standard DataFrame.
             raise TypeError("handling of pandas MultiIndex DataFrame is not implemented yet")
-        # TODO Does isinstance work on a list like dtypes?
         elif isinstance(df.dtypes, pd.SparseDtype) or any(isinstance(item, pd.SparseDtype) for item in df.dtypes):
             # Convert sparse DataFrame to standard DataFrame.
             df = df.sparse.to_dense()

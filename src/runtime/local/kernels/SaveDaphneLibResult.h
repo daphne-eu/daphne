@@ -19,7 +19,6 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
 
 // ****************************************************************************
 // Struct for partial template specialization

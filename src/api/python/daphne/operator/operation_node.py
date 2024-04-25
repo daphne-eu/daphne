@@ -71,7 +71,6 @@ class OperationNode(DAGNode):
         self._is_python_local_data = is_python_local_data
         self._brackets = brackets
         self._output_type = output_type
-        self._deleted = False
 
     def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False):
         """
@@ -105,7 +104,6 @@ class OperationNode(DAGNode):
             if verbose:
                 exec_start_time = time.time()
 
-            # Still a hard copy function that creates tmp files to execute
             self._script.execute()
             self._script.clear(self)
 
@@ -150,8 +148,8 @@ class OperationNode(DAGNode):
                     if useIndexColumn and "index" in df.columns:
                         df.set_index("index", inplace=True, drop=True)
                 else:
-                    # TODO raise an error
-                    # TODO when does this happen
+                    # TODO Raise an error.
+                    # TODO When does this happen?
                     print("Error: NULL pointer access")
                     labels = []
                     dtypes = []
@@ -163,7 +161,6 @@ class OperationNode(DAGNode):
                 if verbose:
                     print(f"compute(): time for Python side data transfer (Frame, shared memory): {(time.time() - dt_start_time):.10f} seconds")
             elif self._output_type == OutputType.FRAME and type=="files":
-                # TODO what about verbos and useIndexColumn here
                 df = pd.read_csv(result)
                 with open(result + ".meta", "r") as f:
                     fmd = json.load(f)
@@ -171,7 +168,6 @@ class OperationNode(DAGNode):
                 result = df
                 self.clear_tmp()
             elif self._output_type == OutputType.MATRIX and type=="shared memory":
-                # TODO what about verbose here
                 daphneLibResult = DaphneLib.getResult()
                 result = np.ctypeslib.as_array(
                     ctypes.cast(daphneLibResult.address, ctypes.POINTER(self.getType(daphneLibResult.vtc))),
@@ -179,7 +175,6 @@ class OperationNode(DAGNode):
                 )
                 self.clear_tmp()
             elif self._output_type == OutputType.MATRIX and type=="files":
-                # TODO what about verbose here
                 arr = np.genfromtxt(result, delimiter=',')
                 self.clear_tmp()
                 return arr
@@ -192,7 +187,7 @@ class OperationNode(DAGNode):
                 )[0, 0]
                 self.clear_tmp()
             
-            # TODO asTensorFlow and asPyTorch should be mutually exclusive
+            # TODO asTensorFlow and asPyTorch should be mutually exclusive.
             if asTensorFlow and self._output_type == OutputType.MATRIX:
                 if verbose:
                     tc_start_time = time.time()
@@ -226,7 +221,7 @@ class OperationNode(DAGNode):
             if result is None:
                 return
             return result
-        
+
     def clear_tmp(self):
        for f in os.listdir(TMP_PATH):
           os.remove(os.path.join(TMP_PATH, f))

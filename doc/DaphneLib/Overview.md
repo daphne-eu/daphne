@@ -364,7 +364,7 @@ print(T3D.compute(asTensorFlow=True, shape=T3D_shape))
 python3 scripts/examples/daphnelib/data-exchange-tensorflow.py
 ```
 
-*Output (random number may vary):*
+*Output (random numbers may vary):*
 
 ```text
 ========== 2D TENSOR EXAMPLE ==========
@@ -475,7 +475,7 @@ print(T3D.compute(asPyTorch=True, shape=T3D_shape))
 python3 scripts/examples/daphnelib/data-exchange-pytorch.py
 ```
 
-*Output (random number may vary):*
+*Output (random numbers may vary):*
 
 ```text
 ========== 2D TENSOR EXAMPLE ==========

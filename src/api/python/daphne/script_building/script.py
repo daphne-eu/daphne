@@ -39,14 +39,14 @@ class DaphneDSLScript:
     out_var_name:List[str]
     _variable_counter: int
 
-    def __init__(self, context, var_counter=0) -> None:
+    def __init__(self, context) -> None:
         self.daphne_context = context
         self.daphnedsl_script = ''
         self.inputs = {}
         self.out_var_name = []
-        self._variable_counter = var_counter
+        self._variable_counter = 0
     
-    def build_code(self, dag_root: DAGNode, type="shared memory", num_returns=2):
+    def build_code(self, dag_root: DAGNode, type="shared memory"):
         baseOutVarString = self._dfs_dag_nodes(dag_root)
         if dag_root._output_type != OutputType.NONE:
             self.out_var_name.append(baseOutVarString)
@@ -71,10 +71,6 @@ class DaphneDSLScript:
             elif dag_root.output_type == OutputType.SCALAR:
                 # We transfer scalars back to Python by wrapping them into a 1x1 matrix.
                 self.add_code(f'saveDaphneLibResult(as.matrix({baseOutVarString}));')
-                return None
-            elif dag_root.output_type == OutputType.MULTI_RETURN:
-                for return_num in range(num_returns): 
-                    self.add_code(f'saveDaphneLibResult({baseOutVarString}_{return_num});')
                 return None
             else:
                 self.add_code(f'print({baseOutVarString});')
@@ -101,7 +97,7 @@ class DaphneDSLScript:
         #os.environ['OPENBLAS_NUM_THREADS'] = '1'
         res = DaphneLib.daphne(ctypes.c_char_p(str.encode(PROTOTYPE_PATH)), ctypes.c_char_p(str.encode(temp_out_path)))
         #os.environ['OPENBLAS_NUM_THREADS'] = '32'
-    
+
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
         """Uses Depth-First-Search to create code from DAG
         :param dag_node: current DAG node

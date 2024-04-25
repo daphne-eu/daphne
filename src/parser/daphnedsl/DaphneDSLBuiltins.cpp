@@ -1099,7 +1099,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value arg = args[0];
         return builder.create<SaveDaphneLibResultOp>(loc, arg);
     }
-    
+
     // --------------------------------------------------------------------
     // Low-level
     // --------------------------------------------------------------------
