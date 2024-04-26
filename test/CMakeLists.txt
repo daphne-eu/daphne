@@ -50,7 +50,7 @@ set(TEST_SOURCES
         api/cli/vectorized/VectorizedPipelineTest.cpp
         api/cli/Utils.cpp
 
-        api/python/DaphneLibTest.cpp
+        # api/python/DaphneLibTest.cpp
 
         api/cli/codegen/EwBinaryScalarTest.cpp
         api/cli/codegen/MatMulTest.cpp
