@@ -31,8 +31,11 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 
 **Importing data from other Python libraries:**
 
-- **`from_numpy`**`(mat: np.array, shared_memory=True) -> Matrix`
-- **`from_pandas`**`(df: pd.DataFrame) -> Frame`
+- **`from_numpy`**`(mat: np.array, shared_memory=True, verbose=False) -> Matrix`
+- **`from_pandas`**`(df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame`
+- **`from_tensorflow`**`(tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False) -> Matrix`
+- **`from_pytorch`**`(tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False) -> Matrix`
+
   
 **Generating data in DAPHNE:**
 
@@ -47,6 +50,10 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 
 - **`readMatrix`**`(file:str) -> Matrix`
 - **`readFrame`**`(file:str) -> Frame`
+
+**Extended relational algebra:**
+
+- **`sql`**`(query) -> Frame`
 
 ## Building Complex Computations
 
@@ -159,6 +166,11 @@ In the following, we describe only the latter.
 - **`ncol`**`()`
 - **`ncell`**`()`
 
+**Frame label manipulation:**
+
+- **`setColLabels`**`(labels)`
+- **`setColLabelsPrefix`**`(prefix)`
+
 **Reorganization:**
 
 - **`cbind`**`(other)`
@@ -167,12 +179,18 @@ In the following, we describe only the latter.
 
 **Extended relational algebra:**
 
+- **`registerView`**`(table_name: str)`
 - **`cartesian`**`(other)`
+- **`innerJoin`**`(right_frame, left_on, right_on)`
 
 **Input/output:**
 
 - **`print`**`()`
 - **`write`**`(file: str)`
+
+**Conversions, casts, and copying:**
+
+- **`toMatrix`**`(value_type="f64") -> Matrix`
 
 ### `Scalar` API Reference
 

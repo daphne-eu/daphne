@@ -25,6 +25,7 @@ __all__ = ["Frame"]
 
 from daphne.operator.operation_node import OperationNode
 from daphne.operator.nodes.scalar import Scalar
+from daphne.operator.nodes.matrix import Matrix
 from daphne.script_building.dag import OutputType
 from daphne.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
 
@@ -40,28 +41,30 @@ if TYPE_CHECKING:
 
 class Frame(OperationNode):
     _pd_dataframe: pd.DataFrame
-    __copy: bool
+    _column_names: Optional[List[str]] = None
 
     def __init__(self, daphne_context: "DaphneContext", operation: str,
                  unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]] = None,
                  named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
-                 local_data: pd.DataFrame = None, brackets: bool = False, copy: bool = False) -> "Frame":
-        self.__copy = copy
+                 local_data: pd.DataFrame = None, brackets: bool = False, 
+                 column_names: Optional[List[str]] = None) -> "Frame":
         is_python_local_data = False
         if local_data is not None:
             self._pd_dataframe = local_data
             is_python_local_data = True
         else:
             self._pd_dataframe = None
-        
+
+        self._column_names = column_names
+
         super().__init__(daphne_context, operation, unnamed_input_nodes,
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
-        if self.__copy:
-            return f'{var_name}={unnamed_input_vars[0]};'
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH) 
-        if self._is_pandas():
+        
+        # Save temporary CSV file, if the operation is "readFrame".
+        if self._is_pandas() and self.operation == "readFrame":
             self._pd_dataframe.to_csv(TMP_PATH+"/"+var_name+".csv", header=False, index=False)
             with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
                 json.dump(
@@ -80,11 +83,8 @@ class Frame(OperationNode):
                 )
         return code_line
 
-    def compute(self) -> Union[pd.DataFrame]:
-        if self._is_pandas():
-            return self._pd_dataframe
-        else:
-            return super().compute()
+    def compute(self, type="shared memory", verbose=False, useIndexColumn=False) -> Union[pd.DataFrame]:
+        return super().compute(type=type, verbose=verbose, useIndexColumn=useIndexColumn)
 
     def _is_pandas(self) -> bool:
         return self._pd_dataframe is not None
@@ -121,6 +121,64 @@ class Frame(OperationNode):
         cartesian product
         """
         return Frame(self.daphne_context, "cartesian", [self, other])
+    
+    def innerJoin(self, right_frame, left_on, right_on) -> 'Frame':
+        """
+        Creates an Inner Join between this object (left) and another frame (right)
+        :param right_frame: Frame to join this object with
+        :param left_on: Left key
+        :param right_on: Right key
+        :return: A Frame containing the inner join of both Frames.
+        """
+        args = [self, right_frame, f'"{left_on}"', f'"{right_on}"']   
+        return Frame(self.daphne_context, "innerJoin", args)
+    
+    def setColLabels(self, labels) -> 'Frame':
+        """
+        Changes the column labels to the given labels.
+        There must be as many labels as columns.
+        :param labels: List of new labels
+        :return: A Frame with the new labels
+        """
+        args = []
+        args.append(self)
+        numCols = self.ncol()
+
+        if len(labels) == numCols:
+            for label in labels: 
+                label_str = f'"{label}"'
+                args.append(label_str)
+
+            return Frame(self.daphne_context, "setColLabels", args)
+        else: 
+            raise ValueError(f"the number of given labels is not equal to the number of columns, expected {numCols}, but received {len(labels)}")
+    
+    def setColLabelsPrefix(self, prefix) -> 'Frame':
+        """
+        Adds a prefix to the labels of all columns.
+        :param prefix: Prefix to be added to every label
+        :return: A Frame with updated labels
+        """
+        prefix_str=f'"{prefix}"'
+        return Frame(self.daphne_context, "setColLabelsPrefix", [self, prefix_str])
+    
+    def registerView(self, table_name:str):
+        """
+        Registers this frame for SQL queries under the specified table name. 
+        This is needed before the SQL queries can be executed.
+        :param table_name: Name for the registered Table
+        :param frame: Frame to create a table
+        """
+        table_name_str = f'"{table_name}"'
+        return OperationNode(self.daphne_context, 'registerView', [table_name_str, self], output_type=OutputType.NONE)
+    
+    def toMatrix(self, value_type="f64") -> 'Matrix': 
+        """
+        Transforms the Frame to a Matrix of the given value type
+        :param value_type: The value type for the Matrix
+        :return: A Matrix of the specified value type
+        """
+        return Matrix(self.daphne_context, f"as.matrix<{value_type}>", [self])
 
     def nrow(self) -> 'Scalar':
         """
