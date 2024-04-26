@@ -14,18 +14,6 @@
  * limitations under the License.
  */
 
-#pragma once
+ser = createFrame([10, 20, 30, 40, 50], "0");
 
-#include <cinttypes>
-
-struct DaphneLibResult {
-    // For matrices.
-    void* address;
-    int64_t rows;
-    int64_t cols;
-    int64_t vtc;
-    // For frames.
-    int64_t* vtcs;
-    char** labels;
-    void** columns;
-};
+print(ser);

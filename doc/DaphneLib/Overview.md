@@ -196,15 +196,14 @@ X.cbind(Y)
 
 ## Data Exchange with other Python Libraries
 
-DaphneLib will support efficient data exchange with other well-known Python libraries, in both directions.
+DaphneLib supports efficient data exchange with other well-known Python libraries, in both directions.
 The data transfer from other Python libraries to DaphneLib can be triggered through the `from_...()` methods of the `DaphneContext` (e.g., `from_numpy()`).
 A comprehensive list of these methods can be found in the [DaphneLib API reference](/doc/DaphneLib/APIRef.md#daphnecontext).
 The data transfer from DaphneLib back to Python happens during the call to `compute()`.
-If the result of the computation in DAPHNE is a matrix, `compute()` returns a `numpy.ndarray`; if the result is a frame, it returns a `pandas.DataFrame`; and if the result is a scalar, it returns a plain Python scalar.
+If the result of the computation in DAPHNE is a matrix, `compute()` returns a `numpy.ndarray` (or optionally a `tensorflow.Tensor` or `torch.Tensor`); if the result is a frame, it returns a `pandas.DataFrame`; and if the result is a scalar, it returns a plain Python scalar.
 
-So far, DaphneLib can exchange data with numpy (via shared memory) and  pandas (via CSV files).
-Enabling data exchange with TensorFlow and PyTorch is on our agenda.
-Furthermore, we are working on making the data exchange more efficient in general.
+So far, DaphneLib can exchange data with numpy, pandas, TensorFlow, and PyTorch.
+By default, the data transfer is via shared memory (and in many cases zero-copy).
 
 ### Data Exchange with numpy
 
@@ -301,6 +300,223 @@ Result of appending the frame to itself, back in Python:
 2  1  1.1
 3  2 -2.2
 4  3  3.3
+```
+
+### Data Exchange with TensorFlow
+
+*Example:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+import tensorflow as tf
+import numpy as np
+
+dc = DaphneContext()
+
+print("========== 2D TENSOR EXAMPLE ==========\n")
+
+# Create data in TensorFlow/numpy.
+t2d = tf.constant(np.random.random(size=(2, 4)))
+
+print("Original 2d tensor in TensorFlow:")
+print(t2d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T2D = dc.from_tensorflow(t2d)
+
+print("\nHow DAPHNE sees the 2d tensor from TensorFlow:")
+T2D.print().compute()
+
+# Add 100 to each value in T2D.
+T2D = T2D + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100, back in Python:")
+print(T2D.compute(asTensorFlow=True))
+
+print("\n========== 3D TENSOR EXAMPLE ==========\n")
+
+# Create data in TensorFlow/numpy.
+t3d = tf.constant(np.random.random(size=(2, 2, 2)))
+
+print("Original 3d tensor in TensorFlow:")
+print(t3d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T3D, T3D_shape = dc.from_tensorflow(t3d, return_shape=True)
+
+print("\nHow DAPHNE sees the 3d tensor from TensorFlow:")
+T3D.print().compute()
+
+# Add 100 to each value in T3D.
+T3D = T3D + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100, back in Python:")
+print(T3D.compute(asTensorFlow=True))
+print("\nResult of adding 100, back in Python (with original shape):")
+print(T3D.compute(asTensorFlow=True, shape=T3D_shape))
+```
+
+*Run by:*
+
+```shell
+python3 scripts/examples/daphnelib/data-exchange-tensorflow.py
+```
+
+*Output (random numbers may vary):*
+
+```text
+========== 2D TENSOR EXAMPLE ==========
+
+Original 2d tensor in TensorFlow:
+tf.Tensor(
+[[0.09682179 0.09636572 0.78658016 0.68227129]
+ [0.64356184 0.96337785 0.07931763 0.97951051]], shape=(2, 4), dtype=float64)
+
+How DAPHNE sees the 2d tensor from TensorFlow:
+DenseMatrix(2x4, double)
+0.0968218 0.0963657 0.78658 0.682271
+0.643562 0.963378 0.0793176 0.979511
+
+Result of adding 100, back in Python:
+tf.Tensor(
+[[100.09682179 100.09636572 100.78658016 100.68227129]
+ [100.64356184 100.96337785 100.07931763 100.97951051]], shape=(2, 4), dtype=float64)
+
+========== 3D TENSOR EXAMPLE ==========
+
+Original 3d tensor in TensorFlow:
+tf.Tensor(
+[[[0.40088013 0.02324858]
+  [0.87607911 0.91645907]]
+
+ [[0.10591184 0.92419294]
+  [0.5397723  0.24957817]]], shape=(2, 2, 2), dtype=float64)
+
+How DAPHNE sees the 3d tensor from TensorFlow:
+DenseMatrix(2x4, double)
+0.40088 0.0232486 0.876079 0.916459
+0.105912 0.924193 0.539772 0.249578
+
+Result of adding 100, back in Python:
+tf.Tensor(
+[[100.40088013 100.02324858 100.87607911 100.91645907]
+ [100.10591184 100.92419294 100.5397723  100.24957817]], shape=(2, 4), dtype=float64)
+
+Result of adding 100, back in Python (with original shape):
+tf.Tensor(
+[[[100.40088013 100.02324858]
+  [100.87607911 100.91645907]]
+
+ [[100.10591184 100.92419294]
+  [100.5397723  100.24957817]]], shape=(2, 2, 2), dtype=float64)
+```
+
+### Data Exchange with PyTorch
+
+*Example:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+import torch
+import numpy as np
+
+dc = DaphneContext()
+
+print("========== 2D TENSOR EXAMPLE ==========\n")
+
+# Create data in PyTorch/numpy.
+t2d = torch.tensor(np.random.random(size=(2, 4)))
+
+print("Original 2d tensor in PyTorch:")
+print(t2d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T2D = dc.from_pytorch(t2d)
+
+print("\nHow DAPHNE sees the 2d tensor from PyTorch:")
+T2D.print().compute()
+
+# Add 100 to each value in T2D.
+T2D = T2D + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100, back in Python:")
+print(T2D.compute(asPyTorch=True))
+
+print("\n========== 3D TENSOR EXAMPLE ==========\n")
+
+# Create data in PyTorch/numpy.
+t3d = torch.tensor(np.random.random(size=(2, 2, 2)))
+
+print("Original 3d tensor in PyTorch:")
+print(t3d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T3D, T3D_shape = dc.from_pytorch(t3d, return_shape=True)
+
+print("\nHow DAPHNE sees the 3d tensor from PyTorch:")
+T3D.print().compute()
+
+# Add 100 to each value in T3D.
+T3D = T3D + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100, back in Python:")
+print(T3D.compute(asPyTorch=True))
+print("\nResult of adding 100, back in Python (with original shape):")
+print(T3D.compute(asPyTorch=True, shape=T3D_shape))
+```
+
+*Run by:*
+
+```shell
+python3 scripts/examples/daphnelib/data-exchange-pytorch.py
+```
+
+*Output (random numbers may vary):*
+
+```text
+========== 2D TENSOR EXAMPLE ==========
+
+Original 2d tensor in PyTorch:
+tensor([[0.1205, 0.8747, 0.1717, 0.0216],
+        [0.7999, 0.6932, 0.4386, 0.0873]], dtype=torch.float64)
+
+How DAPHNE sees the 2d tensor from PyTorch:
+DenseMatrix(2x4, double)
+0.120505 0.874691 0.171693 0.0215546
+0.799858 0.693205 0.438637 0.0872659
+
+Result of adding 100, back in Python:
+tensor([[100.1205, 100.8747, 100.1717, 100.0216],
+        [100.7999, 100.6932, 100.4386, 100.0873]], dtype=torch.float64)
+
+========== 3D TENSOR EXAMPLE ==========
+
+Original 3d tensor in PyTorch:
+tensor([[[0.5474, 0.9653],
+         [0.7891, 0.0573]],
+
+        [[0.4116, 0.6326],
+         [0.3148, 0.3607]]], dtype=torch.float64)
+
+How DAPHNE sees the 3d tensor from PyTorch:
+DenseMatrix(2x4, double)
+0.547449 0.965315 0.78909 0.0572619
+0.411593 0.632629 0.314841 0.360657
+
+Result of adding 100, back in Python:
+tensor([[100.5474, 100.9653, 100.7891, 100.0573],
+        [100.4116, 100.6326, 100.3148, 100.3607]], dtype=torch.float64)
+
+Result of adding 100, back in Python (with original shape):
+tensor([[[100.5474, 100.9653],
+         [100.7891, 100.0573]],
+
+        [[100.4116, 100.6326],
+         [100.3148, 100.3607]]], dtype=torch.float64)
 ```
 
 ## Known Limitations

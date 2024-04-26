@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#pragma once
+f1 = createFrame(
+    [1, 2], [3, 4],
+    "a", "b"
+);
 
-#include <cinttypes>
-
-struct DaphneLibResult {
-    // For matrices.
-    void* address;
-    int64_t rows;
-    int64_t cols;
-    int64_t vtc;
-    // For frames.
-    int64_t* vtcs;
-    char** labels;
-    void** columns;
-};
+f2 = setColLabelsPrefix(f1, "c");
+print(f2);
