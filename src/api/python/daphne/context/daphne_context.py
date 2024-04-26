@@ -36,8 +36,14 @@ from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PAT
 
 import numpy as np
 import pandas as pd
-import torch as torch
-import tensorflow as tf
+try:
+    import torch as torch
+except ImportError as e:
+    torch = e
+try:
+    import tensorflow as tf
+except ImportError as e:
+    tf = e
 
 import time
 from typing import Sequence, Dict, Union, List, Callable, Tuple, Optional, Iterable
@@ -244,92 +250,102 @@ class DaphneContext(object):
             # Return the Frame.
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
     
-    def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False):
-        """Generates a `DAGNode` representing a matrix with data given by a TensorFlow `Tensor`.
-        :param tensor: The TensorFlow Tensor.
-        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
-        :param verbose: Whether the execution time and further information should be output to the console.
-        :param return_shape: Whether the original shape of the input tensor shall be returned.
-        :return: A Matrix or a tuple of a Matrix and the original tensor shape (if `return_shape == True`).
-        """
+    # This feature is only available if TensorFlow is available.
+    if isinstance(tf, ImportError):
+        def from_tensorflow(self, tensor           , shared_memory=True, verbose=False, return_shape=False):
+            raise tf
+    else:
+        def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False):
+            """Generates a `DAGNode` representing a matrix with data given by a TensorFlow `Tensor`.
+            :param tensor: The TensorFlow Tensor.
+            :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+            :param verbose: Whether the execution time and further information should be output to the console.
+            :param return_shape: Whether the original shape of the input tensor shall be returned.
+            :return: A Matrix or a tuple of a Matrix and the original tensor shape (if `return_shape == True`).
+            """
 
-        # Store the original shape for later use.
-        original_shape = tensor.shape
-        
-        if verbose:
-            start_time = time.time()
+            # Store the original shape for later use.
+            original_shape = tensor.shape
+            
+            if verbose:
+                start_time = time.time()
 
-        # Check if the tensor is 2d or higher dimensional.
-        if len(original_shape) == 2:
-            # If 2d, handle as a matrix, convert to numpy array.
-            # This function is only zero copy, if the tensor is shared within the CPU.
-            mat = tensor.numpy()
-            # Using the existing from_numpy method for 2d arrays.
-            matrix = self.from_numpy(mat, shared_memory, verbose)
-        else:
-            # If higher dimensional, reshape to 2d and handle as a matrix.
-            # Store the original numpy representation.
-            original_tensor = tensor.numpy()
-            # Reshape to 2d using numpy's zero copy reshape.
-            reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
+            # Check if the tensor is 2d or higher dimensional.
+            if len(original_shape) == 2:
+                # If 2d, handle as a matrix, convert to numpy array.
+                # This function is only zero copy, if the tensor is shared within the CPU.
+                mat = tensor.numpy()
+                # Using the existing from_numpy method for 2d arrays.
+                matrix = self.from_numpy(mat, shared_memory, verbose)
+            else:
+                # If higher dimensional, reshape to 2d and handle as a matrix.
+                # Store the original numpy representation.
+                original_tensor = tensor.numpy()
+                # Reshape to 2d using numpy's zero copy reshape.
+                reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
+
+                if verbose:
+                    # Check if the original and reshaped tensors share memory.
+                    shares_memory = np.shares_memory(tensor, reshaped_tensor)
+                    print(f"from_tensorflow(): original and reshaped tensors share memory: {shares_memory}")
+
+                # Use the existing from_numpy method for the reshaped 2D array
+                matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
 
             if verbose:
-                # Check if the original and reshaped tensors share memory.
-                shares_memory = np.shares_memory(tensor, reshaped_tensor)
-                print(f"from_tensorflow(): original and reshaped tensors share memory: {shares_memory}")
+                print(f"from_tensorflow(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
 
-            # Use the existing from_numpy method for the reshaped 2D array
-            matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
+            # Return the matrix, and the original shape if return_shape is set to True.
+            return (matrix, original_shape) if return_shape else matrix
 
-        if verbose:
-            print(f"from_tensorflow(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
+    # This feature is only available if PyTorch is available.
+    if isinstance(torch, ImportError):
+        def from_pytorch(self, tensor              , shared_memory=True, verbose=False, return_shape=False):
+            raise torch
+    else:
+        def from_pytorch(self, tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False):
+            """Generates a `DAGNode` representing a matrix with data given by a PyTorch `Tensor`.
+            :param tensor: The PyTorch Tensor.
+            :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+            :param verbose: Whether the execution time and further information should be output to the console.
+            :param return_shape: Whether the original shape of the input tensor shall be returned.
+            :return: A Matrix or a tuple of a Matrix and the original tensor shape (if `return_shape == True`).
+            """
 
-        # Return the matrix, and the original shape if return_shape is set to True.
-        return (matrix, original_shape) if return_shape else matrix
+            # Store the original shape for later use.
+            original_shape = tensor.size()
+            
+            if verbose:
+                start_time = time.time()
 
-    def from_pytorch(self, tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False):
-        """Generates a `DAGNode` representing a matrix with data given by a PyTorch `Tensor`.
-        :param tensor: The PyTorch Tensor.
-        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
-        :param verbose: Whether the execution time and further information should be output to the console.
-        :param return_shape: Whether the original shape of the input tensor shall be returned.
-        :return: A Matrix or a tuple of a Matrix and the original tensor shape (if `return_shape == True`).
-        """
+            # Check if the tensor is 2d or higher dimensional.
+            if tensor.dim() == 2:
+                # If 2d, handle as a matrix, convert to numpy array.
+                # If the Tensor is stored on the CPU, mat = tensor.numpy(force=True) can speed up the performance.
+                mat = tensor.numpy()
+                # Using the existing from_numpy method for 2d arrays.
+                matrix = self.from_numpy(mat, shared_memory, verbose)
+            else:
+                # If higher dimensional, reshape to 2d and handle as a matrix.
+                # Store the original numpy representation.
+                original_tensor = tensor.numpy(force=True)
+                # Reshape to 2d
+                # TODO Does this change the input tensor?
+                reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
 
-        # Store the original shape for later use.
-        original_shape = tensor.size()
-        
-        if verbose:
-            start_time = time.time()
+                if verbose:
+                    # Check if the original and reshaped tensors share memory and print the result.
+                    shares_memory = np.shares_memory(original_tensor, reshaped_tensor)
+                    print(f"from_pytorch(): original and reshaped tensors share memory: {shares_memory}")
 
-        # Check if the tensor is 2d or higher dimensional.
-        if tensor.dim() == 2:
-            # If 2d, handle as a matrix, convert to numpy array.
-            # If the Tensor is stored on the CPU, mat = tensor.numpy(force=True) can speed up the performance.
-            mat = tensor.numpy()
-            # Using the existing from_numpy method for 2d arrays.
-            matrix = self.from_numpy(mat, shared_memory, verbose)
-        else:
-            # If higher dimensional, reshape to 2d and handle as a matrix.
-            # Store the original numpy representation.
-            original_tensor = tensor.numpy(force=True)
-            # Reshape to 2d
-            # TODO Does this change the input tensor?
-            reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
+                # Use the existing from_numpy method for the reshaped 2d array.
+                matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
 
             if verbose:
-                # Check if the original and reshaped tensors share memory and print the result.
-                shares_memory = np.shares_memory(original_tensor, reshaped_tensor)
-                print(f"from_pytorch(): original and reshaped tensors share memory: {shares_memory}")
+                print(f"from_pytorch(): total execution time: {(time.time() - start_time):.10f} seconds")
 
-            # Use the existing from_numpy method for the reshaped 2d array.
-            matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
-
-        if verbose:
-            print(f"from_pytorch(): total execution time: {(time.time() - start_time):.10f} seconds")
-
-        # Return the matrix, and the original shape if return_shape is set to True.
-        return (matrix, original_shape) if return_shape else matrix
+            # Return the matrix, and the original shape if return_shape is set to True.
+            return (matrix, original_shape) if return_shape else matrix
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}

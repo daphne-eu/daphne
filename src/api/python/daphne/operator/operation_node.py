@@ -29,8 +29,14 @@ from daphne.utils.helpers import create_params_string
 
 import numpy as np
 import pandas as pd
-import torch as torch 
-import tensorflow as tf
+try:
+    import torch as torch
+except ImportError as e:
+    torch = e
+try:
+    import tensorflow as tf
+except ImportError as e:
+    tf = e
 
 import ctypes
 import json
@@ -189,6 +195,10 @@ class OperationNode(DAGNode):
             
             # TODO asTensorFlow and asPyTorch should be mutually exclusive.
             if asTensorFlow and self._output_type == OutputType.MATRIX:
+                # This feature is only available if TensorFlow is available.
+                if isinstance(tf, ImportError):
+                    raise tf
+                
                 if verbose:
                     tc_start_time = time.time()
 
@@ -202,6 +212,10 @@ class OperationNode(DAGNode):
                 if verbose:
                     print(f"compute(): time to convert to TensorFlow Tensor: {(time.time() - tc_start_time):.10f} seconds")
             elif asPyTorch and self._output_type == OutputType.MATRIX:
+                # This feature is only available if PyTorch is available.
+                if isinstance(torch, ImportError):
+                    raise torch
+                
                 if verbose:
                     tc_start_time = time.time()
 
