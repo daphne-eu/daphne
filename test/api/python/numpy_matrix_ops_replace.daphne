@@ -14,18 +14,6 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#include <cinttypes>
-
-struct DaphneLibResult {
-    // For matrices.
-    void* address;
-    int64_t rows;
-    int64_t cols;
-    int64_t vtc;
-    // For frames.
-    int64_t* vtcs;
-    char** labels;
-    void** columns;
-};
+m = reshape(as.si64([1, 2, 3, 0, 0, 0, 7, 8, 9]), 3, 3);
+m = replace(m, 0, 10);
+print(m);

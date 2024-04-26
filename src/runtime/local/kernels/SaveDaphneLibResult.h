@@ -66,4 +66,41 @@ struct SaveDaphneLibResult<DenseMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Frame
+// ----------------------------------------------------------------------------
+
+template<>
+struct SaveDaphneLibResult<Frame> {
+    static void apply(const Frame * arg,  DCTX(ctx)) {
+        // Increase the reference counter of the data object to be transferred
+        // to python, such that the data is not garbage collected by DAPHNE.
+        // TODO But who will free the memory in the end?
+        arg->increaseRefCounter();
+
+        DaphneLibResult* daphneLibRes = ctx->getUserConfig().result_struct;
+        
+        if(!daphneLibRes)
+            throw std::runtime_error("saveDaphneLibRes(): daphneLibRes is nullptr");
+
+        const size_t numCols = arg->getNumCols();
+
+        // Create fresh arrays for vtcs, labels and columns.
+        int64_t* vtcs = new int64_t[numCols];
+        char** labels = new char*[numCols];
+        void** columns = new void*[numCols];
+        for(size_t i = 0; i < numCols; i++) {
+            vtcs[i] = static_cast<int64_t>(arg->getSchema()[i]);
+            labels[i] = const_cast<char*>(arg->getLabels()[i].c_str());
+            columns[i] = const_cast<void*>(reinterpret_cast<const void*>(arg->getColumnRaw(i)));
+        }
+
+        daphneLibRes->cols = numCols;
+        daphneLibRes->rows = arg->getNumRows();
+        daphneLibRes->vtcs = vtcs;
+        daphneLibRes->labels = labels;
+        daphneLibRes->columns = columns; 
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SAVEDAPHNELIBRESULT_H
