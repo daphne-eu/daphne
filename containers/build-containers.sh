@@ -152,4 +152,5 @@ FINAL_BASE_IMAGE=nvidia/cuda:$CUDA_TAG
 DAPHNE_BUILD_FLAGS="--mpi --cuda"
 build_daphne
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_${ARCH}_CUDA
+
 set +e

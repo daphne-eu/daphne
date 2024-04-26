@@ -191,12 +191,12 @@ use containers.
 higher are sufficient
 - you can use the provided docker files and scripts to create and run DAPHNE.
 
-**A full description on containers is available in the [containers](containers) subdirectory.**
+**A full description on containers is available in the [containers](/containers) subdirectory.**
 
 The following recreates all images provided by [daphneeu](https://hub.docker.com/u/daphneeu)
 
 ```bash
-cd container
+cd containers
 ./build-containers.sh
 ```
 
