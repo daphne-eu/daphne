@@ -73,9 +73,6 @@ export DAPHNELIB_DIR_PATH=$PWD/lib
 export PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH
 export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH
 
-# Silence TensorFlow warnings in DaphneLib test cases.
-export TF_CPP_MIN_LOG_LEVEL=3
-
 # this speeds up the vectorized tests
 export OPENBLAS_NUM_THREADS=1
 

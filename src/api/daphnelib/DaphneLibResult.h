@@ -19,13 +19,8 @@
 #include <cinttypes>
 
 struct DaphneLibResult {
-    // For matrices.
     void* address;
     int64_t rows;
     int64_t cols;
     int64_t vtc;
-    // For frames.
-    int64_t* vtcs;
-    char** labels;
-    void** columns;
 };
