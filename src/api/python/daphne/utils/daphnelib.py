@@ -19,17 +19,7 @@ from daphne.utils.consts import PROTOTYPE_PATH, DAPHNELIB_FILENAME
 
 # Python representation of the struct DaphneLibResult.
 class DaphneLibResult(ctypes.Structure):
-    _fields_ = [
-        # For matrices.
-        ("address", ctypes.c_void_p),
-        ("rows", ctypes.c_int64),
-        ("cols", ctypes.c_int64),
-        ("vtc", ctypes.c_int64),
-        # For frames.
-        ("vtcs", ctypes.POINTER(ctypes.c_int64)),
-        ("labels", ctypes.POINTER(ctypes.c_char_p)),
-        ("columns", ctypes.POINTER(ctypes.c_void_p))
-    ]
+    _fields_ = [("address", ctypes.c_void_p), ("rows", ctypes.c_int64), ("cols", ctypes.c_int64), ("vtc", ctypes.c_int64)]
 
 DaphneLib = ctypes.CDLL(os.path.join(PROTOTYPE_PATH, DAPHNELIB_FILENAME))
 DaphneLib.getResult.restype = DaphneLibResult

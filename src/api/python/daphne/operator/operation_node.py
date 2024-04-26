@@ -29,13 +29,10 @@ from daphne.utils.helpers import create_params_string
 
 import numpy as np
 import pandas as pd
-import torch as torch 
-import tensorflow as tf
 
 import ctypes
 import json
 import os
-import time
 from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -72,95 +69,15 @@ class OperationNode(DAGNode):
         self._brackets = brackets
         self._output_type = output_type
 
-    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False):
-        """
-        Compute function for processing the Daphne Object or operation node and returning the results.
-        The function builds a DaphneDSL script from the node and its context, executes it, and processes the results
-        to produce a pandas DataFrame, numpy array, or TensorFlow/PyTorch tensors.
-
-        :param type: Execution type, either "shared memory" for in-memory data transfer or "files" for file-based data transfer.
-        :param verbose: If True, outputs verbose logs, including timing information for each step.
-        :param asTensorFlow: If True and the result is a matrix, the output will be converted to a TensorFlow tensor.
-        :param asPyTorch: If True and the result is a matrix, the output will be converted to a PyTorch tensor.
-        :param shape: If provided and the result is a matrix, it defines the shape to reshape the resulting tensor (either TensorFlow or PyTorch).
-        :param useIndexColumn: If True and the result is a DataFrame, uses the column named "index" as the DataFrame's index.
-
-        :return: Depending on the parameters and the operation's output type, this function can return:
-            - A pandas DataFrame for frame outputs.
-            - A numpy array for matrix outputs.
-            - A scalar value for scalar outputs.
-            - TensorFlow or PyTorch tensors if `asTensorFlow` or `asPyTorch` is set to True respectively.
-        """
-        
+    def compute(self, type="shared memory"):
         if self._result_var is None:
-            if verbose:
-                start_time = time.time()
-
             self._script = DaphneDSLScript(self.daphne_context)
             for definition in self.daphne_context._functions.values():
                 self._script.daphnedsl_script += definition
             result = self._script.build_code(self, type)
-
-            if verbose:
-                exec_start_time = time.time()
-
             self._script.execute()
             self._script.clear(self)
-
-            if verbose:
-                print(f"compute(): Python-side execution time of the execute() function: {(time.time() - exec_start_time):.10f} seconds")
-            
-            if self._output_type == OutputType.FRAME and type=="shared memory":
-                if verbose:
-                    dt_start_time = time.time()
-
-                daphneLibResult = DaphneLib.getResult()
-                
-                # Read the frame's address into a numpy array.
-                if daphneLibResult.columns is not None:
-                    # Read the column labels and dtypes from the Frame's labels and dtypes directly.
-                    labels = [ctypes.cast(daphneLibResult.labels[i], ctypes.c_char_p).value.decode() for i in range(daphneLibResult.cols)]
-                    
-                    # Create a new type representing an array of value type codes.
-                    VTArray = ctypes.c_int64 * daphneLibResult.cols
-                    # Cast the pointer to this type and access its contents.
-                    vtcs_array = ctypes.cast(daphneLibResult.vtcs, ctypes.POINTER(VTArray)).contents
-                    # Convert the value types into numpy dtypes.
-                    dtypes = [self.getNumpyType(vtc) for vtc in vtcs_array]
-
-                    data = {label: None for label in labels}
-
-                    # Using ctypes cast and numpy array view to create dictionary directly.
-                    for idx in range(daphneLibResult.cols):
-                        c_data_type = self.getType(daphneLibResult.vtcs[idx])
-                        array_view = np.ctypeslib.as_array(
-                            ctypes.cast(daphneLibResult.columns[idx], ctypes.POINTER(c_data_type)),
-                            shape=[daphneLibResult.rows]
-                        )
-                        label = labels[idx]
-                        data[label] = array_view
-
-                    # Create DataFrame from dictionary.
-                    df = pd.DataFrame(data, copy=False)
-
-                    # If useIndexColumn is True, set "index" column as the DataFrame's index
-                    # TODO What if there is no column named "index"?
-                    if useIndexColumn and "index" in df.columns:
-                        df.set_index("index", inplace=True, drop=True)
-                else:
-                    # TODO Raise an error.
-                    # TODO When does this happen?
-                    print("Error: NULL pointer access")
-                    labels = []
-                    dtypes = []
-                    df = pd.DataFrame()
-                
-                result = df
-                self.clear_tmp()
-
-                if verbose:
-                    print(f"compute(): time for Python side data transfer (Frame, shared memory): {(time.time() - dt_start_time):.10f} seconds")
-            elif self._output_type == OutputType.FRAME and type=="files":
+            if self._output_type == OutputType.FRAME:
                 df = pd.read_csv(result)
                 with open(result + ".meta", "r") as f:
                     fmd = json.load(f)
@@ -186,38 +103,7 @@ class OperationNode(DAGNode):
                     shape=[daphneLibResult.rows, daphneLibResult.cols]
                 )[0, 0]
                 self.clear_tmp()
-            
-            # TODO asTensorFlow and asPyTorch should be mutually exclusive.
-            if asTensorFlow and self._output_type == OutputType.MATRIX:
-                if verbose:
-                    tc_start_time = time.time()
-
-                # Convert the Matrix to a TensorFlow Tensor.
-                result = tf.convert_to_tensor(result)
-
-                # If a shape is provided, reshape the TensorFlow Tensor.
-                if shape is not None:
-                    result = tf.reshape(result, shape)
-
-                if verbose:
-                    print(f"compute(): time to convert to TensorFlow Tensor: {(time.time() - tc_start_time):.10f} seconds")
-            elif asPyTorch and self._output_type == OutputType.MATRIX:
-                if verbose:
-                    tc_start_time = time.time()
-
-                # Convert the Matrix to a PyTorch Tensor.
-                result = torch.from_numpy(result)
-
-                # If a shape is provided, reshape the PyTorch Tensor.
-                if shape is not None:
-                    result = torch.reshape(result, shape)
-
-                if verbose:
-                    print(f"compute(): time to convert to PyTorch Tensor: {(time.time() - tc_start_time):.10f} seconds")
-            
-            if verbose:
-                print(f"compute(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")    
-
+               
             if result is None:
                 return
             return result
@@ -257,26 +143,5 @@ class OperationNode(DAGNode):
             return ctypes.c_uint32
         elif vtc == UI8:
             return ctypes.c_uint8
-        else:
-            raise RuntimeError(f"unknown value type code: {vtc}")
-    
-    def getNumpyType(self, vtc):
-        """Convert DAPHNE value type to numpy dtype."""
-        if vtc == F64:
-            return np.float64
-        elif vtc == F32:
-            return np.float32
-        elif vtc == SI64:
-            return np.int64
-        elif vtc == SI32:
-            return np.int32
-        elif vtc == SI8:
-            return np.int8
-        elif vtc == UI64:
-            return np.uint64
-        elif vtc == UI32:
-            return np.uint32
-        elif vtc == UI8:
-            return np.uint8
         else:
             raise RuntimeError(f"unknown value type code: {vtc}")
