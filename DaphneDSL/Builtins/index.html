@@ -2764,9 +2764,10 @@ At the same time, this creates a <code>.meta</code>-file for the written file, s
 The <em>(1 x m)</em> row-matrix <code>info</code> specifies the details (in the following, <em>d[j]</em> is short for <code>info[0, j]</code>):</p>
 <ul>
 <li>If <em>d[j]</em> == -1, then the <em>j</em>-th column of <code>arg</code> will remain as it is.</li>
+<li>If <em>d[j]</em> == 0, then the <em>j</em>-th column of <code>arg</code> will be omitted in the output.</li>
 <li>
-<p>If <em>d[j]</em> &gt;= 0, then the <em>j</em>-th column of <code>arg</code> will be encoded.</p>
-<p>More precisely, the <em>j</em>-th column of <code>arg</code> must contain only integral values in the range <em>[0, d[j] - 1]</em>, and will be replaced by <em>d[j]</em> columns containing only zeros and ones.
+<p>If <em>d[j]</em> &gt; 0, then the <em>j</em>-th column of <code>arg</code> will be encoded to a vector of length <em>d[j]</em>.</p>
+<p>More precisely, if <em>d[j]</em> &gt; 0 the <em>j</em>-th column of <code>arg</code> must contain only integral values in the range <em>[0, d[j] - 1]</em>, and will be replaced by <em>d[j]</em> columns containing only zeros and ones.
 For each row <em>i</em> in <code>arg</code>, the value in the <code>as.scalar(arg[i, j])</code>-th of those columns is set to 1, while all others are set to 0.</p>
 </li>
 </ul>
