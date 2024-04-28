@@ -126,9 +126,9 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
         const size_t numRows = arg->getNumRows();
         
         if (info->getNumRows() != 1)
-            throw std::runtime_error("OneHot: parameter info must be a row matrix");
+            throw std::runtime_error("OneHot: parameter 'info' must be a row matrix");
         if (numColsArg != info->getNumCols())
-            throw std::runtime_error("OneHot: parameter info must provide information for each column of parameter arg");
+            throw std::runtime_error("OneHot: parameter 'info' must provide information for each column of parameter arg");
         
         size_t numColsRes = 0;
         for (size_t c=0; c < numColsArg; c++) {
@@ -137,9 +137,12 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
                 numColsRes++;
             else if (numDistinct > 0)
                 numColsRes += numDistinct;
-            else
-                throw std::runtime_error("OneHot: parameter info values must be -1, 0, or positive signed integer");
+            else if (numDistinct != 0)
+                throw std::runtime_error("OneHot: parameter 'info' must be an integer greater or equal than -1");
         }
+
+        if (numColsRes == 0)
+            throw std::runtime_error("OneHot: parameter 'info' must contain at least one non-zero entry");
         
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
@@ -149,17 +152,17 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
             size_t cRes = 0;
             for (size_t cArg=0; cArg < numColsArg; ++cArg) {
                 const int64_t numDistinct = info->get(0, cArg);
-                if(numDistinct == -1)
+                if (numDistinct == -1)
                     // retain value from argument matrix
                     res->append(r, cRes++, arg->get(r, cArg));
-                else {
+                else if (numDistinct != 0) {
                     // one-hot encode value from argument matrix
-                    // skipped values are assumed 0, perform bounds check
-                    size_t argVal = static_cast<size_t>(arg->get(r, cArg));
-                    if (argVal < numDistinct)
+                    // skipped values are set to 0
+                    const size_t argVal = static_cast<const size_t>(arg->get(r, cArg));
+                    if (argVal >= 0 && argVal < static_cast<size_t>(numDistinct))
                         res->append(r, cRes + argVal, 1);
                     else
-                        throw std::out_of_range("OneHot: encoded values in arg must be smaller than respective vector length");
+                        throw std::out_of_range("OneHot: arg values that are encoded (info value != -1) must be positive and smaller than the corresponding info value");
                     cRes += numDistinct;
                 }
             }

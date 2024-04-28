@@ -26,7 +26,7 @@
 #include <cstdint>
 #include <stdexcept>
 
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int64_t, double
 
 TEMPLATE_PRODUCT_TEST_CASE("OneHot", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
