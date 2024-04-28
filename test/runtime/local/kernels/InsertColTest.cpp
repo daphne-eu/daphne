@@ -24,6 +24,7 @@
 
 #include <cstdint>
 
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int32_t, double
 
 template<typename DTArg, typename VTSel>
@@ -40,7 +41,7 @@ void checkInsertColThrow(const DTArg * arg, const DTArg * ins, const VTSel lower
     REQUIRE_THROWS_AS((insertCol<DTArg, DTArg, VTSel>(res, arg, ins, lowerIncl, upperExcl, nullptr)), std::out_of_range);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -109,7 +110,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES
 
     DataObjectFactory::destroy(arg, ins);
 }
-TEMPLATE_PRODUCT_TEST_CASE("InsertCol - FP specific", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("InsertCol - FP specific", TAG_KERNELS, (DATA_TYPES), (double)) {
     using DT = TestType;
     using VT = typename DT::VT;
 

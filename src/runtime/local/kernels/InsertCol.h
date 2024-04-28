@@ -144,7 +144,7 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
 template<typename VTArg, typename VTSel>
 struct InsertCol<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
     static void apply(
-            DenseMatrix<VTArg> *& res,
+            Matrix<VTArg> *& res,
             const Matrix<VTArg> * arg, const Matrix<VTArg> * ins,
             VTSel colLowerIncl, VTSel colUpperExcl,
             DCTX(ctx)

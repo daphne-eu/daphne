@@ -228,9 +228,6 @@ struct ExtractRow<Matrix<VT>, Matrix<VT>, VTSel> {
         }
         
         //Main Logic
-
-        // VT * allUpdatedValues = res->getValues();
-        // const VTSel * valuesSel = sel->getValues();
         res->prepareAppend();
         for (size_t r=0; r < numRowsSel; ++r){
             const VTSel valSelectedRow = sel->get(r, 0);  // only one column

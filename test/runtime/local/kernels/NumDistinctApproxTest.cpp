@@ -27,7 +27,10 @@
 #include <tags.h>
 #include <catch.hpp>
 
-TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define VALUE_TYPES double, uint32_t
+
+TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
 
     using DT = TestType;
     using VT = typename DT::VT;
@@ -78,7 +81,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
     CHECK(Approx(approxResult).epsilon(1e-1) == expectedNumDistinct);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
 
     using DT = TestType;
     using VT = typename DT::VT;
@@ -137,7 +140,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (
     CHECK(Approx(approxResult).epsilon(1e-1) == expectedNumDistinct);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
 
     using DT = TestType;
     using VT = typename DT::VT;

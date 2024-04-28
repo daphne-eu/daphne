@@ -26,6 +26,7 @@
 #include <catch.hpp>
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
@@ -149,8 +150,14 @@ TEMPLATE_TEST_CASE(TEST_NAME("Frame error handling"), TAG_KERNELS, int64_t) { //
     DataObjectFactory::destroy(c0, c1, c2, arg, sel);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense Matrix"), TAG_KERNELS, (DenseMatrix), (int64_t, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense/Generic Matrix"), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
+    using VT = typename DT::VT;
+    using DTEmpty = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        DenseMatrix<VT>,
+                        DT
+                    >::type;
     
     DT * arg = genGivenVals<DT>(3, {
         1, 2, 3,
@@ -163,7 +170,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense Matrix"), TAG_KERNELS, (DenseMatrix)
     DT * sel{};
 
     SECTION("selecting nothing") {
-        sel = DataObjectFactory::create<DT>(0, 1, false);
+        sel = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 1, false));
         exp = genGivenVals<DT>(3, {});
         checkExtractCol(res, arg, sel, exp);
     }

@@ -24,7 +24,9 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/HasSpecialValue.h>
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS, (DenseMatrix, CSRMatrix), (uint32_t)) {
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS, (DATA_TYPES), (uint32_t)) {
 
     using DT = TestType;
 
@@ -94,7 +96,7 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - CSRMatrix-Submatrix.", TAG_KERNELS
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - floating point", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - floating point", TAG_KERNELS, (DATA_TYPES), (double)) {
 
     using DT = TestType;
 

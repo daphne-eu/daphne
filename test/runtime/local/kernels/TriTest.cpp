@@ -25,7 +25,7 @@
 #include <catch.hpp>
 
 #define TEST_NAME(opName) "Tri (" opName ")"
-#define DATA_TYPES DenseMatrix, CSRMatrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
 template<class DT>
@@ -62,7 +62,5 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("example"), TAG_KERNELS, (DATA_TYPES), (VAL
     checkTri(m, m1, false, true, true);
     checkTri(m, m2, true, false, false);
 
-    DataObjectFactory::destroy(m);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m, m1, m2);
 }

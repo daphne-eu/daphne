@@ -96,7 +96,7 @@ struct Reverse<Matrix<VT>, Matrix<VT>> {
         res->prepareAppend();
         for (size_t r=0; r < numRows; ++r)
             for (size_t c=0; c < numCols; ++c)
-                res->append(r, c, arg->get(numRows - r, c));
+                res->append(r, c, arg->get((numRows - 1) - r, c));
         res->finishAppend();
     }
 };

@@ -169,7 +169,7 @@ template <typename VT> struct NumDistinctApprox<Matrix<VT>> {
         if (uBSet.size() < K) {
             return uBSet.size();
         }
-  
+
         size_t kMinVal = uBSet.top();
         const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
         double kMinValNormed =

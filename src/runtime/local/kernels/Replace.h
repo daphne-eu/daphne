@@ -236,20 +236,29 @@ struct Replace<Matrix<VT>, Matrix<VT>, VT> {
             res->finishAppend();
             return;
         }
+
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
             requireCopy=true;
         }
+        
         //--------main logic --------------------------
-        res->prepareAppend();
+        if (requireCopy)
+            res->prepareAppend();
         if (pattern != pattern) { // pattern is NaN
             for (size_t r=0; r < numRows; ++r) {
                 for (size_t c=0; c < numCols; ++c) {
-                    if (arg->get(r, c) != arg->get(r, c)) {
-                        res->append(r, c, replacement);
-                    }
-                    else if (requireCopy) {
-                        res->append(r, c, arg->get(r, c));
+                    if (requireCopy) {
+                        if (arg->get(r, c) != arg->get(r, c)) {
+                            res->append(r, c, replacement);
+                        }
+                        else {
+                            res->append(r, c, arg->get(r, c));
+                        }
+                    } else {
+                        if (arg->get(r, c) != arg->get(r, c)) {
+                            res->set(r, c, replacement);
+                        }
                     }
                 }
             }
@@ -257,17 +266,24 @@ struct Replace<Matrix<VT>, Matrix<VT>, VT> {
         else { // pattern is not NaN --> replacement can still be NaN
             for (size_t r=0; r < numRows; ++r) {
                 for (size_t c = 0; c < numCols; ++c) {
-                    if (arg->get(r, c) == pattern) {
-                        res->append(r, c, replacement);
+                    if (requireCopy) {
+                        if (arg->get(r, c) == pattern) {
+                            res->append(r, c, replacement);
+                        }
+                        else {
+                            res->append(r, c, arg->get(r, c));
+                        }
+                    } else {
+                        if (arg->get(r, c) == pattern) {
+                            res->set(r, c, replacement);
+                        }
                     }
-                    else if (requireCopy) {
-                        res->append(r, c, arg->get(r, c));
-                    }
-                }  
+                }
             }
         }
-        res->finishAppend();
-    }   
+        if (requireCopy)
+            res->finishAppend();
+    }
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_REPLACE_H

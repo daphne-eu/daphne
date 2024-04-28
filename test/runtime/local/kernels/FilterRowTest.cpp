@@ -31,10 +31,16 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("FilterRow", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("FilterRow", TAG_KERNELS, (DenseMatrix, Matrix), (double, int64_t, uint32_t)) {
     using DT = TestType;
+    using VTArg = typename DT::VT;
     using VTSel = int64_t;
     using DTSel = DenseMatrix<VTSel>;
+    using DTEmpty = typename std::conditional<
+                        std::is_same<DT, Matrix<VTArg>>::value,
+                        DenseMatrix<VTArg>,
+                        DT
+                    >::type;
 
     auto arg = genGivenVals<DT>(5, {
         1, 2, 3,
@@ -48,7 +54,7 @@ TEMPLATE_PRODUCT_TEST_CASE("FilterRow", TAG_KERNELS, (DenseMatrix), (double, int
     DT * exp = nullptr;
     SECTION("bit vector empty") {
         sel = genGivenVals<DTSel>(5, {0, 0, 0, 0, 0});
-        exp = DataObjectFactory::create<DT>(0, 3, false);
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 3, false));
     }
     SECTION("bit vector contiguous 0") {
         sel = genGivenVals<DTSel>(5, {0, 0, 1, 1, 1});

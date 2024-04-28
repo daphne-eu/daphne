@@ -18,18 +18,30 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 
 #include <tags.h>
+
 #include <catch.hpp>
+
 #include <string>
+#include <type_traits>
 #include <vector>
+
 #include <cstdint>
 
-TEST_CASE("Quantization", TAG_KERNELS) {
+TEMPLATE_PRODUCT_TEST_CASE("Quantization", TAG_KERNELS, (DenseMatrix, Matrix), (float)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        Matrix<uint8_t>,
+                        DenseMatrix<uint8_t>
+                    >::type;
 
-    auto f0 = genGivenVals<DenseMatrix<float>>(2, {
-        0, 1.0,
-	0.5, 1.1});
+    auto f0 = genGivenVals<DT>(2, {
+        0,   1.0,
+	    0.5, 1.1
+    });
 
-    DenseMatrix<uint8_t>* res = nullptr;
+    DTRes * res = nullptr;
 
     quantize(res, f0, 0, 1, nullptr);
 

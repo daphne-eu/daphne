@@ -175,15 +175,15 @@ struct InsertRow<Matrix<VT>, Matrix<VT>, VTSel> {
         res->prepareAppend();
         for (size_t r=0; r < rowLowerIncl_Size; ++r)
             for (size_t c=0; c < numColsArg; ++c)
-                append(r, c, arg->get(r, c));
+                res->append(r, c, arg->get(r, c));
 
         for (size_t r=rowLowerIncl_Size; r < rowUpperExcl_Size; ++r)
             for (size_t c=0; c < numColsArg; ++c)
-                append(r, c, ins->get(r - rowLowerIncl_Size, c));
+                res->append(r, c, ins->get(r - rowLowerIncl_Size, c));
                 
         for (size_t r=rowUpperExcl_Size; r < numRowsArg; ++r)
             for (size_t c=0; c < numColsArg; ++c)
-                append(r, c, arg->get(r, c));
+                res->append(r, c, arg->get(r, c));
         res->finishAppend();
     }
 };

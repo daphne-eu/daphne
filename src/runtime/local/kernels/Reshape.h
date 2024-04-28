@@ -94,7 +94,7 @@ struct Reshape<Matrix<VT>, Matrix<VT>> {
 
         res->prepareAppend();
         for (size_t cell=0; cell < numRows * numCols; ++cell)
-            res->append(cell / numRows, cell % numRows, arg->get(cell / numRowsArg, cell % numRowsArg));
+            res->append(cell / numCols, cell % numCols, arg->get(cell / numColsArg, cell % numColsArg));
         res->finishAppend();
     }
 };

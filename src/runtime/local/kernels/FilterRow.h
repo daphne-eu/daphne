@@ -184,11 +184,13 @@ struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
 
+        size_t resRow = 0;
         res->prepareAppend();
         for (size_t r=0; r < numRowsArg; ++r) {
             if (sel->get(r, 0)) {
                 for (size_t c=0; c < numCols; ++c)
-                    res->append(r, c, arg->get(r, c));
+                    res->append(resRow, c, arg->get(r, c));
+                ++resRow;
             }
         }
         res->finishAppend();
