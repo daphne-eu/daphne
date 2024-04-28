@@ -22,7 +22,7 @@
 # -------------------------------------------------------------
 
 import numpy as np
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 m1 = np.array([1,  2, 3,  4], dtype=np.double)
 m2 = np.array([1, -1, 1, -1], dtype=np.double)

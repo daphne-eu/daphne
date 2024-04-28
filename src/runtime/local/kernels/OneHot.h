@@ -26,6 +26,8 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -56,10 +58,12 @@ void oneHot(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * info, 
 template<typename VT>
 struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
-        assert((info->getNumRows() == 1) && "parameter info must be a row matrix");
+        if (info->getNumRows() != 1)
+            throw std::runtime_error("OneHot: parameter 'info' must be a row matrix");
         
         const size_t numColsArg = arg->getNumCols();
-        assert((numColsArg == info->getNumCols()) && "parameter info must provide information for each column of parameter arg");
+        if (info->getNumCols() != numColsArg)
+            throw std::runtime_error("OneHot: parameter 'info' must provide information for each column of parameter arg");
         
         size_t numColsRes = 0;
         const int64_t * valuesInfo = info->getValues();
@@ -69,9 +73,12 @@ struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
                 numColsRes++;
             else if(numDistinct > 0)
                 numColsRes += numDistinct;
-            else
-                assert(false && "invalid info");
+            else if (numDistinct != 0)
+                throw std::runtime_error("OneHot: parameter 'info' must be an integer greater or equal than -1");
         }
+
+        if (numColsRes == 0)
+            throw std::runtime_error("OneHot: parameter 'info' must contain at least one non-zero entry");
         
         const size_t numRows = arg->getNumRows();
         
@@ -91,13 +98,14 @@ struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
                 if(numDistinct == -1)
                     // retain value from argument matrix
                     valuesRes[cRes++] = valuesArg[cArg];
-                else {
+                else if (numDistinct != 0) {
                     // one-hot encode value from argument matrix
-                    for(int64_t d = 0; d < numDistinct; d++)
-                        valuesRes[cRes + d] = 0;
-                    // throw error or log issue?
-                    // if (static_cast<size_t>(valuesArg[cArg]) < numDistinct)
-                    valuesRes[cRes + static_cast<size_t>(valuesArg[cArg])] = 1;
+                    memset(valuesRes + cRes, VT(0), numDistinct * sizeof(VT));
+                    const size_t argVal = static_cast<const size_t>(valuesArg[cArg]);
+                    if (argVal >= 0 && argVal < static_cast<size_t>(numDistinct))
+                        valuesRes[cRes + argVal] = 1;
+                    else
+                        throw std::out_of_range("OneHot: arg values that are encoded (info value != -1) must be positive and smaller than the corresponding info value");
                     cRes += numDistinct;
                 }
             }

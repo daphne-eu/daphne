@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pandas as pd
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 dc = DaphneContext()
 

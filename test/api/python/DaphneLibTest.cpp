@@ -23,6 +23,9 @@
 
 #include <string>
 
+#include <cstdlib>
+#include <cstring>
+
 const std::string dirPath = "test/api/python/";
 
 #define MAKE_TEST_CASE(name) \
@@ -30,6 +33,25 @@ const std::string dirPath = "test/api/python/";
         DYNAMIC_SECTION(name << ".py") { \
             const std::string prefix = dirPath+name; \
             compareDaphneToDaphneLib(prefix+".py", prefix+".daphne"); \
+        } \
+    }
+#define MAKE_TEST_CASE_ENVVAR(name, envVar) \
+    TEST_CASE(name, TAG_DAPHNELIB) { \
+        DYNAMIC_SECTION(name << ".py") { \
+            const char* depAvail = std::getenv(envVar); \
+            if(depAvail == nullptr) { \
+                FAIL("this test case requires environment variable " envVar " to be set to either 0 or 1, but it is unset"); \
+            } \
+            if(!strcmp(depAvail, "1")) { \
+                const std::string prefix = dirPath+name; \
+                compareDaphneToDaphneLib(prefix+".py", prefix+".daphne"); \
+            } \
+            else if(!strcmp(depAvail, "0")) { \
+                SUCCEED("this test case is skipped since environment variable " envVar " is 0"); \
+            } \
+            else { \
+                FAIL("this test case requires environment variable " envVar " to be set to either 0 or 1, but it is something else"); \
+            } \
         } \
     }
 #define MAKE_TEST_CASE_SCALAR(name) \
@@ -50,6 +72,16 @@ const std::string dirPath = "test/api/python/";
 MAKE_TEST_CASE("data_transfer_numpy_1")
 MAKE_TEST_CASE("data_transfer_numpy_2")
 MAKE_TEST_CASE("data_transfer_pandas_1")
+MAKE_TEST_CASE("data_transfer_pandas_2")
+MAKE_TEST_CASE("data_transfer_pandas_3_series")
+MAKE_TEST_CASE("data_transfer_pandas_4_sparse_dataframe")
+MAKE_TEST_CASE("data_transfer_pandas_5_categorical_dataframe")
+// MAKE_TEST_CASE_ENVVAR("data_transfer_pytorch_1", "DAPHNE_DEP_AVAIL_PYTORCH")
+// MAKE_TEST_CASE_ENVVAR("data_transfer_tensorflow_1", "DAPHNE_DEP_AVAIL_TENSFORFLOW")
+MAKE_TEST_CASE("frame_innerJoin")
+MAKE_TEST_CASE("frame_setColLabels")
+MAKE_TEST_CASE("frame_setColLabelsPrefix")
+MAKE_TEST_CASE("frame_to_matrix")
 MAKE_TEST_CASE("random_matrix_generation")
 MAKE_TEST_CASE("random_matrix_sum")
 MAKE_TEST_CASE("random_matrix_addition")
@@ -73,6 +105,7 @@ MAKE_TEST_CASE("matrix_reorg")
 MAKE_TEST_CASE("matrix_other")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
+MAKE_TEST_CASE("numpy_matrix_ops_replace")
 
 // Tests for DaphneLib complex control flow.
 MAKE_TEST_CASE_PARAMETRIZED("if_else_simple", "param=3.8")

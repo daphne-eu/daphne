@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # (1) Import DaphneLib.
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import numpy as np
 
 # (2) Create DaphneContext.
