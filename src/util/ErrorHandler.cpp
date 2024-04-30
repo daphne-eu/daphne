@@ -22,7 +22,7 @@
 #include <mlir/IR/Location.h>
 #include <stdexcept>
 
-static constexpr auto BREADCRUMB = "\nat ";
+static constexpr auto BREADCRUMB = " -> ";
 static constexpr auto INDENT = "   ";
 static constexpr auto DAPHNE_RED = "\e[38;2;247;1;70m";
 static constexpr auto DAPHNE_BLUE = "\e[38;2;120;137;251m";
@@ -30,8 +30,7 @@ static constexpr auto RESET_COLOR = "\x1b[0m";
 
 /*
  * Creates an std::runtime_error instance with a header, an error message,
- * and a hint referencing the source code line, plus the line prior to and 2
- * line subsequent to the line containing the error.
+ * and a hint referencing the source code line containing the error.
  *
  * \param header Should contain the origin of the exception, e.g., the
  * responsible pass or kernel symbol.
@@ -55,11 +54,10 @@ static constexpr auto RESET_COLOR = "\x1b[0m";
  *       |
  *       |
  */
-std::runtime_error makeError(std::string header, std::string msg,
+std::runtime_error ErrorHandler::makeError(std::string header, std::string msg,
                              std::string file, unsigned int line,
                              unsigned int col) {
     std::stringstream s;
-    // add the
     s << header;
     std::filesystem::path p = file;
     s << INDENT << DAPHNE_BLUE << " | " << RESET_COLOR << "Source file -> "
@@ -76,20 +74,17 @@ std::runtime_error makeError(std::string header, std::string msg,
     std::string hint = std::string(col, ' ') + "^" + std::string(2, '~');
     s << "\n"
       << INDENT << DAPHNE_BLUE << " | " << DAPHNE_RED << hint << RESET_COLOR
-      << "\n";
-
-    for (unsigned int i = 1; i <= 2; i++) {
-        std::getline(fStream, l);
-        s << INDENT << DAPHNE_BLUE << " | " << RESET_COLOR << l << "\n";
-    }
+      << "\n\n";
 
     return std::runtime_error(s.str());
 }
 
+static constexpr int UNREGISTERED = -1;
 std::runtime_error ErrorHandler::runtimeError(int kId, std::string msg,
                                               KernelDispatchMapping *kdm) {
-    if (!kId)
+    if (kId == UNREGISTERED)
         return std::runtime_error(msg);
+
     auto kdi = kdm->getKernelDispatchInfo(kId);
     std::string header =
         std::string("The kernel-function ") + DAPHNE_BLUE + kdi.kernelName +

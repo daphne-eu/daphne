@@ -1453,7 +1453,7 @@ def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
         always relevant) might require additional DaphneIR operations.
     }];
 
-    let arguments = (ins UI64:$userConfigPtr);
+    let arguments = (ins UI64:$userConfigPtr, UI64:$dispatchMappingPtr);
     let results = (outs DaphneContext:$ctx);
 }
 

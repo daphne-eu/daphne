@@ -185,3 +185,11 @@ For instance, the following kernels represent some interesting cases:
 
 Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.
 Please have a look at test cases for existing kernel implementations in [test/runtime/local/kernels](/test/runtime/local/kernels) (surely, these could still be improved).
+
+
+### Error Handling
+
+It is recommended to exceptions such as `throw std::runtime_error` in a kernel
+in case the code runs into an unresolvable issue. We catch these exceptions in
+our surrounding code to the kernel and provide, whenever possible, additional
+information about the source of the error in the DaphneDSL script.

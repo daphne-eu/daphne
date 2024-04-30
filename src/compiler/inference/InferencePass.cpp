@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <util/ErrorHandler.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 
@@ -158,7 +159,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
      */
     std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
-        
+
         // ----------------------------------------------------------------
         // Handle all non-control-flow (non-SCF) operations
         // ----------------------------------------------------------------
@@ -168,11 +169,11 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 op->getOperand(2).getType()
             );
             if(!typeWithCommonInfo) {
-                throw std::runtime_error(
-                        "a variable must not be assigned values of "
-                        "different data types (matrix, frame, scalar) "
-                        "in then/else branches (arith.select)"
-                );
+                throw ErrorHandler::compilerError(
+                    op, "InferencePass.cpp:" + std::to_string(__LINE__),
+                    " a variable must not be assigned values of "
+                    "different data types (matrix, frame, scalar) "
+                    "in then/else branches (arith.select)");
             }
             OpBuilder builder(op->getContext());
             castOperandIf(builder, op, 1, typeWithCommonInfo);
@@ -186,21 +187,23 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
                 }
                 catch (std::runtime_error& re) {
-                    spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
-                    signalPassFailure();
+                    throw ErrorHandler::rethrowError(
+                        "InferencePass.cpp:" + std::to_string(__LINE__), re.what());
                 }
             }
             if (cfg.shapeInference && returnsUnknownShape(op)) {
                 // Try to infer the shapes of all results of this operation.
                 std::vector<std::pair<ssize_t, ssize_t>> shapes = daphne::tryInferShape(op);
                 const size_t numRes = op->getNumResults();
-                if(shapes.size() != numRes)
-                    throw std::runtime_error(
+                if (shapes.size() != numRes) {
+                    throw ErrorHandler::compilerError(
+                        op, "InferencePass.cpp:" + std::to_string(__LINE__),
                         "shape inference for op " +
                             op->getName().getStringRef().str() + " returned " +
-                            std::to_string(shapes.size()) + " shapes, but the "
-                                                            "op has " + std::to_string(numRes) + " results"
-                    );
+                            std::to_string(shapes.size()) +
+                            " shapes, but the op has " +
+                            std::to_string(numRes) + " results");
+                }
                 // Set the infered shapes on all results of this operation.
                 for(size_t i = 0 ; i < numRes ; i++) {
                     if(llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
@@ -214,7 +217,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         else if (auto ft = rt.dyn_cast<daphne::FrameType>())
                             rv.setType(ft.withShape(numRows, numCols));
                         else
-                            throw std::runtime_error(
+                            throw ErrorHandler::compilerError(op, "InferencePass.cpp:" + std::to_string(__LINE__),
                                     "shape inference cannot set the shape of op " +
                                     op->getName().getStringRef().str() +
                                     " operand " + std::to_string(i) + ", since it "
@@ -228,7 +231,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 std::vector<double> sparsities = daphne::tryInferSparsity(op);
                 const size_t numRes = op->getNumResults();
                 if(sparsities.size() != numRes)
-                    throw std::runtime_error(
+                    throw ErrorHandler::compilerError(op, "InferencePass",
                         "sparsity inference for op " +
                             op->getName().getStringRef().str() + " returned " +
                             std::to_string(sparsities.size()) + " shapes, but the "
@@ -249,7 +252,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                             // We do not support sparsity for frames, but if the
                             // sparsity for a frame result is provided as
                             // unknown (-1) that's okay.
-                            throw std::runtime_error(
+                            throw ErrorHandler::compilerError(op, "InferencePass",
                                     "sparsity inference cannot set the shape of op " +
                                     op->getName().getStringRef().str() +
                                     " operand " + std::to_string(i) + ", since it "
@@ -312,7 +315,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 Operation * condOp = beforeBlock.getTerminator();
                 // TODO Make this an assertion?
                 if(!llvm::isa<scf::ConditionOp>(condOp))
-                    throw std::runtime_error("WhileOp terminator is not a ConditionOp");
+                    throw ErrorHandler::compilerError(op, "InferencePass", "WhileOp terminator is not a ConditionOp");
 
                 // Transfer the ConditionOp's operand types to the block arguments
                 // of the after-block and the results of the WhileOp to fulfill
@@ -333,7 +336,10 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 Operation * yieldOp = afterBlock.getTerminator();
                 // TODO Make this an assertion?
                 if(whileOp->getNumOperands() != yieldOp->getNumOperands())
-                    throw std::runtime_error("WhileOp and YieldOp must have the same number of operands");
+                    throw ErrorHandler::compilerError(
+                        op, "InferencePass",
+                        "WhileOp and YieldOp must have the same number of "
+                        "operands");
 
                 // Check if the inferred MLIR types match the result MLIR types.
                 // If any interesting properties were changed inside the loop body,
@@ -345,10 +351,12 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         // Get a type with the conflicting properties set to unknown.
                         Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, operandTy);
                         if(!typeWithCommonInfo) {
-                            throw std::runtime_error(
-                                    "the data type (matrix, frame, scalar) of a variable "
-                                    "must not be changed within the body of a while-loop"
-                            );
+                            throw ErrorHandler::compilerError(
+                                op, "InferencePass",
+                                "the data type (matrix, frame, scalar) of a "
+                                "variable "
+                                "must not be changed within the body of a "
+                                "while-loop");
                         }
                         // Use casts to remove those properties accordingly.
                         castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
@@ -413,10 +421,12 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         // Get a type with the conflicting properties set to unknown.
                         Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, resultTy);
                         if(!typeWithCommonInfo)
-                            throw std::runtime_error(
-                                    "the data type (matrix, frame, scalar) of a variable "
-                                    "must not be changed within the body of a for-loop"
-                            );
+                            throw ErrorHandler::compilerError(
+                                op, "InferencePass.cpp:" + std::to_string(__LINE__),
+                                "the data type (matrix, frame, scalar) of a "
+                                "variable "
+                                "must not be changed within the body of a "
+                                "for-loop.");
                         // Use casts to remove those properties accordingly.
                         castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
                         castOperandIf(builder, forOp, forOp.getNumControlOperands() + i, typeWithCommonInfo);
@@ -457,11 +467,11 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         elseYield->getOperand(i).getType()
                     );
                     if(!typeWithCommonInfo)
-                        throw std::runtime_error(
-                                "a variable must not be assigned values of "
-                                "different data types (matrix, frame, scalar) "
-                                "in then/else branches"
-                        );
+                        throw ErrorHandler::compilerError(
+                            op, "InferencePass" + std::to_string(__LINE__),
+                            "a variable must not be assigned values of "
+                            "different data types (matrix, frame, scalar) "
+                            "in then/else branches");
                     castOperandIf(builder, thenYield, i, typeWithCommonInfo);
                     castOperandIf(builder, elseYield, i, typeWithCommonInfo);
                     ifOp.getResult(i).setType(typeWithCommonInfo);
@@ -483,10 +493,9 @@ public:
         func::FuncOp f = getOperation();
         try {
             f.walk<WalkOrder::PreOrder>(walkOp);
-        }
-        catch (std::runtime_error& re) {
-            spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
-            return;
+        } catch (std::runtime_error &re) {
+            throw ErrorHandler::rethrowError(
+                "InferencePass.cpp:" + std::to_string(__LINE__), re.what());
         }
         // infer function return types
         f.setType(FunctionType::get(&getContext(),
