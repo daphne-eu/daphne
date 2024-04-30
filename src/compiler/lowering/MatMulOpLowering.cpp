@@ -486,7 +486,7 @@ public:
     unsigned NR = tile_sizes[1];
     unsigned MR = tile_sizes[0];
     unsigned KU = options.unroll_factor;
-    auto vec_size = loops[1].getStep();
+    [[maybe_unused]] auto vec_size = loops[1].getStep();
     llvm::SmallVector<AffineForOp> loopNest;
     getPerfectlyNestedLoops(loopNest, loops.front());
     // tile i with MC, j with NC, k with KC
