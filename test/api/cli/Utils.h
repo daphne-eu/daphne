@@ -18,6 +18,7 @@
 #define TEST_API_CLI_UTILS_H
 
 #include <api/cli/StatusCode.h>
+#include <cerrno>
 #include <complex>
 #include <runtime/distributed/worker/WorkerImpl.h>
 
@@ -70,33 +71,39 @@ void LOG(T&& var, OtherArgs&&... args) {
  */
 template<typename... Args>
 int runProgram(std::stringstream & out, std::stringstream & err, const char * execPath, Args ... args) {
+    constexpr int READ = 0;
+    constexpr int WRITE = 1;
     int linkOut[2]; // pipe ends for stdout
     int linkErr[2]; // pipe ends for stderr
     char buf[1024]; // internal buffer for reading from the pipes
-    
+
     // Try to create the pipes.
-    if(pipe(linkOut) == -1)
-        throw std::runtime_error("could not create pipe");
-    if(pipe(linkErr) == -1)
-        throw std::runtime_error("could not create pipe");
-    
+    if (pipe(linkOut) == -1)
+        throw std::runtime_error("could not create pipe" +
+                                 std::to_string(errno));
+    if (pipe(linkErr) == -1)
+        throw std::runtime_error("could not create pipe" +
+                                 std::to_string(errno));
+
     // Try to create the child process.
     pid_t p = fork();
-    
+
     if(p == -1)
         throw std::runtime_error("could not create child process");
     else if(p) { // parent
         // Close write end of pipes.
-        close(linkOut[1]);
-        close(linkErr[1]);
-        
+        close(linkOut[WRITE]);
+        close(linkErr[WRITE]);
+
         // Read data from stdout and stderr of the child from the pipes.
         ssize_t numBytes;
-        while((numBytes = read(linkOut[0], buf, sizeof(buf))))
+        while((numBytes = read(linkOut[READ], buf, sizeof(buf))))
             out.write(buf, numBytes);
-        while((numBytes = read(linkErr[0], buf, sizeof(buf))))
+        while((numBytes = read(linkErr[READ], buf, sizeof(buf))))
             err.write(buf, numBytes);
 
+        close(linkOut[READ]);
+        close(linkErr[READ]);
         // Wait for child's termination.
         int status;
         waitpid(p, &status, 0);
@@ -112,13 +119,13 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
     }
     else { // child
         // Redirect stdout and stderr to the pipe.
-        dup2(linkOut[1], STDOUT_FILENO);
-        dup2(linkErr[1], STDERR_FILENO);
-        close(linkOut[0]);
-        close(linkOut[1]);
-        close(linkErr[0]);
-        close(linkErr[1]);
-        
+        dup2(linkOut[WRITE], STDOUT_FILENO);
+        dup2(linkErr[WRITE], STDERR_FILENO);
+        close(linkOut[READ]);
+        close(linkOut[WRITE]);
+        close(linkErr[READ]);
+        close(linkErr[WRITE]);
+
         // Execute other program.
         // If execPath is a path (contains "/") use execl, otherwise use execlp.
         // We need this to support "mpirun" for the MPI test cases.
