@@ -36,8 +36,7 @@
 
 void DaphneDSLBuiltins::checkNumArgsExact(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsExact) {
     if(numArgs != numArgsExact)
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                 "built-in function `" + func + "` expects exactly " +
                 std::to_string(numArgsExact) + " argument(s), but got " +
                 std::to_string(numArgs)
@@ -46,8 +45,7 @@ void DaphneDSLBuiltins::checkNumArgsExact(mlir::Location loc, const std::string 
 
 void DaphneDSLBuiltins::checkNumArgsBetween(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsMin, size_t numArgsMax) {
     if(numArgs < numArgsMin || numArgs > numArgsMax)
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                 "built-in function `" + func + "` expects between " +
                 std::to_string(numArgsMin) + " and " + std::to_string(numArgsMax) +
                 " argument(s), but got " + std::to_string(numArgs)
@@ -56,8 +54,7 @@ void DaphneDSLBuiltins::checkNumArgsBetween(mlir::Location loc, const std::strin
 
 void DaphneDSLBuiltins::checkNumArgsIn(mlir::Location loc, const std::string & func, size_t numArgs, std::vector<size_t> numArgsChoice) {
     if(numArgsChoice.empty())
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                 "error while parsing built-in function `" + func +
                 "`: expecting at least one option for the permitted number of arguments"
         );
@@ -67,8 +64,7 @@ void DaphneDSLBuiltins::checkNumArgsIn(mlir::Location loc, const std::string & f
         for(size_t i = 1; i < numArgsChoice.size(); i++)
             msg << " or " << numArgsChoice[i];
         msg << " argument(s), but got " << numArgs;
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                 msg.str()
         );
     }
@@ -76,8 +72,7 @@ void DaphneDSLBuiltins::checkNumArgsIn(mlir::Location loc, const std::string & f
 
 void DaphneDSLBuiltins::checkNumArgsMin(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsMin) {
     if(numArgs < numArgsMin)
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins", 
                 "built-in function `" + func + "` expects at least " +
                 std::to_string(numArgsMin) + " argument(s), but got " +
                 std::to_string(numArgs)
@@ -86,8 +81,7 @@ void DaphneDSLBuiltins::checkNumArgsMin(mlir::Location loc, const std::string & 
 
 void DaphneDSLBuiltins::checkNumArgsEven(mlir::Location loc, const std::string & func, size_t numArgs) {
     if(numArgs % 2)
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins", 
                 "built-in function `" + func +
                 "` expects an even number of arguments, but got " +
                 std::to_string(numArgs)
@@ -141,7 +135,7 @@ mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std
                 )
         );
     else
-        throw std::runtime_error("invalid axis");
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid axis for aggregation.");
 }
 
 template<class GrpAggOp>
@@ -373,7 +367,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 labels.push_back(arg);
             }
             else
-                throw std::runtime_error(
+                throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                         "arguments to frame() built-in function must be one or "
                         "more matrices optionally followed by equally many "
                         "strings"
@@ -390,7 +384,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 ));
             }
         else if(numLabels != numCols)
-            throw std::runtime_error(
+            throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                     "frame built-in function expects either no column labels "
                     "or as many labels as columns"
             );
@@ -831,7 +825,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 break;
             }
             default:
-                throw std::runtime_error("ctable(): unexpected number of arguments");
+                throw ErrorHandler::compilerError(loc, "DSLBuiltins", "ctable(): unexpected number of arguments");
         }
         return static_cast<mlir::Value>(builder.create<CTableOp>(
                 loc, utils.unknownType, lhs, rhs, weight, resNumRows, resNumCols
@@ -1088,7 +1082,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         else if(valueTypeCode == (int64_t)ValueTypeCode::UI64)
             vt = builder.getIntegerType(64, false);
         else
-            throw std::runtime_error("invalid value type code");
+            throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid value type code");
 
         return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(
                 loc, utils.matrixOf(vt), upper, lower, rows, cols
@@ -1223,5 +1217,5 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
     // ********************************************************************
 
-    throw CompilerUtils::makeError(loc, "unknown built-in function: `" + func + "`");
+    throw ErrorHandler::compilerError(loc, "DSLBuiltins", "unknown built-in function: `" + func + "`");
 }

@@ -16,6 +16,7 @@
 #include <parser/sql/SQLParser.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
+#include <util/ErrorHandler.h>
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -61,16 +62,16 @@ namespace
 
                 SQLParser parser;
                 parser.setView(tables);
+                parser.setSqlOp(sqlop);
                 std::string sourceName;
                 llvm::raw_string_ostream ss(sourceName);
-                ss << "[sql query @ " << sqlop->getLoc() << ']';
+                ss << sqlop->getLoc();
                 mlir::Value result_op;
                 try {
                     result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
-                }
-                catch (std::runtime_error& re) {
-                    spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
-                    return failure();
+                } catch (std::runtime_error &re) {
+                    throw ErrorHandler::rethrowError("RewriteSqlOpPass",
+                                                     re.what());
                 }
                 rewriter.replaceOp(op, result_op);
                 // TODO Why is this necessary when we have already replaced the op?

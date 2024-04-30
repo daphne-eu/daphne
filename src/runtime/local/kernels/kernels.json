@@ -767,6 +767,10 @@
                 {
                     "type": "uint64_t",
                     "name": "configPtr"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "dispatchMappingPtr"
                 }
             ]
         },

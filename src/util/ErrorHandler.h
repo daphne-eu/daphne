@@ -89,6 +89,36 @@ struct ErrorHandler {
                                            const std::string &msg);
 
     /*
+     * Creates an std::runtime_error instance with a header, an error message,
+     * and a hint referencing the source code line containing the error.
+     *
+     * \param header Should contain the origin of the exception, e.g., the
+     * responsible pass or kernel symbol.
+     * \param msg The msg to the user explaining what failed (and why, when
+     * possible).
+     * \param file The source file, e.g., "test.daphne"
+     * \param line The line in the source code from which the error originated.
+     * \param col The column position in the source code at the given line from
+     * which the error originated.
+     *
+     * Note: the [error] prefix in the example is added in our root catch-block
+     * in daphne_internals.cpp
+     *
+     * Example output:
+     *
+     *    [error]: HEADER [ MSG ]
+     *       | Source file -> FILE:LINE:COL
+     *       |
+     *  LINE | SOURCE
+     *       | ^~~
+     *       |
+     *       |
+     */
+    static std::runtime_error makeError(std::string header, std::string msg,
+                                 std::string file, unsigned int line,
+                                 unsigned int col);
+
+    /*
      * Writes the current module IR to the file "module_fail.log" on disk.
      */
     static void dumpModuleToDisk(mlir::ModuleOp &module);

@@ -23,8 +23,8 @@
 #include <cblas.h>
 #include <lapacke.h>
 
-#include <cassert>
 #include <cstddef>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -58,10 +58,15 @@ struct Solve<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
         const auto nr1 = static_cast<int>(lhs->getNumRows());
         const auto nc1 = static_cast<int>(lhs->getNumCols());
         const auto nc2 = static_cast<int>(rhs->getNumCols());
-        assert((nr1 == static_cast<int>(rhs->getNumRows())) && "#rows of lhs and #rows of rhs must be the same");
-        assert((nr1 == nc1) && "#rows and #cols of lhs must be the same");
-        assert((static_cast<int>(lhs->getRowSkip()) == nc1) && "#cols of lhs must match row skip");
-        assert((nc2==1) && "#cols of rhs must be 1");
+        if (nr1 != static_cast<int>(rhs->getNumRows()))
+            throw std::runtime_error(
+                "#rows of lhs and #rows of rhs must be the same");
+        if (nr1 != nc1)
+            throw std::runtime_error("#rows and #cols of lhs must be the same");
+        if (static_cast<int>(lhs->getRowSkip()) != nc1)
+            throw std::runtime_error("#cols of lhs must match row skip");
+        if (nc2 != 1)
+            throw std::runtime_error("#cols of rhs must be 1");
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
@@ -72,7 +77,8 @@ struct Solve<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
         memcpy(work, lhs->getValues(), nr1*nc1*sizeof(float));         //for in-place A
         memcpy(res->getValues(), rhs->getValues(), nr1*sizeof(float)); //for in-place b-out
         [[maybe_unused]] int info = LAPACKE_sgesv(LAPACK_ROW_MAJOR, nr1, 1, work, nc1, ipiv, res->getValues(), 1);
-        assert((info<=0) && "A factor Ui is exactly singular, so the solution could not be computed");
+        if (info > 0)
+            throw std::runtime_error("A factor Ui is exactly singular, so the solution could not be computed");
     }
 };
 
@@ -82,10 +88,15 @@ struct Solve<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
         const auto nr1 = static_cast<int>(lhs->getNumRows());
         const auto nc1 = static_cast<int>(lhs->getNumCols());
         const auto nc2 = static_cast<int>(rhs->getNumCols());
-        assert((nr1 == static_cast<int>(rhs->getNumRows())) && "#rows of lhs and #rows of rhs must be the same");
-        assert((nr1 == nc1) && "#rows and #cols of lhs must be the same");
-        assert((static_cast<int>(lhs->getRowSkip()) == nc1) && "#cols of lhs must match row skip");
-        assert((nc2==1) && "#cols of rhs must be 1");
+        if (nr1 != static_cast<int>(rhs->getNumRows()))
+            throw std::runtime_error(
+                "#rows of lhs and #rows of rhs must be the same");
+        if (nr1 != nc1)
+            throw std::runtime_error("#rows and #cols of lhs must be the same");
+        if (static_cast<int>(lhs->getRowSkip()) != nc1)
+            throw std::runtime_error("#cols of lhs must match row skip");
+        if (nc2 != 1)
+            throw std::runtime_error("#cols of rhs must be 1");
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<double>>(nr1, nc2, false);
@@ -96,6 +107,7 @@ struct Solve<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
         memcpy(work, lhs->getValues(), nr1*nc1*sizeof(double));         //for in-place A
         memcpy(res->getValues(), rhs->getValues(), nr1*sizeof(double)); //for in-place b-out
         [[maybe_unused]] int info = LAPACKE_dgesv(LAPACK_ROW_MAJOR, nr1, 1, work, nc1, ipiv, res->getValues(), 1);
-        assert((info<=0) && "A factor Ui is exactly singular, so the solution could not be computed");
+        if (info > 0)
+            throw std::runtime_error("A factor Ui is exactly singular, so the solution could not be computed");
     }
 };

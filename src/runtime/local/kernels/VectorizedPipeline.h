@@ -22,7 +22,6 @@
 #include <runtime/local/vectorized/MTWrapper.h>
 #include <ir/daphneir/Daphne.h>
 
-#include <cassert>
 #include <cstddef>
 
 using mlir::daphne::VectorSplit;

@@ -25,7 +25,6 @@
 #include <Eigen/Dense>
 
 #include <iostream>
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************
@@ -62,7 +61,10 @@ struct EigenCal<DenseMatrix<double>,DenseMatrix<double>,DenseMatrix<double>> {
             DCTX(ctx)) {
         const auto nr = static_cast<size_t>(inMat->getNumRows());
         const auto nc = static_cast<size_t>(inMat->getNumCols());
-        assert((isSymmetric<DenseMatrix<double>>(inMat, nullptr)) && "Input matrix must be symmetric");
+        if (!isSymmetric<DenseMatrix<double>>(inMat, nullptr)) {
+            throw std::runtime_error(
+                "EigenCal - Input matrix must be symmetric");
+        }
 
         Eigen::MatrixXd inputMatrix = Eigen::Map<const Eigen::MatrixXd>(inMat->getValues(), nr, nc);
 
@@ -109,7 +111,12 @@ struct EigenCal<DenseMatrix<float>,DenseMatrix<float>,DenseMatrix<float>> {
             DCTX(ctx)) {
         const auto nr = static_cast<size_t>(inMat->getNumRows());
         const auto nc = static_cast<size_t>(inMat->getNumCols());
-        assert((isSymmetric<DenseMatrix<float>>(inMat, nullptr)) && "Input matrix must be symmetric");
+
+        if (!isSymmetric<DenseMatrix<float>>(inMat, nullptr)) {
+            throw std::runtime_error(
+                "EigenCal - Input matrix must be symmetric");
+        }
+
         Eigen::MatrixXf inputMatrix = Eigen::Map<const Eigen::MatrixXf>(inMat->getValues(), nr, nc);
 
         // the instance s(A) includes the eigensystem

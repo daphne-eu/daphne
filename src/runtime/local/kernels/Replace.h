@@ -23,7 +23,6 @@
 
 #include <string.h>
 #include <cstddef>
-#include <cassert>
 #include <stdio.h>
 
 // ****************************************************************************
@@ -56,7 +55,10 @@ template<typename VT>
 struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, VT pattern, VT replacement, DCTX(ctx)) {
         //------handling corner cases -------
-        assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
+        if (!arg) {
+            throw std::runtime_error(
+                "Replace - arg must not be nullptr");
+        }
         // variable declaration
         const size_t numRows = arg->getNumRows(); // number of rows
         const size_t numCols = arg->getNumCols(); // number of columns
@@ -65,9 +67,15 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
         if(elementCount==0){// This case means that the kernel do nothing, i.e.,  no values to replace
             return;
         }
-        if(res!=nullptr){ // In this case, the caller reuses the res matrix
-            assert(res->getNumRows()== numRows && "res is a not a nullptr but it has a different numRows than arg");
-            assert(res->getNumCols()== numCols && "res is a not a nullptr but it has a different numCols than arg");
+        if (res != nullptr) { // In this case, the caller reuses the res matrix
+            if (res->getNumRows() != numRows) {
+                throw std::runtime_error("res is a not a nullptr but it has a "
+                                         "different numRows than arg");
+            }
+            if (res->getNumCols() != numCols) {
+                throw std::runtime_error("res is a not a nullptr but it has a "
+                                         "different numCols than arg");
+            }
         }
         if((replacement!=replacement && pattern!=pattern) || (pattern == replacement)){// nothing to be done pattern equals replacement
             if(res!=nullptr && res==arg){  // arg and res are the same
@@ -134,8 +142,13 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 template<typename VT>
 struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
     static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, VT pattern, VT replacement, DCTX(ctx)) {
-        assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
-        assert(pattern!=0&& "pattern equals zero"); // this case is not supported for now
+        if (!arg) {
+            throw std::runtime_error("Replace - arg must not be nullptr");
+        }
+        if (!pattern) {
+            throw std::runtime_error("Replace - pattern equals zero, this case "
+                                     "is not supported for now");
+        }
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         const size_t nnzElements= arg->getNumNonZeros();
@@ -143,9 +156,18 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
             return;
         }
         if(res!=arg && res!=nullptr){ // In this case, the caller reuses the res matrix
-            assert(res->getNumRows()== numRows && "res is a not a nullptr but it has a different numRows than arg");
-            assert(res->getNumCols()== numCols && "res is a not a nullptr but it has a different numCols than arg");
-            assert(res->getNumNonZeros()== nnzElements && "res is a not a nullptr but it has a different nnzElements than arg");
+            if (res->getNumRows() != numRows) {
+                throw std::runtime_error("res is a not a nullptr but it has a "
+                                         "different numRows than arg");
+            }
+            if (res->getNumCols() != numCols) {
+                throw std::runtime_error("res is a not a nullptr but it has a "
+                                         "different numCols than arg");
+            }
+            if (res->getNumNonZeros() != nnzElements) {
+                throw std::runtime_error("res is a not a nullptr but it has a "
+                                         "different nnzElements than arg");
+            }
         }
         if((replacement!=replacement && pattern!=pattern) || (pattern == replacement)){// nothing to be done pattern equals replacement
             if(res!=nullptr && res==arg){  // arg and res are the same

@@ -21,6 +21,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <stdexcept>
 #include <util/DeduceType.h>
 
 using mlir::daphne::CompareOperation;
@@ -253,9 +254,6 @@ class ThetaJoin<Frame, Frame, Frame> {
      */
     template<typename VTLhs, typename VTRhs>
     static bool compareValues(VTLhs lhs, VTRhs rhs, CompareOperation cmp){
-//        if constexpr ( !std::is_same_v<VTLhs, VTRhs>){
-//            throw std::runtime_error("Value types do not match!");
-//        } else { ...
         if constexpr (std::is_same_v<VTLhs, VTRhs>){
             switch ( cmp ){
                 case CompareOperation::Equal:
@@ -346,8 +344,9 @@ class ThetaJoin<Frame, Frame, Frame> {
     static void apply(Frame*& res, const Frame* lhs, const Frame* rhs, const char** lhsOn, size_t numLhsOn,
                       const char** rhsOn, size_t numRhsOn, CompareOperation* cmp, size_t numCmp) {
         /// @todo get rid of redundant parameters ??
-        assert((numLhsOn == numRhsOn and numRhsOn == numCmp) && "incorrect amount of compare values");
-        
+        if (numLhsOn != numRhsOn || numRhsOn != numCmp)
+            throw std::runtime_error("incorrect amount of compare values");
+
         size_t lhsCols = lhs->getNumCols();
         size_t rhsCols = rhs->getNumCols();
         
