@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -25,6 +26,8 @@
 #include <random>
 #include <set>
 #include <type_traits>
+#include <vector>
+#include <unordered_set>
 
 #include <cassert>
 #include <cmath>
@@ -252,5 +255,103 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
         rowOffsetsRes[0] = 0;
         for(size_t i = 1; i <= numRows; i++)
             rowOffsetsRes[i] += rowOffsetsRes[i - 1];
+    }
+};
+
+// ----------------------------------------------------------------------------
+// COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct RandMatrix<COOMatrix<VT>, VT> {
+    static void apply(COOMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed, DCTX(ctx)) {
+        assert(numRows > 0 && "numRows must be > 0");
+        assert(numCols > 0 && "numCols must be > 0");
+        assert(min <= max && "min must be <= max");
+        assert(sparsity >= 0.0 && sparsity <= 1.0 &&
+               "sparsity has to be in the interval [0.0, 1.0]");
+
+        // The exact number of non-zeros to generate.
+        // TODO Ideally, it should not be allowed that zero is included in [min, max].
+        const auto nnz = static_cast<size_t>(round(numRows * numCols * sparsity));
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<COOMatrix<VT>>(numRows, numCols, nnz, false);
+
+        // Initialize pseudo random number generators.
+        if (seed == -1)
+            seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        std::default_random_engine gen(seed);
+
+        static_assert(
+                std::is_floating_point<VT>::value || std::is_integral<VT>::value,
+                "the value type must be either floating point or integral"
+        );
+        typename std::conditional<
+                std::is_floating_point<VT>::value,
+                std::uniform_real_distribution<VT>,
+                std::uniform_int_distribution<VT>
+        >::type distrVal(min, max);
+
+        VT *valuesRes = res->getValues();
+        for (size_t i = 0; i < nnz; i++)
+            valuesRes[i] = distrVal(gen);
+
+        std::uniform_int_distribution<size_t> distrRow(0, numRows - 1);
+        std::vector<size_t> rowSequence;
+        std::vector<size_t> occurrences(numRows, 0);
+        for (size_t i = 0; i < nnz; ++i) {
+            size_t randomValue = distrRow(gen);
+
+            while (occurrences[randomValue] >= numCols) {
+                randomValue = distrRow(gen);
+            }
+
+            occurrences[randomValue]++;
+            rowSequence.push_back(randomValue);
+        }
+        std::sort(rowSequence.begin(), rowSequence.end());
+
+        std::vector<size_t> colSequence;
+
+        std::vector<size_t> startRow;
+        size_t lastRow = -1;
+        for (size_t i = 0; i < nnz; ++i) {
+            if (rowSequence[i] != lastRow) startRow.push_back(i);
+            lastRow = rowSequence[i];
+        }
+        startRow.push_back(nnz);
+
+        std::uniform_int_distribution<size_t> distrCol(0, numCols - 1);
+
+        for (size_t i = 0; i < startRow.size() - 1; i++) {
+            size_t start = startRow[i];
+            size_t end = startRow[i + 1];
+            std::vector<size_t> subSequence;
+            std::unordered_set<size_t> uniqueValues;
+            while (subSequence.size() < end - start) {
+                size_t randomValue = distrCol(gen);
+                if (uniqueValues.find(randomValue) == uniqueValues.end()) {
+                    subSequence.push_back(randomValue);
+                    uniqueValues.insert(randomValue);
+                }
+            }
+
+            std::sort(subSequence.begin(), subSequence.end());
+            for (size_t value : subSequence) {
+                colSequence.push_back(value);
+            }
+        }
+
+        size_t * rowIdxs = res->getRowIdxs();
+        size_t * colIdxs = res->getColIdxs();
+        for (size_t i = 0; i < nnz; i++) {
+            rowIdxs[i] = rowSequence[i];
+            colIdxs[i] = colSequence[i];
+        }
+
+        valuesRes[nnz] = VT(0);
+        rowIdxs[nnz] = size_t(-1);
+        colIdxs[nnz] = size_t(-1);
     }
 };

@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/RandMatrix.h>
@@ -28,7 +29,7 @@
 #include <cmath>
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, float, uint32_t, uint8_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix, COOMatrix), (double, float, uint32_t, uint8_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
     const size_t numRows = 100;

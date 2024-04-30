@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -33,7 +34,7 @@ void checkTranspose(const DT * arg, const DT * exp) {
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix, COOMatrix), (double, uint32_t)) {
     using DT = TestType;
     
     DT * m = nullptr;
