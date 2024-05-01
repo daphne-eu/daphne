@@ -1,4 +1,4 @@
-// Function with mismatching signature.
+// Function with mismatching signature: more than one argument.
 
 def foo(x, y) {
     return x + y;

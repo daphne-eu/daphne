@@ -38,10 +38,10 @@ const std::string dirPath = "test/api/cli/secondorder/";
     TEST_CASE(name ", failure", TAG_SECONDORDER) { \
         for(unsigned i = 1; i <= count; i++) { \
             DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { \
-                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, name "_failure", i); \
+                checkDaphneFailsSimple(dirPath, name "_failure", i); \
             } \
         } \
     }
 
 MAKE_TEST_CASE("map", 3)
-MAKE_FAILURE_TEST_CASE("map", 4)
+MAKE_FAILURE_TEST_CASE("map", 5)
