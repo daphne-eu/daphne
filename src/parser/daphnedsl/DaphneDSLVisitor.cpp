@@ -1389,15 +1389,16 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
 //        }
         if (litStr.back() == 'u')
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, std::stoul(litStr)));
+        else if ((ss.length() > 2) && std::string_view(litStr).substr(litStr.length()-3) == "ull") {
+            // The suffix "ull" must be checked before the suffix "l", since "l" is a suffix of "ull".
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
+                    static_cast<uint64_t>(std::stoull(litStr))));
+        }
         else if (litStr.back() == 'l')
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, std::stol(litStr)));
         else if (litStr.back() == 'z') {
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
                     static_cast<std::size_t>(std::stoll(litStr))));
-        }
-        else if ((ss.length() > 2) && std::string_view(litStr).substr(litStr.length()-3) == "ull") {
-            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
-                    static_cast<int64_t>(std::stoull(litStr))));
         }
         else {
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
