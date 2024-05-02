@@ -35,7 +35,6 @@ class SQLVisitor : public SQLGrammarVisitor {
 
     ParserUtils utils;
     mlir::OpBuilder builder;
-    ScopedSymbolTable symbolTable;
 
 //special Variables
     mlir::Value currentFrame; //holds the complete Frame with all columns
