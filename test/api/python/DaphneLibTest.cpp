@@ -29,44 +29,36 @@
 const std::string dirPath = "test/api/python/";
 
 #define MAKE_TEST_CASE(name) \
-    TEST_CASE(name, TAG_DAPHNELIB) { \
-        DYNAMIC_SECTION(name << ".py") { \
+    TEST_CASE(name ".py", TAG_DAPHNELIB) { \
+        const std::string prefix = dirPath+name; \
+        compareDaphneToDaphneLib(prefix+".py", prefix+".daphne"); \
+    }
+#define MAKE_TEST_CASE_ENVVAR(name, envVar) \
+    TEST_CASE(name ".py", TAG_DAPHNELIB) { \
+        const char* depAvail = std::getenv(envVar); \
+        if(depAvail == nullptr) { \
+            FAIL("this test case requires environment variable " envVar " to be set to either 0 or 1, but it is unset"); \
+        } \
+        if(!strcmp(depAvail, "1")) { \
             const std::string prefix = dirPath+name; \
             compareDaphneToDaphneLib(prefix+".py", prefix+".daphne"); \
         } \
-    }
-#define MAKE_TEST_CASE_ENVVAR(name, envVar) \
-    TEST_CASE(name, TAG_DAPHNELIB) { \
-        DYNAMIC_SECTION(name << ".py") { \
-            const char* depAvail = std::getenv(envVar); \
-            if(depAvail == nullptr) { \
-                FAIL("this test case requires environment variable " envVar " to be set to either 0 or 1, but it is unset"); \
-            } \
-            if(!strcmp(depAvail, "1")) { \
-                const std::string prefix = dirPath+name; \
-                compareDaphneToDaphneLib(prefix+".py", prefix+".daphne"); \
-            } \
-            else if(!strcmp(depAvail, "0")) { \
-                SUCCEED("this test case is skipped since environment variable " envVar " is 0"); \
-            } \
-            else { \
-                FAIL("this test case requires environment variable " envVar " to be set to either 0 or 1, but it is something else"); \
-            } \
+        else if(!strcmp(depAvail, "0")) { \
+            SUCCEED("this test case is skipped since environment variable " envVar " is 0"); \
+        } \
+        else { \
+            FAIL("this test case requires environment variable " envVar " to be set to either 0 or 1, but it is something else"); \
         } \
     }
 #define MAKE_TEST_CASE_SCALAR(name) \
-    TEST_CASE(name, TAG_DAPHNELIB) { \
-        DYNAMIC_SECTION(name << ".py") { \
-            const std::string prefix = dirPath+name; \
-            compareDaphneToDaphneLibScalar(prefix+".py", prefix+".daphne"); \
-        } \
+    TEST_CASE(name ".py", TAG_DAPHNELIB) { \
+        const std::string prefix = dirPath+name; \
+        compareDaphneToDaphneLibScalar(prefix+".py", prefix+".daphne"); \
     }
 #define MAKE_TEST_CASE_PARAMETRIZED(name, argument) \
-    TEST_CASE((std::string(name)+"_"+std::string(argument)).c_str(), TAG_DAPHNELIB) { \
-        DYNAMIC_SECTION(name << ".py") { \
-            const std::string prefix = dirPath+name; \
-            compareDaphneToDaphneLib(prefix+".py", prefix+".daphne", argument); \
-        } \
+    TEST_CASE((std::string(name)+".py, "+std::string(argument)).c_str(), TAG_DAPHNELIB) { \
+        const std::string prefix = dirPath+name; \
+        compareDaphneToDaphneLib(prefix+".py", prefix+".daphne", argument); \
     }
 
 MAKE_TEST_CASE("data_transfer_numpy_1")
