@@ -2150,8 +2150,9 @@ Variables must have been assigned to before they are used in an expression.</p>
 <h4 id="literals">Literals</h4>
 <p>Literals represent hard-coded values and can be of various data and value types:</p>
 <h5 id="scalar-literals">Scalar literals</h5>
-<p><strong>Integer literals</strong> are specified in decimal notation and have the type <code>si64</code>.</p>
-<p><em>Examples</em>: <code>0</code>, <code>123</code>, <code>-456</code></p>
+<p><strong>Integer literals</strong> are specified in decimal notation.
+By default, they have the type <code>si64</code>, but if the optional suffix <code>u</code> is appended, the type is <code>ui64</code>.</p>
+<p><em>Examples</em>: <code>0</code>, <code>123</code>, <code>-456</code>, <code>18446744073709551615u</code></p>
 <p><strong>Floating-point literals</strong> are specified in decimal notation and have the type <code>f64</code>.
 Furthermore, the following literals stand for special floating-point values: <code>nan</code>, <code>inf</code>, <code>-inf</code>.</p>
 <p><em>Examples</em>: <code>0.0</code>, <code>123.0</code>, <code>-456.78</code>, <code>inf</code>, <code>nan</code></p>
