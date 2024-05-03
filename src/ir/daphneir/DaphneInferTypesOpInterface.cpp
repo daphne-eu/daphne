@@ -564,12 +564,14 @@ std::vector<Type> daphne::RecodeOp::inferTypes() {
 
 std::vector<Type> daphne::Conv2DForwardOp::inferTypes() {
     MLIRContext * ctx = getContext();
-    Type srcTy = getInput().getType().dyn_cast<daphne::MatrixType>();
     Builder builder(ctx);
+    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
+    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
 
     // output matrix of same type as input, height/width dimensions as size/index type
-    return {srcTy, builder.getIndexType(), builder.getIndexType()};
+    return {restype2, builder.getIndexType(), builder.getIndexType()};
 }
+
 // ****************************************************************************
 // Type inference function
 // ****************************************************************************

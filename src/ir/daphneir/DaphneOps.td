@@ -821,7 +821,9 @@ def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward", [ CUDASupport ]> {
 // ----------------------------------------------------------------------------
 
 def Daphne_Conv2DForwardOp : Daphne_Op<"Convolution_Forward",
-    [ DeclareOpInterfaceMethods<InferTypesOpInterface>, CUDASupport ]> {
+    [ DeclareOpInterfaceMethods<InferTypesOpInterface>,
+      DeclareOpInterfaceMethods<InferShapeOpInterface>,
+      CUDASupport ]> {
     let arguments = (ins
         MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter, MatrixOf<[FloatScalar]>:$bias,
         // input shape
