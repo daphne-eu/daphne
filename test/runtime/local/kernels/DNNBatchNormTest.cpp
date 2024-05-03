@@ -15,11 +15,13 @@
  */
 
 #ifdef USE_CUDA
+
+#include "run_tests.h"
+
 #include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include "runtime/local/kernels/CUDA/BatchNorm.h"
-#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 
 #include <cassert>
 #include <catch.hpp>
@@ -36,13 +38,8 @@ void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, co
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("CUDA::BatchNorm::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+    auto dctx = setupContextAndLogger();
     using DT = TestType;
-
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-
-    CUDA::createCUDAContext(dctx.get());
-
 
     auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
     auto gamma = genGivenVals<DT>(1, { 1 });
