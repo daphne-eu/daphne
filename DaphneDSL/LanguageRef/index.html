@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/logo_small.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.21">
     
     
       
@@ -979,6 +979,30 @@
   <a href="#typed-and-untyped-functions-experimental" class="md-nav__link">
     <span class="md-ellipsis">
       Typed and Untyped Functions (experimental)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compiler-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      Compiler Hints
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compiler Hints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kernel-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kernel Hints
     </span>
   </a>
   
@@ -2062,6 +2086,30 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#compiler-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      Compiler Hints
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compiler Hints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kernel-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kernel Hints
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example-scripts" class="md-nav__link">
     <span class="md-ellipsis">
       Example Scripts
@@ -2671,6 +2719,19 @@ A typed function is compiled exactly once and specialized to the specified param
 At call sites, a value of any type, or any value type, can be passed to an untyped parameter.
 As a consequence, an untyped function is compiled and specialized on demand according to the types at a call site.
 Consistently, the types of untyped return values are infered from the parameter types and operations.</p>
+<h2 id="compiler-hints">Compiler Hints</h2>
+<p>One of DAPHNE's strengths is its (WIP) ability to make various decisions on its own, e.g., regarding physical data representation (such as dense/sparse), physical operators (kernels), and data/operator placement (such as local/distributed, CPU/GPU/FPGA, computational storage).
+However, expert users may optionally provide hints to influence compiler decisions.
+This feature is useful for experimentation and in the context of DAPHNE's extensibility.
+For instance, a user could force the use of a certain custom kernel at a certain point in a larger DaphneDSL script to measure the impact of that custom kernel, even if the DAPHNE compiler would normally not choose that kernel in that situation.</p>
+<p><em>The support for compiler hints is still experimental and it is currently not guaranteed that the DAPHNE compiler respects these hints.</em></p>
+<h3 id="kernel-hints">Kernel Hints</h3>
+<p>Users can provide hints on the physical kernel that should be used for a specific occurrence of a DaphneDSL operation.
+So far, kernel hints are only supported for DaphneDSL built-in functions.
+Here, the name of the pre-compiled kernel function can optionally be attached to the name of the built-in function, separated by <code>::</code>.</p>
+<p><em>Examples:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="o">::</span><span class="nf">my_custom_sum_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">);</span>
+</code></pre></div>
 <h2 id="example-scripts">Example Scripts</h2>
 <p>A few example DaphneDSL scripts can be found in:</p>
 <ul>
@@ -2727,7 +2788,7 @@ Consistently, the types of untyped return values are infered from the parameter 
     <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.dd8806f2.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a7c05c9e.min.js"></script>
       
     
   </body>
