@@ -581,7 +581,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         parser.parseFile(builder, inputFile);
     }
     catch(std::exception & e) {
-        spdlog::error("Parser error: {}", e.what());
+        spdlog::error("While parsing: {}", e.what());
         return StatusCode::PARSER_ERROR;
     }
 
@@ -592,13 +592,14 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         if (!executor.runPasses(moduleOp)) {
             return StatusCode::PASS_ERROR;
         }
-    }
-    catch(std::exception & e) {
-        spdlog::error("Pass error: {}", e.what());
+    } catch (std::exception &e) {
+        spdlog::error(
+            "Lowering pipeline error.{}\nPassManager failed module lowering, "
+            "responsible IR written to module_fail.log.\n",
+            e.what());
         return StatusCode::PASS_ERROR;
-    }
-    catch(...) {
-        spdlog::error("Pass error: Unknown exception");
+    } catch (...) {
+        spdlog::error("Lowering pipeline error: Unknown exception");
         return StatusCode::PASS_ERROR;
     }
 

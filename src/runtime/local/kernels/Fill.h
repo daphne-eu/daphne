@@ -21,8 +21,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 
-#include <cassert>
-
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************

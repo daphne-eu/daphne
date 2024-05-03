@@ -24,7 +24,6 @@
 
 #include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -58,30 +57,38 @@ void oneHot(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * info, 
 template<typename VT>
 struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
-        if (info->getNumRows() != 1)
-            throw std::runtime_error("OneHot: parameter 'info' must be a row matrix");
-        
+        if (info->getNumRows() != 1) {
+            throw std::runtime_error(
+                "OneHot - parameter 'info' must be a row matrix");
+        }
+
         const size_t numColsArg = arg->getNumCols();
-        if (info->getNumCols() != numColsArg)
-            throw std::runtime_error("OneHot: parameter 'info' must provide information for each column of parameter arg");
-        
+
+        if (numColsArg != info->getNumCols()) {
+            throw std::runtime_error(
+                "OneHot - parameter 'info' must provide information for each "
+                "column of parameter arg");
+        }
+
         size_t numColsRes = 0;
         const int64_t * valuesInfo = info->getValues();
-        for(size_t c = 0; c < numColsArg; c++) {
+        for (size_t c = 0; c < numColsArg; c++) {
             const int64_t numDistinct = valuesInfo[c];
-            if(numDistinct == -1)
+            if (numDistinct == -1)
                 numColsRes++;
-            else if(numDistinct > 0)
+            else if (numDistinct > 0)
                 numColsRes += numDistinct;
             else if (numDistinct != 0)
-                throw std::runtime_error("OneHot: parameter 'info' must be an integer greater or equal than -1");
+                throw std::runtime_error("OneHot: parameter 'info' must be an "
+                                         "integer greater or equal than -1");
         }
 
         if (numColsRes == 0)
-            throw std::runtime_error("OneHot: parameter 'info' must contain at least one non-zero entry");
-        
+            throw std::runtime_error("OneHot: parameter 'info' must contain at "
+                                     "least one non-zero entry");
+
         const size_t numRows = arg->getNumRows();
-        
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
 

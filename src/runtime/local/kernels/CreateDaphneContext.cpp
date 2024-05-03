@@ -15,10 +15,14 @@
  */
 
 #include "CreateDaphneContext.h"
+#include "util/KernelDispatchMapping.h"
 
-void createDaphneContext(DaphneContext *& res, uint64_t configPtr) {
+void createDaphneContext(DaphneContext *&res, uint64_t configPtr,
+                         uint64_t dispatchMappingPtr) {
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
-    if(config->log_ptr != nullptr)
+    auto dispatchMapping =
+        reinterpret_cast<KernelDispatchMapping *>(dispatchMappingPtr);
+    if (config->log_ptr != nullptr)
         config->log_ptr->registerLoggers();
-    res = new DaphneContext(*config);
+    res = new DaphneContext(*config, *dispatchMapping);
 }

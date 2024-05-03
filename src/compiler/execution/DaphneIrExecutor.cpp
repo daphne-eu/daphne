@@ -15,6 +15,7 @@
  */
 
 #include "DaphneIrExecutor.h"
+#include <util/ErrorHandler.h>
 
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
@@ -23,12 +24,9 @@
 #include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 
 #include <filesystem>
-#include <memory>
-#include <utility>
 
 #include "llvm/Support/TargetSelect.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
-#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
@@ -110,10 +108,15 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         if (userConfig_.explain_property_inference)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
 
-        if (failed(pm.run(module))) {
-            module->dump();
-            module->emitError("module pass error");
-            return false;
+        try {
+            if (failed(pm.run(module))) {
+                module->dump();
+                module->emitError("module pass error");
+                return false;
+            }
+        } catch(...) {
+            ErrorHandler::dumpModuleToDisk(module);
+            throw;
         }
     }
 
@@ -148,19 +151,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_type_adaptation)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after type adaptation:"));
-
-#if 0
-    if (userConfig_.use_distributed) {
-        pm.addPass(mlir::daphne::createDistributeComputationsPass());
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
-        pm.addPass(mlir::createCSEPass());
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - CSE"));
-        pm.addPass(mlir::createCanonicalizerPass());
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - canonicalization"));
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createWhileLoopInvariantCodeMotionPass());
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
-    }
-#endif
 
     // For now, in order to use the distributed runtime we also require the
     // vectorized engine to be enabled to create pipelines. Therefore, *if*
@@ -228,10 +218,15 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_llvm)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering:"));
 
-    if (failed(pm.run(module))) {
-        module->dump();
-        module->emitError("module pass error");
-        return false;
+    try {
+        if (failed(pm.run(module))) {
+            module->dump();
+            module->emitError("module pass error");
+            return false;
+        }
+    } catch (...) {
+        ErrorHandler::dumpModuleToDisk(module);
+        throw;
     }
 
     return true;

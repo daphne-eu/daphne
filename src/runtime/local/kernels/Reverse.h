@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************

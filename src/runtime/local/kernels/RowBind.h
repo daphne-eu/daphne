@@ -27,7 +27,6 @@
 
 #include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 

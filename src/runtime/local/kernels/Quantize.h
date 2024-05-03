@@ -23,7 +23,6 @@
 
 #include <stdexcept>
 
-#include <cassert>
 #include <cmath>
 #include <cstdint>
 
@@ -96,10 +95,15 @@ struct Quantize<DenseMatrix<uint8_t>, DenseMatrix<float>> {
 
         if(res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<uint8_t>>(nr1, nc1, false);
-        }
-        else {
-            assert((nr1 == res->getNumRows()) && "#rows of res and #rows of rhs must be the same");
-            assert((nc1 == res->getNumCols()) && "#cols of res and #cols of rhs must be the same");
+        } else {
+            if (nr1 != res->getNumRows()) {
+                throw std::runtime_error("Quantize - #rows of res and #rows of "
+                                         "rhs must be the same");
+            }
+            if (nc1 != res->getNumCols()) {
+                throw std::runtime_error("Quantize - #cols of res and #cols of "
+                                         "rhs must be the same");
+            }
         }
 
         float scale = 0;

@@ -15,6 +15,7 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <util/ErrorHandler.h>
 #include <compiler/utils/LoweringUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
@@ -58,7 +59,7 @@ void processMemRefInterop(OpBuilder builder, Value v) {
     Operation* lastUseOp = findLastUseOfSSAValue(v);
 
     builder.setInsertionPointAfter(lastUseOp);
-    builder.create<daphne::DecRefOp>(builder.getUnknownLoc(),
+    builder.create<daphne::DecRefOp>(v.getLoc(),
                                      v.getDefiningOp()->getOperand(0));
 }
 
@@ -140,7 +141,7 @@ void processValue(OpBuilder builder, Value v) {
     }
 
     // Finally create the DecRefOp.
-    builder.create<daphne::DecRefOp>(builder.getUnknownLoc(), v);
+    builder.create<daphne::DecRefOp>(v.getLoc(), v);
 }
 
 /**
@@ -155,12 +156,12 @@ void processValue(OpBuilder builder, Value v) {
 void incRefIfObj(Value v, OpBuilder & b) {
     Type t = v.getType();
     if(llvm::isa<daphne::MatrixType, daphne::FrameType>(t))
-        b.create<daphne::IncRefOp>(b.getUnknownLoc(), v);
+        b.create<daphne::IncRefOp>(v.getLoc(), v);
     else if(llvm::isa<daphne::UnknownType>(t))
-        throw std::runtime_error(
-                "ManageObjRefsPass encountered a value of unknown type, so it "
-                "cannot know if it is a data object"
-        );
+        throw ErrorHandler::compilerError(
+            v.getDefiningOp(), "ManageObjRefsPass",
+            "ManageObjRefsPass encountered a value of unknown type, so it "
+            "cannot know if it is a data object.");
 }
 
 /**

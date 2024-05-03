@@ -15,6 +15,8 @@
  */
 
 #include "compiler/utils/CompilerUtils.h"
+#include <util/ErrorHandler.h>
+#include <util/KernelDispatchMapping.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -26,6 +28,7 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/BuiltinDialect.h"
+#include "mlir/IR/Location.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/IR/IRMapping.h"
 
@@ -56,10 +59,12 @@ namespace
                 return 2;
             if(llvm::isa<daphne::DistributedComputeOp>(op))
                 return 1;
-            throw std::runtime_error(
-                    "lowering to kernel call not yet supported for this variadic operation: "
-                    + op->getName().getStringRef().str()
-            );
+
+            throw ErrorHandler::compilerError(
+                op, "RewriteToCallKernelOpPass",
+                "lowering to kernel call not yet supported for this variadic "
+                "operation: " +
+                    op->getName().getStringRef().str());
         }
 
         // TODO This method is only required since MLIR does not seem to
@@ -122,10 +127,11 @@ namespace
                         isVariadic[index]
                 );
             }
-            throw std::runtime_error(
-                    "lowering to kernel call not yet supported for this variadic operation: "
-                    + op->getName().getStringRef().str()
-            );
+            throw ErrorHandler::compilerError(
+                op, "RewriteToCallKernelOpPass",
+                "lowering to kernel call not yet supported for this variadic "
+                "operation: " +
+                    op->getName().getStringRef().str());
         }
 
         /**
@@ -390,9 +396,19 @@ namespace
                 newOperands.push_back(rewriteStr);
             }
 
+            auto kId = rewriter.create<mlir::arith::ConstantOp>(
+                loc, rewriter.getI32IntegerAttr(
+                         KernelDispatchMapping::instance().registerKernel(
+                             callee.str(), op)));
+
+            // NOTE: kId has to be added before CreateDaphneContextOp because
+            // there is an assumption that the CTX is the last argument
+            // (LowerToLLVMPass.cpp::623,702). This means the kId is expected to
+            // be the second to last argument.
+            newOperands.push_back(kId);
+
             // Inject the current DaphneContext as the last input parameter to
             // all kernel calls, unless it's a CreateDaphneContextOp.
-
             if(!llvm::isa<daphne::CreateDaphneContextOp>(op))
                 newOperands.push_back(dctx);
 

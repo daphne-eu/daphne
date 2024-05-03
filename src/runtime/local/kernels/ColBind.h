@@ -27,7 +27,6 @@
 #include <sstream>
 #include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -61,8 +60,12 @@ template<typename VT>
 struct ColBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
-        assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same number of rows");
-        
+
+        if (numRows != rhs->getNumRows()) {
+            throw std::runtime_error(
+                "ColBind - lhs and rhs must have the same number of rows");
+        }
+
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numColsRhs = rhs->getNumCols();
         

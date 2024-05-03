@@ -24,7 +24,6 @@
 #include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/kernels/EwUnarySca.h>
 
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************
