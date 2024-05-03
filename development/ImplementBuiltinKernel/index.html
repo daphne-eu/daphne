@@ -1226,6 +1226,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Error Handling
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1356,6 +1365,15 @@
   <a href="#test-cases" class="md-nav__link">
     <span class="md-ellipsis">
       Test Cases
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Error Handling
     </span>
   </a>
   
@@ -1529,6 +1547,11 @@ For instance, the following kernels represent some interesting cases:</p>
 <h3 id="test-cases">Test Cases</h3>
 <p>Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.
 Please have a look at test cases for existing kernel implementations in <a href="https://github.com/daphne-eu/daphne/tree/main/test/runtime/local/kernels">test/runtime/local/kernels</a> (surely, these could still be improved).</p>
+<h3 id="error-handling">Error Handling</h3>
+<p>It is recommended to exceptions such as <code>throw std::runtime_error</code> in a kernel
+in case the code runs into an unresolvable issue. We catch these exceptions in
+our surrounding code to the kernel and provide, whenever possible, additional
+information about the source of the error in the DaphneDSL script.</p>
 
 
 
