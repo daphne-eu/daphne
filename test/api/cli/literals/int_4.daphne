@@ -1,2 +1,2 @@
-// max positive int64_t
+// max positive int64_t (2^63 - 1)
 print(9223372036854775807);

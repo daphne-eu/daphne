@@ -18,6 +18,8 @@
 #define TEST_API_CLI_UTILS_H
 
 #include <api/cli/StatusCode.h>
+#include <cerrno>
+#include <complex>
 #include <runtime/distributed/worker/WorkerImpl.h>
 
 #include <catch.hpp>
@@ -28,7 +30,6 @@
 
 #include <grpcpp/server.h>
 
-#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -70,33 +71,39 @@ void LOG(T&& var, OtherArgs&&... args) {
  */
 template<typename... Args>
 int runProgram(std::stringstream & out, std::stringstream & err, const char * execPath, Args ... args) {
+    constexpr int READ = 0;
+    constexpr int WRITE = 1;
     int linkOut[2]; // pipe ends for stdout
     int linkErr[2]; // pipe ends for stderr
     char buf[1024]; // internal buffer for reading from the pipes
-    
+
     // Try to create the pipes.
-    if(pipe(linkOut) == -1)
-        throw std::runtime_error("could not create pipe");
-    if(pipe(linkErr) == -1)
-        throw std::runtime_error("could not create pipe");
-    
+    if (pipe(linkOut) == -1)
+        throw std::runtime_error("could not create pipe" +
+                                 std::to_string(errno));
+    if (pipe(linkErr) == -1)
+        throw std::runtime_error("could not create pipe" +
+                                 std::to_string(errno));
+
     // Try to create the child process.
     pid_t p = fork();
-    
+
     if(p == -1)
         throw std::runtime_error("could not create child process");
     else if(p) { // parent
         // Close write end of pipes.
-        close(linkOut[1]);
-        close(linkErr[1]);
-        
+        close(linkOut[WRITE]);
+        close(linkErr[WRITE]);
+
         // Read data from stdout and stderr of the child from the pipes.
         ssize_t numBytes;
-        while((numBytes = read(linkOut[0], buf, sizeof(buf))))
+        while((numBytes = read(linkOut[READ], buf, sizeof(buf))))
             out.write(buf, numBytes);
-        while((numBytes = read(linkErr[0], buf, sizeof(buf))))
+        while((numBytes = read(linkErr[READ], buf, sizeof(buf))))
             err.write(buf, numBytes);
 
+        close(linkOut[READ]);
+        close(linkErr[READ]);
         // Wait for child's termination.
         int status;
         waitpid(p, &status, 0);
@@ -112,13 +119,13 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
     }
     else { // child
         // Redirect stdout and stderr to the pipe.
-        dup2(linkOut[1], STDOUT_FILENO);
-        dup2(linkErr[1], STDERR_FILENO);
-        close(linkOut[0]);
-        close(linkOut[1]);
-        close(linkErr[0]);
-        close(linkErr[1]);
-        
+        dup2(linkOut[WRITE], STDOUT_FILENO);
+        dup2(linkErr[WRITE], STDERR_FILENO);
+        close(linkOut[READ]);
+        close(linkOut[WRITE]);
+        close(linkErr[READ]);
+        close(linkErr[WRITE]);
+
         // Execute other program.
         // If execPath is a path (contains "/") use execl, otherwise use execlp.
         // We need this to support "mpirun" for the MPI test cases.
@@ -309,6 +316,79 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
     // output.
     CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == exp);
+    CHECK(err.str() == "");
+}
+
+/**
+ * @brief Checks if the numerical values in the standard output of the two given
+ * DaphneDSL script runs are within a relative distance to a reference text.
+ *
+ * @param left The output from a runDaphne().
+ * @param right The output from a runDaphne().
+ * @param ignore_lines How many lines in the beginning of the DaphneDSL output
+ * do contain numerical values to compare.
+ * @param epsilon The relative error that is acceptable.
+ */
+template <typename... Args>
+void compareDaphneRunsNumerically(std::stringstream &left,
+                                  std::stringstream &right,
+                                  const int ignore_lines,
+                                  const long double epsilon) {
+    std::string s_left;
+    std::string s_right;
+    float f_left{0};
+    float f_right{0};
+    for (auto i = 0; i != ignore_lines; i++) {
+        std::getline(left, s_left);
+        std::getline(right, s_right);
+    }
+    bool correct_so_far = true;
+
+    while (std::getline(left, s_left, ' ') &&
+           std::getline(right, s_right, ' ') && correct_so_far) {
+        try {
+            // Long double just to be sure
+            f_left = std::stold(s_left);
+            f_right = std::stold(s_right);
+        } catch (std::invalid_argument const &) {
+            FAIL("The result does not have the right number of outputs.");
+        }
+        correct_so_far =
+            std::norm(f_left - f_right) < epsilon * std::norm(f_left);
+    }
+    CHECK(correct_so_far == true);
+}
+
+/**
+ * @brief Checks if the numerical values in the standard output of the given
+ * DaphneDSL script run with the command line interface of the DAPHNE Prototype
+ * are within a relative distance to a reference text.
+ *
+ * Also checks that the status code indicates a successful execution and that
+ * nothing was printed to standard error.
+ *
+ * @param exp The expected output on stdout.
+ * @param scriptFilePath The path to the DaphneDSL script file to execute.
+ * output.
+ * @param ignore_lines How many lines in the beginning of the DaphneDSL output
+ * do contain numerical values to compare.
+ * @param epsilon The relative error that is acceptable.
+ * @param args The arguments to pass in addition to the script's path. Note
+ * that script arguments must be passed via the `--args` option for this
+ * utility function. Despite the variadic template, each element should be of
+ * type `char *`. The last one does *not* need to be a null pointer.
+ */
+template <typename... Args>
+void compareDaphneToStringNumerically(const std::string &exp,
+                                      const std::string &scriptFilePath,
+                                      int ignore_lines, long double epsilon,
+                                      Args... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphne(out, err, args..., scriptFilePath.c_str());
+    CHECK(status == StatusCode::SUCCESS);
+    std::stringstream exp_ss(exp);
+    compareDaphneRunsNumerically(exp_ss, out, ignore_lines, epsilon);
     CHECK(err.str() == "");
 }
 

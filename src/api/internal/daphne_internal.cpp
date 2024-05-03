@@ -15,6 +15,7 @@
  */
 
 #include "runtime/local/datastructures/IAllocationDescriptor.h"
+#include <vector>
 #ifdef USE_MPI
     #include "runtime/distributed/worker/MPIWorker.h"
 #endif
@@ -31,7 +32,6 @@
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Pass/PassManager.h"
 #include "llvm/Support/CommandLine.h"
 
 #ifdef USE_CUDA
@@ -260,10 +260,46 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
+
     static opt<bool> mlirCodegen(
         "mlir-codegen", cat(daphneOptions),
         desc("Enables lowering of certain DaphneIR operations on DenseMatrix to low-level MLIR operations.")
     );
+    static opt<int> matmul_vec_size_bits(
+        "matmul-vec-size-bits", cat(daphneOptions),
+        desc("Set the vector size to be used in the lowering of the MatMul operation if possible. Value of 0 is interpreted as off switch."),
+        init(0)
+    );
+    static opt<bool> matmul_tile(
+        "matmul-tile", cat(daphneOptions),
+        desc("Enables loop tiling in the lowering of the MatMul operation.")
+    );
+    static opt<int> matmul_unroll_factor(
+        "matmul-unroll-factor", cat(daphneOptions),
+        desc("Factor by which to unroll the finally resulting inner most loop in the lowered MatMul if tiling is used."),
+        init(1)
+    );
+    static opt<int> matmul_unroll_jam_factor(
+        "matmul-unroll-jam-factor", cat(daphneOptions),
+        desc("Factor by which to unroll jam the two inner most loop in the lowered MatMul if tiling is used."),
+        init(4)
+    );
+    static opt<int> matmul_num_vec_registers(
+        "matmul-num-vec-registers", cat(daphneOptions),
+        desc("Number of vector registers. Used during automatic tiling in lowering of MatMulOp"),
+        init(16)
+    );
+    static llvm::cl::list<unsigned> matmul_fixed_tile_sizes(
+        "matmul-fixed-tile-sizes", cat(daphneOptions),
+        desc("Set fixed tile sizes to be used for the lowering of MatMul if tiling is used. This also enables tiling."),
+        CommaSeparated
+    );
+    static opt<bool> matmul_invert_loops(
+        "matmul-invert-loops", cat(daphneOptions),
+        desc("Enable inverting of the inner two loops in the matrix multiplication as a fallback option, if tiling is not possible or deactivated.")
+    );
+    
+
     static opt<bool> performHybridCodegen(
         "mlir-hybrid-codegen", cat(daphneOptions),
         desc("Enables prototypical hybrid code generation combining pre-compiled kernels and MLIR code generation.")
@@ -382,6 +418,18 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.use_phy_op_selection = !noPhyOpSelection;
     user_config.use_mlir_codegen = mlirCodegen;
+    user_config.matmul_vec_size_bits = matmul_vec_size_bits;
+    user_config.matmul_tile = matmul_tile;
+    user_config.matmul_unroll_factor = matmul_unroll_factor;
+    user_config.matmul_unroll_jam_factor = matmul_unroll_jam_factor;
+    user_config.matmul_num_vec_registers = matmul_num_vec_registers;
+    user_config.matmul_invert_loops = matmul_invert_loops;
+    if (matmul_fixed_tile_sizes.size() > 0) {
+        user_config.matmul_use_fixed_tile_sizes = true;
+        user_config.matmul_fixed_tile_sizes = matmul_fixed_tile_sizes;
+        // Specifying a fixed tile size will be interpreted as wanting to use tiling.
+        user_config.matmul_tile = true;
+    }
     user_config.use_mlir_hybrid_codegen = performHybridCodegen;
 
     if(!libDir.getValue().empty())
