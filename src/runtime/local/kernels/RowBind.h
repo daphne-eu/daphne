@@ -22,6 +22,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <stdexcept>
@@ -181,23 +182,22 @@ struct RowBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         const size_t numColsUps = ups->getNumCols();
         const size_t numRowsLows = lows->getNumRows();
         const size_t numColsLows = lows->getNumCols();
-        
+
         if (numColsUps != numColsLows)
             throw std::runtime_error("RowBind: ups and lows must have the same number of columns");
-        
+
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsUps + numRowsLows, numColsUps, false);
-        
+
         res->prepareAppend();
-        for (size_t r=0; r < numRowsUps; ++r)
-            for (size_t c=0; c < numColsUps; ++c)
+        for (size_t r = 0; r < numRowsUps; ++r)
+            for (size_t c = 0; c < numColsUps; ++c)
                 res->append(r, c, ups->get(r, c));
 
-        for (size_t r=0; r < numRowsLows; ++r)
-            for (size_t c=0; c < numColsLows; ++c)
+        for (size_t r = 0; r < numRowsLows; ++r)
+            for (size_t c = 0; c < numColsLows; ++c)
                 res->append(numRowsUps + r, c, lows->get(r, c));
         res->finishAppend();
-        
     }
 };
 

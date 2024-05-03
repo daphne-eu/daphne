@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -83,18 +84,21 @@ struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
 template<typename VT>
 struct Reshape<Matrix<VT>, Matrix<VT>> {
     static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, size_t numRows, size_t numCols, DCTX(ctx)) {
-        const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
-        if (numRows * numCols != numRowsArg * numColsArg)
+        if (numRows * numCols != arg->getNumRows() * numColsArg)
             throw std::runtime_error("Reshape: new shape must retain the number of cells");
 
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         res->prepareAppend();
-        for (size_t cell=0; cell < numRows * numCols; ++cell)
-            res->append(cell / numCols, cell % numCols, arg->get(cell / numColsArg, cell % numColsArg));
+        for (size_t r = 0, rArg = 0, cArg = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c) {
+                res->append(r, c, arg->get(rArg, cArg++));
+                cArg = (cArg != numColsArg) * cArg;
+                rArg += (cArg == 0);
+            }
         res->finishAppend();
     }
 };

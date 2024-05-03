@@ -19,6 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <algorithm>
 #include <stdexcept>
@@ -49,7 +50,7 @@ void recode(DTRes *& res, DTDict *& dict, const DTArg * arg, bool orderPreservin
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
-// DenseMatrix
+// DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
 template<typename VTVal, typename VTCode>
@@ -149,7 +150,7 @@ struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
 };
 
 // ----------------------------------------------------------------------------
-// Matrix
+// Matrix <- Matrix
 // ----------------------------------------------------------------------------
 
 template<typename VTVal, typename VTCode>
@@ -169,7 +170,7 @@ struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
         if (orderPreserving) {
             // Determine the distinct values in the input.
             std::set<VTVal> distinct;
-            for (size_t r=0; r < numRowsArg; ++r) {
+            for (size_t r = 0; r < numRowsArg; ++r) {
                 distinct.insert(arg->get(r, 0));
             }
 
@@ -190,7 +191,7 @@ struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
 
             // Recode the data.
             res->prepareAppend();
-            for (size_t r=0; r < numRowsArg; ++r)
+            for (size_t r = 0; r < numRowsArg; ++r)
                 res->append(r, 0, recodeDict[arg->get(r, 0)]);
             res->finishAppend();
         }
@@ -201,7 +202,7 @@ struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
 
             // Recode the data.
             res->prepareAppend();
-            for (size_t r=0; r < numRowsArg; ++r) {
+            for (size_t r = 0; r < numRowsArg; ++r) {
                 const VTVal argVal = arg->get(r, 0);
 
                 auto it = recodeDict.find(argVal);
@@ -219,7 +220,8 @@ struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
                 dict = DataObjectFactory::create<DenseMatrix<VTVal>>(recodeDict.size(), 1, false);
 
             // Store decoding dictionary.
-            for (auto it = recodeDict.begin(); it != recodeDict.end(); it++)
+            // recodeDict is unordered so we cannot use append here
+            for (auto it = recodeDict.begin(); it != recodeDict.end(); ++it)
                 dict->set(it->second, 0, it->first);
         }
     }

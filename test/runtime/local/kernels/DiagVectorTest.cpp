@@ -32,7 +32,7 @@
 #define DATA_TYPES CSRMatrix, DenseMatrix, Matrix
 #define VALUE_TYPES  int32_t, double  
 
-template<class DTArg, class DTRes>
+template<class DTRes, class DTArg>
 void checkDiagVector(const DTArg * arg, DTRes *& res, DTRes * exp) {
     diagVector<DTRes, DTArg>(res, arg, nullptr);
     CHECK(*res == *exp);
@@ -57,7 +57,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-normal", TAG_KERNELS, (DATA_TYPES), (VALU
 
     checkDiagVector(arg, res, exp);
 
-    DataObjectFactory::destroy(exp, arg, res);
+    DataObjectFactory::destroy(arg, exp, res);
 }
 
 
@@ -80,7 +80,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-mixed-diagonal", TAG_KERNELS, (DATA_TYPES
 
     checkDiagVector(arg, res, exp);
 
-    DataObjectFactory::destroy(exp, arg, res);
+    DataObjectFactory::destroy(arg, exp, res);
 }
 
 
@@ -103,5 +103,5 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-null", TAG_KERNELS, (DATA_TYPES), (VALUE_
     
     checkDiagVector(arg, res, exp);
 
-    DataObjectFactory::destroy(exp, arg, res);
+    DataObjectFactory::destroy(arg, exp, res);
 }

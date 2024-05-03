@@ -17,10 +17,12 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-#include <cstddef>
-#include <cstdio>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
+#include <cstddef>
+#include <cstdio>
 #include <string>
 
 template <class DTArg> struct IsSymmetric {
@@ -60,7 +62,7 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
         }
 
         // singular matrix is considered symmetric.
-        if (numRows <= 1 || numCols <= 1) {
+        if (numRows <= 1) {
             return true;
         }
 
@@ -157,23 +159,18 @@ template <typename VT> struct IsSymmetric<Matrix<VT>> {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        if (numRows != numCols) {
+        if (numRows != numCols)
             throw std::runtime_error("isSymmetric: Provided matrix is not square.");
-        }
 
         // singular matrix is considered symmetric.
-        if (numRows <= 1 || numCols <= 1) {
+        if (numRows <= 1)
             return true;
-        }
 
-        // TODO add cache-conscious operations
-        for (size_t rowIdx=0; rowIdx < numRows; ++rowIdx) {
-            for (size_t colIdx = rowIdx + 1; colIdx < numCols; ++colIdx) {
-                if (arg->get(rowIdx, colIdx) != arg->get(colIdx, rowIdx)) {
+        for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx)
+            for (size_t colIdx = rowIdx + 1; colIdx < numCols; ++colIdx)
+                if (arg->get(rowIdx, colIdx) != arg->get(colIdx, rowIdx))
                     return false;
-                }
-            }
-        }
+
         return true;
     }
 };

@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <cstddef>
 
@@ -126,15 +127,15 @@ struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
 template<typename VT>
 struct Transpose<Matrix<VT>, Matrix<VT>> {
     static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {
-        const size_t numRows = arg->getNumRows();
-        const size_t numCols = arg->getNumCols();
-        
+        const size_t numRowsRes = arg->getNumCols();
+        const size_t numColsRes = arg->getNumRows();
+
         if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
-        
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numColsRes, false);
+
         res->prepareAppend();
-        for (size_t r=0; r < numCols; ++r)
-            for (size_t c=0; c < numRows; ++c)
+        for (size_t r = 0; r < numRowsRes; ++r)
+            for (size_t c = 0; c < numColsRes; ++c)
                 res->append(r, c, arg->get(c, r));
         res->finishAppend();
     }

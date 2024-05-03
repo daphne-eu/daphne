@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/Order.h>
 #include <runtime/local/kernels/CheckEq.h>
 
@@ -25,7 +26,6 @@
 
 #include <catch.hpp>
 
-#include <type_traits>
 #include <vector>
 
 TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
@@ -126,12 +126,8 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
 
 TEMPLATE_PRODUCT_TEST_CASE("Order", TAG_KERNELS, (DenseMatrix, Matrix), (double, float)){ // NOLINT(cert-err58-cpp)
     using DT = TestType;
-    using VT = typename DT::VT;
-    using DTIdx = typename std::conditional<
-                        std::is_same<DT, Matrix<VT>>::value,
-                        Matrix<size_t>,
-                        DenseMatrix<size_t>
-                    >::type;
+    using DTIdx = typename DT::template WithValueType<size_t>;
+
     size_t numKeyCols;
     size_t colIdxs[4];
     bool ascending[4];
@@ -147,9 +143,9 @@ TEMPLATE_PRODUCT_TEST_CASE("Order", TAG_KERNELS, (DenseMatrix, Matrix), (double,
             1,  10, 3, 7, 7, 7,
             17, 7,  2, 3, 7, 7,
             7,  7,  1, 2, 3, 7,
-            7,  7,  1, 1, 2, 3,
+            7,  7,  1, 1, 2, 3
         });
-        expMatrix =  genGivenVals<DT>(4, {
+        expMatrix = genGivenVals<DT>(4, {
             7,  7,  1, 1, 2, 3,
             7,  7,  1, 2, 3, 7,
             17, 7,  2, 3, 7, 7,

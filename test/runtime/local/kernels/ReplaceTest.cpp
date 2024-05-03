@@ -29,8 +29,6 @@
 
 #include <cstdint>
 
-
-
 #define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES double, float, uint32_t, uint64_t, int32_t, int64_t
 #define VALUE_TYPES_SPECIAL_CASE double

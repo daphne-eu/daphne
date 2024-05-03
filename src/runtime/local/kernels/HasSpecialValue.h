@@ -17,13 +17,14 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
-#include <runtime/local/datastructures/CSRMatrix.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
 #include <string>
-#include <cmath>
 #include <type_traits>
 
 // ****************************************************************************
@@ -135,8 +136,8 @@ template <typename VT, typename TestType> struct HasSpecialValue<Matrix<VT>, Tes
         const size_t numCols = arg->getNumCols();
 
         if (std::isnan(testVal)) {
-            for (size_t rowIdx=0; rowIdx < numRows; ++rowIdx) {
-                for (size_t colIdx=0; colIdx < numCols; ++colIdx) {
+            for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx) {
+                for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
                     const VT val = arg->get(rowIdx, colIdx);
                     if (std::isnan(val)) {
                         return true;
@@ -144,8 +145,8 @@ template <typename VT, typename TestType> struct HasSpecialValue<Matrix<VT>, Tes
                 }
             }
         } else {
-            for (size_t rowIdx=0; rowIdx < numRows; ++rowIdx) {
-                for (size_t colIdx=0; colIdx < numCols; ++colIdx) {
+            for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx) {
+                for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
                     const VT val = arg->get(rowIdx, colIdx);
                     if (val == testVal) {
                         return true;

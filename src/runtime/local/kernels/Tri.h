@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -153,7 +154,7 @@ struct Tri<Matrix<VT>> {
             throw std::runtime_error("Tri: matrix must be square");
 
         if (res == nullptr)
-            // append sets non-appended values to zero so initialization of zeros is redundant
+            // append sets non-appended values to zero so initialization of zeros would be redundant
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         size_t start = upper ? !diag : 0;
@@ -161,11 +162,11 @@ struct Tri<Matrix<VT>> {
         size_t * inc = upper ? &start : &end;
 
         res->prepareAppend();
-        for (size_t r=0; r < numRows; r++, (*inc)++) {
-            for (size_t c=start; c < end; c++) {
+        for (size_t r = 0; r < numRows; ++r, ++(*inc)) {
+            for (size_t c = start; c < end; ++c) {
                 VT val = arg->get(r, c);
                 if (val != VT(0))
-                    res->append(r, c, !values ? 1 : val);
+                    res->append(r, c, values ? val : 1);
             }
         }
         res->finishAppend();

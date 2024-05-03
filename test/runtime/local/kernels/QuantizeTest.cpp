@@ -22,23 +22,17 @@
 #include <catch.hpp>
 
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include <cstdint>
 
 TEMPLATE_PRODUCT_TEST_CASE("Quantization", TAG_KERNELS, (DenseMatrix, Matrix), (float)) {
     using DT = TestType;
-    using VT = typename DT::VT;
-    using DTRes = typename std::conditional<
-                        std::is_same<DT, Matrix<VT>>::value,
-                        Matrix<uint8_t>,
-                        DenseMatrix<uint8_t>
-                    >::type;
+    using DTRes = typename DT::template WithValueType<uint8_t>;
 
     auto f0 = genGivenVals<DT>(2, {
         0,   1.0,
-	    0.5, 1.1
+        0.5, 1.1
     });
 
     DTRes * res = nullptr;

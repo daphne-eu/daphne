@@ -20,10 +20,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/CastObj.h>
-
-#include <numeric>
-#include <vector>
 
 #include <cassert>
 #include <cstddef>
@@ -115,10 +113,10 @@ struct MatMul<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
             res = DataObjectFactory::create<DenseMatrix<VT>>(lhsRows, rhsCols, false);
 
         res->prepareAppend();
-        for (size_t rowRes=0; rowRes < lhsRows; ++rowRes) {
-            for (size_t colRes=0; colRes < rhsCols; ++colRes) {
+        for (size_t rowRes = 0; rowRes < lhsRows; ++rowRes) {
+            for (size_t colRes = 0; colRes < rhsCols; ++colRes) {
                 VT resVal = 0;
-                for (size_t cell=0; cell < lhsCols; ++cell) {
+                for (size_t cell = 0; cell < lhsCols; ++cell) {
                     VT lhsVal = transa ? lhs->get(cell, rowRes) : lhs->get(rowRes, cell);
                     VT rhsVal = transb ? rhs->get(colRes, cell) : rhs->get(cell, colRes);
                     resVal += lhsVal * rhsVal;

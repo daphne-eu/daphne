@@ -24,6 +24,7 @@
 
 #include <catch.hpp>
 
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
@@ -82,10 +83,16 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (DAT
     DataObjectFactory::destroy(m1);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (DenseMatrix, Matrix), (VALUE_TYPES)) {
     using DT = TestType;
+    using VT = typename DT::VT;
+    using DTGen = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        DenseMatrix<VT>,
+                        DT
+                    >::type;
     
-    std::vector<typename DT::VT> vals = {
+    std::vector<VT> vals = {
         1, 2, 2, 2, 0, 0,
         3, 4, 4, 4, 1, 2,
         0, 0, 0, 0, 3, 4,
@@ -93,28 +100,28 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (Den
         1, 2, 0, 0, 0, 0,
         3, 4, 0, 0, 1, 2,
     };
-    std::vector<typename DT::VT> vals2 = { 
-        1.001, 2, 2, 2, 0, 0,
-        3, 4, 4.001, 4, 1, 2,
+    std::vector<VT> vals2 = { 
+        1+1e-3, 2, 2, 2, 0, 0,
+        3, 4, 4+1e-3, 4, 1, 2,
         0, 0, 0, 0, 3, 4,
         0, 0, 0, 0, 0, 0,
         1, 2, 0, 0, 0, 0,
         3, 4, 0, 0, 1, 2,
     };    
 
-    auto orig1 = genGivenVals<DT>(6, vals);
-    auto orig2 = genGivenVals<DT>(6, vals2); 
+    auto orig1 = genGivenVals<DTGen>(6, vals);
+    auto orig2 = genGivenVals<DTGen>(6, vals2); 
     
     SECTION("same inst") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
-        CHECK(checkEqApprox(view1, view1, 0.00001, nullptr));
+        auto view1 = static_cast<DT *>(DataObjectFactory::create<DTGen>(orig1, 0, 2, 0, 2));
+        CHECK(checkEqApprox(view1, view1, 1e-5, nullptr));
         DataObjectFactory::destroy(view1);
     }
     SECTION("same view on different equal matrices") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
-        auto view2 = DataObjectFactory::create<DT>(orig2, 0, 2, 0, 2);
-        CHECK(checkEqApprox(view1, view2, 0.01, nullptr));
-        CHECK_FALSE(checkEqApprox(view1, view2, 0.000000001, nullptr));
+        auto view1 = static_cast<DT *>(DataObjectFactory::create<DTGen>(orig1, 0, 2, 0, 2));
+        auto view2 = static_cast<DT *>(DataObjectFactory::create<DTGen>(orig2, 0, 2, 0, 2));
+        CHECK(checkEqApprox(view1, view2, 1e-2, nullptr));
+        CHECK_FALSE(checkEqApprox(view1, view2, 1e-9, nullptr));
         DataObjectFactory::destroy(view1, view2);
     }
     

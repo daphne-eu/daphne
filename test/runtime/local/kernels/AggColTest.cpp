@@ -76,7 +76,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     using DTArg = TestType;
     using VT = typename DTArg::VT;
     using DTRes = typename std::conditional<
-                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, 
+                        std::is_same<DTArg, Matrix<VT>>::value, 
                         Matrix<VT>, 
                         DenseMatrix<VT>
                     >::type;
@@ -112,7 +112,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     using DTArg = TestType;
     using VT = typename DTArg::VT;
     using DTRes = typename std::conditional<
-                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, 
+                        std::is_same<DTArg, Matrix<VT>>::value, 
                         Matrix<VT>, 
                         DenseMatrix<VT>
                     >::type;

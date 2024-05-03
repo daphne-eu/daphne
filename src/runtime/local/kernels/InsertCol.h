@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <sstream>
 #include <stdexcept>
@@ -151,26 +152,24 @@ struct InsertCol<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
     ) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
-        const size_t numRowsIns = ins->getNumRows();
-        const size_t numColsIns = ins->getNumCols();
 
         const size_t colLowerIncl_Size = static_cast<const size_t>(colLowerIncl);
         const size_t colUpperExcl_Size = static_cast<const size_t>(colUpperExcl);
-        
-        validateArgsInsertCol(colLowerIncl_Size, colLowerIncl, colUpperExcl_Size, colUpperExcl,
-                    numRowsArg, numColsArg, numRowsIns, numColsIns);
 
-        if(res == nullptr)
+        validateArgsInsertCol(colLowerIncl_Size, colLowerIncl, colUpperExcl_Size, colUpperExcl,
+                    numRowsArg, numColsArg, ins->getNumRows(), ins->getNumCols());
+
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsArg, false);
-        
+
         res->prepareAppend();
-        for (size_t r=0; r < numRowsArg; ++r) {
+        for (size_t r = 0; r < numRowsArg; ++r) {
             // fill values left of insertion, then between and lastly to its right
-            for (size_t c=0; c < colLowerIncl_Size; ++c)
+            for (size_t c = 0; c < colLowerIncl_Size; ++c)
                 res->append(r, c, arg->get(r, c));
-            for (size_t c=colLowerIncl_Size; c < colUpperExcl_Size; ++c)
+            for (size_t c = colLowerIncl_Size; c < colUpperExcl_Size; ++c)
                 res->append(r, c, ins->get(r, c - colLowerIncl_Size));
-            for (size_t c=colUpperExcl_Size; c < numColsArg; ++c)
+            for (size_t c = colUpperExcl_Size; c < numColsArg; ++c)
                 res->append(r, c, arg->get(r, c));
         }
         res->finishAppend();

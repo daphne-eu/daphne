@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -220,20 +221,19 @@ struct Replace<Matrix<VT>, Matrix<VT>, VT> {
         if (res != nullptr && (numRows != res->getNumRows() || numCols != res->getNumCols()))
             throw std::runtime_error("Replace: res must have the same shape as arg");
 
-        if ((replacement!=replacement && pattern!=pattern) || (pattern == replacement)){ // nothing to be done pattern equals replacement
-            if (res!=nullptr && res==arg) {  // arg and res are the same
-                return; 
-            }
-            else if (res==nullptr) {
-                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,  false);
-            }
+        if ((replacement!=replacement && pattern!=pattern) || (pattern == replacement)) { // nothing to be done pattern equals replacement
+            if (res != nullptr && res == arg) // arg and res are the same
+                return;
+            else if (res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
             // copy and return in this case replace will be a copy function that copies arg to res
             res->prepareAppend();
-            for (size_t r=0; r < numRows; ++r){
-                for (size_t c=0; c < numCols; ++c)
+            for (size_t r = 0; r < numRows; ++r)
+                for (size_t c = 0; c < numCols; ++c)
                     res->append(r, c, arg->get(r, c));
-            }
             res->finishAppend();
+
             return;
         }
 
@@ -246,37 +246,31 @@ struct Replace<Matrix<VT>, Matrix<VT>, VT> {
         if (requireCopy)
             res->prepareAppend();
         if (pattern != pattern) { // pattern is NaN
-            for (size_t r=0; r < numRows; ++r) {
-                for (size_t c=0; c < numCols; ++c) {
+            for (size_t r = 0; r < numRows; ++r) {
+                for (size_t c = 0; c < numCols; ++c) {
                     if (requireCopy) {
-                        if (arg->get(r, c) != arg->get(r, c)) {
+                        if (arg->get(r, c) != arg->get(r, c))
                             res->append(r, c, replacement);
-                        }
-                        else {
+                        else
                             res->append(r, c, arg->get(r, c));
-                        }
                     } else {
-                        if (arg->get(r, c) != arg->get(r, c)) {
+                        if (arg->get(r, c) != arg->get(r, c))
                             res->set(r, c, replacement);
-                        }
                     }
                 }
             }
         }
         else { // pattern is not NaN --> replacement can still be NaN
-            for (size_t r=0; r < numRows; ++r) {
+            for (size_t r = 0; r < numRows; ++r) {
                 for (size_t c = 0; c < numCols; ++c) {
                     if (requireCopy) {
-                        if (arg->get(r, c) == pattern) {
+                        if (arg->get(r, c) == pattern)
                             res->append(r, c, replacement);
-                        }
-                        else {
+                        else
                             res->append(r, c, arg->get(r, c));
-                        }
                     } else {
-                        if (arg->get(r, c) == pattern) {
+                        if (arg->get(r, c) == pattern)
                             res->set(r, c, replacement);
-                        }
                     }
                 }
             }

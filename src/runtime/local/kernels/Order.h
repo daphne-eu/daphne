@@ -130,7 +130,7 @@ void columnGroupScan(std::vector<std::pair<VTIdx, VTIdx>> &groups, DenseMatrix<V
 template<typename VTIdx, typename VT>
 void columnGroupScan(std::vector<std::pair<VTIdx, VTIdx>> &groups, Matrix<VT>* col, const size_t colIdx, DCTX(ctx)) {
     const size_t numOldGroups = groups.size();
-    for (size_t g=0; g < numOldGroups; ++g) {
+    for (size_t g = 0; g < numOldGroups; ++g) {
         size_t currentRowIdx = groups[g].first;
         size_t lastRowIdx = groups[g].second;
         while (currentRowIdx != lastRowIdx) {
@@ -288,6 +288,7 @@ template <typename VTRes, typename VTArg>
 struct Order<Matrix<VTRes>, Matrix<VTArg>> {
     static void apply(Matrix<VTRes> *& res, const Matrix<VTArg> * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
         size_t numRows = arg->getNumRows();
+
         if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr ||
             (returnIdx == false && !std::is_same<VTRes, VTArg>::value) ||
             (returnIdx == true && !std::is_same<VTRes, size_t>::value)
@@ -302,9 +303,8 @@ struct Order<Matrix<VTRes>, Matrix<VTArg>> {
         groups.push_back(std::make_pair(0, numRows));
 
         if (numColIdxs > 1) {
-            for (size_t i = 0; i < numColIdxs-1; ++i) {
+            for (size_t i = 0; i < numColIdxs-1; ++i)
                 multiColumnIDSort(idx, arg, colIdxs[i], groups, ascending[i], ctx);
-            }
         }
 
         if (groupsRes == nullptr) {
@@ -314,10 +314,24 @@ struct Order<Matrix<VTRes>, Matrix<VTArg>> {
             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
         }
 
-        if (returnIdx)
-        {
-           res = (Matrix<VTRes> *) idx;
+        if (returnIdx) {
+            // if (res == nullptr)
+            //     res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
+            // else if (res->getNumRows() != numRows || res->getNumCols() != 1)
+            //     throw std::runtime_error("Order: given res has wrong shape");
+
+            // res->prepareAppend();
+            // for (size_t r = 0; r < numRows; ++r)
+            //     res->append(r, 0, static_cast<VTRes>(indices[r]));
+            // res->finishAppend();
+            res = (Matrix<VTRes> *) idx;
         } else {
+            // extractRow requires res to have the same value type as arg
+            // if (res == nullptr)
+            //     res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, arg->getNumCols(), true);
+            // else if (res->getNumRows() != numRows || res->getNumCols() != arg->getNumCols())
+            //     throw std::runtime_error("Order: given res has wrong shape");
+
             extractRow<Matrix<VTArg>, Matrix<VTArg>, size_t>((Matrix<VTArg> *&) res, arg, idx, ctx);
             DataObjectFactory::destroy(idx);
         }

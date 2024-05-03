@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <algorithm>
 #include <random>
@@ -271,7 +272,7 @@ struct RandMatrix<Matrix<VT>, VT> {
     static void apply(Matrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed, DCTX(ctx)) {
         validateArgsRandMatrix(numRows, numCols, min, max, sparsity);
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         if (seed == -1) {
@@ -296,19 +297,16 @@ struct RandMatrix<Matrix<VT>, VT> {
 
         // If sparsity >= 0.5, we initialize with random values and insert zeros,
         // else if sparsity < 0.5, it is more efficient to initialize with zero values and insert random.
-        size_t insertedValuesLimit;
-        if (sparsity >= 0.5) {
-            insertedValuesLimit = size_t(round((1 - sparsity) * numCols * numRows));                    
-        } else {
-            insertedValuesLimit = size_t(round(sparsity * numCols * numRows));
-        }
-        
+        size_t insertedValuesLimit = (sparsity >= 0.5) ?
+                                static_cast<size_t>(round((1 - sparsity) * numCols * numRows)) :
+                                static_cast<size_t>(round(sparsity * numCols * numRows));
+
         // Fill Matrix with non-zero/random values
         // TODO It might be faster to pull the check on sparsity out of the
         // loop, including a duplication of the loop.
         res->prepareAppend();
-        for (size_t r=0; r < numRows; ++r) {
-            for (size_t c=0; c < numCols; ++c) {
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
                 if (sparsity >= 0.5) {
                     VT randVal = distrVal(genVal);
                     while (randVal == 0)
@@ -316,7 +314,7 @@ struct RandMatrix<Matrix<VT>, VT> {
                     res->append(r, c, randVal);
                 }
                 // values do not need to be explicitely set to 0 for 
-                // sparsity < 0.5 because append assumes them to be 0 if unspecified
+                // sparsity < 0.5 because append sets them to 0 if unspecified
             }
         }
         res->finishAppend();
@@ -329,7 +327,7 @@ struct RandMatrix<Matrix<VT>, VT> {
         // TODO If res->getRowSkip() == res->getNumCols(), it might be faster
         // not to calculate row and col by / and %, but to directly use the
         // generated index.
-        for (iRange = 0; iRange < (numCols * numRows) && iSize < insertedValuesLimit; iRange++) {            
+        for (iRange = 0; iRange < (numCols * numRows) && iSize < insertedValuesLimit; ++iRange) {            
             size_t rRange = (numCols * numRows) - iRange;
             size_t rSize = insertedValuesLimit - iSize;
             if (fmod(distrIndex(genIndex), rRange) < rSize) {
@@ -343,7 +341,7 @@ struct RandMatrix<Matrix<VT>, VT> {
                         randVal = distrVal(genVal);
                     res->set(row, col, randVal);
                 }
-                iSize++;
+                ++iSize;
             }
         }
     }

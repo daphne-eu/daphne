@@ -19,6 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 #include <type_traits>
@@ -144,13 +145,14 @@ struct Bin<Matrix<VTRes>, Matrix<VTArg>> {
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
 
         if (min == max && numBins == 1) {
+            // sets all values to zero
             res->prepareAppend();
             res->finishAppend();
         }
         else {
             res->prepareAppend();
-            for (size_t r=0; r < numRows; ++r) {
-                for (size_t c=0; c < numCols; ++c) {
+            for (size_t r = 0; r < numRows; ++r) {
+                for (size_t c = 0; c < numCols; ++c) {
                     VTArg argVal = arg->get(r, c);
                     VTRes bin;
                     if (argVal <= min) // important if VTArg is an unsigned integer type

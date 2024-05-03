@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -208,16 +209,16 @@ template<typename VT, typename VTSel>
 struct ExtractRow<Matrix<VT>, Matrix<VT>, VTSel> {
     static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, const Matrix<VTSel> * sel, DCTX(ctx)) {
         // input validation
-        if (arg==nullptr)
+        if (arg == nullptr)
             throw std::runtime_error("invalid argument passed to ExtractRow on dense matrix: arg cannot be null");
-        if (sel==nullptr)
+        if (sel == nullptr)
             throw std::runtime_error("invalid argument passed to ExtractRow on dense matrix: rowIdxs sel cannot be null");
         VALIDATE_ARGS(sel->getNumCols());
 
         const size_t numRowsSel = sel->getNumRows();
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
-        if (res==nullptr){
+        if (res == nullptr){
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsSel, numColsArg, false);
         }
         else if (res->getNumRows() != numRowsSel || res->getNumCols() != numColsArg) {
@@ -227,9 +228,9 @@ struct ExtractRow<Matrix<VT>, Matrix<VT>, VTSel> {
             throw std::runtime_error(errMsg.str());
         }
         
-        //Main Logic
+        // Main Logic
         res->prepareAppend();
-        for (size_t r=0; r < numRowsSel; ++r){
+        for (size_t r = 0; r < numRowsSel; ++r){
             const VTSel valSelectedRow = sel->get(r, 0);  // only one column
 
             if (std::isnan(valSelectedRow)) {
@@ -243,9 +244,8 @@ struct ExtractRow<Matrix<VT>, Matrix<VT>, VTSel> {
                     "matrix with row boundaries '[0, " << numRowsArg << ")'";
                 throw std::out_of_range(errMsg.str());
             }
-            else
-            {
-                for (size_t c=0; c < numColsArg; ++c)
+            else {
+                for (size_t c = 0; c < numColsArg; ++c)
                     res->append(r, c, arg->get(static_cast<const size_t>(valSelectedRow), c));
             }
         }

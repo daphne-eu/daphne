@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <numeric>
 #include <stdexcept>
@@ -64,7 +65,8 @@ struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         if(sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
-        size_t numColsRes = std::accumulate(sel->getValues(), sel->getValues() + sel->getNumRows(), 0);
+        const VTSel * valuesSel = sel->getValues();
+        size_t numColsRes = std::accumulate(valuesSel, valuesSel + sel->getNumRows(), 0);
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
@@ -99,17 +101,17 @@ struct FilterCol<Matrix<VT>, Matrix<VT>, VTSel> {
             throw std::runtime_error("sel must be a single-column matrix");
 
         size_t numColsRes = 0;
-        for (size_t c=0; c < numColsArg; ++c)
+        for (size_t c = 0; c < numColsArg; ++c)
             numColsRes += sel->get(c, 0);
 
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
 
         res->prepareAppend();
-        for (size_t r=0; r < numRows; ++r) {
-            for (size_t ca = 0, cr = 0; ca < numColsArg; ++ca)
-                if (sel->get(ca, 0))
-                    res->append(r, cr++, arg->get(r, ca));
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t cArg = 0, cRes = 0; cArg < numColsArg; ++cArg)
+                if (sel->get(cArg, 0))
+                    res->append(r, cRes++, arg->get(r, cArg));
         }
         res->finishAppend();
     }

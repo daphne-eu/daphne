@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -67,7 +68,8 @@ struct FilterRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         if(sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
-        size_t numRowsRes = std::accumulate(sel->getValues(), sel->getValues() + sel->getNumRows(), 0);
+        const VTSel * valuesSel = sel->getValues();
+        size_t numRowsRes = std::accumulate(valuesSel, valuesSel + sel->getNumRows(), 0);
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
@@ -178,7 +180,7 @@ struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
             throw std::runtime_error("sel must be a single-column matrix");
 
         size_t numRowsRes = 0;
-        for (size_t r=0; r < numRowsArg; ++r)
+        for (size_t r = 0; r < numRowsArg; ++r)
             numRowsRes += sel->get(r, 0);
 
         if (res == nullptr)
@@ -186,9 +188,9 @@ struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
 
         size_t resRow = 0;
         res->prepareAppend();
-        for (size_t r=0; r < numRowsArg; ++r) {
+        for (size_t r = 0; r < numRowsArg; ++r) {
             if (sel->get(r, 0)) {
-                for (size_t c=0; c < numCols; ++c)
+                for (size_t c = 0; c < numCols; ++c)
                     res->append(resRow, c, arg->get(r, c));
                 ++resRow;
             }

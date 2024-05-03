@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <sstream>
 #include <stdexcept>
@@ -159,30 +160,28 @@ struct InsertRow<Matrix<VT>, Matrix<VT>, VTSel> {
     ) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
-        const size_t numRowsIns = ins->getNumRows();
-        const size_t numColsIns = ins->getNumCols();
 
         const size_t rowLowerIncl_Size = static_cast<const size_t>(rowLowerIncl);
         const size_t rowUpperExcl_Size = static_cast<const size_t>(rowUpperExcl);
-        
-        validateArgsInsertRow(rowLowerIncl_Size, rowLowerIncl, rowUpperExcl_Size, rowUpperExcl,
-                    numRowsArg, numColsArg, numRowsIns, numColsIns);
 
-        if(res == nullptr)
+        validateArgsInsertRow(rowLowerIncl_Size, rowLowerIncl, rowUpperExcl_Size, rowUpperExcl,
+                    numRowsArg, numColsArg, ins->getNumRows(), ins->getNumCols());
+
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsArg, numColsArg, false);
-        
+
         // fill values above insertion, then between and lastly below
         res->prepareAppend();
-        for (size_t r=0; r < rowLowerIncl_Size; ++r)
-            for (size_t c=0; c < numColsArg; ++c)
+        for (size_t r = 0; r < rowLowerIncl_Size; ++r)
+            for (size_t c = 0; c < numColsArg; ++c)
                 res->append(r, c, arg->get(r, c));
 
-        for (size_t r=rowLowerIncl_Size; r < rowUpperExcl_Size; ++r)
-            for (size_t c=0; c < numColsArg; ++c)
+        for (size_t r = rowLowerIncl_Size; r < rowUpperExcl_Size; ++r)
+            for (size_t c = 0; c < numColsArg; ++c)
                 res->append(r, c, ins->get(r - rowLowerIncl_Size, c));
                 
-        for (size_t r=rowUpperExcl_Size; r < numRowsArg; ++r)
-            for (size_t c=0; c < numColsArg; ++c)
+        for (size_t r = rowUpperExcl_Size; r < numRowsArg; ++r)
+            for (size_t c = 0; c < numColsArg; ++c)
                 res->append(r, c, arg->get(r, c));
         res->finishAppend();
     }

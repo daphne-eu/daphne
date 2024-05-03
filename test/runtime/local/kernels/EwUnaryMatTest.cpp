@@ -557,7 +557,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     
     auto arg = genGivenVals<DT>(1, {1});
     DT * exp = nullptr;
-    CHECK_THROWS(ewUnaryMat<TestType, TestType>(static_cast<UnaryOpCode>(999), exp, arg, nullptr));
+    CHECK_THROWS(ewUnaryMat<DT, DT>(static_cast<UnaryOpCode>(999), exp, arg, nullptr));
 
     DataObjectFactory::destroy(arg);
 }

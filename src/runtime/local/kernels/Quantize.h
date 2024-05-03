@@ -19,6 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -134,9 +135,9 @@ struct Quantize<Matrix<uint8_t>, Matrix<float>> {
         calc_quantization_params(min, max, scale, q_zero);
 
         res->prepareAppend();
-        for (size_t i=0; i < numRows; ++i) {
-            for (size_t j=0; j < numCols; ++j) {
-                res->append(i, j, quantize_value(arg->get(i, j), scale, q_zero));
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
+                res->append(r, c, quantize_value(arg->get(r, c), scale, q_zero));
             }
         }
         res->finishAppend();

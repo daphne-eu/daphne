@@ -162,7 +162,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense/Generic Matrix"), TAG_KERNELS, (DATA
     DT * arg = genGivenVals<DT>(3, {
         1, 2, 3,
         4, 5, 6,
-        7, 8, 9,
+        7, 8, 9
     });
 
     DT * res{};
@@ -179,7 +179,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense/Generic Matrix"), TAG_KERNELS, (DATA
         exp = genGivenVals<DT>(3, {
             1, 3,
             4, 6,
-            7, 9,
+            7, 9
         });
         checkExtractCol(res, arg, sel, exp);
     }
@@ -188,7 +188,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense/Generic Matrix"), TAG_KERNELS, (DATA
         exp = genGivenVals<DT>(3, {
             1, 2, 3,
             4, 5, 6,
-            7, 8, 9,
+            7, 8, 9
         });
         checkExtractCol(res, arg, sel, exp);
     }
@@ -197,7 +197,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense/Generic Matrix"), TAG_KERNELS, (DATA
         exp = genGivenVals<DT>(3, {
             3, 1, 2,
             6, 4, 5,
-            9, 7, 8,
+            9, 7, 8
         });
         checkExtractCol(res, arg, sel, exp);
     }
@@ -206,7 +206,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense/Generic Matrix"), TAG_KERNELS, (DATA
         exp = genGivenVals<DT>(3, {
             2, 3, 3, 1, 2, 1, 2, 3,
             5, 6, 6, 4, 5, 4, 5, 6,
-            8, 9, 9, 7, 8, 7, 8, 9,
+            8, 9, 9, 7, 8, 7, 8, 9
         });
         checkExtractCol(res, arg, sel, exp);
     }

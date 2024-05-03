@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <cstdint>
 
@@ -200,22 +201,20 @@ struct CTable<Matrix<VTWeight>, Matrix<VTCoord>, Matrix<VTCoord>, VTWeight> {
         DCTX(ctx)
     ) {
         const size_t lhsNumRows = lhs->getNumRows();
-        const size_t lhsNumCols = lhs->getNumCols();
-        const size_t rhsNumRows = rhs->getNumRows();
-        const size_t rhsNumCols = rhs->getNumCols();
 
-        if ((lhsNumCols != 1) || (rhsNumCols != 1))
+        if ((lhs->getNumCols() != 1) || (rhs->getNumCols() != 1))
             throw std::runtime_error("ctable: lhs and rhs must have only one column");
-        if (lhsNumRows != rhsNumRows)
+        if (lhsNumRows != rhs->getNumRows())
             throw std::runtime_error("ctable: lhs and rhs must have the same number of rows");
 
         const bool isResNumRowsFromLhs = resNumRows < 0;
         const bool isResNumColsFromRhs = resNumCols < 0;
+
         if (res == nullptr) {
-            // Utility
-            auto getMaxVal = [](const Matrix<VTCoord> * mat) {
+            auto getMaxVal = [] (const Matrix<VTCoord> * mat) {
+                const size_t numRows = mat->getNumRows();
                 VTCoord maxVal = mat->get(0, 0);
-                for (size_t r=1; r < mat->getNumRows(); ++r) {
+                for (size_t r = 1; r < numRows; ++r) {
                     VTCoord val = mat->get(r, 0);
                     if (val > maxVal)
                         maxVal = val;
@@ -235,7 +234,7 @@ struct CTable<Matrix<VTWeight>, Matrix<VTCoord>, Matrix<VTCoord>, VTWeight> {
             // The number of rows and columns of the result were derived from the
             // left-hand-side and right-hand-side arguments. Thus, all positions
             // are in-bounds.
-            for (size_t i=0; i < lhsNumRows; ++i) {
+            for (size_t i = 0; i < lhsNumRows; ++i) {
                 const ssize_t r = lhs->get(i, 0);
                 const ssize_t c = rhs->get(i, 0);
                 res->set(r, c, res->get(r, c) + weight);
@@ -245,7 +244,7 @@ struct CTable<Matrix<VTWeight>, Matrix<VTCoord>, Matrix<VTCoord>, VTWeight> {
             // The number of rows and/or columns of the result were given by the
             // caller. Thus, positions might be out-of-bounds. If that is the
             // case, they shall be silently ignored.
-            for (size_t i=0; i < lhsNumRows; ++i) {
+            for (size_t i = 0; i < lhsNumRows; ++i) {
                 const ssize_t r = lhs->get(i, 0);
                 const ssize_t c = rhs->get(i, 0);
                 if (r < resNumRows && c < resNumCols)

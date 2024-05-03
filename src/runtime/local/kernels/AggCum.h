@@ -19,6 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
@@ -106,13 +107,13 @@ struct AggCum<Matrix<VTRes>, Matrix<VTArg>> {
 
         // First row: copy from arg to res.
         res->prepareAppend();
-        for (size_t c=0; c < numCols; ++c)
+        for (size_t c = 0; c < numCols; ++c)
             res->append(0, c, arg->get(0, c));
         res->finishAppend();
 
         // Remaining rows: calculate from previous res row and current arg row.
-        for (size_t r=1; r < numRows; ++r)
-            for (size_t c=0; c < numCols; ++c)
+        for (size_t r = 1; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
                 res->set(r, c, func(res->get(r-1, c), arg->get(r, c), ctx));
     }
 };

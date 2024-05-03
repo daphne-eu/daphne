@@ -136,8 +136,8 @@ struct WriteCsv<Matrix<VT>> {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        for (size_t r=0; r < numRows; ++r) {
-            for (size_t c=0; c < numCols; ++c) {
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
                 fprintf(
                         file->identifier,
                         std::is_floating_point<VT>::value ? "%f" : (std::is_same<VT, long int>::value ? "%ld" : "%d"),

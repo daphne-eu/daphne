@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 // this include file is placed here to solve a compilation issue with spdlog and catch2
 #include <spdlog/spdlog.h>
@@ -231,8 +232,8 @@ struct CheckEq<Matrix<VT>> {
         if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
         
-        for (size_t r=0; r < numRows; ++r)
-            for (size_t c=0; c < numCols; ++c)
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
                 if (lhs->get(r, c) != rhs->get(r, c))
                     return false;
         

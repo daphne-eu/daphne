@@ -336,8 +336,8 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
         
         res->prepareAppend();
-        for (size_t r=0; r < numRows; ++r)
-            for (size_t c=0; c < numCols; ++c)
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
                 res->append(r, c, func(lhs->get(r, c), rhs->get(r, c), ctx));
         res->finishAppend();
     }

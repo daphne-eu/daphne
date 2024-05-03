@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <sstream>
 #include <stdexcept>
@@ -173,15 +174,15 @@ struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
         VALIDATE_ARGS(sel->getNumCols());
 
         const size_t numColsRes = sel->getNumRows();
-        const size_t numRows = arg->getNumRows();
+        const size_t numRowsRes = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, numColsRes, false);
-        
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsRes, numColsRes, false);
+
         res->prepareAppend();
-        for (size_t r=0; r < numRows; ++r) {
-            for (size_t c=0; c < numColsRes; ++c) {
+        for (size_t r = 0; r < numRowsRes; ++r) {
+            for (size_t c = 0; c < numColsRes; ++c) {
                 const VTSel VTcolIdx = sel->get(c, 0);
                 const size_t colIdx = static_cast<const size_t>(VTcolIdx);
                 if (VTcolIdx < 0 || numColsArg <= colIdx) {
@@ -190,7 +191,6 @@ struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
                         "for dense matrix with column boundaries '[0, " << numColsArg << ")'";
                     throw std::out_of_range(errMsg.str());
                 }
-
                 res->append(r, c, arg->get(r, colIdx));
             }
         }

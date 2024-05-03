@@ -19,6 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <cassert>
 
@@ -70,17 +71,13 @@ struct Fill<DenseMatrix<VT>, VT> {
 template<typename VT>
 struct Fill<Matrix<VT>, VT> {
     static void apply(Matrix<VT> *& res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
-
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
 
         if (arg != 0) {
-            size_t numRows = res->getNumRows();
-            size_t numCols = res->getNumCols();
-
             res->prepareAppend();
-            for (size_t r=0; r < numRows; ++r)
-                for (size_t c=0; c < numCols; ++c)
+            for (size_t r = 0; r < numRows; ++r)
+                for (size_t c = 0; c < numCols; ++c)
                     res->append(r, c, arg);
             res->finishAppend();
         }

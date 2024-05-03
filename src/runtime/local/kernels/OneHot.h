@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -27,7 +28,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -131,10 +131,10 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
             throw std::runtime_error("OneHot: parameter 'info' must provide information for each column of parameter arg");
         
         size_t numColsRes = 0;
-        for (size_t c=0; c < numColsArg; c++) {
+        for (size_t c = 0; c < numColsArg; c++) {
             const int64_t numDistinct = info->get(0, c);
             if (numDistinct == -1)
-                numColsRes++;
+                ++numColsRes;
             else if (numDistinct > 0)
                 numColsRes += numDistinct;
             else if (numDistinct != 0)
@@ -144,13 +144,13 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
         if (numColsRes == 0)
             throw std::runtime_error("OneHot: parameter 'info' must contain at least one non-zero entry");
         
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
 
         res->prepareAppend();
-        for (size_t r=0; r < numRows; ++r) {
+        for (size_t r = 0; r < numRows; ++r) {
             size_t cRes = 0;
-            for (size_t cArg=0; cArg < numColsArg; ++cArg) {
+            for (size_t cArg = 0; cArg < numColsArg; ++cArg) {
                 const int64_t numDistinct = info->get(0, cArg);
                 if (numDistinct == -1)
                     // retain value from argument matrix
@@ -162,7 +162,8 @@ struct OneHot<Matrix<VT>, Matrix<VT>> {
                     if (argVal >= 0 && argVal < static_cast<size_t>(numDistinct))
                         res->append(r, cRes + argVal, 1);
                     else
-                        throw std::out_of_range("OneHot: arg values that are encoded (info value != -1) must be positive and smaller than the corresponding info value");
+                        throw std::out_of_range("OneHot: arg values that are encoded (info value != -1) "
+                                                "must be positive and smaller than the corresponding info value");
                     cRes += numDistinct;
                 }
             }

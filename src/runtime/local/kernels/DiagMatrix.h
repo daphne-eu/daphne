@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -150,6 +151,7 @@ struct DiagMatrix<CSRMatrix<VT>, CSRMatrix<VT>> {
 template<typename VT>
 struct DiagMatrix<Matrix<VT>, Matrix<VT>> {
     static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {
+        // TODO: this could be relaxed to allow row-matrices
         if (arg->getNumCols() != 1)
             throw std::runtime_error("DiagMatrix: parameter arg must be a column-matrix");
         
@@ -159,7 +161,7 @@ struct DiagMatrix<Matrix<VT>, Matrix<VT>> {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsCols, numRowsCols, false);
         
         res->prepareAppend();
-        for (size_t r=0; r < numRowsCols; ++r) {
+        for (size_t r = 0; r < numRowsCols; ++r) {
             res->append(r, r, arg->get(r, 0));
         }
         res->finishAppend();

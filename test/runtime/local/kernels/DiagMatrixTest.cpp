@@ -68,8 +68,8 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-csr/generic"), TAG_KERNELS, (CSRMatri
         3,
         0,
         0,
-	    1,
-	    0,
+        1,
+        0,
     });
     auto exp = genGivenVals<DT>(5, {
         3,0,0,0,0,
@@ -85,8 +85,8 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-csr/generic"), TAG_KERNELS, (CSRMatri
 
     arg = genGivenVals<DT>(3, {
         3,
-	    1,
-	    2,
+        1,
+        2,
     });
     exp = genGivenVals<DT>(3, {
         3,0,0,

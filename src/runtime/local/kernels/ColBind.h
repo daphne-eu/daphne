@@ -22,6 +22,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <sstream>
 #include <stdexcept>
@@ -164,9 +165,9 @@ struct ColBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r) {
-            for (size_t c=0; c < numColsLhs; ++c)
+            for (size_t c = 0; c < numColsLhs; ++c)
                 res->append(r, c, lhs->get(r, c));
-            for (size_t c=0; c < numColsRhs; ++c)
+            for (size_t c = 0; c < numColsRhs; ++c)
                 res->append(r, numColsLhs + c, rhs->get(r, c));
         }
         res->finishAppend();

@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
@@ -216,35 +217,34 @@ struct AggAll<VTRes, Matrix<VTArg>> {
             agg = VTRes(0);
         }
 
-        for (size_t r=0; r < numRows; ++r)
-            for (size_t c=0; c < numCols; ++c)
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
                 agg = func(agg, static_cast<VTRes>(arg->get(r, c)), ctx);
 
         if (AggOpCodeUtils::isPureBinaryReduction(opCode))
             return agg;
 
-        agg /= arg->getNumCols() * arg->getNumRows();
+        agg /= numCols * numRows;
         // The op-code is either MEAN or STDDEV or VAR.
-        if (opCode == AggOpCode::MEAN) {
+        if (opCode == AggOpCode::MEAN)
             return agg;
-        }
+
         // else op-code is STDDEV or VAR
         stddev = 0;
-        for (size_t r=0; r < numRows; ++r) {
-            for (size_t c=0; c < numCols; ++c) {
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
                 VTRes val = static_cast<VTRes>(arg->get(r, c)) - agg;
                 stddev = stddev + val * val;
             }
         }
 
-        stddev /= arg->getNumCols() * arg->getNumRows();
+        stddev /= numCols * numRows;
 
-        // Variance --> stddev before sqrt() is variance
-        if (opCode == AggOpCode::VAR){
-            VTRes var = stddev;
-            return var;
-        }
+        // VAR --> stddev before sqrt() is variance
+        if (opCode == AggOpCode::VAR)
+            return stddev;
         
+        // STDDEV
         stddev = sqrt(stddev);
         return stddev;
     }

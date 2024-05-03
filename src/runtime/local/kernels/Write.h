@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/WriteCsv.h>
@@ -105,7 +106,7 @@ struct Write<Matrix<VT>> {
     static void apply(const Matrix<VT> * arg, const char * filename, DCTX(ctx)) {
 	std::string fn(filename);
 	auto pos = fn.find_last_of('.');
-	std::string ext(fn.substr(pos+1)) ;
+	std::string ext(fn.substr(pos+1));
 	if (ext == "csv") {
 		File * file = openFileForWrite(filename);
 		FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
@@ -113,7 +114,7 @@ struct Write<Matrix<VT>> {
 		writeCsv(arg, file);
 		closeFile(file);
     } else {
-      throw std::runtime_error( "[Write.h] - Matrix.h kernel currently only support csv file extension.");
+      throw std::runtime_error( "[Write.h] - generic Matrix type currently only support csv file extension.");
     }
     }
 };

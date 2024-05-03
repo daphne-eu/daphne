@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/AggAll.h>
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
@@ -261,10 +262,10 @@ struct AggRow<Matrix<VTRes>, Matrix<VTArg>> {
         
         if (opCode == AggOpCode::IDXMIN) {
             res->prepareAppend();
-            for (size_t r=0; r < numRows; ++r) {
+            for (size_t r = 0; r < numRows; ++r) {
                 VTArg minVal = arg->get(r, 0);
                 size_t minValIdx = 0;
-                for (size_t c=1; c < numCols; ++c) {
+                for (size_t c = 1; c < numCols; ++c) {
                     VTArg argVal = arg->get(r, c);
                     if (argVal < minVal) {
                         minVal = argVal;
@@ -277,10 +278,10 @@ struct AggRow<Matrix<VTRes>, Matrix<VTArg>> {
         }
         else if (opCode == AggOpCode::IDXMAX) {
             res->prepareAppend();
-            for (size_t r=0; r < numRows; ++r) {
+            for (size_t r = 0; r < numRows; ++r) {
                 VTArg maxVal = arg->get(r, 0);
                 size_t maxValIdx = 0;
-                for (size_t c=1; c < numCols; ++c) {
+                for (size_t c = 1; c < numCols; ++c) {
                     VTArg argVal = arg->get(r, c);
                     if (argVal > maxVal) {
                         maxVal = argVal;
@@ -304,9 +305,9 @@ struct AggRow<Matrix<VTRes>, Matrix<VTArg>> {
                 func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
             res->prepareAppend();
-            for (size_t r=0; r < numRows; ++r) {
+            for (size_t r = 0; r < numRows; ++r) {
                 VTRes agg = static_cast<VTRes>(arg->get(r, 0));
-                for (size_t c=1; c < numCols; ++c)
+                for (size_t c = 1; c < numCols; ++c)
                     agg = func(agg, static_cast<VTRes>(arg->get(r, c)), ctx);
                 res->append(r, 0, static_cast<VTRes>(agg));
             }
@@ -316,7 +317,7 @@ struct AggRow<Matrix<VTRes>, Matrix<VTArg>> {
                 return;
 
             // The op-code is either MEAN or STDDEV or VAR
-            for (size_t r=0; r < numRows; ++r) {
+            for (size_t r = 0; r < numRows; ++r) {
                 res->set(r, 0, res->get(r, 0) / numCols);
             }
 
@@ -328,15 +329,15 @@ struct AggRow<Matrix<VTRes>, Matrix<VTArg>> {
             // Create a temporary matrix to store the resulting standard deviations for each row
             std::vector<VTRes> tmp(numRows);
 
-            for (size_t r=0; r < numRows; ++r) {
-                for (size_t c=0; c < numCols; ++c) {
+            for (size_t r = 0; r < numRows; ++r) {
+                for (size_t c = 0; c < numCols; ++c) {
                     VTRes val = static_cast<VTRes>(arg->get(r, c)) - res->get(r, 0);
                     tmp[r] += val * val;
                 }               
             }
 
             res->prepareAppend();
-            for (size_t r=0; r < numRows; ++r) {
+            for (size_t r = 0; r < numRows; ++r) {
                 tmp[r] /= numCols;
                 if (opCode == AggOpCode::STDDEV)
                     res->append(r, 0, sqrt(tmp[r]));

@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <sstream>
 #include <stdexcept>
@@ -122,8 +123,8 @@ struct CondMatMatMat<Matrix<VTVal>, Matrix<VTCond>, Matrix<VTVal>, Matrix<VTVal>
             res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
 
         res->prepareAppend();
-        for (size_t r=0; r < numRows; ++r)
-            for (size_t c=0; c < numCols; ++c)
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
                 res->append(r, c, static_cast<bool>(cond->get(r, c)) ? thenVal->get(r, c) : elseVal->get(r, c));
         res->finishAppend();
     }
