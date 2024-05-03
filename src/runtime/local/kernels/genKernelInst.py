@@ -149,6 +149,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         concreteOpName = concreteOpName.replace("::", "_")
         if opCode is not None:
             opCodeWord = opCodeType[:-len("OpCode")]
+            sep_pos = (((opCodeWord.find("::") + 2) if "::" in opCodeWord else 0))
+            opCodeWord = opCodeWord[sep_pos:]
             concreteOpName = concreteOpName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
             concreteOpName = concreteOpName.replace(opCodeWord.lower(), opCode.lower())
 
@@ -212,7 +214,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
         argTypes = [rtp["type"].replace(" **", "").replace(" *", "").replace("const ", "") for rtp in extendedRuntimeParams if not rtp["isOutput"]]
         resTypes = [rtp["type"].replace(" **", "").replace(" *", "").replace("const ", "") for rtp in extendedRuntimeParams if     rtp["isOutput"]]
-        
+
         argTypesTmp = []
         for t in argTypes:
             # TODO Don't hardcode these exceptions.

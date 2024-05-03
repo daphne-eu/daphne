@@ -875,8 +875,8 @@ class Daphne_PoolForwardOp<string name, list<Trait> traits = []> : Daphne_Op<nam
     let results = (outs MatrixOf<[FloatScalar]>:$data, Size:$outHeight, Size:$outWidth);
 }
 
-def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"maxPoolForward", [ CUDASupport ]>;
-def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward", [ CUDASupport ]>;
+def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"NN_Max_Forward", [ CUDASupport ]>;
+def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"NN_Avg_Forward", [ CUDASupport ]>;
 
 // ----------------------------------------------------------------------------
 // Softmax
