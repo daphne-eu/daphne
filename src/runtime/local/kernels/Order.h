@@ -290,8 +290,7 @@ struct Order<Matrix<VTRes>, Matrix<VTArg>> {
         size_t numRows = arg->getNumRows();
 
         if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr ||
-            (returnIdx == false && !std::is_same<VTRes, VTArg>::value) ||
-            (returnIdx == true && !std::is_same<VTRes, size_t>::value)
+            (returnIdx == false && !std::is_same<VTRes, VTArg>::value)
         ) {
             throw std::runtime_error("order-kernel called with invalid arguments");
         }
@@ -315,25 +314,19 @@ struct Order<Matrix<VTRes>, Matrix<VTArg>> {
         }
 
         if (returnIdx) {
-            // if (res == nullptr)
-            //     res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
-            // else if (res->getNumRows() != numRows || res->getNumCols() != 1)
-            //     throw std::runtime_error("Order: given res has wrong shape");
+            if (res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
+            else if (res->getNumRows() != numRows || res->getNumCols() != 1)
+                throw std::runtime_error("Order: given res has wrong shape");
 
-            // res->prepareAppend();
-            // for (size_t r = 0; r < numRows; ++r)
-            //     res->append(r, 0, static_cast<VTRes>(indices[r]));
-            // res->finishAppend();
-            res = (Matrix<VTRes> *) idx;
+            res->prepareAppend();
+            for (size_t r = 0; r < numRows; ++r)
+                res->append(r, 0, static_cast<VTRes>(indices[r]));
+            res->finishAppend();
         } else {
-            // extractRow requires res to have the same value type as arg
-            // if (res == nullptr)
-            //     res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, arg->getNumCols(), true);
-            // else if (res->getNumRows() != numRows || res->getNumCols() != arg->getNumCols())
-            //     throw std::runtime_error("Order: given res has wrong shape");
-
             extractRow<Matrix<VTArg>, Matrix<VTArg>, size_t>((Matrix<VTArg> *&) res, arg, idx, ctx);
-            DataObjectFactory::destroy(idx);
         }
+
+        DataObjectFactory::destroy(idx);
     }
 };
