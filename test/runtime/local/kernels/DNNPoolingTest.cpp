@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
+
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 
 #ifdef USE_CUDA
-    #include <api/cli/DaphneUserConfig.h>
     #include <runtime/local/kernels/CUDA/Pooling.h>
     #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 #else
@@ -31,8 +32,6 @@
 #include <catch.hpp>
 
 #include <vector>
-
-#include "run_tests.h"
 
 template<typename DT>
 DT* genInput() {
@@ -55,7 +54,7 @@ void check(const DT* in, const DT* exp, DaphneContext* dctx) {
 #ifdef USE_CUDA
     CUDA::NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
 #else
-    Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
+    NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
 #endif
     CHECK(*res == *exp);
 }
