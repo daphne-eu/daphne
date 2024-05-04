@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <ir/daphneir/Daphne.h>
 
