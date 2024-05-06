@@ -16,6 +16,7 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+#include <util/KernelDispatchMapping.h>
 
 #include <mlir/Pass/Pass.h>
 
@@ -45,16 +46,16 @@ void InsertDaphneContextPass::runOnOperation()
     Block & b = f.getBody().front();
     
     OpBuilder builder(&b, b.begin());
-    Location loc = builder.getUnknownLoc();
+    Location loc = f.getLoc();
 
     // Insert a CreateDaphneContextOp as the first operation in the block.
     builder.create<daphne::CreateDaphneContextOp>(
+        loc, daphne::DaphneContextType::get(&getContext()),
+        builder.create<daphne::ConstantOp>(
+            loc, reinterpret_cast<uint64_t>(&user_config)),
+        builder.create<daphne::ConstantOp>(
             loc,
-            daphne::DaphneContextType::get(&getContext()),
-            builder.create<daphne::ConstantOp>(
-                    loc, reinterpret_cast<uint64_t>(&user_config)
-            )
-    );
+            reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())));
 #ifdef USE_CUDA
     if(user_config.use_cuda) {
         builder.create<daphne::CreateCUDAContextOp>(loc);

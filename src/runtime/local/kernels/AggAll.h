@@ -23,7 +23,6 @@
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************

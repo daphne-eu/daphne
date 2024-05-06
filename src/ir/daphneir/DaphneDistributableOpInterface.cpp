@@ -15,6 +15,7 @@
  */
 
 #include <ir/daphneir/Daphne.h>
+#include <util/ErrorHandler.h>
 
 #include <string>
 #include <vector>
@@ -77,14 +78,14 @@ std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
     const ssize_t ncL = tL.getNumCols();
     const ssize_t nrR = tR.getNumRows();
     const ssize_t ncR = tR.getNumCols();
-    
-    if(nrL == -1 || nrR == -1 || ncL == -1 || ncR == -1)
-        throw std::runtime_error(
-                "unknown shapes of left and/or right operand to elementwise "
-                "binary operation are not supported while deciding "
-                "distribute/broadcast"
-        );
-    
+
+    if (nrL == -1 || nrR == -1 || ncL == -1 || ncR == -1)
+        throw ErrorHandler::compilerError(
+            op->getLoc(), "DistributableOpInterface",
+            "unknown shapes of left and/or right operand to elementwise "
+            "binary operation are not supported while deciding "
+            "distribute/broadcast");
+
     if(nrL == nrR && ncL == ncR) // matrix-matrix
         return {false, false}; // distribute both inputs
     else if(nrR == 1 && ncL == ncR) // matrix-row
@@ -92,10 +93,10 @@ std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
     else if(nrL == nrR && ncR == 1) // matrix-col
         return {false, true}; // distribute lhs, broadcast rhs
     else
-        throw std::runtime_error(
-                "mismatching shapes of left and right operand to elementwise "
-                "binary operation while deciding distribute/broadcast"
-        );
+        throw ErrorHandler::compilerError(
+            op->getLoc(), "DistributableOpInterface",
+            "mismatching shapes of left and right operand to elementwise "
+            "binary operation while deciding distribute/broadcast");
 }
 
 // ****************************************************************************

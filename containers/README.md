@@ -60,7 +60,7 @@ The images mentioned above come with different tags optionally support accelerat
 * **< date >_< flavour >_< optional-version-string >_< OS-Version >**: This is the format of tags that indicate a daily/nightly
 build. E.g., <br /> ```2023-05-12_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04``` identifies a **CUDA** image of CUDA version
 12.1.1 with *CUDNN 8** support that is based on Ubuntu 20.04 and was generated on the 12th of May 2023. 
-* For the currently imminent release 0.2 we will have a v0.2 tag. 
+* There are dedicated tags for releases (e.g., `v0.2`).
 * All images we provide at the moment are Ubuntu 20.04 based and run on the amd64 platform only. Developers frequently
 build for other OS and platform versions themselves. Contributions on the GitHub issue tracker are welcome.
 

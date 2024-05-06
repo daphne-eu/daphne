@@ -1,0 +1,18 @@
+[
+  {
+    "opMnemonic": "sumAll",
+    "kernelFuncName": "mySumSeq",
+    "resTypes": ["float"],
+    "argTypes": ["DenseMatrix<float>"],
+    "backend": "CPP",
+    "libPath": "libMyKernels.so"
+  },
+  {
+    "opMnemonic": "sumAll",
+    "kernelFuncName": "mySumSIMD",
+    "resTypes": ["float"],
+    "argTypes": ["DenseMatrix<float>"],
+    "backend": "CPP",
+    "libPath": "libMyKernels.so"
+  }
+]

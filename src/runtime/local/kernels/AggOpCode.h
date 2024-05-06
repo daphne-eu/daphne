@@ -22,8 +22,6 @@
 #include <limits>
 #include <stdexcept>
 
-#include <cassert>
-
 enum class AggOpCode {
     SUM,
     PROD,
@@ -54,7 +52,10 @@ struct AggOpCodeUtils {
     }
     
     static BinaryOpCode getBinaryOpCode(AggOpCode opCode) {
-        assert(isPureBinaryReduction(opCode));
+        if (!isPureBinaryReduction(opCode)) {
+            throw std::runtime_error(
+                "Aggregation kernel expects pure binary reduction.");
+        }
         switch(opCode) {
             case AggOpCode::SUM: return BinaryOpCode::ADD;
             case AggOpCode::PROD: return BinaryOpCode::MUL;
@@ -67,7 +68,10 @@ struct AggOpCodeUtils {
     
     template<typename VT>
     static VT getNeutral(AggOpCode opCode) {
-        assert(isPureBinaryReduction(opCode));
+        if (!isPureBinaryReduction(opCode)) {
+            throw std::runtime_error(
+                "Aggregation kernel expects pure binary reduction.");
+        }
         switch(opCode) {
             case AggOpCode::SUM: return VT(0);
             case AggOpCode::PROD: return VT(1);

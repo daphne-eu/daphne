@@ -68,12 +68,32 @@ if [ $BUILD_DAPHNE -gt 0 ]; then
 fi
 
 # Preparations for running DaphneLib (Python API) tests and MLIR codegen tests (LLVM LIT)
-export PYTHONPATH="$PYTHONPATH:$PWD/src/:/usr/lib/llvm-10/build/utils/lit/"
+export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/:/usr/lib/llvm-10/build/utils/lit/"
+export DAPHNELIB_DIR_PATH=$PWD/lib
 export PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH
 export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH
 
+# Silence TensorFlow warnings in DaphneLib test cases.
+export TF_CPP_MIN_LOG_LEVEL=3
+
 # this speeds up the vectorized tests
 export OPENBLAS_NUM_THREADS=1
+
+# Find out if TensorFlow and PyTorch are available in Python and set environment
+# variables accordingly. Used to switch the DaphneLib test cases for data transfer
+# with these libraries on/off.
+# As an alternative to environment variables, we could use a custom catch2 main
+# function with custom CLI arguments, but that seems to be more complicated.
+if python3 -c "import tensorflow" 2> /dev/null; then
+    export DAPHNE_DEP_AVAIL_TENSFORFLOW=1
+else
+    export DAPHNE_DEP_AVAIL_TENSFORFLOW=0
+fi
+if python3 -c "import torch" 2> /dev/null; then
+    export DAPHNE_DEP_AVAIL_PYTORCH=1
+else
+    export DAPHNE_DEP_AVAIL_PYTORCH=0
+fi
 
 # Run tests.
 # shellcheck disable=SC2086

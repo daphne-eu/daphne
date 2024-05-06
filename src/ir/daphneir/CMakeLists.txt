@@ -52,4 +52,5 @@ add_mlir_dialect_library(MLIRDaphne
 
     LINK_LIBS PUBLIC
     CompilerUtils
+    Util
 )

@@ -18,6 +18,7 @@
 #define SRC_PARSER_CANCELINGERRORLISTENER_H
 
 #include "antlr4-runtime.h"
+#include <util/ErrorHandler.h>
 
 class CancelingErrorListener : public antlr4::BaseErrorListener {
 private:
@@ -29,8 +30,9 @@ private:
                      std::exception_ptr e) override {
         std::stringstream ss;
         ss << recognizer->getInputStream()->getSourceName() << ':' << line << ':' << charPositionInLine << ' '
-           << msg;
-        throw antlr4::ParseCancellationException(ss.str());
+           << msg << "\n";
+        throw ErrorHandler::makeError("Antlr4 Parser", ss.str(), recognizer->getInputStream()->getSourceName(), line, charPositionInLine);
+        // throw antlr4::ParseCancellationException(ss.str());
     }
 };
 

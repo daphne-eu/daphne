@@ -22,8 +22,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <cassert>
 #include <cstddef>
+#include <stdexcept>
 #include <stdio.h>
 
 // ****************************************************************************
@@ -66,7 +66,12 @@ struct Tri<DenseMatrix<VT>> {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        assert((numRows == numCols) && "matrix must be square");
+        if (numRows != numCols) {
+            throw std::runtime_error("matrix must be square, but is of shape" +
+                                     std::to_string(numRows) + "x" +
+                                     std::to_string(numCols));
+        }
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, true);
 
@@ -102,7 +107,11 @@ struct Tri<CSRMatrix<VT>> {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        assert((numRows == numCols) && "matrix must be square");
+        if (numRows != numCols) {
+            throw std::runtime_error("matrix must be square, but is of shape" +
+                                     std::to_string(numRows) + "x" +
+                                     std::to_string(numCols));
+        }
         if(res == nullptr) {
             const size_t nonZeros = std::min(arg->getNumNonZeros(), numRows * (numRows + 1) / 2);
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, nonZeros, false);

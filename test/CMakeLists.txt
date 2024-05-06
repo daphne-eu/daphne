@@ -27,6 +27,8 @@ set(TEST_SOURCES
         api/cli/expressions/CastTest.cpp
         api/cli/expressions/CondTest.cpp
         api/cli/expressions/MatrixLiteralTest.cpp
+        api/cli/extensibility/ExtensionTest.cpp
+        api/cli/extensibility/HintTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/io/ReadTest.cpp
@@ -58,6 +60,7 @@ set(TEST_SOURCES
         api/cli/codegen/AggAllTest.cpp
         api/cli/codegen/MapOpTest.cpp
         codegen/CodegenTest.cpp
+        codegen/MatMulAccuracyTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
 
@@ -116,6 +119,7 @@ set(TEST_SOURCES
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MapTest.cpp
         runtime/local/kernels/MatMulTest.cpp
+        runtime/local/kernels/OneHotTest.cpp
         runtime/local/kernels/OrderTest.cpp
         runtime/local/kernels/OuterBinaryTest.cpp
         runtime/local/kernels/QuantizeTest.cpp

@@ -23,7 +23,6 @@
 
 #include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -56,8 +55,11 @@ void diagMatrix(DTRes *& res, const DTArg * arg, DCTX(ctx)) {
 template<typename VT>
 struct DiagMatrix<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
-        assert((arg->getNumCols() == 1) && "parameter arg must be a column-matrix");
-        
+        if (arg->getNumCols() != 1) {
+            throw std::runtime_error(
+                "DiagMatrix.h - parameter arg must be a column-matrix");
+        }
+
         const size_t numRowsCols = arg->getNumRows();
         
         if(res == nullptr)

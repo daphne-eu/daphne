@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <runtime/local/datastructures/AllocationDescriptorHost.h>
 #include <runtime/local/io/DaphneSerializer.h>
 #include "DenseMatrix.h"
 

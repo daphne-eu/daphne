@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
+
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 
 #ifdef USE_CUDA
-    #include <api/cli/DaphneUserConfig.h>
     #include <runtime/local/kernels/CUDA/Pooling.h>
     #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 #else
@@ -31,8 +32,6 @@
 #include <catch.hpp>
 
 #include <vector>
-
-#include "run_tests.h"
 
 template<typename DT>
 DT* genInput() {
@@ -53,9 +52,9 @@ void check(const DT* in, const DT* exp, DaphneContext* dctx) {
     size_t out_h;
     size_t out_w;
 #ifdef USE_CUDA
-    CUDA::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
+    CUDA::NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
 #else
-    Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
+    NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
 #endif
     CHECK(*res == *exp);
 }
@@ -77,7 +76,7 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
                     145, 146, 147
     });
 
-    check<Pooling::AVG>(inputs, out_f2x2_s1x1_p0x0, dctx.get());
+    check<NN::Pooling::AVG>(inputs, out_f2x2_s1x1_p0x0, dctx.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(out_f2x2_s1x1_p0x0);
@@ -104,7 +103,7 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, doubl
                     148, 149, 150
     });
 
-    check<Pooling::MAX>(inputs, out_f2x2_s1x1_p0x0, dctx.get());
+    check<NN::Pooling::MAX>(inputs, out_f2x2_s1x1_p0x0, dctx.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(out_f2x2_s1x1_p0x0);

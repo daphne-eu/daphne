@@ -40,25 +40,12 @@ protected:
     size_t numRows;
     size_t numCols;
 
-    Structure(size_t numRows, size_t numCols) : refCounter(1), numRows(numRows), numCols(numCols) {
-        mdo = std::make_shared<MetaDataObject>();
-    };
+    Structure(size_t numRows, size_t numCols);
 
     mutable std::shared_ptr<MetaDataObject> mdo;
 
-    void clone_mdo(const Structure* src) {
-        // FIXME: This clones the meta data to avoid locking (thread synchronization for data copy)
-        for(int i = 0; i < static_cast<int>(ALLOCATION_TYPE::NUM_ALLOC_TYPES); i++) {
-            auto placements = src->mdo->getDataPlacementByType(static_cast<ALLOCATION_TYPE>(i));
-            for(auto it = placements->begin(); it != placements->end(); it++) {
-                auto src_alloc = it->get()->allocation.get();
-                auto src_range = it->get()->range.get();
-                auto new_data_placement = this->mdo->addDataPlacement(src_alloc, src_range);
-                if(src->mdo->isLatestVersion(it->get()->dp_id))
-                    this->mdo->addLatest(new_data_placement->dp_id);
-            }
-        }
-    }
+    void clone_mdo(const Structure* src);
+    
 public:
     virtual ~Structure() = default;
 

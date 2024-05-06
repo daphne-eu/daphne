@@ -11,9 +11,5 @@
     "explain_property_inference": false,
     "explain_sql": false,
     "explain_vectorized": false,
-    "explain_freeOps": false,
-    "library_paths": [
-        "my\\path",
-        "my\\second\\path"
-    ]
+    "explain_freeOps": false
 }

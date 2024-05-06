@@ -15,6 +15,7 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <util/ErrorHandler.h>
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/datastructures/Structure.h>
 
@@ -46,7 +47,7 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
         return std::make_pair(1, 1);
 }
 
-ssize_t inferNumRowsFromArgs(ValueRange vs) {
+ssize_t inferNumRowsFromArgs(Operation* op, ValueRange vs) {
     // If the #rows of all arguments is known and matches, then this is the
     // inferred #rows. If the known #rows of any two arguments mismatch, an
     // exception is thrown. Otherwise, if the #rows of any argument is unknown,
@@ -62,7 +63,7 @@ ssize_t inferNumRowsFromArgs(ValueRange vs) {
         else if(numRows == -1)
             numRows = nextNumRows;
         else if(nextNumRows != numRows)
-            throw std::runtime_error(
+            throw ErrorHandler::compilerError(op->getLoc(), "InferShapeOpInterface",
                     "shape inference: inferNumRowsFromArgs() requires that "
                     "arguments have the same number of rows, but there is "
                     "one with " + std::to_string(numRows) + " and one with " +
@@ -72,7 +73,7 @@ ssize_t inferNumRowsFromArgs(ValueRange vs) {
     return someUnknown ? -1 : numRows;
 }
 
-ssize_t inferNumColsFromArgs(ValueRange vs) {
+ssize_t inferNumColsFromArgs(Operation *op, ValueRange vs) {
     // If the #cols of all arguments is known and matches, then this is the
     // infered #cols. If the known #cols of any two arguments mismatch, an
     // exception is thrown. Otherwise, if the #cols of any argument is unknown,
@@ -88,7 +89,7 @@ ssize_t inferNumColsFromArgs(ValueRange vs) {
         else if(numCols == -1)
             numCols = nextNumCols;
         else if(nextNumCols != numCols)
-            throw std::runtime_error(
+            throw ErrorHandler::compilerError(op->getLoc(), "InferShapeOpInterface",
                     "shape inference: inferNumColsFromArgs() requires that "
                     "arguments have the same number of columns, but there is "
                     "one with " + std::to_string(numCols) + " and one with " +
@@ -165,14 +166,14 @@ ssize_t daphne::SeqOp::inferNumRows() {
             return -1;
         }
     }
-    throw std::runtime_error(
-            "at the moment, shape inference for SeqOp supports only F64 and "
-            "SI64 value types"
-    );
+    throw ErrorHandler::compilerError(
+        getLoc(), "InferShapeOpInterface (daphne::SeqOp::inferNumRows)",
+        "at the moment, shape inference for SeqOp supports only F64 and "
+        "SI64 value types");
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CreateFrameOp::inferShape() {
-    return {{inferNumRowsFromArgs(getCols()), inferNumColsFromSumOfArgs(getCols())}};
+    return {{inferNumRowsFromArgs(this->getOperation(), getCols()), inferNumColsFromSumOfArgs(getCols())}};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupJoinOp::inferShape() {
@@ -279,7 +280,9 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
     if(auto condMatTy = condTy.dyn_cast<daphne::MatrixType>())
         return {{condMatTy.getNumRows(), condMatTy.getNumCols()}};
     else if(auto condFrmTy = condTy.dyn_cast<daphne::FrameType>())
-        throw std::runtime_error("CondOp does not support frames for the condition yet");
+        throw ErrorHandler::compilerError(
+            getLoc(), "InferShapeOpInterface (daphne::CondOp::inferShape)",
+            "CondOp does not support frames for the condition yet");
     else { // cond is a scalar // TODO check if it is really a scalar
         Type thenTy = getThenVal().getType();
         Type elseTy = getElseVal().getType();
@@ -320,6 +323,19 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
     }
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::Conv2DForwardOp::inferShape() {
+    auto Itype = getInput().getType().dyn_cast<daphne::MatrixType>();
+    auto Ftype = getFilter().getType().dyn_cast<daphne::MatrixType>();
+
+    auto Hin = CompilerUtils::constantOrThrow<size_t>(getInputHeight());
+    auto Win = CompilerUtils::constantOrThrow<size_t>(getInputWidth());
+    ssize_t numRows = Itype.getNumRows();
+    ssize_t numCols = Ftype.getNumRows() * Hin * Win;
+
+    // op output is [mat, scalar, scalar] for the convolved data and its dimensions
+    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+}
+
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CTableOp::inferShape() {
     // If the result shape is given as arguments, then we know it.
     // Otherwise, we don't.
@@ -357,10 +373,11 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
     }
     else
         // If this is the case, shape inference shouldn't have been called.
-        throw std::runtime_error(
-                "SliceRowOp shape inference does only support unknown, matrix, and frame inputs"
-        );
-    
+        throw ErrorHandler::compilerError(
+            getLoc(), "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
+            "SliceRowOp shape inference does only support unknown, matrix, and "
+            "frame inputs");
+
     auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
     auto upEx = CompilerUtils::isConstant<int64_t>(getUpperExcl());
 
@@ -369,22 +386,30 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
         ssize_t loInPos = loIn.second;
         ssize_t upExPos = upEx.second;
         if(loInPos < 0 || loInPos >= srcNumRows)
-            throw std::runtime_error(
+            throw ErrorHandler::compilerError(
+                getLoc(),
+                "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
                 "SliceRowOp shape inference: lowerIncl must be in [0, numRows), "
-                "but is " + std::to_string(loInPos) +
-                " with " + std::to_string(srcNumRows) + " rows"
-            );
+                "but is " +
+                    std::to_string(loInPos) + " with " +
+                    std::to_string(srcNumRows) + " rows");
         if(upExPos < 0 || upExPos > srcNumRows)
-            throw std::runtime_error(
+            throw ErrorHandler::compilerError(
+                getLoc(),
+                "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
                 "SliceRowOp shape inference: upperExcl must be in [0, numRows], "
                 "but is " + std::to_string(upExPos) +
                 " with " + std::to_string(srcNumRows) + " rows"
             );
         if(loInPos > upExPos)
-            throw std::runtime_error(
-                "SliceRowOp shape inference: lowerIncl must not be greater than upperExcl"
-                " (found " + std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")"
-            );
+            throw ErrorHandler::compilerError(
+                getLoc(),
+                "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
+                "SliceRowOp shape inference: lowerIncl must not be greater "
+                "than upperExcl"
+                " (found " +
+                    std::to_string(loInPos) + " and " +
+                    std::to_string(upExPos) + ")");
         resNumRows = upExPos - loInPos;
     }
 
@@ -405,10 +430,11 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     }
     else
         // If this is the case, shape inference shouldn't have been called.
-        throw std::runtime_error(
-                "SliceColOp shape inference does only support matrix and frame inputs"
-        );
-    
+        throw ErrorHandler::compilerError(
+            getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
+            "SliceColOp shape inference does only support matrix and frame "
+            "inputs");
+
     auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
     auto upEx = CompilerUtils::isConstant<int64_t>(getUpperExcl());
 
@@ -417,22 +443,26 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
         ssize_t loInPos = loIn.second;
         ssize_t upExPos = upEx.second;
         if(loInPos < 0 || loInPos >= srcNumCols)
-            throw CompilerUtils::makeError(
+            throw ErrorHandler::compilerError(
                 getLoc(),
-                "SliceColOp shape inference: lowerIncl must be in [0, numCols), "
-                "but is " + std::to_string(loInPos) +
-                " with " + std::to_string(srcNumCols) + " cols"
-            );
+                "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
+                "SliceColOp shape inference: lowerIncl must be in [0, "
+                "numCols), "
+                "but is " +
+                    std::to_string(loInPos) + " with " +
+                    std::to_string(srcNumCols) + " cols");
         if(upExPos < 0 || upExPos > srcNumCols)
-            throw CompilerUtils::makeError(
+            throw ErrorHandler::compilerError(
                 getLoc(),
+                "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
                 "SliceColOp shape inference: upperExcl must be in [0, numCols], "
                 "but is " + std::to_string(upExPos) +
                 " with " + std::to_string(srcNumCols) + " cols"
             );
         if(loInPos > upExPos)
-            throw CompilerUtils::makeError(
+            throw ErrorHandler::compilerError(
                 getLoc(),
+                "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
                 "SliceColOp shape inference: lowerIncl must not be greater than upperExcl"
                 " (found " + std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")"
             );
@@ -495,7 +525,9 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::RecodeOp::inferShape() {
         resNumCols = -1;
     }
     else
-        throw std::runtime_error("the argument to recode has an invalid type");
+        throw ErrorHandler::compilerError(
+            getLoc(), "InferShapeOpInterface (daphne::RecodeOp::inferShape)",
+            "the argument to recode has an invalid type");
 
     // TODO We could infer (or estimate) the number of rows of the dictionary result
     // if we knew the number of distinct values in the argument (or could estimate it).
@@ -617,9 +649,9 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::tryInferShape(Operation* op) {
         tryParamTraitUntil<u, tryNumRowsFromIthArgNumCols>::apply(numRows, numCols, op);
         tryParamTraitUntil<u, tryNumColsFromIthArgNumRows>::apply(numRows, numCols, op);
         if(op->hasTrait<NumRowsFromAllArgs>())
-            numRows = inferNumRowsFromArgs(op->getOperands());
+            numRows = inferNumRowsFromArgs(op, op->getOperands());
         if(op->hasTrait<NumColsFromAllArgs>())
-            numCols = inferNumColsFromArgs(op->getOperands());
+            numCols = inferNumColsFromArgs(op, op->getOperands());
         if(op->hasTrait<NumRowsFromSumOfAllArgs>())
             numRows = inferNumRowsFromSumOfArgs(op->getOperands());
         if(op->hasTrait<NumColsFromSumOfAllArgs>())

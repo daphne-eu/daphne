@@ -16,6 +16,7 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+#include <util/ErrorHandler.h>
 
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/Operation.h>
@@ -77,11 +78,11 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 for(size_t i = 0 ; i < whileOp.getNumOperands() ; i++) {
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
-                    if(yieldedTy != resultTy)
-                        throw std::runtime_error(
+                    if (yieldedTy != resultTy)
+                        throw ErrorHandler::compilerError(
+                            whileOp, "SelectMatrixRepresentationsPass",
                             "the representation of a matrix must not be "
-                            "changed within the body of a while-loop"
-                        );
+                            "changed within the body of a while-loop.");
                 }
                 // Tell the walker to skip the descendants of the WhileOp, we
                 // have already triggered a walk on them explicitly.
@@ -109,11 +110,11 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 for(size_t i = 0 ; i < forOp.getNumIterOperands() ; i++) {
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
-                    if(yieldedTy != resultTy)
-                        throw std::runtime_error(
+                    if (yieldedTy != resultTy)
+                        throw ErrorHandler::compilerError(
+                            forOp, "SelectMatrixRepresentationsPass",
                             "the representation of a matrix must not be "
-                            "changed within the body of a for-loop"
-                        );
+                            "changed within the body of a for-loop");
                 }
                 // Tell the walker to skip the descendants of the ForOp, we
                 // have already triggered a walk on them explicitly.
@@ -134,11 +135,11 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 for(size_t i = 0 ; i < ifOp.getNumResults() ; i++) {
                     Type thenTy = thenYield->getOperand(i).getType();
                     Type elseTy = elseYield->getOperand(i).getType();
-                    if(thenTy != elseTy)
-                        throw std::runtime_error(
+                    if (thenTy != elseTy)
+                        throw ErrorHandler::compilerError(
+                            ifOp, "SelectMatrixRepresentationsPass",
                             "a matrix must not be assigned two values of "
-                            "different representations in then/else branches"
-                        );
+                            "different representations in then/else branches");
                     ifOp.getResult(i).setType(thenTy);
                 }
                 // Tell the walker to skip the descendants of the IfOp, we

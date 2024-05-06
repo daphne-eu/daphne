@@ -35,6 +35,7 @@ const std::string dirPath = "test/runtime/distributed/worker/";
 TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED, (DenseMatrix), (double))
 {
     auto dctx = setupContextAndLogger();
+    user_config.resolveLibDir();
     using DT = TestType;    
     WorkerImpl workerImpl(user_config);
     

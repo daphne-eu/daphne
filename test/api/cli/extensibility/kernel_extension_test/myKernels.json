@@ -1,0 +1,10 @@
+[
+  {
+    "opMnemonic": "sumAll",
+    "kernelFuncName": "mySumAll",
+    "resTypes": ["float"],
+    "argTypes": ["DenseMatrix<float>"],
+    "backend": "CPP",
+    "libPath": "libMyKernels.so"
+  }
+]

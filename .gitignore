@@ -29,10 +29,10 @@ __pycache__/
 .clion.source.upload.marker
 
 # local test/dev scripts
-tmpdaphne.daphne
-*.daphne
-*.mlir
-*.log
+/tmpdaphne.daphne
+/*.daphne
+/*.mlir
+/*.log
 
 # cuda compiler
 compiler-debug-cuda.txt
@@ -61,7 +61,3 @@ profiler/
 precompiled-dependencies/
 /cmake*/
 /data
-
-# Allow .daphne and .mlir files in test/
-!test/**/*.mlir
-!test/**/*.daphne

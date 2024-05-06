@@ -22,13 +22,43 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 
 **DaphneLib is still in an experimental stage, feedback and bug reports via GitHub issues are highly welcome.**
 
+## Prerequisites
+
+**Provide DAPHNE:**
+
+- `libdaphnelib.so` and `libAllKernels.so` must be present
+  - Building the project with `./build.sh --target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
+  - OR use the `lib/` dir of a release
+- `LD_LIBRARY_PATH` must be set (e.g., executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
+- Set the environment variable `DAPHNELIB_DIR_PATH` to the path were the libraries (`*.so` files) are placed, e.g., `path/to/daphne/lib/`
+
+## Installation
+
+- There are two options to install the Python package `daphne` (DaphneLib)
+  - Via github url: `pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python`
+  - OR clone the DAPHNE repository and install from source files: `pip install daphne/src/api/python`
+- *Recommendation:* Use a virtual environment
+
+    ```shell
+    python3 -m venv my_venv
+    source my_venv/bin/activate
+    pip install ...
+    ```
+
+## Use Without Installation
+
+- In a cloned DAPHNE repository, DaphneLib can also be used without installing the Python package `daphne`
+- To this end, `python3` must be told where to find the package by adding the respective directory to the Python path
+- From the DAPHNE root directory, execute: `export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/"`
+- OR execute the script `run_python.sh` (instead of `python3`) from the DAPHNE root directory, e.g., `./run_python.sh myScript.py`
+
 ## Introductory Example
 
 The following simple example script generates a *5x3* matrix of random values in *[0, 1)* using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of *0* and a standard deviation of *1*.
 
 ```python
 # (1) Import DaphneLib.
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import numpy as np
 
 # (2) Create DaphneContext.
@@ -45,7 +75,6 @@ print(Y.compute())
 ```
 
 First, DAPHNE's Python library must be imported **(1)**.
-We plan to make this as simple as `import daphne` in the future.
 
 Then, a `DaphneContext` must be created **(2)**.
 The `DaphneContext` offers means to obtain DAPHNE matrices and frames, which serve as the starting point for defining complex computations.
@@ -66,15 +95,6 @@ The script above can be executed by:
 ```bash
 python3 scripts/examples/daphnelib/shift-and-scale.py
 ```
-
-Note that there are some **temporary limitations** (which will be fixed in the future):
-
-- `python3` must be executed from the DAPHNE base directory.
-- Before executing DaphneLib Python scripts, the environment variable `PYTHONPATH` must be updated by executing the following command once per session:
-
-  ```bash
-  export PYTHONPATH="$PYTHONPATH:$PWD/src/"
-  ```
 
 The remainder of this document presents the core features of DaphneLib *as they are right now*, but *note that DaphneLib is still under active development*.
 
@@ -99,7 +119,7 @@ Data types and value types can be combined, e.g.:
 
 - `matrix<f64>` is a matrix of double-precision floating point values
 
-In DaphneLib, each node of the computation DAG has one of the types `api.python.operator.nodes.matrix.Matrix`, `api.python.operator.nodes.frame.Frame`, or `api.python.operator.nodes.scalar.Scalar`.
+In DaphneLib, each node of the computation DAG has one of the types `daphne.operator.nodes.matrix.Matrix`, `daphne.operator.nodes.frame.Frame`, or `daphne.operator.nodes.scalar.Scalar`.
 The type of a node determines which methods can be invoked on it (see [DaphneLib API reference](/doc/DaphneLib/APIRef.md)).
 
 ## Obtaining DAPHNE Matrices and Frames
@@ -176,22 +196,21 @@ X.cbind(Y)
 
 ## Data Exchange with other Python Libraries
 
-DaphneLib will support efficient data exchange with other well-known Python libraries, in both directions.
+DaphneLib supports efficient data exchange with other well-known Python libraries, in both directions.
 The data transfer from other Python libraries to DaphneLib can be triggered through the `from_...()` methods of the `DaphneContext` (e.g., `from_numpy()`).
 A comprehensive list of these methods can be found in the [DaphneLib API reference](/doc/DaphneLib/APIRef.md#daphnecontext).
 The data transfer from DaphneLib back to Python happens during the call to `compute()`.
-If the result of the computation in DAPHNE is a matrix, `compute()` returns a `numpy.ndarray`; if the result is a frame, it returns a `pandas.DataFrame`; and if the result is a scalar, it returns a plain Python scalar.
+If the result of the computation in DAPHNE is a matrix, `compute()` returns a `numpy.ndarray` (or optionally a `tensorflow.Tensor` or `torch.Tensor`); if the result is a frame, it returns a `pandas.DataFrame`; and if the result is a scalar, it returns a plain Python scalar.
 
-So far, DaphneLib can exchange data with numpy (via shared memory) and  pandas (via CSV files).
-Enabling data exchange with TensorFlow and PyTorch is on our agenda.
-Furthermore, we are working on making the data exchange more efficient in general.
+So far, DaphneLib can exchange data with numpy, pandas, TensorFlow, and PyTorch.
+By default, the data transfer is via shared memory (and in many cases zero-copy).
 
 ### Data Exchange with numpy
 
 *Example:*
 
 ```python
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import numpy as np
 
 dc = DaphneContext()
@@ -237,7 +256,7 @@ Result of adding 100 to each value, back in Python:
 *Example:*
 
 ```python
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import pandas as pd
 
 dc = DaphneContext()
@@ -283,14 +302,229 @@ Result of appending the frame to itself, back in Python:
 4  3  3.3
 ```
 
+### Data Exchange with TensorFlow
+
+*Example:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+import tensorflow as tf
+import numpy as np
+
+dc = DaphneContext()
+
+print("========== 2D TENSOR EXAMPLE ==========\n")
+
+# Create data in TensorFlow/numpy.
+t2d = tf.constant(np.random.random(size=(2, 4)))
+
+print("Original 2d tensor in TensorFlow:")
+print(t2d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T2D = dc.from_tensorflow(t2d)
+
+print("\nHow DAPHNE sees the 2d tensor from TensorFlow:")
+T2D.print().compute()
+
+# Add 100 to each value in T2D.
+T2D = T2D + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100, back in Python:")
+print(T2D.compute(asTensorFlow=True))
+
+print("\n========== 3D TENSOR EXAMPLE ==========\n")
+
+# Create data in TensorFlow/numpy.
+t3d = tf.constant(np.random.random(size=(2, 2, 2)))
+
+print("Original 3d tensor in TensorFlow:")
+print(t3d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T3D, T3D_shape = dc.from_tensorflow(t3d, return_shape=True)
+
+print("\nHow DAPHNE sees the 3d tensor from TensorFlow:")
+T3D.print().compute()
+
+# Add 100 to each value in T3D.
+T3D = T3D + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100, back in Python:")
+print(T3D.compute(asTensorFlow=True))
+print("\nResult of adding 100, back in Python (with original shape):")
+print(T3D.compute(asTensorFlow=True, shape=T3D_shape))
+```
+
+*Run by:*
+
+```shell
+python3 scripts/examples/daphnelib/data-exchange-tensorflow.py
+```
+
+*Output (random numbers may vary):*
+
+```text
+========== 2D TENSOR EXAMPLE ==========
+
+Original 2d tensor in TensorFlow:
+tf.Tensor(
+[[0.09682179 0.09636572 0.78658016 0.68227129]
+ [0.64356184 0.96337785 0.07931763 0.97951051]], shape=(2, 4), dtype=float64)
+
+How DAPHNE sees the 2d tensor from TensorFlow:
+DenseMatrix(2x4, double)
+0.0968218 0.0963657 0.78658 0.682271
+0.643562 0.963378 0.0793176 0.979511
+
+Result of adding 100, back in Python:
+tf.Tensor(
+[[100.09682179 100.09636572 100.78658016 100.68227129]
+ [100.64356184 100.96337785 100.07931763 100.97951051]], shape=(2, 4), dtype=float64)
+
+========== 3D TENSOR EXAMPLE ==========
+
+Original 3d tensor in TensorFlow:
+tf.Tensor(
+[[[0.40088013 0.02324858]
+  [0.87607911 0.91645907]]
+
+ [[0.10591184 0.92419294]
+  [0.5397723  0.24957817]]], shape=(2, 2, 2), dtype=float64)
+
+How DAPHNE sees the 3d tensor from TensorFlow:
+DenseMatrix(2x4, double)
+0.40088 0.0232486 0.876079 0.916459
+0.105912 0.924193 0.539772 0.249578
+
+Result of adding 100, back in Python:
+tf.Tensor(
+[[100.40088013 100.02324858 100.87607911 100.91645907]
+ [100.10591184 100.92419294 100.5397723  100.24957817]], shape=(2, 4), dtype=float64)
+
+Result of adding 100, back in Python (with original shape):
+tf.Tensor(
+[[[100.40088013 100.02324858]
+  [100.87607911 100.91645907]]
+
+ [[100.10591184 100.92419294]
+  [100.5397723  100.24957817]]], shape=(2, 2, 2), dtype=float64)
+```
+
+### Data Exchange with PyTorch
+
+*Example:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+import torch
+import numpy as np
+
+dc = DaphneContext()
+
+print("========== 2D TENSOR EXAMPLE ==========\n")
+
+# Create data in PyTorch/numpy.
+t2d = torch.tensor(np.random.random(size=(2, 4)))
+
+print("Original 2d tensor in PyTorch:")
+print(t2d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T2D = dc.from_pytorch(t2d)
+
+print("\nHow DAPHNE sees the 2d tensor from PyTorch:")
+T2D.print().compute()
+
+# Add 100 to each value in T2D.
+T2D = T2D + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100, back in Python:")
+print(T2D.compute(asPyTorch=True))
+
+print("\n========== 3D TENSOR EXAMPLE ==========\n")
+
+# Create data in PyTorch/numpy.
+t3d = torch.tensor(np.random.random(size=(2, 2, 2)))
+
+print("Original 3d tensor in PyTorch:")
+print(t3d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T3D, T3D_shape = dc.from_pytorch(t3d, return_shape=True)
+
+print("\nHow DAPHNE sees the 3d tensor from PyTorch:")
+T3D.print().compute()
+
+# Add 100 to each value in T3D.
+T3D = T3D + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100, back in Python:")
+print(T3D.compute(asPyTorch=True))
+print("\nResult of adding 100, back in Python (with original shape):")
+print(T3D.compute(asPyTorch=True, shape=T3D_shape))
+```
+
+*Run by:*
+
+```shell
+python3 scripts/examples/daphnelib/data-exchange-pytorch.py
+```
+
+*Output (random numbers may vary):*
+
+```text
+========== 2D TENSOR EXAMPLE ==========
+
+Original 2d tensor in PyTorch:
+tensor([[0.1205, 0.8747, 0.1717, 0.0216],
+        [0.7999, 0.6932, 0.4386, 0.0873]], dtype=torch.float64)
+
+How DAPHNE sees the 2d tensor from PyTorch:
+DenseMatrix(2x4, double)
+0.120505 0.874691 0.171693 0.0215546
+0.799858 0.693205 0.438637 0.0872659
+
+Result of adding 100, back in Python:
+tensor([[100.1205, 100.8747, 100.1717, 100.0216],
+        [100.7999, 100.6932, 100.4386, 100.0873]], dtype=torch.float64)
+
+========== 3D TENSOR EXAMPLE ==========
+
+Original 3d tensor in PyTorch:
+tensor([[[0.5474, 0.9653],
+         [0.7891, 0.0573]],
+
+        [[0.4116, 0.6326],
+         [0.3148, 0.3607]]], dtype=torch.float64)
+
+How DAPHNE sees the 3d tensor from PyTorch:
+DenseMatrix(2x4, double)
+0.547449 0.965315 0.78909 0.0572619
+0.411593 0.632629 0.314841 0.360657
+
+Result of adding 100, back in Python:
+tensor([[100.5474, 100.9653, 100.7891, 100.0573],
+        [100.4116, 100.6326, 100.3148, 100.3607]], dtype=torch.float64)
+
+Result of adding 100, back in Python (with original shape):
+tensor([[[100.5474, 100.9653],
+         [100.7891, 100.0573]],
+
+        [[100.4116, 100.6326],
+         [100.3148, 100.3607]]], dtype=torch.float64)
+```
+
 ## Known Limitations
 
 DaphneLib is still in an early development stage.
 Thus, there are a few limitations that users should be aware of.
 We plan to fix all of these limitations in the future.
 
-- `import`ing DaphneLib is still unnecessarily verbose.
 - Using DAPHNE's command-line arguments to influence its behavior is not supported yet.
-- Many DaphneDSL built-in functions are not represented by DaphneLib methods yet.
-- Complex control flow (if-then-else, loops, functions) are not supported yet. Python control flow statements are of limited applicability for DaphneLib.
+- Some DaphneDSL built-in functions are not represented by DaphneLib methods yet.
 - High-level primitives for integrated data analysis pipelines, which are implemented in DaphneDSL, cannot be called from DaphneLib yet.
