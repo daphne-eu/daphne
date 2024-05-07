@@ -63,7 +63,7 @@ template<typename VTSel>
 void validateArgsInsertRow(size_t rowLowerIncl_Size, VTSel rowLowerIncl, size_t rowUpperExcl_Size, VTSel rowUpperExcl,
                     size_t numRowsArg, size_t numColsArg, size_t numRowsIns, size_t numColsIns) {
     
-    if (rowLowerIncl_Size < 0 || rowUpperExcl_Size < rowLowerIncl_Size || numRowsArg < rowUpperExcl_Size
+    if (rowUpperExcl_Size < rowLowerIncl_Size || numRowsArg < rowUpperExcl_Size
         || (rowLowerIncl_Size == numRowsArg && rowLowerIncl_Size != 0)) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl
