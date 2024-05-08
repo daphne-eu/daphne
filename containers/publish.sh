@@ -40,6 +40,9 @@ if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
   ARCH=ARMV8
 fi
 
+# GitHub actions environment
+$USE_SUDO docker push daphneeu/github-action:latest
+
 # cuda dev image
 $USE_SUDO docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion} daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}
 $USE_SUDO docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}
