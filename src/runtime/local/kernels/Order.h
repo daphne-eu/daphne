@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <functional>
 #include <numeric>
+#include <type_traits>
 #include <vector>
 
 // ****************************************************************************
@@ -274,7 +275,11 @@ struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         {
            res = (DenseMatrix<VTRes>*) idx;
         } else {
-            extractRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, size_t>((DenseMatrix<VTArg>*&) res, arg, idx, ctx);
+            if constexpr(std::is_same<VTArg, VTRes>::value)
+                extractRow(res, arg, idx, ctx);
+            else
+                // When returnIdx is false, then VTRes and VTArg should be the same, so this should not happen.
+                throw std::runtime_error("when returnIdx is false, then VTRes and VTArg should be the same");
             DataObjectFactory::destroy(idx);
         }
     }
@@ -324,7 +329,11 @@ struct Order<Matrix<VTRes>, Matrix<VTArg>> {
                 res->append(r, 0, static_cast<VTRes>(indices[r]));
             res->finishAppend();
         } else {
-            extractRow<Matrix<VTArg>, Matrix<VTArg>, size_t>((Matrix<VTArg> *&) res, arg, idx, ctx);
+            if constexpr(std::is_same<VTArg, VTRes>::value)
+                extractRow(res, arg, idx, ctx);
+            else
+                // When returnIdx is false, then VTRes and VTArg should be the same, so this should not happen.
+                throw std::runtime_error("when returnIdx is false, then VTRes and VTArg should be the same");
         }
 
         DataObjectFactory::destroy(idx);
