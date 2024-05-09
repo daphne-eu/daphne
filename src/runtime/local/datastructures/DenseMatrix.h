@@ -241,7 +241,7 @@ public:
     }
     
     void prepareAppend() override {
-        // the matrix might be empty
+        // The matrix might be empty.
         if (numRows != 0 && numCols != 0)
             values.get()[0] = ValueType(0);
         lastAppendedRowIdx = 0;
@@ -259,11 +259,14 @@ public:
     }
     
     void finishAppend() override {
-        // append might be called on empty matrix
-        // numRows/numCols are unsigned and can underflow
-        if (    (numRows != 0 && numCols != 0) 
-            && ((lastAppendedRowIdx + 1 < numRows) || (lastAppendedColIdx + 1 < numCols))
+        // The matrix might be empty.
+        if (
+            (numRows != 0 && numCols != 0) &&
+            (
+                (lastAppendedRowIdx + 1 < numRows) ||
+                (lastAppendedColIdx + 1 < numCols)
             )
+        )
             append(numRows - 1, numCols - 1, ValueType(0));
     }
 

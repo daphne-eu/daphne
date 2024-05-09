@@ -22,7 +22,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 
-#include <numeric>
 #include <stdexcept>
 
 #include <cstddef>
@@ -65,8 +64,9 @@ struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         if(sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
-        const VTSel * valuesSel = sel->getValues();
-        size_t numColsRes = std::accumulate(valuesSel, valuesSel + sel->getNumRows(), 0);
+        size_t numColsRes = 0;
+        for(size_t c = 0; c < numColsArg; c++)
+            numColsRes += sel->get(c, 0);
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);

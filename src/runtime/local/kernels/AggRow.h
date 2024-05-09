@@ -28,7 +28,6 @@
 
 #include <vector>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <cmath>

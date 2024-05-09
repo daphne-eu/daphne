@@ -79,6 +79,30 @@ struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 };
 
 // ----------------------------------------------------------------------------
+// Matrix <- Matrix, scalar
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryObjSca<Matrix<VT>, Matrix<VT>, VT> {
+    static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, VT rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        
+        // TODO Choose matrix implementation depending on expected number of non-zeros.
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+        
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+        
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, func(lhs->get(r, c), rhs, ctx));
+        res->finishAppend();
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Frame <- Frame, scalar
 // ----------------------------------------------------------------------------
 
@@ -112,29 +136,6 @@ struct EwBinaryObjSca<Frame, Frame, VT> {
                 default: throw std::runtime_error("EwBinaryObjSca::apply: unknown value type code");
             }
         }   
-    }
-};
-
-// ----------------------------------------------------------------------------
-// Matrix <- Matrix, scalar
-// ----------------------------------------------------------------------------
-
-template<typename VT>
-struct EwBinaryObjSca<Matrix<VT>, Matrix<VT>, VT> {
-    static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, VT rhs, DCTX(ctx)) {
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-        
-        if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
-        
-        res->prepareAppend();
-        for (size_t r = 0; r < numRows; ++r)
-            for (size_t c = 0; c < numCols; ++c)
-                res->append(r, c, func(lhs->get(r, c), rhs, ctx));
-        res->finishAppend();
     }
 };
 
