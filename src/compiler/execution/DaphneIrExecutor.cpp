@@ -205,7 +205,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
             "IR after managing object references:"));
 
     pm.addNestedPass<mlir::func::FuncOp>(
-        mlir::daphne::createRewriteToCallKernelOpPass());
+        mlir::daphne::createRewriteToCallKernelOpPass(userConfig_, usedLibPaths));
     if (userConfig_.explain_kernels)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
@@ -218,6 +218,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_llvm)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering:"));
 
+    // Initialize the use of each distinct kernels library to false.
+    usedLibPaths = userConfig_.kernelCatalog.getLibPaths();
+    
     try {
         if (failed(pm.run(module))) {
             module->dump();
@@ -240,35 +243,24 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
     unsigned sizeLevel = 0;
     llvm::TargetMachine *targetMachine = nullptr;
     auto optPipeline = mlir::makeOptimizingTransformer(optLevel, sizeLevel, targetMachine);
+
+    // Determine the actually used kernels libraries.
     std::vector<llvm::StringRef> sharedLibRefs;
-    // This next line adds to our Linux platform lock-in
-    std::string daphne_executable_dir(
-        std::filesystem::canonical("/proc/self/exe").parent_path());
-    if (userConfig_.libdir.empty()) {
-        sharedLibRefPaths.push_back(
-            std::string(daphne_executable_dir + "/../lib/libAllKernels.so"));
-        sharedLibRefs.emplace_back(sharedLibRefPaths.back());
-    } else {
-        sharedLibRefs.insert(sharedLibRefs.end(),
-                             userConfig_.library_paths.begin(),
-                             userConfig_.library_paths.end());
-    }
+    for(auto it = usedLibPaths.begin(); it != usedLibPaths.end(); it++)
+        if(it->second) {
+            std::string usedLibPath = it->first;
+            sharedLibRefPaths.push_back(usedLibPath);
+            sharedLibRefs.emplace_back(sharedLibRefPaths.back());
 
-#ifdef USE_CUDA
-    if (userConfig_.use_cuda) {
-        sharedLibRefPaths.push_back(
-            std::string(daphne_executable_dir + "/../lib/libCUDAKernels.so"));
-        sharedLibRefs.emplace_back(sharedLibRefPaths.back());
-    }
-#endif
+            // Check if the used kernels library really exists at the expected path
+            // and throw an understandable error, otherwise.
+            if(!std::filesystem::exists(usedLibPath))
+                throw std::runtime_error(
+                    "the shared library `" + usedLibPath +
+                    "` is needed for some kernel, but the file does not exist"
+                );
+        }
 
-#ifdef USE_FPGAOPENCL
-    if (userConfig_.use_fpgaopencl) {
-        sharedLibRefPaths.push_back(std::string(
-            daphne_executable_dir + "/../lib/libFPGAOPENCLKernels.so"));
-        sharedLibRefs.emplace_back(sharedLibRefPaths.back());
-    }
-#endif
     registerLLVMDialectTranslation(context_);
     // module.dump();
     mlir::ExecutionEngineOptions options;

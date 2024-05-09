@@ -30,6 +30,7 @@
 #define TAG_CONTROLFLOW "[controlflow]"
 #define TAG_DATASTRUCTURES "[datastructures]"
 #define TAG_DISTRIBUTED "[distributed]"
+#define TAG_EXTENSIBILITY "[extensibility]"
 #define TAG_MATRIX_LITERAL "[matrixliterals]"
 #define TAG_TERNARY "[ternary]"
 #define TAG_FUNCTIONS "[functions]"

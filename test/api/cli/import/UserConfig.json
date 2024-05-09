@@ -15,7 +15,6 @@
     "taskPartitioningScheme": "STATIC",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
-    "library_paths": [],
     "daphnedsl_import_paths": 
     {
         "default_dirs": ["test/api/cli/import/sandbox"],

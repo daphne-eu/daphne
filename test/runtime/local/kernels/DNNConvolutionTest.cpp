@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
+
+#ifdef USE_CUDA
+
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -22,12 +26,7 @@
 #include <tags.h>
 #include <catch.hpp>
 
-#ifdef USE_CUDA
-#include <api/cli/DaphneUserConfig.h>
 #include "runtime/local/kernels/CUDA/Convolution.h"
-#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
-
-
 
 template<class DT>
 void check(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
@@ -40,11 +39,8 @@ void check(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("conv_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+    auto dctx = setupContextAndLogger();
     using DT = TestType;
-
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-    CUDA::createCUDAContext(dctx.get());
 
     auto input = genGivenVals<DT>(1, { 1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto filter = genGivenVals<DT>(1, { 1, 0, 0, 1});

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <api/daphnelib/DaphneLibResult.h>
+#include <compiler/catalog/KernelCatalog.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include <runtime/local/datastructures/IAllocationDescriptor.h>
 #include <util/LogConfig.h>
@@ -29,6 +30,7 @@ class DaphneLogger;
 #include <memory>
 #include <map>
 #include <limits>
+#include <filesystem>
 
 /*
  * Container to pass around user configuration
@@ -101,12 +103,29 @@ struct DaphneUserConfig {
 #endif
     
     
-    std::string libdir;
-    std::vector<std::string> library_paths;
+    std::string libdir = "{exedir}/../lib";
     std::map<std::string, std::vector<std::string>> daphnedsl_import_paths;
 
 
     // TODO Maybe the DaphneLib result should better reside in the DaphneContext,
     // but having it here is simpler for now.
     DaphneLibResult* result_struct = nullptr;
+    
+    KernelCatalog kernelCatalog;
+
+    /**
+     * @brief Replaces the prefix `"{exedir}/"` in the field `libdir` by the path
+     * of the directory in which the currently running executable resides.
+     *
+     * Note that the current executable is not necessarily `daphne`. It could also
+     * be a distributed worker (e.g., `DistributedWorker`) or Python (`python3`).
+     */
+    void resolveLibDir() {
+        const std::string exedirPlaceholder = "{exedir}/";
+        if(libdir.substr(0, exedirPlaceholder.size()) == exedirPlaceholder) {
+            // This next line adds to our Linux platform lock-in.
+            std::filesystem::path daphneExeDir(std::filesystem::canonical("/proc/self/exe").parent_path());
+            libdir = daphneExeDir / libdir.substr(exedirPlaceholder.size());
+        }
+    }
 };

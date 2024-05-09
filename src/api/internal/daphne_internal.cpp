@@ -26,6 +26,7 @@
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
+#include <parser/catalog/KernelCatalogParser.h>
 #include <parser/config/ConfigParser.h>
 #include <util/DaphneLogger.h>
 
@@ -41,8 +42,13 @@
 #include <chrono>
 #include <exception>
 #include <iostream>
+#include <string>
+#include <unordered_map>
+
 #include <csignal>
 #include <csetjmp>
+#include <cstdlib>
+#include <cstring>
 #include <execinfo.h>
 
 // global logger handle for this executable
@@ -258,7 +264,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     );
     static opt<string> libDir(
             "libdir", cat(daphneOptions),
-            desc("The directory containing kernel libraries")
+            desc(
+                "The directory containing the kernel catalog files "
+                "(typically, but not necessarily, along with the kernel shared libraries)"
+            )
     );
 
     static opt<bool> mlirCodegen(
@@ -303,6 +312,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     static opt<bool> performHybridCodegen(
         "mlir-hybrid-codegen", cat(daphneOptions),
         desc("Enables prototypical hybrid code generation combining pre-compiled kernels and MLIR code generation.")
+    );
+    static opt<string> kernelExt(
+        "kernel-ext", cat(daphneOptions),
+        desc("Additional kernel extension to register (path to a kernel catalog JSON file).")
     );
 
     enum ExplainArgs {
@@ -434,7 +447,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     if(!libDir.getValue().empty())
         user_config.libdir = libDir.getValue();
-    user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
+    user_config.resolveLibDir();
+
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.queueSetupScheme = queueSetupScheme;
 	user_config.victimSelection = victimSelection;
@@ -538,10 +552,6 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         user_config.enable_profiling = true;
     }
 
-    // add this after the cli args loop to work around args order
-    if(!user_config.libdir.empty() && user_config.use_cuda)
-            user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
-
     // For DaphneLib (Python API).
     user_config.result_struct = daphneLibRes;
 
@@ -557,18 +567,37 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     }
 
     // ************************************************************************
+    // Create DaphneIrExecutor and get MLIR context
+    // ************************************************************************
+
+    // Creates an MLIR context and loads the required MLIR dialects.
+    DaphneIrExecutor executor(selectMatrixRepr, user_config);
+    mlir::MLIRContext * mctx = executor.getContext();
+
+    // ************************************************************************
+    // Populate kernel extension catalog
+    // ************************************************************************
+
+    KernelCatalog & kc = executor.getUserConfig().kernelCatalog;
+    // kc.dump();
+    KernelCatalogParser kcp(mctx);
+    kcp.parseKernelCatalog(user_config.libdir + "/catalog.json", kc);
+    if(user_config.use_cuda)
+        kcp.parseKernelCatalog(user_config.libdir + "/CUDAcatalog.json", kc);
+    // kc.dump();
+    if(!kernelExt.empty())
+        kcp.parseKernelCatalog(kernelExt, kc);
+
+    // ************************************************************************
     // Parse, compile and execute DaphneDSL script
     // ************************************************************************
 
     clock::time_point tpBegPars = clock::now();
 
-    // Creates an MLIR context and loads the required MLIR dialects.
-    DaphneIrExecutor executor(selectMatrixRepr, user_config);
-
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR
     // operations are inserted into the module.
-    OpBuilder builder(executor.getContext());
+    OpBuilder builder(mctx);
     auto loc = mlir::FileLineColLoc::get(builder.getStringAttr(inputFile), 0, 0);
     auto moduleOp = ModuleOp::create(loc);
     auto * body = moduleOp.getBody();

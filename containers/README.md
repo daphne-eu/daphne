@@ -131,16 +131,16 @@ work inside the container with remote development features of several popular ID
 **2. The password** of a running daphneeu/daphne-dev container can be retrieved (if it's been forgotten and scrolled out of sight)
 by searching the log output of the container.
    * First retrieve the container id:
-    ``` bash
-    $ docker ps
-    CONTAINER ID   IMAGE                             COMMAND                  CREATED       STATUS       PORTS     NAMES
-    99a5b6c85bbb   daphneeu/daphne-dev:latest_BASE   "/entrypoint-interac…"   2 hours ago   Up 2 hours   22/tcp    tender_mcclintock
-    ```
-    *  The password can subsequently be retrieved with 
-    ``` bash
-    $ docker logs 99a5b6c85bbb | grep password
-    Use docker-username with password Docker!4556 for SSH login
-    ```
+     ``` bash
+     $ docker ps
+     CONTAINER ID   IMAGE                             COMMAND                  CREATED       STATUS       PORTS     NAMES
+     99a5b6c85bbb   daphneeu/daphne-dev:latest_BASE   "/entrypoint-interac…"   2 hours ago   Up 2 hours   22/tcp    tender_mcclintock
+     ```
+   * The password can subsequently be retrieved with:
+     ``` bash
+     $ docker logs 99a5b6c85bbb | grep password
+     Use docker-username with password Docker!4556 for SSH login
+     ```
 
 
 

@@ -22,9 +22,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_custom_command(
-            OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
+            OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json
             COMMAND python3 ARGS genKernelInst.py kernels.json
-                    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp CUDA
+                    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json CUDA
             MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
             DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
@@ -74,8 +74,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 endif()
 
 add_custom_command(
-        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
-        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp CPP
+        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp ${PROJECT_SOURCE_DIR}/lib/catalog.json
+        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp ${PROJECT_SOURCE_DIR}/lib/catalog.json CPP
         MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
         DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/

@@ -323,6 +323,19 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
     }
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::Conv2DForwardOp::inferShape() {
+    auto Itype = getInput().getType().dyn_cast<daphne::MatrixType>();
+    auto Ftype = getFilter().getType().dyn_cast<daphne::MatrixType>();
+
+    auto Hin = CompilerUtils::constantOrThrow<size_t>(getInputHeight());
+    auto Win = CompilerUtils::constantOrThrow<size_t>(getInputWidth());
+    ssize_t numRows = Itype.getNumRows();
+    ssize_t numCols = Ftype.getNumRows() * Hin * Win;
+
+    // op output is [mat, scalar, scalar] for the convolved data and its dimensions
+    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+}
+
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CTableOp::inferShape() {
     // If the result shape is given as arguments, then we know it.
     // Otherwise, we don't.

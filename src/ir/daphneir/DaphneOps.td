@@ -448,7 +448,7 @@ class Daphne_AllAggOp<string name, Type scalarType, list<Trait> traits = []>
     let results = (outs scalarType:$res);
 }
 
-def Daphne_AllAggSumOp    : Daphne_AllAggOp<"sumAll", NumScalar, [ValueTypeFromFirstArg,CUDASupport]>;
+def Daphne_AllAggSumOp    : Daphne_AllAggOp<"sumAll", NumScalar, [ValueTypeFromFirstArg]>;
 def Daphne_AllAggMinOp    : Daphne_AllAggOp<"minAll", NumScalar, [ValueTypeFromFirstArg]>;
 def Daphne_AllAggMaxOp    : Daphne_AllAggOp<"maxAll", NumScalar, [ValueTypeFromFirstArg]>;
 def Daphne_AllAggMeanOp   : Daphne_AllAggOp<"meanAll", NumScalar, [ValueTypeFromArgsFP]>;
@@ -821,7 +821,9 @@ def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward", [ CUDASupport ]> {
 // ----------------------------------------------------------------------------
 
 def Daphne_Conv2DForwardOp : Daphne_Op<"Convolution_Forward",
-    [ DeclareOpInterfaceMethods<InferTypesOpInterface>, CUDASupport ]> {
+    [ DeclareOpInterfaceMethods<InferTypesOpInterface>,
+      DeclareOpInterfaceMethods<InferShapeOpInterface>,
+      CUDASupport ]> {
     let arguments = (ins
         MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter, MatrixOf<[FloatScalar]>:$bias,
         // input shape
@@ -873,8 +875,8 @@ class Daphne_PoolForwardOp<string name, list<Trait> traits = []> : Daphne_Op<nam
     let results = (outs MatrixOf<[FloatScalar]>:$data, Size:$outHeight, Size:$outWidth);
 }
 
-def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"maxPoolForward", [ CUDASupport ]>;
-def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward", [ CUDASupport ]>;
+def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"NN_Max_Forward", [ CUDASupport ]>;
+def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"NN_Avg_Forward", [ CUDASupport ]>;
 
 // ----------------------------------------------------------------------------
 // Softmax

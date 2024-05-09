@@ -16,13 +16,15 @@
 
 #pragma once
 
-#include "DataPlacement.h"
+class DataPlacement;
+#include "IAllocationDescriptor.h"
 #include "Range.h"
 
 #include <algorithm>
 #include <array>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 /**
  * @brief The MetaDataObject class contains meta data of a data structure (Frame, Matrix)
