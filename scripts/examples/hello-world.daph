@@ -14,21 +14,4 @@
  * limitations under the License.
  */
 
-x = 1;
-y = 2;
-print(x + y);
-
-# Creating a random 2x3 matrix
-m = rand(2, 3, 100.0, 200.0, 1.0, -1);
-print(m);
-print(m + m);
-
-// Print transpose of matrix
-print(t(m));
-
-# Comments are useful to temporarily disable code blocks like this matMul
-Z = m @ t(m);
-print(Z);
-
-print("Hello world!");
-print("Bye!");
+print("Hello World!");
