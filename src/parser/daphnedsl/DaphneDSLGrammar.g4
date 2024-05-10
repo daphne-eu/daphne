@@ -170,11 +170,11 @@ FLOAT_LITERAL:
         ('0' | NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)*)
         (
             // decimal point and part after it
-            ('.' (DIGIT_SEP? DIGIT)+)
+            ('.' DIGIT+ (DIGIT_SEP? DIGIT)*)
             |
             // scientific notation, with optional decimal point
             (
-                ('.' (DIGIT_SEP? DIGIT)+)?
+                ('.' DIGIT+ (DIGIT_SEP? DIGIT)*)?
                 [eE]
                 ('-'|'+')? ('0' | NON_ZERO_DIGIT DIGIT*)
             )

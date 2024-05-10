@@ -1,2 +1,18 @@
-// NaN
-print(nan);
+// float_3.daphne with float type
+
+// non-zero
+// varying length before/after decimal point
+
+print(0.1234f);
+print(1.234f);
+print(12.34f);
+print(123.4f);
+print(1234.0f);
+print("");
+
+// negatives
+print(-0.1234f);
+print(-1.234f);
+print(-12.34f);
+print(-123.4f);
+print(-1234.0f);

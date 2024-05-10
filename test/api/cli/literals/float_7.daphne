@@ -1,28 +1,35 @@
-// Delimiters _ and '
+// scientific notation (no decimal point)
 
-// Before the decimal point.
-print(1_234.56f);
-print(1_234.56);
-print(1'234.56f);
-print(1'234.56);
+// zero
+print(0e0);
+print(0e3);
+print(0E0);
+print(0E3);
 print("");
 
-// After the decimal point.
-print(1234.5_6f);
-print(1234.5_6);
-print(1234.5'6f);
-print(1234.5'6);
+// positive base, mixed exponent, small e
+print(10e12);
+print(1e6);
+print(1e+6);
+print(1e-6);
+print("");
+// capital E
+print(10E12);
+print(1E6);
+print(1E+6);
+print(1E-6);
 print("");
 
-// Before and after the decimal point.
-print(1_234.5_6f);
-print(1_234.5_6);
-print(1'234.5'6f);
-print(1'234.5'6);
+// negative base, mixed exponent, small e
+print(-10e12);
+print(-1e6);
+print(-1e+6);
+print(-1e-6);
 print("");
+// capital E
+print(-10E12);
+print(-1E6);
+print(-1E+6);
+print(-1E-6);
 
-// Before and after the decimal point, with different delimiter characters.
-print(1_23'4.5'6f);
-print(1_23'4.5'6);
-print(1'23_4.5_6f);
-print(1'23_4.5_6);
+// floats in float_8.daphne

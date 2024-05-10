@@ -1,2 +1,41 @@
-// positive infinity
-print(inf);
+// non-zero
+// varying length before/after decimal point
+// digit separators before/after/before and after decimal point
+
+// _ separator
+print(1_000.0);
+print(1.000_1);
+print(1_00.00_1);
+print("");
+
+// ' separator
+print(1'000.0);
+print(1.000'1);
+print(1'00.00'1);
+print("");
+
+// mixed separators
+print(1_2'3.4'5_6);
+print(1'2_3.4_5'6);
+print("");
+
+
+// negatives
+// _ separator
+print(-1_000.0);
+print(-1.000_1);
+print(-1_00.00_1);
+print("");
+
+// ' separator
+print(-1'000.0);
+print(-1.000'1);
+print(-1'00.00'1);
+print("");
+
+// mixed separators
+print(-1_2'3.4'5_6);
+print(-1'2_3.4_5'6);
+
+
+// floats in float_6.daphne

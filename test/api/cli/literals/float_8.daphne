@@ -1,11 +1,35 @@
-// (lower case) E notation for floats
-print(1e10);
-print(1e-10);
-print(1.2e5);
-print(1.2e-5);
-print(-1.2e+5);
-print(1e0);
-print(1e0f);
+// float_7.daphne with float type
 
-// upper case E
-print(1E5);
+// scientific notation (no decimal point)
+
+// zero
+print(0e0f);
+print(0e3f);
+print(0E0f);
+print(0E3f);
+print("");
+
+// positive base, mixed exponent, small e
+print(10e12f);
+print(1e6f);
+print(1e+6f);
+print(1e-6f);
+print("");
+// capital E
+print(10E12f);
+print(1E6f);
+print(1E+6f);
+print(1E-6f);
+print("");
+
+// negative base, mixed exponent, small e
+print(-10e12f);
+print(-1e6f);
+print(-1e+6f);
+print(-1e-6f);
+print("");
+// capital E
+print(-10E12f);
+print(-1E6f);
+print(-1E+6f);
+print(-1E-6f);

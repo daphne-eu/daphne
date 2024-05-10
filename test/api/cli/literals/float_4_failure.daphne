@@ -1,0 +1,2 @@
+// digit separator must be followed by digit
+print(10.0_);
