@@ -1371,7 +1371,7 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, std::
         }
     };
 
-    for (int64_t i=0; i < static_cast<int64_t>(values->size()); ++i) {
+    for (int64_t i = 0; i < static_cast<int64_t>(values->size()); ++i) {
         currentValue = (*values)[i];
         currentType = (*valueTypes)[i];
 
@@ -1409,12 +1409,14 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, std::
         // FillOp currently only supports arguments with equal type
         // so values need to be casted first if the result of an expr
         // is less general than the value type of `result`
-        if (matrixVt == builder.getF64Type()
-                && insValue.getType() != builder.getF64Type()) {
+        if (    matrixVt == builder.getF64Type() &&
+                insValue.getType() != builder.getF64Type()
+            ) {
             insValue = utils.castF64If(insValue);
         }
-        else if (matrixVt == builder.getIntegerType(64, true)
-                && insValue.getType() != builder.getIntegerType(64, true)) {
+        else if (matrixVt == builder.getIntegerType(64, true) &&
+                insValue.getType() != builder.getIntegerType(64, true)
+            ) {
             insValue = utils.castSI64If(insValue);
         }
 
@@ -1472,7 +1474,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     std::vector<mlir::Type> valueTypes;
     values.reserve(numMatElems);
     valueTypes.reserve(numMatElems);
-    for (size_t i=0; i<numMatElems; ++i) {
+    for (size_t i = 0; i < numMatElems; ++i) {
         mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
         values.emplace_back(currentValue);
         valueTypes.emplace_back(currentValue.getType());
@@ -1517,14 +1519,14 @@ antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::Fr
     columnMatrices.reserve(cols);
     columnMatElemType.reserve(cols);
 
-    for (size_t i=0; i<elementCount; i=i+2) {
+    for (size_t i = 0; i < elementCount; i+=2) {
         mlir::Value label = utils.valueOrError(visit(ctx->expr(i)));
         mlir::Value mat = utils.valueOrError(visit(ctx->expr(i+1)));
 
         if (label.getType() != utils.strType)
-            throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
+            throw ErrorHandler::compilerError(loc, "DSLVisitor", "expected label. Labels for frame literals must be strings");
         if (!(mat.getType().template isa<mlir::daphne::MatrixType>()))
-            throw ErrorHandler::compilerError(loc, "DSLVisitor", "columns for frame literals must be matrices");
+            throw ErrorHandler::compilerError(loc, "DSLVisitor", "expected matrix. Columns for frame literals must be matrices");
 
         labels.emplace_back(label);
         columnMatrices.emplace_back(mat);
@@ -1532,9 +1534,8 @@ antlrcpp::Any DaphneDSLVisitor::visitFrameLiteralExpr(DaphneDSLGrammarParser::Fr
     }
 
     mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), columnMatElemType);
-    mlir::Value result;
     
-    result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, columnMatrices, labels));
+    mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, columnMatrices, labels));
 
     return result;
 }
@@ -1552,7 +1553,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     std::vector<mlir::Value> labels;
     labels.reserve(cols);
 
-    for (size_t i=0; i<cols; ++i) {
+    for (size_t i = 0; i < cols; ++i) {
         mlir::Value label = utils.valueOrError(visit(ctx->literal(i)));
         if (label.getType() != utils.strType)
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
@@ -1565,7 +1566,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     valuesVec.resize(cols);
     valueTypesVec.resize(cols);
 
-    for (size_t i=0; i<elementCount; ++i) {
+    for (size_t i = 0; i < elementCount; ++i) {
         if (i < cols) {
             valuesVec[i].reserve(rows);
             valueTypesVec[i].reserve(rows);
@@ -1579,7 +1580,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     std::vector<mlir::Type> colTypes;
     colValues.reserve(cols);
     colTypes.reserve(cols);
-    for (size_t i=0; i<cols; ++i) {
+    for (size_t i = 0; i < cols; ++i) {
         colTypes.emplace_back(mostGeneralVt(valueTypesVec[i]));
 
         if (colTypes[i].isSignedInteger(64)) {
@@ -1598,9 +1599,8 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     }
 
     mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
-    mlir::Value result;
     
-    result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, colValues, labels));
+    mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, colValues, labels));
 
     return result;
 }

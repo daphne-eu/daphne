@@ -44,3 +44,4 @@ const std::string dirPath = "test/api/cli/expressions/";
     }
 
 MAKE_SUCCESS_TEST_CASE("matrix_literal", 6)
+MAKE_FAILURE_TEST_CASE("matrix_literal", 3)

@@ -25,3 +25,5 @@ DenseMatrix(2x2, bool)
 DenseMatrix(2x2, int64_t)
 1 2
 3 4
+DenseMatrix(1x4, int64_t)
+1 2 3 4

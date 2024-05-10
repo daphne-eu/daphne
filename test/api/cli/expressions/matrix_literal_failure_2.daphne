@@ -1,0 +1,2 @@
+// invalid value type si8
+print([0, 1, as.si8(2)]);
