@@ -17,7 +17,7 @@
 # Data transfer from numpy to DAPHNE and back, via shared memory.
 
 import numpy as np
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 m1 = np.array([1, 2, 3, 4, 5, 6], dtype=np.double)
 m1.shape = (2, 3)

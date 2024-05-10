@@ -24,9 +24,9 @@
 #include <algorithm>
 #include <random>
 #include <set>
+#include <stdexcept>
 #include <type_traits>
 
-#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -61,13 +61,19 @@ void randMatrix(DTRes *& res, size_t numRows, size_t numCols, VTArg min, VTArg m
 template<typename VT>
 struct RandMatrix<DenseMatrix<VT>, VT> {
     static void apply(DenseMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed, DCTX(ctx)) {
-        assert(numRows > 0 && "numRows must be > 0");
-        assert(numCols > 0 && "numCols must be > 0");
-        assert(min <= max && "min must be <= max");
-        assert((min != 0 || max != 0) &&
-               "min and max must not both be zero, consider setting sparsity to zero instead");
-        assert(sparsity >= 0.0 && sparsity <= 1.0 &&
-               "sparsity has to be in the interval [0.0, 1.0]");
+        if (!(numRows > 0))
+            throw std::runtime_error("RandMatrix - numRows must be > 0");
+        if (!(numCols > 0))
+            throw std::runtime_error("RandMatrix - numCols must be > 0");
+        if (min > max)
+            throw std::runtime_error("RandMatrix - min must be <= max");
+        if (!min && !max)
+            throw std::runtime_error(
+                "RandMatrix - min and max must not both be zero, consider "
+                "setting sparsity to zero instead");
+        if (sparsity < 0.0 || sparsity > 1.0)
+            throw std::runtime_error(
+                "sparsity has to be in the interval [0.0, 1.0]");
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
@@ -80,11 +86,11 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
 
         std::mt19937 genVal(seed);
         std::mt19937 genIndex(seed * 3);
-        
+
         static_assert(
-                std::is_floating_point<VT>::value || std::is_integral<VT>::value,
-                "the value type must be either floating point or integral"
-        );
+            std::is_floating_point<VT>::value || std::is_integral<VT>::value,
+            "the value type must be either floating point or integral");
+
         typename std::conditional<
                 std::is_floating_point<VT>::value,
                 std::uniform_real_distribution<VT>,
@@ -154,11 +160,19 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
 template<typename VT>
 struct RandMatrix<CSRMatrix<VT>, VT> {
     static void apply(CSRMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed, DCTX(ctx)) {
-        assert(numRows > 0 && "numRows must be > 0");
-        assert(numCols > 0 && "numCols must be > 0");
-        assert(min <= max && "min must be <= max");
-        assert(sparsity >= 0.0 && sparsity <= 1.0 &&
-               "sparsity has to be in the interval [0.0, 1.0]");
+        if (!(numRows > 0))
+            throw std::runtime_error("RandMatrix - numRows must be > 0");
+        if (!(numCols > 0))
+            throw std::runtime_error("RandMatrix - numCols must be > 0");
+        if (min > max)
+            throw std::runtime_error("RandMatrix - min must be <= max");
+        if (!min && !max)
+            throw std::runtime_error(
+                "RandMatrix - min and max must not both be zero, consider "
+                "setting sparsity to zero instead");
+        if (sparsity < 0.0 || sparsity > 1.0)
+            throw std::runtime_error(
+                "sparsity has to be in the interval [0.0, 1.0]");
 
         // The exact number of non-zeros to generate.
         // TODO Ideally, it should not be allowed that zero is included in [min, max].
@@ -171,11 +185,11 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
         if (seed == -1)
             seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         std::default_random_engine gen(seed);
-        
+
         static_assert(
-                std::is_floating_point<VT>::value || std::is_integral<VT>::value,
-                "the value type must be either floating point or integral"
-        );
+            std::is_floating_point<VT>::value || std::is_integral<VT>::value,
+            "the value type must be either floating point or integral");
+
         typename std::conditional<
                 std::is_floating_point<VT>::value,
                 std::uniform_real_distribution<VT>,

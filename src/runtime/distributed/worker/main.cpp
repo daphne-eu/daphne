@@ -25,6 +25,7 @@
 int main(int argc, char *argv[])
 {
     DaphneUserConfig user_config{};
+    user_config.resolveLibDir();
     auto logger = std::make_unique<DaphneLogger>(user_config);
 
     if (argc != 2) {

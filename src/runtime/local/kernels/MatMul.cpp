@@ -253,7 +253,10 @@ void MatMul<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>>::apply(DenseMatri
     const auto nc1 = static_cast<int>(transa ? lhs->getNumRows() : lhs->getNumCols());
     const auto nr2 = static_cast<int>(transb ? rhs->getNumCols() : rhs->getNumRows());
     const auto nc2 = static_cast<int>(transb ? rhs->getNumRows() : rhs->getNumCols());
-    assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
+    if (nc1 != nr2) {
+        throw std::runtime_error(
+            "MatMul - #cols of lhs and #rows of rhs must be the same");
+    }
     const VT alpha = 1.0f;
     const VT beta = 0.0f;
     if(res == nullptr)

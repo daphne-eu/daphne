@@ -767,6 +767,10 @@
                 {
                     "type": "uint64_t",
                     "name": "configPtr"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "dispatchMappingPtr"
                 }
             ]
         },
@@ -2539,7 +2543,8 @@
             [["DenseMatrix", "int8_t"]],
             [["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint32_t"]],
-            [["DenseMatrix", "uint8_t"]]
+            [["DenseMatrix", "uint8_t"]],
+            ["Frame"]
         ]
     },
     {
@@ -3436,7 +3441,7 @@
     {
         "kernelTemplate": {
             "header": "Pooling.h",
-            "opName": "Pooling::Forward",
+            "opName": "NN::Pooling::Forward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -3451,15 +3456,15 @@
             ],
             "runtimeParams": [
                 {
-                    "type": "PoolingOpCode",
+                    "type": "NN::PoolingOpCode",
                     "name": "opcode"
                 },
                 {
                     "type": "DTRes *&",
                     "name": "res"
                 },
-                { "type": "size_t& ", "name": "res_h" },
-                { "type": "size_t& ", "name": "res_w" },
+                { "type": "size_t&", "name": "res_h" },
+                { "type": "size_t&", "name": "res_w" },
                 {
                     "type": "const DTArg *",
                     "name": "data"
@@ -3727,11 +3732,11 @@
                     "name": "res"
                 },
                 {
-                    "type": "size_t& ",
+                    "type": "size_t&",
                     "name": "res_h"
                 },
                 {
-                    "type": "size_t& ",
+                    "type": "size_t&",
                     "name": "res_w"
                 },
                 {

@@ -24,4 +24,5 @@
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-void createDaphneContext(DaphneContext *& res, uint64_t configPtr);
+void createDaphneContext(DaphneContext *&res, uint64_t configPtr,
+                         uint64_t dispatchMappingPtr);

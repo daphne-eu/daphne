@@ -66,6 +66,8 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 | CUDA SDK                             | 11.7.1                       | Optional for CUDA ops                                                                                                                   |
 | OneAPI SDK                           | 2022.x                       | Optional for OneAPI ops                                                                                                                 |
 | Intel FPGA SDK or OneAPI FPGA Add-On | 2022.x                       | Optional for FPGAOPENCL ops                                                                                                             |
+| tensorflow                           | 2.13.1                       | Optional for data exchange between DaphneLib and TensorFlow |
+| torch                                | 2.3.0+cu121                  | Optional for data exchange between DaphneLib and PyTorch |
 
 ### Hardware
 
@@ -189,12 +191,12 @@ use containers.
 higher are sufficient
 - you can use the provided docker files and scripts to create and run DAPHNE.
 
-**A full description on containers is available in the [containers](containers) subdirectory.**
+**A full description on containers is available in the [containers](/containers) subdirectory.**
 
 The following recreates all images provided by [daphneeu](https://hub.docker.com/u/daphneeu)
 
 ```bash
-cd container
+cd containers
 ./build-containers.sh
 ```
 

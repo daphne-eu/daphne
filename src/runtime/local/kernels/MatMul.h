@@ -22,7 +22,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CastObj.h>
 
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************
@@ -62,7 +61,10 @@ struct MatMul<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         [[maybe_unused]] const size_t nr2 = rhs->getNumRows();
         const size_t nc2 = rhs->getNumCols();
 
-        assert(nc1 == nr2 && "#cols of lhs and #rows of rhs must be the same");
+        if (nc1 != nr2) {
+            throw std::runtime_error(
+                "MatMul - #cols of lhs and #rows of rhs must be the same");
+        }
         // FIXME: transpose isn't supported atm
 
         if(res == nullptr)

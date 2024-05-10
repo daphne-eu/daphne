@@ -15,12 +15,13 @@
 # limitations under the License.
 
 # Data transfer from pandas to DAPHNE and back, via files.
+# pd.DataFrame
 
 import pandas as pd
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 
 df = pd.DataFrame({"abc": [1, 2, 3], "def": [-1.1, -2.2, -3.3]})
 
 dctx = DaphneContext()
 
-(dctx.from_pandas(df)).print().compute()
+dctx.from_pandas(df, shared_memory=False).print().compute(type="files")

@@ -15,6 +15,7 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <util/ErrorHandler.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <ir/daphneir/DaphneOpsEnums.cpp.inc>
@@ -243,7 +244,9 @@ std::string unknownStrIf(double val) {
 void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                                             mlir::DialectAsmPrinter &os) const
 {
-    if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+    if (type.isa<mlir::daphne::StructureType>())
+        os << "Structure";
+    else if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
         os << "Matrix<"
                 << unknownStrIf(t.getNumRows()) << 'x'
                 << unknownStrIf(t.getNumCols()) << 'x'
@@ -686,17 +689,17 @@ mlir::OpFoldResult mlir::daphne::EwDivOp::fold(FoldAdaptor adaptor) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a / b; };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if(b == 0) {
-            std::string msg = "Can't divide by 0";
-            emitError() << msg;
-            throw std::runtime_error(msg);
+            throw ErrorHandler::compilerError(
+                this->getLoc(), "CanonicalizerPass (mlir::daphne::EwDivOp::fold)",
+                "Can't divide by 0");
         }
         return a.sdiv(b);
     };
     auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if(b == 0) {
-            std::string msg = "Can't divide by 0";
-            emitError() << msg;
-            throw std::runtime_error(msg);
+            throw ErrorHandler::compilerError(
+                this->getLoc(), "CanonicalizerPass (mlir::daphne::EwDivOp::fold)",
+                "Can't divide by 0");
         }
         return a.udiv(b);
     };
@@ -729,17 +732,17 @@ mlir::OpFoldResult mlir::daphne::EwModOp::fold(FoldAdaptor adaptor) {
     ArrayRef<Attribute> operands = adaptor.getOperands();
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if(b == 0) {
-            std::string msg = "Can't compute mod 0";
-            emitError() << msg;
-            throw std::runtime_error(msg);
+            throw ErrorHandler::compilerError(
+                this->getLoc(), "CanonicalizerPass (mlir::daphne::EwModOp::fold)",
+                "Can't compute mod 0");
         }
         return a.srem(b);
     };
     auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if(b == 0) {
-            std::string msg = "Can't compute mod 0";
-            emitError() << msg;
-            throw std::runtime_error(msg);
+            throw ErrorHandler::compilerError(
+                this->getLoc(), "CanonicalizerPass (mlir::daphne::EwModOp::fold)",
+                "Can't compute mod 0");
         }
         return a.urem(b);
     };
@@ -1366,7 +1369,7 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
         if(auto elseFrmTy = elseVal.getType().dyn_cast<daphne::FrameType>())
             if(elseFrmTy.getLabels() != nullptr)
                 elseVal = rewriter.create<mlir::daphne::CastOp>(loc, elseFrmTy.withLabels(nullptr), elseVal);
-        
+
         // Check if the types of the then-value and the else-value are the same.
         if(thenVal.getType() != elseVal.getType()) {
             if(llvm::isa<daphne::UnknownType>(thenVal.getType()) || llvm::isa<daphne::UnknownType>(elseVal.getType()))
@@ -1376,12 +1379,12 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
             else
                 // If both types are known, but different, this is an error.
                 // TODO We could try to cast the types.
-                throw CompilerUtils::makeError(
-                        op.getLoc(),
-                        "the then/else-values of CondOp must have the same value type"
-                );
+                throw ErrorHandler::compilerError(
+                    op, "CanonicalizerPass (mlir::daphne::CondOp)",
+                    "the then/else-values of CondOp must have the same value "
+                    "type");
         }
-            
+
         {
             // Save the insertion point (automatically restored at the end of the block).
             PatternRewriter::InsertionGuard insertGuard(rewriter);

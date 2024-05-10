@@ -1,0 +1,2 @@
+// max positive uint64_t (2^64 - 1)
+print(18446744073709551615u);

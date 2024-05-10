@@ -64,15 +64,17 @@ struct WriteCsv<DenseMatrix<VT>> {
     static void apply(const DenseMatrix<VT> *arg, File* file) {
         assert(file != nullptr && "File required");
         const VT * valuesArg = arg->getValues();
-        size_t cell = 0;
+        const size_t rowSkip = arg->getRowSkip();
+        const size_t argNumCols = arg->getNumCols();
+
         for (size_t i = 0; i < arg->getNumRows(); ++i)
         {
-            for(size_t j = 0; j < arg->getNumCols(); ++j)
+            for(size_t j = 0; j < argNumCols; ++j)
             {
                 fprintf(
                         file->identifier,
                         std::is_floating_point<VT>::value ? "%f" : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
-                        valuesArg[cell++]
+                        valuesArg[i*rowSkip + j]
                 );
                 if(j < (arg->getNumCols() - 1))
                     fprintf(file->identifier, ",");

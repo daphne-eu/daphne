@@ -1,0 +1,8 @@
+Frame(3x1, [f.a:int64_t])
+1
+2
+3
+Frame(3x1, [sum(f.a):int64_t])
+1
+4
+3

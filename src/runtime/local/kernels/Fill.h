@@ -20,8 +20,6 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <cassert>
-
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************

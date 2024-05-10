@@ -17,6 +17,7 @@
 #pragma once
 
 #include <api/cli/DaphneUserConfig.h>
+#include <util/KernelDispatchMapping.h>
 
 #include <vector>
 #include <iostream>
@@ -67,10 +68,13 @@ struct DaphneContext {
      * changing the configuration at run-time via DaphneDSL.
      */
     DaphneUserConfig& config;
+    KernelDispatchMapping& dispatchMapping;
 
     std::shared_ptr<spdlog::logger> logger;
 
-    explicit DaphneContext(DaphneUserConfig& config) : config(config) {
+    explicit DaphneContext(DaphneUserConfig &config,
+                           KernelDispatchMapping &dispatchMapping)
+        : config(config), dispatchMapping(dispatchMapping) {
         logger = spdlog::get("runtime");
     }
 

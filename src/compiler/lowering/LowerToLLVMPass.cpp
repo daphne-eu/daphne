@@ -17,6 +17,7 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "compiler/utils/CompilerUtils.h"
+#include <util/ErrorHandler.h>
 
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 
@@ -182,11 +183,14 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
             Type t0 = resultTypes[0];
             Type mt0 = t0.dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
             for(size_t i = 1; i < numRes; i++)
-                if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
-                    throw std::runtime_error(
-                            "all results of a CallKernelOp must have the same "
-                            "type to combine them into a single variadic result"
-                    );
+                if (mt0 != resultTypes[i]
+                               .dyn_cast<daphne::MatrixType>()
+                               .withSameElementTypeAndRepr()) {
+                    throw ErrorHandler::compilerError(
+                        loc, "LowerToLLVMPass",
+                        "all results of a CallKernelOp must have the same "
+                        "type to combine them into a single variadic result");
+                }
             // Wrap the common result type into a pointer, since we need an
             // array of that type.
             args.push_back(LLVM::LLVMPointerType::get(
@@ -492,16 +496,19 @@ public:
                 else if(llvm::isa<FloatType>(itemType)) {
                     item = rewriter.create<LLVM::FPExtOp>(loc, rewriter.getF64Type(), item);
                     item = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getI64Type(), item);
+                } else {
+                    throw ErrorHandler::compilerError(
+                        loc, "LowerToLLVMPass",
+                        "itemType is an unsupported type");
                 }
-                else
-                    throw std::runtime_error("itemType is an unsupported type");
                 item = rewriter.create<LLVM::IntToPtrOp>(loc, elementType, item);
             }
-            else
-                throw std::runtime_error(
+            else {
+                throw ErrorHandler::compilerError(loc, "LowerToLLVMPass",
                         "casting to a non-pointer type in "
                         "StoreVariadicPackOpLowering is not implemented yet"
                 );
+            }
         }
         rewriter.replaceOpWithNewOp<LLVM::StoreOp>(
                 op.getOperation(), item, addr
@@ -526,10 +533,10 @@ public:
         callee << '_' << op->getName().stripDialect().str();
 
         // Result Matrix
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType());
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType(), false);
 
         // Input Matrix
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getArg().getType());
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getArg().getType(), false);
 
         // Pointer to UDF 
         callee << "__void";
@@ -626,9 +633,11 @@ public:
                     else if(llvm::isa<FloatType>(expTy)) {
                         val = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getF64Type(), val);
                         val = rewriter.create<LLVM::FPTruncOp>(loc, expTy, val);
+                    } else {
+                        throw ErrorHandler::compilerError(
+                            loc, "LowerToLLVMPass",
+                            "expTy is an unsupported type");
                     }
-                    else
-                        throw std::runtime_error("expTy is an unsupported type");
                 }
                 funcBlock.getArgument(0).replaceAllUsesWith(val);
                 funcBlock.eraseArgument(0);
@@ -726,21 +735,24 @@ public:
         // Get some information on the results.
         Operation::result_type_range resultTypes = op->getResultTypes();
         const size_t numRes = op->getNumResults();
-        
+
         if(numRes > 0) {
             // TODO Support individual types for all outputs (see #397).
             // Check if all results have the same type.
             Type mt0 = resultTypes[0].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
-            for(size_t i = 1; i < numRes; i++)
-                if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
-                    throw std::runtime_error(
-                            "encountered a vectorized pipelines with different "
-                            "result types, but at the moment we require all "
-                            "results to have the same type"
-                    );
-            
+            for (size_t i = 1; i < numRes; i++) {
+                if (mt0 != resultTypes[i]
+                               .dyn_cast<daphne::MatrixType>()
+                               .withSameElementTypeAndRepr()) {
+                    throw ErrorHandler::compilerError(
+                        op, "LowerToLLVMPass",
+                        "encountered a vectorized pipelines with different "
+                        "result types, but at the moment we require all "
+                        "results to have the same type");
+                }
+            }
             // Append the name of the common type of all results to the kernel name.
-            callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0]) << "_variadic__size_t";
+            callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0], false) << "_variadic__size_t";
         }
 
         mlir::Type operandType;
@@ -761,11 +773,17 @@ public:
                 std::string str;
                 llvm::raw_string_ostream output(str);
                 op->getResult(0).getType().print(output);
-                throw std::runtime_error("Unsupported result type for vectorizedPipeline op: " + str);
+                throw ErrorHandler::compilerError(
+                    op, "LowerToLLVMPass",
+                    "Unsupported result type for vectorizedPipeline op: " +
+                        str);
             }
         }
         else {
-            throw std::runtime_error("vectorizedPipelineOp without outputs not supported at the moment!");
+            throw ErrorHandler::compilerError(
+                op, "LowerToLLVMPass",
+                "vectorizedPipelineOp without outputs not supported at the "
+                "moment!");
         }
 
         // Handle variadic operands isScalar and inputs (both share numInputs).
@@ -776,7 +794,7 @@ public:
             daphne::VariadicPackType::get(rewriter.getContext(), rewriter.getI1Type()),
             attrNumInputs);
         // For inputs and numInputs.
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, true);
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, false, true);
         callee << "_variadic__size_t";
         auto vpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc,
             daphne::VariadicPackType::get(rewriter.getContext(), operandType),
@@ -805,11 +823,11 @@ public:
 
         auto numOutputs = op.getNumResults();
         // Variadic num rows operands.
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
         auto rowsOperands = adaptor.getOperands().drop_front(numDataOperands);
         newOperands
             .push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), rowsOperands.take_front(numOutputs)));
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
         auto colsOperands = rowsOperands.drop_front(numOutputs);
         newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), colsOperands.take_front(numOutputs)));
 
@@ -979,10 +997,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
-    patterns.insert<
-            CallKernelOpLowering,
-            CreateVariadicPackOpLowering>(typeConverter, &getContext());
-
+    patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering>(
+        typeConverter, &getContext());
     patterns.insert<VectorizedPipelineOpLowering>(typeConverter, &getContext(), cfg);
 
     patterns.insert<

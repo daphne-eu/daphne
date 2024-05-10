@@ -89,7 +89,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
                                          const mlir::FunctionType &funcType,
                                          const std::string &functionName);
     
-    void handleAssignmentPart(
+    void handleAssignmentPart(mlir::Location loc,
         const std::string & var,
         DaphneDSLGrammarParser::IndexingContext * idxCtx,
         ScopedSymbolTable & symbolTable,
@@ -118,6 +118,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
 
     /**
      * @brief Tries to find a unary (i.e. single param) UDF based on the argument type
+     * @param mlir::Location of UDF
      * @param functionName Name of the UDF
      * @param argType The type of the argument passed to the UDF
      * @return `FuncOp` of the matched UDF or `std::nullopt` if no UDF with the provided 
@@ -125,7 +126,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @throws `std::runtime_error` if a UDF with the name exists but no matching 
      *  version was found
      */
-    std::optional<mlir::func::FuncOp> findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const;
+    std::optional<mlir::func::FuncOp> findMatchingUnaryUDF(mlir::Location loc, const std::string &functionName, mlir::Type argType) const;
 
     /**
      * @brief Checks if the type of an agrument to a UDF is compatible with the 

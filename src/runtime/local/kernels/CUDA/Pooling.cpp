@@ -17,7 +17,7 @@
 #include "runtime/local/kernels/CUDA/Pooling.h"
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
-namespace CUDA::Pooling {
+namespace CUDA::NN::Pooling {
 
     template<template<typename> class OP, typename DTRes, typename DTArg>
     void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, size_t& res_h, size_t& res_w,
@@ -61,10 +61,10 @@ namespace CUDA::Pooling {
                                         d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
     }
 
-    template struct Forward<::Pooling::AVG, DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward<::Pooling::AVG, DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<::NN::Pooling::AVG, DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<::NN::Pooling::AVG, DenseMatrix<double>, DenseMatrix<double>>;
 
-    template struct Forward<::Pooling::MAX, DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward<::Pooling::MAX, DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<::NN::Pooling::MAX, DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<::NN::Pooling::MAX, DenseMatrix<double>, DenseMatrix<double>>;
 }
 
