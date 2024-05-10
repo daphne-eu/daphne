@@ -22,11 +22,11 @@
 #include "HostUtils.h"
 #include "runtime/local/kernels/Pooling.h"
 
-namespace CUDA::Pooling {
+namespace CUDA::NN::Pooling {
 
     // introduce generic pooling ops in this namespace
-    using ::Pooling::AVG;
-    using ::Pooling::MAX;
+    using ::NN::Pooling::AVG;
+    using ::NN::Pooling::MAX;
     
     template<template<typename> class OP, typename DTRes, typename DTArg>
     struct Forward {

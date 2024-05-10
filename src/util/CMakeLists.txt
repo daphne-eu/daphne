@@ -20,7 +20,12 @@ endif()
 add_library(Util
 		DaphneLogger.h
 		DaphneLogger.cpp
+        ErrorHandler.h
+        ErrorHandler.cpp
+        KernelDispatchMapping.h
+        KernelDispatchMapping.cpp
         MurmurHash3.cpp
-		preprocessor_defs.h)
+		preprocessor_defs.h
+        )
 
 target_link_libraries(Util PRIVATE spdlog::spdlog)

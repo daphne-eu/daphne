@@ -45,6 +45,11 @@ def Unknown : Daphne_Type<"Unknown"> {
 // Data types
 // ****************************************************************************
 
+def Structure : Daphne_Type<"Structure"> {
+    // Don't use this in TableGen!
+    let summary = "structure";
+}
+
 // A matrix type.
 def Matrix : Daphne_Type<"Matrix"> {
     let summary = "matrix";

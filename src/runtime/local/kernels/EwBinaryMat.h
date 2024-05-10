@@ -24,7 +24,6 @@
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************

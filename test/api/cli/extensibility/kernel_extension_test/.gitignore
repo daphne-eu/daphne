@@ -1,0 +1,4 @@
+.ninja_deps
+.ninja_log
+libMyKernels.so
+myKernels.o

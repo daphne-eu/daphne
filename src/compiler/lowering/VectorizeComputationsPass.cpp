@@ -14,7 +14,9 @@
  *  limitations under the License.
  */
 
+
 #include "compiler/utils/CompilerUtils.h"
+#include <util/ErrorHandler.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -219,7 +221,7 @@ void VectorizeComputationsPass::runOnOperation()
                         }
                     }
                 }
-                
+
                 if(qualified){
                     auto split = std::get<1>(e);
                     // find the corresponding `OpResult` to figure out combine
@@ -234,7 +236,10 @@ void VectorizeComputationsPass::runOnOperation()
                         // can't be merged
                     }
                     else {
-                        throw std::runtime_error("VectorSplit case `" + stringifyEnum(split).str() + "` not handled");
+                        throw ErrorHandler::compilerError(
+                            v, "VectorizeComputationsPass",
+                            "VectorSplit case `" + stringifyEnum(split).str() +
+                                "` not handled");
                     }
                 }
             }

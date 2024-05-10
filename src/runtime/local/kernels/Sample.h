@@ -24,9 +24,9 @@
 #include <algorithm>
 #include <random>
 #include <set>
+#include <stdexcept>
 #include <type_traits>
 
-#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -62,12 +62,14 @@ void sample(DTRes *& res, VTArg range, size_t size, bool withReplacement, int64_
 template<typename VT>
 struct Sample<DenseMatrix<VT>, VT> {
     static void apply(DenseMatrix<VT> *& res, VT range, int64_t size, bool withReplacement, int64_t seed, DCTX(ctx)) {
-        assert(size > 0 && "size (rows) must be > 0");
-        assert(range > 0 && "range must be > 0");        
-        if ( ! withReplacement ){
-            if (!std::is_floating_point<VT>::value){
-                assert(range >= size && "if no duplicates are allowed, then must be range >= size");
-            }
+        if (size <= 0)
+            throw std::runtime_error("size (rows) must be > 0");
+        if (range <= 0)
+            throw std::runtime_error("range must be > 0");
+        if (!withReplacement && !std::is_floating_point<VT>::value &&
+            range < size) {
+            throw std::runtime_error("if no duplicates are allowed, "
+                                     "then must be range >= size");
         }
 
         if(res == nullptr)
@@ -80,11 +82,11 @@ struct Sample<DenseMatrix<VT>, VT> {
         }
 
         std::mt19937 genVal(seed);
-        
-        static_assert(
-        std::is_floating_point<VT>::value || std::is_integral<VT>::value,
-                "the value type must be either floating point or integral"
-        );
+
+        if (!std::is_floating_point<VT>::value && !std::is_integral<VT>::value)
+            throw std::runtime_error(
+                "the value type must be either floating point or integral");
+
         // TODO For std::uniform_real_distribution, the upper bound is not
         // included in the interval of possible values, so when VT is a
         // floating-point type, std::nextafter() is not required. However, we

@@ -23,6 +23,7 @@
 #include <llvm/Support/SourceMgr.h>
 
 #include <ir/daphneir/Daphne.h>
+#include <parser/catalog/KernelCatalogParser.h>
 
 #include "WorkerImpl.h"
 
@@ -74,6 +75,12 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     // want to hardcode insertFreeOp to false anymore. But maybe we will insert
     // the FreeOps at the coordinator already.
     DaphneIrExecutor executor(false, cfg);
+
+    KernelCatalog & kc = executor.getUserConfig().kernelCatalog;
+    KernelCatalogParser kcp(executor.getContext());
+    kcp.parseKernelCatalog(cfg.libdir + "/catalog.json", kc);
+    if(executor.getUserConfig().use_cuda)
+        kcp.parseKernelCatalog(cfg.libdir + "/CUDAcatalog.json", kc);
 
     mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, executor.getContext()));
     if (!module) {

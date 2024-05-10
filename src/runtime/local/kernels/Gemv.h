@@ -108,7 +108,10 @@ struct Gemv<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         [[maybe_unused]] const size_t nr2 = vec->getNumRows();
         const size_t nc2 = vec->getNumCols();
 
-        assert(nc1 == nr2 && "#cols of mat and #rows of vec must be the same");
+        if (nc1 != nr2) {
+            throw std::runtime_error(
+                "Gemv - #cols of mat and #rows of vec must be the same");
+        }
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false);

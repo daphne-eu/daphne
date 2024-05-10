@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "daphne"
+authors = [
+    {name = "The DAPHNE Consortium", email = "daphne_dev@know-center.at"},
+]
+description = "DaphneLib: Python API for DAPHNE"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache v2.0"}
+classifiers = [
+    "License :: Apache v2.0",
+    "Topic :: Software Development :: Libraries",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "pandas",
+]
+version = "0.2.0"
+
+[project.urls]
+Homepage = "https://daphne-eu.eu/"
+Documentation = "https://daphne-eu.github.io/daphne/"
+Repository = "https://github.com/daphne-eu/daphne"
+Issues = "https://github.com/daphne-eu/daphne/issues"
+Changelog = "https://github.com/daphne-eu/daphne/releases"
+
+[tool.setuptools]
+license-files = ["LICENSE.txt"]

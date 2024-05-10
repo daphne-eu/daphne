@@ -31,6 +31,14 @@ struct DaphneConfigJsonParams {
     inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
     inline static const std::string USE_PHY_OP_SELECTION = "use_phy_op_selection";
     inline static const std::string USE_MLIR_CODEGEN = "use_mlir_codegen";
+    inline static const std::string MATMUL_VEC_SIZE_BITS = "matmul_vec_size_bits";
+    inline static const std::string MATMUL_TILE = "matmul_tile"; 
+    inline static const std::string MATMUL_FIXED_TILE_SIZES = "matmul_fixed_tile_sizes";
+    inline static const std::string MATMUL_USE_FIXED_TILE_SIZES = "matmul_use_fixed_tile_sizes"; 
+    inline static const std::string MATMUL_UNROLL_FACTOR = "matmul_unroll_factor";    
+    inline static const std::string MATMUL_UNROLL_JAM_FACTOR = "matmul_unroll_jam_factor";   
+    inline static const std::string MATMUL_NUM_VEC_REGISTERS = "matmul_num_vec_registers";   
+    inline static const std::string MATMUL_INVERT_LOOPS = "matmul_invert_loops";    
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
@@ -52,11 +60,18 @@ struct DaphneConfigJsonParams {
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
     inline static const std::string CUDA_DEVICES = "cuda_devices";
     inline static const std::string LIB_DIR = "libdir";
-    inline static const std::string LIBRARY_PATHS = "library_paths";
     inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
     inline static const std::string LOGGING = "logging";
 
     inline static const std::string JSON_PARAMS[] = {
+            MATMUL_VEC_SIZE_BITS,
+            MATMUL_TILE,
+            MATMUL_FIXED_TILE_SIZES,
+            MATMUL_USE_FIXED_TILE_SIZES,
+            MATMUL_UNROLL_FACTOR,
+            MATMUL_UNROLL_JAM_FACTOR,
+            MATMUL_NUM_VEC_REGISTERS,
+            MATMUL_INVERT_LOOPS,
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,
@@ -83,7 +98,6 @@ struct DaphneConfigJsonParams {
             MINIMUM_TASK_SIZE,
             CUDA_DEVICES,
             LIB_DIR,
-            LIBRARY_PATHS,
             DAPHNEDSL_IMPORT_PATHS,
             LOGGING
     };

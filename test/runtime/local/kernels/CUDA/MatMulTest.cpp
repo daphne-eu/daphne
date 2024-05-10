@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
+
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
-#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 #include <runtime/local/kernels/CUDA/MatMul.h>
 
 #include <tags.h>
@@ -34,12 +35,8 @@ void checkMatMulCUDA(const DT * lhs, const DT * rhs, const DT * exp, bool transa
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+    auto dctx = setupContextAndLogger();
     using DT = TestType;
-
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-    CUDA::createCUDAContext(dctx.get());
-
     auto m0 = genGivenVals<DT>(3, {
         0, 0, 0,
         0, 0, 0,
@@ -119,13 +116,8 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, d
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul Transposed", TAG_KERNELS, (DenseMatrix), (float, double)) {
+    auto dctx = setupContextAndLogger();
     using DT = TestType;
-
-
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-    CUDA::createCUDAContext(dctx.get());
-
     auto m0 = genGivenVals<DT>(3, {
             1, 2, 3,
             3, 1, 2,

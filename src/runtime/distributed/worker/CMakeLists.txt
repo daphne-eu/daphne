@@ -39,6 +39,7 @@ set(LIBS
         IO        
         CallData
         Proto
+        DaphneCatalogParser
         DaphneMetaDataParser
         Arrow::arrow_shared
         Parquet::parquet_shared

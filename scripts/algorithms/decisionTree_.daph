@@ -144,7 +144,7 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
     # construct 0/1 predicate vectors with <= semantics
     # find rows that match at least one value and appear in I
     # (vectorized evaluation, each column in P is a split candidate)
-    fP = upperTri(fill(1,belen,belen+1), true, true);
+    fP = upperTri(fill(1,belen,belen), true, true);
     vI = seq(1,belen+1,1);
     if( max_values < 1.0 && ncol(fP)>10 ) {
       # This cannot generate 0.0, as sparsity is set to 1; is that okay?

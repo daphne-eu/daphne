@@ -1,4 +1,11 @@
 {
+    "matmul_vec_size_bits": 0,
+    "matmul_tile": false,
+    "matmul_use_fixed_tile_sizes": true,
+    "matmul_fixed_tile_sizes": [4, 4, 4, 4, 4],
+    "matmul_unroll_factor": 1,
+    "matmul_unroll_jam_factor": 4,
+    "matmul_num_vec_registers": 16,
     "use_cuda": false,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
@@ -19,7 +26,7 @@
     "taskPartitioningScheme": "STATIC",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
-    "library_paths": [],
+    "libdir": "{exedir}/../lib",
     "daphnedsl_import_paths": {},
     "logging": [
         { "log-level-limit": "ERROR" },

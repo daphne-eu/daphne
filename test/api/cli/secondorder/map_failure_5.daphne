@@ -1,0 +1,8 @@
+// Function with mismatching signature: more than one result.
+
+def foo(x) {
+    return x, x+1;
+}
+
+X = [1, 2, 3];
+print(map(X, foo));

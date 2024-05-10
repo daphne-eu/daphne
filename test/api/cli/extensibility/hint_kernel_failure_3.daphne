@@ -1,0 +1,7 @@
+// Hint to use a pre-compiled kernel for a user-defined function.
+
+def hello() {
+    print("world");
+}
+
+hello::someKernel();

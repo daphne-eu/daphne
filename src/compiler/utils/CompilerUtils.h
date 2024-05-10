@@ -18,6 +18,7 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <parser/metadata/MetaDataParser.h>
+#include "util/ErrorHandler.h"
 
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/IR/Value.h>
@@ -46,9 +47,9 @@ private:
         if(p.first)
             return p.second;
         else
-            throw std::runtime_error(
-                    errorMsg.empty()
-                    ? ("the given value must be a constant of " + valTypeName + " type")
+            throw ErrorHandler::compilerError(v.getLoc(), "constantOrThrow",
+                    errorMsg.empty() ?
+                    ("the given value must be a constant of " + valTypeName + " type")
                     : errorMsg
             );
     }
@@ -123,10 +124,15 @@ public:
      * might complain about recursion.
      *
      * @param t MLIR type name
-     * @param generalizeToStructure If true, "Structure" is used instead of derived types DenseMatrix et al.
-     * @return string representation of the C++ type names
+     * @param angleBrackets If `true` (default), angle brackets are used for C++ template types (e.g., `DenseMatrix<float>`);
+     * Otherwise, underscores are used (e.g., `DenseMatrix_float`).
+     * @param generalizeToStructure If `true`, `Structure` is used instead of derived types like `DenseMatrix` etc.
+     * @return A string representation of the C++ type names
      */
-    static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) { // NOLINT(misc-no-recursion)
+    // TODO The parameter generalizeToStructure seems to be used only by some remaining kernel name generation
+    // in LowerToLLVMPass. Once those call-sites have been refactored to use the kernel catalog, this feature
+    // can be removed here.
+    static std::string mlirTypeToCppTypeName(mlir::Type t, bool angleBrackets = true, bool generalizeToStructure = false) { // NOLINT(misc-no-recursion)
         if(t.isF64())
             return "double";
         else if(t.isF32())
@@ -147,17 +153,24 @@ public:
             return "bool";
         else if(t.isIndex())
             return "size_t";
-        else if(auto matTy = t.dyn_cast<mlir::daphne::MatrixType>())
+        else if(t.isa<mlir::daphne::StructureType>())
+            return "Structure";
+        else if(auto matTy = t.dyn_cast<mlir::daphne::MatrixType>()) {
             if(generalizeToStructure)
                 return "Structure";
             else {
                 switch (matTy.getRepresentation()) {
-                case mlir::daphne::MatrixRepresentation::Dense:
-                    return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
-                case mlir::daphne::MatrixRepresentation::Sparse:
-                    return "CSRMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
+                    case mlir::daphne::MatrixRepresentation::Dense: {
+                        const std::string vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
+                        return angleBrackets ? ("DenseMatrix<" + vtName + ">") : ("DenseMatrix_" + vtName);
+                    }
+                    case mlir::daphne::MatrixRepresentation::Sparse: {
+                        const std::string vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
+                        return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
+                    }
                 }
             }
+        }
         else if(llvm::isa<mlir::daphne::FrameType>(t))
             if(generalizeToStructure)
                 return "Structure";
@@ -170,8 +183,10 @@ public:
             return "char";
         else if(llvm::isa<mlir::daphne::DaphneContextType>(t))
             return "DaphneContext";
-        else if(auto handleTy = t.dyn_cast<mlir::daphne::HandleType>())
-            return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
+        else if(auto handleTy = t.dyn_cast<mlir::daphne::HandleType>()) {
+            const std::string tName = mlirTypeToCppTypeName(handleTy.getDataType(), angleBrackets, generalizeToStructure);
+            return angleBrackets ? ("Handle<" + tName + ">") : ("Handle_" + tName);
+        }
         else if(llvm::isa<mlir::daphne::FileType>(t))
             return "File";
         else if(llvm::isa<mlir::daphne::DescriptorType>(t))
@@ -179,7 +194,8 @@ public:
         else if(llvm::isa<mlir::daphne::TargetType>(t))
             return "Target";
         else if(auto memRefType = t.dyn_cast<mlir::MemRefType>()) {
-            return "StridedMemRefType_" + mlirTypeToCppTypeName(memRefType.getElementType(), false) + "_2";
+            const std::string vtName = mlirTypeToCppTypeName(memRefType.getElementType(), angleBrackets, false);
+            return angleBrackets ? ("StridedMemRefType<" + vtName + ",2>") : ("StridedMemRefType_" + vtName + "_2");
         }
 
         std::string typeName;
@@ -207,12 +223,12 @@ public:
             if(!dctx)
                 dctx = op.getResult();
             else
-                throw std::runtime_error(
+                throw ErrorHandler::compilerError(op.getLoc(), "getDaphneContext",
                         "function body block contains more than one CreateDaphneContextOp"
                 );
         }
         if(!dctx)
-            throw std::runtime_error(
+            throw ErrorHandler::compilerError(func.getLoc(), "getDaphneContext",
                     "function body block contains no CreateDaphneContextOp"
             );
         return dctx;
@@ -299,33 +315,4 @@ public:
             )
         );
     }
-
-    /**
-     * @brief Creates an exception with a message that contains the given location (in
-     * a uniformly formatted way) and the given message.
-     * 
-     * This function should be used for consistent error message formatting.
-     * 
-     * @param loc The location information
-     * @param msg The original error message (without the location information)
-     * @return An exception instance to be thrown at the call-site
-     */
-    static std::runtime_error makeError(mlir::Location loc, const std::string & msg) {
-        // Note: We return an exception rather than throwing it here for the following reason:
-        // If this function threw the exception, we would use this function like a replacement
-        // for a C++ throw statement. However, that would be hard to understand for the C++
-        // compiler in some cases. For instance, assume a function f() with non-void return value
-        // contains only an if-then-else statement, whose then-branch returns a value and
-        // whose else-branch throws an exception. The C++ compiler could complain about
-        // reaching the end of control flow without a return or throw statement in f().
-        // By returning the exception, the caller can simply throw it as in `throw makeError(...);`,
-        // and that will look fine for the C++ compiler.
-
-        // TODO Support different sub-classes of Location.
-        auto flcLoc = loc.dyn_cast<mlir::FileLineColLoc>();
-        std::stringstream s;
-        s << flcLoc.getFilename().str() << ':' << flcLoc.getLine() << ':' << flcLoc.getColumn() << ' ' << msg;
-        return std::runtime_error(s.str());
-    }
-
 };

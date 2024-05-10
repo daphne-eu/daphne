@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 int readLogLevel(const std::string& level) {
     std::string level_lowercase(level);
@@ -41,7 +42,7 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 
     checkAnyUnexpectedKeys(jf, filename);   // raise an error if the config JSON file contains any unexpected keys
 
-    if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
+        if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
         config.use_cuda = jf.at(DaphneConfigJsonParams::USE_CUDA_).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_VECTORIZED_EXEC))
         config.use_vectorized_exec = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_EXEC).get<bool>();
@@ -53,6 +54,22 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::USE_PHY_OP_SELECTION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_MLIR_CODEGEN))
         config.use_mlir_codegen = jf.at(DaphneConfigJsonParams::USE_MLIR_CODEGEN).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS))
+        config.matmul_vec_size_bits = jf.at(DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_TILE))
+        config.matmul_tile = jf.at(DaphneConfigJsonParams::MATMUL_TILE).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_USE_FIXED_TILE_SIZES))
+        config.matmul_use_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_USE_FIXED_TILE_SIZES).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES))
+        config.matmul_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES).get<std::vector<unsigned>>(); 
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR))
+        config.matmul_unroll_factor = jf.at(DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_JAM_FACTOR))
+        config.matmul_unroll_jam_factor = jf.at(DaphneConfigJsonParams::MATMUL_UNROLL_JAM_FACTOR).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_NUM_VEC_REGISTERS))
+        config.matmul_num_vec_registers = jf.at(DaphneConfigJsonParams::MATMUL_NUM_VEC_REGISTERS).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::MATMUL_INVERT_LOOPS))
+        config.matmul_invert_loops = jf.at(DaphneConfigJsonParams::MATMUL_INVERT_LOOPS).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
         config.cuda_fuse_any = jf.at(DaphneConfigJsonParams::CUDA_FUSE_ANY).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE))
@@ -100,8 +117,6 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 #endif
     if (keyExists(jf, DaphneConfigJsonParams::LIB_DIR))
         config.libdir = jf.at(DaphneConfigJsonParams::LIB_DIR).get<std::string>();
-    if (keyExists(jf, DaphneConfigJsonParams::LIBRARY_PATHS))
-        config.library_paths = jf.at(DaphneConfigJsonParams::LIBRARY_PATHS).get<std::vector<std::string>>();
     if (keyExists(jf, DaphneConfigJsonParams::DAPHNEDSL_IMPORT_PATHS)) {
         config.daphnedsl_import_paths = jf.at(DaphneConfigJsonParams::DAPHNEDSL_IMPORT_PATHS).get<std::map<std::string,
                 std::vector<std::string>>>();

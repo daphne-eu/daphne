@@ -1,8 +1,8 @@
 // Performs a MatMulOp. Used to compare precompiled kernel with codegen.
 
 N = 3;
-A = fill(5.0, N, N);
-B = fill(3.0, N, N);
+A = as.matrix<f64>(fill(5.0, N, N));
+B = as.matrix<f64>(fill(3.0, N, N));
 
 C = A@B;
 
