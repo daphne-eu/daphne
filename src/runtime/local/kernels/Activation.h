@@ -27,7 +27,13 @@ namespace NN::Activation {
 
     template<typename OP, typename DTRes, typename DTArg>
     struct Forward {
-        static void apply(DTRes *&res, [[maybe_unused]] const DTArg *data, DCTX(dctx)) { throw
-                std::runtime_error("C++ ReLU activation not implemented"); }
+        static void apply(DTRes *&res, [[maybe_unused]] const DTArg *data, DCTX(dctx)) {
+            throw std::runtime_error("C++ ReLU activation not implemented"); }
+    };
+
+    template<typename OP, typename DTRes, typename DTArg>
+    struct Backward {
+        static void apply(DTRes *&res, const DTArg *grad_in, const DTArg *data_in, DCTX(dctx)) {
+            throw std::runtime_error("C++ ReLU activation not implemented"); }
     };
 }
