@@ -3887,6 +3887,52 @@
     },
     {
         "kernelTemplate": {
+            "header": "Activation.h",
+            "opName": "NN::Activation::Backward",
+            "returnType": "void",
+            "opCodeAsTemplateParam": 1,
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "NN::ActivationOpCode",
+                    "name": "opcode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "grad_in"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data_in"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ],
+                "opCodes": ["ReLU"]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Affine.h",
             "opName": "NN::Affine::Forward",
             "returnType": "void",

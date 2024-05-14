@@ -752,6 +752,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Deep neural network
     // ********************************************************************
 
+    // Forward pass
     if (func == "affine") {
         return createAffineFwdOp(loc, func, args);
     }
@@ -790,6 +791,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value input_data = args[0];
         return static_cast<mlir::Value>(builder.create<mlir::daphne::SoftmaxForwardOp>(loc, input_data.getType(), input_data));
+    }
+
+    // Backward pass
+    if (func == "relu_back") {
+        checkNumArgsExact(loc, func, numArgs, 2);
+        mlir::Value grad_in = args[0];
+        mlir::Value data_in = args[1];
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ReluBackwardOp>(loc, data_in.getType(), grad_in, data_in));
     }
 
     // ********************************************************************

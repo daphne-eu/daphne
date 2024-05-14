@@ -27,6 +27,7 @@ void CUDAContext::destroy() {
     CHECK_CUDART(cudaStreamDestroy(cusolver_stream));
     CHECK_CUDNN(cudnnDestroyPoolingDescriptor(pooling_desc));
     CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_tensor_desc));
+    CHECK_CUDNN(cudnnDestroyTensorDescriptor(src2_tensor_desc));
     CHECK_CUDNN(cudnnDestroyTensorDescriptor(dst_tensor_desc));
     CHECK_CUDNN(cudnnDestroyTensorDescriptor(bn_tensor_desc));
     CHECK_CUDNN(cudnnDestroyActivationDescriptor(activation_desc));
@@ -55,6 +56,7 @@ void CUDAContext::init() {
     CHECK_CUDNN(cudnnCreate(&cudnn_handle));
     CHECK_CUDNN(cudnnCreatePoolingDescriptor(&pooling_desc));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_tensor_desc));
+    CHECK_CUDNN(cudnnCreateTensorDescriptor(&src2_tensor_desc));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&dst_tensor_desc));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&bn_tensor_desc));
     CHECK_CUDNN(cudnnCreateActivationDescriptor(&activation_desc));

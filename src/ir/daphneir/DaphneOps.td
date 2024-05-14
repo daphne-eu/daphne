@@ -800,6 +800,15 @@ class Daphne_ActivationForwardOp<string name, list<Trait> traits = []> :
 
 def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"NN_Relu_Forward", [ ValueTypeFromFirstArg, DataTypeFromFirstArg, CUDASupport ]>;
 
+class Daphne_ActivationBackwardOp<string name, list<Trait> traits = []> :
+        Daphne_Op<name, traits> {
+    let arguments = (ins MatrixOf<[FloatScalar]>:$grad_in, MatrixOf<[FloatScalar]>:$input);
+
+    let results = (outs MatrixOf<[FloatScalar]>:$grad_out);
+}
+
+def Daphne_ReluBackwardOp : Daphne_ActivationBackwardOp<"NN_Relu_Backward", [ CUDASupport ]>;
+
 // ----------------------------------------------------------------------------
 // Affine
 // ----------------------------------------------------------------------------
