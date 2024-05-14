@@ -17,7 +17,7 @@
 #include "Activation.h"
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
-namespace CUDA::Activation {
+namespace CUDA::NN::Activation {
     template<typename OP, typename DTRes, typename DTArg>
     void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
         const size_t deviceID = 0; //ToDo: multi device support

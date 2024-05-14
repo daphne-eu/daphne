@@ -782,13 +782,13 @@ class Daphne_ActivationForwardOp<string name, list<Trait> traits = []> :
     let results = (outs MatrixOf<[FloatScalar]>:$data);
 }
 
-def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"Relu_Forward", [ CUDASupport ]>;
+def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"NN_Relu_Forward", [ CUDASupport ]>;
 
 // ----------------------------------------------------------------------------
 // Affine
 // ----------------------------------------------------------------------------
 
-def Daphne_AffineForwardOp : Daphne_Op<"affineForward", [ CUDASupport ]> {
+def Daphne_AffineForwardOp : Daphne_Op<"NN_Affine_Forward", [ CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$weights,
             MatrixOf<[FloatScalar]>:$bias);
 

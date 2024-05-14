@@ -20,7 +20,7 @@
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
 
-namespace Activation {
+namespace NN::Activation {
     struct ReLU {
         static inline int getActivationType() { /* ToDo: ReLU activation */ return 0; }
     };

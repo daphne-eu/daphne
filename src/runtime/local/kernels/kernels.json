@@ -3567,7 +3567,7 @@
     {
         "kernelTemplate": {
             "header": "Activation.h",
-            "opName": "Activation::Forward",
+            "opName": "NN::Activation::Forward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -3582,7 +3582,7 @@
             ],
             "runtimeParams": [
                 {
-                    "type": "ActivationOpCode",
+                    "type": "NN::ActivationOpCode",
                     "name": "opcode"
                 },
                 {
@@ -3609,7 +3609,7 @@
     {
         "kernelTemplate": {
             "header": "Affine.h",
-            "opName": "Affine::Forward",
+            "opName": "NN::Affine::Forward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
