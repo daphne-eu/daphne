@@ -97,7 +97,8 @@ public:
 
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
-    cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
+    // ToDo: move these to the allocation descriptor
+    cudnnTensorDescriptor_t src_tensor_desc{}, src2_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
     cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
     cudnnFilterDescriptor_t filter_desc{};
     cudnnActivationDescriptor_t  activation_desc{};
