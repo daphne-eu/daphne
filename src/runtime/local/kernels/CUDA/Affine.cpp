@@ -52,8 +52,10 @@ namespace CUDA::NN::Affine {
         const VT* d_weights = weights->getValues(&alloc_desc);
 
         if (nc1 != weights->getNumRows()) {
-            throw std::runtime_error(fmt::format("NN::Affine: #cols of lhs and #rows of rhs must be the same ({} != {})",
-                    nc1, weights->getNumRows()));
+            throw std::runtime_error(
+                fmt::format("CUDA::NN::Affine: #cols of lhs and #rows of rhs must be "
+                            "the same ({} != {})",
+                            nc1, weights->getNumRows()));
         }
 
         if(res == nullptr)
@@ -64,7 +66,8 @@ namespace CUDA::NN::Affine {
         launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_input, d_weights, d_res);
 
         if(bias) {
-            assert((bias->getNumRows() == 1) && "bias dimensions not matching up with weights matrix (W[MxN] -> b[1xN]");
+            if (bias->getNumRows() != 1)
+                throw std::runtime_error("Affine (CUDA): bias dimensions not matching up with weights matrix (W[MxN] -> b[1xN]");
             const VT* d_bias = bias->getValues(&alloc_desc);
             CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
                     1, bias->getNumCols(), 1, 1));

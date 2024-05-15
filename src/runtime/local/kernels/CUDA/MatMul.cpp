@@ -101,7 +101,8 @@ namespace CUDA {
         const size_t nc2 = rhs->getNumCols();
         const size_t A_nnz = lhs->getNumNonZeros();
         const size_t B_nnz = rhs->getNumNonZeros();
-        assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
+        if (nc1 != nr2)
+            throw std::runtime_error("MatMul (CUDA): #cols of lhs and #rows of rhs must be the same");
         const VT blend_alpha = 1.0f;
         const VT blend_beta = 0.0f;
         cusparseOperation_t opA = transa ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE;

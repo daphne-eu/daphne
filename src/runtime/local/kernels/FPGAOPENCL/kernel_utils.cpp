@@ -4,7 +4,6 @@
 
 #include "AOCLUtils/aocl_utils.h"
 #include "CL/opencl.h"
-#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

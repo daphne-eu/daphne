@@ -35,6 +35,7 @@
 #include <llvm/Support/SourceMgr.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <vector>
+#include <stdexcept>
 
 using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
@@ -146,7 +147,8 @@ public:
                 }
             }
             else {
-                assert(splits[i] == VectorSplit::ROWS && "only row split supported for now");
+                if (splits[i] != VectorSplit::ROWS)
+                    throw std::runtime_error("DistributedWrapper: only row split is currently supported");
                 // std::cout << i << " distr: " << inputs[i]->getNumRows() << " x " << inputs[i]->getNumCols() << std::endl;
                 if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
 #ifdef USE_MPI 

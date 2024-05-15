@@ -29,8 +29,8 @@
     #include <runtime/distributed/worker/MPIHelper.h>
 #endif 
 
-#include <cassert>
 #include <cstddef>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -124,7 +124,8 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
         }; 
         DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller(dctx);
             
-        assert(mat != nullptr);
+        if (mat == nullptr)
+            throw std::runtime_error("Distribute gRPC: mat must not be a nullptr");
         
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);
         
@@ -193,7 +194,8 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
         auto ctx = DistributedContext::get(dctx);
         auto workers = ctx->getWorkers();
         
-        assert(mat != nullptr);
+        if (mat == nullptr)
+            throw std::runtime_error("Distribute gRPC: mat must not be a nullptr");
         
         std::vector<std::thread> threads_vector;
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);

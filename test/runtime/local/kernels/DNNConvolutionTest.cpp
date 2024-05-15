@@ -22,7 +22,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 
-#include <cassert>
 #include <tags.h>
 #include <catch.hpp>
 

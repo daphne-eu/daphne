@@ -22,8 +22,8 @@
 
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -178,7 +178,8 @@ public:
     [[nodiscard]] bool isPartialBuffer() const { return bufferSize != this->getNumRows() * this->getRowSkip() * sizeof(ValueType); }
 
     void shrinkNumRows(size_t numRows) {
-        assert((numRows <= this->numRows) && "number of rows can only the shrunk");
+        if (numRows > this->numRows)
+            throw std::runtime_error("DenseMatrix (shrinkNumRows): number of rows can only be shrunk");
         // TODO Here we could reduce the allocated size of the values array.
         this->numRows = numRows;
     }
@@ -484,7 +485,8 @@ class DenseMatrix<const char*> : public Matrix<const char*>
 public:
 
     void shrinkNumRows(size_t numRows) {
-        assert((numRows <= this->numRows) && "number of rows can only the shrunk");
+        if (numRows > this->numRows)
+            throw std::runtime_error("DenseMatrix (shrinkNumRows): number of rows can only be shrunk");
         // TODO Here we could reduce the allocated size of the values array.
         this->numRows = numRows;
     }
@@ -622,7 +624,8 @@ public:
     float printBufferSize() const { return static_cast<float>(numRows*numCols) / (1048576); }
 
     bool operator==(const DenseMatrix<const char*> &M) const {
-        assert(getNumRows() != 0 && getNumCols() != 0 && strBuf && values && "Invalid matrix");
+        if (getNumRows() == 0 || getNumCols() == 0 || !strBuf || !values)
+            throw std::runtime_error("DenseMatrix (operator==): invalid matrix. DenseMatrix must not be empty");
         for(size_t r = 0; r < getNumRows(); r++)
             for(size_t c = 0; c < getNumCols(); c++)
                 if(strcmp(M.getValues()[M.pos(r,c)], values.get()[pos(r,c)]))

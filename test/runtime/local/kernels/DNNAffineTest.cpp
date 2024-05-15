@@ -24,7 +24,6 @@
 #include <runtime/local/kernels/CheckEq.h>
 
 #include <catch.hpp>
-#include <cassert>
 #include <tags.h>
 
 template<class DT>
