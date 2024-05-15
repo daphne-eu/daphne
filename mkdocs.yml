@@ -28,7 +28,7 @@ theme:
     - navigation.tabs.sticky
 markdown_extensions:
   - pymdownx.arithmatex:
-    generic: true
+      generic: true
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
