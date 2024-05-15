@@ -943,8 +943,14 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
     const auto& identifierVec = ctx->IDENTIFIER();
     for(size_t s = 0; s < identifierVec.size(); s++)
         func += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
-    assert(func == "map" && "Called 'handleMapOpCall' for another function");
+
     mlir::Location loc = utils.getLoc(ctx->start);
+    
+    if (func != "map")
+        throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                "called 'handleMapOpCall' for function "
+                 + func + " instead of 'map'"
+        );
     
     if (ctx->expr().size() != 2) {
         throw ErrorHandler::compilerError(loc, "DSLVisitor",

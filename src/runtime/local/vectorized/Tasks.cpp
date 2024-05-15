@@ -128,13 +128,15 @@ void CompiledPipelineTask<CSRMatrix<VT>>::execute(uint32_t fid, uint32_t batchSi
     for(size_t i = 0; i < _data._numOutputs; i++) {
         switch(_data._combines[i]) {
             case VectorCombine::ROWS: {
-                assert(_data._wholeResultCols[i] != -1 && "TODO");
+                if (_data._wholeResultCols[i] == -1)
+                    throw std::runtime_error("TODO: CompiledPipeLineTask (CSRMatrix) Rows _data._wholeResultCols[i] == -1");
                 localResNumRows[i] = _data._ru - _data._rl;
                 localResNumCols[i] = _data._wholeResultCols[i];
                 break;
             }
             case VectorCombine::COLS: {
-                assert(_data._wholeResultRows[i] != -1 && "TODO");
+                if (_data._wholeResultRows[i] == -1)
+                    throw std::runtime_error("TODO: CompiledPipeLineTask (CSRMatrix) Cols _data._wholeResultRows[i] == -1");
                 localResNumRows[i] = _data._wholeResultRows[i];
                 localResNumCols[i] = _data._ru - _data._rl;
                 break;

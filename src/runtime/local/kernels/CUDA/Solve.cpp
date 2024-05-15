@@ -87,10 +87,14 @@ namespace CUDA {
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nc2 = rhs->getNumCols();
-        assert((nr1 == rhs->getNumRows()) && "#rows of lhs and #rows of rhs must be the same");
-        assert((nr1 == nc1) && "#rows and #cols of lhs must be the same");
-        assert((lhs->getRowSkip() == nc1) && "#cols of lhs must match row skip");
-        assert((nc2 == 1) && "#cols of rhs must be 1");
+        if (nr1 != rhs->getNumRows())
+            throw std::runtime_error("Solve (CUDA): #rows of lhs and #rows of rhs must be the same");
+        if (nr1 != nc1)
+            throw std::runtime_error("Solve (CUDA): #rows and #cols of lhs must be the same");
+        if (lhs->getRowSkip() != nc1)
+            throw std::runtime_error("Solve (CUDA): #cols of lhs must match row skip");
+        if (nc2 != 1)
+            throw std::runtime_error("Solve (CUDA): #cols of rhs must be 1");
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false, &alloc_desc);

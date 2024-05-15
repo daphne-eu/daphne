@@ -20,7 +20,6 @@
 #include "IContext.h"
 #include <AOCLUtils/aocl_utils.h>
 #include <CL/opencl.h>
-#include <cassert>
 #include <iostream>
 #include <memory>
 

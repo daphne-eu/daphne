@@ -22,8 +22,8 @@
 #include <runtime/local/datastructures/Range.h>
 
 #include <vector>
+#include <stdexcept>
 #include <string>
-#include <cassert>
 #include <cstddef>
 #include <type_traits>
 
@@ -182,7 +182,7 @@ public:
                     m = (*outputs[i])->getNumCols() % workersSize;
                 }
                 else
-                    assert(!"Only Rows/Cols combineType supported atm");
+                    throw std::runtime_error("LoadPartitioningDistributed: Only Rows/Cols combineType supported atm");
 
                 DistributedData data;
                 data.ix = ix[i];

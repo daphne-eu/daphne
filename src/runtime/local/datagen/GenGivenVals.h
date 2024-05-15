@@ -22,9 +22,9 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <algorithm>
+#include <stdexcept>
 #include <vector>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -108,7 +108,8 @@ template<>
 struct GenGivenVals<DenseMatrix<const char*>> {
     static DenseMatrix<const char*> * generate(size_t numRows, const std::vector<const char*> & elements, size_t minNumNonZeros = 0) {
         const size_t numCells = elements.size();
-        assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
+        if (numCells % numRows != 0)
+            throw std::runtime_error("genGivenVals: number of given data elements must be divisible by given number of rows");
         const size_t numCols = numCells / numRows;
         auto res = DataObjectFactory::create<DenseMatrix<const char*>>(numRows, numCols, false);
         res->prepareAppend();
@@ -128,7 +129,8 @@ template<typename VT>
 struct GenGivenVals<CSRMatrix<VT>> {
     static CSRMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
         const size_t numCells = elements.size();
-        assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
+        if (numCells % numRows != 0)
+            throw std::runtime_error("genGivenVals: number of given data elements must be divisible by given number of rows");
         const size_t numCols = numCells / numRows;
         size_t numNonZeros = 0;
         for(VT v : elements)

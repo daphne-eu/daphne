@@ -202,8 +202,10 @@ std::vector<Type> daphne::RandMatrixOp::inferTypes() {
         elTy = getMax().getType();
     }
     else {
-        assert((getMax().getType() == UnknownType::get(getContext()) || elTy == getMax().getType())
-            && "Min and max need to have the same type");
+        if (getMax().getType() != UnknownType::get(getContext()) && elTy != getMax().getType())
+            throw ErrorHandler::compilerError(
+                getLoc(), "InferTypesOpInterface (daphne::RandMatrixOp::inferTypes)",
+                "min and max need to have the same type");
     }
     return {daphne::MatrixType::get(getContext(), elTy)};
 }

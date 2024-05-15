@@ -29,7 +29,6 @@
     #include <runtime/distributed/worker/MPIHelper.h>
 #endif
 
-#include <cassert>
 #include <cstddef>
 
 using mlir::daphne::VectorCombine;

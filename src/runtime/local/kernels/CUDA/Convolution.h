@@ -25,7 +25,6 @@
 #include <random>
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 

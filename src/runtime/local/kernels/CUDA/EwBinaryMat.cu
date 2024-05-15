@@ -251,10 +251,11 @@ namespace CUDA {
             throw std::runtime_error(fmt::format("Unknown opCode {} for EwBinaryMat", static_cast<uint32_t>(opCode)));
         }
         if(err) {
-            assert(
-                    false && "lhs and rhs must either have the same dimensions, "
-                             "or one if them must be a row/column vector with the "
-                             "width/height of the other"
+            throw std::runtime_error(
+                            "EwBinaryMat (CUDA): "
+                            "lhs and rhs must either have the same dimensions, "
+                            "or one of them must be a row/column vector with the "
+                            "width/height of the other"
             );
         }
         ctx->logger->debug("EwBinMat[{}]: {} blocks x {} threads = {} total threads for {} items",

@@ -28,13 +28,13 @@
 
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <queue>
 #include <fstream>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -84,9 +84,12 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols,
 template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
   static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows,
                     size_t numCols, char delim) {
-    assert(file != nullptr && "File required");
-    assert(numRows > 0 && "numRows must be > 0");
-    assert(numCols > 0 && "numCols must be > 0");
+    if (file == nullptr)
+      throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
+    if (numRows <= 0)
+      throw std::runtime_error("ReadCsvFile: numRows must be > 0");
+    if (numCols <= 0)
+      throw std::runtime_error("ReadCsvFile: numCols must be > 0");
 
     if (res == nullptr) {
       res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
@@ -131,8 +134,8 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
 template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, struct File *file, size_t numRows,
                       size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true) {
-        assert(numNonZeros != -1
-            && "Currently reading of sparse matrices requires a number of non zeros to be defined");
+        if (numNonZeros == -1)
+          throw std::runtime_error("ReadCsvFile: Currently, reading of sparse matrices requires a number of non zeros to be defined");
 
         if(res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(
@@ -239,8 +242,10 @@ private:
 template <> struct ReadCsvFile<Frame> {
   static void apply(Frame *&res, struct File *file, size_t numRows,
                     size_t numCols, char delim, ValueTypeCode *schema) {
-    assert(numRows > 0 && "numRows must be > 0");
-    assert(numCols > 0 && "numCols must be > 0");
+    if (numRows <= 0)
+      throw std::runtime_error("ReadCsvFile: numRows must be > 0");
+    if (numCols <= 0)
+      throw std::runtime_error("ReadCsvFile: numCols must be > 0");
 
     if (res == nullptr) {
       res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
