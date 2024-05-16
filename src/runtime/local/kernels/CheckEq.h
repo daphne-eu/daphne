@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 // this include file is placed here to solve a compilation issue with spdlog and catch2
 #include <spdlog/spdlog.h>
@@ -211,6 +212,31 @@ template <> struct CheckEq<Frame> {
                     throw std::runtime_error("CheckEq::apply: unknown value type code");
             }
         }   
+        return true;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CheckEq<Matrix<VT>> {
+    static bool apply(const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
+        if (lhs == rhs)
+            return true;
+        
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+            return false;
+        
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                if (lhs->get(r, c) != rhs->get(r, c))
+                    return false;
+        
         return true;
     }
 };

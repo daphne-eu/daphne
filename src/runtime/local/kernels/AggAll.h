@@ -20,9 +20,11 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
+#include <cmath>
 #include <cstddef>
 
 // ****************************************************************************
@@ -185,6 +187,65 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
 
             }
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// scalar <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct AggAll<VTRes, Matrix<VTArg>> {
+    static VTRes apply(AggOpCode opCode, const Matrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
+        VTRes agg, stddev;
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            agg = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
+        }
+        else {
+            // TODO Setting the function pointer yields the correct result.
+            // However, since MEAN, VAR, and STDDEV are not sparse-safe, the program
+            // does not take the same path for doing the summation, and is less
+            // efficient.
+            // for MEAN, VAR, and STDDEV, we need to sum
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            agg = VTRes(0);
+        }
+
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                agg = func(agg, static_cast<VTRes>(arg->get(r, c)), ctx);
+
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode))
+            return agg;
+
+        agg /= numCols * numRows;
+        // The op-code is either MEAN or STDDEV or VAR.
+        if (opCode == AggOpCode::MEAN)
+            return agg;
+
+        // else op-code is STDDEV or VAR
+        stddev = 0;
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
+                VTRes val = static_cast<VTRes>(arg->get(r, c)) - agg;
+                stddev = stddev + val * val;
+            }
+        }
+
+        stddev /= numCols * numRows;
+
+        // VAR --> stddev before sqrt() is variance
+        if (opCode == AggOpCode::VAR)
+            return stddev;
+        
+        // STDDEV
+        stddev = sqrt(stddev);
+        return stddev;
     }
 };
 

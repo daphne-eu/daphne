@@ -23,12 +23,13 @@
 
 #include <catch.hpp>
 
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
 
 #define TEST_NAME(opName) "OuterBinary (" opName ")"
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, int32_t
 
 // ****************************************************************************
@@ -65,25 +66,31 @@ void helper(BinaryOpCode opCode, std::vector<typename DT::VT> lhsVals, std::vect
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("valid shapes"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
+    using VT = typename DT::VT;
+    using DTEmpty = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        DenseMatrix<VT>,
+                        DT
+                    >::type;
 
     DT * lhs = nullptr;
     DT * rhs = nullptr;
     DT * exp = nullptr;
 
     SECTION("0x1 op 1x0") {
-        lhs = DataObjectFactory::create<DT>(0, 1, false);
-        rhs = DataObjectFactory::create<DT>(1, 0, false);
-        exp = DataObjectFactory::create<DT>(0, 0, false);
+        lhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 1, false));
+        rhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(1, 0, false));
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
     }
     SECTION("0x1 op 1xn") {
-        lhs = DataObjectFactory::create<DT>(0, 1, false);
+        lhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 1, false));
         rhs = genGivenVals<DT>(1, {4, 5, 6, 7});
-        exp = DataObjectFactory::create<DT>(0, 4, false);
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 4, false));
     }
     SECTION("mx1 op 1x0") {
         lhs = genGivenVals<DT>(3, {1, 2, 3});
-        rhs = DataObjectFactory::create<DT>(1, 0, false);
-        exp = DataObjectFactory::create<DT>(3, 0, false);
+        rhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(1, 0, false));
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
     }
     SECTION("mx1 op 1xn") {
         lhs = genGivenVals<DT>(3, {1, 2, 3});
@@ -102,17 +109,23 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("valid shapes"), TAG_KERNELS, (DATA_TYPES),
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("invalid shapes"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
+    using VT = typename DT::VT;
+    using DTEmpty = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        DenseMatrix<VT>,
+                        DT
+                    >::type;
 
     DT * lhs = nullptr;
     DT * rhs = nullptr;
 
     SECTION("mx0 op 1xn") {
-        lhs = DataObjectFactory::create<DT>(3, 0, false);
+        lhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
         rhs = genGivenVals<DT>(1, {0, 0, 0, 0});
     }
     SECTION("mx1 op 0xn") {
         lhs = genGivenVals<DT>(3, {0, 0, 0});
-        rhs = DataObjectFactory::create<DT>(0, 4, false);
+        rhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 4, false));
     }
     SECTION("mx2 op 1xn") {
         lhs = genGivenVals<DT>(3, {0, 0,  0, 0,  0, 0});

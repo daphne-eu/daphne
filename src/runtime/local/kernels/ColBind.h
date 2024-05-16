@@ -22,6 +22,10 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
+
+#include <sstream>
+#include <stdexcept>
 
 #include <cstddef>
 #include <cstring>
@@ -138,6 +142,38 @@ struct ColBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
             resRowOffsets[r] = lhsRowOffsets[r] - lhsStartOffset + rhsRowOffsets[r] - rhsStartOffset;
         }
         resRowOffsets[res->getNumRows()] = numNonZerosRes;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct ColBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+
+        if (numRows != rhs->getNumRows()) {
+            std::ostringstream errMsg;
+            errMsg << "ColBind: lhs and rhs must have the same number of rows but are instead " << numRows << " and " << rhs->getNumRows();
+            throw std::runtime_error(errMsg.str());
+        }
+
+        const size_t numColsLhs = lhs->getNumCols();
+        const size_t numColsRhs = rhs->getNumCols();
+        
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsLhs + numColsRhs, false);
+        
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numColsLhs; ++c)
+                res->append(r, c, lhs->get(r, c));
+            for (size_t c = 0; c < numColsRhs; ++c)
+                res->append(r, numColsLhs + c, rhs->get(r, c));
+        }
+        res->finishAppend();
     }
 };
 

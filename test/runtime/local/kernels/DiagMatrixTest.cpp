@@ -58,20 +58,18 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-dense"), TAG_KERNELS, (DenseMatrix), 
     checkDiagMatrix(arg, dense_exp);
     checkDiagMatrix(arg, csr_exp);
 
-    DataObjectFactory::destroy(csr_exp);
-    DataObjectFactory::destroy(dense_exp);
-    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(csr_exp, dense_exp, arg);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-csr"), TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-csr/generic"), TAG_KERNELS, (CSRMatrix, Matrix), (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(5, {
         3,
         0,
         0,
-	1,
-	0,
+        1,
+        0,
     });
     auto exp = genGivenVals<DT>(5, {
         3,0,0,0,0,
@@ -83,13 +81,12 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-csr"), TAG_KERNELS, (CSRMatrix), (VAL
 
     checkDiagMatrix(arg, exp);
 
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(exp, arg);
 
     arg = genGivenVals<DT>(3, {
         3,
-	1,
-	2,
+        1,
+        2,
     });
     exp = genGivenVals<DT>(3, {
         3,0,0,
@@ -99,6 +96,5 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-csr"), TAG_KERNELS, (CSRMatrix), (VAL
 
     checkDiagMatrix(arg, exp);
 
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(exp, arg);
 }

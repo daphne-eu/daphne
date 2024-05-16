@@ -284,3 +284,26 @@ public:
         }
     }
 };
+
+// ----------------------------------------------------------------------------
+//  Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+class CastObj<Matrix<VTRes>, Matrix<VTArg>> {
+
+public:
+    static void apply(Matrix<VTRes> *& res, const Matrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, static_cast<VTRes>(arg->get(r, c)));
+        res->finishAppend();
+    }
+};

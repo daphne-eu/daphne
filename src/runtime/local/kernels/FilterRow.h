@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -162,5 +163,40 @@ struct FilterRow<Frame, Frame, VTSel> {
 };
 
 #undef FILTERROW_FRAME_MODE
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT, typename VTSel>
+struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, const Matrix<VTSel> * sel, DCTX(ctx)) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (sel->getNumRows() != numRowsArg)
+            throw std::runtime_error("sel must have exactly one entry (row) for each row in arg");
+        if (sel->getNumCols() != 1)
+            throw std::runtime_error("sel must be a single-column matrix");
+
+        size_t numRowsRes = 0;
+        for (size_t r = 0; r < numRowsArg; ++r)
+            numRowsRes += sel->get(r, 0);
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
+
+        size_t resRow = 0;
+        res->prepareAppend();
+        for (size_t r = 0; r < numRowsArg; ++r) {
+            if (sel->get(r, 0)) {
+                for (size_t c = 0; c < numCols; ++c)
+                    res->append(resRow, c, arg->get(r, c));
+                ++resRow;
+            }
+        }
+        res->finishAppend();
+    }
+};
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_FILTERROW_H

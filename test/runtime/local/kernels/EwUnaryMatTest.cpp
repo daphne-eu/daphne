@@ -18,6 +18,7 @@
 #include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/EwUnaryMat.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 
@@ -30,7 +31,7 @@
 #include <cstdint>
 
 #define TEST_NAME(opName) "EwUnaryMat (" opName ")"
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int32_t, double
 
 template<typename DTRes, typename DTArg>
@@ -62,7 +63,6 @@ void checkEwUnaryMatThrow(UnaryOpCode opCode, const DTArg * arg) {
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -70,15 +70,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         1,
         1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::ABS, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::ABS, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -90,14 +90,14 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         10, -10, VT(1.4),
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(2, {
+    auto exp = genGivenVals<DT>(2, {
         0, 1, -1,
         1, -1, 1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::SIGN, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::SIGN, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
@@ -109,19 +109,18 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNE
         - std::numeric_limits<VT>::infinity(),
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(2, {
+    auto exp = genGivenVals<DT>(2, {
         1,
         -1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::SIGN, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::SIGN, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -129,15 +128,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         16,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         1,
         4,
     });
 
-    checkEwUnaryMat(UnaryOpCode::SQRT, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::SQRT, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -164,15 +163,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("exp"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         3,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         1,
         VT(0.367),
         VT(20.085),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::EXP, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::EXP, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -185,15 +184,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln"), TAG_KERNELS, (DATA_TYPES), (VALUE_TY
         8,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         VT(1.098),
         VT(2.079),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::LN, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::LN, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -224,15 +223,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sin"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         VT(0.841),
         VT(-0.841),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::SIN, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::SIN, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cos"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -245,15 +244,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cos"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         1,
         VT(0.54),
         VT(0.54),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::COS, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::COS, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tan"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -266,15 +265,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tan"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         VT(1.557),
         VT(-1.557),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::TAN, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::TAN, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -287,15 +286,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         VT(1.57),
         VT(-1.57),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::ASIN, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::ASIN, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -322,15 +321,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         VT(1.57),
         0,
         VT(3.141),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::ACOS, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::ACOS, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -357,15 +356,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("atan"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         VT(0.785),
         VT(-0.785),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::ATAN, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::ATAN, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sinh"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -378,15 +377,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sinh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         VT(1.175),
         VT(-1.175),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::SINH, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::SINH, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cosh"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -399,15 +398,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cosh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         1,
         VT(1.543),
         VT(1.543),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::COSH, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::COSH, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tanh"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -420,15 +419,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tanh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         VT(0.761),
         VT(-0.761),
     });
 
-    checkEwUnaryMatApprox(UnaryOpCode::TANH, arg, dense_exp);
+    checkEwUnaryMatApprox(UnaryOpCode::TANH, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 // ****************************************************************************
@@ -437,7 +436,6 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tanh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -445,39 +443,37 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor"), TAG_KERNELS, (DATA_TYPES), (VALUE
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         1,
         -1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::FLOOR, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::FLOOR, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor, floating-point-specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(2, {
         0.3, -0.3,
         0.9, -0.9,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(2, {
+    auto exp = genGivenVals<DT>(2, {
         0, -1,
         0, -1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::FLOOR, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::FLOOR, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -485,39 +481,37 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         1,
         -1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::CEIL, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::CEIL, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil, floating-point-specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(2, {
         0.3, -0.3,
         1.1, -1.9,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(2, {
+    auto exp = genGivenVals<DT>(2, {
         1, -0.0,
         2, -1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::CEIL, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::CEIL, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -525,34 +519,33 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round"), TAG_KERNELS, (DATA_TYPES), (VALUE
         -1,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(3, {
+    auto exp = genGivenVals<DT>(3, {
         0,
         1,
         -1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::ROUND, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::ROUND, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(2, {
         0.3, -0.3,
         0.5, -0.5,
     });
 
-    auto dense_exp = genGivenVals<DenseMatrix<VT>>(2, {
+    auto exp = genGivenVals<DT>(2, {
         0, -0.0,
         1, -1,
     });
 
-    checkEwUnaryMat(UnaryOpCode::ROUND, arg, dense_exp);
+    checkEwUnaryMat(UnaryOpCode::ROUND, arg, exp);
 
-    DataObjectFactory::destroy(arg, dense_exp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
 // ****************************************************************************
