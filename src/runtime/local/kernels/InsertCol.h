@@ -63,7 +63,7 @@ template<typename VTSel>
 void validateArgsInsertCol(size_t colLowerIncl_Size, VTSel colLowerIncl, size_t colUpperExcl_Size, VTSel colUpperExcl,
                     size_t numRowsArg, size_t numColsArg, size_t numRowsIns, size_t numColsIns) {
     
-    if (colLowerIncl_Size < 0 || colUpperExcl_Size < colLowerIncl_Size || numColsArg < colUpperExcl_Size
+    if (colUpperExcl_Size < colLowerIncl_Size || numColsArg < colUpperExcl_Size
         || (colLowerIncl_Size == numColsArg && colLowerIncl_Size != 0)) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
