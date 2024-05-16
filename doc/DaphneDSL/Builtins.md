@@ -405,7 +405,7 @@ Note that most of these operations only have a CUDNN-based kernel for GPU execut
     More precisely,
     $\text{res}[x, y] = \left| \{ k \bigm| \text{ys}[k, 0] = y \wedge \text{xs}[k, 0] = x, \; 0 \leq k \leq n-1 \} \right| * \text{weight} \quad \forall x \in \text{xs}, y \in \text{ys}$.
   
-    In other words, starting with an all-zero result matrix, all pairs of values $\{ (x,y) \mid x \in \text{xs}, y \in \text{ys} \}$
+    In other words, starting with an all-zero result matrix, all pairs of values $\{ (\text{xs}[k, 0],\text{ys}[k, 0]) \mid 0 \leq k \leq n-1 \}$
     are used to index the result matrix and increase the corresponding value by `weight`.  
     Note that `ys` and `xs` must not contain negative numbers.
   
