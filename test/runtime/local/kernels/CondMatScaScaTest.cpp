@@ -26,7 +26,7 @@
 #include <cstdint>
 
 #define TEST_NAME(opName) "CondMatScaSca (" opName ")"
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int64_t, double
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
