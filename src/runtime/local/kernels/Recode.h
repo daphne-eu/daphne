@@ -19,6 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <algorithm>
 #include <stdexcept>
@@ -49,7 +50,7 @@ void recode(DTRes *& res, DTDict *& dict, const DTArg * arg, bool orderPreservin
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
-// DenseMatrix
+// DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
 template<typename VTVal, typename VTCode>
@@ -144,6 +145,84 @@ struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
                 const VTCode c = it->second;
                 valuesDict[c * rowSkipDict] = v;
             }
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTVal, typename VTCode>
+struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
+    static void apply(Matrix<VTCode> *& res, Matrix<VTVal> *& dict, const Matrix<VTVal> * arg, bool orderPreserving, DCTX(ctx)) {
+        // Validation.
+        // TODO Remove this requirement, it's not strictly necessary.
+        if (arg->getNumCols() != 1)
+            throw std::runtime_error("recode: the argument must have exactly one column");
+
+        const size_t numRowsArg = arg->getNumRows();
+        
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTCode>>(numRowsArg, 1, false);
+        
+
+        if (orderPreserving) {
+            // Determine the distinct values in the input.
+            std::set<VTVal> distinct;
+            for (size_t r = 0; r < numRowsArg; ++r) {
+                distinct.insert(arg->get(r, 0));
+            }
+
+            // Allocate output for the decoding dictionary.
+            if (dict == nullptr)
+                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(distinct.size(), 1, false);
+
+            // Create recoding dictionary and store decoding dictionary.
+            VTCode nextCode = 0;
+            std::unordered_map<VTVal, VTCode> recodeDict;
+
+            dict->prepareAppend();
+            for (auto it = distinct.begin(); it != distinct.end(); ++it) {
+                recodeDict.emplace(*it, nextCode);
+                dict->append(nextCode++, 0, *it);
+            }
+            dict->finishAppend();
+
+            // Recode the data.
+            res->prepareAppend();
+            for (size_t r = 0; r < numRowsArg; ++r)
+                res->append(r, 0, recodeDict[arg->get(r, 0)]);
+            res->finishAppend();
+        }
+        else {
+            // Internal data structure.
+            VTCode nextCode = 0;
+            std::unordered_map<VTVal, VTCode> recodeDict;
+
+            // Recode the data.
+            res->prepareAppend();
+            for (size_t r = 0; r < numRowsArg; ++r) {
+                const VTVal argVal = arg->get(r, 0);
+
+                auto it = recodeDict.find(argVal);
+                if (it != recodeDict.end())
+                    res->append(r, 0, it->second);
+                else {
+                    recodeDict.emplace(argVal, nextCode);
+                    res->append(r, 0, nextCode++);
+                }
+            }
+            res->finishAppend();
+
+            // Allocate output for the decoding dictionary.
+            if (dict == nullptr)
+                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(recodeDict.size(), 1, false);
+
+            // Store decoding dictionary.
+            // recodeDict is unordered so we cannot use append here
+            for (auto it = recodeDict.begin(); it != recodeDict.end(); ++it)
+                dict->set(it->second, 0, it->first);
         }
     }
 };

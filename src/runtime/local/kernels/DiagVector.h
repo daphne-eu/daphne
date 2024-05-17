@@ -19,6 +19,9 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
+#include <stdexcept>
 
 #include <cstddef>
 
@@ -118,5 +121,32 @@ struct DiagVector<DenseMatrix<VT>, CSRMatrix<VT>> {
             }
             resValues[i]=targetValue;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct DiagVector<Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+
+        //------handling corner cases -------
+        if (arg == nullptr)
+            throw std::runtime_error("DiagVector: arg must not be nullptr");
+        if (numRows != arg->getNumCols())
+            throw std::runtime_error("DiagVector: arg matrix should be square");
+        if (numRows == 0)
+            throw std::runtime_error("DiagVector: arg matrix cannot be empty");
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            res->append(r, 0, arg->get(r, r));
+        res->finishAppend();
     }
 };

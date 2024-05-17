@@ -89,19 +89,18 @@ struct EwBinaryObjSca<Matrix<VT>, Matrix<VT>, VT> {
         const size_t numCols = lhs->getNumCols();
         
         // TODO Choose matrix implementation depending on expected number of non-zeros.
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
         
         res->prepareAppend();
-        for(size_t r = 0; r < numRows; r++)
-            for(size_t c = 0; c < numCols; c++)
-                res->append(r, c) = func(lhs->get(r, c), rhs);
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, func(lhs->get(r, c), rhs, ctx));
         res->finishAppend();
     }
 };
-
 
 // ----------------------------------------------------------------------------
 // Frame <- Frame, scalar

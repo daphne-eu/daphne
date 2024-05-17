@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -66,7 +67,7 @@ struct CondMatScaMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, DenseMatrix
             numCols != elseVal->getNumCols()
         )
             throw std::runtime_error(
-                    "CondMatMatMat: condition/else matrices must have the same shape"
+                    "CondMatScaMat: condition/else matrices must have the same shape"
             );
 
         if(res == nullptr)
@@ -86,6 +87,41 @@ struct CondMatScaMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, DenseMatrix
             valuesCond += rowSkipCond;
             valuesElse += rowSkipElse;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, scalar, Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTVal, typename VTCond>
+struct CondMatMatSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, Matrix<VTVal>> {
+    static void apply(
+        Matrix<VTVal> *& res,
+        const Matrix<VTCond> * cond,
+        VTVal thenVal,
+        const Matrix<VTVal> * elseVal,
+        DCTX(ctx)
+    ) {
+        const size_t numRows = cond->getNumRows();
+        const size_t numCols = cond->getNumCols();
+
+        if (numRows != elseVal->getNumRows() || numCols != elseVal->getNumCols()) {
+            std::ostringstream errMsg;
+            errMsg << "CondMatScaMat: condition/else matrices must have the same shape but have ("
+                    << numRows << "," << numCols << ") and (" 
+                    << elseVal->getNumRows() << "," << elseVal->getNumCols() << ")";
+            throw std::runtime_error(errMsg.str());
+        }
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, static_cast<bool>(cond->get(r, c)) ? thenVal : elseVal->get(r, c));
+        res->finishAppend();
     }
 };
 

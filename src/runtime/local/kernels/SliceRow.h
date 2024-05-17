@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -91,6 +92,28 @@ struct SliceRow<Frame, Frame, VTSel> {
         const size_t numRowsArg = arg->getNumRows();
         validateArgsSliceRow(lowerIncl, upperExcl, numRowsArg);
         res = arg->sliceRow(lowerIncl, upperExcl);
+    }        
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTArg, typename VTSel>
+struct SliceRow<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
+    static void apply(Matrix<VTArg> *& res, const Matrix<VTArg> * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
+        const size_t numColsArg = arg->getNumCols();
+        const size_t numRowsRes = static_cast<const size_t>(upperExcl - lowerIncl);
+        validateArgsSliceRow(lowerIncl, upperExcl, arg->getNumRows());
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsRes, numColsArg, false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRowsRes; ++r)
+            for (size_t c = 0; c < numColsArg; ++c)
+                res->append(r, c, arg->get(static_cast<const size_t>(lowerIncl) + r, c));
+        res->finishAppend();
     }        
 };
 
