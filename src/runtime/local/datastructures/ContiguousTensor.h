@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,14 @@ class ContiguousTensor : public Tensor<ValueType> {
 
     std::shared_ptr<ValueType[]> data;
 
+    private:
+    // Grant DataObjectFactory access to the private constructors and
+    // destructors.
+    template<class DataType, typename ... ArgTypes>
+    friend DataType * DataObjectFactory::create(ArgTypes ...);
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
+
     ContiguousTensor(const std::vector<size_t> &tensor_shape, InitCode init_code)
         : Tensor<ValueType>::Tensor(tensor_shape),
           data(std::make_shared<ValueType[]>(this->total_element_count)) {
@@ -56,8 +64,8 @@ class ContiguousTensor : public Tensor<ValueType> {
         }
 
         switch (init_code) {
-            case InitCode::NONE: {
-            } break;
+            case InitCode::NONE:
+                break;
             case InitCode::ZERO: {
                 for (size_t i = 0; i < this->total_element_count; i++) {
                     data.get()[i] = 0;
@@ -94,9 +102,9 @@ class ContiguousTensor : public Tensor<ValueType> {
             data = other->data;
         } else {
             data = std::make_shared<ValueType[]>(this->total_element_count);
-         for(size_t i=0; i<this->total_element_count; i++) {
-            data[i] = static_cast<ValueType>(other->data[i]);
-         }
+            for(size_t i=0; i<this->total_element_count; i++) {
+                data[i] = static_cast<ValueType>(other->data[i]);
+            }
         }
     };
 
@@ -173,6 +181,8 @@ class ContiguousTensor : public Tensor<ValueType> {
     ~ContiguousTensor() override = default;
 
     void printValue(std::ostream &os, ValueType val) const;
+    
+    public:
 
     bool operator==(const ContiguousTensor<ValueType> &rhs) const {
         if (this->tensor_shape != rhs.tensor_shape) {
@@ -335,7 +345,6 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     size_t serialize(std::vector<char> &buf) const override {
-        // TODO
-        return 0;
+        throw std::runtime_error("ContiguousTensor::serialize() is not supported (yet)");
     }
 };

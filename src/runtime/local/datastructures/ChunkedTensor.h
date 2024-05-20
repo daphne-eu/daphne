@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,14 @@ class ChunkedTensor : public Tensor<ValueType> {
     std::unique_ptr<AsyncIOInfo[]> chunk_io_futures;
 
     std::shared_ptr<ValueType[]> data;
+
+    private:
+    // Grant DataObjectFactory access to the private constructors and
+    // destructors.
+    template<class DataType, typename ... ArgTypes>
+    friend DataType * DataObjectFactory::create(ArgTypes ...);
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
 
     ChunkedTensor(const std::vector<size_t> &tensor_shape, const std::vector<size_t> &chunk_shape, InitCode init_code)
         : Tensor<ValueType>::Tensor(tensor_shape), chunk_shape(chunk_shape) {
@@ -283,6 +291,8 @@ class ChunkedTensor : public Tensor<ValueType> {
     ~ChunkedTensor() override {};
 
     void printValue(std::ostream &os, ValueType val) const;
+    
+    public:
 
     bool operator==(const ChunkedTensor<ValueType> &rhs) const {
         if (this->tensor_shape != rhs.tensor_shape || chunk_shape != rhs.chunk_shape) {
@@ -1184,8 +1194,7 @@ class ChunkedTensor : public Tensor<ValueType> {
     }
 
     size_t serialize(std::vector<char> &buf) const override {
-        // TODO
-        return 0;
+        throw std::runtime_error("ChunkedTensor::serialize() is not supported (yet)");
     }
 
     size_t getNumItems() const override {

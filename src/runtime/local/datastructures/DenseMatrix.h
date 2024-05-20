@@ -298,6 +298,10 @@ public:
     [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
 
     bool operator==(const DenseMatrix<ValueType> & rhs) const {
+        // Note that we do not use the generic `get` interface to matrices here since
+        // this operator is meant to be used for writing tests for, besides others,
+        // those generic interfaces.
+        
         if(this == &rhs)
             return true;
         

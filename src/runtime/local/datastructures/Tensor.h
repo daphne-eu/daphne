@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <vector>
 #include <cstdlib>
+#include <stdexcept>
 
 #include <runtime/local/datastructures/Structure.h>
 
@@ -60,17 +61,17 @@ class Tensor : public Structure {
     // These pure virtual functions are only well defined for a ND-tensor in the
     // case of N=2. Which dimension is addressed via row and column id is ambiguous
     // for larger N.
-    // Use provided dice() function instead
+    // Use the provided tryDice() function instead.
     virtual Tensor* sliceRow(size_t rl, size_t ru) const override {
-        std::abort();
+        throw std::runtime_error("Tensor::sliceRow() is not supported (yet)");
     }
 
     virtual Tensor* sliceCol(size_t cl, size_t cu) const override {
-        std::abort();
+        throw std::runtime_error("Tensor::sliceCol() is not supported (yet)");
     }
 
     virtual Tensor* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
-        std::abort();
+        throw std::runtime_error("Tensor::slice() is not supported (yet)");
     }
 };
 

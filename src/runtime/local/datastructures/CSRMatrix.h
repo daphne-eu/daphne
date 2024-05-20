@@ -399,6 +399,10 @@ public:
     }
 
     bool operator==(const CSRMatrix<ValueType> & rhs) const {
+        // Note that we do not use the generic `get` interface to matrices here since
+        // this operator is meant to be used for writing tests for, besides others,
+        // those generic interfaces.
+
         if(this == &rhs)
             return true;
         
@@ -431,10 +435,6 @@ public:
                 return false;
         
         return true;
-    }
-
-    size_t getNumItems() const override {
-        return this->getNumRows() * this->getNumCols();
     }
 
     size_t serialize(std::vector<char> &buf) const override ;
