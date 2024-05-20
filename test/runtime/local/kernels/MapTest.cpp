@@ -99,4 +99,5 @@ std::enable_if_t<(sizeof...(VTresN) > 0)> checkMult3Map() {
 TEMPLATE_TEST_CASE("Map element-wise dense matrix", TAG_KERNELS, TYPES) {
     // Test all combination of types in TYPES
     checkMult3Map<DenseMatrix, TestType, TYPES>();
+    checkMult3Map<Matrix, TestType, TYPES>();
 }

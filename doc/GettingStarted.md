@@ -16,17 +16,195 @@ limitations under the License.
 
 # Getting Started
 
-This document summarizes everything you need to know to get started with using or extending the DAPHNE system.
+This document provides quick-start instructions for DAPHNE users and DAPHNE developers, which should work in *most* cases. Furthermore, it contains background information to help with custom setups.
 
-## System Requirements
+- [Quickstart for Users](#quickstart-for-users)
+- [Quickstart for Developers](#quickstart-for-developers)
+- [Additional Details for Custom Setups](#additional-details-for-custom-setups)
 
-Please ensure that your development system meets the following requirements before trying to build the system.
+## Quickstart for Users
+
+Follow these instructions if you want to *use* DAPHNE to define and run your own integrated data analysis pipelines.
+These simple steps should suffice to get started for *most* users.
+If required, you can find more details for custom setups later in this document.
+
+### 1. Get DAPHNE
+
+**Option 1: Use a binary release**
+
+Download and extract the file `daphne-<flavor>-<version>-bin.tgz` from the [release page](https://github.com/daphne-eu/daphne/releases).
+It is recommended to use the latest version and to choose the flavor based on your platform and needs (e.g., `X86-64`, `cuda-X86-64`, or `ARMV8`).
+Using DAPHNE with CUDA requires Nvidia Pascal hardware or newer.
+
+**Option 2: Build from sources**
+
+To build from the *latest sources* with *the most up-to-date state of DAPHNE*, please follow the [Quickstart for Developers](#quickstart-for-developers) below.
+If you want to use a *source release*, also follow those instructions, but instead of cloning the DAPHNE repository, download the source code of the latest release (file `<version>.zip`) from the [release page](https://github.com/daphne-eu/daphne/releases).
+After the build, you can simply use the system without making changes to the source code.
+
+### 2. Run DAPHNE
+
+**Ubuntu.**
+The DAPHNE release binaries should run natively on recent Ubuntu systems (20.04 or later) and perhaps on other GNU/Linux distributions.
+However, if there are any issues running DAPHNE natively, please try the pre-built DAPHNE container image.
+
+**Windows.**
+The container image can also be used in Windows and WSL.
+Installing WSL and Docker should be straightforward using the documentation provided by [Microsoft](https://learn.microsoft.com/en-us/windows/wsl/).
+On an installed WSL container, launching DAPHNE via Docker should work the same way as in a native installation.
+
+The following commands should be executed in a bash (or a compatible shell) from the extracted binary release directory (e.g., `daphne-X86-64-v<version>-bin`).
+
+#### Option 1: Run DAPHNE in the Container
+
+**Download the container image**
+```bash
+docker pull daphneeu/daphne:latest_X86-64_BASE
+```
+***Hint:** In case of Docker permission errors, consider prepending `sudo` to the command.*
+
+***Hint:** You may want to choose another image tag based on your platform and needs, e.g., `latest_X86-64_CUDA` (for GPU support) or `latest_ARMV8_BASE` (for ARM support).*
+
+**Run a DaphneDSL hello-world script in the container**, which should print the following (besides some numbers):
+```bash
+containers/quickstart.sh scripts/examples/hello-world.daph
+```
+```text
+Hello World!
+```
+
+#### Option 2: Run DAPHNE Natively
+
+**Run a DaphneDSL hello-world script natively**, which should print the following (besides some numbers):
+
+```bash
+./run-daphne.sh scripts/examples/hello-world.daph
+```
+```text
+Hello World!
+```
+
+***Hint:** Run with `--cuda` to activate CUDA ops, see also `./run-daphne.sh --help`.*
+
+**Run a DaphneLib example natively**, which should print something like the following (the concrete numbers are random):
+
+```bash
+./run-python.sh scripts/examples/daphnelib/shift-and-scale.py
+```
+```text
+[[ 0.60676254 -0.88097088 -0.33785961]
+ [-0.48030447 -1.04911355  0.97716037]
+ [ 1.44938037  1.31980374 -0.2036432 ]
+ [-0.060317   -0.46788873 -1.59526103]
+ [-1.51552144  1.07816942  1.15960347]]
+```
+
+***Hint:** DaphneLib requires numpy and pandas, consider installing them in a virtual environment.*
+
+### Next Steps
+
+- Browse the [user documentation](/doc/), especially the parts on [DaphneDSL](/doc/DaphneDSL/LanguageRef.md) and [DaphneLib](/doc/DaphneLib/Overview.md).
+- Have a look at some [examples](/scripts/examples/).
+- Start using DAPHNE for your own integrated data analysis pipelines.
+
+## Quickstart for Developers
+
+Follow these instructions if you want to *make modifications* to DAPHNE in terms of the source code, tests, examples, tooling, or documentation.
+These simple steps should suffice to get started for *most* developers.
+If required, you can find more details for custom setups later in this document.
+
+### 1. Clone the DAPHNE Source Code Repository
+
+**Clone the source code** of the main DAPHNE repository (command below) or your own fork (adapt the command below as necessary).
+
+```bash
+git clone https://github.com/daphne-eu/daphne.git
+```
+
+### 2. Download the DAPHNE Development Container Image
+
+<!-- TODO assumes X86-64 is correct -->
+
+The development container image already contains all necessary dependencies of a DAPHNE development environment as well as a useful initialization of environment variables etc., such that you don't need to worry about these things and can have a productive start.
+
+**Get the container image**
+
+```bash
+docker pull daphneeu/daphne-dev:latest_X86-64_BASE
+```
+***Hint:** In case of Docker permission errors, try prepending `sudo` to the command.*
+
+***Hint:** You may want to choose another image tag based on your platform and needs, e.g., `latest_X86-64_CUDA` (for GPU support) or `latest_ARMV8_BASE` (for ARM support).*
+
+**Enter the container**, which should finally print something like the following (where `xyz` is your user name on your system, and the password and IP address may vary):
+
+```bash
+cd daphne
+./containers/run-docker-example.sh
+```
+```
+Use xyz with password Docker!0147 for SSH login
+Docker Container IP address(es):
+172.17.0.2
+xyz@daphne-container:/daphne$
+```
+
+***Hint:** In case of Docker permission errors, consider setting `USE_SUDO=sudo` in `run-docker-example.sh` near line 26.*
+
+***Hint:** If you pulled a container image of another tag above (e.g., `latest_X86-64_CUDA`), set `DOCKER_TAG=` accordingly in `run-docker-example.sh` near line 22.*
+
+***Hint:** You can leave the container at any time by executing `exit` or by typing `[Ctrl]`+`[D]`.*
+
+### 3. Build DAPHNE and Run the Test Suite
+
+*Everything related to building and running DAPHNE should be done inside the DAPHNE development container*, as described above.
+
+**Build DAPHNE**, which should finally print something like the following:
+```bash
+./build.sh --no-deps --target all
+```
+```text
+[DAPHNE]..Successfully built Daphne://all
+```
+
+**Run the test suite**, which should finally print something like the following (the concrete numbers of assertions and test cases may have changed since the time of this writing):
+```bash
+./test.sh -nb -d yes
+```
+```text
+===============================================================================
+All tests passed (307532 assertions in 1186 test cases)
+```
+
+**Run a hello-world script**, which should print the following:
+```bash
+bin/daphne scripts/examples/hello-world.daph
+```
+```text
+Hello World!
+```
+
+### Next Steps
+
+- Browse the [user and developer documentation](/doc/).
+- Get familiar with the [contribution guidelines](/CONTRIBUTING.md).
+- Start working in DAPHNE (for inspiration, see the list of [open issues](https://github.com/daphne-eu/daphne/issues), including ["good first issues"](https://github.com/daphne-eu/daphne/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22))
+
+## Additional Details for Custom Setups
+
+The [Quickstart for Users](#quickstart-for-users) and [Quickstart for Developers](#quickstart-for-developers) above should be enough for most users and developers to get started.
+Nevertheless, there are cases when more details are required, e.g., when DAPHNE shall be run natively, without one of the pre-built containers.
+
+### System Requirements
+
+Please ensure that your development system meets the following requirements before trying to build DAPHNE.
+Note that the DAPHNE container images already ship with all these dependencies installed.
 
 **(*)**
 You can view the version numbers as an orientation rather than a strict requirement.
 Newer versions should work as well, older versions might work as well.
 
-### Operating system
+#### Operating system
 
 | OS         | distribution/version known to work (*) | Comment                                                                    |
 |------------|----------------------------------------|----------------------------------------------------------------------------|
@@ -35,12 +213,12 @@ Newer versions should work as well, older versions might work as well.
 | GNU/Linux  | Ubuntu 18.04                           | Used with Intel PAC D5005 FPGA, custom toolchain needed                    |
 | MS Windows | 10 Build 19041, 11                     | Should work in Ubuntu WSL, using the provided Docker images is recommended |
 
-#### Windows
+##### Windows
 
-Installing WSL and Docker should be straight forward using the documentation proveded by [Microsoft](https://learn.microsoft.com/en-us/windows/wsl/). On an installed WSL container
+Installing WSL and Docker should be straightforward using the documentation provided by [Microsoft](https://learn.microsoft.com/en-us/windows/wsl/). On an installed WSL container,
 launching DAPHNE via Docker (see below) should work the same way as in a native installation.
 
-### Software
+#### Software
 
 | tool/lib                             | version known to work (*)    | comment                                                                                                                                 |
 |--------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
@@ -69,7 +247,7 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 | tensorflow                           | 2.13.1                       | Optional for data exchange between DaphneLib and TensorFlow |
 | torch                                | 2.3.0+cu121                  | Optional for data exchange between DaphneLib and PyTorch |
 
-### Hardware
+#### Hardware
 
 - about 7.5 GB of free disk space to build from source (mostly due to dependencies)
 - Optional:
@@ -160,36 +338,28 @@ variables (unless you have reason to customize your setup - then it is assumed t
 
 We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. You can use all [command line arguments](https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#top) of catch2 with `test.sh`.
 
-### Running the DAPHNE system
+### Running DAPHNE
 
 Write a little DaphneDSL script or use [`scripts/examples/hello-world.daph`](/scripts/examples/hello-world.daph)...
 
 ```csharp
-x = 1;
-y = 2;
-print(x + y);
-
-m = rand(2, 3, 100.0, 200.0, 1.0, -1);
-print(m);
-print(m + m);
-print(t(m));
+print("Hello World!");
 ```
 
-... and execute it as follows: `bin/daphne scripts/examples/hello-world.daph` (This command works if Daphne is run
-after building from source. Omit "build" in the path to the Daphne binary if executed from the binary distribution).
+... and execute it as follows: `bin/daphne scripts/examples/hello-world.daph` (This command works if `daphne` is run
+after building from source. Omit `bin/` in the path to the DAPHNE binary if executed from the binary distribution).
 
 Optionally flags like ``--cuda`` can be added after the daphne command and before the script file to activate support
 for accelerated ops (see [software requirements](#software) above and [build instructions](development/BuildingDaphne.md)).
 For further flags that can be set at runtime to activate additional functionality, run ``daphne --help``.
 
-### Building and Running with Containers [Alternative path for building and running the system and the tests]
+### Building and Running with Containers
 
-If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may
-use containers.
+To avoid installing dependencies and to circumvent conflicts with existing installed libraries, one may use containers.
 
-- you need to install Docker or Singularity: Docker version 20.10.2 or higher | Singularity version 3.7.0-1.el7 or
+- You need to install Docker or Singularity: Docker version 20.10.2 or higher | Singularity version 3.7.0-1.el7 or
 higher are sufficient
-- you can use the provided docker files and scripts to create and run DAPHNE.
+- You can use the provided docker files and scripts to create and run DAPHNE.
 
 **A full description on containers is available in the [containers](/containers) subdirectory.**
 
@@ -228,11 +398,3 @@ On the top-level, there are the following directories:
 - [`src`:](/src) the actual source code, subdivided into the individual components of the system
 - [`test`:](/test) test cases
 - `thirdparty`: required external software
-
-### What Next?
-
-You might want to have a look at
-
-- the [documentation](/doc/)
-- the [contribution guidelines](/CONTRIBUTING.md)
-- the [open issues](https://github.com/daphne-eu/daphne/issues)

@@ -17,14 +17,19 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
-#include <runtime/local/datastructures/CSRMatrix.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
 #include <string>
-#include <cmath>
 #include <type_traits>
+
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
 
 template <class DTArg, typename TestType> struct HasSpecialValue {
     static bool apply(const DTArg *arg, TestType testVal, DCTX(ctx)) = delete;
@@ -46,6 +51,14 @@ template <class DTArg, typename TestType> struct HasSpecialValue {
 template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg, TestType testVal, DCTX(ctx)) { 
     return HasSpecialValue<DTArg, TestType>::apply(arg, testVal, ctx);
 }
+
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
+
+// ----------------------------------------------------------------------------
+// Bool <- DenseMatrix, scalar
+// ----------------------------------------------------------------------------
 
 template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>, TestType> {
     static bool apply(const DenseMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
@@ -76,6 +89,10 @@ template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>
     }
 };
 
+// ----------------------------------------------------------------------------
+// Bool <- CSRMatrix, scalar
+// ----------------------------------------------------------------------------
+
 template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, TestType> {
     static bool apply(const CSRMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
@@ -105,6 +122,39 @@ template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, 
                 }
             }
         }
+        return false;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Bool <- Matrix, scalar
+// ----------------------------------------------------------------------------
+
+template <typename VT, typename TestType> struct HasSpecialValue<Matrix<VT>, TestType> {
+    static bool apply(const Matrix<VT> *arg, TestType testVal, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (std::isnan(testVal)) {
+            for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx) {
+                for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
+                    const VT val = arg->get(rowIdx, colIdx);
+                    if (std::isnan(val)) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx) {
+                for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
+                    const VT val = arg->get(rowIdx, colIdx);
+                    if (val == testVal) {
+                        return true;
+                    }
+                }
+            }
+        }
+
         return false;
     }
 };

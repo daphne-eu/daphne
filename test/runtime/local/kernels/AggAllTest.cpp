@@ -28,7 +28,7 @@
 #include <vector>
 
 #define TEST_NAME(opName) "AggAll (" opName ")"
-#define DATA_TYPES DenseMatrix, CSRMatrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
 template<typename VTRes, class DTArg>

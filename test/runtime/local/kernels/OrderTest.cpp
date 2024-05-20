@@ -18,10 +18,12 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/Order.h>
 #include <runtime/local/kernels/CheckEq.h>
 
 #include <tags.h>
+
 #include <catch.hpp>
 
 #include <vector>
@@ -118,90 +120,89 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
     
     CHECK(*res == *exp);
     CHECK(*resIdxs == *c3Exp);
-    DataObjectFactory::destroy(c3Exp);
 
-    DataObjectFactory::destroy(arg);
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(c3Exp, arg, exp, res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Order", TAG_KERNELS, (DenseMatrix), (double, float)){ // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("Order", TAG_KERNELS, (DenseMatrix, Matrix), (double, float)){ // NOLINT(cert-err58-cpp)
     using DT = TestType;
+    using DTIdx = typename DT::template WithValueType<size_t>;
+
     size_t numKeyCols;
     size_t colIdxs[4];
     bool ascending[4];
 
-    DT* argMatrix = nullptr;
-    DT* resMatrix = nullptr;
-    DT* expMatrix = nullptr;
-    DenseMatrix<size_t>* resIdxs = nullptr;
-    DenseMatrix<size_t>* expIdxs = nullptr;
+    DT * argMatrix = nullptr;
+    DT * resMatrix = nullptr;
+    DT * expMatrix = nullptr;
+    DTIdx * resIdxs = nullptr;
+    DTIdx * expIdxs = nullptr;
 
     SECTION("single key column, ascending") {
         argMatrix = genGivenVals<DT>(4, {
-            1, 10, 3, 7, 7, 7,
-            17, 7, 2, 3, 7, 7,
-            7, 7, 1, 2, 3, 7,
-            7, 7, 1, 1, 2, 3,
+            1,  10, 3, 7, 7, 7,
+            17, 7,  2, 3, 7, 7,
+            7,  7,  1, 2, 3, 7,
+            7,  7,  1, 1, 2, 3
         });
-        expMatrix =  genGivenVals<DT>(4, {
-            7, 7, 1, 1, 2, 3,
-            7, 7, 1, 2, 3, 7,
-            17, 7, 2, 3, 7, 7,
-            1, 10, 3, 7, 7, 7
+        expMatrix = genGivenVals<DT>(4, {
+            7,  7,  1, 1, 2, 3,
+            7,  7,  1, 2, 3, 7,
+            17, 7,  2, 3, 7, 7,
+            1,  10, 3, 7, 7, 7
         });
-        expIdxs = genGivenVals<DenseMatrix<size_t>>(4, { 3, 2, 1, 0});
+        expIdxs = genGivenVals<DTIdx>(4, { 3, 2, 1, 0});
         numKeyCols = 1;
         colIdxs[0] = 3;
         ascending[0] = true;
     }
     SECTION("four key columns, ascending/descending") {
         argMatrix = genGivenVals<DT>(20, {
-            1.1, 1.1, 0, 6,
-            -3.1, -2, 0, 3,
-            4.4, 4.4, 1, 9,
-            -8.8, 2.1, 1, 1,
-            5.6, 1.1, 0, 13,
-            2.3, 2.3, 0, 7,
-            0.3, 0.5, 0, 5,
-            4.4, 4.4, 3, 10,
-            6.6, -10, 0, 15,
-            6.6, 0, 0, 16,
-            -8.8, 2.1, 2, 2,
-            6.6, 10, 1, 17,
-            6.6, 10, 2, 18,
-            4.4, 4.4, 3, 11,
-            -0.3, -0.3, 0, 4,
-            4.4, -15.5, 0, 12,
-            6.6, 10, 3, 19,
-            2.3, -2.3, 0, 8,
-            6.6, 10, 3, 20,
-            5.6, -1.1, 0, 14
+            1.1,    1.1,   0,  6,
+            -3.1,   -2,    0,  3,
+            4.4,    4.4,   1,  9,
+            -8.8,   2.1,   1,  1,
+            5.6,    1.1,   0,  13,
+            2.3,    2.3,   0,  7,
+            0.3,    0.5,   0,  5,
+            4.4,    4.4,   3,  10,
+            6.6,    -10,   0,  15,
+            6.6,    0,     0,  16,
+            -8.8,   2.1,   2,  2,
+            6.6,    10,    1,  17,
+            6.6,    10,    2,  18,
+            4.4,    4.4,   3,  11,
+            -0.3,   -0.3,  0,  4,
+            4.4,    -15.5, 0,  12,
+            6.6,    10,    3,  19,
+            2.3,    -2.3,  0,  8,
+            6.6,    10,    3,  20,
+            5.6,    -1.1,  0,  14
         });
         expMatrix = genGivenVals<DT>(20, {
-            4.4, -15.5, 0, 12,
-            6.6, -10, 0, 15,
-            2.3, -2.3, 0, 8,
-            -3.1, -2, 0, 3,
-            5.6, -1.1, 0, 14,
-            -0.3, -0.3, 0, 4,
-            6.6, 0, 0, 16,
-            0.3, 0.5, 0, 5,
-            5.6, 1.1, 0, 13,
-            1.1, 1.1, 0, 6,
-            -8.8, 2.1, 2, 2,
-            -8.8, 2.1, 1, 1,
-            2.3, 2.3, 0, 7,
-            4.4, 4.4, 3, 10,
-            4.4, 4.4, 3, 11,
-            4.4, 4.4, 1, 9,
-            6.6, 10, 3, 19,
-            6.6, 10, 3, 20,
-            6.6, 10, 2, 18,
-            6.6, 10, 1, 17
+            4.4,    -15.5, 0,  12,
+            6.6,    -10,   0,  15,
+            2.3,    -2.3,  0,  8,
+            -3.1,   -2,    0,  3,
+            5.6,    -1.1,  0,  14,
+            -0.3,   -0.3,  0,  4,
+            6.6,    0,     0,  16,
+            0.3,    0.5,   0,  5,
+            5.6,    1.1,   0,  13,
+            1.1,    1.1,   0,  6,
+            -8.8,   2.1,   2,  2,
+            -8.8,   2.1,   1,  1,
+            2.3,    2.3,   0,  7,
+            4.4,    4.4,   3,  10,
+            4.4,    4.4,   3,  11,
+            4.4,    4.4,   1,  9,
+            6.6,    10,    3,  19,
+            6.6,    10,    3,  20,
+            6.6,    10,    2,  18,
+            6.6,    10,    1,  17
         });
-        expIdxs = genGivenVals<DenseMatrix<size_t>>(20, { 15, 8, 17, 1, 19, 14, 9, 6, 4, 0,
-                                                          10, 3, 5, 7, 13, 2, 16, 18, 12, 11 });
+        expIdxs = genGivenVals<DTIdx>(20, { 15, 8, 17, 1, 19, 14, 9, 6, 4, 0,
+                                            10, 3, 5, 7, 13, 2, 16, 18, 12, 11 });
         numKeyCols = 4;
         colIdxs[0] = 1;
         ascending[0] = true;
@@ -212,16 +213,12 @@ TEMPLATE_PRODUCT_TEST_CASE("Order", TAG_KERNELS, (DenseMatrix), (double, float))
         colIdxs[3] = 3;
         ascending[3] = true;
     }
-    
+
     order(resMatrix, argMatrix, colIdxs, numKeyCols, ascending, numKeyCols, false, nullptr);
     order(resIdxs, argMatrix, colIdxs, numKeyCols, ascending, numKeyCols, true, nullptr);
 
     CHECK(*resMatrix == *expMatrix);
     CHECK(*resIdxs == *expIdxs);
 
-    DataObjectFactory::destroy(argMatrix);
-    DataObjectFactory::destroy(resMatrix);
-    DataObjectFactory::destroy(expMatrix);
-    DataObjectFactory::destroy(resIdxs);
-    DataObjectFactory::destroy(expIdxs);
+    DataObjectFactory::destroy(argMatrix, resMatrix, expMatrix, resIdxs, expIdxs);
 }

@@ -39,12 +39,12 @@ protected:
         // nothing to do
     };
 
+public:
+
     virtual ~Matrix()
     {
         // nothing to do
     };
-
-public:
 
     template<typename NewValueType>
     using WithValueType = Matrix<NewValueType>;
@@ -147,6 +147,24 @@ public:
      */
     virtual void finishAppend() = 0;
 
+    bool operator==(const Matrix<ValueType> & rhs) const {
+        if (this == &rhs)
+            return true;
+        
+        const size_t numRows = this->getNumRows();
+        const size_t numCols = this->getNumCols();
+        
+        if (numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+            return false;
+        
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                if (this->get(r, c) != rhs.get(r, c))
+                    return false;
+        
+        return true;
+    }
+
     size_t getNumDims() const override {
         return 2;
     }
@@ -155,5 +173,11 @@ public:
         return this->numCols * this->numRows;
     }
 };
+
+template<typename ValueType>
+std::ostream & operator<<(std::ostream & os, const Matrix<ValueType> & obj) {
+    obj.print(os);
+    return os;
+}
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H

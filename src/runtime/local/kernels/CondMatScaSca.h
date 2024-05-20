@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -75,6 +76,33 @@ struct CondMatScaSca<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, VTVal> {
             valuesRes += rowSkipRes;
             valuesCond += rowSkipCond;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, scalar, scalar
+// ----------------------------------------------------------------------------
+
+template<typename VTVal, typename VTCond>
+struct CondMatMatSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, VTVal> {
+    static void apply(
+        Matrix<VTVal> *& res,
+        const Matrix<VTCond> * cond,
+        VTVal thenVal,
+        VTVal elseVal,
+        DCTX(ctx)
+    ) {
+        const size_t numRows = cond->getNumRows();
+        const size_t numCols = cond->getNumCols();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, static_cast<bool>(cond->get(r, c)) ? thenVal : elseVal);
+        res->finishAppend();
     }
 };
 
