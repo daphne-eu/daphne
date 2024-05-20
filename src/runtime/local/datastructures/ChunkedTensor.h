@@ -323,6 +323,8 @@ class ChunkedTensor : public Tensor<ValueType> {
     ~ChunkedTensor() override {};
 
     void printValue(std::ostream &os, ValueType val) const;
+    
+    public:
 
     public:
 

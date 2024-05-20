@@ -109,9 +109,9 @@ class ContiguousTensor : public Tensor<ValueType> {
             data = other->data;
         } else {
             data = std::make_shared<ValueType[]>(this->total_element_count);
-         for(size_t i=0; i<this->total_element_count; i++) {
-            data[i] = static_cast<ValueType>(other->data[i]);
-         }
+            for(size_t i=0; i<this->total_element_count; i++) {
+                data[i] = static_cast<ValueType>(other->data[i]);
+            }
         }
     };
 
@@ -188,6 +188,8 @@ class ContiguousTensor : public Tensor<ValueType> {
     ~ContiguousTensor() override = default;
 
     void printValue(std::ostream &os, ValueType val) const;
+    
+    public:
 
     public:
 
