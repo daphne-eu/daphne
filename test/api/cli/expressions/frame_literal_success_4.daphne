@@ -1,5 +1,5 @@
 // Row-major frame literals with (limited) expressions
-// Row-major do not yet support expressions passed by variables
+// Row-major frame literals do not yet support column names passed as expressions
 
 def testFunc() -> f64 {
     return 1.1;

@@ -145,17 +145,17 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx);
 
     /**
-     * @brief Creates a column matrix from a vector of mlir values and
-     *  generates mlir operations to fill in non parse-time constants if present
-     * @tparam VT value type of the result (e.g. int64_t)
+     * @brief Creates a column matrix from a vector of MLIR values and
+     *  generates MLIR operations to fill in non-parse-time constants if present
+     * @tparam VT value type of the result (e.g. `int64_t`)
      * @param loc Location of where the matrix is beeing constructed
-     * @param values Pointer to a vector of mlir values
-     * @param valueTypes Pointer to matching vector with mlir type of given values
-     * @return Mlir value containing the built dense matrix
+     * @param values Pointer to a vector of MLIR values
+     * @param valueTypes Pointer to matching vector with MLIR type of given values
+     * @return MLIR value containing the built matrix
     */
     template<typename VT>
-    mlir::Value buildColMatrixFromValues(mlir::Location loc, std::vector<mlir::Value> * values,
-                                    std::vector<mlir::Type> * valueTypes, mlir::Type matrixVt);
+    mlir::Value buildColMatrixFromValues(mlir::Location loc, const std::vector<mlir::Value> & values,
+                                    const std::vector<mlir::Type> & valueTypes, mlir::Type matrixVt);
 
     std::shared_ptr<spdlog::logger> logger;
 
@@ -238,7 +238,7 @@ public:
 
     antlrcpp::Any visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) override;
 
-    antlrcpp::Any visitFrameLiteralExpr(DaphneDSLGrammarParser::FrameLiteralExprContext * ctx) override;
+    antlrcpp::Any visitColMajorFrameLiteralExpr(DaphneDSLGrammarParser::ColMajorFrameLiteralExprContext * ctx) override;
 
     antlrcpp::Any visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext * ctx) override;
     
