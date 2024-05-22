@@ -150,6 +150,13 @@ int64_t CompilerUtils::constantOrDefault<int64_t>(mlir::Value v, int64_t d) {
 }
 
 template<>
+uint64_t CompilerUtils::constantOrDefault<uint64_t>(mlir::Value v, uint64_t d) {
+    return constantOrDefaultHelper<uint64_t, mlir::IntegerAttr>(
+            v, d, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
+    );
+}
+
+template<>
 float CompilerUtils::constantOrDefault<float>(mlir::Value v, float d) {
     return constantOrDefaultHelper<float, mlir::FloatAttr>(
             v, d, [](mlir::FloatAttr attr){return attr.getValue().convertToFloat();}
