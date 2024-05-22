@@ -107,7 +107,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             rp["type"] = rp["type"][:-2] + "**"
             rp["isOutput"] = True
         if rp["type"].endswith("&"):
-            rp["type"] = rp["type"][:-1]
+            # print(rp["type"])
+            # rp["type"] = rp["type"][:-1]
+            # print(rp["type"])
             rp["isOutput"] = True
         elif "isOutput" not in rp:
             rp["isOutput"] = False
@@ -124,7 +126,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             .replace("const ", "")
             .replace(" **", "" if rp["isOutput"] else "_variadic")
             .replace(" *", "_variadic" if "isVariadic" in rp and rp["isVariadic"] else "")
+            # .replace("& ", "&" if rp["isOutput"] else "")
             .replace("& ", "")
+            .replace("&", "")
             .replace("<", "_")
             .replace(">", "")
             .replace(",", "_")
@@ -233,7 +237,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         outFile.write(INDENT + "}\n")
 
         argTypes = [rtp["type"].replace(" **", "").replace(" *", "").replace("const ", "") for rtp in extendedRuntimeParams if not rtp["isOutput"]]
-        resTypes = [rtp["type"].replace(" **", "").replace(" *", "").replace("const ", "") for rtp in extendedRuntimeParams if     rtp["isOutput"]]
+        resTypes = [rtp["type"].replace(" **", "").replace(" *", "").replace("const ", "").replace("&", "") for rtp in extendedRuntimeParams if     rtp["isOutput"]]
 
         argTypesTmp = []
         for t in argTypes:
