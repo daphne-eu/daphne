@@ -20,10 +20,15 @@
 void createDaphneContext(DaphneContext *&res, uint64_t configPtr,
                          uint64_t dispatchMappingPtr, uint64_t statisticsPtr) {
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
-    auto dispatchMapping =
-        reinterpret_cast<KernelDispatchMapping *>(dispatchMappingPtr);
-    auto statistics = reinterpret_cast<Statistics *>(statisticsPtr);
-    if (config->log_ptr != nullptr)
-        config->log_ptr->registerLoggers();
-    res = new DaphneContext(*config, *dispatchMapping, *statistics);
+        if(config->dctx_ptr) {
+        res = reinterpret_cast<DaphneContext*>(config->dctx_ptr);
+    }
+    else {
+        auto dispatchMapping =
+            reinterpret_cast<KernelDispatchMapping *>(dispatchMappingPtr);
+        auto statistics = reinterpret_cast<Statistics *>(statisticsPtr);
+        if (config->log_ptr != nullptr)
+            config->log_ptr->registerLoggers();
+        res = new DaphneContext(*config, *dispatchMapping, *statistics);
+    }
 }
