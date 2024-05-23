@@ -39,12 +39,12 @@ protected:
         // nothing to do
     };
 
+public:
+
     virtual ~Matrix()
     {
         // nothing to do
     };
-
-public:
 
     template<typename NewValueType>
     using WithValueType = Matrix<NewValueType>;
@@ -148,5 +148,11 @@ public:
     virtual void finishAppend() = 0;
 
 };
+
+template<typename ValueType>
+std::ostream & operator<<(std::ostream & os, const Matrix<ValueType> & obj) {
+    obj.print(os);
+    return os;
+}
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H

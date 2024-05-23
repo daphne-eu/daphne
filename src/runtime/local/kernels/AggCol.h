@@ -21,12 +21,15 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
+#include <vector>
+
+#include <cmath>
 #include <cstddef>
 #include <cstring>
-#include <cmath>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -277,6 +280,110 @@ struct AggCol<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
         memcpy(valuesRes, valuesT, numCols * sizeof(VTRes));
         DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
 
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct AggCol<Matrix<VTRes>, Matrix<VTArg>> {
+    static void apply(AggOpCode opCode, Matrix<VTRes> *& res, const Matrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, false);
+
+        if (opCode == AggOpCode::IDXMIN || opCode == AggOpCode::IDXMAX) {
+            // Minimum/Maximum values seen so far per column (initialize with first row of argument).
+            std::vector<VTArg> tmp;
+            tmp.reserve(numCols);
+            for (size_t c = 0; c < numCols; ++c)
+                tmp.emplace_back(arg->get(0, c));
+
+            // Positions at which the minimum/maximum values were found (initialize with zeros),
+            // stored directly in the result.
+            res->prepareAppend();
+            res->finishAppend();
+
+            // Scan over the remaining rows and update the minimum values and their positions accordingly.
+            // TODO: reduce code duplication with lambda
+            //       initial test seemed slower than separate loops but should be tested again
+            if (opCode == AggOpCode::IDXMIN) {
+                for (size_t r = 1; r < numRows; ++r) {
+                    for (size_t c = 0; c < numCols; ++c) {
+                        VTArg argVal = arg->get(r, c);
+                        if (argVal < tmp[c]) {
+                            tmp[c] = argVal;
+                            res->set(0, c, r);
+                        }
+                    }
+                }
+            }
+            else {
+                for (size_t r = 1; r < numRows; ++r) {
+                    for (size_t c = 0; c < numCols; ++c) {
+                        VTArg argVal = arg->get(r, c);
+                        if (argVal > tmp[c]) {
+                            tmp[c] = argVal;
+                            res->set(0, c, r);
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
+            if (AggOpCodeUtils::isPureBinaryReduction(opCode))
+                func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            else
+                // TODO Setting the function pointer yields the correct result.
+                // However, since MEAN and STDDEV are not sparse-safe, the program
+                // does not take the same path for doing the summation, and is less
+                // efficient.
+                // for MEAN and STDDDEV, we need to sum
+                func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+
+            res->prepareAppend();
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(0, c, static_cast<VTRes>(arg->get(0, c)));
+            res->finishAppend();
+            for (size_t r = 1; r < numRows; ++r) {
+                for (size_t c = 0; c < numCols; ++c)
+                    res->set(0, c, func(res->get(0, c), static_cast<VTRes>(arg->get(r, c)), ctx));
+            }
+            
+            if (AggOpCodeUtils::isPureBinaryReduction(opCode))
+                return;
+            
+            // The op-code is either MEAN or STDDEV or VAR.
+
+            for (size_t c = 0; c < numCols; ++c)
+                res->set(0, c, res->get(0, c) / numRows);
+
+            if (opCode == AggOpCode::MEAN)
+                return;
+
+            std::vector<VTRes> tmp(numCols);
+            
+            for (size_t r = 0; r < numRows; ++r) {
+                for (size_t c = 0; c < numCols; ++c) {
+                    VTRes val = static_cast<VTRes>(arg->get(r, c)) - res->get(0, c);
+                    tmp[c] += val * val;
+                }
+            }
+
+            res->prepareAppend();
+            for (size_t c = 0; c < numCols; ++c) {
+                tmp[c] /= numRows;
+                if (opCode == AggOpCode::STDDEV)
+                    tmp[c] = sqrt(tmp[c]);
+                res->append(0, c, tmp[c]);
+            }
+            res->finishAppend();
+        }
     }
 };
 

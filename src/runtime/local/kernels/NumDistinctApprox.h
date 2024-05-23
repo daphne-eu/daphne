@@ -17,21 +17,30 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
+#include <util/MurmurHash3.h>
+#include <util/UniqueBoundedSet.h>
+
 #include <bits/stdint-uintn.h>
+#include <chrono>
+#include <functional>
+#include <iterator>
+#include <queue>
+#include <tuple>
+#include <vector>
+
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <functional>
-#include <iterator>
-#include <queue>
-#include <runtime/local/datastructures/CSRMatrix.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <util/UniqueBoundedSet.h>
-#include <tuple>
-#include <util/MurmurHash3.h>
-#include <vector>
-#include <chrono>
+
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+
 template <class DTArg> struct NumDistinctApprox {
     static size_t apply(const DTArg *arg, size_t K, int64_t seed, DCTX(ctx)) = delete;
 };
@@ -51,6 +60,10 @@ template <class DTArg> size_t numDistinctApprox(const DTArg *arg, size_t K, int6
 // ****************************************************************************
 // (Partial) template specializations for different DataTypes
 // ****************************************************************************
+
+// ----------------------------------------------------------------------------
+// size_t <- DenseMatrix
+// ----------------------------------------------------------------------------
 
 template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
     static size_t apply(const DenseMatrix<VT> *arg, size_t K, int64_t seed, DCTX(ctx)) {
@@ -86,6 +99,10 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
         return static_cast<size_t>(static_cast<double>((K - 1)) / kMinValNormed);
     }
 };
+
+// ----------------------------------------------------------------------------
+// size_t <- CSRMatrix
+// ----------------------------------------------------------------------------
 
 template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
     static size_t apply(const CSRMatrix<VT> *arg, size_t K, int64_t seed, DCTX(ctx)) {
@@ -133,3 +150,38 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// size_t <- Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct NumDistinctApprox<Matrix<VT>> {
+    static size_t apply(const Matrix<VT> *arg, size_t K, int64_t seed, DCTX(ctx)) {
+        if (seed == -1)
+            seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        UniqueBoundedSet<uint32_t> uBSet(K);
+        uint32_t hashedValueOut = 0;
+
+        for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx) {
+            for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
+                VT argVal = arg->get(rowIdx, colIdx);
+                MurmurHash3_x86_32(&argVal, sizeof(VT), seed, &hashedValueOut);
+                uBSet.push(hashedValueOut);
+            }
+        }
+
+        // When the set is not full, we know exactly how many distinct items are in there.
+        if (uBSet.size() < K)
+            return uBSet.size();
+
+        size_t kMinVal = uBSet.top();
+        const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
+        double kMinValNormed =
+            static_cast<double>(kMinVal) / static_cast<double>(maxVal);
+
+        return static_cast<size_t>(static_cast<double>((K - 1)) / kMinValNormed);
+    }
+};

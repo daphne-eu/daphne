@@ -25,10 +25,11 @@
 
 #include <catch.hpp>
 
+#include <type_traits>
 #include <vector>
 
 #define TEST_NAME(opName) "AggCol (" opName ")"
-#define DATA_TYPES DenseMatrix, CSRMatrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
 template<class DTRes, class DTArg>
@@ -36,13 +37,18 @@ void checkAggCol(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
     DTRes * res = nullptr;
     aggCol<DTRes, DTArg>(opCode, res, arg, nullptr);
     CHECK(checkEqApprox(res, exp, 1e-5, nullptr));
+    DataObjectFactory::destroy(res);
 }
 
 // The value types of argument and result could be different, so we need to
 // test various combinations.
 #define SUM_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<VTRes>; \
+    using DTRes = typename std::conditional< \
+                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, \
+                        Matrix<VTRes>, \
+                        DenseMatrix<VTRes> \
+                    >::type; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -60,10 +66,7 @@ void checkAggCol(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
     checkAggCol(AggOpCode::SUM, m0, m0exp); \
     checkAggCol(AggOpCode::SUM, m1, m1exp); \
      \
-    DataObjectFactory::destroy(m0); \
-    DataObjectFactory::destroy(m0exp); \
-    DataObjectFactory::destroy(m1); \
-    DataObjectFactory::destroy(m1exp); \
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp); \
 }
 SUM_TEST_CASE(int64_t)
 SUM_TEST_CASE(double)
@@ -71,7 +74,12 @@ SUM_TEST_CASE(double)
 // The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
-    using DTRes = DenseMatrix<typename DTArg::VT>;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DTArg, Matrix<VT>>::value, 
+                        Matrix<VT>, 
+                        DenseMatrix<VT>
+                    >::type;
     
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
@@ -96,18 +104,18 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     checkAggCol(AggOpCode::MIN, m1, m1exp);
     checkAggCol(AggOpCode::MIN, m2, m2exp);
     
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m0exp);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m1exp);
-    DataObjectFactory::destroy(m2);
-    DataObjectFactory::destroy(m2exp);
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
 
 // The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
-    using DTRes = DenseMatrix<typename DTArg::VT>;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DTArg, Matrix<VT>>::value, 
+                        Matrix<VT>, 
+                        DenseMatrix<VT>
+                    >::type;
     
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
@@ -132,19 +140,18 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     checkAggCol(AggOpCode::MAX, m1, m1exp);
     checkAggCol(AggOpCode::MAX, m2, m2exp);
     
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m0exp);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m1exp);
-    DataObjectFactory::destroy(m2);
-    DataObjectFactory::destroy(m2exp);
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
 
 // The value types of argument and result could be different, so we need to
 // test various combinations.
 #define MEAN_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<VTRes>; \
+    using DTRes = typename std::conditional< \
+                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, \
+                        Matrix<VTRes>, \
+                        DenseMatrix<VTRes> \
+                    >::type; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -163,10 +170,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     checkAggCol(AggOpCode::MEAN, m0, m0exp); \
     checkAggCol(AggOpCode::MEAN, m2, m2exp); \
      \
-    DataObjectFactory::destroy(m0); \
-    DataObjectFactory::destroy(m0exp); \
-    DataObjectFactory::destroy(m2); \
-    DataObjectFactory::destroy(m2exp); \
+    DataObjectFactory::destroy(m0, m0exp, m2, m2exp); \
 }
 MEAN_TEST_CASE(int64_t);
 MEAN_TEST_CASE(double);
@@ -175,7 +179,11 @@ MEAN_TEST_CASE(double);
 // test various combinations.
 #define STDDEV_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<VTRes>; \
+    using DTRes = typename std::conditional< \
+                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, \
+                        Matrix<VTRes>, \
+                        DenseMatrix<VTRes> \
+                    >::type; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -194,17 +202,18 @@ MEAN_TEST_CASE(double);
     checkAggCol(AggOpCode::STDDEV, m0, m0exp); \
     checkAggCol(AggOpCode::STDDEV, m2, m2exp); \
      \
-    DataObjectFactory::destroy(m0); \
-    DataObjectFactory::destroy(m0exp); \
-    DataObjectFactory::destroy(m2); \
-    DataObjectFactory::destroy(m2exp); \
+    DataObjectFactory::destroy(m0, m0exp, m2, m2exp); \
 }
 STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);
 
 #define VAR_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("var - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<VTRes>; \
+    using DTRes = typename std::conditional< \
+                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, \
+                        Matrix<VTRes>, \
+                        DenseMatrix<VTRes> \
+                    >::type; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -223,10 +232,7 @@ STDDEV_TEST_CASE(double);
     checkAggCol(AggOpCode::VAR, m0, m0exp); \
     checkAggCol(AggOpCode::VAR, m1, m1exp); \
      \
-    DataObjectFactory::destroy(m0); \
-    DataObjectFactory::destroy(m0exp); \
-    DataObjectFactory::destroy(m1); \
-    DataObjectFactory::destroy(m1exp); \
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp); \
 }
 VAR_TEST_CASE(int64_t);
 VAR_TEST_CASE(double);

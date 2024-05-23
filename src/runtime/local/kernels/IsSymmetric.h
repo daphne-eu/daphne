@@ -17,10 +17,12 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-#include <cstddef>
-#include <cstdio>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
+#include <cstddef>
+#include <cstdio>
 #include <string>
 
 template <class DTArg> struct IsSymmetric {
@@ -39,6 +41,10 @@ template <class DTArg> bool isSymmetric(const DTArg *arg, DCTX(ctx)) {
 // (Partial) template specializations for different DataTypes
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// Bool <- DenseMatrix
+// ----------------------------------------------------------------------------
+
 /**
  * @brief Checks for symmetrie of a `DenseMatrix`.
  *
@@ -56,7 +62,7 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
         }
 
         // singular matrix is considered symmetric.
-        if (numRows <= 1 || numCols <= 1) {
+        if (numRows <= 1) {
             return true;
         }
 
@@ -75,6 +81,10 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
         return true;
     }
 };
+
+// ----------------------------------------------------------------------------
+// Bool <- CSRMatrix
+// ----------------------------------------------------------------------------
 
 template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
     static bool apply(const CSRMatrix<VT> *arg, DCTX(ctx)) {
@@ -136,6 +146,31 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
                 return false;
             }
         }
+        return true;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Bool <- Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct IsSymmetric<Matrix<VT>> {
+    static bool apply(const Matrix<VT> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (numRows != numCols)
+            throw std::runtime_error("isSymmetric: Provided matrix is not square.");
+
+        // singular matrix is considered symmetric.
+        if (numRows <= 1)
+            return true;
+
+        for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx)
+            for (size_t colIdx = rowIdx + 1; colIdx < numCols; ++colIdx)
+                if (arg->get(rowIdx, colIdx) != arg->get(colIdx, rowIdx))
+                    return false;
+
         return true;
     }
 };

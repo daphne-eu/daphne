@@ -24,14 +24,24 @@
 #include <catch.hpp>
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("FilterCol", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+#define DATA_TYPES DenseMatrix, Matrix
+#define VALUE_TYPES double, int64_t, uint32_t
+
+TEMPLATE_PRODUCT_TEST_CASE("FilterCol", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
+    using VT = typename DT::VT;
     using VTSel = int64_t;
     using DTSel = DenseMatrix<VTSel>;
+    using DTEmpty = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        DenseMatrix<VT>,
+                        DT
+                    >::type;
 
     auto arg = genGivenVals<DT>(3, {
         1, 2, 3, 4, 5,
@@ -43,7 +53,7 @@ TEMPLATE_PRODUCT_TEST_CASE("FilterCol", TAG_KERNELS, (DenseMatrix), (double, int
     DT * exp = nullptr;
     SECTION("bit vector empty") {
         sel = genGivenVals<DTSel>(5, {0, 0, 0, 0, 0});
-        exp = DataObjectFactory::create<DT>(3, 0, false);
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
     }
     SECTION("bit vector contiguous 0") {
         sel = genGivenVals<DTSel>(5, {0, 0, 1, 1, 1});

@@ -25,7 +25,7 @@
 #include <tags.h>
 #include <catch.hpp>
 
-TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix, Matrix), (double, uint32_t)) {
 
     using DT = TestType;
 

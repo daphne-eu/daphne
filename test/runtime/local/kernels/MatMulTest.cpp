@@ -28,6 +28,9 @@
 
 #include <vector>
 
+#define DATA_TYPES DenseMatrix, Matrix
+#define VALUE_TYPES float, double, int32_t, int64_t
+
 template<class DT>
 void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp, DCTX(dctx), bool transa = false, bool transb = false) {
     DT * res = nullptr;
@@ -36,7 +39,7 @@ void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp, DCTX(dctx), boo
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double, int32_t, int64_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     auto dctx = setupContextAndLogger();
 
     using DT = TestType;
@@ -134,7 +137,7 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double,
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, m6, v0, v1, v2, v3, v4, v5, v6, v7, v8);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DenseMatrix), (float, double, int32_t, int64_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     auto dctx = setupContextAndLogger();
 

@@ -26,6 +26,9 @@
 
 #include <cstdint>
 
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define VALUE_TYPES double, uint32_t
+
 template<class DT>
 void checkTranspose(const DT * arg, const DT * exp) {
     DT * res = nullptr;
@@ -33,7 +36,7 @@ void checkTranspose(const DT * arg, const DT * exp) {
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     
     DT * m = nullptr;
@@ -85,6 +88,5 @@ TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (
 
     checkTranspose(m, mt);
 
-    DataObjectFactory::destroy(m);
-    DataObjectFactory::destroy(mt);
+    DataObjectFactory::destroy(m, mt);
 }

@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/CastObj.h>
 
 #include <cstddef>
@@ -95,5 +96,36 @@ struct MatMul<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, Matrix
+// ----------------------------------------------------------------------------
 
+template<typename VT>
+struct MatMul<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * lhs, const Matrix<VT> * rhs, bool transa, bool transb, DCTX(ctx)) {
+        const size_t lhsRows = transa ? lhs->getNumCols() : lhs->getNumRows();
+        const size_t lhsCols = transa ? lhs->getNumRows() : lhs->getNumCols();
+        const size_t rhsRows = transb ? rhs->getNumCols() : rhs->getNumRows();
+        const size_t rhsCols = transb ? rhs->getNumRows() : rhs->getNumCols();
+        
+        if (lhsCols != rhsRows)
+            throw std::runtime_error("MatMul: #cols of lhs and #rows of rhs must be the same");
 
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(lhsRows, rhsCols, false);
+
+        res->prepareAppend();
+        for (size_t rowRes = 0; rowRes < lhsRows; ++rowRes) {
+            for (size_t colRes = 0; colRes < rhsCols; ++colRes) {
+                VT resVal = 0;
+                for (size_t cell = 0; cell < lhsCols; ++cell) {
+                    VT lhsVal = transa ? lhs->get(cell, rowRes) : lhs->get(rowRes, cell);
+                    VT rhsVal = transb ? rhs->get(colRes, cell) : rhs->get(cell, colRes);
+                    resVal += lhsVal * rhsVal;
+                }
+                res->append(rowRes, colRes, resVal);
+            }
+        }
+        res->finishAppend();
+    }
+};

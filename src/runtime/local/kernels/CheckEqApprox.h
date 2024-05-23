@@ -20,10 +20,11 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
-#include <iostream>
 
 // TODO This kernel should handle integral value types gracefully, e.g. by
 // forwarding to the non-approximate checkEq-kernel. This would allow us to
@@ -217,6 +218,34 @@ template <> struct CheckEqApprox<Frame> {
                     throw std::runtime_error("CheckEqApprox::apply: unknown value type code");
             }
         }   
+        return true;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CheckEqApprox<Matrix<VT>> {
+    static bool apply(const Matrix<VT> * lhs, const Matrix<VT> * rhs, double eps, DCTX(ctx)) {
+        if (lhs == rhs)
+            return true;
+        
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+            return false;
+
+        for (size_t r=0; r < numRows; ++r) {
+            for (size_t c=0; c < numCols; ++c) {
+                double diff = lhs->get(r, c) - rhs->get(r, c);
+                if (std::abs(diff) > eps)
+                    return false;
+            }
+        }        
+         
         return true;
     }
 };
