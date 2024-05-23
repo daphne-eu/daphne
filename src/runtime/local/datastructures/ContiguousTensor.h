@@ -30,6 +30,13 @@
 #include <runtime/local/datastructures/Tensor.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
+/**
+*  @brief An implementation of a tensor with a contiguous, "row-major" memory layout
+*
+*  This tensor implementation is backed by a single allocation for its data. The elements of the tensor are placed
+*  within this in the "higher dimensional equivalent of row-major order".
+*
+*/
 template<typename ValueType>
 class ContiguousTensor : public Tensor<ValueType> {
     public:
@@ -110,7 +117,7 @@ class ContiguousTensor : public Tensor<ValueType> {
 
     ContiguousTensor(const DenseMatrix<ValueType> *other)
         : Tensor<ValueType>::Tensor(other->getNumRows(), other->getNumCols()), data(other->getValuesSharedPtr()) {
-        strides = {1, other->getNumCols()};
+        strides = {1, other->getRowSkip()};
         for(size_t i=0; i<this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
                 throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
