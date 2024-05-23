@@ -29,6 +29,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Tensor.h>
 #include <runtime/local/io/io_uring/AsyncUtil.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
 struct AsyncIOInfo {
     std::atomic<IO_STATUS> status = IO_STATUS::PRE_SUBMISSION;
@@ -1150,15 +1151,14 @@ class ChunkedTensor : public Tensor<ValueType> {
 
     // Prints elements in logical layout
     void print(std::ostream &os) const override {
-        os << "ChunkedTensor with shape: [";
+        os << "ChunkedTensor(";
         for (size_t i = 0; i < this->rank; i++) {
             os << this->tensor_shape[i];
             if (i != this->rank - 1) {
-                os << ",";
+                os << "x";
             }
         }
-        os << "]\n"
-           << "Elementtype: " << ValueTypeUtils::cppNameFor<ValueType> << std::endl;
+        os << ", " << ValueTypeUtils::cppNameFor<ValueType> << ")" << std::endl;
 
         if (this->rank == 0) {
             os << data.get()[0] << std::endl;
