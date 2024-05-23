@@ -1,2 +1,2 @@
-// float type inf is inff
+// slightly misspelled special value
 print(infff);

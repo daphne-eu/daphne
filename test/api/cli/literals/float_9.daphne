@@ -1,4 +1,4 @@
-// scientific notation (decimal point)
+// scientific notation (with decimal point)
 
 // zero
 print(0.0e0);

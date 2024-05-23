@@ -1,6 +1,6 @@
 // float_7.daphne with float type
 
-// scientific notation (no decimal point)
+// scientific notation (without decimal point)
 
 // zero
 print(0e0f);

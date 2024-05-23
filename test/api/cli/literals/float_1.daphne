@@ -1,5 +1,5 @@
-// TODO: add type check to all float tests to verify that -f actually casts to float
 // special values
+// TODO: add type check to all float tests to verify that -f actually casts to float (see #357)
 
 print(nan);
 print(nanf);
