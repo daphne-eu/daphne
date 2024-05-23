@@ -1,0 +1,15 @@
+// scientific notation, digit separators
+
+// digit separator without decimal point
+print(1_00e4);
+print(1'00e4);
+print("");
+
+// digit separator behind decimal point
+print(1.0_0e6);
+print(1.0'0e6);
+print("");
+
+// digit separator before and after decimal point
+print(1_0.0_0e5);
+print(1'0.0'0e5);

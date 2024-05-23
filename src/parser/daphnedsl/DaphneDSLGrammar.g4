@@ -138,6 +138,9 @@ fragment DIGIT:
 fragment NON_ZERO_DIGIT:
     [1-9] ;
 
+fragment DIGIT_SEP:
+    [_'] ;
+
 fragment LETTER:
     [a-zA-Z] ;
 
@@ -153,10 +156,32 @@ VALUE_TYPE:
     ) ;
 
 INT_LITERAL:
-    ('0' | '-'? NON_ZERO_DIGIT DIGIT* ('l' | 'u' | 'ull' | 'z')?);
+    ('0' | '-'? NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)* ('l' | 'u' | 'ull' | 'z')?);
 
 FLOAT_LITERAL:
-    ('nan' | 'nanf' | '-'? ('inf' | 'inff') | '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ 'f'? );
+    (
+        // special values
+        'nan' | 'nanf' | '-'? ('inf' | 'inff')
+        |
+        // ordinary values
+        // optional minus
+        '-'?
+        // part before the decimal point
+        ('0' | NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)*)
+        (
+            // decimal point and part after it
+            ('.' DIGIT+ (DIGIT_SEP? DIGIT)*)
+            |
+            // scientific notation, with optional decimal point
+            (
+                ('.' DIGIT+ (DIGIT_SEP? DIGIT)*)?
+                [eE]
+                ('-'|'+')? ('0' | NON_ZERO_DIGIT DIGIT*)
+            )
+        )
+        // optional suffix for single-precision
+        'f'?
+    );
 
 STRING_LITERAL:
     '"' (ESCAPE_SEQ | ~["\\])* '"';

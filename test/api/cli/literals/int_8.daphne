@@ -1,2 +1,7 @@
+// Delimiters _ and '
+print(1_234_567);
+print(1'234'567);
+print(1_23'45_67);
+
 // max positive uint64_t (2^64 - 1)
 print(18446744073709551615u);

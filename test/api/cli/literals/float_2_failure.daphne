@@ -1,0 +1,2 @@
+// at least 1 digit must be given after decimal point
+print(1.);
