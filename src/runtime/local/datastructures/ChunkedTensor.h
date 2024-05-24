@@ -50,7 +50,7 @@ void ReverseArray(VT *data, uint64_t element_count) {
 * @brief A chunked tensor implementation
 *
 * This tensor implementation is backed by a single array of values. Compared to the ContiguousTensor for a chunked
-* tensor, a tensor tensor of rank N with a given shape (its size in each dimension) is further logically split into
+* tensor, a chunked tensor of rank N with a given shape (its size in each dimension) is further logically split into
 * chunks with its own, typically much smaller chunk_shape. In this implementation all chunks have the same chunk_shape.
 * Within the chunks the contained elements are arranged in the "higher dimensional equivalent of row-major" order, i.e.
 * in the same order as a equivalent ContiguosTensor with shape==chunk_shape.
@@ -61,7 +61,7 @@ void ReverseArray(VT *data, uint64_t element_count) {
 * The two main advantages of this memory layout are:
 * 
 * 1. Fine grained and flexible control over the memory layout of the data structure by initially choosing a specific
-* chunk_shape or later on choosing to "rechunck" the tensor to a new chunk_shape. 
+* chunk_shape or later on choosing to "rechunk" the tensor to a new chunk_shape.
 *
 * This allows the data structure layout to be adapted to the access pattern of specific kernels making their access
 * patterns potentially significantly more cache friendly, which is especially relevant for larger tensors. Typical
