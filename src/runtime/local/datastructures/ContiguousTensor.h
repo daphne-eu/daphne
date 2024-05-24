@@ -54,7 +54,7 @@ class ContiguousTensor : public Tensor<ValueType> {
 
     ContiguousTensor(const std::vector<size_t> &tensor_shape, InitCode init_code)
         : Tensor<ValueType>::Tensor(tensor_shape),
-          data(std::make_shared<ValueType[]>(this->total_element_count)) {
+          data(new ValueType[this->total_element_count], std::default_delete<ValueType[]>()) {
         strides.resize(this->rank);
         if (this->rank > 0) {
             strides[0] = 1;
@@ -108,7 +108,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         if constexpr (std::is_same<VTArg, ValueType>::value) { 
             data = other->data;
         } else {
-            data = std::make_shared<ValueType[]>(this->total_element_count);
+            data = std::shared_ptr<ValueType[]>(new ValueType[this->total_element_count], std::default_delete<ValueType[]>());
             for(size_t i=0; i<this->total_element_count; i++) {
                 data[i] = static_cast<ValueType>(other->data[i]);
             }
