@@ -141,7 +141,7 @@ class ChunkedTensor : public Tensor<ValueType> {
 
         total_size_in_elements = total_chunk_count * chunk_element_count;
 
-        data = std::make_shared<ValueType[]>(total_size_in_elements);
+        data = std::shared_ptr<ValueType[]>(new ValueType[total_size_in_elements], std::default_delete<ValueType[]>());
 
         chunk_materialization_flags = std::make_unique<std::atomic<bool>[]>(total_chunk_count);
         chunk_io_futures            = std::make_unique<AsyncIOInfo[]>(total_chunk_count);
@@ -221,7 +221,7 @@ class ChunkedTensor : public Tensor<ValueType> {
           intra_chunk_strides(other->intra_chunk_strides), chunks_per_dim(other->chunks_per_dim),
           total_size_in_elements(other->total_size_in_elements), total_chunk_count(other->total_chunk_count),
           chunk_materialization_flags(std::make_unique<std::atomic<bool>[]>(total_chunk_count)) {
-        data = std::make_shared<ValueType[]>(total_size_in_elements);
+        data = std::shared_ptr<ValueType[]>(new ValueType[total_size_in_elements], std::default_delete<ValueType[]>());
         for (size_t i = 0; i < total_chunk_count; i++) {
             chunk_materialization_flags[i] = static_cast<bool>(other->chunk_materialization_flags[i]);
         }
