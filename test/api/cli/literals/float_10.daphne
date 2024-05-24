@@ -1,0 +1,37 @@
+// float_9.daphne with float type
+
+// scientific notation (with decimal point)
+
+// zero
+print(0.0e0f);
+print(0.0e3f);
+print(-0.0e1f);
+print(0.0E0f);
+print(0.0E3f);
+print(-0.0E1f);
+print("");
+
+// positive base, mixed exponent, small e
+print(0.000001e6f);
+print(0.000001e+6f);
+print(1000000e-6f);
+print(12.34e-2f);
+print("");
+// capital E
+print(0.000001E6f);
+print(0.000001E+6f);
+print(1000000E-6f);
+print(12.34E-2f);
+print("");
+
+// negative base, mixed exponent, small e
+print(-0.000001e6f);
+print(-0.000001e+6f);
+print(-1000000e-6f);
+print(-12.34e-2f);
+print("");
+// capital E
+print(-0.000001E6f);
+print(-0.000001E+6f);
+print(-1000000E-6f);
+print(-12.34E-2f);

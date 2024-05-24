@@ -107,15 +107,18 @@ Literals represent hard-coded values and can be of various data and value types:
 
 ##### Scalar literals
 
-**Integer literals** are specified in decimal notation.
+**Integer literals** are specified in decimal digits.
 By default, they have the type `si64`, but if the optional suffix `u` is appended, the type is `ui64`.
+They support the digit separators `'` and `_`.
 
-*Examples*: `0`, `123`, `-456`, `18446744073709551615u`
+*Examples*: `0`, `123`, `-456`, `1_000`, `18446744073709551615u`
 
-**Floating-point literals** are specified in decimal notation and have the type `f64`.
-Furthermore, the following literals stand for special floating-point values: `nan`, `inf`, `-inf`.
+**Floating-point literals** are specified in decimal or scientific notation.
+The following literals stand for special floating-point values: `nan`, `inf`, `-inf`.
+By default, the type of a floating-point literal is `f64`, but if an `f` is appended to the literal, it is of type `f32` instead.
+Floating-point literals support the digit separators `'` and `_`.
 
-*Examples*: `0.0`, `123.0`, `-456.78`, `inf`, `nan`
+*Examples*: `0.0`, `123.0`, `-456.78f`, `inf`, `nan`, `1.2e5f`, `1E-14`
 
 **Boolean literals** can be `false` and `true`.
 

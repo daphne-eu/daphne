@@ -42,7 +42,6 @@ nav:
     - README.md
     - GettingStarted.md
   - 'Users':
-    - Quickstart.md
     - RunningDaphneLocally.md
     - 'Configuration': Config.md
     - 'DaphneDSL':

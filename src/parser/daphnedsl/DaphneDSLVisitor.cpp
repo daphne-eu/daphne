@@ -1446,16 +1446,14 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
     // primitive C++ data types.
     mlir::Location loc = utils.getLoc(ctx->start);
     if(auto lit = ctx->INT_LITERAL()) {
-        const std::string litStr = lit->getText();
-        auto ss = std::string_view(litStr);
-//        if(litStr.length() > 2) {
-//            spdlog::debug("litstr: {} len: {}", litStr, litStr.length());
-//            spdlog::debug("stringview: {}", ss);
-//            spdlog::debug("substringview: {}", ss.substr(litStr.length() - 3));
-//        }
+        std::string litStr = lit->getText();
+
+        // remove digit separators
+        litStr = std::regex_replace(litStr, std::regex("_|'"), "");
+
         if (litStr.back() == 'u')
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, std::stoul(litStr)));
-        else if ((ss.length() > 2) && std::string_view(litStr).substr(litStr.length()-3) == "ull") {
+        else if ((litStr.length() > 2) && std::string_view(litStr).substr(litStr.length()-3) == "ull") {
             // The suffix "ull" must be checked before the suffix "l", since "l" is a suffix of "ull".
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
                     static_cast<uint64_t>(std::stoull(litStr))));
@@ -1472,7 +1470,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         }
     }
     if(auto lit = ctx->FLOAT_LITERAL()) {
-        const std::string litStr = lit->getText();
+        std::string litStr = lit->getText();
         double val;
         if(litStr == "nan")
             val = std::numeric_limits<double>::quiet_NaN();
@@ -1487,11 +1485,16 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         else if(litStr == "-inff")
             val = -std::numeric_limits<float>::infinity();
         else if (litStr.back() == 'f') {
+            // remove digit separators
+            litStr = std::regex_replace(litStr, std::regex("_|'"), "");
             auto fval = std::stof(litStr.c_str());
             return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, fval));
         }
-        else
+        else {
+            // remove digit separators
+            litStr = std::regex_replace(litStr, std::regex("_|'"), "");
             val = std::atof(litStr.c_str());
+        }
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val)
         );
     }
