@@ -16,3 +16,8 @@ add_library(IO
         utils.cpp
 )
 target_link_libraries(IO)
+
+add_library(IO_URING_LIB
+        io_uring/IO_URing.cpp
+        io_uring/IO_Threadpool.cpp)
+target_link_libraries(IO_URING_LIB PRIVATE liburing.a Threads::Threads)
