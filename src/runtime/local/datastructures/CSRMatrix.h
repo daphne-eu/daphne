@@ -398,6 +398,45 @@ public:
         return this->getNumItems() * sizeof(ValueType);
     }
 
+    bool operator==(const CSRMatrix<ValueType> & rhs) const {
+        // Note that we do not use the generic `get` interface to matrices here since
+        // this operator is meant to be used for writing tests for, besides others,
+        // those generic interfaces.
+
+        if(this == &rhs)
+            return true;
+        
+        const size_t numRows = this->getNumRows();
+        const size_t numCols = this->getNumCols();
+        
+        if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+            return false;
+        
+        const ValueType * valuesBegLhs = this->getValues(0);
+        const ValueType * valuesEndLhs = this->getValues(numRows);
+        const ValueType * valuesBegRhs = rhs.getValues(0);
+        const ValueType * valuesEndRhs = rhs.getValues(numRows);
+        
+        const size_t nnzLhs = valuesEndLhs - valuesBegLhs;
+        const size_t nnzRhs = valuesEndRhs - valuesBegRhs;
+        
+        if(nnzLhs != nnzRhs)
+            return false;
+        
+        if(valuesBegLhs != valuesBegRhs)
+            if(memcmp(valuesBegLhs, valuesBegRhs, nnzLhs * sizeof(ValueType)))
+                return false;
+        
+        const size_t * colIdxsBegLhs = this->getColIdxs(0);
+        const size_t * colIdxsBegRhs = rhs.getColIdxs(0);
+        
+        if(colIdxsBegLhs != colIdxsBegRhs)
+            if(memcmp(colIdxsBegLhs, colIdxsBegRhs, nnzLhs * sizeof(size_t)))
+                return false;
+        
+        return true;
+    }
+
     size_t serialize(std::vector<char> &buf) const override ;
 };
 

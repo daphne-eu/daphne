@@ -20,13 +20,9 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Matrix.h>
-
-// this include file is placed here to solve a compilation issue with spdlog and catch2
-#include <spdlog/spdlog.h>
-
-#include <cstddef>
-#include <cstring>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -57,22 +53,8 @@ bool checkEq(const DT * lhs, const DT * rhs, DCTX(ctx)) {
 };
 
 // ****************************************************************************
-// Operator == for matrices of the same type
-// ****************************************************************************
-
-template<class DT>
-bool operator==(const DT & lhs, const DT & rhs) {
-    // nullptr might become problematic some day.
-    return checkEq(&lhs, &rhs, nullptr);
-}
-
-// ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
-
-// Note that we do not use the generic `get` interface to matrices here since
-// this operators is meant to be used for writing tests for, besides others,
-// those generic interfaces.
 
 // ----------------------------------------------------------------------------
 // DenseMatrix
@@ -81,35 +63,7 @@ bool operator==(const DT & lhs, const DT & rhs) {
 template<typename VT>
 struct CheckEq<DenseMatrix<VT>> {
     static bool apply(const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
-        if(lhs == rhs)
-            return true;
-        
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-        
-        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
-            return false;
-        
-        const VT * valuesLhs = lhs->getValues();
-        const VT * valuesRhs = rhs->getValues();
-        
-        const size_t rowSkipLhs = lhs->getRowSkip();
-        const size_t rowSkipRhs = rhs->getRowSkip();
-        
-        if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
-            return true;
-        
-        if(rowSkipLhs == numCols && rowSkipRhs == numCols)
-            return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(VT));
-        else {
-            for(size_t r = 0; r < numRows; r++) {
-                if(memcmp(valuesLhs, valuesRhs, numCols * sizeof(VT)))
-                    return false;
-                valuesLhs += rowSkipLhs;
-                valuesRhs += rowSkipRhs;
-            }
-            return true;
-        }
+        return *lhs == *rhs;
     }
 };
 
@@ -120,38 +74,7 @@ struct CheckEq<DenseMatrix<VT>> {
 template<typename VT>
 struct CheckEq<CSRMatrix<VT>> {
     static bool apply(const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
-        if(lhs == rhs)
-            return true;
-        
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-        
-        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
-            return false;
-        
-        const VT * valuesBegLhs = lhs->getValues(0);
-        const VT * valuesEndLhs = lhs->getValues(numRows);
-        const VT * valuesBegRhs = rhs->getValues(0);
-        const VT * valuesEndRhs = rhs->getValues(numRows);
-        
-        const size_t nnzLhs = valuesEndLhs - valuesBegLhs;
-        const size_t nnzRhs = valuesEndRhs - valuesBegRhs;
-        
-        if(nnzLhs != nnzRhs)
-            return false;
-        
-        if(valuesBegLhs != valuesBegRhs)
-            if(memcmp(valuesBegLhs, valuesBegRhs, nnzLhs * sizeof(VT)))
-                return false;
-        
-        const size_t * colIdxsBegLhs = lhs->getColIdxs(0);
-        const size_t * colIdxsBegRhs = rhs->getColIdxs(0);
-        
-        if(colIdxsBegLhs != colIdxsBegRhs)
-            if(memcmp(colIdxsBegLhs, colIdxsBegRhs, nnzLhs * sizeof(size_t)))
-                return false;
-        
-        return true;
+        return *lhs == *rhs;
     }
 };
 
@@ -161,58 +84,29 @@ struct CheckEq<CSRMatrix<VT>> {
 
 template <> struct CheckEq<Frame> {
     static bool apply(const Frame * lhs, const Frame * rhs, DCTX(ctx)) {
-        if(lhs == rhs)
-            return true;
+        return *lhs == *rhs;
+    }
+};
 
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
+// ----------------------------------------------------------------------------
+// Contiguous Tensor
+// ----------------------------------------------------------------------------
 
-        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
-            return false;
+template<typename VT>
+struct CheckEq<ContiguousTensor<VT>> {
+    static bool apply(const ContiguousTensor<VT> * lhs, const ContiguousTensor<VT> * rhs, DCTX(ctx)) {
+        return *lhs == *rhs;
+    }
+};
 
-        if(memcmp(lhs->getSchema(), rhs->getSchema(), numCols * sizeof(ValueTypeCode)))
-            return false;
+// ----------------------------------------------------------------------------
+// Chunked Tensor
+// ----------------------------------------------------------------------------
 
-        const std::string * labelsLhs = lhs->getLabels();
-        const std::string * labelsRhs = rhs->getLabels();
-        for (size_t c = 0; c < numCols; c++) {
-            if(labelsLhs[c] != labelsRhs[c])
-                return false;
-        }
-        
-        for (size_t c = 0; c < numCols; c++)
-        {
-            switch(lhs->getColumnType(c)) {
-                // For all value types:
-                case ValueTypeCode::F64: if(!checkEq(lhs->getColumn<double>(c),
-                    rhs->getColumn<double>(c), ctx)) return false;
-                    break;
-                case ValueTypeCode::F32: if (!checkEq(lhs->getColumn<float>(c),
-                    rhs->getColumn<float>(c), ctx)) return false;
-                    break;
-                case ValueTypeCode::SI64: if (!checkEq(lhs->getColumn<int64_t>(c),
-                    rhs->getColumn<int64_t>(c), ctx)) return false;
-                    break;
-                case ValueTypeCode::SI32: if (!checkEq(lhs->getColumn<int32_t>(c),
-                    rhs->getColumn<int32_t>(c), ctx)) return false;
-                    break;
-                case ValueTypeCode::SI8 : if (!checkEq(lhs->getColumn<int8_t>(c),
-                    rhs->getColumn<int8_t>(c), ctx)) return false;
-                    break;
-                case ValueTypeCode::UI64: if (!checkEq(lhs->getColumn<uint64_t>(c),
-                    rhs->getColumn<uint64_t>(c), ctx)) return false;
-                    break;
-                case ValueTypeCode::UI32: if (!checkEq(lhs->getColumn<uint32_t>(c), 
-                    rhs->getColumn<uint32_t>(c), ctx)) return false;
-                    break;
-                case ValueTypeCode::UI8 : if (!checkEq(lhs->getColumn<uint8_t>(c),
-                    rhs->getColumn<uint8_t>(c), ctx)) return false;
-                    break;
-                default:
-                    throw std::runtime_error("CheckEq::apply: unknown value type code");
-            }
-        }   
-        return true;
+template<typename VT>
+struct CheckEq<ChunkedTensor<VT>> {
+    static bool apply(const ChunkedTensor<VT> * lhs, const ChunkedTensor<VT> * rhs, DCTX(ctx)) {
+        return *lhs == *rhs;
     }
 };
 
@@ -223,20 +117,6 @@ template <> struct CheckEq<Frame> {
 template<typename VT>
 struct CheckEq<Matrix<VT>> {
     static bool apply(const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
-        if (lhs == rhs)
-            return true;
-        
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-        
-        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
-            return false;
-        
-        for (size_t r = 0; r < numRows; ++r)
-            for (size_t c = 0; c < numCols; ++c)
-                if (lhs->get(r, c) != rhs->get(r, c))
-                    return false;
-        
-        return true;
+        return *lhs == *rhs;
     }
 };

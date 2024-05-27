@@ -296,7 +296,43 @@ public:
     }
 
     [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
-    
+
+    bool operator==(const DenseMatrix<ValueType> & rhs) const {
+        // Note that we do not use the generic `get` interface to matrices here since
+        // this operator is meant to be used for writing tests for, besides others,
+        // those generic interfaces.
+        
+        if(this == &rhs)
+            return true;
+        
+        const size_t numRows = this->getNumRows();
+        const size_t numCols = this->getNumCols();
+        
+        if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+            return false;
+        
+        const ValueType* valuesLhs = this->getValues();
+        const ValueType* valuesRhs = rhs.getValues();
+        
+        const size_t rowSkipLhs = this->getRowSkip();
+        const size_t rowSkipRhs = rhs.getRowSkip();
+        
+        if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
+            return true;
+        
+        if(rowSkipLhs == numCols && rowSkipRhs == numCols)
+            return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
+        else {
+            for(size_t r = 0; r < numRows; r++) {
+                if(memcmp(valuesLhs, valuesRhs, numCols * sizeof(ValueType)))
+                    return false;
+                valuesLhs += rowSkipLhs;
+                valuesRhs += rowSkipRhs;
+            }
+            return true;
+        }
+    }
+
     size_t serialize(std::vector<char> &buf) const override;
 };
 
