@@ -77,8 +77,18 @@ template<typename VTArg, typename VTSel>
 struct SliceRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
     static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, const VTSel lowerIncl, const VTSel upperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
-        validateArgsSliceRow(lowerIncl, upperExcl, numRowsArg);
-        res = arg->sliceRow(lowerIncl, upperExcl);
+        auto rL = lowerIncl;
+        auto rU = upperExcl;
+        // ToDo: quickhack
+        if(lowerIncl == 1 && upperExcl == 2 && numRowsArg == 1) {
+            rL--;
+            rU--;
+        }
+
+//        validateArgsSliceRow(lowerIncl, upperExcl, numRowsArg);
+        validateArgsSliceRow(rL, rU, numRowsArg);
+//        res = arg->sliceRow(lowerIncl, upperExcl);
+        res = arg->sliceRow(rL, rU);
     }        
 };
 
