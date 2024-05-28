@@ -56,7 +56,7 @@ function build_daphne() {
         --build-arg NUM_CORES="$(nproc)" --build-arg TIMESTAMP="$TIMESTAMP_DATE" \
         --build-arg GIT_HASH="$(curl -s https://api.github.com/repos/$GH_USER/$GIT_REPO/branches/$GIT_BRANCH | \
                 jq --raw-output '.commit["sha"]' -)" \
-        --build-arg CMAKE_VERSION="${cmakeVersion}"
+        --build-arg CMAKE_VERSION="${cmakeVersion}" \
         --build-arg BASE_IMAGE="$BASE_IMAGE" --build-arg FINAL_BASE_IMAGE="$FINAL_BASE_IMAGE"  \
         --build-arg DAPHNE_REPO=$DAPHNE_REPO_URL --build-arg DAPHNE_BRANCH=$GIT_BRANCH \
         --build-arg CREATION_DATE="$TIMESTAMP_RFC3339" --build-arg DAPHNE_BUILD_FLAGS="$DAPHNE_BUILD_FLAGS" \
