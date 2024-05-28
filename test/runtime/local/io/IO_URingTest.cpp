@@ -41,7 +41,7 @@ TEST_CASE("io_uring / io threadpool setup Tests", TAG_IO) {
 TEST_CASE("io_uring basic File R/W test", TAG_IO) {
     IOThreadpool io_pool(1, 64, false, false, 1000);
 
-    int fd = open("./test/runtime/local/io/uring_test_file", O_CREAT | O_RDWR | O_DIRECT | O_TRUNC, S_IRUSR | S_IWUSR);
+    int fd = open("./test/runtime/local/io", O_TMPFILE | O_RDWR | O_DIRECT, S_IRUSR | S_IWUSR);
     REQUIRE(fd > 0);
 
     auto data_page   = std::make_unique<uint64_t[]>(4096 / sizeof(uint64_t));
@@ -100,7 +100,7 @@ TEST_CASE("io_uring basic File R/W test", TAG_IO) {
 TEST_CASE("io_uring sleep cv test", TAG_IO) {
     IOThreadpool io_pool(1, 64, false, false, 1000);
 
-    int fd = open("./test/runtime/local/io/uring_test_file", O_CREAT | O_RDWR | O_DIRECT | O_TRUNC, S_IRUSR | S_IWUSR);
+    int fd = open("./test/runtime/local/io", O_TMPFILE | O_RDWR | O_DIRECT, S_IRUSR | S_IWUSR);
     REQUIRE(fd > 0);
 
     auto data_page   = std::make_unique<uint64_t[]>(4096 / sizeof(uint64_t));
@@ -175,7 +175,7 @@ TEST_CASE("io_uring sleep cv test", TAG_IO) {
 TEST_CASE("io_uring basic File R/W test - multiple instance and requests", TAG_IO) {
     IOThreadpool io_pool(7, 64, false, false, 1000);
 
-    int fd = open("./test/runtime/local/io/uring_test_file", O_CREAT | O_RDWR | O_DIRECT | O_TRUNC, S_IRUSR | S_IWUSR);
+    int fd = open("./test/runtime/local/io", O_TMPFILE | O_RDWR | O_DIRECT, S_IRUSR | S_IWUSR);
     REQUIRE(fd > 0);
 
     uint64_t op_count = 47;
