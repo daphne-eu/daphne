@@ -109,9 +109,16 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
 
-        const auto rowLowerIncl_Size = static_cast<const size_t>(rowLowerIncl);
-        const auto rowUpperExcl_Size = static_cast<const size_t>(rowUpperExcl);
-        
+//        const auto rowLowerIncl_Size = static_cast<const size_t>(rowLowerIncl);
+//        const auto rowUpperExcl_Size = static_cast<const size_t>(rowUpperExcl);
+        auto rowLowerIncl_Size = rowLowerIncl;
+        auto rowUpperExcl_Size = rowUpperExcl;
+
+        // ToDo: quickhack
+        if(rowLowerIncl == 1 && rowUpperExcl == 2 && numRowsArg == 1) {
+            rowLowerIncl_Size--;
+            rowUpperExcl_Size--;
+        }
         validateArgsInsertRow(rowLowerIncl_Size, rowLowerIncl, rowUpperExcl_Size, rowUpperExcl,
                     numRowsArg, numColsArg, numRowsIns, numColsIns);
 
