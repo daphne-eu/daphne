@@ -30,7 +30,7 @@
 template<class DT>
         void check(const DT* in, const DT* W, const DT* b, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
-    CUDA::Affine::Forward<DT, DT>::apply(res, in, W, b, dctx);
+    CUDA::NN::Affine::Forward<DT, DT>::apply(res, in, W, b, dctx);
     CHECK(*res == *exp);
 }
 

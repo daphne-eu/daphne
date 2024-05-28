@@ -19,8 +19,6 @@
 #include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
 
-#include <spdlog/spdlog.h>
-
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -309,9 +307,21 @@ std::vector<Type> daphne::ExtractOp::inferTypes() {
 }
 
 std::vector<Type> daphne::OneHotOp::inferTypes() {
-    throw ErrorHandler::compilerError(
-        getLoc(), "InferTypesOpInterface",
-        "type inference not implemented for OneHotOp"); // TODO
+    Type srcType = getArg().getType();
+    return {srcType.dyn_cast<daphne::MatrixType>().withSameElementType()};
+}
+
+std::vector<Type> daphne::GenericCallOp::inferTypes() {
+    std::vector<Type> resTypes;
+    for(auto rt : getResultTypes()) {
+        if(auto mt = rt.dyn_cast<daphne::MatrixType>())
+            resTypes.push_back(mt.withSameElementType());
+        else if(auto ft = rt.dyn_cast<daphne::FrameType>())
+            resTypes.push_back(ft.withSameColumnTypes());
+        else
+            resTypes.push_back(rt);
+    }
+    return resTypes;
 }
 
 std::vector<Type> daphne::OrderOp::inferTypes() {
@@ -563,6 +573,26 @@ std::vector<Type> daphne::RecodeOp::inferTypes() {
 }
 
 std::vector<Type> daphne::Conv2DForwardOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
+    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
+
+    // output matrix of same type as input, height/width dimensions as size/index type
+    return {restype2, builder.getIndexType(), builder.getIndexType()};
+}
+
+std::vector<Type> daphne::AvgPoolForwardOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
+    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
+
+    // output matrix of same type as input, height/width dimensions as size/index type
+    return {restype2, builder.getIndexType(), builder.getIndexType()};
+}
+
+std::vector<Type> daphne::MaxPoolForwardOp::inferTypes() {
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
     auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());

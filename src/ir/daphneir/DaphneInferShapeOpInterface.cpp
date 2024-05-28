@@ -324,13 +324,63 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::Conv2DForwardOp::inferShape() {
-    auto Itype = getInput().getType().dyn_cast<daphne::MatrixType>();
-    auto Ftype = getFilter().getType().dyn_cast<daphne::MatrixType>();
+    auto shapeX = getShape(getInput());
+    auto shapeW = getShape(getFilter());
+    auto Hin = CompilerUtils::constantOrDefault<size_t>(getInputHeight(), 1);
+    auto Win = CompilerUtils::constantOrDefault<size_t>(getInputWidth(), 1);
+    auto Hf = CompilerUtils::constantOrDefault<size_t>(getFilterHeight(), 1);
+    auto Wf = CompilerUtils::constantOrDefault<size_t>(getFilterWidth(), 1);
+    auto padh = CompilerUtils::constantOrDefault<size_t>(getPadHeight(), 1);
+    auto padw = CompilerUtils::constantOrDefault<size_t>(getPadWidth(), 1);
+    auto strideh = CompilerUtils::constantOrDefault<size_t>(getStrideHeight(), 1);
+    auto stridew = CompilerUtils::constantOrDefault<size_t>(getStrideWidth(), 1);
 
-    auto Hin = CompilerUtils::constantOrThrow<size_t>(getInputHeight());
-    auto Win = CompilerUtils::constantOrThrow<size_t>(getInputWidth());
-    ssize_t numRows = Itype.getNumRows();
-    ssize_t numCols = Ftype.getNumRows() * Hin * Win;
+    size_t Hout = std::floor((Hin + 2 * padh - Hf) / strideh + 1);
+    size_t Wout = std::floor((Win + 2 * padw - Wf) / stridew + 1);
+    auto F = shapeW.first;
+
+    ssize_t numRows = shapeX.first;
+    ssize_t numCols = F == -1 ? -1 : F * Hout * Wout;
+
+    // op output is [mat, scalar, scalar] for the convolved data and its dimensions
+    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::AvgPoolForwardOp::inferShape() {
+    auto Hin = CompilerUtils::constantOrDefault<size_t>(getInputHeight(), 1);
+    auto Win = CompilerUtils::constantOrDefault<size_t>(getInputWidth(), 1);
+    auto C = CompilerUtils::constantOrDefault<size_t>(getInputNumChannels(), 1);
+    auto Hf = CompilerUtils::constantOrDefault<size_t>(getPoolHeight(), 1);
+    auto Wf = CompilerUtils::constantOrDefault<size_t>(getPoolWidth(), 1);
+    auto padh = CompilerUtils::constantOrDefault<size_t>(getPadHeight(), 1);
+    auto padw = CompilerUtils::constantOrDefault<size_t>(getPadWidth(), 1);
+    auto strideh = CompilerUtils::constantOrDefault<size_t>(getStrideHeight(), 1);
+    auto stridew = CompilerUtils::constantOrDefault<size_t>(getStrideWidth(), 1);
+    auto shapeX = getShape(getInput());
+    auto numRows = shapeX.first;
+    size_t Hout = std::floor((Hin + 2 * padh - Hf) / strideh + 1);
+    size_t Wout = std::floor((Win + 2 * padw - Wf) / stridew + 1);
+    auto numCols = C * Hout * Wout;
+
+    // op output is [mat, scalar, scalar] for the convolved data and its dimensions
+    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::MaxPoolForwardOp::inferShape() {
+    auto Hin = CompilerUtils::constantOrDefault<size_t>(getInputHeight(), 1);
+    auto Win = CompilerUtils::constantOrDefault<size_t>(getInputWidth(), 1);
+    auto C = CompilerUtils::constantOrDefault<size_t>(getInputNumChannels(), 1);
+    auto Hf = CompilerUtils::constantOrDefault<size_t>(getPoolHeight(), 1);
+    auto Wf = CompilerUtils::constantOrDefault<size_t>(getPoolWidth(), 1);
+    auto padh = CompilerUtils::constantOrDefault<size_t>(getPadHeight(), 1);
+    auto padw = CompilerUtils::constantOrDefault<size_t>(getPadWidth(), 1);
+    auto strideh = CompilerUtils::constantOrDefault<size_t>(getStrideHeight(), 1);
+    auto stridew = CompilerUtils::constantOrDefault<size_t>(getStrideWidth(), 1);
+    auto shapeX = getShape(getInput());
+    auto numRows = shapeX.first;
+    size_t Hout = std::floor((Hin + 2 * padh - Hf) / strideh + 1);
+    size_t Wout = std::floor((Win + 2 * padw - Wf) / stridew + 1);
+    auto numCols = C * Hout * Wout;
 
     // op output is [mat, scalar, scalar] for the convolved data and its dimensions
     return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};

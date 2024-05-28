@@ -76,6 +76,8 @@ struct DaphneUserConfig {
     bool explain_obj_ref_mgnt = false;
     bool explain_mlir_codegen = false;
 
+    bool force_cuda = false;
+
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
     QueueTypeOption queueSetupScheme = CENTRALIZED;
 	VictimSelectionLogic victimSelection = SEQPRI;

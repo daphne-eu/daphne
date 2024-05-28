@@ -29,7 +29,7 @@
 template<class OP, class DT>
 void check(const DT* in, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
-    CUDA::Activation::Forward<OP, DT, DT>::apply(res, in, dctx);
+    CUDA::NN::Activation::Forward<OP, DT, DT>::apply(res, in, dctx);
     CHECK(*res == *exp);
 }
 
@@ -43,7 +43,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::Activation::ReLU::Forward", TAG_DNN, (DenseMat
     // expected output when used with settings filter 2x2, stride 1x1, padding 0x0
     auto result = genGivenVals<DT>(1, { 0, 0, 0, 0, 1, 2, 3, 4, 5 });
 
-    check<CUDA::Activation::ReLU>(input, result, dctx.get());
+    check<CUDA::NN::Activation::ReLU>(input, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);

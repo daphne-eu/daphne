@@ -156,10 +156,12 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
         logger->trace("{} CUDA supported={}", op->getName().getStringRef().str(), use_cuda);
         use_cuda = use_cuda && CompilerUtils::isMatrixComputation(op);
         logger->trace("{} isMatrixComputation={}", op->getName().getStringRef().str(), use_cuda);
-        use_cuda = use_cuda && hasReqMinDims(op);
-        logger->trace("{} hasMinInputDims={}", op->getName().getStringRef().str(), use_cuda);
-        use_cuda = use_cuda && fitsInMemory(op);
-        logger->trace("{} fitsInMem={}", op->getName().getStringRef().str(), use_cuda);
+        if(!cfg.force_cuda) {
+            use_cuda = use_cuda && hasReqMinDims(op);
+            logger->trace("{} hasMinInputDims={}", op->getName().getStringRef().str(), use_cuda);
+            use_cuda = use_cuda && fitsInMemory(op);
+            logger->trace("{} fitsInMem={}", op->getName().getStringRef().str(), use_cuda);
+        }
         return use_cuda;
     }
 };
