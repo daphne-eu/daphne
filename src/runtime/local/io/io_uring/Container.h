@@ -24,11 +24,13 @@
 #include <optional>
 #include <vector>
 
+constexpr uint64_t initial_capacity = 16;
+
 template<typename T>
 struct ThreadSafeStack {
     T *data;
     std::atomic<uint64_t> size = 0;
-    uint64_t capacity          = 16;
+    uint64_t capacity          = initial_capacity;
     std::mutex lck;
 
     // Assumes lock is currently held
@@ -147,11 +149,11 @@ struct ThreadSafeStack {
     }
 
     ThreadSafeStack() {
-        data = static_cast<T *>(std::malloc(sizeof(T) * 16));
+        data = static_cast<T *>(std::malloc(sizeof(T) * initial_capacity));
     }
 
     ~ThreadSafeStack() {
-        free(data);
+        std::free(data);
     }
 };
 
@@ -160,10 +162,10 @@ template<typename DataType>
 struct Pool {
     std::unique_ptr<DataType[]> data;
     uint64_t max_size;
-    std::atomic<uint64_t> currently_occupied_slots = 0;
     std::unique_ptr<std::mutex[]> entry_lcks;
     // For polling; May not be accurate
     std::unique_ptr<std::atomic<bool>[]> is_in_use;
+    std::atomic<uint64_t> currently_occupied_slots = 0;
 
     Pool(uint64_t max_size) : max_size(max_size) {
         data       = std::make_unique<DataType[]>(max_size);
