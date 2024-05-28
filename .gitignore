@@ -61,5 +61,3 @@ profiler/
 precompiled-dependencies/
 /cmake*/
 /data
-
-uring_test_file
