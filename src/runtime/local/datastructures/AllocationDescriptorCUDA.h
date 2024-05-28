@@ -34,11 +34,12 @@ public:
         // ToDo: for now we free if this is the last context-external ref to the buffer
         if(data.use_count()) {
             if (data.use_count() == 2) {
-                std::cerr << "cudaFree alloc_id=" << alloc_id << " use_count=" << data.use_count() << std::endl;
+//                std::cerr << "cudaFree alloc_id=" << alloc_id << " use_count=" << data.use_count() << std::endl;
                 if(alloc_id != 29)
                     CUDAContext::get(dctx, device_id)->free(alloc_id);
-            } else
-                std::cerr << "not freeing alloc_id=" << alloc_id << " use_count=" << data.use_count() << std::endl;
+            }
+//            else
+//                std::cerr << "not freeing alloc_id=" << alloc_id << " use_count=" << data.use_count() << std::endl;
         }
     }
 
