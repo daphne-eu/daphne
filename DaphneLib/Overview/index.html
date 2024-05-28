@@ -1592,7 +1592,7 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 <li>OR execute the script <code>run_python.sh</code> (instead of <code>python3</code>) from the DAPHNE root directory, e.g., <code>./run_python.sh myScript.py</code></li>
 </ul>
 <h2 id="introductory-example">Introductory Example</h2>
-<p>The following simple example script generates a <em>5x3</em> matrix of random values in <em>[0, 1)</em> using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of <em>0</em> and a standard deviation of <em>1</em>.</p>
+<p>The following simple example script generates a <em>5x3</em> matrix of random values in <span class="arithmatex">\([0, 1)\)</span> using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of <em>0</em> and a standard deviation of <em>1</em>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># (1) Import DaphneLib.</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -2101,6 +2101,12 @@ We plan to fix all of these limitations in the future.</p>
     
     
       <script src="../../assets/javascripts/bundle.081f42fc.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
       
     
   </body>

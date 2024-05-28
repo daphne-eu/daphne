@@ -2009,7 +2009,7 @@ The <code>seed</code> can be set to <code>-1</code> (randomly chooses a seed), o
 </li>
 <li>
 <p><strong><code>sample</code></strong><code>(range:scalar, size:size, withReplacement:bool, seed:si64)</code></p>
-<p>Generates a <em>(<code>size</code> x 1)</em> column-matrix of values drawn from the range <em>[0, <code>range</code> - 1]</em>.
+<p>Generates a <em>(<code>size</code> x 1)</em> column-matrix of values drawn from the range <em>[0, <code>range - 1</code>]</em>.
 The parameter <code>withReplacement</code> determines if a value can be drawn multiple times (<code>true</code>) or not (<code>false</code>).
 The <code>seed</code> can be set to <code>-1</code> (randomly chooses a seed), or be provided explicitly to enable reproducible random values.</p>
 </li>
@@ -2076,18 +2076,53 @@ This is the product of the number of rows and the number of columns.</p>
 </tbody>
 </table>
 <h3 id="trigonometrichyperbolic">Trigonometric/Hyperbolic</h3>
-<p><code>arg</code> unit must be radians (conversion: $x^\circ * \frac{\pi}{180^\circ} = y$ radians)
-| function | meaning |
-| ----- | ----- |
-| <strong><code>sin</code></strong> | sine |
-| <strong><code>cos</code></strong> | cosine |
-| <strong><code>tan</code></strong> | tangent |
-| <strong><code>asin</code></strong> | arc sine  (inverse of sine) |
-| <strong><code>acos</code></strong> | arc cosine (inverse of cosine) |
-| <strong><code>atan</code></strong> | arc tangent (inverse of tangent) |
-| <strong><code>sinh</code></strong> | hyperbolic sine ($\frac{e^\text{arg}-e^\text{ - arg}}{2}$) |
-| <strong><code>cosh</code></strong> | hyperbolic cosine ($\frac{e^\text{arg}+e^\text{ - arg}}{2}$) |
-| <strong><code>tanh</code></strong> | hyperbolic tangent ($\frac{\text{sinh arg}}{\text{cosh arg}}$) |</p>
+<p><code>arg</code> unit must be radians (conversion: <span class="arithmatex">\(x^\circ * \frac{\pi}{180^\circ} = y\)</span> radians)</p>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>sin</code></strong></td>
+<td>sine</td>
+</tr>
+<tr>
+<td><strong><code>cos</code></strong></td>
+<td>cosine</td>
+</tr>
+<tr>
+<td><strong><code>tan</code></strong></td>
+<td>tangent</td>
+</tr>
+<tr>
+<td><strong><code>asin</code></strong></td>
+<td>arc sine  (inverse of sine)</td>
+</tr>
+<tr>
+<td><strong><code>acos</code></strong></td>
+<td>arc cosine (inverse of cosine)</td>
+</tr>
+<tr>
+<td><strong><code>atan</code></strong></td>
+<td>arc tangent (inverse of tangent)</td>
+</tr>
+<tr>
+<td><strong><code>sinh</code></strong></td>
+<td>hyperbolic sine <span class="arithmatex">\(\left( \frac{\exp(\text{arg}) \, - \, \exp(\text{ - arg})}{2} \right)\)</span></td>
+</tr>
+<tr>
+<td><strong><code>cosh</code></strong></td>
+<td>hyperbolic cosine <span class="arithmatex">\(\left( \frac{\exp(\text{arg}) \, + \, \exp(\text{ - arg})}{2} \right)\)</span></td>
+</tr>
+<tr>
+<td><strong><code>tanh</code></strong></td>
+<td>hyperbolic tangent <span class="arithmatex">\(\left( \frac{\text{sinh arg}}{\text{cosh arg}} \right)\)</span></td>
+</tr>
+</tbody>
+</table>
 <h3 id="rounding">Rounding</h3>
 <table>
 <thead>
@@ -2613,10 +2648,12 @@ If <code>values</code> is <code>true</code>, the non-zero elements in the upper 
 <p><strong><code>ctable</code></strong><code>(ys:matrix, xs:matrix[, weight:scalar][, numRows:int, numCols:int])</code></p>
 <p>Returns the contingency table of two <em>(n x 1)</em> column-matrices <code>ys</code> and <code>xs</code>.
 The resulting matrix <code>res</code> consists of <code>max(ys) + 1</code> rows and <code>max(xs) + 1</code> columns.
-More precisely, <em><code>res[x, y]</code> = |{ k | <code>ys[k, 0]</code> = y and <code>xs[k, 0]</code> = x, 0 ≤ k ≤ n-1 }| * <code>weight</code></em>.</p>
-<p>In other words, starting with an all-zero result matrix, <code>ys</code> and <code>xs</code> can be thought of as lists of <code>y</code>/<code>x</code>-coordinates which indicate the result matrix's cells whose value shall be increased by <code>weight</code>.
+More precisely,
+<span class="arithmatex">\(\text{res}[x, y] = \left| \{ k \bigm| \text{ys}[k, 0] = y \wedge \text{xs}[k, 0] = x, \; 0 \leq k \leq n-1 \} \right| * \text{weight} \quad \forall x \in \text{xs}, y \in \text{ys}\)</span>.</p>
+<p>In other words, starting with an all-zero result matrix, all pairs of values <span class="arithmatex">\(\{ (\text{xs}[k, 0],\text{ys}[k, 0]) \mid 0 \leq k \leq n-1 \}\)</span>
+are used to index the result matrix and increase the corresponding value by <code>weight</code>.<br />
 Note that <code>ys</code> and <code>xs</code> must not contain negative numbers.</p>
-<p>The scalar weight is an optional argument and defaults to 1.0.
+<p>The scalar weight is an optional argument and defaults to <code>1.0</code>.
 The weight also determines the value type of the result.</p>
 <p>Moreover, optionally, the result shape in terms of the number of rows and columns can be specified.
 If omited, it defaults to the smallest numbers required to accommodate all given <code>y</code>/<code>x</code>-coordinates, as expressed above.
@@ -2759,10 +2796,12 @@ Iff the parameter <code>orderPreserving</code> is <code>true</code>, then the di
 That way, range predicates are possible on the encoded output.
 Otherwise, new codes are assigned to distinct values are they are encountered.
 That way, only point predicates are possible on the encoded output.</p>
-<p>There are two results:
-- The first result is the encoded data, a <em>(n x 1)</em> matrix of the codes for each element in the input <code>arg</code>.
-- The second result is the decoding dictionary, a <em>(#distinct(<code>arg</code>) x 1)</em> matrix of the distinct values in <code>arg</code>.
-    The value at position <em>i</em> is the value that is mapped to the code <em>i</em>.</p>
+<p>There are two results:</p>
+<ul>
+<li>The first result is the encoded data, a <em>(n x 1)</em> matrix of the codes for each element in the input <code>arg</code>.</li>
+<li>The second result is the decoding dictionary, a <em>(#distinct(<code>arg</code>) x 1)</em> matrix of the distinct values in <code>arg</code>.
+    The value at position <em>i</em> is the value that is mapped to the code <em>i</em>.</li>
+</ul>
 <p>The encoded data can be decoded by right indexing on the dictionary using the codes as positions.</p>
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>data = [10, 5, 20, 5, 20];
@@ -2867,6 +2906,12 @@ Specifying <code>min</code> and <code>max</code> is optional; if they are omitte
     
     
       <script src="../../assets/javascripts/bundle.081f42fc.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
       
     
   </body>

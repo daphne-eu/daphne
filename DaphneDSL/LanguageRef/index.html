@@ -2404,7 +2404,7 @@ The result is always a data object of the same data type as the input (even <em>
 <h5 id="indexing-by-bit-vector">Indexing by bit vector</h5>
 <p>This is not supported for addressing columns of frames yet.</p>
 <p>For each row/column, a single zero/one entry ("bit") must be provided.
-More precisely, a (<em>r x 1</em>) matrix is required on data objects with <em>r</em> rows, and a (<em>c x 1</em>) matrix is required on data objects with <em>c</em> columns.
+More precisely, a (<em>n x 1</em>) matrix is required on data objects with <em>n</em> rows, and a (<em>m x 1</em>) matrix is required on data objects with <em>m</em> columns.
 Only the rows/columns with a corresponding 1-value in the bit vector are present in the result.</p>
 <p>Note that double square brackets (<code>[[...]]</code>) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.</p>
 <p><em>Examples:</em></p>
@@ -2771,6 +2771,12 @@ Here, the name of the pre-compiled kernel function can optionally be attached to
     
     
       <script src="../../assets/javascripts/bundle.081f42fc.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
       
     
   </body>
