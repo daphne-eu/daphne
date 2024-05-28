@@ -1457,7 +1457,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     rows = utils.castSizeIf(rows);
 
     if (numMatElems == 0)
-        throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "empty matrix literal are not supported");
+        throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "empty matrix literals are not supported");
 
     std::vector<mlir::Value> values;
     std::vector<mlir::Type> valueTypes;
@@ -1494,36 +1494,36 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
 antlrcpp::Any DaphneDSLVisitor::visitColMajorFrameLiteralExpr(DaphneDSLGrammarParser::ColMajorFrameLiteralExprContext * ctx) {
     mlir::Location loc = utils.getLoc(ctx->start);
 
-    size_t elementCount = ctx->expr().size();
-    size_t cols = elementCount / 2;
+    size_t labelCount = ctx->labels.size();
+    size_t colCount = ctx->cols.size();
     
-    if (elementCount % 2 != 0)
+    if (labelCount != colCount)
         throw ErrorHandler::compilerError(loc, "DSLVisitor", "frame literals must have an equal number of column labels and column matrices");
 
-    std::vector<mlir::Value> labels;
+    std::vector<mlir::Value> parsedLabels;
     std::vector<mlir::Value> columnMatrices;
     std::vector<mlir::Type> columnMatElemType;
-    labels.reserve(cols);
-    columnMatrices.reserve(cols);
-    columnMatElemType.reserve(cols);
+    parsedLabels.reserve(colCount);
+    columnMatrices.reserve(colCount);
+    columnMatElemType.reserve(colCount);
 
-    for (size_t i = 0; i < elementCount; i+=2) {
-        mlir::Value label = utils.valueOrError(visit(ctx->expr(i)));
-        mlir::Value mat = utils.valueOrError(visit(ctx->expr(i+1)));
+    for (size_t i = 0; i < colCount; ++i) {
+        mlir::Value label = utils.valueOrError(visit(ctx->labels[i]));
+        mlir::Value mat = utils.valueOrError(visit(ctx->cols[i]));
 
         if (label.getType() != utils.strType)
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
         if (!(mat.getType().template isa<mlir::daphne::MatrixType>()))
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "columns for frame literals must be matrices");
 
-        labels.emplace_back(label);
+        parsedLabels.emplace_back(label);
         columnMatrices.emplace_back(mat);
         columnMatElemType.emplace_back(mat.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
     }
 
     mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), columnMatElemType);
     
-    mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, columnMatrices, labels));
+    mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, columnMatrices, parsedLabels));
 
     return result;
 }
@@ -1531,39 +1531,47 @@ antlrcpp::Any DaphneDSLVisitor::visitColMajorFrameLiteralExpr(DaphneDSLGrammarPa
 antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext * ctx) {
     mlir::Location loc = utils.getLoc(ctx->start);
 
-    size_t elementCount = ctx->expr().size();
-    size_t cols = ctx->literal().size();
-    size_t rows = elementCount / cols;
-    
-    if (elementCount % cols != 0)
-        throw ErrorHandler::compilerError(loc, "DSLVisitor", "columns in frame literals must have equal length");
+    size_t cols = ctx->labels.size();
+    size_t rows = ctx->frameRowMat().size();
 
-    std::vector<mlir::Value> labels;
-    labels.reserve(cols);
-
-    for (size_t i = 0; i < cols; ++i) {
-        mlir::Value label = utils.valueOrError(visit(ctx->literal(i)));
-        if (label.getType() != utils.strType)
-            throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
-        labels.emplace_back(label);
-    }
+    if (cols == 0 || rows == 0)
+        throw ErrorHandler::compilerError(loc, "DSLVisitor", "empty frame literals are not supported");
 
     // row-major matrices are converted to column-major format
+    std::vector<mlir::Value> parsedLabels;
     std::vector<std::vector<mlir::Value>> valuesVec;
     std::vector<std::vector<mlir::Type>> valueTypesVec;
+    parsedLabels.reserve(cols);
     valuesVec.resize(cols);
     valueTypesVec.resize(cols);
 
-    for (size_t i = 0; i < elementCount; ++i) {
-        if (i < cols) {
-            valuesVec[i].reserve(rows);
-            valueTypesVec[i].reserve(rows);
-        }
-        mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
-        valuesVec[i % cols].emplace_back(currentValue);
-        valueTypesVec[i % cols].emplace_back(currentValue.getType());
+    for (size_t i = 0; i < cols; ++i) {
+        // parse labels
+        mlir::Value label = utils.valueOrError(visit(ctx->labels[i]));
+        if (label.getType() != utils.strType)
+            throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
+        parsedLabels.emplace_back(label);
+
+        // reserve space for inner vectors
+        valuesVec[i].reserve(rows);
+        valueTypesVec[i].reserve(rows);
     }
 
+    // build row vector and place values in the corresponding column
+    for (size_t i = 0; i < rows; ++i) {
+        std::vector<mlir::Value> rowMat = visit(ctx->frameRowMat(i)).as<std::vector<mlir::Value>>();
+
+        if (rowMat.size() != cols)
+            throw ErrorHandler::compilerError(loc, "DSLVisitor", "size of row does not match the amount of labels");
+
+        for (size_t j = 0; j < cols; ++j) {
+            valuesVec[j].emplace_back(rowMat[j]);
+            valueTypesVec[j].emplace_back(rowMat[j].getType());
+        }
+    }
+
+    // determine most general value type in each column and
+    // build column matrices from column vectors
     std::vector<mlir::Value> colValues;
     std::vector<mlir::Type> colTypes;
     colValues.reserve(cols);
@@ -1587,9 +1595,18 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
 
     mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
     
-    mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, colValues, labels));
+    mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, colValues, parsedLabels));
 
     return result;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFrameRowMat(DaphneDSLGrammarParser::FrameRowMatContext * ctx) {
+    size_t elementCount = ctx->expr().size();
+    std::vector<mlir::Value> values;
+    values.reserve(elementCount);
+    for (size_t i = 0; i < elementCount; ++i)
+        values.emplace_back(utils.valueOrError(visit(ctx->expr(i))));
+    return values;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) {

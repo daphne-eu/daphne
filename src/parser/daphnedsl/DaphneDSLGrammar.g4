@@ -97,9 +97,13 @@ expr:
     | lhs=expr op='||' rhs=expr # disjExpr
     | cond=expr '?' thenExpr=expr ':' elseExpr=expr # condExpr
     | '[' (expr (',' expr)*)? ']' ('(' rows=expr? ',' cols=expr? ')')? # matrixLiteralExpr
-    | '{' (expr ':' expr (',' expr ':' expr)*)? '}' # colMajorFrameLiteralExpr
-    | '{' '[' (literal (',' literal)*)? ']' (',' '[' (expr (',' expr)*)? ']')* '}' # rowMajorFrameLiteralExpr
+    | '{' (labels+=expr ':' cols+=expr (',' labels+=expr ':' cols+=expr)*)? '}' # colMajorFrameLiteralExpr
+    | '{' '[' (labels+=expr (',' labels+=expr)*)? ']' (',' frameRowMat)* '}' # rowMajorFrameLiteralExpr
     ;
+
+// equivalent to a matrix literal but does not generalize value type
+frameRowMat:
+    '[' (expr (',' expr)*)? ']' ;
 
 indexing:
     '[' (rows=range)? ',' (cols=range)? ']' ;
