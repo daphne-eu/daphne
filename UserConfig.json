@@ -6,14 +6,14 @@
     "matmul_unroll_factor": 1,
     "matmul_unroll_jam_factor": 4,
     "matmul_num_vec_registers": 16,
-    "use_cuda": true,
+    "use_cuda": false,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
     "cuda_fuse_any": false,
     "use_mlir_codegen": false,
     "vectorized_single_queue": false,
     "debug_llvm": false,
-    "explain_kernels": true,
+    "explain_kernels": false,
     "explain_llvm": false,
     "explain_parsing": false,
     "explain_parsing_simplified": false,
@@ -31,9 +31,9 @@
     "daphnedsl_import_paths": {
         "default_dirs": ["scripts/algorithms", "scripts"]
     },
-    "force_cuda": true,
+    "force_cuda": false,
     "logging": [
-        { "log-level-limit": "DEBUG" },
+        { "log-level-limit": "INFO" },
         {
             "comment": "This configuration controls logging in the GPU compiler pass only",
             "name": "compiler::cuda",
