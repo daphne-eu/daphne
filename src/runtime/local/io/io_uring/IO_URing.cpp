@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include <asm-generic/errno-base.h>
 #include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <vector>
 
 #include <liburing.h>
+#include <asm-generic/errno-base.h>
 
 #include "AsyncUtil.h"
 #include "IO_URing.h"
@@ -166,7 +166,7 @@ bool URing::SubmitRead() {
         }
     }
 
-    // Inform if there was !an attempt! to make progress -> use amount_of_requests_to_submit over requests_submited
+    // Inform if there was !an attempt! to make progress -> use amount_of_requests_to_submit over requests_submitted
     return amount_of_requests_to_submit != 0;
 }
 
@@ -261,7 +261,7 @@ bool URing::SubmitWrite() {
         }
     }
 
-    // Inform if there was !an attempt! to make progress -> use amount_of_requests_to_submit over requests_submited
+    // Inform if there was !an attempt! to make progress -> use amount_of_requests_to_submit over requests_submitted
     return amount_of_requests_to_submit != 0;
 }
 

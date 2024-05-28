@@ -45,6 +45,17 @@ struct URingRunner{
     ~URingRunner();
 };
 
+// Manages amount_of_io_urings instances of io_uring, that each come with 2 dedicated threads for submission and 
+// completion handling. Users may simply call submitX() and then can check the status of their i/o requests via the
+// respective IO_STATUS returned from submitX(). This interface removes need for the user to address the thread safety
+// concerns that come with accessing an io_uring instance from multiple threads, out-of-order arrival of requests / 
+// observing a cqe on one thread that belongs to a i/o request originating from another thread, distributing requests 
+// among instances, keeping track to which instance each request was submitted and store their meta data while the
+// requests remain in flight etc...
+// Note: Currently the threads are spawned and "owned" by the threadpool and go to sleep if there is/recently has not
+// been more work for them to do. For daphne it would probably be better if the threads would not be managed internally
+// and instead be provided by daphne, simply by calling Completion/SubmissionWrapper() (which should be changed to simply
+// return rather than go to sleep in times of low load).
 struct IOThreadpool {
     std::vector<URingRunner *> runners;
     IOThreadpool(uint32_t amount_of_io_urings,
