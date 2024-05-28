@@ -26,8 +26,7 @@
 /*
  * Max Pooling layer.
  */
-
-import "../util.daph" as "util";
+#source("scripts/nn/util.dml") as util
 
 #forward = function(matrix[double] X, int C, int Hin, int Win, int Hf, int Wf,
 #                   int strideh, int stridew, int padh, int padw)
@@ -65,33 +64,35 @@ def forward(X:matrix, C, Hin, Win, Hf, Wf, strideh, stridew, padh, padw) -> matr
   N = nrow(X);
   Hout = floor((Hin + 2*padh - Hf)/strideh + 1);
   Wout = floor((Win + 2*padw - Wf)/stridew + 1);
-  pad_value = -1.0/0.0;  # in max pooling we pad with -infinity;
+  #pad_value = -1/0;  # in max pooling we pad with -infinity;
 
   # Create output volume
   #out = matrix(0, rows=N, cols=C*Hout*Wout)
 out = fill(0.0, N, C * Hout * Wout);
 
   # Max pooling - im2col implementation
-  for (n in 0:N - 1) {  # all examples
-    img = reshape(X[n,], C, Hin * Win);  # reshape
+#  parfor (n in 1:N) {  # all examples
+#    img = matrix(X[n,], rows=C, cols=Hin*Win)  # reshape
+#
+#    if (padh > 0 | padw > 0) {
+#      # Pad image to shape (C, (Hin+2*padh)*(Win+2*padw))
+#      img = util::pad_image(img, Hin, Win, padh, padw, pad_value)
+#    }
+#
+#    img_maxes = matrix(0, rows=C, cols=Hout*Wout)  # zeros
+#    parfor (c in 1:C) {  # all channels
+#      # Extract local image slice patches into columns with im2col, of shape (Hf*Wf, Hout*Wout)
+#      img_slice_cols = util::im2col(img[c,], Hin+2*padh, Win+2*padw, Hf, Wf, strideh, stridew)
+#
+#      # Max pooling on patches
+#      img_maxes[c,] = colMaxs(img_slice_cols)
+#    }
+#
+#    out[n,] = matrix(img_maxes, rows=1, cols=C*Hout*Wout)
+#  }
+    #out,Hout,Wout=max_pool2d(X,N,C,Hin,Win,Hf,Wf,strideh,stridew,padh,padw);
 
-    if (padh > 0 || padw > 0) {
-      # Pad image to shape (C, (Hin+2*padh)*(Win+2*padw))
-      img = util.pad_image(img, Hin, Win, padh, padw, pad_value);
-    }
-
-    img_maxes = fill(0.0, C, Hout * Wout);  # zeros
-    for (c in 0:C - 1) {  # all channels
-      # Extract local image slice patches into columns with im2col, of shape (Hf*Wf, Hout*Wout)
-      img_slice_cols = util.im2col(img[c,], Hin + 2 * padh, Win + 2 * padw, Hf, Wf, strideh, stridew);
-
-      # Max pooling on patches
-      img_maxes[c,] = aggMax(img_slice_cols, 1);
-    }
-
-    out[n,] = reshape(img_maxes, 1, C * Hout * Wout);
-  }
-  return out, as.si64(Hout), as.si64(Wout);
+    return out, as.si64(Hout), as.si64(Wout);
 }
 
 #backward = function(matrix[double] dout, int Hout, int Wout, matrix[double] X,
@@ -126,53 +127,45 @@ def backward(dout:matrix, Hout, Wout, X:matrix, C, Hin, Win, Hf, Wf, strideh, st
    * Outputs:
    *  - dX: Gradient wrt `X`, of shape (N, C*Hin*Win).
    */
-  N = nrow(X);
-  pad_value = -1.0/0.0;  # in max pooling we pad with -infinity
-
+#  N = nrow(X)
+#  pad_value = -1/0  # in max pooling we pad with -infinity
+#
 #  # Create gradient volume
-  dX = fill(0.0, N, C * Hin * Win);
+#  dX = matrix(0, rows=N, cols=C*Hin*Win)
+#
+#  # Gradient of max pooling
+#  parfor (n in 1:N, check=0) {  # all examples
+#    img = matrix(X[n,], rows=C, cols=Hin*Win)
+#    if (padh > 0 | padw > 0) {
+#      # Pad image to shape (C, (Hin+2*padh)*(Win+2*padw))
+#      img = util::pad_image(img, Hin, Win, padh, padw, pad_value)
+#    }
 
-  # Gradient of max pooling
-  for (n in 0:N - 1) {  # all examples
-    img = reshape(X[n,], C, Hin * Win);
-    if (padh > 0 || padw > 0) {
-      # Pad image to shape (C, (Hin+2*padh)*(Win+2*padw))
-      img = util.pad_image(img, Hin, Win, padh, padw, pad_value);
-    }
+#    dimg = matrix(0, rows=C, cols=(Hin+2*padh)*(Win+2*padw))
+#    parfor (c in 1:C, check=0) {  # all channels
+#      img_slice = matrix(img[c,], rows=Hin+2*padh, cols=Win+2*padw)
+#      dimg_slice = matrix(0, rows=Hin+2*padh, cols=Win+2*padw)
+#      for (hout in 1:Hout, check=0) {  # all output rows
+#        hin = (hout-1)*strideh + 1
+#        for (wout in 1:Wout) {  # all output columns
+#          win = (wout-1)*stridew + 1
+#          img_slice_patch = img_slice[hin:hin+Hf-1, win:win+Wf-1]
+#          max_val_ind = img_slice_patch == max(img_slice_patch)  # max value indicator matrix
+#          # gradient passes through only for the max value(s) in this patch
+#          dimg_slice_patch = max_val_ind * dout[n, (c-1)*Hout*Wout + (hout-1)*Wout + wout]
+#          dimg_slice[hin:hin+Hf-1, win:win+Wf-1] = dimg_slice[hin:hin+Hf-1, win:win+Wf-1]
+#                                                   + dimg_slice_patch
+#        }
+#      }
+#     dimg[c,] = matrix(dimg_slice, rows=1, cols=(Hin+2*padh)*(Win+2*padw))
+#    }
 
-    dimg = fill(0.0, C, (Hin + 2 * padh) * (Win + 2 * padw));
-    for (c in 0:C - 1) {  # all channels
-    #print("c:" + c);
-      img_slice = reshape(img[c,], Hin + 2 * padh, Win + 2 * padw);
-      dimg_slice = fill(0.0, Hin + 2 * padh, Win + 2 * padw);
-      for (hout in 0:Hout - 1) {  # all output rows
-        hin_ = hout * strideh;
-        for (wout in 0:Wout - 1) {  # all output columns
-          win_ = wout * stridew;
-          #print("win_: " + win_);
-          img_slice_patch = img_slice[hin_:hin_ + Hf - 1, win_:win_ + Wf - 1];
-          max_val_ind = img_slice_patch == aggMax(img_slice_patch);  # max value indicator matrix
-          #print("max_val_ind: ");
-          #print(max_val_ind);
-          # gradient passes through only for the max value(s) in this patch
-          dimg_slice_patch = max_val_ind * dout[n, c * Hout * Wout + hout * Wout + wout];
-          dimg_slice[hin_:hin_ + Hf - 1, win_:win_ + Wf - 1] = dimg_slice[hin_:hin_ + Hf - 1, win_:win_ + Wf - 1] + dimg_slice_patch;
-     #     print(dimg_slice_patch);
-          #print(dimg_slice);
-          #print("win_ + Wf: " + (win_ + Wf));
-        }
-      }
-      dimg[c,] = reshape(dimg_slice, 1, (Hin + 2 * padh) * (Win + 2 * padw));
-    }
-
-    if (padh > 0 || padw > 0) {
-      # Unpad image gradient
-      dimg = util.unpad_image(dimg, Hin, Win, padh, padw);  # shape (C, (Hin+2*padh)*(Win+2*padw))
-    }
-    dX[n,] = reshape(dimg, 1, C * Hin * Win);
-                      print("blubb");
-
-  }
-#dX = fill(1, 1, C*Hin*Win);
+#    if (padh > 0 | padw > 0) {
+#      # Unpad image gradient
+#      dimg = util::unpad_image(dimg, Hin, Win, padh, padw)  # shape (C, (Hin+2*padh)*(Win+2*padw))
+#    }
+#    dX[n,] = matrix(dimg, rows=1, cols=C*Hin*Win)
+#  }
+dX = fill(1, 1, C*Hin*Win);
 return dX;
 }

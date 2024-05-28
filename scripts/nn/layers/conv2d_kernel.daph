@@ -25,30 +25,26 @@
 
 /*
  * 2D Convolutional layer.
+ *
+ * This implementation uses a built-in operator for higher performance.
  */
 
-import "../util.daph" as "util";
+import ("nn/util.dml") as "util";
 
-#forward = function(matrix[double] X, matrix[double] W, matrix[double] b,
-#                   int C, int Hin, int Win, int Hf, int Wf,
-#                   int strideh, int stridew, int padh, int padw)
-#    return (matrix[double] out, int Hout, int Wout) {
 def forward(X:matrix, W:matrix, b:matrix, C, Hin, Win, Hf, Wf, strideh, stridew, padh, padw) -> matrix, si64, si64 {
   /*
    * Computes the forward pass for a 2D spatial convolutional layer with
    * F filters.  The input data has N examples, each represented as a 3D
    * volume unrolled into a single vector.
    *
-   * This implementation uses `im2col` internally for each image to
-   * extract local image regions (patches) into columns, and then
-   * performs a matrix multiplication with the filters to compute the
-   * output maps.
+   * This implementation uses a built-in operator for higher
+   * performance.
    *
    * Inputs:
    *  - X: Inputs, of shape (N, C*Hin*Win).
    *  - W: Weights, of shape (F, C*Hf*Wf).
    *  - b: Biases, of shape (F, 1).
-   *  - C: Number of input channels (dimensionality of input depth).
+   *  - C: Number of input channels (dimensionality of depth).
    *  - Hin: Input height.
    *  - Win: Input width.
    *  - Hf: Filter height.
@@ -73,27 +69,18 @@ def forward(X:matrix, W:matrix, b:matrix, C, Hin, Win, Hf, Wf, strideh, stridew,
    */
   N = nrow(X);
   F = nrow(W);
-  Hout = floor((Hin + 2*padh - Hf)/strideh + 1);
-  Wout = floor((Win + 2*padw - Wf)/stridew + 1);
+  #Hout = floor((Hin + 2*padh - Hf)/strideh + 1);
+  #Wout = floor((Win + 2*padw - Wf)/stridew + 1);
 
-  # Create output volume
-  out = fill(0.0, N, F * Hout * Wout);
-
-  # Convolution - im2col implementation
-  for (n in 0:N - 1) {  # all examples
-    #Xn = reshape(X[n,], C, Hin * Win);  # reshape
-Xn = fill(0.0, C, Hin * Win);
-    # Pad image
-    Xn_padded = util.pad_image(Xn, Hin, Win, padh, padw, 0.0);  # shape (C, (Hin+2*padh)*(Win+2*padw))
-
-    # Extract local image patches into columns with im2col, of shape (C*Hf*Wf, Hout*Wout)
-    Xn_padded_cols = util.im2col(Xn_padded, Hin+2*padh, Win+2*padw, Hf, Wf, strideh, stridew);
-
-    # Convolve patches with filters
-    outn = W @ Xn_padded_cols + b;  # shape (F, Hout*Wout)
-    out[n,] = reshape(outn, 1, F * Hout * Wout);  # reshape
-  }
-  return out, Hout, Wout;
+  # Convolution - built-in implementation
+  #out = conv2d(X, W, input_shape=[N,C,Hin,Win], filter_shape=[F,C,Hf,Wf], stride=[strideh,stridew], padding=[padh,padw]);
+  out, Hout, Wout = conv2d(X, W, N, F, Hin, Win, Hf, Wf, strideh, stridew, padh, padw, b);
+print("conv2d: Hout: ",0,0); print(Hout);
+print("conv2d: Wout: ",0,0); print(Wout);
+  # Add bias term to each output filter
+  #done within conv2d
+  #out = biasAdd(out, b);
+  return out, as.si64(Hout), as.si64(Wout);
 }
 
 #backward = function(matrix[double] dout, int Hout, int Wout,
@@ -107,8 +94,6 @@ def backward(dout:matrix, Hout, Wout, X:matrix, W:matrix, b:matrix, C, Hin, Win,
    * Computes the backward pass for a 2D spatial convolutional layer
    * with F filters.
    *
-   * This implementation uses `im2col` and `col2im` internally.
-   *
    * Inputs:
    *  - dout: Gradient wrt `out` from upstream, of
    *      shape (N, F*Hout*Wout).
@@ -117,7 +102,7 @@ def backward(dout:matrix, Hout, Wout, X:matrix, W:matrix, b:matrix, C, Hin, Win,
    *  - X: Inputs, of shape (N, C*Hin*Win).
    *  - W: Weights, of shape (F, C*Hf*Wf).
    *  - b: Biases, of shape (F, 1).
-   *  - C: Number of input channels (dimensionality of input depth).
+   *  - C: Number of input channels (dimensionality of depth).
    *  - Hin: Input height.
    *  - Win: Input width.
    *  - Hf: Filter height.
@@ -125,7 +110,15 @@ def backward(dout:matrix, Hout, Wout, X:matrix, W:matrix, b:matrix, C, Hin, Win,
    *  - strideh: Stride over height.
    *  - stridew: Stride over width.
    *  - padh: Padding for top and bottom sides.
+   *      For same output height as input, set `padh = (Hf - 1) / 2`,
+   *      assuming `strideh = 1`.
+   *      More generally, `padh = (Hin*(strideh-1) + Hf - strideh) / 2`
+   *      preserves the spatial dimensions of the input.
    *  - padw: Padding for left and right sides.
+   *      For same output width as input, set `padw = (Wf - 1) / 2`,
+   *      assuming `stridew = 1`.
+   *      More generally, `padw = (Win*(stridew-1) + Wf - stridew) / 2`
+   *      preserves the spatial dimensions of the input.
    *
    * Outputs:
    *  - dX: Gradient wrt `X`, of shape (N, C*Hin*Win).
@@ -135,31 +128,21 @@ def backward(dout:matrix, Hout, Wout, X:matrix, W:matrix, b:matrix, C, Hin, Win,
   N = nrow(X);
   F = nrow(W);
 
-  # Create output gradient volumes
-  dX = fill(0.0, N, C * Hin * Win);
-  dW = fill(0.0, F, C * Hf * Wf);
-  db = fill(0.0, F, 1);
+  #ToDo:
+  # Partial derivatives for convolution - built-in implementation
+#  dW = conv2d_backward_filter(X, dout, stride=[strideh,stridew], padding=[padh,padw],
+#                              input_shape=[N,C,Hin,Win], filter_shape=[F,C,Hf,Wf])
+  dW = fill(-2, Hout, Wout);
 
-  # Partial derivatives for convolution - im2col implementation
-  for (n in 0:N - 1) {  # all examples
-    doutn = reshape(dout[n,], F, Hout * Wout);
+#  dX = conv2d_backward_data(W, dout, stride=[strideh,stridew], padding=[padh,padw],
+#                            input_shape=[N,C,Hin,Win], filter_shape=[F,C,Hf,Wf])
 
-    # Compute dW
-    Xn = reshape(X[n,], C, Hin * Win);  # reshape
-    Xn_padded = util.pad_image(Xn, Hin, Win, padh, padw, 0.0);  # shape (C, (Hin+2*padh)*(Win+2*padw))
-    Xn_padded_cols = util.im2col(Xn_padded, Hin+2*padh, Win+2*padw, Hf, Wf, strideh, stridew);
-    dW = dW + doutn @ t(Xn_padded_cols);
+  dX = fill(-2, Hout, Wout);
 
-    # Compute db
-    db = db + sum(doutn,0);
-
-    # Compute dX
-    dXn_padded_cols = t(W) @ doutn;  # shape (C*Hf*Wf, Hout*Wout)
-    dXn_padded = util.col2im(dXn_padded_cols, C, Hin+2*padh, Win+2*padw, Hf, Wf, strideh, stridew, 0 /*"add"*/);
-    dXn = util.unpad_image(dXn_padded, Hin, Win, padh, padw);
-    dX[n,] = reshape(dXn, 1, C * Hin * Win);  # reshape
-  }
-  return dX, dW, db;
+  # Partial derivatives for bias vector
+  db = util.channel_sums(dout, F, Hout, Wout);
+  #db = fill(-3, Hout, Wout);
+  return dW, dX, db;
 }
 
 #init = function(int F, int C, int Hf, int Wf, int seed = -1)
@@ -188,6 +171,7 @@ def init(F, C, Hf, Wf, seed) -> matrix<f64>, matrix<f64> {
    *  - W: Weights, of shape (F, C*Hf*Wf).
    *  - b: Biases, of shape (F, 1).
    */
+  #W = rand(rows=F, cols=C*Hf*Wf, pdf="normal", seed=seed) * sqrt(2.0/(C*Hf*Wf))
   W = rand(F, C*Hf*Wf, 0.0, 256.0, 1.0, seed);
   b = fill(0.0, F, 1);
   return W, b;
