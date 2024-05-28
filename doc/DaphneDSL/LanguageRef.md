@@ -332,7 +332,7 @@ So far, this is only supported for addressing columns of frames.
 This is not supported for addressing columns of frames yet.
 
 For each row/column, a single zero/one entry ("bit") must be provided.
-More precisely, a (*r x 1*) matrix is required on data objects with *r* rows, and a (*c x 1*) matrix is required on data objects with *c* columns.
+More precisely, a (*n x 1*) matrix is required on data objects with *n* rows, and a (*m x 1*) matrix is required on data objects with *m* columns.
 Only the rows/columns with a corresponding 1-value in the bit vector are present in the result.
 
 Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.
