@@ -27,7 +27,7 @@
  * Stochastic Gradient Descent with Nesterov momentum (SGD-Nesterov) optimizer.
  */
 
-def update(X:matrix, dX:matrix, lr, mu, v:matrix) -> matrix, matrix {
+def update(X:matrix, dX:matrix, lr, mu, v:matrix) -> matrix<f64>, matrix<f64> {
   /*
    * Performs an SGD update with Nesterov momentum.
    *
@@ -66,7 +66,7 @@ def update(X:matrix, dX:matrix, lr, mu, v:matrix) -> matrix, matrix {
   return X, v;
 }
 
-def init(X:matrix) -> matrix {
+def init(X:matrix) -> matrix<f64> {
   /*
    * Initialize the state for this optimizer.
    *

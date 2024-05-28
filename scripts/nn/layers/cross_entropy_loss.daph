@@ -66,7 +66,7 @@ def forward(pred:matrix, y:matrix) -> f64 {
 
 #backward = function(matrix[double] pred, matrix[double] y)
 #    return (matrix[double] dpred) {
-def backward(pred:matrix, y:matrix) -> matrix {
+def backward(pred:matrix, y:matrix) -> matrix<f64> {
   /*
    * Computes the backward pass of a cross-entropy loss function.  The
    * inputs consist of N examples, each with K dimensions corresponding

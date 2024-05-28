@@ -76,11 +76,19 @@ import "nn/networks/lenet-train.daph" as "lenet";
 #fmt = ifdef($fmt, "csv")
 #train = read($train, format=fmt)
 #test = read($test, format=fmt)
-train = readMatrix("./data/mnist20_features.csv");
-test = readMatrix("./data/mnist20_features.csv");
+#train_X = readMatrix("./data/mnist20_features.csv");
+#train_Y = readMatrix("./data/mnist20_labels.csv");
+#test_X = readMatrix("./data/mnist20_features.csv");
+#test_Y = readMatrix("./data/mnist20_labels.csv");
 #C = $C
 #Hin = $Hin
 #Win = $Win
+
+train_X = readMatrix("./data/mnist/mnist_features.csv");
+train_Y = readMatrix("./data/mnist/mnist_labels.csv");
+#test_X = readMatrix("./data/mnist/mnist_features.csv");
+#test_Y = readMatrix("./data/mnist/mnist_labels.csv");
+
 C = 1;
 Hin = 28;
 Win = 28;
@@ -90,17 +98,22 @@ epochs = 2;
 out_dir = ".";
 
 # Extract images and labels
-images = train[,2:ncol(train)];
-labels = train[,1];
-X_test = test[,2:ncol(test)];
-Y_test = test[,1];
+#images = train[,1:ncol(train)];
+#labels = train[,1];
+#X_test = test[,1:ncol(test)];
+#Y_test = test[,1];
+
+images = train_X[0:5000,];
+labels = train_Y[0:5000,];
+X_test = train_X[5001:6000,];
+Y_test = train_Y[5001:6000,];
 
 # Scale images to [-1,1], and one-hot encode the labels
-n = nrow(train);
-n_test = nrow(test);
+n = nrow(images);
+n_test = nrow(X_test);
 images = (images / 255.0) * 2 - 1;
 #labels = table(seq(1, n, 1), labels+1, n, 10);
-labels = oneHot(labels, fill(as.si64(nrow(labels)),1, ncol(labels)));
+#labels = oneHot(labels, fill(as.si64(nrow(labels)),1, ncol(labels)));
 X_test = (X_test / 255.0) * 2 - 1;
 #Y_test = table(seq(1, n_test, 1), Y_test+1, n_test, 10);
 #Y_test = oneHot(Y_test, fill(nrow(Y_test),1, ncol(Y_test)));
@@ -110,15 +123,15 @@ X_test = (X_test / 255.0) * 2 - 1;
 #X_val = images[1:5000,];
 #Y = labels[5001:nrow(images),];
 #Y_val = labels[1:5000,];
-X = images[11:nrow(images),];
-X_val = images[0:10,];
+#X = images[1001:nrow(images) - 3000,];
+X = images[1001:nrow(images) - 3000,];
+X_val = images[0:1000,];
 Y = labels[11:nrow(images),];
-Y_val = labels[0:10,];
+Y_val = labels[0:1000,];
 
 
 
 # Train
-#W1, b1, W2, b2, W3, b3, W4, b4 = lenet.train(X, Y, X_val, Y_val, C, Hin, Win, epochs);
 W1, b1 = lenet.train(X, Y, X_val, Y_val, C, Hin, Win, epochs);
 
 #print(sum(as.matrix<f64>(W1)));

@@ -26,9 +26,6 @@
 /*
  * Rectified Linear Unit (ReLU) nonlinearity layer.
  */
-
-#forward = function(matrix[double] X)
-#    return (matrix[double] out) {
 def forward(X:matrix) -> matrix<f64> {
   /*
    * Computes the forward pass for a ReLU nonlinearity layer.
@@ -41,15 +38,11 @@ def forward(X:matrix) -> matrix<f64> {
    * Outputs:
    *  - out: Outputs, of same shape as `X`.
    */
-  //out = max(0, X);
-  out = relu(X);
-  #return as.matrix<f64>(out);
+  out = max(0, X);
   return out;
 }
 
-#backward = function(matrix[double] dout, matrix[double] X)
-#    return (matrix[double] dX) {
-def backward(dout:matrix, X:matrix) -> matrix {
+def backward(dout:matrix, X:matrix) -> matrix<f64> {
   /*
    * Computes the backward pass for a ReLU nonlinearity layer.
    *
@@ -63,7 +56,6 @@ def backward(dout:matrix, X:matrix) -> matrix {
    * Outputs:
    *  - dX: Gradient wrt `X`, of same shape as `X`.
    */
-   //dX = (X > 0) * dout
-   dX = relu_back(dout, X);
+   dX = (X > 0) * dout;
    return dX;
 }
