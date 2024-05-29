@@ -32,6 +32,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
+            ${PREFIX}/../../instrumentation/KernelInstrumentation.cpp
             ${PREFIX}/../../context/CUDAContext.cpp
             ${PREFIX}/CreateCUDAContext.cpp
             ${PREFIX}/AggAll.cu
