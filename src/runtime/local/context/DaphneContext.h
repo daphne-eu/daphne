@@ -18,6 +18,7 @@
 
 #include <api/cli/DaphneUserConfig.h>
 #include <util/KernelDispatchMapping.h>
+#include <util/Statistics.h>
 
 #include <vector>
 #include <iostream>
@@ -69,12 +70,14 @@ struct DaphneContext {
      */
     DaphneUserConfig& config;
     KernelDispatchMapping& dispatchMapping;
+    Statistics& stats;
 
     std::shared_ptr<spdlog::logger> logger;
 
     explicit DaphneContext(DaphneUserConfig &config,
-                           KernelDispatchMapping &dispatchMapping)
-        : config(config), dispatchMapping(dispatchMapping) {
+                           KernelDispatchMapping &dispatchMapping,
+                           Statistics &stats)
+        : config(config), dispatchMapping(dispatchMapping), stats(stats) {
         logger = spdlog::get("runtime");
     }
 
@@ -104,9 +107,14 @@ struct DaphneContext {
        return dynamic_cast<FPGAContext*>(fpga_contexts[dev_id].get());
     }
 #endif
- 
 
+    void startKernelTimer(int kId) {
+        stats.startKernelTimer(kId);
+    }
 
+    void stopKernelTimer(int kId) {
+        stats.stopKernelTimer(kId);
+    }
 
     [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
     [[nodiscard]] bool useFPGA() const { return !fpga_contexts.empty(); }

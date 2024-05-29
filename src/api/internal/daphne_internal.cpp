@@ -29,6 +29,8 @@
 #include <parser/catalog/KernelCatalogParser.h>
 #include <parser/config/ConfigParser.h>
 #include <util/DaphneLogger.h>
+#include <util/KernelDispatchMapping.h>
+#include <util/Statistics.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -369,6 +371,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         llvm::cl::init(configFileInitValue)
     );
 
+    static opt<bool> enableStatistics(
+        "statistics", cat(daphneOptions),
+        desc("Enables runtime statistics output."));
+
     static opt<bool> enableProfiling (
             "enable-profiling", cat(daphneOptions),
             desc("Enable profiling support")
@@ -512,6 +518,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
         }
     }
+
+    user_config.statistics = enableStatistics;
 
     if(user_config.use_distributed && distributedBackEndSetup==ALLOCATION_TYPE::DIST_MPI)
     {
@@ -682,6 +690,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         std::cerr << "\"total_seconds\": "       << durTotal;
         std::cerr << "}" << std::endl;
     }
+
+    if (user_config.statistics)
+        Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
 
     return StatusCode::SUCCESS;
 }

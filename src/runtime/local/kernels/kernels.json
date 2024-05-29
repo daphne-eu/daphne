@@ -771,6 +771,10 @@
                 {
                     "type": "uint64_t",
                     "name": "dispatchMappingPtr"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "statisticsPtr"
                 }
             ]
         },

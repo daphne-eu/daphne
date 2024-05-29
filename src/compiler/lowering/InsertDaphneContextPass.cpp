@@ -17,6 +17,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 #include <util/KernelDispatchMapping.h>
+#include <util/Statistics.h>
 
 #include <mlir/Pass/Pass.h>
 
@@ -55,7 +56,10 @@ void InsertDaphneContextPass::runOnOperation()
             loc, reinterpret_cast<uint64_t>(&user_config)),
         builder.create<daphne::ConstantOp>(
             loc,
-            reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())));
+            reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())),
+        builder.create<daphne::ConstantOp>(
+            loc,
+            reinterpret_cast<uint64_t>(&Statistics::instance())));
 #ifdef USE_CUDA
     if(user_config.use_cuda) {
         builder.create<daphne::CreateCUDAContextOp>(loc);

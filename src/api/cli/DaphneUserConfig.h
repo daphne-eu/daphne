@@ -75,6 +75,7 @@ struct DaphneUserConfig {
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
     bool explain_mlir_codegen = false;
+    bool statistics = false;
 
     bool force_cuda = false;
 
