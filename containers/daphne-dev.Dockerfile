@@ -22,6 +22,7 @@ ARG BASE_IMAGE=ubuntu:20.04
 #ARG FINAL_BASE_IMAGE=ubuntu:20.04
 ARG CMAKE_VERSION=3.29.3
 ARG TIMESTAMP=0
+ARG TZ=Etc/UTC
 
 #FROM ${BASE_IMAGE} as base
 #ARG DEBIAN_FRONTEND="noninteractive"
@@ -69,6 +70,7 @@ ARG TIMESTAMP=0
 
 FROM ${BASE_IMAGE} as daphne-dev
 ARG DEBIAN_FRONTEND="noninteractive"
+ARG TZ
 RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recommends install  \
     ca-certificates file git openssh-client unzip wget tar \
     libomp-dev  libpfm4-dev libssl-dev libxml2-dev uuid-dev zlib1g-dev \
@@ -82,6 +84,7 @@ COPY --from=daphneeu/daphne-deps /usr/local/include/ /usr/local/include/
 COPY --from=daphneeu/daphne-deps /usr/local/lib/ /usr/local/lib/
 COPY --from=daphneeu/daphne-deps /usr/local/share/ /usr/local/share/
 RUN ldconfig
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
 #RUN useradd -rm -d /home/daphnedev -s /bin/bash -g users -G sudo -u 2000 daphnedev
 #RUN mkdir -p /home/daphnedev/.ssh
 #RUN chmod 700 /home/daphnedev/.ssh
