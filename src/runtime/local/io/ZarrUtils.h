@@ -2,8 +2,6 @@
 
 #include <vector>
 #include <cstdint>
-#include <cstring>
-#include <memory>
 
 #include <spdlog/spdlog.h>
 
@@ -17,3 +15,4 @@ std::vector<std::string> computeFullFilePathsForRequestedChunks(
     const std::vector<std::vector<size_t>>& requested_chunk_ids,
     std::vector<std::string>& full_chunk_file_paths,
     std::vector<std::vector<size_t>>& chunk_ids);
+std::shared_ptr<spdlog::logger> GetZarrLogger();

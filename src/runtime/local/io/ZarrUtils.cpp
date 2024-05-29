@@ -1,3 +1,4 @@
+#include "spdlog/sinks/stdout_color_sinks.h"
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -61,5 +62,17 @@ std::vector<std::string> computeFullFilePathsForRequestedChunks(const std::vecto
             throw std::runtime_error("PartialReadZarr->ChunkedTensor: Did not find all requested chunk files");
         }
     }
+
     return full_requested_chunk_file_paths;
+}
+
+std::shared_ptr<spdlog::logger> GetZarrLogger() {
+    std::string zarr_lgr_name = "runtime::io::zarr";
+    auto lgr = spdlog::get(zarr_lgr_name);
+
+    if (lgr != nullptr) {
+        return lgr;
+    }
+
+    return spdlog::stdout_color_mt(zarr_lgr_name);
 }

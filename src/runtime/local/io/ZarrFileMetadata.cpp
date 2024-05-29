@@ -4,9 +4,10 @@
 #include <optional>
 #include <vector>
 #include <string>
-#include <tuple>
+#include <utility>
 #include <cstdint>
 #include <filesystem>
+#include <algorithm>
 
 std::ostream& operator<<(std::ostream& out, const ByteOrder& bo) {
     switch (bo) {
@@ -25,55 +26,56 @@ std::ostream& operator<<(std::ostream& out, const ByteOrder& bo) {
 
 std::ostream& operator<<(std::ostream& out, const ZarrDatatype& dt) {
     switch (dt) {
-        case ZarrDatatype::BOOLEAN:
+        using enum ZarrDatatype;
+        case BOOLEAN:
             out << "\"boolean\"";
             break;
-        case ZarrDatatype::FP64:
+        case FP64:
             out << "\"double\"";
             break;
-        case ZarrDatatype::FP32:
+        case FP32:
             out << "\"double\"";
             break;
-        case ZarrDatatype::INT64:
+        case INT64:
             out << "\"int64_t\"";
             break;
-        case ZarrDatatype::INT32:
+        case INT32:
             out << "\"int32_t\"";
             break;
-        case ZarrDatatype::INT16:
+        case INT16:
             out << "\"int16_t\"";
             break;
-        case ZarrDatatype::INT8:
+        case INT8:
             out << "\"int8_t\"";
             break;
-        case ZarrDatatype::UINT64:
+        case UINT64:
             out << "\"uint64_t\"";
             break;
-        case ZarrDatatype::UINT32:
+        case UINT32:
             out << "\"uint32_t\"";
             break;
-        case ZarrDatatype::UINT16:
+        case UINT16:
             out << "\"uint16_t\"";
             break;
-        case ZarrDatatype::UINT8:
+        case UINT8:
             out << "\"uint8_t\"";
             break;
-        case ZarrDatatype::COMPLEX_FLOATING:
+        case COMPLEX_FLOATING:
             out << "\"complex floating\"";
             break;
-        case ZarrDatatype::TIMEDELTA:
+        case TIMEDELTA:
             out << "\"timedelta\"";
             break;
-        case ZarrDatatype::DATETIME:
+        case DATETIME:
             out << "\"datetime\"";
             break;
-        case ZarrDatatype::STRING:
+        case STRING:
             out << "\"string\"";
             break;
-        case ZarrDatatype::UNICODE:
+        case UNICODE:
             out << "\"unicode\"";
             break;
-        case ZarrDatatype::OTHER:
+        case OTHER:
             out << "\"other\"";
             break;
     }
@@ -125,8 +127,8 @@ std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& ch
 
         int64_t chunk_id;
         switch (current_char_state) {
-            // using enum ZarrParseCharState;
-            case ZarrParseCharState::IsNumeral:
+            using enum ZarrParseCharState;
+            case IsNumeral:
                 tmp += chunk_key_to_test[i];
                 if (i == (chunk_key_to_test.size() - 1)) {
                     chunk_id = std::stol(tmp);
@@ -140,7 +142,7 @@ std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& ch
                     parsed_chunk_ids.push_back(static_cast<uint64_t>(chunk_id));
                 }
                 break;
-            case ZarrParseCharState::IsSeperator:
+            case IsSeperator:
                 if (tmp.size() == 0) {
                     // encountered separator without preceding number
                     return std::nullopt;
@@ -155,7 +157,7 @@ std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& ch
                 tmp.clear();
                 parsed_chunk_ids.push_back(static_cast<uint64_t>(chunk_id));
                 break;
-            case ZarrParseCharState::IsInvalid:
+            case IsInvalid:
                 return std::nullopt;
         }
     }
@@ -163,6 +165,8 @@ std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& ch
     if (parsed_chunk_ids.size() != tensor_shape.size()) {
         return std::nullopt;
     }
+
+    std::reverse(parsed_chunk_ids.begin(), parsed_chunk_ids.end());
 
     return parsed_chunk_ids;
 }
