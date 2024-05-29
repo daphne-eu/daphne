@@ -122,6 +122,6 @@ struct DaphneContext {
     [[nodiscard]] IContext *getDistributedContext() const {
         return distributed_context.get();
     }
-    
-    [[maybe_unused]] [[nodiscard]] DaphneUserConfig getUserConfig() const { return config; }
+
+    [[nodiscard]] DaphneUserConfig &getUserConfig() const { return config; }
 };
