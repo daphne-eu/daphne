@@ -48,7 +48,7 @@ WORKDIR $DAPHNE_DIR
 RUN ldconfig
 RUN ./build.sh --no-fancy --no-deps --no-submodule-update --installPrefix /usr/local $DAPHNE_BUILD_FLAGS
 RUN strip --strip-unneeded bin/*
-RUN strip --strip-unneeded lib/*
+RUN strip --strip-unneeded lib/*\.so*
 WORKDIR /
 
 FROM ${FINAL_BASE_IMAGE} as daphne
