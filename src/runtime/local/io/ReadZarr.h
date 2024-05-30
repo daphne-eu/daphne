@@ -243,27 +243,6 @@ struct ReadZarr<ContiguousTensor<VT>> {
     }
 };
 
-
-enum struct ChunkAlignment {
-    All_chunks_fully_alinged,
-    Only_right_side_trunked,
-    Has_left_side_trunkated,
-};
-    
-ChunkAlignment CheckAlignment(const std::vector<uint64_t>& chunk_shape, const std::vector<std::pair<uint64_t,uint64_t>>& element_ranges) {
-    for(size_t i=0; i < chunk_shape.size(); i++) {
-        if (std::get<0>(element_ranges[i]) % chunk_shape[i] != 0) {
-            return ChunkAlignment::Has_left_side_trunkated;
-        }
-    }
-    for(size_t i=0; i < chunk_shape.size(); i++) {
-        if (std::get<1>(element_ranges[i]) % chunk_shape[i] != 0) {
-            return ChunkAlignment::Only_right_side_trunked;
-        }
-    }
-    return ChunkAlignment::All_chunks_fully_alinged;
-}
-
 // Read a part of a tensor in a zarr "file/archive" into a chunked tensor. The section to be read is indicated by the
 // element_id_ranges parameter.
 // The chunk_shape specified in the zarr file will always also be the chunk shape of the resulting tensor.

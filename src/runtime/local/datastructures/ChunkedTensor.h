@@ -20,7 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <exception>
+#include <stdexcept>
 #include <memory>
 #include <optional>
 #include <ostream>

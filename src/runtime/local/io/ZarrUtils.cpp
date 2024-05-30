@@ -1,4 +1,3 @@
-#include "spdlog/sinks/stdout_color_sinks.h"
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -8,11 +7,13 @@
 #include <memory>
 
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include <fcntl.h>
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/io/ZarrFileMetadata.h>
+#include <runtime/local/io/ZarrUtils.h>
 #include <parser/metadata/ZarrFileMetaDataParser.h>
 
 bool checkEndiannessMatch(const ByteOrder bo, std::shared_ptr<spdlog::logger> log) {
@@ -76,3 +77,18 @@ std::shared_ptr<spdlog::logger> GetZarrLogger() {
 
     return spdlog::stdout_color_mt(zarr_lgr_name);
 }
+
+ChunkAlignment CheckAlignment(const std::vector<uint64_t>& chunk_shape, const std::vector<std::pair<uint64_t,uint64_t>>& element_ranges) {
+    for(size_t i=0; i < chunk_shape.size(); i++) {
+        if (std::get<0>(element_ranges[i]) % chunk_shape[i] != 0) {
+            return ChunkAlignment::Has_left_side_trunkated;
+        }
+    }
+    for(size_t i=0; i < chunk_shape.size(); i++) {
+        if (std::get<1>(element_ranges[i]) % chunk_shape[i] != 0) {
+            return ChunkAlignment::Only_right_side_trunked;
+        }
+    }
+    return ChunkAlignment::All_chunks_fully_alinged;
+}
+

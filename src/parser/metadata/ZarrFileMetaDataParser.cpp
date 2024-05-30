@@ -17,6 +17,7 @@
 #include <parser/metadata/ZarrFileMetaDataParser.h>
 
 #include <fstream>
+#include <string>
 
 #include <runtime/local/io/ZarrFileMetadata.h>
 #include <nlohmannjson/json.hpp>
