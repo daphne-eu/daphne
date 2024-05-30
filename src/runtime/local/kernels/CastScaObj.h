@@ -84,7 +84,7 @@ struct CastScaObj<Frame, VTArg> {
 template<typename VTRes, typename VTArg>
 struct CastScaObj<ContiguousTensor<VTRes>, VTArg> {
     static void apply(ContiguousTensor<VTRes> *& res, const VTArg arg, DCTX(ctx)) {
-        res = DataObjectFactory::create<ContiguousTensor<VTRes>>({}, InitCode::NONE);
+        res = DataObjectFactory::create<ContiguousTensor<VTRes>>(std::vector<size_t>({}), InitCode::NONE);
         res->data[0] = static_cast<VTRes>(arg);
     }
 };
@@ -96,7 +96,7 @@ struct CastScaObj<ContiguousTensor<VTRes>, VTArg> {
 template<typename VTRes, typename VTArg>
 struct CastScaObj<ChunkedTensor<VTRes>, VTArg> {
     static void apply(ChunkedTensor<VTRes> *& res, const VTArg arg, DCTX(ctx)) {
-        res = DataObjectFactory::create<ChunkedTensor<VTRes>>({}, InitCode::NONE);
+        res = DataObjectFactory::create<ChunkedTensor<VTRes>>(std::vector<size_t>({}), std::vector<size_t>({}), InitCode::NONE);
         res->data[0] = static_cast<VTRes>(arg);
     }
 };
