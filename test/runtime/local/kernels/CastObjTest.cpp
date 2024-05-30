@@ -17,6 +17,9 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
@@ -411,4 +414,122 @@ TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, double, floa
     DataObjectFactory::destroy(m0, d0, res0);
     DataObjectFactory::destroy(m1, d1, res1);
     DataObjectFactory::destroy(m2, d2, res2);
+}
+
+
+TEMPLATE_TEST_CASE("CastObj ContiguousTensor to ChunkedTensor", TAG_KERNELS, double, float, int64_t) {
+    using VT = TestType;
+    using DTRes = ChunkedTensor<VT>;
+    using DTArg= ContiguousTensor<VT>;
+    
+    DTArg* arg = DataObjectFactory::create<DTArg>(std::vector<size_t>({1,3,2}), InitCode::IOTA);
+    DTRes* res = nullptr;
+    castObj<DTRes,DTArg>(res, arg, nullptr);
+    
+    REQUIRE(res != nullptr);
+
+    for(size_t i=0; i<6; i++) {
+        REQUIRE(res->data[i] == static_cast<VT>(i));
+    }
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(arg);
+}
+
+TEMPLATE_TEST_CASE("CastObj ChunkedTensor to ContiguousTensor", TAG_KERNELS, double, float, int64_t) {
+    using VT = TestType;
+    using DTRes = ContiguousTensor<VT>;
+    using DTArg = ChunkedTensor<VT>;
+    
+    DTArg* arg = DataObjectFactory::create<DTArg>(std::vector<size_t>({1,3,2}),std::vector<size_t>({1,3,2}), InitCode::IOTA);
+    DTRes* res = nullptr;
+    castObj<DTRes,DTArg>(res, arg, nullptr);
+    
+    REQUIRE(res != nullptr);
+
+    for(size_t i=0; i<6; i++) {
+        REQUIRE(res->data[i] == static_cast<VT>(i));
+    }
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(arg);
+}
+
+TEMPLATE_TEST_CASE("CastObj DenseMatrix to ContiguousTensor", TAG_KERNELS, double, float, int64_t) {
+    using VT = TestType;
+    using DTRes = ContiguousTensor<VT>;
+    using DTArg = DenseMatrix<VT>;
+    
+    DTArg* arg = DataObjectFactory::create<DTArg>(2,2,false);
+    for(size_t i=0; i<4; i++) {
+        arg->getValues()[i] = static_cast<VT>(i);
+    }
+    DTRes* res = nullptr;
+    castObj<DTRes,DTArg>(res, arg, nullptr);
+    
+    REQUIRE(res != nullptr);
+
+    for(size_t i=0; i<4; i++) {
+        REQUIRE(res->data[i] == static_cast<VT>(i));
+    }
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(arg);
+}
+
+TEMPLATE_TEST_CASE("CastObj ContiguousTensor to DenseMatrix", TAG_KERNELS, double, float, int64_t) {
+    using VT = TestType;
+    using DTRes = DenseMatrix<VT>;
+    using DTArg = ContiguousTensor<VT>;
+    
+    DTArg* arg = DataObjectFactory::create<DTArg>(std::vector<size_t>({2,2}), InitCode::IOTA);
+    DTRes* res = nullptr;
+    castObj<DTRes,DTArg>(res, arg, nullptr);
+    
+    REQUIRE(res != nullptr);
+
+    for(size_t i=0; i<4; i++) {
+        REQUIRE(res->getValues()[i] == static_cast<VT>(i));
+    }
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(arg);
+}
+
+TEMPLATE_TEST_CASE("CastObj ContiguousTensor to ContiguousTensor", TAG_KERNELS, double, float, int64_t) {
+    using VT = TestType;
+    using DTRes = ContiguousTensor<VT>;
+    using DTArg = ContiguousTensor<double>;
+    
+    DTArg* arg = DataObjectFactory::create<DTArg>(std::vector<size_t>({2,2}), InitCode::IOTA);
+    DTRes* res = nullptr;
+    castObj<DTRes,DTArg>(res, arg, nullptr);
+    
+    REQUIRE(res != nullptr);
+
+    for(size_t i=0; i<4; i++) {
+        REQUIRE(res->data[i] == static_cast<VT>(i));
+    }
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(arg);
+}
+
+TEMPLATE_TEST_CASE("CastObj ChunkedTensor to ChunkedTensor", TAG_KERNELS, double, float, int64_t) {
+    using VT = TestType;
+    using DTRes = ChunkedTensor<VT>;
+    using DTArg = ChunkedTensor<double>;
+    
+    DTArg* arg = DataObjectFactory::create<DTArg>(std::vector<size_t>({1,3,2}),std::vector<size_t>({1,3,2}), InitCode::IOTA);
+    DTRes* res = nullptr;
+    castObj<DTRes,DTArg>(res, arg, nullptr);
+    
+    REQUIRE(res != nullptr);
+
+    for(size_t i=0; i<6; i++) {
+        REQUIRE(res->data[i] == static_cast<VT>(i));
+    }
+
+    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(arg);
 }

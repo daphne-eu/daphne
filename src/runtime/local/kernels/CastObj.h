@@ -19,6 +19,9 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
@@ -305,5 +308,84 @@ public:
             for (size_t c = 0; c < numCols; ++c)
                 res->append(r, c, static_cast<VTRes>(arg->get(r, c)));
         res->finishAppend();
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  ContiguousTensor  <- ContiguousTensor
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct CastObj<ContiguousTensor<VTRes>, ContiguousTensor<VTArg>> {
+    static void apply(ContiguousTensor<VTRes> *&res, const ContiguousTensor<VTArg> *arg, DCTX(ctx)) {
+        res = DataObjectFactory::create<ContiguousTensor<VTRes>>(arg);
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  ChunkedTensor  <- ChunkedTensor
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct CastObj<ChunkedTensor<VTRes>, ChunkedTensor<VTArg>> {
+    static void apply(ChunkedTensor<VTRes> *&res, const ChunkedTensor<VTArg> *arg, DCTX(ctx)) {
+        res = DataObjectFactory::create<ChunkedTensor<VTRes>>(arg);
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  ChunkedTensor  <- ContiguousTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CastObj<ChunkedTensor<VT>, ContiguousTensor<VT>> {
+    static void apply(ChunkedTensor<VT> *&res, const ContiguousTensor<VT> *arg, DCTX(ctx)) {
+        res = DataObjectFactory::create<ChunkedTensor<VT>>(arg);
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  ContiguousTensor  <- ChunkedTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CastObj<ContiguousTensor<VT>, ChunkedTensor<VT>> {
+    static void apply(ContiguousTensor<VT> *&res, const ChunkedTensor<VT> *arg, DCTX(ctx)) {
+        if (arg->tensor_shape == arg->chunk_shape) {
+            res = DataObjectFactory::create<ContiguousTensor<VT>>(arg->data.get(), arg->tensor_shape);
+        } else {
+            auto tmp = DataObjectFactory::create<ChunkedTensor<VT>>(arg);
+            if (!tmp->tryRechunk(arg->tensor_shape)) {
+                throw std::runtime_error("Rechunk during Cast to contiguous tensor failde");
+            }
+            res = DataObjectFactory::create<ContiguousTensor<VT>>(tmp->data, tmp->tensor_shape);
+            DataObjectFactory::destroy(tmp);
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  DenseMatrix  <- ContiguousTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CastObj<DenseMatrix<VT>, ContiguousTensor<VT>> {
+    static void apply(DenseMatrix<VT> *&res, const ContiguousTensor<VT> *arg, DCTX(ctx)) {
+        if (arg->rank != 2) {
+            throw std::runtime_error("Attempted to cast tensor of rank != 2 to DenseMatrix");
+        }
+        res = DataObjectFactory::create<DenseMatrix<VT>>(arg->tensor_shape[0], arg->tensor_shape[1], arg->data);
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  ContiguousTensor  <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CastObj<ContiguousTensor<VT>, DenseMatrix<VT>> {
+    static void apply(ContiguousTensor<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
+        res = DataObjectFactory::create<ContiguousTensor<VT>>(
+            arg->getValuesSharedPtr(), std::vector<size_t>({arg->getNumCols(), arg->getNumCols()}));
     }
 };
