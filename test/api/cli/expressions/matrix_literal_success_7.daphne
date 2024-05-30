@@ -13,6 +13,8 @@ int32Mat = [as.si32(3), as.ui8(2), as.si8(1), false](1,);
 uint8Mat = [as.ui8(2), as.si8(1), false](1,);
 int8Mat = [as.si8(1), false](1,);
 
+boolMat = [as.bool(1==1), false](1,);
+
 print(doubleMat);
 print(floatMat);
 print(uint64Mat);
@@ -21,3 +23,4 @@ print(uint32Mat);
 print(int32Mat);
 print(uint8Mat);
 print(int8Mat);
+print(boolMat);
