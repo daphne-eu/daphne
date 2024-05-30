@@ -171,12 +171,11 @@ std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& ch
     return parsed_chunk_ids;
 }
 
-std::string GetChunkKeyFromChunkIds(const std::string& dim_seperator,
-                                    const std::vector<size_t>& chunk_ids) {
+std::string GetChunkKeyFromChunkIds(const std::string& dim_seperator, const std::vector<size_t>& chunk_ids) {
     std::string key;
-    for(size_t i=0; i<chunk_ids.size(); i++) {
+    for (size_t i=0; i<chunk_ids.size(); i++) {
         key += std::to_string(chunk_ids[i]);
-        if(i != (chunk_ids.size() - 1)) {
+        if (i != (chunk_ids.size() - 1)) {
           key += dim_seperator;
         }
     }

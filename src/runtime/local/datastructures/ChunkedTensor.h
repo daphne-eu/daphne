@@ -350,10 +350,8 @@ class ChunkedTensor : public Tensor<ValueType> {
             ValueType *lhs_chunk_data = getPtrToChunk(current_chunk_id);
             ValueType *rhs_chunk_data = rhs.getPtrToChunk(current_chunk_id);
 
-
-
             if (isPartialChunk(current_chunk_id)) {
-                if (!ComparePartialChunks(current_chunk_id, lhs_chunk_data, rhs_chunk_data)) {
+                if (!comparePartialChunks(current_chunk_id, lhs_chunk_data, rhs_chunk_data)) {
                     return false;
                 }
             } else {
@@ -377,11 +375,11 @@ class ChunkedTensor : public Tensor<ValueType> {
         return false;
     }
 
-    bool ComparePartialChunks(const std::vector<size_t> &chunk_ids, ValueType* lhs_data, ValueType* rhs_data) const {
+    bool comparePartialChunks(const std::vector<size_t> &chunk_ids, ValueType* lhs_data, ValueType* rhs_data) const {
         size_t total_valid_elements = 1;
         std::vector<size_t> bounds;
         std::vector<size_t> strides;
-        for (size_t i=0; i < this->rank; i++) {
+        for (size_t i = 0; i < this->rank; i++) {
             bool is_boundary_dim = chunk_ids[i] == chunks_per_dim[i] - 1;
             size_t rem = this->tensor_shape[i] % chunk_shape[i] == 0 ? chunk_shape[i] : this->tensor_shape[i] % chunk_shape[i];
 
@@ -393,7 +391,6 @@ class ChunkedTensor : public Tensor<ValueType> {
             } else {
                 strides.push_back(strides[i - 1] * bounds[i - 1]);
             }
-
         }
 
         for (size_t i=0; i < total_valid_elements; i++) {
@@ -1296,7 +1293,7 @@ class ChunkedTensor : public Tensor<ValueType> {
     void printChunk(std::ostream &os, const std::vector<size_t> &chunk_ids) const {
         ValueType* chunk_ptr = getPtrToChunk(chunk_ids);
 
-        for(size_t i=0; i < this->chunk_element_count; i++) {
+        for(size_t i = 0; i < this->chunk_element_count; i++) {
             if (i % this->chunk_shape[0] == 0) {
                 os << "\n";
             }

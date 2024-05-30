@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,9 +52,9 @@ struct ZarrFileMetaData {
     std::string fill_value;
     std::string dtype;
     std::string dimension_separator = ".";
-    ByteOrder byte_order;
-    ZarrDatatype data_type;
-    uint16_t nBytes;
+    ByteOrder byte_order = ByteOrder::LITTLEENDIAN;
+    ZarrDatatype data_type = ZarrDatatype::INT64;
+    uint16_t nBytes = 8;
 };
 
 std::ostream& operator<<(std::ostream& out, const ByteOrder& bo);

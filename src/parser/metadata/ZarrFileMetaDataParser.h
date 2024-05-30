@@ -22,4 +22,34 @@ struct ZarrFileMetaData;
 
 struct ZarrFileMetaDataParser {
     static ZarrFileMetaData readMetaData(const std::string& filename);
+
+    static const std::string ZARR_KEY_FILE_EXTENSION;
+    static const std::string ZARR_KEY_CHUNKS;
+    static const std::string ZARR_KEY_SHAPE;
+    static const std::string ZARR_KEY_FORMAT;
+    static const std::string ZARR_KEY_ORDER;
+    static const std::string ZARR_KEY_FILLVALUE;
+    static const std::string ZARR_KEY_DTYPE;
+    static const std::string ZARR_KEY_DIMENSION_SEPARATOR;
+    static const std::string ZARR_KEY_COMPRESSOR;
+    static const std::string ZARR_KEY_FILTERS;
+    static const char ZARR_KEY_VAL_BYTEORDER_LE;
+    static const char ZARR_KEY_VAL_BYTEORDER_BE;
+    static const char ZARR_KEY_VAL_BYTEORDER_NOT_RELEVANT;
+
+    static const char ZARR_KEY_VAL_BYTELENGTH_1;
+    static const char ZARR_KEY_VAL_BYTELENGTH_2;
+    static const char ZARR_KEY_VAL_BYTELENGTH_4;
+    static const char ZARR_KEY_VAL_BYTELENGTH_8;
+
+    static const char ZARR_KEY_VAL_DTYPE_INTEGER;
+    static const char ZARR_KEY_VAL_DTYPE_BOOLEAN;
+    static const char ZARR_KEY_VAL_DTYPE_UNSIGNED_INTEGER;
+    static const char ZARR_KEY_VAL_DTYPE_FLOAT;
+    static const char ZARR_KEY_VAL_DTYPE_COMPLEX_FLOATING;
+    static const char ZARR_KEY_VAL_DTYPE_TIMEDELTA;
+    static const char ZARR_KEY_VAL_DTYPE_DATETIME;
+    static const char ZARR_KEY_VAL_DTYPE_STRING;
+    static const char ZARR_KEY_VAL_DTYPE_UNICODE;
+    static const char ZARR_KEY_VAL_DTYPE_OTHER;
 };

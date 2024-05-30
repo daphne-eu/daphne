@@ -92,64 +92,49 @@ void readZarr(DTRes *&res, const char *filename, const std::vector<std::pair<siz
 //     PartialReadZarr<DTRes>::apply(res, filename, fmd, {{lowerX, upperX},{lowerY,upperY},{lowerZ,upperZ}}, log);
 // }
 
+template<typename T1, typename T2>
+void validateDatatype(const std::string& datatype) {
+    if (!std::is_same<T1, T2>::value) {
+        throw std::runtime_error("ReadZarr: read VT is " + datatype + "!= exptected VT");
+    }
+}
+
 template<typename VT>
 void CheckZarrMetaDataVT(ZarrDatatype read_type) {
     switch (read_type) {
         using enum ZarrDatatype;
         case BOOLEAN:
-            if (!std::is_same<bool, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is bool != exptected VT");
-            }
+            validateDatatype<bool, VT>("bool");
             break;
         case FP64:
-            if (!std::is_same<double, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is double != exptected VT");
-            }
+            validateDatatype<double, VT>("double");
             break;
         case FP32:
-            if (!std::is_same<float, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is float != exptected VT");
-            }
+            validateDatatype<float, VT>("float");
             break;
         case UINT64:
-            if (!std::is_same<uint64_t, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is uint64_t != exptected VT");
-            }
+            validateDatatype<uint64_t, VT>("uint64_t");
             break;
         case UINT32:
-            if (!std::is_same<uint32_t, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is uint32_t != exptected VT");
-            }
+            validateDatatype<uint32_t, VT>("uint32_t");
             break;
         case UINT16:
-            if (!std::is_same<uint16_t, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is uint16_t != exptected VT");
-            }
+            validateDatatype<uint16_t, VT>("uint16_t");
             break;
         case UINT8:
-            if (!std::is_same<uint8_t, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is uint8_t != exptected VT");
-            }
+            validateDatatype<uint8_t, VT>("uint8_t");
             break;
         case INT64:
-            if (!std::is_same<int64_t, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is int64_t != exptected VT");
-            }
+            validateDatatype<int64_t, VT>("int64_t");
             break;
         case INT32:
-            if (!std::is_same<int32_t, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is int32_t != exptected VT");
-            }
+            validateDatatype<int32_t, VT>("int32_t");
             break;
         case INT16:
-            if (!std::is_same<int16_t, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is int16_t != exptected VT");
-            }
+            validateDatatype<int16_t, VT>("int16_t");
             break;
         case INT8:
-            if (!std::is_same<int8_t, VT>::value) {
-                throw std::runtime_error("ReadZarr: read VT is int8_t != exptected VT");
-            }
+            validateDatatype<int8_t, VT>("int8_t");
             break;
         default:
             throw std::runtime_error("ReadZarr: read VT currently not supported");
@@ -272,16 +257,14 @@ struct PartialReadZarr<ChunkedTensor<VT>> {
         switch (chunk_alignment) {
             using enum ChunkAlignment;
 
-            case All_chunks_fully_alinged:
-                {
+            case All_chunks_fully_alinged: {
                 res = initial_tensor->tryDiceAtChunkLvl(initial_tensor->GetChunkRangeFromIdRange(element_id_ranges).value());
                 if (res == nullptr) {
                     throw std::runtime_error("PartialReadZarr->ChunkedTensor: Dice at chunk lvl failed");
                 }
                 break;
-                }
-            case Only_right_side_trunked:
-                {
+            }
+            case Only_right_side_trunked:{
                 res = initial_tensor->tryDiceAtChunkLvl(initial_tensor->GetChunkRangeFromIdRange(element_id_ranges).value());
                 if (res == nullptr) {
                     throw std::runtime_error("PartialReadZarr->ChunkedTensor: Dice at chunk lvl failed");
@@ -291,7 +274,7 @@ struct PartialReadZarr<ChunkedTensor<VT>> {
                 // overhanging chunks is the same.
                 std::vector<size_t> new_tensor_shape;
                 size_t new_total_element_count = 1;
-                for (size_t i=0; i < initial_tensor->rank; i++) {
+                for (size_t i = 0; i < initial_tensor->rank; i++) {
                     new_tensor_shape.push_back(std::get<1>(element_id_ranges[i]) - std::get<0>(element_id_ranges[i]));
                     new_total_element_count *= new_tensor_shape.back();
                 }
@@ -299,16 +282,15 @@ struct PartialReadZarr<ChunkedTensor<VT>> {
                 res->total_element_count = new_total_element_count;
 
                 break;
-                }
-            case Has_left_side_trunkated:
-                {
+            }
+            case Has_left_side_trunkated:{
                 res = initial_tensor->tryDice(element_id_ranges, initial_tensor->chunk_shape);
                 if (res == nullptr) {
                     throw std::runtime_error("PartialReadZarr->ChunkedTensor: Dice to final shape failed");
                 }
 
                 break;
-                }
+            }
         }
 
         DataObjectFactory::destroy(initial_tensor);
