@@ -359,6 +359,10 @@ class ChunkedTensor : public Tensor<ValueType> {
     }
 
     size_t getLinearId(const std::vector<size_t> &indices) const {
+        if (this->rank == 0) {
+            return 0;
+        }
+
         size_t chunk_id       = indices[0] / chunk_shape[0];
         size_t intra_chunk_id = indices[0] % chunk_shape[0];
         size_t linear_id      = intra_chunk_id + chunk_strides[0] * chunk_id;
@@ -372,6 +376,10 @@ class ChunkedTensor : public Tensor<ValueType> {
     }
 
     size_t getLinearIdFromChunkIds(const std::vector<size_t> &chunk_indices) const {
+        if (this->rank == 0) {
+            return 0;
+        }
+
         size_t linear_id = chunk_indices[0] * chunk_strides[0];
         for (size_t i = 1; i < this->rank; i++) {
             linear_id += (chunk_indices[i] * chunk_strides[i]);
@@ -380,6 +388,10 @@ class ChunkedTensor : public Tensor<ValueType> {
     }
 
     std::vector<size_t> getChunkIdsFromLinearChunkId(size_t linear_chunk_id) const {
+        if (this->rank == 0) {
+            return {};
+        }
+
         std::vector<size_t> chunk_ids;
         std::vector<size_t> chunk_id_strides;
 
@@ -400,7 +412,7 @@ class ChunkedTensor : public Tensor<ValueType> {
 
     size_t getLinearChunkIdFromChunkIds(const std::vector<size_t> &chunk_ids) const {
         if (this->rank == 0) {
-            return {};
+            return 0;
         }
 
         std::vector<size_t> chunk_id_strides;
@@ -435,6 +447,10 @@ class ChunkedTensor : public Tensor<ValueType> {
             return std::nullopt;
         }
 
+        if (this->rank == 0) {
+            return {};
+        }
+
         // Bounds check ranges
         for (size_t i = 0; i < this->rank; i++) {
             element_id_ranges[i] = {std::get<0>(element_id_ranges[i]), std::get<1>(element_id_ranges[i]) - 1};
@@ -460,8 +476,9 @@ class ChunkedTensor : public Tensor<ValueType> {
         if (element_id_ranges.size() != this->rank) {
             return std::nullopt;
         }
+
         if (this->rank == 0) {
-            return std::nullopt;
+            return {};
         }
 
         // Bounds check ranges
@@ -514,7 +531,7 @@ class ChunkedTensor : public Tensor<ValueType> {
             return std::nullopt;
         }
         if (this->rank == 0) {
-            return std::nullopt;
+            return {};
         }
 
         // Bounds check ranges

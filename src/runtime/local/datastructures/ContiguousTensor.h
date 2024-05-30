@@ -244,8 +244,13 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     bool trySet(const std::vector<size_t> &element_indices, ValueType value) {
-        if (element_indices.size() != this->rank || this->rank == 0) {
+        if (element_indices.size() != this->rank) {
             return false;
+        }
+
+        if (this->rank == 0) {
+            data.get()[0] = 0;
+            return true;
         }
 
         for (size_t i = 0; i < this->rank; i++) {
@@ -264,6 +269,10 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     void set(const std::vector<size_t> &element_indices, ValueType value) {
+        if (this->rank == 0 && element_indices.size() == 0) {
+            data.get()[0] = value;
+        }
+
         size_t linear_id = element_indices[0];
         for (size_t i = 1; i < this->rank; i++) {
             linear_id += element_indices[i] * strides[i];
