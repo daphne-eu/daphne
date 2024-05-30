@@ -351,7 +351,8 @@ void compareDaphneRunsNumerically(std::stringstream &left,
             f_left = std::stold(s_left);
             f_right = std::stold(s_right);
         } catch (std::invalid_argument const &) {
-            FAIL("The result does not have the right number of outputs.");
+            FAIL("The result does not have the right number of outputs.\nLeft="
+                 << left.str() << "\t Right=" << right.str());
         }
         correct_so_far =
             std::norm(f_left - f_right) < epsilon * std::norm(f_left);

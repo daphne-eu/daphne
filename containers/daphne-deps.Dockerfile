@@ -30,16 +30,19 @@ ARG DAPHNE_BRANCH=main
 ARG TIMESTAMP=0
 ARG CREATION_DATE=0
 ARG GIT_HASH=0
+ARG TZ=Etc/UTC
 
 FROM ${BASE_IMAGE} as base
 ARG DEBIAN_FRONTEND
 ARG DEBCONF_NOWARNINGS
+ARG TZ
 RUN apt-get -qq -y update && apt-get -y upgrade \
     && apt-get -y --no-install-recommends install  \
     ca-certificates file git openssh-client unzip wget tar \
     libomp-dev  libpfm4-dev libssl-dev libxml2-dev uuid-dev zlib1g-dev \
     build-essential clang gfortran lld llvm llvm-10-tools ninja-build openjdk-11-jdk-headless pkg-config python3 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
 
 FROM base as build-cmake
 ARG NUM_CORES=4

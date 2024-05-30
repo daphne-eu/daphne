@@ -26,6 +26,8 @@ add_library(Util
         KernelDispatchMapping.cpp
         MurmurHash3.cpp
 		preprocessor_defs.h
+        Statistics.h
+        Statistics.cpp
         )
 
 target_link_libraries(Util PRIVATE spdlog::spdlog)

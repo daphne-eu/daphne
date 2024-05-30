@@ -26,6 +26,7 @@ ARG DAPHNE_BRANCH=main
 ARG TIMESTAMP=0
 ARG CREATION_DATE=0
 ARG GIT_HASH=0
+ARG TZ=Etc/UTC
 
 FROM ${BASE_IMAGE} as daphne-build
 ARG DAPHNE_DIR
@@ -35,6 +36,7 @@ ARG TIMESTAMP
 ARG CREATION_DATE
 ARG GIT_HASH
 ARG DAPHNE_BUILD_FLAGS
+ARG TZ
 LABEL "org.opencontainers.image.revision"="${DAPHNE_REPO}@${DAPHNE_BRANCH}"
 LABEL "org.opencontainers.image.base.name"="$BASE_IMAGE"
 LABEL "org.opencontainers.image.version"="$TIMESTAMP"
@@ -46,9 +48,10 @@ RUN echo $DAPHNE_DIR
 RUN git clone --depth=1 --single-branch --branch=$DAPHNE_BRANCH $DAPHNE_REPO $DAPHNE_DIR
 WORKDIR $DAPHNE_DIR
 RUN ldconfig
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
 RUN ./build.sh --no-fancy --no-deps --no-submodule-update --installPrefix /usr/local $DAPHNE_BUILD_FLAGS
 RUN strip --strip-unneeded bin/*
-RUN strip --strip-unneeded lib/*
+RUN strip --strip-unneeded lib/*\.so*
 WORKDIR /
 
 FROM ${FINAL_BASE_IMAGE} as daphne
@@ -58,18 +61,19 @@ ARG DAPHNE_BRANCH
 ARG TIMESTAMP
 ARG CREATION_DATE
 ARG GIT_HASH
+ARG TZ
 LABEL "org.opencontainers.image.source"="${DAPHNE_REPO}"
 LABEL "org.opencontainers.image.base.name"="${BASE_IMAGE}"
 LABEL "org.opencontainers.image.version"="$TIMESTAMP"
 LABEL "org.opencontainers.image.created"="${CREATION_DATE}"
 LABEL "org.opencontainers.image.revision"="${GIT_HASH}"
 RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recommends install  \
-    libtinfo6 libssl1.1 zlib1g python3-numpy python3-pandas libxml2 \
+    libtinfo6 openssl zlib1g python3-numpy python3-pandas libxml2 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=daphne-build $DAPHNE_DIR/bin/* /usr/local/bin
 COPY --from=daphne-build $DAPHNE_DIR/lib/* /usr/local/lib
 COPY --from=daphne-build /usr/local/lib/lib*.so* /usr/local/lib
-
 RUN ldconfig
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
 ENTRYPOINT ["/usr/local/bin/daphne"]
 CMD ["--help"]
