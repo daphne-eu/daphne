@@ -96,8 +96,6 @@ std::optional<size_t> CheckChunkListArrival(
 
                     switch (current_chunk_io_status) {
                         using enum IO_STATUS;
-                        case PRE_SUBMISSION:
-                            break;
                         case IN_FLIGHT:
                             break;
                         case SUCCESS:
@@ -107,6 +105,9 @@ std::optional<size_t> CheckChunkListArrival(
                             }
                             chunk_arrival_counter++;
                             arg->chunk_materialization_flags[linear_chunk_id] = true;
+                            break;
+                        case PRE_SUBMISSION:
+                            throw std::runtime_error("Chunk required for Aggregate kernel is not materialized and not currently being read from file.");
                             break;
                         default:
                             // Error cases like BAD_FD
@@ -340,7 +341,7 @@ void AggChunk(VTRes* dest,
 
     bool is_first_swap = true;
     for (size_t i = 0; i < chunk_shape.size(); i++) {
-        // Ignore dims not flaged for reduction
+        // Ignore dims not flagged for reduction
         if (agg_dimension_mask[i]) {
             // recalculate strides since they change in each iteration
             src_chunk_strides[0]  = 1;

@@ -29,88 +29,90 @@
 #include <vector>
 #include <cstddef>
 #include <memory>
-#include <concepts>
-#include <type_traits>
-#include <algorithm>
 #include <optional>
 
 #include "AggOpCode.h"
-#include "AggUtil.h"
+#include "AggTensorUtil.h"
 
-// TODO: IDXmin/max
+// This file includes a more general version of the Aggregate kernels given in AggCog.h / AggRow.h etc., as these are
+// ambiguous / do not directly apply to any tensor of any rank.
+// The dimension to reduce/aggregate over is specified via a mask supplied in agg_dimension_mask.
+// Aggregating a tensor of rank N over all dimension will yield a tensor of rank N with tensor_shape[i] == 1 for all i,
+// this tensor can then be converted to a cpp scalar type via the reduce rank kernel or the user may call the AggAll
+// kernel, which does both operations at once.
+// For a version of this kernel that operates on a subset of the tensors data, by additionally supplying ranges see
+// AggTensorRange kernels.
 
-// The arg are not const here since the kernels check and update the materilization flags / io status of chunks
-// The alternative way of doing this would be to add callbacks that do that to the io engine so th compute kernels do
+// Note: The arg are not const here since the kernels check and update the materialization flags / io status of chunks
+// The alternative way of doing this would be to add callbacks that do that to the io engine so the compute kernels do
 // not have to modify the arg tensor
-// TODO: handle overhanging chunks properly
-// TODO: move opCode to template para it is generated at compile time anyway
+// agg_dim_mask passed per ptr since signatures with template args are not handled by the kernels.json parser shrug*
 
-// agg_dim_mask passed per ptr since signitures with tempalte args are not handled by the kernels.json parser shrug*
+// TODO: IDXmin/max, handle overhanging chunks properly
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
 template<typename VTRes, class DTArg>
-struct AggSparse {
-    static VTRes* apply(AggOpCode opCode,
-                        bool* agg_dimension_mask,
-                        size_t* lhs_range_values,
-                        size_t* rhs_range_values,
-                        DTArg* arg,
-                        DCTX(ctx)) = delete;
+struct Agg {
+    static VTRes* apply(AggOpCode opCode, bool* agg_dimension_mask, DTArg* arg, DCTX(ctx)) = delete;
 };
+
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-
 template<typename VTRes, class DTArg>
-VTRes* aggSparse(AggOpCode opCode,
-                 bool* agg_dimension_mask,
-                 size_t* lhs_range_values,
-                 size_t* rhs_range_values,
-                 DTArg* arg,
-                 DCTX(ctx)) {
-    return AggSparse<VTRes, DTArg>::apply(opCode, agg_dimension_mask, lhs_range_values, rhs_range_values, arg, ctx);
+VTRes* agg(AggOpCode opCode, bool* agg_dimension_mask, DTArg* arg, DCTX(ctx)) {
+    return Agg<VTRes, DTArg>::apply(opCode, agg_dimension_mask, arg, ctx);
 }
 
 
-//  Assumes chunks are either matrialized or are async matrialized by other thread -> will hang otherwise
 template<Scalar_t VTRes, Scalar_t VTArg>
-struct AggSparse<ChunkedTensor<VTRes>, ChunkedTensor<VTArg>> {
+struct Agg<ContiguousTensor<VTRes>, ContiguousTensor<VTArg>> {
+    static ContiguousTensor<VTRes>* apply(AggOpCode opCode,
+                                          bool* agg_dimension_mask,
+                                          const ContiguousTensor<VTArg>* arg,
+                                          DCTX(ctx)) {
+        size_t rank = arg->rank;
+
+        std::vector<size_t> result_tensor_shape = arg->tensor_shape;
+
+        for (size_t i = 0; i < rank; i++) {
+            if (agg_dimension_mask[i]) {
+                result_tensor_shape[i] = 1;
+            }
+        }
+
+        ContiguousTensor<VTRes>* result =
+          DataObjectFactory::create<ContiguousTensor<VTRes>>(result_tensor_shape, InitCode::NONE);
+
+        AggChunkOPDispatch<VTRes, VTArg, true>(opCode,
+                                               result->data.get(),
+                                               arg->data.get(),
+                                               arg->tensor_shape,
+                                               arg->total_element_count,
+                                               agg_dimension_mask,
+                                               true);
+
+        return result;
+    }
+};
+
+//  Assumes chunks are either materialized or are async materialized by other thread -> will hang otherwise
+template<Scalar_t VTRes, Scalar_t VTArg>
+struct Agg<ChunkedTensor<VTRes>, ChunkedTensor<VTArg>> {
     static ChunkedTensor<VTRes>* apply(AggOpCode opCode,
                                        bool* agg_dimension_mask,
-                                       size_t* lhs_range_values,
-                                       size_t* rhs_range_values,
                                        ChunkedTensor<VTArg>* arg,
                                        DCTX(ctx)) {
         size_t rank = arg->rank;
 
-        std::vector<std::pair<size_t, size_t>> chunk_ranges;
-        chunk_ranges.resize(rank);
-        for(size_t i=0; i<rank; i++) {
-            chunk_ranges[i] = {lhs_range_values[i],rhs_range_values[i]};
-        }
-
-        for (size_t i = 0; i < rank; i++) {
-            if ((std::get<0>(chunk_ranges[i]) >= std::get<1>(chunk_ranges[i])) ||
-                (std::get<0>(chunk_ranges[i]) >= arg->tensor_shape[i]) ||
-                (std::get<1>(chunk_ranges[i]) > arg->tensor_shape[i])) {
-                throw std::runtime_error(
-                  "Invalid chunk range! lhs must be larger than rhs and neither may be out >= tensor_shape[i]");
-            }
-        }
-
-        std::vector<std::vector<size_t>> chunk_list = arg->GetChunkListFromChunkRange(chunk_ranges).value();
-        std::vector<size_t> result_tensor_shape;
-        result_tensor_shape.resize(rank);
-        for (size_t i = 0; i < rank; i++) {
-            result_tensor_shape[i] =
-              (std::get<1>(chunk_ranges[i]) - std::get<0>(chunk_ranges[i])) * arg->chunk_shape[i];
-        }
-        std::vector<size_t> result_chunk_shape = arg->chunk_shape;
+        std::vector<size_t> result_tensor_shape = arg->tensor_shape;
+        std::vector<size_t> result_chunk_shape  = arg->chunk_shape;
+        size_t chunk_count                      = arg->total_chunk_count;
 
         for (size_t i = 0; i < rank; i++) {
             if (agg_dimension_mask[i]) {
@@ -119,47 +121,37 @@ struct AggSparse<ChunkedTensor<VTRes>, ChunkedTensor<VTArg>> {
             }
         }
 
-        ChunkedTensor<VTRes>* result;
-        if (opCode == AggOpCode::STDDEV) {
-            result = agg<ChunkedTensor<VTRes>, ChunkedTensor<VTArg>>(
-              AggOpCode::SUM, agg_dimension_mask, arg, nullptr);
-        } else {
-            result =
-              DataObjectFactory::create<ChunkedTensor<VTRes>>(result_tensor_shape, result_chunk_shape, InitCode::NONE);
-        }
+        ChunkedTensor<VTRes>* result =
+          DataObjectFactory::create<ChunkedTensor<VTRes>>(result_tensor_shape, result_chunk_shape, InitCode::NONE);
 
         std::vector<bool> dest_chunk_has_been_touched(result->total_chunk_count, false);
 
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {    // Sum,Prod,min,max,idxmin,idxmax
-            // TODO handle idxmin/max
-
-            auto chunk_status = std::make_unique<ChunkMap[]>(chunk_list.size());
+            auto chunk_status = std::make_unique<ChunkMap[]>(chunk_count);
             std::vector<size_t> dest_chunk_ids;
             dest_chunk_ids.resize(rank);
-            for (size_t i = 0; i < chunk_list.size(); i++) {
+            for (size_t i = 0; i < chunk_count; i++) {
+                std::vector<size_t> tmp_src_ids = arg->getChunkIdsFromLinearChunkId(i);
+
                 for (size_t j = 0; j < rank; j++) {
-                    dest_chunk_ids[j] = agg_dimension_mask[j] ? 0 : chunk_list[i][j] - std::get<0>(chunk_ranges[j]);
+                    dest_chunk_ids[j] = agg_dimension_mask[j] ? 0 : tmp_src_ids[j];
                 }
-                chunk_status[i] = {arg->getLinearChunkIdFromChunkIds(chunk_list[i]),
-                                   result->getLinearChunkIdFromChunkIds(dest_chunk_ids),
-                                   true};
+                chunk_status[i] = {i, result->getLinearChunkIdFromChunkIds(dest_chunk_ids), true};
             }
 
-            size_t remaining_chunks = chunk_list.size();
+            size_t remaining_chunks = chunk_count;
             while (remaining_chunks != 0) {
-                for (size_t i = 0; i < chunk_list.size(); i++) {
+                for (size_t i = 0; i < chunk_count; i++) {
                     if (chunk_status[i].not_processed_yet) {
                         bool chunk_can_be_proccessed = false;
                         if (arg->chunk_materialization_flags[chunk_status[i].linear_src_id]) {
                             chunk_can_be_proccessed = true;
-                        } else {    // chunk not marked materialized, but it may has arrived due to async io
+                        } else {    // chunk not marked materialized, but it may arrived due to async io in the meantime
                             IO_STATUS current_chunk_io_status =
                               arg->chunk_io_futures[chunk_status[i].linear_src_id].status;
 
                             switch (current_chunk_io_status) {
                                 using enum IO_STATUS;
-                                case PRE_SUBMISSION:
-                                    break;
                                 case IN_FLIGHT:
                                     break;
                                 case SUCCESS:
@@ -171,6 +163,9 @@ struct AggSparse<ChunkedTensor<VTRes>, ChunkedTensor<VTArg>> {
                                     }
                                     chunk_can_be_proccessed                                         = true;
                                     arg->chunk_materialization_flags[chunk_status[i].linear_src_id] = true;
+                                    break;
+                                case PRE_SUBMISSION:
+                                    throw std::runtime_error("Chunk required for Aggregate kernel is not materialized and not currently being read from file.");
                                     break;
                                 default:
                                     // Error cases like BAD_FD
@@ -216,9 +211,14 @@ struct AggSparse<ChunkedTensor<VTRes>, ChunkedTensor<VTArg>> {
             for (size_t i = 0; i < rank; i++) {
                 if (agg_dimension_mask[i]) {
                     no_aggregation_dim = false;
+                    std::vector<std::pair<size_t, size_t>> full_tensor_range;
+                    full_tensor_range.resize(rank);
+                    for (size_t j = 0; j < rank; j++) {
+                        full_tensor_range[j] = {0, arg->tensor_shape[j] + 1};
+                    }
                     // Fill the lists
                     std::vector<std::vector<std::vector<size_t>>> current_lists_of_chunks =
-                      GetChunkAggregationLists(chunk_list, i);
+                      GetChunkAggregationLists(arg->GetChunkListFromIdRange(full_tensor_range).value(), i);
 
                     std::vector<bool> chunk_list_fully_arrived(current_lists_of_chunks.size(), false);
                     size_t remaining_lists_to_proccess = current_lists_of_chunks.size();
@@ -253,9 +253,8 @@ struct AggSparse<ChunkedTensor<VTRes>, ChunkedTensor<VTArg>> {
                     }
                 }
             }
-
             if (no_aggregation_dim) {    // for correctness no need to be efficient
-                for (size_t i = 0; i < arg->total_chunk_count; i++) {
+                for (size_t i = 0; i < chunk_count; i++) {
                     while (!arg->IsChunkMaterialized(arg->getChunkIdsFromLinearChunkId(i))) {
                     };
                     VTRes* dest = result->getPtrToChunk(result->getChunkIdsFromLinearChunkId(i));

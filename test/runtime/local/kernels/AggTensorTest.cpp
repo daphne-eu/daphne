@@ -18,8 +18,8 @@
 #include "runtime/local/datastructures/Tensor.h"
 #include "runtime/local/datastructures/ChunkedTensor.h"
 #include "runtime/local/datastructures/ContiguousTensor.h"
-#include <runtime/local/kernels/Agg.h>
-#include <runtime/local/kernels/AggSparse.h>
+#include <runtime/local/kernels/AggTensor.h>
+#include <runtime/local/kernels/AggTensorRange.h>
 #include <runtime/local/kernels/AggOpCode.h>
 
 #include <tags.h>
@@ -31,7 +31,7 @@
 TEST_CASE("Agg-ContiguousTensor", TAG_KERNELS) {
     auto t1   = DataObjectFactory::create<ContiguousTensor<uint32_t>>(std::vector<size_t>({3, 3, 3}), InitCode::IOTA);
     auto tmod = DataObjectFactory::create<ContiguousTensor<uint64_t>>(std::vector<size_t>({3, 3, 2}), InitCode::IOTA);
-    tmod->data[0] = 1;
+    tmod->data[0] = 1; // So PROD does not result in 0
 
     bool all_true[3] = {true,true,true};
 
@@ -45,6 +45,10 @@ TEST_CASE("Agg-ContiguousTensor", TAG_KERNELS) {
       AggOpCode::MAX, all_true, t1, nullptr);
 
     REQUIRE((t2->tensor_shape == std::vector<size_t>({1, 1, 1})));
+    REQUIRE((t3->tensor_shape == std::vector<size_t>({1, 1, 1})));
+    REQUIRE((t4->tensor_shape == std::vector<size_t>({1, 1, 1})));
+    REQUIRE((t5->tensor_shape == std::vector<size_t>({1, 1, 1})));
+
     REQUIRE(t2->data[0] == 351);
     REQUIRE(t3->data[0] == 355687428096000);
     REQUIRE(t4->data[0] == 0);
