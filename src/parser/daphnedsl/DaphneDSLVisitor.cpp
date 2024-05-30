@@ -38,6 +38,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cstdint>
@@ -1372,18 +1373,41 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, const
         mlir::Value currentValue = values[i];
         mlir::Type currentType = valueTypes[i];
 
-        if (currentType.isSignedInteger(64)) {
-            std::pair<bool, int64_t> constValue = CompilerUtils::isConstant<int64_t>(currentValue);
-            fillRes(i, constValue);
+        if (mlir::IntegerType valueIntType = currentType.dyn_cast<mlir::IntegerType>()) {
+            if (currentType.isSignedInteger()) {
+                switch (valueIntType.getWidth()) {
+                    case 64:
+                        fillRes(i, CompilerUtils::isConstant<int64_t>(currentValue)); break;
+                    case 32:
+                        fillRes(i, CompilerUtils::isConstant<int32_t>(currentValue)); break;
+                    case 8:
+                        fillRes(i, CompilerUtils::isConstant<int8_t>(currentValue)); break;
+                    default:
+                        throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
+                }
+            }
+            else if (currentType.isUnsignedInteger()) {
+                switch (valueIntType.getWidth()) {
+                    case 64:
+                        fillRes(i, CompilerUtils::isConstant<uint64_t>(currentValue)); break;
+                    case 32:
+                        fillRes(i, CompilerUtils::isConstant<uint32_t>(currentValue)); break;
+                    case 8:
+                        fillRes(i, CompilerUtils::isConstant<uint8_t>(currentValue)); break;
+                    default:
+                        throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
+                }
+            }
+            else if (currentType.isSignlessInteger(1))
+                fillRes(i, CompilerUtils::isConstant<bool>(currentValue));
+            else
+                throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
+
         }
-        else if (currentType.isF64()) {
-            std::pair<bool, double> constValue = CompilerUtils::isConstant<double>(currentValue);
-            fillRes(i, constValue);
-        }
-        else if (currentType.isSignlessInteger(1)) {
-            std::pair<bool, bool> constValue = CompilerUtils::isConstant<bool>(currentValue);
-            fillRes(i, constValue);
-        }
+        else if (currentType.isF64())
+            fillRes(i, CompilerUtils::isConstant<double>(currentValue));
+        else if (currentType.isF32())
+            fillRes(i, CompilerUtils::isConstant<float>(currentValue));
         else {
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
         }
@@ -1472,15 +1496,40 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     mlir::Type valueType = mostGeneralVt(valueTypes);
     mlir::Value colMatrix;
 
-    if (valueType.isSignedInteger(64)) {
-        colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<int64_t>(loc, values, valueTypes, valueType);
+    if (mlir::IntegerType valueIntType = valueType.dyn_cast<mlir::IntegerType>()) {
+        if (valueType.isSignedInteger()) {
+            switch (valueIntType.getWidth()) {
+                case 64:
+                    colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<int64_t>(loc, values, valueTypes, valueType); break;
+                case 32:
+                    colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<int32_t>(loc, values, valueTypes, valueType); break;
+                case 8:
+                    colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<int8_t>(loc, values, valueTypes, valueType); break;
+                default:
+                    throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
+            }
+        }
+        else if (valueType.isUnsignedInteger()) {
+            switch (valueIntType.getWidth()) {
+                case 64:
+                    colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<uint64_t>(loc, values, valueTypes, valueType); break;
+                case 32:
+                    colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<uint32_t>(loc, values, valueTypes, valueType); break;
+                case 8:
+                    colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<uint8_t>(loc, values, valueTypes, valueType); break;
+                default:
+                    throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
+            }
+        }
+        else if (valueType.isSignlessInteger(1))
+            colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<bool>(loc, values, valueTypes, valueType);
+        else
+            throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
     }
-    else if (valueType.isF64()) {
+    else if (valueType.isF64())
         colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<double>(loc, values, valueTypes, valueType);
-    }
-    else if (valueType.isSignlessInteger(1)) {
-        colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<bool>(loc, values, valueTypes, valueType);
-    }
+    else if (valueType.isF32())
+        colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<float>(loc, values, valueTypes, valueType);
     else {
         throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
     }
@@ -1531,42 +1580,48 @@ antlrcpp::Any DaphneDSLVisitor::visitColMajorFrameLiteralExpr(DaphneDSLGrammarPa
 antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext * ctx) {
     mlir::Location loc = utils.getLoc(ctx->start);
 
-    size_t cols = ctx->labels.size();
-    size_t rows = ctx->frameRowMat().size();
+    auto labelVectors = visit(ctx->labels).as<std::pair<
+                std::vector<mlir::Value>,
+                std::vector<mlir::Type>
+            >>();
+    auto parsedLabels = labelVectors.first;
+
+    size_t cols = parsedLabels.size();
+    size_t rows = ctx->rows.size();
 
     if (cols == 0 || rows == 0)
         throw ErrorHandler::compilerError(loc, "DSLVisitor", "empty frame literals are not supported");
 
+    // validate label types
+    for (mlir::Type labelType : labelVectors.second) {
+        if (labelType != utils.strType)
+            throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
+    }
+
     // row-major matrices are converted to column-major format
-    std::vector<mlir::Value> parsedLabels;
     std::vector<std::vector<mlir::Value>> valuesVec;
     std::vector<std::vector<mlir::Type>> valueTypesVec;
-    parsedLabels.reserve(cols);
     valuesVec.resize(cols);
     valueTypesVec.resize(cols);
-
+    // reserve space for inner vectors
     for (size_t i = 0; i < cols; ++i) {
-        // parse labels
-        mlir::Value label = utils.valueOrError(visit(ctx->labels[i]));
-        if (label.getType() != utils.strType)
-            throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
-        parsedLabels.emplace_back(label);
-
-        // reserve space for inner vectors
         valuesVec[i].reserve(rows);
         valueTypesVec[i].reserve(rows);
     }
 
     // build row vector and place values in the corresponding column
     for (size_t i = 0; i < rows; ++i) {
-        std::vector<mlir::Value> rowMat = visit(ctx->frameRowMat(i)).as<std::vector<mlir::Value>>();
+        auto rowVectors = visit(ctx->rows[i]).as<std::pair<
+                std::vector<mlir::Value>,
+                std::vector<mlir::Type>
+            >>();
 
-        if (rowMat.size() != cols)
+        if (rowVectors.first.size() != cols)
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "size of row does not match the amount of labels");
 
         for (size_t j = 0; j < cols; ++j) {
-            valuesVec[j].emplace_back(rowMat[j]);
-            valueTypesVec[j].emplace_back(rowMat[j].getType());
+            valuesVec[j].emplace_back(std::move(rowVectors.first[j]));
+            valueTypesVec[j].emplace_back(std::move(rowVectors.second[j]));
         }
     }
 
@@ -1579,17 +1634,42 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     for (size_t i = 0; i < cols; ++i) {
         colTypes.emplace_back(mostGeneralVt(valueTypesVec[i]));
 
-        if (colTypes[i].isSignedInteger(64)) {
-            colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<int64_t>(loc, valuesVec[i], valueTypesVec[i], colTypes[i]));
+        if (mlir::IntegerType valueIntType = colTypes[i].dyn_cast<mlir::IntegerType>()) {
+            if (colTypes[i].isSignedInteger()) {
+                switch (valueIntType.getWidth()) {
+                    case 64:
+                        colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<int64_t>(loc, valuesVec[i], valueTypesVec[i], colTypes[i])); break;
+                    case 32:
+                        colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<int32_t>(loc, valuesVec[i], valueTypesVec[i], colTypes[i])); break;
+                    case 8:
+                        colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<int8_t>(loc, valuesVec[i], valueTypesVec[i], colTypes[i])); break;
+                    default:
+                        throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
+                }
+            }
+            else if (colTypes[i].isUnsignedInteger()) {
+                switch (valueIntType.getWidth()) {
+                    case 64:
+                        colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<uint64_t>(loc, valuesVec[i], valueTypesVec[i], colTypes[i])); break;
+                    case 32:
+                        colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<uint32_t>(loc, valuesVec[i], valueTypesVec[i], colTypes[i])); break;
+                    case 8:
+                        colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<uint8_t>(loc, valuesVec[i], valueTypesVec[i], colTypes[i])); break;
+                    default:
+                        throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
+                }
+            }
+            else if (colTypes[i].isSignlessInteger(1))
+                colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<bool>(loc, valuesVec[i], valueTypesVec[i], colTypes[i]));
+            else
+                throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
         }
-        else if (colTypes[i].isF64()) {
+        else if (colTypes[i].isF64())
             colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<double>(loc, valuesVec[i], valueTypesVec[i], colTypes[i]));
-        }
-        else if (colTypes[i].isSignlessInteger()) {
-            colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<bool>(loc, valuesVec[i], valueTypesVec[i], colTypes[i]));
-        }
+        else if (colTypes[i].isF32())
+            colValues.emplace_back(DaphneDSLVisitor::buildColMatrixFromValues<float>(loc, valuesVec[i], valueTypesVec[i], colTypes[i]));
         else {
-            throw ErrorHandler::compilerError(loc, "DSLVisitor", "invalid value type for matrix literal");
+            throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
         }
     }
 
@@ -1603,10 +1683,15 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
 antlrcpp::Any DaphneDSLVisitor::visitFrameRowMat(DaphneDSLGrammarParser::FrameRowMatContext * ctx) {
     size_t elementCount = ctx->expr().size();
     std::vector<mlir::Value> values;
+    std::vector<mlir::Type> types;
     values.reserve(elementCount);
-    for (size_t i = 0; i < elementCount; ++i)
-        values.emplace_back(utils.valueOrError(visit(ctx->expr(i))));
-    return values;
+    types.reserve(elementCount);
+    for (size_t i = 0; i < elementCount; ++i) {
+        mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
+        values.emplace_back(currentValue);
+        types.emplace_back(currentValue.getType());
+    }
+    return std::make_pair(values, types);
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) {

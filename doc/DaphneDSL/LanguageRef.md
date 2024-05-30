@@ -143,8 +143,7 @@ Special characters must be escaped using a backslash:
 A matrix literal consists of a comma-separated list of elements enclosed in square brackets,
 optionally followed by parentheses with a comma separated pair of dimensions (number of rows and/or columns).
 The elements and the dimensions can be complex expressions.
-The matrix's value type is the most general value type among its elements and currently supports
-`f64`, `si64`, and `bool` types (in decreasing order of generality).
+The matrix's value type is the most general value type among its elements.
 Matrix literals are by default column matrices if no dimensions are specified.
 If only one dimension is given, the other one will be inferred automatically.
 Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can also be used to modify the shape of matrices.
@@ -177,7 +176,7 @@ Both labels and columns can be complex expressions.
 **Frame literals of rows** consist of comma-separated rows, whereby each row is enclosed in square brackets.
 The first row contains the `str`-typed column labels.
 All remaining rows represent the data of the frame.
-Currently, the labels must be literals, while the elements can be complex expressions.
+Both labels and elements of a row can be complex expressions.
 However, it is currently not possible to specify an entire row by an expression.
 
 *Examples:*

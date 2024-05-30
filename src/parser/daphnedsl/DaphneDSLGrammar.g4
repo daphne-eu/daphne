@@ -98,7 +98,7 @@ expr:
     | cond=expr '?' thenExpr=expr ':' elseExpr=expr # condExpr
     | '[' (expr (',' expr)*)? ']' ('(' rows=expr? ',' cols=expr? ')')? # matrixLiteralExpr
     | '{' (labels+=expr ':' cols+=expr (',' labels+=expr ':' cols+=expr)*)? '}' # colMajorFrameLiteralExpr
-    | '{' '[' (labels+=expr (',' labels+=expr)*)? ']' (',' frameRowMat)* '}' # rowMajorFrameLiteralExpr
+    | '{' labels=frameRowMat (',' rows+=frameRowMat)* '}' # rowMajorFrameLiteralExpr
     ;
 
 // equivalent to a matrix literal but does not generalize value type
