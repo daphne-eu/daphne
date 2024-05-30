@@ -19,10 +19,10 @@
 #include <mlir/IR/Location.h>
 #include <mlir/IR/Operation.h>
 
-#include <string>
-#include <unordered_map>
 #include <atomic>
 #include <mutex>
+#include <string>
+#include <unordered_map>
 
 /**
  * Data-object keeping source file location information for a specific kernel
@@ -41,7 +41,7 @@ struct KDMInfo {
  * and maps a kernel identifier (int) to an instance of KDMInfo.
  */
 struct KernelDispatchMapping {
-  private:
+   private:
     int kIdCounter{0};
     std::mutex m_dispatchMapping{};
     std::unordered_map<int, KDMInfo> dispatchMapping{};
@@ -51,7 +51,20 @@ struct KernelDispatchMapping {
      */
     mlir::FileLineColLoc currentLoc{};
 
-  public:
+   public:
+    std::unordered_map<int, KDMInfo>::iterator begin() {
+        return dispatchMapping.begin();
+    }
+    std::unordered_map<int, KDMInfo>::iterator end() {
+        return dispatchMapping.end();
+    }
+    std::unordered_map<int, KDMInfo>::const_iterator begin() const {
+        return dispatchMapping.begin();
+    }
+    std::unordered_map<int, KDMInfo>::const_iterator end() const {
+        return dispatchMapping.end();
+    }
+
     static KernelDispatchMapping& instance();
 
     /**
@@ -59,7 +72,7 @@ struct KernelDispatchMapping {
      * \param name The symbol name of the kernel.
      * \param op The mlir::Operation being lowered to dispatch a kernel call.
      */
-    int registerKernel(std::string name, mlir::Operation *op);
-    // 
+    int registerKernel(std::string name, mlir::Operation* op);
+    //
     KDMInfo getKernelDispatchInfo(int kId);
 };

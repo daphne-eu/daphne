@@ -22,62 +22,86 @@
 
 
 #include <tags.h>
+
 #include <catch.hpp>
+
+#include <type_traits>
+
 #include <cstdint>
 
-#define DATA_TYPES CSRMatrix, DenseMatrix
+#define DATA_TYPES CSRMatrix, DenseMatrix, Matrix
 #define VALUE_TYPES  int32_t, double  
 
-template<class DT>
-void checkDiagVector(const DT * arg, DenseMatrix<typename DT::VT> *& res, DenseMatrix<typename DT::VT> * expectedMatrix) {
-    diagVector<DenseMatrix<typename DT::VT>, DT>(res, arg, nullptr);
-    CHECK(*res == *expectedMatrix);
+template<class DTRes, class DTArg>
+void checkDiagVector(const DTArg * arg, DTRes *& res, DTRes * exp) {
+    diagVector<DTRes, DTArg>(res, arg, nullptr);
+    CHECK(*res == *exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("DiagVector-normal", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){ // NOLINT(cert-err58-cpp)
-
     using DT = TestType;
-    auto inputMatrix = genGivenVals<DT>(3, {
+    using VT = typename DT::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        Matrix<VT>,
+                        DenseMatrix<VT>
+                    >::type;
+
+    DT * arg = genGivenVals<DT>(3, {
         3,0,0,
         0,2,0,
         0,0,1,
     });
-    auto* expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {3, 2, 1});
-    checkDiagVector(inputMatrix, expectedMatrix, expectedMatrix);
-    DataObjectFactory::destroy(expectedMatrix);
-    DataObjectFactory::destroy(inputMatrix);
+    DTRes * exp = genGivenVals<DTRes>(3, {3, 2, 1});
+    DTRes * res = nullptr;
+
+    checkDiagVector(arg, res, exp);
+
+    DataObjectFactory::destroy(arg, exp, res);
 }
 
 
 TEMPLATE_PRODUCT_TEST_CASE("DiagVector-mixed-diagonal", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){ // NOLINT(cert-err58-cpp)
-
     using DT = TestType;
-    auto inputMatrix = genGivenVals<DT>(3, {
+    using VT = typename DT::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        Matrix<VT>,
+                        DenseMatrix<VT>
+                    >::type;
+
+    DT * arg = genGivenVals<DT>(3, {
         1,0,0,
         0,0,0,
         0,0,1,
     });
-    auto* expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {1, 0, 1});
-    DenseMatrix<typename DT::VT> * res=nullptr;
-    checkDiagVector(inputMatrix, res, expectedMatrix);
-    DataObjectFactory::destroy(expectedMatrix);
-    DataObjectFactory::destroy(inputMatrix);
-    DataObjectFactory::destroy(res);
+    DTRes * exp = genGivenVals<DTRes>(3, {1, 0, 1});
+    DTRes * res = nullptr;
+
+    checkDiagVector(arg, res, exp);
+
+    DataObjectFactory::destroy(arg, exp, res);
 }
 
 
 TEMPLATE_PRODUCT_TEST_CASE("DiagVector-null", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){ // NOLINT(cert-err58-cpp)
-
     using DT = TestType;
-    auto inputMatrix = genGivenVals<DT>(3, {
+    using VT = typename DT::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DT, Matrix<VT>>::value,
+                        Matrix<VT>,
+                        DenseMatrix<VT>
+                    >::type;
+
+    DT * arg = genGivenVals<DT>(3, {
         3,0,0,
         0,2,0,
         0,0,1,
     });
-    auto* expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {3, 2, 1});
-    DenseMatrix<typename DT::VT> * res=nullptr;
-    checkDiagVector(inputMatrix, res, expectedMatrix);
-    DataObjectFactory::destroy(expectedMatrix);
-    DataObjectFactory::destroy(inputMatrix);
-    DataObjectFactory::destroy(res);
+    DTRes * exp = genGivenVals<DTRes>(3, {3, 2, 1});
+    DTRes * res = nullptr;
+    
+    checkDiagVector(arg, res, exp);
+
+    DataObjectFactory::destroy(arg, exp, res);
 }

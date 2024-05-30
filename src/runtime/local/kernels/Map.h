@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <algorithm>
 
@@ -73,4 +74,28 @@ struct Map<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
     }
 };
+
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct Map<Matrix<VTRes>, Matrix<VTArg>> {
+    static void apply(Matrix<VTRes> *& res, const Matrix<VTArg> * arg, void* func, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+        
+        auto udf = reinterpret_cast<VTRes(*)(VTArg)>(func);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, udf(arg->get(r, c)));
+        res->finishAppend();
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_H

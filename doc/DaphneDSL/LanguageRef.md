@@ -107,15 +107,18 @@ Literals represent hard-coded values and can be of various data and value types:
 
 ##### Scalar literals
 
-**Integer literals** are specified in decimal notation.
+**Integer literals** are specified in decimal digits.
 By default, they have the type `si64`, but if the optional suffix `u` is appended, the type is `ui64`.
+They support the digit separators `'` and `_`.
 
-*Examples*: `0`, `123`, `-456`, `18446744073709551615u`
+*Examples*: `0`, `123`, `-456`, `1_000`, `18446744073709551615u`
 
-**Floating-point literals** are specified in decimal notation and have the type `f64`.
-Furthermore, the following literals stand for special floating-point values: `nan`, `inf`, `-inf`.
+**Floating-point literals** are specified in decimal or scientific notation.
+The following literals stand for special floating-point values: `nan`, `inf`, `-inf`.
+By default, the type of a floating-point literal is `f64`, but if an `f` is appended to the literal, it is of type `f32` instead.
+Floating-point literals support the digit separators `'` and `_`.
 
-*Examples*: `0.0`, `123.0`, `-456.78`, `inf`, `nan`
+*Examples*: `0.0`, `123.0`, `-456.78f`, `inf`, `nan`, `1.2e5f`, `1E-14`
 
 **Boolean literals** can be `false` and `true`.
 
@@ -362,7 +365,7 @@ So far, this is only supported for addressing columns of frames.
 This is not supported for addressing columns of frames yet.
 
 For each row/column, a single zero/one entry ("bit") must be provided.
-More precisely, a (*r x 1*) matrix is required on data objects with *r* rows, and a (*c x 1*) matrix is required on data objects with *c* columns.
+More precisely, a (*n x 1*) matrix is required on data objects with *n* rows, and a (*m x 1*) matrix is required on data objects with *m* columns.
 Only the rows/columns with a corresponding 1-value in the bit vector are present in the result.
 
 Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.

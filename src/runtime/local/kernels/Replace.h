@@ -20,6 +20,9 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
+#include <stdexcept>
 
 #include <string.h>
 #include <cstddef>
@@ -214,6 +217,88 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
                 }
             }
         }
+    }
+};
+
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct Replace<Matrix<VT>, Matrix<VT>, VT> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, VT pattern, VT replacement, DCTX(ctx)) {
+        bool requireCopy = false; // this variable is to indicate whether we need to copy to res (when not using inplace update semantics)
+
+        //------handling corner cases -------
+        if (arg == nullptr)
+            throw std::runtime_error("Replace: arg must not be nullptr");
+
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if ((numRows == 0) && (numCols == 0))
+            return;
+        
+        if (res != nullptr && (numRows != res->getNumRows() || numCols != res->getNumCols()))
+            throw std::runtime_error("Replace: res must have the same shape as arg");
+
+        if ((replacement!=replacement && pattern!=pattern) || (pattern == replacement)) { // nothing to be done pattern equals replacement
+            if (res != nullptr && res == arg) // arg and res are the same
+                return;
+            else if (res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+            // copy and return in this case replace will be a copy function that copies arg to res
+            res->prepareAppend();
+            for (size_t r = 0; r < numRows; ++r)
+                for (size_t c = 0; c < numCols; ++c)
+                    res->append(r, c, arg->get(r, c));
+            res->finishAppend();
+
+            return;
+        }
+
+        if (res == nullptr) {
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+            requireCopy=true;
+        }
+        
+        //--------main logic --------------------------
+        if (requireCopy)
+            res->prepareAppend();
+        if (pattern != pattern) { // pattern is NaN
+            for (size_t r = 0; r < numRows; ++r) {
+                for (size_t c = 0; c < numCols; ++c) {
+                    if (requireCopy) {
+                        if (arg->get(r, c) != arg->get(r, c))
+                            res->append(r, c, replacement);
+                        else
+                            res->append(r, c, arg->get(r, c));
+                    } else {
+                        if (arg->get(r, c) != arg->get(r, c))
+                            res->set(r, c, replacement);
+                    }
+                }
+            }
+        }
+        else { // pattern is not NaN --> replacement can still be NaN
+            for (size_t r = 0; r < numRows; ++r) {
+                for (size_t c = 0; c < numCols; ++c) {
+                    if (requireCopy) {
+                        if (arg->get(r, c) == pattern)
+                            res->append(r, c, replacement);
+                        else
+                            res->append(r, c, arg->get(r, c));
+                    } else {
+                        if (arg->get(r, c) == pattern)
+                            res->set(r, c, replacement);
+                    }
+                }
+            }
+        }
+        if (requireCopy)
+            res->finishAppend();
     }
 };
 

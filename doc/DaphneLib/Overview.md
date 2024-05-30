@@ -54,7 +54,7 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 
 ## Introductory Example
 
-The following simple example script generates a *5x3* matrix of random values in *[0, 1)* using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of *0* and a standard deviation of *1*.
+The following simple example script generates a *5x3* matrix of random values in $[0, 1)$ using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of *0* and a standard deviation of *1*.
 
 ```python
 # (1) Import DaphneLib.

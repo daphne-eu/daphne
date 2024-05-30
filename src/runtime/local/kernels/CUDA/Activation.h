@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_ACTIVATION_H
-#define DAPHNE_PROTOTYPE_ACTIVATION_H
-
 #pragma once
 
 #include "runtime/local/context/DaphneContext.h"
@@ -24,7 +21,7 @@
 #include "runtime/local/datastructures/DenseMatrix.h"
 #include "HostUtils.h"
 
-namespace CUDA::Activation {
+namespace CUDA::NN::Activation {
     struct ReLU {
         static inline cudnnActivationMode_t getActivationType() { return CUDNN_ACTIVATION_RELU; }
     };
@@ -34,5 +31,3 @@ namespace CUDA::Activation {
         static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
     };
 }
-
-#endif // DAPHNE_PROTOTYPE_ACTIVATION_H

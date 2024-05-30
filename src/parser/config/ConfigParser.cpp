@@ -42,7 +42,7 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 
     checkAnyUnexpectedKeys(jf, filename);   // raise an error if the config JSON file contains any unexpected keys
 
-        if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
+    if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
         config.use_cuda = jf.at(DaphneConfigJsonParams::USE_CUDA_).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_VECTORIZED_EXEC))
         config.use_vectorized_exec = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_EXEC).get<bool>();
@@ -141,6 +141,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 
         }
     }
+    if (keyExists(jf, DaphneConfigJsonParams::FORCE_CUDA))
+        config.force_cuda = jf.at(DaphneConfigJsonParams::FORCE_CUDA).get<bool>();
 }
 
 bool ConfigParser::keyExists(const nlohmann::json& j, const std::string& key) {

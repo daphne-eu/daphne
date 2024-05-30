@@ -33,19 +33,11 @@
 // Once we add CSRMatrix here, we should also factor out the frame test cases.
 
 #define TEST_NAME(opName) "EwBinaryObjSca (" opName ")"
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
-template<class DT>
-void checkEwBinaryMatSca(BinaryOpCode opCode, const DT * lhs, typename DT::VT rhs, const DT * exp) {
-    DT * res = nullptr;
-    ewBinaryObjSca<DT, DT, typename DT::VT>(opCode, res, lhs, rhs, nullptr);
-    CHECK(*res == *exp);
-    DataObjectFactory::destroy(res);
-}
-
 template<class DT, typename VT>
-void checkEwBinaryFrameSca(BinaryOpCode opCode, const DT * lhs, VT rhs, const DT * exp) {
+void checkEwBinaryObjSca(BinaryOpCode opCode, const DT * lhs, const VT rhs, const DT * exp) {
     DT * res = nullptr;
     ewBinaryObjSca<DT, DT, VT>(opCode, res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
@@ -56,10 +48,10 @@ void checkEwBinaryFrameSca(BinaryOpCode opCode, const DT * lhs, VT rhs, const DT
 // Arithmetic
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
+
     auto m0 = genGivenVals<DT>(4, {
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
@@ -79,33 +71,54 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
             1, 1, 1, 1, 1, 1,
     });
 
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::ADD, m0, 0, m0);
-        checkEwBinaryMatSca(BinaryOpCode::ADD, m1, 0, m1);
-        checkEwBinaryMatSca(BinaryOpCode::ADD, m1, 1, m2);
-    }   
-    SECTION("frame") {
-        Frame * f0 = nullptr;
-        castObj<Frame, DT>(f0, m0, nullptr);
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::ADD, f0, 0, f0);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::ADD, f1, 0, f1);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::ADD, f1, 1, f2);
-        DataObjectFactory::destroy(f0, f1, f2);
-    }
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::ADD, m0, 0, m0);
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::ADD, m1, 0, m1);
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::ADD, m1, 1, m2);
 
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m0, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_TEST_CASE(TEST_NAME("add - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m0 = genGivenVals<DTCol>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DTCol>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DTCol>(4, {
+            2, 3, 1, 1, 2, 4,
+            1, 2, 1, 3, 1, 4,
+            1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1,
+    });
+
+    Frame * f0 = nullptr;
+    castObj<Frame, DTCol>(f0, m0, nullptr);
+    Frame * f1 = nullptr;
+    castObj<Frame, DTCol>(f1, m1, nullptr);
+    Frame * f2 = nullptr;
+    castObj<Frame, DTCol>(f2, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::ADD, f0, 0, f0);
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::ADD, f1, 0, f1);
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::ADD, f1, 1, f2);
+
+    DataObjectFactory::destroy(f0, f1, f2, m0, m1, m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
+
     auto m0 = genGivenVals<DT>(4, {
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
@@ -124,391 +137,484 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
     });
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::MUL, m0, 0, m0);
-        checkEwBinaryMatSca(BinaryOpCode::MUL, m1, 0, m0);
-        checkEwBinaryMatSca(BinaryOpCode::MUL, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f0 = nullptr;
-        castObj<Frame, DT>(f0, m0, nullptr);
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::MUL, f0, 0, f0);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::MUL, f1, 0, f0);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::MUL, f1, 2, f2);
-        DataObjectFactory::destroy(f0, f1, f2);
-    }
-    
-        
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::MUL, m0, 0, m0);
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::MUL, m1, 0, m0);
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::MUL, m1, 2, m2);
+
+    DataObjectFactory::destroy(m0, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_TEST_CASE(TEST_NAME("mul - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m0 = genGivenVals<DTCol>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DTCol>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DTCol>(4, {
+            2, 4, 0, 0, 2, 6,
+            0, 2, 0, 4, 0, 6,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+
+    Frame * f0 = nullptr;
+    castObj<Frame, DTCol>(f0, m0, nullptr);
+    Frame * f1 = nullptr;
+    castObj<Frame, DTCol>(f1, m1, nullptr);
+    Frame * f2 = nullptr;
+    castObj<Frame, DTCol>(f2, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::MUL, f0, 0, f0);
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::MUL, f1, 0, f0);
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::MUL, f1, 2, f2);
+
+    DataObjectFactory::destroy(f0, f1, f2, m0, m1, m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
+
     auto m0 = genGivenVals<DT>(2, {
             0, 0, 0,
-            0, 0, 0,
+            0, 0, 0
     });
     auto m1 = genGivenVals<DT>(2, {
             1, 2, 4,
-            6, 8, 9,
+            6, 8, 9
     });
     auto m2 = genGivenVals<DT>(2, {
-             2,  4,  8,
-            12, 16, 18,
+            2,  4,  8,
+            12, 16, 18
     });
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::DIV, m0, 1, m0);
-        checkEwBinaryMatSca(BinaryOpCode::DIV, m1, 1, m1);
-        checkEwBinaryMatSca(BinaryOpCode::DIV, m2, 2, m1);
-    }   
-    SECTION("frame") {
-        Frame * f0 = nullptr;
-        castObj<Frame, DT>(f0, m0, nullptr);
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::DIV, f0, 1, f0);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::DIV, f1, 1, f1);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::DIV, f2, 2, f1);
-        DataObjectFactory::destroy(f0, f1, f2);
-    }
-    
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::DIV, m0, 1, m0);
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::DIV, m1, 1, m1);
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::DIV, m2, 2, m1);
+
+    DataObjectFactory::destroy(m0, m1, m2);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("div - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m0 = genGivenVals<DTCol>(2, {
+            0, 0, 0,
+            0, 0, 0
+    });
+    auto m1 = genGivenVals<DTCol>(2, {
+            1, 2, 4,
+            6, 8, 9
+    });
+    auto m2 = genGivenVals<DTCol>(2, {
+            2,  4,  8,
+            12, 16, 18
+    });
+
+    Frame * f0 = nullptr;
+    castObj<Frame, DTCol>(f0, m0, nullptr);
+    Frame * f1 = nullptr;
+    castObj<Frame, DTCol>(f1, m1, nullptr);
+    Frame * f2 = nullptr;
+    castObj<Frame, DTCol>(f2, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::DIV, f0, 1, f0);
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::DIV, f1, 1, f1);
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::DIV, f2, 2, f1);
+
+    DataObjectFactory::destroy(f0, f1, f2, m0, m1, m2);
 }
 
 // ****************************************************************************
 // Comparisons
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
-    auto m2 = genGivenVals<DT>(2, {0, 1, 0,  1, 0, 0,});
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::EQ, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::EQ, f1, 2, f2);
-        DataObjectFactory::destroy(f1, f2);
-    }
-    
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+
+    auto arg = genGivenVals<DT>(2, {1, 2, 3, 2, 3, 1});
+    auto exp = genGivenVals<DT>(2, {0, 1, 0, 1, 0, 0});
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::EQ, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
-    auto m2 = genGivenVals<DT>(2, {1, 0, 1,  0, 1, 1,});
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::NEQ, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::NEQ, f1, 2, f2);
-        DataObjectFactory::destroy(f1, f2);
-    }
-    
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+TEMPLATE_TEST_CASE(TEST_NAME("eq - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {1, 2, 3, 2, 3, 1});
+    auto m2 = genGivenVals<DTCol>(2, {0, 1, 0, 1, 0, 0,});
+
+    Frame * arg = nullptr;
+    castObj<Frame, DTCol>(arg, m1, nullptr);
+    Frame * exp = nullptr;
+    castObj<Frame, DTCol>(exp, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::EQ, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
-    auto m2 = genGivenVals<DT>(2, {1, 0, 0,  0, 0, 1,});
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::LT, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::LT, f1, 2, f2);
-        DataObjectFactory::destroy(f1, f2);
-    }
-    
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+
+    auto arg = genGivenVals<DT>(2, {1, 2, 3, 2, 3, 1});
+    auto exp = genGivenVals<DT>(2, {1, 0, 1, 0, 1, 1});
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::NEQ, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
-    auto m2 = genGivenVals<DT>(2, {1, 1, 0,  1, 0, 1,});
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::LE, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::LE, f1, 2, f2);
-        DataObjectFactory::destroy(f1, f2);
-    }
-        
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+TEMPLATE_TEST_CASE(TEST_NAME("neq - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {1, 2, 3, 2, 3, 1});
+    auto m2 = genGivenVals<DTCol>(2, {1, 0, 1, 0, 1, 1});
+
+    Frame * arg = nullptr;
+    castObj<Frame, DTCol>(arg, m1, nullptr);
+    Frame * exp = nullptr;
+    castObj<Frame, DTCol>(exp, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::NEQ, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
-    auto m2 = genGivenVals<DT>(2, {0, 0, 1,  0, 1, 0,});
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::GT, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::GT, f1, 2, f2);
-        DataObjectFactory::destroy(f1, f2);
-    }
-        
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+
+    auto arg = genGivenVals<DT>(2, {1, 2, 3, 2, 3, 1});
+    auto exp = genGivenVals<DT>(2, {1, 0, 0, 0, 0, 1});
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::LT, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_TEST_CASE(TEST_NAME("lt - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {1, 2, 3, 2, 3, 1});
+    auto m2 = genGivenVals<DTCol>(2, {1, 0, 0, 0, 0, 1});
+
+    Frame * arg = nullptr;
+    castObj<Frame, DTCol>(arg, m1, nullptr);
+    Frame * exp = nullptr;
+    castObj<Frame, DTCol>(exp, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::LT, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
-    auto m2 = genGivenVals<DT>(2, {0, 1, 1,  1, 1, 0,});
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::GE, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::GE, f1, 2, f2);
-        DataObjectFactory::destroy(f1, f2);
-    }
-        
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+
+    auto arg = genGivenVals<DT>(2, {1, 2, 3, 2, 3, 1});
+    auto exp = genGivenVals<DT>(2, {1, 1, 0, 1, 0, 1});
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::LE, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("le - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {1, 2, 3, 2, 3, 1});
+    auto m2 = genGivenVals<DTCol>(2, {1, 1, 0, 1, 0, 1});
+
+    Frame * arg = nullptr;
+    castObj<Frame, DTCol>(arg, m1, nullptr);
+    Frame * exp = nullptr;
+    castObj<Frame, DTCol>(exp, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::LE, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(2, {1, 2, 3, 2, 3, 1});
+    auto exp = genGivenVals<DT>(2, {0, 0, 1, 0, 1, 0});
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::GT, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("gt - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {1, 2, 3, 2, 3, 1});
+    auto m2 = genGivenVals<DTCol>(2, {0, 0, 1, 0, 1, 0});
+
+    Frame * arg = nullptr;
+    castObj<Frame, DTCol>(arg, m1, nullptr);
+    Frame * exp = nullptr;
+    castObj<Frame, DTCol>(exp, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::GT, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(2, {1, 2, 3, 2, 3, 1});
+    auto exp = genGivenVals<DT>(2, {0, 1, 1, 1, 1, 0});
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::GE, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("ge - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {1, 2, 3, 2, 3, 1});
+    auto m2 = genGivenVals<DTCol>(2, {0, 1, 1, 1, 1, 0});
+
+    Frame * arg = nullptr;
+    castObj<Frame, DTCol>(arg, m1, nullptr);
+    Frame * exp = nullptr;
+    castObj<Frame, DTCol>(exp, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::GE, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
 // ****************************************************************************
 // Min/max
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     
-    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
-    auto m2 = genGivenVals<DT>(2, {1, 2, 2,  2, 2, 1,});
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::MIN, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::MIN, f1, 2, f2);
-        DataObjectFactory::destroy(f1, f2);
-    }
+    auto arg = genGivenVals<DT>(2, {1, 2, 3, 2, 3, 1});
+    auto exp = genGivenVals<DT>(2, {1, 2, 2, 2, 2, 1});
 
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::MIN, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_TEST_CASE(TEST_NAME("min - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {1, 2, 3, 2, 3, 1});
+    auto m2 = genGivenVals<DTCol>(2, {1, 2, 2, 2, 2, 1});
+
+    Frame * arg = nullptr;
+    castObj<Frame, DTCol>(arg, m1, nullptr);
+    Frame * exp = nullptr;
+    castObj<Frame, DTCol>(exp, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::MIN, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
-    auto m2 = genGivenVals<DT>(2, {2, 2, 3,  2, 3, 2,});
-    
-    SECTION("matrix") {
-        checkEwBinaryMatSca(BinaryOpCode::MAX, m1, 2, m2);
-    }   
-    SECTION("frame") {
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * f2 = nullptr;
-        castObj<Frame, DT>(f2, m2, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::MAX, f1, 2, f2);
-        DataObjectFactory::destroy(f1, f2);
-    }    
 
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+    auto arg = genGivenVals<DT>(2, {1, 2, 3, 2, 3, 1});
+    auto exp = genGivenVals<DT>(2, {2, 2, 3, 2, 3, 2});
+
+    checkEwBinaryObjSca<DT, VT>(BinaryOpCode::MAX, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("max - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {1, 2, 3, 2, 3, 1});
+    auto m2 = genGivenVals<DTCol>(2, {2, 2, 3, 2, 3, 2});
+
+    Frame * arg = nullptr;
+    castObj<Frame, DTCol>(arg, m1, nullptr);
+    Frame * exp = nullptr;
+    castObj<Frame, DTCol>(exp, m2, nullptr);
+
+    checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::MAX, arg, 2, exp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
 // ****************************************************************************
 // Logical
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {0, 1, 2, VT(-2)});
-    
-    DT * mExp = nullptr;
+
+    auto arg = genGivenVals<DT>(2, {0, 1, 2, VT(-2)});
+    DT * exp = nullptr;
+
     SECTION("scalar=0, matrix") {
-        mExp = genGivenVals<DT>(2, {0, 0, 0, 0});
-        checkEwBinaryMatSca(BinaryOpCode::AND, m1, 0, mExp);
+        exp = genGivenVals<DT>(2, {0, 0, 0, 0});
+        checkEwBinaryObjSca<DT, VT>(BinaryOpCode::AND, arg, 0, exp);
     }
     SECTION("scalar=1, matrix") {
-        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
-        checkEwBinaryMatSca(BinaryOpCode::AND, m1, 1, mExp);
+        exp = genGivenVals<DT>(2, {0, 1, 1, 1});
+        checkEwBinaryObjSca<DT, VT>(BinaryOpCode::AND, arg, 1, exp);
     }
     SECTION("scalar=2, matrix") {
-        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
-        checkEwBinaryMatSca(BinaryOpCode::AND, m1, 2, mExp);
+        exp = genGivenVals<DT>(2, {0, 1, 1, 1});
+        checkEwBinaryObjSca<DT, VT>(BinaryOpCode::AND, arg, 2, exp);
     }
     SECTION("scalar=-2, matrix") {
-        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
-        checkEwBinaryMatSca(BinaryOpCode::AND, m1, VT(-2), mExp);
-    }
-    SECTION("scalar=0, frame") {
-        mExp = genGivenVals<DT>(2, {0, 0, 0, 0});
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * fExp = nullptr;
-        castObj<Frame, DT>(fExp, mExp, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::AND, f1, 0, fExp);
-        DataObjectFactory::destroy(f1, fExp);
-    }
-    SECTION("scalar=1, frame") {
-        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * fExp = nullptr;
-        castObj<Frame, DT>(fExp, mExp, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::AND, f1, 1, fExp);
-        DataObjectFactory::destroy(f1, fExp);
-    }
-    SECTION("scalar=2, frame") {
-        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * fExp = nullptr;
-        castObj<Frame, DT>(fExp, mExp, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::AND, f1, 2, fExp);
-        DataObjectFactory::destroy(f1, fExp);
-    }
-    SECTION("scalar=-2, frame") {
-        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * fExp = nullptr;
-        castObj<Frame, DT>(fExp, mExp, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::AND, f1, VT(-2), fExp);
-        DataObjectFactory::destroy(f1, fExp);
+        exp = genGivenVals<DT>(2, {0, 1, 1, 1});
+        checkEwBinaryObjSca<DT, VT>(BinaryOpCode::AND, arg, VT(-2), exp);
     }
 
-    DataObjectFactory::destroy(m1, mExp);
+    DataObjectFactory::destroy(arg, exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
-    
-    auto m1 = genGivenVals<DT>(2, {0, 1,  2, VT(-2)});
-    
-    DT * mExp = nullptr;
-    SECTION("scalar=0, matrix") {
-        mExp = genGivenVals<DT>(2, {0, 1,  1, 1});
-        checkEwBinaryMatSca(BinaryOpCode::OR, m1, 0, mExp);
-    }
-    SECTION("scalar=1, matrix") {
-        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
-        checkEwBinaryMatSca(BinaryOpCode::OR, m1, 1, mExp);
-    }
-    SECTION("scalar=2, matrix") {
-        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
-        checkEwBinaryMatSca(BinaryOpCode::OR, m1, 2, mExp);
-    }
-    SECTION("scalar=-2, matrix") {
-        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
-        checkEwBinaryMatSca(BinaryOpCode::OR, m1, VT(-2), mExp);
-    }
+TEMPLATE_TEST_CASE(TEST_NAME("and - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {0, 1, 2, VT(-2)});
+    DTCol * m2 = nullptr;
+    Frame * arg = nullptr;
+    Frame * exp = nullptr;
+
     SECTION("scalar=0, frame") {
-        mExp = genGivenVals<DT>(2, {0, 1,  1, 1});
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * fExp = nullptr;
-        castObj<Frame, DT>(fExp, mExp, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::OR, f1, 0, fExp);
-        DataObjectFactory::destroy(f1, fExp);
+        m2 = genGivenVals<DTCol>(2, {0, 0, 0, 0});
+        castObj<Frame, DTCol>(arg, m1, nullptr);
+        castObj<Frame, DTCol>(exp, m2, nullptr);
+
+        checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::AND, arg, 0, exp);
     }
     SECTION("scalar=1, frame") {
-        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * fExp = nullptr;
-        castObj<Frame, DT>(fExp, mExp, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::OR, f1, 1, fExp);
-        DataObjectFactory::destroy(f1, fExp);
+        m2 = genGivenVals<DTCol>(2, {0, 1, 1, 1});
+        castObj<Frame, DTCol>(arg, m1, nullptr);
+        castObj<Frame, DTCol>(exp, m2, nullptr);
+
+        checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::AND, arg, 1, exp);
     }
     SECTION("scalar=2, frame") {
-        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * fExp = nullptr;
-        castObj<Frame, DT>(fExp, mExp, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::OR, f1, 2, fExp);
-        DataObjectFactory::destroy(f1, fExp);
+        m2 = genGivenVals<DTCol>(2, {0, 1, 1, 1});
+        castObj<Frame, DTCol>(arg, m1, nullptr);
+        castObj<Frame, DTCol>(exp, m2, nullptr);
+
+        checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::AND, arg, 2, exp);
     }
     SECTION("scalar=-2, frame") {
-        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
-        Frame * f1 = nullptr;
-        castObj<Frame, DT>(f1, m1, nullptr);
-        Frame * fExp = nullptr;
-        castObj<Frame, DT>(fExp, mExp, nullptr);
-        checkEwBinaryFrameSca<Frame,VT>(BinaryOpCode::OR, f1, VT(-2), fExp);
-        DataObjectFactory::destroy(f1, fExp);
+        m2 = genGivenVals<DTCol>(2, {0, 1, 1, 1});
+        castObj<Frame, DTCol>(arg, m1, nullptr);
+        castObj<Frame, DTCol>(exp, m2, nullptr);
+
+        checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::AND, arg, VT(-2), exp);
     }
-    
-    DataObjectFactory::destroy(m1, mExp);
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(2, {0, 1, 2, VT(-2)});
+    DT * exp = nullptr;
+
+    SECTION("scalar=0, matrix") {
+        exp = genGivenVals<DT>(2, {0, 1, 1, 1});
+        checkEwBinaryObjSca<DT, VT>(BinaryOpCode::OR, arg, 0, exp);
+    }
+    SECTION("scalar=1, matrix") {
+        exp = genGivenVals<DT>(2, {1, 1, 1, 1});
+        checkEwBinaryObjSca<DT, VT>(BinaryOpCode::OR, arg, 1, exp);
+    }
+    SECTION("scalar=2, matrix") {
+        exp = genGivenVals<DT>(2, {1, 1, 1, 1});
+        checkEwBinaryObjSca<DT, VT>(BinaryOpCode::OR, arg, 2, exp);
+    }
+    SECTION("scalar=-2, matrix") {
+        exp = genGivenVals<DT>(2, {1, 1, 1, 1});
+        checkEwBinaryObjSca<DT, VT>(BinaryOpCode::OR, arg, VT(-2), exp);
+    }
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("or - Frame"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using DTCol = DenseMatrix<VT>;
+
+    auto m1 = genGivenVals<DTCol>(2, {0, 1, 2, VT(-2)});
+    DTCol * m2 = nullptr;
+    Frame * arg = nullptr;
+    Frame * exp = nullptr;
+
+    SECTION("scalar=0, frame") {
+        m2 = genGivenVals<DTCol>(2, {0, 1, 1, 1});
+        castObj<Frame, DTCol>(arg, m1, nullptr);
+        castObj<Frame, DTCol>(exp, m2, nullptr);
+
+        checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::OR, arg, 0, exp);
+    }
+    SECTION("scalar=1, frame") {
+        m2 = genGivenVals<DTCol>(2, {1, 1, 1, 1});
+        castObj<Frame, DTCol>(arg, m1, nullptr);
+        castObj<Frame, DTCol>(exp, m2, nullptr);
+
+        checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::OR, arg, 1, exp);
+    }
+    SECTION("scalar=2, frame") {
+        m2 = genGivenVals<DTCol>(2, {1, 1, 1, 1});
+        castObj<Frame, DTCol>(arg, m1, nullptr);
+        castObj<Frame, DTCol>(exp, m2, nullptr);
+
+        checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::OR, arg, 2, exp);
+    }
+    SECTION("scalar=-2, frame") {
+        m2 = genGivenVals<DTCol>(2, {1, 1, 1, 1});
+        castObj<Frame, DTCol>(arg, m1, nullptr);
+        castObj<Frame, DTCol>(exp, m2, nullptr);
+
+        checkEwBinaryObjSca<Frame, VT>(BinaryOpCode::OR, arg, VT(-2), exp);
+    }
+
+    DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
 // ****************************************************************************
@@ -518,6 +624,6 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DATA_TYPES), (VALUE_TY
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT * res = nullptr;
-    auto m = genGivenVals<DT>(1, {1});
-    CHECK_THROWS(ewBinaryObjSca<DT, DT, typename DT::VT>(static_cast<BinaryOpCode>(999), res, m, 1, nullptr));
+    auto arg = genGivenVals<DT>(1, {1});
+    CHECK_THROWS(ewBinaryObjSca<DT, DT, typename DT::VT>(static_cast<BinaryOpCode>(999), res, arg, 1, nullptr));
 }

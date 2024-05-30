@@ -19,6 +19,7 @@ abslVersion=20230802.1
 antlrVersion=4.9.2
 arrowVersion=13.0.0
 catch2Version=2.13.8
+cmakeVersion=3.29.3
 cudaVersion=12.2.2
 eigenVersion=3.4.0
 grpcVersion=1.38.0

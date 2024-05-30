@@ -21,7 +21,7 @@
 
 # defaults:
 ARG BASE_IMAGE=ubuntu:20.04
-ARG CMAKE_VERSION=3.28.3
+ARG CMAKE_VERSION=3.29.3
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG DEBCONF_NOWARNINGS="yes"
 ARG DAPHNE_DIR=/daphne
@@ -30,16 +30,19 @@ ARG DAPHNE_BRANCH=main
 ARG TIMESTAMP=0
 ARG CREATION_DATE=0
 ARG GIT_HASH=0
+ARG TZ=Etc/UTC
 
 FROM ${BASE_IMAGE} as base
 ARG DEBIAN_FRONTEND
 ARG DEBCONF_NOWARNINGS
+ARG TZ
 RUN apt-get -qq -y update && apt-get -y upgrade \
     && apt-get -y --no-install-recommends install  \
     ca-certificates file git openssh-client unzip wget tar \
     libomp-dev  libpfm4-dev libssl-dev libxml2-dev uuid-dev zlib1g-dev \
     build-essential clang gfortran lld llvm llvm-10-tools ninja-build openjdk-11-jdk-headless pkg-config python3 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
 
 FROM base as build-cmake
 ARG NUM_CORES=4
@@ -86,5 +89,7 @@ RUN ldconfig
 
 FROM daphneeu/daphne-deps as github-action
 RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recommends install  \
-    moreutils python3-numpy python3-pandas ccache python3-pip python3-networkx python3-dev graphviz-dev \
+    moreutils ccache python3-pip python3-dev graphviz-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+#python3-numpy python3-pandas python3-networkx \
+RUN pip install -U pip numpy pandas networkx tensorflow torch

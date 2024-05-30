@@ -27,7 +27,7 @@
 #include <vector>
 
 #define TEST_NAME(opName) "AggCum (" opName ")"
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, int32_t
 
 template<class DTRes, class DTArg>
@@ -40,13 +40,15 @@ void checkAggCum(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = TestType;
+    using DTEmpty = DenseMatrix<typename DTArg::VT>;
     
     DTArg * arg = nullptr;
     DTRes * exp = nullptr;
 
     SECTION("0x0 matrix") {
-        arg = DataObjectFactory::create<DTArg>(0, 0, false);
-        exp = DataObjectFactory::create<DTRes>(0, 0, false);
+        // can't create an empty generic Matrix, so DenseMatrix is casted instead
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
     }
     SECTION("1xn matrix") {
         arg = genGivenVals<DTArg>(1, {1, -2, 3});
@@ -107,13 +109,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("prod"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = TestType;
-    
+    using DTEmpty = DenseMatrix<typename DTArg::VT>;
+
     DTArg * arg = nullptr;
     DTRes * exp = nullptr;
 
     SECTION("0x0 matrix") {
-        arg = DataObjectFactory::create<DTArg>(0, 0, false);
-        exp = DataObjectFactory::create<DTRes>(0, 0, false);
+        // can't create an empty generic Matrix, so DenseMatrix is casted instead
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
     }
     SECTION("1xn matrix") {
         arg = genGivenVals<DTArg>(1, {1, -2, 3});
@@ -174,13 +178,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("prod"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = TestType;
+    using DTEmpty = DenseMatrix<typename DTArg::VT>;
     
     DTArg * arg = nullptr;
     DTRes * exp = nullptr;
 
     SECTION("0x0 matrix") {
-        arg = DataObjectFactory::create<DTArg>(0, 0, false);
-        exp = DataObjectFactory::create<DTRes>(0, 0, false);
+        // can't create an empty generic Matrix, so DenseMatrix is casted instead
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
     }
     SECTION("1xn matrix") {
         arg = genGivenVals<DTArg>(1, {1, -2, 3});
@@ -241,13 +247,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = TestType;
+    using DTEmpty = DenseMatrix<typename DTArg::VT>;
     
     DTArg * arg = nullptr;
     DTRes * exp = nullptr;
 
     SECTION("0x0 matrix") {
-        arg = DataObjectFactory::create<DTArg>(0, 0, false);
-        exp = DataObjectFactory::create<DTRes>(0, 0, false);
+        // can't create an empty generic Matrix, so DenseMatrix is casted instead
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
     }
     SECTION("1xn matrix") {
         arg = genGivenVals<DTArg>(1, {1, -2, 3});

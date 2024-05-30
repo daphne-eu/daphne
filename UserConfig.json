@@ -28,6 +28,7 @@
     "minimumTaskSize": 1,
     "libdir": "{exedir}/../lib",
     "daphnedsl_import_paths": {},
+    "force_cuda": false,
     "logging": [
         { "log-level-limit": "ERROR" },
         {

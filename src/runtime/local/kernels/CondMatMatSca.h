@@ -20,7 +20,9 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
+#include <sstream>
 #include <stdexcept>
 
 // ****************************************************************************
@@ -87,6 +89,41 @@ struct CondMatMatSca<DenseMatrix<VTVal>, DenseMatrix<VTCond>, DenseMatrix<VTVal>
             valuesCond += rowSkipCond;
             valuesThen += rowSkipThen;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, Matrix, scalar
+// ----------------------------------------------------------------------------
+
+template<typename VTVal, typename VTCond>
+struct CondMatMatSca<Matrix<VTVal>, Matrix<VTCond>, Matrix<VTVal>, VTVal> {
+    static void apply(
+        Matrix<VTVal> *& res,
+        const Matrix<VTCond> * cond,
+        const Matrix<VTVal> * thenVal,
+        VTVal elseVal,
+        DCTX(ctx)
+    ) {
+        const size_t numRows = cond->getNumRows();
+        const size_t numCols = cond->getNumCols();
+
+        if (numRows != thenVal->getNumRows() || numCols != thenVal->getNumCols()) {
+            std::ostringstream errMsg;
+            errMsg << "CondMatMatSca: condition/then matrices must have the same shape but have ("
+                    << numRows << "," << numCols << ") and (" 
+                    << thenVal->getNumRows() << "," << thenVal->getNumCols() << ")";
+            throw std::runtime_error(errMsg.str());
+        }
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, static_cast<bool>(cond->get(r, c)) ? thenVal->get(r, c) : elseVal);
+        res->finishAppend();
     }
 };
 

@@ -1,6 +1,5 @@
 # Overview
 
-- [Quickstart](/doc/Quickstart.md)
 - [Getting Started](/doc/GettingStarted.md)
 
 ## User Documentation

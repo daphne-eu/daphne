@@ -74,6 +74,7 @@ set(TEST_SOURCES
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
+        runtime/local/datastructures/TensorTest.cpp
 
         runtime/local/io/ReadCsvTest.cpp
         runtime/local/io/ReadParquetTest.cpp

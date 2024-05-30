@@ -24,6 +24,7 @@
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
 
+#include <stdexcept>
 #include <type_traits>
 
 #include <cassert>
@@ -120,6 +121,35 @@ template <> struct WriteCsv<Frame> {
     }
 }
 
+};
+
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT>
+struct WriteCsv<Matrix<VT>> {
+    static void apply(const Matrix<VT> *arg, File* file) {
+        if (file == nullptr)
+            throw std::runtime_error("WriteCsv: File required");
+
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
+                fprintf(
+                        file->identifier,
+                        std::is_floating_point<VT>::value ? "%f" : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
+                        arg->get(r, c)
+                );
+                if (c < (numCols - 1))
+                    fprintf(file->identifier, ",");
+                else
+                    fprintf(file->identifier, "\n");
+            }
+        }
+   }
 };
   
 #endif // SRC_RUNTIME_LOCAL_IO_WRITECSV_H

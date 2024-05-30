@@ -240,7 +240,9 @@ public:
     }
     
     void prepareAppend() override {
-        values.get()[0] = ValueType(0);
+        // The matrix might be empty.
+        if (numRows != 0 && numCols != 0)
+            values.get()[0] = ValueType(0);
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
     }
@@ -256,7 +258,14 @@ public:
     }
     
     void finishAppend() override {
-        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+        // The matrix might be empty.
+        if (
+            (numRows != 0 && numCols != 0) &&
+            (
+                (lastAppendedRowIdx + 1 < numRows) ||
+                (lastAppendedColIdx + 1 < numCols)
+            )
+        )
             append(numRows - 1, numCols - 1, ValueType(0));
     }
 
@@ -287,7 +296,43 @@ public:
     }
 
     [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
-    
+
+    bool operator==(const DenseMatrix<ValueType> & rhs) const {
+        // Note that we do not use the generic `get` interface to matrices here since
+        // this operator is meant to be used for writing tests for, besides others,
+        // those generic interfaces.
+        
+        if(this == &rhs)
+            return true;
+        
+        const size_t numRows = this->getNumRows();
+        const size_t numCols = this->getNumCols();
+        
+        if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+            return false;
+        
+        const ValueType* valuesLhs = this->getValues();
+        const ValueType* valuesRhs = rhs.getValues();
+        
+        const size_t rowSkipLhs = this->getRowSkip();
+        const size_t rowSkipRhs = rhs.getRowSkip();
+        
+        if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
+            return true;
+        
+        if(rowSkipLhs == numCols && rowSkipRhs == numCols)
+            return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
+        else {
+            for(size_t r = 0; r < numRows; r++) {
+                if(memcmp(valuesLhs, valuesRhs, numCols * sizeof(ValueType)))
+                    return false;
+                valuesLhs += rowSkipLhs;
+                valuesRhs += rowSkipRhs;
+            }
+            return true;
+        }
+    }
+
     size_t serialize(std::vector<char> &buf) const override;
 };
 
@@ -513,7 +558,9 @@ public:
     }
     
     void prepareAppend() override {
-        values.get()[0] = "\0";
+        // the matrix might be empty
+        if (numRows != 0 && numCols != 0)
+            values.get()[0] = "\0";
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
         strBuf->currentTop = strBuf.get()->strings;
@@ -540,7 +587,10 @@ public:
     }
     
     void finishAppend() override {
-        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+        // numRows/numCols are unsigned and can underflow
+        if (    (numRows != 0 && numCols != 0)
+            && ((lastAppendedRowIdx + 1 < numRows) || (lastAppendedColIdx + 1 < numCols))
+            )
             append(numRows - 1, numCols - 1, "\0");
     }
 

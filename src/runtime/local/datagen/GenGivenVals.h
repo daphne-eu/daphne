@@ -158,4 +158,16 @@ struct GenGivenVals<CSRMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct GenGivenVals<Matrix<VT>> {
+    static Matrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
+        // this is to simplify generating test matrices for the "Matrix" kernel specializations
+        return GenGivenVals<DenseMatrix<VT>>::generate(numRows, elements, minNumNonZeros);
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_DATAGEN_GENGIVENVALS_H

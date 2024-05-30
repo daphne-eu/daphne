@@ -19,7 +19,9 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
+#include <stdexcept>
 #include <type_traits>
 
 #include <cmath>
@@ -43,6 +45,35 @@ void bin(DTRes *& res, const DTArg * arg, int64_t numBins, typename DTArg::VT mi
 }
 
 // ****************************************************************************
+// Argument validation
+// ****************************************************************************
+
+template<typename VTArg>
+void validateArgsBin(int64_t numBins, VTArg min, VTArg max) {
+    if (numBins <= 0)
+        throw std::runtime_error("bin-kernel: numBins must be greater than zero");
+    if (min > max)
+        throw std::runtime_error("bin-kernel: min must not be greater than max");
+    if (min == max && numBins > 1)
+        throw std::runtime_error("bin-kernel: min equals max, so numBins must not be greater than 1");
+    if (std::is_floating_point<VTArg>::value) {
+        const VTArg inf = std::numeric_limits<VTArg>::infinity();
+        if (std::isnan(min))
+            throw std::runtime_error("bin-kernel: min must not be NaN");
+        if (std::isnan(max))
+            throw std::runtime_error("bin-kernel: max must not be NaN");
+        if (min == inf)
+            throw std::runtime_error("bin-kernel: min must not be infinity");
+        if (max == inf)
+            throw std::runtime_error("bin-kernel: max must not be infinity");
+        if (min == -inf)
+            throw std::runtime_error("bin-kernel: min must not be -infinity");
+        if (max == -inf)
+            throw std::runtime_error("bin-kernel: max must not be -infinity");
+    }
+}
+
+// ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
@@ -53,27 +84,7 @@ void bin(DTRes *& res, const DTArg * arg, int64_t numBins, typename DTArg::VT mi
 template<typename VTRes, typename VTArg>
 struct Bin<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, int64_t numBins, VTArg min, VTArg max, DCTX(ctx)) {
-        if(numBins <= 0)
-            throw std::runtime_error("bin-kernel: numBins must be greater than zero");
-        if(min > max)
-            throw std::runtime_error("bin-kernel: min must not be greater than max");
-        if(min == max && numBins > 1)
-            throw std::runtime_error("bin-kernel: min equals max, so numBins must not be greater than 1");
-        if(std::is_floating_point<VTArg>::value) {
-            const VTArg inf = std::numeric_limits<VTArg>::infinity();
-            if(std::isnan(min))
-                throw std::runtime_error("bin-kernel: min must not be NaN");
-            if(std::isnan(max))
-                throw std::runtime_error("bin-kernel: max must not be NaN");
-            if(min == inf)
-                throw std::runtime_error("bin-kernel: min must not be infinity");
-            if(max == inf)
-                throw std::runtime_error("bin-kernel: max must not be infinity");
-            if(min == -inf)
-                throw std::runtime_error("bin-kernel: min must not be -infinity");
-            if(max == -inf)
-                throw std::runtime_error("bin-kernel: max must not be -infinity");
-        }
+        validateArgsBin(numBins, min, max);
         
         double binSize = static_cast<double>(max - min) / numBins;
 
@@ -113,5 +124,50 @@ struct Bin<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 valuesArg += rowSkipArg;
                 valuesRes += rowSkipRes;
             }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct Bin<Matrix<VTRes>, Matrix<VTArg>> {
+    static void apply(Matrix<VTRes> *& res, const Matrix<VTArg> * arg, int64_t numBins, VTArg min, VTArg max, DCTX(ctx)) {
+        validateArgsBin(numBins, min, max);
+        
+        double binSize = static_cast<double>(max - min) / numBins;
+
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+
+        if (min == max && numBins == 1) {
+            // sets all values to zero
+            res->prepareAppend();
+            res->finishAppend();
+        }
+        else {
+            res->prepareAppend();
+            for (size_t r = 0; r < numRows; ++r) {
+                for (size_t c = 0; c < numCols; ++c) {
+                    VTArg argVal = arg->get(r, c);
+                    VTRes bin;
+                    if (argVal <= min) // important if VTArg is an unsigned integer type
+                        bin = 0;
+                    else {
+                        bin = std::ceil(static_cast<double>(argVal - min) / binSize) - 1;
+                        if (bin < 0)
+                            bin = 0;
+                        else if (bin >= numBins)
+                            bin = numBins - 1;
+                    }
+                    res->append(r, c, bin);
+                }
+            }
+            res->finishAppend();
+        }
     }
 };
