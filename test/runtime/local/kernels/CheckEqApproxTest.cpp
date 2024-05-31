@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#include <cstddef>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 
 #include <tags.h>
@@ -26,8 +29,6 @@
 
 #include <type_traits>
 #include <vector>
-
-#include <cstdint>
 
 // TODO Extend tests to integral value types, they should be handled
 // gracefully, too.
@@ -153,4 +154,30 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, frames", TAG_KERNELS, (DenseMatrix), 
     DataObjectFactory::destroy(c1);
     DataObjectFactory::destroy(c2);
     DataObjectFactory::destroy(c3);
+}
+
+TEST_CASE("CheckApproxEq, ContiguousTensor", TAG_KERNELS) {
+    double eps = 0.0001;
+    double eps_tolerance = 0.001;
+    auto t1 = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({2,4,4}), InitCode::IOTA);
+    auto t1_mod = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({2,4,4}), InitCode::IOTA);
+
+    for(size_t i=0; i < t1_mod->total_element_count; i++) {
+        t1_mod->data[i] += eps;
+    }
+
+    REQUIRE(checkEqApprox(t1, t1_mod, eps_tolerance, nullptr));
+}
+
+TEST_CASE("CheckApproxEq, ChunkedTensor", TAG_KERNELS) {
+    double eps = 0.0001;
+    double eps_tolerance = 0.001;
+    auto t1 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({2,4,4}), std::vector<size_t>({2,2,2}), InitCode::IOTA);
+    auto t1_mod = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({2,4,4}), std::vector<size_t>({2,2,2}), InitCode::IOTA);
+
+    for(size_t i=0; i < t1_mod->total_element_count; i++) {
+        t1_mod->data[i] += eps;
+    }
+
+    REQUIRE(checkEqApprox(t1, t1_mod, eps_tolerance, nullptr));
 }

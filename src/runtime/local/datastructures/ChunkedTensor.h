@@ -331,9 +331,12 @@ class ChunkedTensor : public Tensor<ValueType> {
     
     public:
 
-    bool operator==(const ChunkedTensor<ValueType> &rhs) const {
+    template<typename VT>
+    bool IsApproxEqual(const ChunkedTensor<ValueType> &rhs, VT eps) const {
+        bool compare_exact = eps == static_cast<VT>(0);
+
         if (this->rank == 0 && rhs.rank == 0) {
-            return data[0] == rhs.data[0];
+            return compare_exact ? data[0] == rhs.data[0] : eps <= std::abs(static_cast<VT>(data[0]) - static_cast<VT>(rhs.data[0]));
         }
 
         if (this->tensor_shape != rhs.tensor_shape || chunk_shape != rhs.chunk_shape) {
@@ -357,22 +360,32 @@ class ChunkedTensor : public Tensor<ValueType> {
             ValueType *lhs_chunk_data = getPtrToChunk(current_chunk_id);
             ValueType *rhs_chunk_data = rhs.getPtrToChunk(current_chunk_id);
 
-
-
             if (isPartialChunk(current_chunk_id)) {
-                if (!ComparePartialChunks(current_chunk_id, lhs_chunk_data, rhs_chunk_data)) {
+                if (!ComparePartialChunks(current_chunk_id, lhs_chunk_data, rhs_chunk_data, eps)) {
                     return false;
                 }
             } else {
                 if (lhs_chunk_data != rhs_chunk_data) {
-                    if (std::memcmp(lhs_chunk_data, rhs_chunk_data, sizeof(ValueType) * chunk_element_count) != 0) {
-                        return false;
+                    if (compare_exact) {
+                        if (std::memcmp(lhs_chunk_data, rhs_chunk_data, sizeof(ValueType) * chunk_element_count) != 0) {
+                            return false;
+                        }
+                    } else {
+                        for (size_t j=0; j < this->chunk_element_count; j++) {
+                            if (eps < std::abs(static_cast<VT>(lhs_chunk_data[j]) - static_cast<VT>(rhs_chunk_data[j]))) {
+                                return false;
+                            }
+                        }
                     }
                 }
             }
         }
 
         return true;
+    }
+
+    bool operator==(const ChunkedTensor<ValueType> &rhs) const {
+        return IsApproxEqual(rhs, 0);
     }
 
     bool isPartialChunk(const std::vector<size_t> &chunk_ids) const {
@@ -384,7 +397,10 @@ class ChunkedTensor : public Tensor<ValueType> {
         return false;
     }
 
-    bool ComparePartialChunks(const std::vector<size_t> &chunk_ids, ValueType* lhs_data, ValueType* rhs_data) const {
+    template<typename VT>
+    bool ComparePartialChunks(const std::vector<size_t> &chunk_ids, ValueType* lhs_data, ValueType* rhs_data, VT eps) const {
+        bool exact_compare = eps == static_cast<VT>(0);
+
         size_t total_valid_elements = 1;
         std::vector<size_t> bounds;
         std::vector<size_t> strides;
@@ -417,7 +433,7 @@ class ChunkedTensor : public Tensor<ValueType> {
                 lin_id += element_ids[j] * intra_chunk_strides[j]; 
             }
 
-            if (lhs_data[lin_id] != rhs_data[lin_id]) {
+            if (exact_compare ? lhs_data[lin_id] != rhs_data[lin_id] : eps >= std::abs(static_cast<VT>(lhs_data[lin_id]) - static_cast<VT>(rhs_data[lin_id]))) {
                 return false;
             }
         }

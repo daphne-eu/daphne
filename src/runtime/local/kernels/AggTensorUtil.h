@@ -331,7 +331,7 @@ void AggChunk(VTRes* dest,
     }
 
     VTRes* current_dest = scratch_space.get();
-    VTRes* current_src;    // used after the first swap
+    VTRes* current_src = nullptr;    // used after the first swap
     size_t current_chunk_size = chunk_size;
 
     std::vector<size_t> src_chunk_strides;

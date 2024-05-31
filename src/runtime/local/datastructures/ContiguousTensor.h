@@ -191,13 +191,29 @@ class ContiguousTensor : public Tensor<ValueType> {
     
     public:
 
-    bool operator==(const ContiguousTensor<ValueType> &rhs) const {
+    template<typename VT>
+    bool IsApproxEqual(const ContiguousTensor<ValueType> &rhs, VT eps) const {
         if (this->tensor_shape != rhs.tensor_shape) {
             return false;
         }
 
-        return !static_cast<bool>(
-          std::memcmp(data.get(), rhs.data.get(), this->total_element_count * sizeof(ValueType)));
+        bool exact_compare = eps == static_cast<VT>(0);
+
+        if (exact_compare) {
+            return !static_cast<bool>(
+              std::memcmp(data.get(), rhs.data.get(), this->total_element_count * sizeof(ValueType)));
+        }
+
+        for (size_t i=0; i<this->total_element_count; i++) {
+            if (eps < std::abs(static_cast<VT>(data[i]) - static_cast<VT>(rhs.data[i]))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool operator==(const ContiguousTensor<ValueType> &rhs) const {
+        return IsApproxEqual<double>(rhs, static_cast<double>(0));
     }
 
     DenseMatrix<ValueType> *tryToGetDenseMatrix() const {
