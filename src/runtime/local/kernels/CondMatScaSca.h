@@ -20,9 +20,11 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Matrix.h>
 
-#include <stdexcept>
+#include <vector>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -84,7 +86,7 @@ struct CondMatScaSca<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, VTVal> {
 // ----------------------------------------------------------------------------
 
 template<typename VTVal, typename VTCond>
-struct CondMatMatSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, VTVal> {
+struct CondMatScaSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, VTVal> {
     static void apply(
         Matrix<VTVal> *& res,
         const Matrix<VTCond> * cond,
@@ -103,6 +105,80 @@ struct CondMatMatSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, VTVal> {
             for (size_t c = 0; c < numCols; ++c)
                 res->append(r, c, static_cast<bool>(cond->get(r, c)) ? thenVal : elseVal);
         res->finishAppend();
+    }
+};
+
+// ----------------------------------------------------------------------------
+// ContiguousTensor <- ContiguousTensor, scalar, scalar
+// ----------------------------------------------------------------------------
+
+template<typename VTVal, typename VTCond>
+struct CondMatScaSca<ContiguousTensor<VTVal>, ContiguousTensor<VTCond>, VTVal, VTVal> {
+    static void apply(
+        ContiguousTensor<VTVal> *& res,
+        const ContiguousTensor<VTCond> * cond,
+        VTVal thenVal,
+        VTVal elseVal,
+        DCTX(ctx)
+    ) {
+        res = DataObjectFactory::create<ContiguousTensor<VTVal>>(cond->tensor_shape, InitCode::NONE);
+
+        for (size_t i=0; i < cond->total_element_count; i++) {
+            res->data[i] = static_cast<bool>(cond->data[i]) ? thenVal : elseVal;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// ChunkedTensor <- ChunkedTensor, scalar, scalar
+// ----------------------------------------------------------------------------
+
+template<typename VTVal, typename VTCond>
+struct CondMatScaSca<ChunkedTensor<VTVal>, ChunkedTensor<VTCond>, VTVal, VTVal> {
+    static void apply(
+        ChunkedTensor<VTVal> *& res,
+        const ChunkedTensor<VTCond> * cond,
+        VTVal thenVal,
+        VTVal elseVal,
+        DCTX(ctx)
+    ) {
+        res = DataObjectFactory::create<ChunkedTensor<VTVal>>(cond->tensor_shape, InitCode::NONE);
+
+        for (size_t i=0; i < cond->total_chunk_count; i++) {
+            auto current_chunk_ids = cond->getChunkIdsFromLinearChunkId(i);
+
+            VTVal* current_chunk_ptr_res = res->getPtrToChunk(current_chunk_ids);
+            VTVal* current_chunk_ptr_cond = cond->getPtrToChunk(current_chunk_ids);
+
+            if (!cond->isPartialChunk(current_chunk_ids)) {
+                for (size_t j=0; j < cond->chunk_element_count; j++) {
+                    current_chunk_ptr_res[j] = static_cast<bool>(current_chunk_ptr_cond[j]) ? thenVal : elseVal;
+                }
+            } else {
+                auto valid_id_bounds = cond->GetIdBoundsOfPartialChunk(current_chunk_ids);
+                auto strides = cond->GetStridesOfPartialChunk(valid_id_bounds);
+                auto valid_element_count = cond->GetElementCountOfPartialChunk(valid_id_bounds);
+
+                for (size_t i=0; i < valid_element_count; i++) {
+                    std::vector<size_t> element_ids;
+                    element_ids.resize(cond->rank);
+
+                    int64_t tmp = i;
+                    for (int64_t j=cond->rank-1; j >= 0; j--) {
+                        element_ids[j] = tmp / strides[j];
+                        tmp = tmp % strides[j];
+                    }
+                    size_t lin_id = 0;
+                    for (size_t j = 0; j < cond->rank; j++) {
+                        lin_id += element_ids[j] * strides[j]; 
+                    }
+
+                    current_chunk_ptr_res[lin_id] = static_cast<bool>(current_chunk_ptr_cond[lin_id]) ? thenVal : elseVal;
+                }
+            }
+
+            res->chunk_materialization_flags[i] = true;
+        }
     }
 };
 

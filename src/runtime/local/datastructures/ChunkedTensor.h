@@ -401,23 +401,9 @@ class ChunkedTensor : public Tensor<ValueType> {
     bool ComparePartialChunks(const std::vector<size_t> &chunk_ids, ValueType* lhs_data, ValueType* rhs_data, VT eps) const {
         bool exact_compare = eps == static_cast<VT>(0);
 
-        size_t total_valid_elements = 1;
-        std::vector<size_t> bounds;
-        std::vector<size_t> strides;
-        for (size_t i=0; i < this->rank; i++) {
-            bool is_boundary_dim = chunk_ids[i] == chunks_per_dim[i] - 1;
-            size_t rem = this->tensor_shape[i] % chunk_shape[i] == 0 ? chunk_shape[i] : this->tensor_shape[i] % chunk_shape[i];
-
-            bounds.push_back(is_boundary_dim ? rem : chunk_shape[i]);
-            total_valid_elements = total_valid_elements * bounds.back();
-
-            if (i == 0) {
-                strides.push_back(1);
-            } else {
-                strides.push_back(strides[i - 1] * bounds[i - 1]);
-            }
-
-        }
+        std::vector<size_t> bounds = GetIdBoundsOfPartialChunk(chunk_ids);
+        std::vector<size_t> strides = GetStridesOfPartialChunk(bounds);
+        size_t total_valid_elements = GetElementCountOfPartialChunk(bounds);
 
         for (size_t i=0; i < total_valid_elements; i++) {
             std::vector<size_t> element_ids;
@@ -439,6 +425,37 @@ class ChunkedTensor : public Tensor<ValueType> {
         }
 
         return true;
+    }
+
+    std::vector<size_t> GetIdBoundsOfPartialChunk(const std::vector<size_t> &chunk_ids) const {
+        std::vector<size_t> bounds;
+        for (size_t i=0; i < this->rank; i++) {
+            bool is_boundary_dim = chunk_ids[i] == chunks_per_dim[i] - 1;
+            size_t rem = this->tensor_shape[i] % chunk_shape[i] == 0 ? chunk_shape[i] : this->tensor_shape[i] % chunk_shape[i];
+
+            bounds.push_back(is_boundary_dim ? rem : chunk_shape[i]);
+        }
+        return bounds;
+    }
+
+    std::vector<size_t> GetStridesOfPartialChunk(const std::vector<size_t> &bounds) const {
+        std::vector<size_t> strides;
+        for (size_t i=0; i < this->rank; i++) {
+            if (i == 0) {
+                strides.push_back(1);
+            } else {
+                strides.push_back(strides[i - 1] * bounds[i - 1]);
+            }
+        }
+        return strides;
+    }
+
+    size_t GetElementCountOfPartialChunk(const std::vector<size_t> &bounds) const {
+        size_t total_valid_elements = 1;
+        for (size_t i=0; i < this->rank; i++) {
+            total_valid_elements = total_valid_elements * bounds[i];
+        }
+        return total_valid_elements;
     }
 
     size_t getLinearId(const std::vector<size_t> &indices) const {
