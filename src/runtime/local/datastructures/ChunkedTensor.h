@@ -18,7 +18,9 @@
 
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <stdexcept>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -106,18 +108,21 @@ class ChunkedTensor : public Tensor<ValueType> {
 
     ChunkedTensor(const std::vector<size_t> &tensor_shape, const std::vector<size_t> &chunk_shape, InitCode init_code)
         : Tensor<ValueType>::Tensor(tensor_shape), chunk_shape(chunk_shape) {
-
-        chunk_strides.resize(this->rank);
-        intra_chunk_strides.resize(this->rank);
-
-        if (this->rank > 0) {
-            intra_chunk_strides[0] = 1;
+        if (this->rank != chunk_shape.size()) {
+            throw std::runtime_error("Chunk shape dimension does not match tensor rank");
         }
 
         for(size_t i=0; i<this->rank; i++) {
             if ((tensor_shape[i] == 0) || chunk_shape[i] == 0) {
                 throw std::runtime_error("Tensors with dimensions of extent 0 are disallowed.");
             }
+        }
+
+        chunk_strides.resize(this->rank);
+        intra_chunk_strides.resize(this->rank);
+
+        if (this->rank > 0) {
+            intra_chunk_strides[0] = 1;
         }
 
         for (size_t i = 1; i < this->rank; i++) {
@@ -235,7 +240,7 @@ class ChunkedTensor : public Tensor<ValueType> {
         }
     }
 
-    ChunkedTensor(const DenseMatrix<ValueType> *matrix, size_t chunk_size_x, size_t chunk_size_y)
+    explicit ChunkedTensor(const DenseMatrix<ValueType> *matrix, size_t chunk_size_x, size_t chunk_size_y)
         : Tensor<ValueType>::Tensor(matrix->getNumRows(), matrix->getNumCols()) {
         for(size_t i=0; i<this->rank; i++) {
             if ((this->tensor_shape[i] == 0) || chunk_shape[i] == 0)  {
@@ -327,6 +332,10 @@ class ChunkedTensor : public Tensor<ValueType> {
     public:
 
     bool operator==(const ChunkedTensor<ValueType> &rhs) const {
+        if (this->rank == 0 && rhs.rank == 0) {
+            return data[0] == rhs.data[0];
+        }
+
         if (this->tensor_shape != rhs.tensor_shape || chunk_shape != rhs.chunk_shape) {
             return false;
         }
@@ -348,9 +357,17 @@ class ChunkedTensor : public Tensor<ValueType> {
             ValueType *lhs_chunk_data = getPtrToChunk(current_chunk_id);
             ValueType *rhs_chunk_data = rhs.getPtrToChunk(current_chunk_id);
 
-            if (lhs_chunk_data != rhs_chunk_data) {
-                if (std::memcmp(lhs_chunk_data, rhs_chunk_data, sizeof(ValueType) * chunk_element_count) != 0) {
+
+
+            if (isPartialChunk(current_chunk_id)) {
+                if (!ComparePartialChunks(current_chunk_id, lhs_chunk_data, rhs_chunk_data)) {
                     return false;
+                }
+            } else {
+                if (lhs_chunk_data != rhs_chunk_data) {
+                    if (std::memcmp(lhs_chunk_data, rhs_chunk_data, sizeof(ValueType) * chunk_element_count) != 0) {
+                        return false;
+                    }
                 }
             }
         }
@@ -358,11 +375,57 @@ class ChunkedTensor : public Tensor<ValueType> {
         return true;
     }
 
-    size_t getLinearId(const std::vector<size_t> &indices) const {
-        if (this->rank == 0) {
-            return 0;
+    bool isPartialChunk(const std::vector<size_t> &chunk_ids) const {
+        for (size_t i=0; i < this->rank; i++) {
+            if ((this->tensor_shape[i] % chunk_shape[i] != 0) && chunk_ids[i] == chunks_per_dim[i] - 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool ComparePartialChunks(const std::vector<size_t> &chunk_ids, ValueType* lhs_data, ValueType* rhs_data) const {
+        size_t total_valid_elements = 1;
+        std::vector<size_t> bounds;
+        std::vector<size_t> strides;
+        for (size_t i=0; i < this->rank; i++) {
+            bool is_boundary_dim = chunk_ids[i] == chunks_per_dim[i] - 1;
+            size_t rem = this->tensor_shape[i] % chunk_shape[i] == 0 ? chunk_shape[i] : this->tensor_shape[i] % chunk_shape[i];
+
+            bounds.push_back(is_boundary_dim ? rem : chunk_shape[i]);
+            total_valid_elements = total_valid_elements * bounds.back();
+
+            if (i == 0) {
+                strides.push_back(1);
+            } else {
+                strides.push_back(strides[i - 1] * bounds[i - 1]);
+            }
+
         }
 
+        for (size_t i=0; i < total_valid_elements; i++) {
+            std::vector<size_t> element_ids;
+            element_ids.resize(this->rank);
+
+            int64_t tmp = i;
+            for (int64_t j=this->rank-1; j >= 0; j--) {
+                element_ids[j] = tmp / strides[j];
+                tmp = tmp % strides[j];
+            }
+            size_t lin_id = 0;
+            for (size_t j = 0; j < this->rank; j++) {
+                lin_id += element_ids[j] * intra_chunk_strides[j]; 
+            }
+
+            if (lhs_data[lin_id] != rhs_data[lin_id]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    size_t getLinearId(const std::vector<size_t> &indices) const {
         size_t chunk_id       = indices[0] / chunk_shape[0];
         size_t intra_chunk_id = indices[0] % chunk_shape[0];
         size_t linear_id      = intra_chunk_id + chunk_strides[0] * chunk_id;
@@ -376,10 +439,6 @@ class ChunkedTensor : public Tensor<ValueType> {
     }
 
     size_t getLinearIdFromChunkIds(const std::vector<size_t> &chunk_indices) const {
-        if (this->rank == 0) {
-            return 0;
-        }
-
         size_t linear_id = chunk_indices[0] * chunk_strides[0];
         for (size_t i = 1; i < this->rank; i++) {
             linear_id += (chunk_indices[i] * chunk_strides[i]);
@@ -388,10 +447,6 @@ class ChunkedTensor : public Tensor<ValueType> {
     }
 
     std::vector<size_t> getChunkIdsFromLinearChunkId(size_t linear_chunk_id) const {
-        if (this->rank == 0) {
-            return {};
-        }
-
         std::vector<size_t> chunk_ids;
         std::vector<size_t> chunk_id_strides;
 
@@ -412,7 +467,7 @@ class ChunkedTensor : public Tensor<ValueType> {
 
     size_t getLinearChunkIdFromChunkIds(const std::vector<size_t> &chunk_ids) const {
         if (this->rank == 0) {
-            return 0;
+            return {};
         }
 
         std::vector<size_t> chunk_id_strides;
@@ -447,10 +502,6 @@ class ChunkedTensor : public Tensor<ValueType> {
             return std::nullopt;
         }
 
-        if (this->rank == 0) {
-            return {};
-        }
-
         // Bounds check ranges
         for (size_t i = 0; i < this->rank; i++) {
             element_id_ranges[i] = {std::get<0>(element_id_ranges[i]), std::get<1>(element_id_ranges[i]) - 1};
@@ -476,9 +527,8 @@ class ChunkedTensor : public Tensor<ValueType> {
         if (element_id_ranges.size() != this->rank) {
             return std::nullopt;
         }
-
         if (this->rank == 0) {
-            return {};
+            return std::nullopt;
         }
 
         // Bounds check ranges
@@ -531,7 +581,7 @@ class ChunkedTensor : public Tensor<ValueType> {
             return std::nullopt;
         }
         if (this->rank == 0) {
-            return {};
+            return std::nullopt;
         }
 
         // Bounds check ranges
@@ -794,6 +844,14 @@ class ChunkedTensor : public Tensor<ValueType> {
             return false;
         }
 
+        if (new_chunk_shape == this->chunk_shape) {
+            return true;
+        }
+
+        if (this->rank == 0) {
+            return true;
+        }
+
         // Do not allow rechunking if not all chunks are populated, as this
         // would require materialization to be tracked at
         // entry not chunk lvl
@@ -801,10 +859,6 @@ class ChunkedTensor : public Tensor<ValueType> {
             if (!chunk_materialization_flags[i]) {
                 return false;
             }
-        }
-
-        if (this->rank == 0) {
-            return true;
         }
 
         size_t new_chunk_element_count = new_chunk_shape[0];
@@ -907,7 +961,7 @@ class ChunkedTensor : public Tensor<ValueType> {
     }
 
     // Ranges inclusive on lower bound and exclusive on upper bound i.e. [x,y] at dsl lvl is in math == [x:y)
-    ChunkedTensor<ValueType> *tryDiceAtChunkLvl(std::vector<std::pair<size_t, size_t>>& chunk_ranges) const {
+    ChunkedTensor<ValueType> *tryDiceAtChunkLvl(const std::vector<std::pair<size_t, size_t>>& chunk_ranges) const {
         if (chunk_ranges.size() != this->rank) {
             return nullptr;
         }
@@ -919,11 +973,12 @@ class ChunkedTensor : public Tensor<ValueType> {
             return tmp;
         }
 
+        auto new_chunk_ranges = chunk_ranges;
         for (size_t i = 0; i < this->rank; i++) {
-            chunk_ranges[i] = {std::get<0>(chunk_ranges[i]), std::get<1>(chunk_ranges[i]) - 1};
-            if (std::get<0>(chunk_ranges[i]) >= chunks_per_dim[i] ||
-                std::get<1>(chunk_ranges[i]) >= chunks_per_dim[i] ||
-                std::get<0>(chunk_ranges[i]) > std::get<1>(chunk_ranges[i])) {
+            new_chunk_ranges[i] = {std::get<0>(chunk_ranges[i]), std::get<1>(chunk_ranges[i]) - 1};
+            if (std::get<0>(new_chunk_ranges[i]) >= chunks_per_dim[i] ||
+                std::get<1>(new_chunk_ranges[i]) >= chunks_per_dim[i] ||
+                std::get<0>(new_chunk_ranges[i]) > std::get<1>(new_chunk_ranges[i])) {
                 return nullptr;
             }
         }
@@ -933,10 +988,10 @@ class ChunkedTensor : public Tensor<ValueType> {
         new_chunk_strides.resize(this->rank);
         new_chunk_count_per_dim.resize(this->rank);
         new_chunk_strides[0] = 1;
-        new_chunk_count_per_dim[0] = std::get<1>(chunk_ranges[0]) - std::get<0>(chunk_ranges[0]) + 1;
+        new_chunk_count_per_dim[0] = std::get<1>(new_chunk_ranges[0]) - std::get<0>(new_chunk_ranges[0]) + 1;
         size_t chunk_count = new_chunk_count_per_dim[0];
         for(size_t i=1; i<this->rank; i++) {
-            new_chunk_count_per_dim[i] = std::get<1>(chunk_ranges[i]) - std::get<0>(chunk_ranges[i]) + 1;
+            new_chunk_count_per_dim[i] = std::get<1>(new_chunk_ranges[i]) - std::get<0>(new_chunk_ranges[i]) + 1;
             chunk_count *= new_chunk_count_per_dim[i];
             new_chunk_strides[i] = new_chunk_strides[i-1] * new_chunk_count_per_dim[i-1];
         }
@@ -946,7 +1001,7 @@ class ChunkedTensor : public Tensor<ValueType> {
         for(size_t i=0; i<chunk_count; i++) {
             size_t tmp = i;
             for(int64_t j=this->rank-1; j>=0; j--) {
-                current_chunk_ids[static_cast<size_t>(j)] = (tmp / new_chunk_strides[static_cast<size_t>(j)]) + std::get<0>(chunk_ranges[static_cast<size_t>(j)]);
+                current_chunk_ids[static_cast<size_t>(j)] = (tmp / new_chunk_strides[static_cast<size_t>(j)]) + std::get<0>(new_chunk_ranges[static_cast<size_t>(j)]);
                 tmp = tmp % new_chunk_strides[j];
             }
 
@@ -956,7 +1011,7 @@ class ChunkedTensor : public Tensor<ValueType> {
         }
 
         for (size_t i = 0; i < this->rank; i++) {
-            for (size_t j = std::get<0>(chunk_ranges[i]); j <= std::get<1>(chunk_ranges[i]); j++) {
+            for (size_t j = std::get<0>(new_chunk_ranges[i]); j <= std::get<1>(new_chunk_ranges[i]); j++) {
                 if (!chunk_materialization_flags[j]) {
                     return nullptr;
                 }
@@ -966,11 +1021,15 @@ class ChunkedTensor : public Tensor<ValueType> {
         std::vector<size_t> new_tensor_shape;
         new_tensor_shape.resize(this->rank);
         for (size_t i = 0; i < this->rank; i++) {
-            new_tensor_shape[i] = (std::get<1>(chunk_ranges[i]) - std::get<0>(chunk_ranges[i]) + 1) * chunk_shape[i];
+            new_tensor_shape[i] = (std::get<1>(new_chunk_ranges[i]) - std::get<0>(new_chunk_ranges[i]) + 1) * chunk_shape[i];
         }
 
         ChunkedTensor<ValueType> *new_tensor =
           DataObjectFactory::create<ChunkedTensor<ValueType>>(new_tensor_shape, chunk_shape, InitCode::NONE);
+
+        for (size_t i = 0; i < new_tensor->total_chunk_count; i++) {
+            new_tensor->chunk_materialization_flags[i] = true;
+        }
 
         std::vector<size_t> new_chunk_count_strides;
         new_chunk_count_strides.push_back(1);
@@ -988,7 +1047,7 @@ class ChunkedTensor : public Tensor<ValueType> {
             for (int64_t j = this->rank - 1; j >= 0; j--) {
                 new_current_chunk_ids[static_cast<size_t>(j)] = tmp / new_chunk_count_strides[static_cast<size_t>(j)];
                 old_current_chunk_ids[static_cast<size_t>(j)] =
-                  new_current_chunk_ids[static_cast<size_t>(j)] + std::get<0>(chunk_ranges[static_cast<size_t>(j)]);
+                  new_current_chunk_ids[static_cast<size_t>(j)] + std::get<0>(new_chunk_ranges[static_cast<size_t>(j)]);
                 tmp = tmp % new_chunk_count_strides[static_cast<size_t>(j)];
             }
 
@@ -1237,6 +1296,30 @@ class ChunkedTensor : public Tensor<ValueType> {
             } else {
                 os << "_ ";
             }
+        }
+        os << std::endl;
+    }
+
+    void printChunk(std::ostream &os, const std::vector<size_t> &chunk_ids) const {
+        ValueType* chunk_ptr = getPtrToChunk(chunk_ids);
+
+        for(size_t i=0; i < this->chunk_element_count; i++) {
+            if (i % this->chunk_shape[0] == 0) {
+                os << "\n";
+            }
+
+            os << chunk_ptr[i] << " ";
+        }
+        os << std::endl;
+    }
+
+    void printRawLayout(std::ostream &os) const {
+        for(size_t i=0; i < this->total_element_count; i++) {
+            if (i % this->tensor_shape[0] == 0) {
+                os << "\n";
+            }
+
+            os << this->data[i] << " ";
         }
         os << std::endl;
     }

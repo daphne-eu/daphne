@@ -101,7 +101,7 @@ class ContiguousTensor : public Tensor<ValueType> {
     };
     
     template<typename VTArg>
-    ContiguousTensor(const ContiguousTensor<VTArg> *other)
+    explicit ContiguousTensor(const ContiguousTensor<VTArg> *other)
         : Tensor<ValueType>::Tensor(other->tensor_shape), strides(other->strides) {
         // workarround for old versions of gcc with template specialization bug
         //https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85282
@@ -115,7 +115,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         }
     };
 
-    ContiguousTensor(const DenseMatrix<ValueType> *other)
+    explicit ContiguousTensor(const DenseMatrix<ValueType> *other)
         : Tensor<ValueType>::Tensor(other->getNumRows(), other->getNumCols()), data(other->getValuesSharedPtr()) {
         strides = {1, other->getRowSkip()};
         for(size_t i=0; i<this->rank; i++) {
@@ -126,7 +126,7 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     // Copies passed data
-    ContiguousTensor(ValueType *input_data, const std::vector<size_t> &tensor_shape)
+    explicit ContiguousTensor(ValueType *input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape),
           data(new ValueType[this->total_element_count], std::default_delete<ValueType[]>()) {
         strides.resize(this->rank);
@@ -147,7 +147,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         std::memcpy(data.get(), input_data, this->total_element_count * sizeof(ValueType));
     }
 
-    ContiguousTensor(std::shared_ptr<ValueType[]>& input_data, const std::vector<size_t> &tensor_shape)
+    explicit ContiguousTensor(std::shared_ptr<ValueType[]>& input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape) {
         data = input_data;
         strides.resize(this->rank);
@@ -167,7 +167,7 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     // Takes ownership of data
-    ContiguousTensor(std::unique_ptr<ValueType[]> input_data, const std::vector<size_t> &tensor_shape)
+    explicit ContiguousTensor(std::unique_ptr<ValueType[]> input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape), data(std::move(input_data)) {
         strides.resize(this->rank);
         if (this->rank > 0) {
@@ -244,13 +244,8 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     bool trySet(const std::vector<size_t> &element_indices, ValueType value) {
-        if (element_indices.size() != this->rank) {
+        if (element_indices.size() != this->rank || this->rank == 0) {
             return false;
-        }
-
-        if (this->rank == 0) {
-            data.get()[0] = 0;
-            return true;
         }
 
         for (size_t i = 0; i < this->rank; i++) {
@@ -269,10 +264,6 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     void set(const std::vector<size_t> &element_indices, ValueType value) {
-        if (this->rank == 0 && element_indices.size() == 0) {
-            data.get()[0] = value;
-        }
-
         size_t linear_id = element_indices[0];
         for (size_t i = 1; i < this->rank; i++) {
             linear_id += element_indices[i] * strides[i];
