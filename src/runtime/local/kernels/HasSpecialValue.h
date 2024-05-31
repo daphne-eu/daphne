@@ -19,13 +19,12 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Matrix.h>
 
 #include <cmath>
 #include <cstddef>
-#include <cstdio>
-#include <string>
-#include <type_traits>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -156,5 +155,77 @@ template <typename VT, typename TestType> struct HasSpecialValue<Matrix<VT>, Tes
         }
 
         return false;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Bool <- ContiguousTensor, scalar
+// ----------------------------------------------------------------------------
+
+template <typename VT, typename TestType> struct HasSpecialValue<ContiguousTensor<VT>, TestType> {
+    static bool apply(const ContiguousTensor<VT> *arg, TestType testVal, DCTX(ctx)) {
+        if (std::isnan(testVal)) {
+            for (size_t i=0; i < arg->total_element_count; i++) {
+                if (std::isnan(arg->data[i])) {
+                    return true;
+                }
+            }
+        } else {
+            for (size_t i=0; i < arg->total_element_count; i++) {
+                if (arg->data[i] == testVal) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Bool <- ChunkedTensor, scalar
+// ----------------------------------------------------------------------------
+
+template <typename VT, typename TestType> struct HasSpecialValue<ChunkedTensor<VT>, TestType> {
+    static bool apply(const ChunkedTensor<VT> *arg, TestType testVal, DCTX(ctx)) {
+        bool is_nan = std::isnan(testVal);
+
+        for (size_t i=0; i < arg->total_chunk_count; i++) {
+            auto current_chunk_ids = arg->getChunkIdsFromLinearChunkId(i);
+
+            VT* current_chunk_ptr = arg->getPtrToChunk(current_chunk_ids);
+
+            if (!arg->isPartialChunk(current_chunk_ids)) {
+                for (size_t j=0; j < arg->chunk_element_count; j++) {
+                    if (is_nan ? std::isnan(current_chunk_ptr[j]) : current_chunk_ptr[j] == testVal) {
+                        return true;
+                    }
+                }
+            } else {
+                auto valid_id_bounds = arg->GetIdBoundsOfPartialChunk(current_chunk_ids);
+                auto strides = arg->GetStridesOfPartialChunk(valid_id_bounds);
+                auto valid_element_count = arg->GetElementCountOfPartialChunk(valid_id_bounds);
+
+                for (size_t i=0; i < valid_element_count; i++) {
+                    std::vector<size_t> element_ids;
+                    element_ids.resize(arg->rank);
+
+                    int64_t tmp = i;
+                    for (int64_t j=arg->rank-1; j >= 0; j--) {
+                        element_ids[j] = tmp / strides[j];
+                        tmp = tmp % strides[j];
+                    }
+                    size_t lin_id = 0;
+                    for (size_t j = 0; j < arg->rank; j++) {
+                        lin_id += element_ids[j] * strides[j]; 
+                    }
+
+                    if (is_nan ? std::isnan(current_chunk_ptr[lin_id]) : current_chunk_ptr[lin_id] == testVal) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 };
