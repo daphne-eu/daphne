@@ -26,6 +26,7 @@
 #include <ostream>
 #include <utility>
 #include <vector>
+#include <random>
 
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -213,6 +214,16 @@ class ChunkedTensor : public Tensor<ValueType> {
                         }
                         set(current_ids, i);
                     }
+                }
+                break;
+            }
+            case InitCode::RAND: {
+                std::random_device rd;
+                std::mt19937_64 rng(rd());
+                std::uniform_real_distribution<double> dist(0.0, 255.0);
+
+                for (size_t i = 0; i < this->total_element_count; i++) {
+                    data.get()[i] = static_cast<ValueType>(dist(rng));
                 }
                 break;
             }
