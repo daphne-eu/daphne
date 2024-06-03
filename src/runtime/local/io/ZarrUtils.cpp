@@ -5,6 +5,7 @@
 #include <vector>
 #include <bit>
 #include <memory>
+#include <type_traits>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>

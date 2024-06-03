@@ -311,8 +311,7 @@ class ContiguousTensor : public Tensor<ValueType> {
             }
         }
 
-        std::vector<size_t> new_tensor_shape;
-        new_tensor_shape.resize(this->rank);
+        std::vector<size_t> new_tensor_shape(this->rank);
         for (size_t i = 0; i < this->rank; i++) {
             new_tensor_shape[i] = std::get<1>(index_ranges[i]) - std::get<0>(index_ranges[i]) + 1;
         }
@@ -320,8 +319,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         ContiguousTensor<ValueType> *new_tensor =
           DataObjectFactory::create<ContiguousTensor<ValueType>>(new_tensor_shape, InitCode::NONE);
 
-        std::vector<size_t> current_indices;
-        current_indices.resize(this->rank);
+        std::vector<size_t> current_indices(this->rank);
         for (size_t i = 0; i < new_tensor->total_element_count; i++) {
             size_t tmp = i;
 
