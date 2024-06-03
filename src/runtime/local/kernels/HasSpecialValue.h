@@ -225,7 +225,7 @@ template <typename VT, typename TestType> struct HasSpecialValue<ChunkedTensor<V
                     }
                 }
             }
-            return false;
         }
+        return false;
     }
 };
