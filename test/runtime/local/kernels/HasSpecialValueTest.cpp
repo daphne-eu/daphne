@@ -155,10 +155,10 @@ TEST_CASE("HasSpecialValue - ContiguousTensor") {
     t_inf->data[0] =  std::numeric_limits<double>::infinity();
     
     REQUIRE(hasSpecialValue(t_sig, std::numeric_limits<double>::signaling_NaN(), nullptr));
-    REQUIRE(!hasSpecialValue(t_sig, std::numeric_limits<double>::quiet_NaN(), nullptr));
+    REQUIRE(!hasSpecialValue(t_0, std::numeric_limits<double>::signaling_NaN(), nullptr));
 
-    REQUIRE(!hasSpecialValue(t_quiet, std::numeric_limits<double>::signaling_NaN(), nullptr));
     REQUIRE(hasSpecialValue(t_quiet, std::numeric_limits<double>::quiet_NaN(), nullptr));
+    REQUIRE(!hasSpecialValue(t_0, std::numeric_limits<double>::quiet_NaN(), nullptr));
 
     REQUIRE(hasSpecialValue(t_inf, std::numeric_limits<double>::infinity(), nullptr));
     REQUIRE(!hasSpecialValue(t_iota, std::numeric_limits<double>::infinity(), nullptr));
@@ -183,10 +183,10 @@ TEST_CASE("HasSpecialValue - ChunkedTensor") {
     t_inf->data[0] =  std::numeric_limits<double>::infinity();
     
     REQUIRE(hasSpecialValue(t_sig, std::numeric_limits<double>::signaling_NaN(), nullptr));
-    REQUIRE(!hasSpecialValue(t_sig, std::numeric_limits<double>::quiet_NaN(), nullptr));
+    REQUIRE(!hasSpecialValue(t_0, std::numeric_limits<double>::signaling_NaN(), nullptr));
 
-    REQUIRE(!hasSpecialValue(t_quiet, std::numeric_limits<double>::signaling_NaN(), nullptr));
     REQUIRE(hasSpecialValue(t_quiet, std::numeric_limits<double>::quiet_NaN(), nullptr));
+    REQUIRE(!hasSpecialValue(t_0, std::numeric_limits<double>::quiet_NaN(), nullptr));
 
     REQUIRE(hasSpecialValue(t_inf, std::numeric_limits<double>::infinity(), nullptr));
     REQUIRE(!hasSpecialValue(t_iota, std::numeric_limits<double>::infinity(), nullptr));
