@@ -18,7 +18,7 @@ limitations under the License.
 
 Refer to the online documentation:
 
-- [DaphneLib](https://github.com/m-birke/daphne/tree/main/scripts/examples/daphnelib)
+- [DaphneLib](https://daphne-eu.github.io/daphne/DaphneLib/Overview/)
 - [Container Usage](https://daphne-eu.github.io/daphne/GettingStarted/#2-download-the-daphne-development-container-image)
 - [Building DAPHNE](https://daphne-eu.github.io/daphne/development/BuildingDaphne/)
 
@@ -32,7 +32,7 @@ export DAPHNELIB_DIR_PATH='pathto/daphne/lib'
 
 ## Usage
 
-More script examples on [github](https://github.com/m-birke/daphne/tree/main/scripts/examples/daphnelib)
+More script examples on [github](https://github.com/daphne-eu/daphne/tree/main/scripts/examples/daphnelib)
 
 ```python
 from daphne.context.daphne_context import DaphneContext
