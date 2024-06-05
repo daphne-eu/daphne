@@ -1680,7 +1680,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     return result;
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitFrameRowMat(DaphneDSLGrammarParser::FrameRowMatContext * ctx) {
+antlrcpp::Any DaphneDSLVisitor::visitFrameRow(DaphneDSLGrammarParser::FrameRowContext * ctx) {
     size_t elementCount = ctx->expr().size();
     std::vector<mlir::Value> values;
     std::vector<mlir::Type> types;

@@ -98,11 +98,10 @@ expr:
     | cond=expr '?' thenExpr=expr ':' elseExpr=expr # condExpr
     | '[' (expr (',' expr)*)? ']' ('(' rows=expr? ',' cols=expr? ')')? # matrixLiteralExpr
     | '{' (labels+=expr ':' cols+=expr (',' labels+=expr ':' cols+=expr)*)? '}' # colMajorFrameLiteralExpr
-    | '{' labels=frameRowMat (',' rows+=frameRowMat)* '}' # rowMajorFrameLiteralExpr
+    | '{' labels=frameRow (',' rows+=frameRow)* '}' # rowMajorFrameLiteralExpr
     ;
 
-// equivalent to a matrix literal but does not generalize value type
-frameRowMat:
+frameRow:
     '[' (expr (',' expr)*)? ']' ;
 
 indexing:

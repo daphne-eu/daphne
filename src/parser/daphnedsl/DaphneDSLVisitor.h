@@ -242,7 +242,7 @@ public:
 
     antlrcpp::Any visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext * ctx) override;
 
-    antlrcpp::Any visitFrameRowMat(DaphneDSLGrammarParser::FrameRowMatContext * ctx) override;
+    antlrcpp::Any visitFrameRow(DaphneDSLGrammarParser::FrameRowContext * ctx) override;
     
     antlrcpp::Any visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) override;
     
