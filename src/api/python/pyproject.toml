@@ -13,8 +13,18 @@ requires-python = ">=3.8"
 license = {text = "Apache v2.0"}
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
-    "Topic :: Software Development :: Libraries",
     "Operating System :: POSIX :: Linux",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+keywords = [
+    "DAPHNE",
+    "Integrated Data Analysis Pipelines",
 ]
 dependencies = [
     "pandas",
