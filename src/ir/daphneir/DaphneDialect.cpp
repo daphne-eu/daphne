@@ -606,7 +606,9 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(FoldAdaptor adaptor) {
                 apInt = apInt.zextOrTrunc(outTy.getWidth());
             }
             else if(outTy.isSignedInteger()) {
-                apInt = apInt.sextOrTrunc(outTy.getWidth());
+                apInt = (in.getType().isSignedInteger())
+                        ? apInt.sextOrTrunc(outTy.getWidth())
+                        : apInt.zextOrTrunc(outTy.getWidth());
             }
             return IntegerAttr::getChecked(getLoc(), outTy, apInt);
         }
