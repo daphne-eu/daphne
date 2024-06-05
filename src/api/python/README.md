@@ -82,8 +82,8 @@ Use [twine](https://twine.readthedocs.io/en/stable/) for publishing to [PyPI](ht
 
 1. Set `version` in `pyproject.toml`
 1. Build according to __Build__ section
-1. `twine check dist/daphne-<version>-py3-none-any.whl`
+1. `twine check dist/daphne_lib-<version>-py3-none-any.whl`
     - checks the wheel file
-1. `twine upload -u __token__ dist/daphne-<version>-py3-none-any.whl`
+1. `twine upload -u __token__ dist/daphne_lib-<version>-py3-none-any.whl`
     - to publish to PyPI
     - twine prompts for your PyPI token
