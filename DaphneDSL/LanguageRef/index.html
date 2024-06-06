@@ -659,6 +659,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#frame-literals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frame literals
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1755,6 +1764,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#frame-literals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frame literals
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2156,7 +2174,7 @@ Variables must have been assigned to before they are used in an expression.</p>
 <li>floating-point numbers of various widths: <code>f64</code>, <code>f32</code></li>
 <li>signed and unsigned integers of various widths: <code>si64</code>, <code>si32</code>, <code>si8</code>, <code>ui64</code>, <code>ui32</code>, <code>ui8</code></li>
 <li>strings <code>str</code> <em>(currently only for scalars, support for matrix elements is still experimental)</em></li>
-<li>booleans <code>bool</code> <em>(currently only for scalars)</em></li>
+<li>booleans <code>bool</code> <em>(currently only for scalars and dense matrices)</em></li>
 </ul>
 <p>Data types and value types can be combined, e.g.:</p>
 <ul>
@@ -2204,27 +2222,50 @@ Special characters must be escaped using a backslash:</p>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s">&quot;This is \&quot;hello.daphne\&quot;.&quot;</span>
 </code></pre></div>
 <h5 id="matrix-literals">Matrix literals</h5>
-<p>A matrix literal consists of a comma-separated list of scalar literals, enclosed in square braces.
-All scalars specified for the elements must be of the same type.
-Furthermore, all specified elements must be actual literals, i.e., expressions are not supported yet.
-The resulting matrix is always a column matrix, i.e., if <em>n</em> elements are specified, its shape is <em>(n x 1)</em>.
-Note that the <a href="/daphne/DaphneDSL/Builtins">built-in function</a> <code>reshape</code> can be used to modify the shape.</p>
+<p>A matrix literal consists of a comma-separated list of elements enclosed in square brackets,
+optionally followed by parentheses with a comma separated pair of dimensions (number of rows and/or columns).
+The elements and the dimensions can be complex expressions.
+The matrix's value type is the most general value type among its elements.
+Matrix literals are by default column matrices if no dimensions are specified.
+If only one dimension is given, the other one will be inferred automatically.
+Note that the <a href="/daphne/DaphneDSL/Builtins">built-in function</a> <code>reshape</code> can also be used to modify the shape of matrices.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">[</span><span class="m">1.0</span><span class="p">,</span><span class="w"> </span><span class="m">0.0</span><span class="p">,</span><span class="w"> </span><span class="m">-4.0</span><span class="p">]</span><span class="w">            </span><span class="c1"># matrix&lt;f64&gt; with shape (3 x 1)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nf">reshape</span><span class="p">([</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">],</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="c1"># matrix&lt;si64&gt; with shape (1 x 4)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">-4.0</span><span class="p">]</span><span class="w">                    </span><span class="c1"># matrix&lt;f64&gt; with shape (3 x 1)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="m">3</span><span class="p">),</span><span class="w"> </span><span class="m">4</span><span class="p">](</span><span class="m">1</span><span class="p">,)</span><span class="w">          </span><span class="c1"># matrix&lt;f64&gt; with shape (1 x 4)</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="nf">sum</span><span class="p">([</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">])](</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w">    </span><span class="c1"># matrix&lt;si64&gt; with shape (2 x 2)</span>
+</code></pre></div>
+<h5 id="frame-literals">Frame literals</h5>
+<p>Frame literals can be defined using either columns or rows and are enclosed in curly brackets.</p>
+<p><strong>Frame literals of columns</strong> consist of comma-separated pairs of a <code>str</code>-typed label
+and a (n x 1) matrix, in the format <code>label: column</code>.
+Both labels and columns can be complex expressions.</p>
+<p><em>Examples:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># frame with two columns: &quot;col 1&quot; of type f64 and &quot;col 2&quot; of type si64</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="p">{</span><span class="s">&quot;col 1&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="m">3</span><span class="p">)],</span><span class="w"> </span><span class="s">&quot;col 2&quot;</span><span class="o">:</span><span class="w"> </span><span class="nf">seq</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)}</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># frame with two columns: &quot;col 1&quot; of type si64 and &quot;col 2&quot; of type f64</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">{</span><span class="s">&quot;col 1&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;col 2&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="m">1.1</span><span class="p">,</span><span class="w"> </span><span class="m">-2.2</span><span class="p">,</span><span class="w"> </span><span class="m">3.3</span><span class="p">]}</span>
+</code></pre></div>
+<p><strong>Frame literals of rows</strong> consist of comma-separated rows, whereby each row is enclosed in square brackets.
+The first row contains the <code>str</code>-typed column labels.
+All remaining rows represent the data of the frame.
+Both labels and elements of a row can be complex expressions.
+However, it is currently not possible to specify an entire row by an expression.</p>
+<p><em>Examples:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># equivalent to the 2nd example above, specified by rows</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="p">{[</span><span class="s">&quot;col 1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;col 2&quot;</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1.1</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">-2.2</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">3.3</span><span class="p">]}</span>
 </code></pre></div>
 <h4 id="variable-expressions">Variable Expressions</h4>
 <p>Variables are referenced by their name.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>x
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>x
 </code></pre></div>
 <h4 id="script-arguments">Script arguments</h4>
 <p>Script arguments are named <em>literals</em> that can be passed to a DaphneDSL script.
 They are referenced by a dollar sign <code>$</code> followed by the argument's name.</p>
 <p><em>Examples:</em></p>
 <p><code>bin/daphne my_script.daphne a=12 b=-2 c=false d=true e=2.0 f=-1.1 g=\"string\" h="\"white spaces\""</code></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nf">print</span><span class="p">(</span><span class="o">$</span><span class="n">g</span><span class="p">);</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">myVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">$</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="n">b</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nf">print</span><span class="p">(</span><span class="o">$</span><span class="n">g</span><span class="p">);</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">myVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">$</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="n">b</span><span class="p">;</span>
 </code></pre></div>
 <p>Note that matrix literals are not supported as script arguments yet. Check out <a href="/daphne/RunningDaphneLocally">Running DAPHNE Locally</a> for more information.</p>
 <h3 id="complex-expressions">Complex Expressions</h3>
@@ -2329,13 +2370,13 @@ The following table shows which combinations of inputs are allowed and which res
 <p><strong>(*)</strong> <em>Scalar-<code>op</code>-matrix</em> operations are so far only supported for <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>; for <code>/</code> only if the matrix is of a floating-point value type.</p>
 <p>In the future, we will fully support <em>scalar-<code>op</code>-matrix</em> operations as well as row/column-matrices as the left-hand-side operands.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="m">1.5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">0.001</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">3.5</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="m">1.5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">0.001</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">3.5</span>
 </code></pre></div>
 <h4 id="parentheses">Parentheses</h4>
 <p>Parentheses can be used to manually control operator precedence.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="indexing">Indexing</h4>
 <p>(Right) indexing enables the extraction of a part of the rows and/or columns of a data object (matrix/frame) into a new data object.
@@ -2344,7 +2385,7 @@ The result is always a data object of the same data type as the input (even <em>
 <h5 id="omit-indexing">Omit indexing</h5>
 <p>Omitting the specification of rows/columns means extracting all rows/columns.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1"># same as X (all rows and columns)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1"># same as X (all rows and columns)</span>
 </code></pre></div>
 <h5 id="indexing-by-position">Indexing by position</h5>
 <p>This is supported for addressing rows and columns in matrices and frames.</p>
@@ -2353,7 +2394,7 @@ The result is always a data object of the same data type as the input (even <em>
   Extracts only the specified row/column.</li>
 </ul>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">X</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts the cell in row 2, column 3 as a 1 x 1 matrix</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">X</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts the cell in row 2, column 3 as a 1 x 1 matrix</span>
 </code></pre></div>
 <ul>
 <li><em>Row/column range:</em>
@@ -2362,10 +2403,10 @@ The result is always a data object of the same data type as the input (even <em>
   In that case, they are replaced by zero and the number of rows/columns, respectively.</li>
 </ul>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">X</span><span class="p">[</span><span class="m">2</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts rows 2, 3, 4 of column 3</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">X</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="o">:</span><span class="p">]</span><span class="w">  </span><span class="c1"># extracts row 2 of all columns from column 3 onward</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">X</span><span class="p">[</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w">  </span><span class="c1"># extracts rows 0, 1, 2, 3, 4 of column 3</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">X</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w">   </span><span class="c1"># extracts all rows of column 3, same as X[, 3]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">X</span><span class="p">[</span><span class="m">2</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts rows 2, 3, 4 of column 3</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">X</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="o">:</span><span class="p">]</span><span class="w">  </span><span class="c1"># extracts row 2 of all columns from column 3 onward</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">X</span><span class="p">[</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w">  </span><span class="c1"># extracts rows 0, 1, 2, 3, 4 of column 3</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">X</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w">   </span><span class="c1"># extracts all rows of column 3, same as X[, 3]</span>
 </code></pre></div>
 <ul>
 <li><em>Arbitrary sequence of row/column positions:</em>
@@ -2374,8 +2415,8 @@ The result is always a data object of the same data type as the input (even <em>
   In particular, they do <em>not</em> need to be contiguous, sorted, or unique.</li>
 </ul>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">X</span><span class="p">[</span><span class="w"> </span><span class="p">[</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">],</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts rows 5, 1, and 3</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts column 2 three times</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">X</span><span class="p">[</span><span class="w"> </span><span class="p">[</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">],</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts rows 5, 1, and 3</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts column 2 three times</span>
 </code></pre></div>
 <p>Note that, when using matrix literals to specify the positions, a space must be left between the opening/closing bracket <code>[</code>/<code>]</code> of the indexing and that of the matrix literal, in order to avoid confusion with the indexing by bit vector.</p>
 <p>A few remarks on positions:</p>
@@ -2387,9 +2428,9 @@ The result is always a data object of the same data type as the input (even <em>
 <li>They can be given as literals or as any expression evaluating to a suitable value.</li>
 </ul>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">X</span><span class="p">[</span><span class="m">1.2</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">              </span><span class="c1"># same as X[1, ]</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">X</span><span class="p">[</span><span class="m">1.9</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">              </span><span class="c1"># same as X[1, ]</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">2</span><span class="o">*</span><span class="nf">sum</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span><span class="o">:</span><span class="p">]</span><span class="w"> </span><span class="c1"># expressions</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">X</span><span class="p">[</span><span class="m">1.2</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">              </span><span class="c1"># same as X[1, ]</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">X</span><span class="p">[</span><span class="m">1.9</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">              </span><span class="c1"># same as X[1, ]</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">2</span><span class="o">*</span><span class="nf">sum</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span><span class="o">:</span><span class="p">]</span><span class="w"> </span><span class="c1"># expressions</span>
 </code></pre></div>
 <h5 id="indexing-by-label">Indexing by label</h5>
 <p>So far, this is only supported for addressing columns of frames.</p>
@@ -2398,8 +2439,8 @@ The result is always a data object of the same data type as the input (even <em>
   Extracts only the column with the given label.</li>
 </ul>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="s">&quot;revenue&quot;</span><span class="p">]</span><span class="w">        </span><span class="c1"># extracts the column labeled &quot;revenue&quot;</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">X</span><span class="p">[</span><span class="m">100</span><span class="o">:</span><span class="m">200</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;revenue&quot;</span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts rows 100 through 199 of the column labeled &quot;revenue&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="s">&quot;revenue&quot;</span><span class="p">]</span><span class="w">        </span><span class="c1"># extracts the column labeled &quot;revenue&quot;</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">X</span><span class="p">[</span><span class="m">100</span><span class="o">:</span><span class="m">200</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;revenue&quot;</span><span class="p">]</span><span class="w"> </span><span class="c1"># extracts rows 100 through 199 of the column labeled &quot;revenue&quot;</span>
 </code></pre></div>
 <h5 id="indexing-by-bit-vector">Indexing by bit vector</h5>
 <p>This is not supported for addressing columns of frames yet.</p>
@@ -2408,13 +2449,13 @@ More precisely, a (<em>n x 1</em>) matrix is required on data objects with <em>n
 Only the rows/columns with a corresponding 1-value in the bit vector are present in the result.</p>
 <p>Note that double square brackets (<code>[[...]]</code>) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Assume X is a 4x3 matrix.</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">X</span><span class="p">[[[</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">],</span><span class="w"> </span><span class="p">]]</span><span class="w">           </span><span class="c1"># extracts rows 1 and 2</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">                              </span><span class="c1"># same as X[[1, 2], ]</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="n">X</span><span class="p">[[,</span><span class="w"> </span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="p">]]</span><span class="w">             </span><span class="c1"># extracts columns 0 and 2</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">                              </span><span class="c1"># same as X[, [0, 2]]</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="n">X</span><span class="p">[[[</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="p">]]</span><span class="w"> </span><span class="c1"># extracts columns 0 and 2 of rows 1 and 2</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">                              </span><span class="c1"># same as X[[1, 2], [0, 2]]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Assume X is a 4x3 matrix.</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">X</span><span class="p">[[[</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">],</span><span class="w"> </span><span class="p">]]</span><span class="w">           </span><span class="c1"># extracts rows 1 and 2</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">                              </span><span class="c1"># same as X[[1, 2], ]</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">X</span><span class="p">[[,</span><span class="w"> </span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="p">]]</span><span class="w">             </span><span class="c1"># extracts columns 0 and 2</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">                              </span><span class="c1"># same as X[, [0, 2]]</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="n">X</span><span class="p">[[[</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="p">]]</span><span class="w"> </span><span class="c1"># extracts columns 0 and 2 of rows 1 and 2</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">                              </span><span class="c1"># same as X[[1, 2], [0, 2]]</span>
 </code></pre></div>
 <p>Note that, when using a matrix literal to provide the column bit vector, there must be a space between the closing bracket <code>]</code> of the matrix literal and the closing double bracket <code>]]</code> of the indexing expression, e.g., <code>X[[, [0] ]]</code> instead of <code>X[[, [0]]]</code>.</p>
 <h4 id="casts">Casts</h4>
@@ -2429,28 +2470,28 @@ Currently, it is possible to cast:</p>
 <p>Casts can either fully specify the target data <em>and</em> value type, or specify only the target data type <em>or</em> the target value type.
 In the latter case, the unspecified part of the type will be retained from the argument.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">as.scalar</span><span class="o">&lt;</span><span class="n">f64</span><span class="o">&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="c1"># casts x to f64 scalar</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">as.matrix</span><span class="o">&lt;</span><span class="n">ui32</span><span class="o">&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to a matrix of ui32</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="nf">as.scalar</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to a scalar of the same value type as x</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="nf">as.matrix</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to a matrix of the same value type as x</span>
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="nf">as.frame</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="c1"># casts x to a frame whose column types are the value type of x</span>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>
-<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="nf">as.f32</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to the same data type as x, but with value type f32</span>
-<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="nf">as.ui8</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to the same data type as x, but with value type ui8</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">as.scalar</span><span class="o">&lt;</span><span class="n">f64</span><span class="o">&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="c1"># casts x to f64 scalar</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">as.matrix</span><span class="o">&lt;</span><span class="n">ui32</span><span class="o">&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to a matrix of ui32</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="nf">as.scalar</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to a scalar of the same value type as x</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="nf">as.matrix</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to a matrix of the same value type as x</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="nf">as.frame</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="c1"># casts x to a frame whose column types are the value type of x</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="nf">as.f32</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to the same data type as x, but with value type f32</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="nf">as.ui8</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="c1"># casts x to the same data type as x, but with value type ui8</span>
 </code></pre></div>
 <p>Note that casting to frames does not support changing the value/column type yet, i.e., expressions like <code>as.frame&lt;f64, si32, f32&gt;(x)</code> and <code>as.f64(x)</code> (on a frame <code>x</code>) do not work yet.</p>
 <h4 id="function-calls">Function calls</h4>
 <p>Function calls can address <a href="/daphne/DaphneDSL/Builtins"><em>built-in</em> functions</a> as well as <a href="#user-defined-functions-udfs"><em>user-defined</em> functions</a>, but the syntax is the same in both cases:
 The name of the function followed by a comma-separated list of positional parameters in parentheses.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nf">print</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nf">t</span><span class="p">(</span><span class="n">myMatrix</span><span class="p">);</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="nf">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nf">print</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nf">t</span><span class="p">(</span><span class="n">myMatrix</span><span class="p">);</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="nf">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">);</span>
 </code></pre></div>
 <h4 id="conditional-expression">Conditional expression</h4>
 <p>DaphneDSL supports the conditional expression with the general syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">condition</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">then</span><span class="o">-</span><span class="k">value</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">else</span><span class="o">-</span><span class="k">value</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">condition</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">then</span><span class="o">-</span><span class="k">value</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">else</span><span class="o">-</span><span class="k">value</span>
 </code></pre></div>
 <p>The condition can be either a scalar or a matrix.</p>
 <ul>
@@ -2466,8 +2507,8 @@ The name of the function followed by a comma-separated list of positional parame
   The result is a matrix of the same shape as the condition and the same value type as the <code>then-value</code>/<code>else-value</code>.</li>
 </ul>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="m">42.0</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="m">-42.0</span><span class="w">                      </span><span class="c1"># 42.0 if i &gt; 5, -42.0 otherwise</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="p">[</span><span class="m">1.0</span><span class="p">,</span><span class="w"> </span><span class="m">2.0</span><span class="p">,</span><span class="w"> </span><span class="m">3.0</span><span class="p">,</span><span class="w"> </span><span class="m">4.0</span><span class="p">]</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="m">99.9</span><span class="w">  </span><span class="c1"># [1.0, 99.9, 99.9, 4.0]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="m">42.0</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="m">-42.0</span><span class="w">                      </span><span class="c1"># 42.0 if i &gt; 5, -42.0 otherwise</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="p">[</span><span class="m">1.0</span><span class="p">,</span><span class="w"> </span><span class="m">2.0</span><span class="p">,</span><span class="w"> </span><span class="m">3.0</span><span class="p">,</span><span class="w"> </span><span class="m">4.0</span><span class="p">]</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="m">99.9</span><span class="w">  </span><span class="c1"># [1.0, 99.9, 99.9, 4.0]</span>
 </code></pre></div>
 <h2 id="statements">Statements</h2>
 <p>At the highest level, a DaphneDSL script is a sequence of statements.
@@ -2477,22 +2518,22 @@ Statements comprise assignments, various forms of control flow, and declarations
 This is useful for expressions (especially function calls) which do not return a value.
 Nevertheless, it can also be used for expressions with one or more return values, in which case these values are ignored.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nf">print</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1"># built-in function without return value</span>
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">2</span><span class="p">;</span><span class="w">          </span><span class="c1"># value is ignored, useless but possible</span>
-<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="nf">doSomething</span><span class="p">();</span><span class="w">  </span><span class="c1"># possible return values are ignored, but the execution </span>
-<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">                </span><span class="c1"># of the user-defined function could have side effects</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nf">print</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1"># built-in function without return value</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">2</span><span class="p">;</span><span class="w">          </span><span class="c1"># value is ignored, useless but possible</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="nf">doSomething</span><span class="p">();</span><span class="w">  </span><span class="c1"># possible return values are ignored, but the execution </span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">                </span><span class="c1"># of the user-defined function could have side effects</span>
 </code></pre></div>
 <h3 id="assignment-statement">Assignment statement</h3>
 <p>The return value(s) of an expression can be assigned to one (or more) variable(s).</p>
 <p><strong>Single-assignments</strong> are used for expressions with exactly one return value.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">2</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">2</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Multi-assignments</strong> are used for expressions with more than one return value.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">evals</span><span class="p">,</span><span class="w"> </span><span class="n">evecs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">eigen</span><span class="p">(</span><span class="n">A</span><span class="p">);</span><span class="w"> </span><span class="c1"># eigen() returns two values, the (n x 1)-matrix of</span>
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">                         </span><span class="c1"># eigen-values and the (n x n)-matrix of eigen-vectors</span>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">                         </span><span class="c1"># of the input matrix A.</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">evals</span><span class="p">,</span><span class="w"> </span><span class="n">evecs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">eigen</span><span class="p">(</span><span class="n">A</span><span class="p">);</span><span class="w"> </span><span class="c1"># eigen() returns two values, the (n x 1)-matrix of</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">                         </span><span class="c1"># eigen-values and the (n x n)-matrix of eigen-vectors</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">                         </span><span class="c1"># of the input matrix A.</span>
 </code></pre></div>
 <h4 id="indexing_1">Indexing</h4>
 <p>The value of an expression can also be assigned to a <em>partition</em> of an <em>existing data object</em>.
@@ -2500,8 +2541,8 @@ This is done by (left) indexing, whose syntax is similar to (right) indexing in 
 <p>Currently, left indexing is supported only for matrices.
 Furthermore, the rows/columns cannot be addressed by arbitrary positions lists or bit vectors (yet).</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">X</span><span class="p">[</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">]</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="m">123</span><span class="p">];</span><span class="w">            </span><span class="c1"># insert (1 x 1)-matrix</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">X</span><span class="p">[</span><span class="m">10</span><span class="o">:</span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="o">:</span><span class="m">5</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">fill</span><span class="p">(</span><span class="m">123</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">);</span><span class="w"> </span><span class="c1"># insert (10 x 3)-matrix</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">X</span><span class="p">[</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">]</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="m">123</span><span class="p">];</span><span class="w">            </span><span class="c1"># insert (1 x 1)-matrix</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="n">X</span><span class="p">[</span><span class="m">10</span><span class="o">:</span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="o">:</span><span class="m">5</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">fill</span><span class="p">(</span><span class="m">123</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">);</span><span class="w"> </span><span class="c1"># insert (10 x 3)-matrix</span>
 </code></pre></div>
 <p>The following conditions must be fulfilled:</p>
 <ul>
@@ -2514,17 +2555,17 @@ Furthermore, the rows/columns cannot be addressed by arbitrary positions lists o
 <p>Left indexing can be used with both single and multi-assignments.
 With the latter, it can be used with each variable on the left-hand side individually and independently.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">[</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="o">:</span><span class="p">],</span><span class="w"> </span><span class="n">Z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">calculateSomething</span><span class="p">();</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">[</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="o">:</span><span class="p">],</span><span class="w"> </span><span class="n">Z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">calculateSomething</span><span class="p">();</span>
 </code></pre></div>
 <p><strong>Copy-on-write semantics</strong></p>
 <p>Left indexing enables the modification of existing data objects, whereby the semantics is <em>copy-on-write</em>.
 That is, if two different variables represent the same runtime data object, then left indexing on one of these variables does not have any effects on the other one.
 This is achieved by transparently copying the data as necessary.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">...</span><span class="p">;</span><span class="w">           </span><span class="c1"># some matrix</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">;</span><span class="w">             </span><span class="c1"># copy-by-reference</span>
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="n">B</span><span class="p">[</span><span class="kc">...</span><span class="p">,</span><span class="w"> </span><span class="kc">...</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">...</span><span class="p">;</span><span class="w"> </span><span class="c1"># copy-on-write: changes B, but no effect on A</span>
-<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="n">A</span><span class="p">[</span><span class="kc">...</span><span class="p">,</span><span class="w"> </span><span class="kc">...</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">...</span><span class="p">;</span><span class="w"> </span><span class="c1"># copy-on-write: changes A, but no effect on B</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">...</span><span class="p">;</span><span class="w">           </span><span class="c1"># some matrix</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">;</span><span class="w">             </span><span class="c1"># copy-by-reference</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="n">B</span><span class="p">[</span><span class="kc">...</span><span class="p">,</span><span class="w"> </span><span class="kc">...</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">...</span><span class="p">;</span><span class="w"> </span><span class="c1"># copy-on-write: changes B, but no effect on A</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="n">A</span><span class="p">[</span><span class="kc">...</span><span class="p">,</span><span class="w"> </span><span class="kc">...</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">...</span><span class="p">;</span><span class="w"> </span><span class="c1"># copy-on-write: changes A, but no effect on B</span>
 </code></pre></div>
 <h3 id="control-flow-statements">Control Flow statements</h3>
 <p>DaphneDSL supports block statements, conditional branching, and various kinds of loops.
@@ -2536,28 +2577,28 @@ Besides that, a block statement starts a new scope in terms of visibility of var
 Within a block, all variables from outside the block can be read and written.
 However, variables created inside a block are not visible anymore after the block.</p>
 <p>The syntax of a block statement is:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="p">{</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">    </span><span class="n">statement1</span>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">    </span><span class="n">statement2</span>
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">    </span><span class="kc">...</span>
-<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="p">{</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">    </span><span class="n">statement1</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">    </span><span class="n">statement2</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">    </span><span class="kc">...</span>
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="p">}</span>
 </code></pre></div>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="p">{</span>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">    </span><span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w"> </span><span class="c1"># read access</span>
-<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">;</span><span class="w">    </span><span class="c1"># write access</span>
-<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">;</span><span class="w">    </span><span class="c1"># variable created inside the block</span>
-<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="p">}</span>
-<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w">     </span><span class="c1"># prints 2</span>
-<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="nf">print</span><span class="p">(</span><span class="n">y</span><span class="p">);</span><span class="w">     </span><span class="c1"># error</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="p">{</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">    </span><span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w"> </span><span class="c1"># read access</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">;</span><span class="w">    </span><span class="c1"># write access</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">;</span><span class="w">    </span><span class="c1"># variable created inside the block</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="p">}</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w">     </span><span class="c1"># prints 2</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="nf">print</span><span class="p">(</span><span class="n">y</span><span class="p">);</span><span class="w">     </span><span class="c1"># error</span>
 </code></pre></div>
 <h4 id="if-then-else">If-then-else</h4>
 <p>The syntax of an if-then-else statement is as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
-<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">    </span><span class="n">then</span><span class="o">-</span><span class="n">statement</span>
-<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="k">else</span>
-<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">    </span><span class="k">else</span><span class="o">-</span><span class="n">statement</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">    </span><span class="n">then</span><span class="o">-</span><span class="n">statement</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="k">else</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">    </span><span class="k">else</span><span class="o">-</span><span class="n">statement</span>
 </code></pre></div>
 <p><em>condition</em> is an expression returning a single value.
 If this value is <code>true</code> (when casted to value type <code>bool</code>, if necessary), the <em>then-statement</em> is executed.
@@ -2565,22 +2606,22 @@ Otherwise, the <em>else-statement</em> is executed, <em>if it is present</em>.
 Note that the <em>else</em>-branch (keyword and statement) may be omitted.
 Furthermore, <em>then-statement</em> and <em>else-statement</em> can be block statements, to allow any number of statements in the then and else-branches.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nf">if </span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">)</span>
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">    </span><span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nf">if </span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">)</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="w">    </span><span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nf">if </span><span class="p">(</span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">    </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="p">;</span>
-<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">    </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true</span><span class="p">;</span>
-<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="p">}</span>
-<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="n">else</span>
-<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">    </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">2</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nf">if </span><span class="p">(</span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">    </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="p">;</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="w">    </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true</span><span class="p">;</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="p">}</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="n">else</span>
+<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="w">    </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">2</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nf">if </span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="w">    </span><span class="nf">print</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="p">);</span>
-<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="n">else</span><span class="w"> </span><span class="nf">if </span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
-<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="w">    </span><span class="nf">print</span><span class="p">(</span><span class="s">&quot;not a, but b&quot;</span><span class="p">);</span>
-<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="n">else</span>
-<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a><span class="w">    </span><span class="nf">print</span><span class="p">(</span><span class="s">&quot;neither a nor b&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="nf">if </span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="w">    </span><span class="nf">print</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="p">);</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="n">else</span><span class="w"> </span><span class="nf">if </span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="w">    </span><span class="nf">print</span><span class="p">(</span><span class="s">&quot;not a, but b&quot;</span><span class="p">);</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="n">else</span>
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="w">    </span><span class="nf">print</span><span class="p">(</span><span class="s">&quot;neither a nor b&quot;</span><span class="p">);</span>
 </code></pre></div>
 <h4 id="loops">Loops</h4>
 <p>DaphneDSL supports for-loops, while-loops, and do-while-loops.
@@ -2588,8 +2629,8 @@ In the future we plan to support also parfor-loops as well as <code>break</code>
 <h5 id="for-loops">For-Loops</h5>
 <p>For-loops are used to iterate over the elements of a sequence of integers.
 The syntax of a for-loop is as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nf">for </span><span class="p">(</span><span class="n">var</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">start</span><span class="o">:</span><span class="n">end</span><span class="p">[</span><span class="o">:</span><span class="n">step</span><span class="p">])</span>
-<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">    </span><span class="n">body</span><span class="o">-</span><span class="n">statement</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="nf">for </span><span class="p">(</span><span class="n">var</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">start</span><span class="o">:</span><span class="n">end</span><span class="p">[</span><span class="o">:</span><span class="n">step</span><span class="p">])</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">    </span><span class="n">body</span><span class="o">-</span><span class="n">statement</span>
 </code></pre></div>
 <p><em>var</em> must be a valid identifier and is assigned the values from <em>start</em> to <em>end</em> in increments of <em>step</em>.
 <em>start</em>, <em>end</em>, and <em>step</em> are expressions evaluating to a single number.
@@ -2598,60 +2639,60 @@ In that sense, for-loops can also be used to count backwards by setting <em>star
 The <em>body-statement</em> is executed for each value in the sequence, and within the <em>body-statement</em>, this value is accessible via the read-only variable <code>var</code>.
 Note that the <em>body-statement</em> may be a block statement enclosing an arbitrary number of statements.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="p">:</span><span class="m">3</span><span class="p">)</span>
-<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">3</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="p">:</span><span class="m">3</span><span class="p">)</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">3</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">;</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
-<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="nf">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="m">10</span><span class="o">:</span><span class="m">1</span><span class="o">:</span><span class="m">-3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">;</span>
-<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
-<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="p">}</span>
-<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w"> </span><span class="c1"># 22</span>
-<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="nf">print</span><span class="p">(</span><span class="n">y</span><span class="p">);</span><span class="w"> </span><span class="c1">#  4</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">;</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="nf">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="m">10</span><span class="o">:</span><span class="m">1</span><span class="o">:</span><span class="m">-3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">;</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a><span class="p">}</span>
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a><span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w"> </span><span class="c1"># 22</span>
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a><span class="nf">print</span><span class="p">(</span><span class="n">y</span><span class="p">);</span><span class="w"> </span><span class="c1">#  4</span>
 </code></pre></div>
 <h5 id="while-loops">While-Loops</h5>
 <p>While loops are used to execute a (block of) statement(s) as long as an arbitrary condition holds true.
 The syntax of a while-loop is as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
-<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="w">    </span><span class="n">body</span><span class="o">-</span><span class="n">statement</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="w">    </span><span class="n">body</span><span class="o">-</span><span class="n">statement</span>
 </code></pre></div>
 <p><em>condition</em> is an expression returning a single value, and is evaluated before each iteration.
 If this value is <code>true</code> (when casted to value type <code>bool</code>, if necessary), the <em>body-statement</em> is executed, and the loop starts anew.
 Otherwise, the program continues after the loop.
 Note that the <em>body-statement</em> may be a block statement enclosing an arbitrary number of statements.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
-<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="nf">while</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">converged</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">    </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="n">B</span><span class="p">;</span>
-<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="w">    </span><span class="n">converged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">A</span><span class="p">);</span>
-<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a><span class="w">    </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
-<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="nf">while</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">converged</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="w">    </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="n">B</span><span class="p">;</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="w">    </span><span class="n">converged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">A</span><span class="p">);</span>
+<a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="w">    </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
+<a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a><span class="p">}</span>
 </code></pre></div>
 <h5 id="do-while-loops">Do-While-Loops</h5>
 <p>Do-while-loops are a variant of while-loops, which checks the condition after each iteration.
 Consequently, a do-while-loop always executes at least one iteration.
 The syntax of a do-while-loop is as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="k">do</span>
-<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="w">    </span><span class="n">body</span><span class="o">-</span><span class="n">statement</span>
-<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="k">do</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="w">    </span><span class="n">body</span><span class="o">-</span><span class="n">statement</span>
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">);</span>
 </code></pre></div>
 <p>The semicolon at the end is optional.
 Note that the <em>body-statement</em> may be a block statement enclosing an arbitrary number of statements.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">;</span>
-<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="k">do</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="w">    </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sqrt</span><span class="p">(</span><span class="n">A</span><span class="p">);</span>
-<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="w">    </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
-<a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">A</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">;</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="k">do</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="w">    </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sqrt</span><span class="p">(</span><span class="n">A</span><span class="p">);</span>
+<a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="w">    </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
+<a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">A</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">);</span>
 </code></pre></div>
 <h2 id="user-defined-functions-udfs">User-defined Functions (UDFs)</h2>
 <p>DaphneDSL allows users to define their own functions.
 The syntax of a function definition looks as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="n">def</span><span class="w"> </span><span class="nf">funcName</span><span class="p">(</span><span class="n">paramName1</span><span class="p">[:</span><span class="n">paramType1</span><span class="p">],</span><span class="w"> </span><span class="n">paramName2</span><span class="p">[:</span><span class="n">paramType2</span><span class="p">],</span><span class="w"> </span><span class="p">...)</span><span class="w"> </span><span class="p">[</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">returnType1</span><span class="p">,</span><span class="w"> </span><span class="n">returnType2</span><span class="p">,</span><span class="w"> </span><span class="p">...]</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="w">    </span><span class="n">statement1</span>
-<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">    </span><span class="n">statement2</span>
-<a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="w">    </span><span class="p">...</span>
-<a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="n">def</span><span class="w"> </span><span class="nf">funcName</span><span class="p">(</span><span class="n">paramName1</span><span class="p">[:</span><span class="n">paramType1</span><span class="p">],</span><span class="w"> </span><span class="n">paramName2</span><span class="p">[:</span><span class="n">paramType2</span><span class="p">],</span><span class="w"> </span><span class="p">...)</span><span class="w"> </span><span class="p">[</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">returnType1</span><span class="p">,</span><span class="w"> </span><span class="n">returnType2</span><span class="p">,</span><span class="w"> </span><span class="p">...]</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="w">    </span><span class="n">statement1</span>
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">    </span><span class="n">statement2</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="w">    </span><span class="p">...</span>
+<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>The function name must be a valid and unique identifier.
 A function can have zero, one, or more parameters, and their names must be valid and unique identifiers.
@@ -2667,30 +2708,30 @@ The body of a function definition is always a block statement, i.e., it must be 
 <p>User-defined functions can return zero, one, or more (comma-separated) values using the <code>return</code>-statement.
 The number of returned values must match the function signature.</p>
 <p><em>Examples:</em>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="k">return</span><span class="p">;</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="n">don</span><span class="err">&#39;</span><span class="n">t</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">any</span><span class="w"> </span><span class="n">values</span>
-<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">exactly</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="k">value</span>
-<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">;</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">two</span><span class="w"> </span><span class="n">values</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="k">return</span><span class="p">;</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="n">don</span><span class="err">&#39;</span><span class="n">t</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">any</span><span class="w"> </span><span class="n">values</span>
+<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">exactly</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="k">value</span>
+<a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">;</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">two</span><span class="w"> </span><span class="n">values</span>
 </code></pre></div></p>
 <p>Currently, the return statement must be the last statement of a function.
 Alternatively, it can be nested into if-then-else (early return), as long as it is ensured that there is exactly one return statement at the end of each path through the function (experimental).</p>
 <p><em>Examples:</em></p>
-<p><div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="n">def</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="n">si64</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">si64</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span>
-<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
-<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span>
-<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
-<a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fib</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">2</span><span class="p">);</span>
-<a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a><span class="p">}</span>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="n">def</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="n">si64</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">si64</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span>
+<a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
+<a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span>
+<a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="m">1</span><span class="p">;</span>
+<a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fib</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">2</span><span class="p">);</span>
+<a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a><span class="p">}</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>def nextTwo(a: si64) -&gt; si64, si64 {
-<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>    return a + 1, a + 2;
-<a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>}
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>def nextTwo(a: si64) -&gt; si64, si64 {
+<a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>    return a + 1, a + 2;
+<a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a>}
 </code></pre></div></p>
 <h3 id="calling-user-defined-functions">Calling User-defined Functions</h3>
 <p>A user-defined function can be called like any other (built-in) function (see <em>function-call expressions</em> above).</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">123</span><span class="p">;</span>
-<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">nextTwo</span><span class="p">(</span><span class="m">123</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">123</span><span class="p">;</span>
+<a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">nextTwo</span><span class="p">(</span><span class="m">123</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="typed-and-untyped-functions-experimental">Typed and Untyped Functions (experimental)</h3>
 <p>DaphneDSL supports both typed and untyped functions.</p>
@@ -2712,7 +2753,7 @@ For instance, a user could force the use of a certain custom kernel at a certain
 So far, kernel hints are only supported for DaphneDSL built-in functions.
 Here, the name of the pre-compiled kernel function can optionally be attached to the name of the built-in function, separated by <code>::</code>.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="o">::</span><span class="nf">my_custom_sum_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="o">::</span><span class="nf">my_custom_sum_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">);</span>
 </code></pre></div>
 <h2 id="example-scripts">Example Scripts</h2>
 <p>A few example DaphneDSL scripts can be found in:</p>
