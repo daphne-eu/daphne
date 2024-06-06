@@ -26,6 +26,7 @@ set(TEST_SOURCES
         api/cli/distributed/DistributedTest.cpp
         api/cli/expressions/CastTest.cpp
         api/cli/expressions/CondTest.cpp
+        api/cli/expressions/FrameLiteralTest.cpp
         api/cli/expressions/MatrixLiteralTest.cpp
         api/cli/extensibility/ExtensionTest.cpp
         api/cli/extensibility/HintTest.cpp

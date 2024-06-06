@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 const std::string dirPath = "test/api/cli/expressions/";
 
 #define MAKE_SUCCESS_TEST_CASE(name, count) \
-    TEST_CASE(name ", success", TAG_MATRIX_LITERAL) { \
+    TEST_CASE(name ", success", TAG_FRAME_LITERAL) { \
         for(unsigned i = 1; i <= count; i++) { \
             DYNAMIC_SECTION(name "_success_" << i << ".daphne") { \
                 compareDaphneToRefSimple(dirPath, name "_success", i); \
@@ -35,7 +35,7 @@ const std::string dirPath = "test/api/cli/expressions/";
     }
 
 #define MAKE_FAILURE_TEST_CASE(name, count) \
-    TEST_CASE(name ", failure", TAG_MATRIX_LITERAL) { \
+    TEST_CASE(name ", failure", TAG_FRAME_LITERAL) { \
         for(unsigned i = 1; i <= count; i++) { \
             DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { \
                 checkDaphneFailsSimple(dirPath, name "_failure", i); \
@@ -43,5 +43,5 @@ const std::string dirPath = "test/api/cli/expressions/";
         } \
     }
 
-MAKE_SUCCESS_TEST_CASE("matrix_literal", 7)
-MAKE_FAILURE_TEST_CASE("matrix_literal", 2)
+MAKE_SUCCESS_TEST_CASE("frame_literal", 6)
+MAKE_FAILURE_TEST_CASE("frame_literal", 3)
