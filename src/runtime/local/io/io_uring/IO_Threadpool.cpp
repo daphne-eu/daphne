@@ -25,14 +25,20 @@
 #include "IO_URing.h"
 #include "IO_Threadpool.h"
 
-void CompletionWrapper(std::atomic<bool> *shut_down_requested, URing *ring, std::atomic<bool> *sleep_cv) {
+void CompletionWrapper(std::atomic<bool> *shut_down_requested,
+                       URing *ring,
+                       std::atomic<bool> *sleep_cv,
+                       uint64_t* min_idle_time_till_sleep_in_ms) {
     std::chrono::time_point<std::chrono::high_resolution_clock> initially_idle_timestamp;
     bool idle                                    = false;
-    constexpr uint64_t idle_timeout_threshold_ms = 20;
 
     while (!(*shut_down_requested)) {
         bool proccessed_a_cqe = false;
-        for (size_t i = 0; i < 100; i++) {
+        // The PeekCQAndHandleCQEs() call contains the actual work to be performed. As both the checks whether to shut
+        // down and or to sleep require "relatively" expensive seq_cst atomics they are only check once in a while i.e.
+        // here every min_cqe_processing amount of times
+        constexpr size_t min_cqe_processing = 100;
+        for (size_t i = 0; i < min_cqe_processing; i++) {
             if (ring->PeekCQAndHandleCQEs()) {
                 proccessed_a_cqe = true;
             }
@@ -50,7 +56,7 @@ void CompletionWrapper(std::atomic<bool> *shut_down_requested, URing *ring, std:
                 } else {    // Check if timed out y ? -> go to sleep
                     if (static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
                                                 std::chrono::high_resolution_clock::now() - initially_idle_timestamp)
-                                                .count()) >= idle_timeout_threshold_ms) {
+                                                .count()) >= *min_idle_time_till_sleep_in_ms) {
                         *sleep_cv = false;
                         sleep_cv->wait(false, std::memory_order_seq_cst);
                         idle = false;
@@ -66,10 +72,10 @@ void CompletionWrapper(std::atomic<bool> *shut_down_requested, URing *ring, std:
 void SubmissionWrapper(std::atomic<bool> *shut_down_requested,
                        URing *ring,
                        std::atomic<bool> *sleep_cv,
-                       std::atomic<bool> *sleep_cv_of_completion_thread) {
+                       std::atomic<bool> *sleep_cv_of_completion_thread,
+                       uint64_t* min_idle_time_till_sleep_in_ms) {
     std::chrono::time_point<std::chrono::high_resolution_clock> initially_idle_timestamp;
     bool idle                                    = false;
-    constexpr uint64_t idle_timeout_threshold_ms = 20;
 
     while (!(*shut_down_requested)) {
         // More precisely it also tracks the attempt to submit requests i.e. it indicates whether we submitted smth or tried
@@ -77,7 +83,11 @@ void SubmissionWrapper(std::atomic<bool> *shut_down_requested,
         //some requests last time -> likely that there are more and if not this should fail next round. -> this is an indicator
         // if there is more work to be done or not without directly checking atomic q sizes
         bool submitted_a_request = false;
-        for (size_t i = 0; i < 100; i++) {
+        // The PeekCQAndHandleCQEs() call contains the actual work to be performed. As both the checks whether to shut
+        // down and or to sleep require "relatively" expensive seq_cst atomics they are only check once in a while i.e.
+        // here every min_cqe_processing amount of times
+        constexpr size_t min_cqe_processing = 100;
+        for (size_t i = 0; i < min_cqe_processing; i++) {
             if (ring->SubmitRead() || ring->SubmitWrite()) {
                 submitted_a_request = true;
             }
@@ -99,7 +109,7 @@ void SubmissionWrapper(std::atomic<bool> *shut_down_requested,
             } else {    // Already started timer -> check if timed out -> go to sleep
                 if (static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
                                             std::chrono::high_resolution_clock::now() - initially_idle_timestamp)
-                                            .count()) >= idle_timeout_threshold_ms) {
+                                            .count()) >= *min_idle_time_till_sleep_in_ms) {
                     *sleep_cv = false;
                     sleep_cv->wait(false, std::memory_order_seq_cst);
                     idle = false;
@@ -114,14 +124,16 @@ void SubmissionWrapper(std::atomic<bool> *shut_down_requested,
 URingRunner::URingRunner(uint32_t ring_size,
                          bool use_io_dev_polling,
                          bool use_sq_polling,
-                         uint32_t submission_queue_idle_timeout_in_ms)
-    : ring(ring_size, use_io_dev_polling, use_sq_polling, submission_queue_idle_timeout_in_ms),
+                         uint32_t io_uring_submission_queue_idle_timeout_in_ms, // concerns the kernel space sq poll thread
+                         uint64_t idle_time_till_sleep_in_ms) // concerns the user space threads
+    : ring(ring_size, use_io_dev_polling, use_sq_polling, io_uring_submission_queue_idle_timeout_in_ms), min_idle_time(idle_time_till_sleep_in_ms),
       shut_down_requested(false), submission_worker(SubmissionWrapper,
                                                     &shut_down_requested,
                                                     &ring,
                                                     &submission_worker_should_be_active,
-                                                    &completion_worker_should_be_active),
-      completion_worker(CompletionWrapper, &shut_down_requested, &ring, &completion_worker_should_be_active),
+                                                    &completion_worker_should_be_active,
+                                                    &min_idle_time),
+      completion_worker(CompletionWrapper, &shut_down_requested, &ring, &completion_worker_should_be_active, &min_idle_time),
       submission_worker_should_be_active(true), completion_worker_should_be_active(true) {};
 
 URingRunner::~URingRunner() {
@@ -138,7 +150,8 @@ IOThreadpool::IOThreadpool(uint32_t amount_of_io_urings,
                            uint32_t ring_size,
                            bool use_io_dev_polling,
                            bool use_sq_polling,
-                           uint32_t submission_queue_idle_timeout_in_ms) {
+                           uint32_t submission_queue_idle_timeout_in_ms, // concerns the kernel space thread sq poll thread
+                           uint64_t idle_time_till_sleep_in_ms) { // concerns the user space threads
     runners.resize(amount_of_io_urings);
     for (uint32_t i = 0; i < amount_of_io_urings; i++) {
         runners[i] =

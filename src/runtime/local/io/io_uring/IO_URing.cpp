@@ -134,6 +134,11 @@ bool URing::SubmitRead() {
         // Now for all requests for which we got a sqe tell io_uring about them
         uint64_t sqes_to_submit                   = alloced_slots_for_sqe_meta_data.size();
         uint32_t fruitless_attempts               = 0;
+        // io_uring_submit() is allowed to not process all requests at once (including processing 0).
+        // Under normal operation and if no error occurred, io_uring will process multiple requests (frequently all)
+        // with one call.
+        // This constant provides a bound for maximum amount of attempts that returned 0 that have occurred in a row, as
+        // a fail safe against a hang in this loop.
         constexpr uint32_t max_fruitless_attempts = 5;
 
         while (requests_submitted != sqes_to_submit) {
@@ -229,6 +234,11 @@ bool URing::SubmitWrite() {
         // Now for all requests for which we got a sqe tell io_uring about them
         uint64_t sqes_to_submit                   = alloced_slots_for_sqe_meta_data.size();
         uint32_t fruitless_attempts               = 0;
+        // io_uring_submit() is allowed to not process all requests at once (including processing 0).
+        // Under normal operation and if no error occurred, io_uring will process multiple requests (frequently all)
+        // with one call.
+        // This constant provides a bound for maximum amount of attempts that returned 0 that have occurred in a row, as
+        // a fail safe against a hang in this loop.
         constexpr uint32_t max_fruitless_attempts = 5;
 
         while (requests_submitted != sqes_to_submit) {
