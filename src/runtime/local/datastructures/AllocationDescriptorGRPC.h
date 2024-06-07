@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "DataPlacement.h"
+
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <ir/daphneir/Daphne.h>
@@ -23,8 +25,7 @@
 #include <runtime/local/datastructures/DistributedAllocationHelpers.h>
 
 class AllocationDescriptorGRPC : public IAllocationDescriptor {
-private:
-    [[maybe_unused]] DaphneContext *ctx;
+    DaphneContext *ctx;
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_GRPC;
     const std::string workerAddress;
     DistributedData distributedData;
