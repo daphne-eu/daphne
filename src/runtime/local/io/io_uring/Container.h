@@ -24,13 +24,12 @@
 #include <optional>
 #include <vector>
 
-constexpr uint64_t initial_capacity = 16;
-
 template<typename T>
 struct ThreadSafeStack {
     T *data;
     std::atomic<uint64_t> size = 0;
-    uint64_t capacity          = initial_capacity;
+    uint64_t capacity;
+    static constexpr uint64_t default_initial_capacity = 16;
     std::mutex lck;
 
     // Assumes lock is currently held
@@ -148,7 +147,7 @@ struct ThreadSafeStack {
         }
     }
 
-    ThreadSafeStack() {
+    ThreadSafeStack(uint64_t initial_capacity = default_initial_capacity) {
         data = static_cast<T *>(std::malloc(sizeof(T) * initial_capacity));
     }
 

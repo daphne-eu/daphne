@@ -25,14 +25,19 @@
 #include "AsyncUtil.h"
 #include "IO_URing.h"
 
-void CompletionWrapper(std::atomic<bool> *shut_down_requested, URing *ring, std::atomic<bool> *sleep_cv);
+void CompletionWrapper(std::atomic<bool> *shut_down_requested,
+                       URing *ring,
+                       std::atomic<bool> *sleep_cv,
+                       uint64_t *min_idle_time_till_sleep_in_ms);
 void SubmissionWrapper(std::atomic<bool> *shut_down_requested,
                        URing *ring,
                        std::atomic<bool> *sleep_cv,
-                       std::atomic<bool> *sleep_cv_of_completion_thread);
+                       std::atomic<bool> *sleep_cv_of_completion_thread,
+                       uint64_t *min_idle_time_till_sleep_in_ms);
 
 struct URingRunner{
     URing ring;
+    uint64_t min_idle_time;
     std::atomic<bool> shut_down_requested;
     std::thread submission_worker;
     std::thread completion_worker;
@@ -41,7 +46,8 @@ struct URingRunner{
     URingRunner(uint32_t ring_size,
                 bool use_io_dev_polling,
                 bool use_sq_polling,
-                uint32_t submission_queue_idle_timeout_in_ms);
+                uint32_t io_uring_submission_queue_idle_timeout_in_ms,
+                uint64_t idle_time_till_sleep_in_ms = 20);
     ~URingRunner();
 };
 
@@ -62,7 +68,8 @@ struct IOThreadpool {
                  uint32_t ring_size,
                  bool use_io_dev_polling,
                  bool use_sq_polling,
-                 uint32_t submission_queue_idle_timeout_in_ms);
+                 uint32_t io_uring_submission_queue_idle_timeout_in_ms,
+                 uint64_t idle_time_till_sleep_in_ms = 20);
     ~IOThreadpool();
     std::unique_ptr<std::atomic<IO_STATUS>[]> SubmitReads(const std::vector<URingRead> &reads);
     std::unique_ptr<std::atomic<IO_STATUS>[]> SubmitWrites(const std::vector<URingWrite> &writes);
