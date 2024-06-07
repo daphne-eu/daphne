@@ -1092,6 +1092,16 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value arg = args[0];
         return builder.create<SaveDaphneLibResultOp>(loc, arg).getOperation();
     }
+    if(func == "stop") {
+        checkNumArgsBetween(loc, func, numArgs, 0, 1);
+        mlir::Value message;
+        if (numArgs == 0) {
+            message = builder.create<mlir::daphne::ConstantOp>(loc, builder.getType<mlir::daphne::StringType>(), builder.getStringAttr("Unspecified error occurred."));
+        } else {
+            message = args[0];
+        }
+        return builder.create<StopOp>(loc, message);
+    } 
 
     // --------------------------------------------------------------------
     // Low-level

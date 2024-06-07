@@ -1366,6 +1366,11 @@ def Daphne_SaveDaphneLibResultOp : Daphne_Op<"saveDaphneLibResult"> {
     let results = (outs); // no results
 }
 
+def Daphne_StopOp : Daphne_Op<"stop"> {
+    let arguments = (ins StrScalar:$message);
+    let results = (outs); // no results
+}
+
 // ----------------------------------------------------------------------------
 // Low-level
 // ----------------------------------------------------------------------------

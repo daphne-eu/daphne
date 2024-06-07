@@ -2552,6 +2552,21 @@
     },
     {
         "kernelTemplate": {
+            "header": "Stop.h",
+            "opName": "stop",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "const char *",
+                    "name": "message"
+                }
+            ]
+        },
+        "instantiations": [[]]
+    },
+    {
+        "kernelTemplate": {
             "header": "ReceiveFromNumpy.h",
             "opName": "receiveFromNumpy",
             "returnType": "void",
