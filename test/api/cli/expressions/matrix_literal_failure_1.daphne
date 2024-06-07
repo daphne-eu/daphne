@@ -1,0 +1,2 @@
+// can't infer value type from empty matrix literal
+print([]);

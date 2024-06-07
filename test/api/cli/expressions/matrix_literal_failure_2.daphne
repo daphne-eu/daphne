@@ -1,0 +1,2 @@
+// element in matrix is neither scalar nor singleton matrix
+print([0, 1, [2, 3]]);
