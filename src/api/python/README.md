@@ -16,23 +16,35 @@ limitations under the License.
 
 # DaphneLib
 
-Refer to the online documentation:
+DaphneLib is a Python wrapper for DAPHNE. Refer to the [online documentation](https://daphne-eu.github.io/daphne/).
 
-- [DaphneLib](https://daphne-eu.github.io/daphne/DaphneLib/Overview/)
-- [Container Usage](https://daphne-eu.github.io/daphne/GettingStarted/#2-download-the-daphne-development-container-image)
-- [Building DAPHNE](https://daphne-eu.github.io/daphne/development/BuildingDaphne/)
+## Compatibility
+
+Make sure to use the __same version numbers on minor granularity__ for DAPHNE and DaphneLib to ensure compatibility. Eg. using the DAPHNE v0.3 release for DaphneLib v0.3.0.
+
+## Prerequisites
+
+Before starting with DaphneLib, it is necessary to obtain the DAPHNE system (binaries) separately. Follow the instructions at [Quickstart for Users](https://daphne-eu.github.io/daphne/GettingStarted/#quickstart-for-users) to obtain DAPHNE. Make sure that DAPHNE is running on it's own before using DaphneLib by executing the DAPHNE binary (`path-to/daphne/bin/daphne --help`). Depending on how you obtained DAPHNE, it could be that you need to extend the `LD_LIBRARY_PATH` environment variable:
+
+```sh
+export LD_LIBRARY_PATH=path-to/daphne/lib:path-to/daphne/thirdparty/installed/lib:$LD_LIBRARY_PATH
+```
+
+## Installation
+
+`pip install daphne-lib`
 
 ## Setup
 
 The environment variable `DAPHNELIB_DIR_PATH` must be set to the directory with `libdaphnelib.so` and `libAllKernels.so` in it.
 
 ```sh
-export DAPHNELIB_DIR_PATH='pathto/daphne/lib'
+export DAPHNELIB_DIR_PATH='path-to/daphne/lib'
 ```
 
 ## Usage
 
-More script examples on [github](https://github.com/daphne-eu/daphne/tree/main/scripts/examples/daphnelib)
+More script examples on [github](https://github.com/daphne-eu/daphne/tree/main/scripts/examples/daphnelib) and usage guide on [online docs](https://daphne-eu.github.io/daphne/DaphneLib/Overview/).
 
 ```python
 from daphne.context.daphne_context import DaphneContext
@@ -57,7 +69,9 @@ print("\nResult of adding 100 to each value, back in Python:")
 print(X.compute())
 ```
 
-## Build
+## For Developers
+
+### Build
 
 Build Python wheel package:
 
@@ -66,7 +80,7 @@ pip install build
 ./clean.sh && python3 -m build --wheel
 ```
 
-## Dev Setup
+### Dev Setup
 
 With editable install
 
@@ -76,11 +90,11 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-## Publish
+### Publish
 
 Use [twine](https://twine.readthedocs.io/en/stable/) for publishing to [PyPI](https://pypi.org/project/daphne-lib/). Install via `pip install twine`.
 
-1. Set `version` in `pyproject.toml`
+1. Set `version` in `pyproject.toml` according to the DAPHNE version and [semver](https://semver.org/)
 1. Build according to __Build__ section
 1. `twine check dist/daphne_lib-<version>-py3-none-any.whl`
     - checks the wheel file
