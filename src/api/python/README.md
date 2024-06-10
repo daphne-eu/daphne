@@ -20,7 +20,7 @@ DaphneLib is a Python wrapper for DAPHNE. Refer to the [online documentation](ht
 
 ## Compatibility
 
-Make sure to use the __same version numbers on minor granularity__ for DAPHNE and DaphneLib to ensure compatibility. Eg. using the DAPHNE v0.3 release for DaphneLib v0.3.0.
+Make sure to use the __same version numbers on minor granularity__ for DAPHNE and DaphneLib to ensure compatibility. E.g., using the DAPHNE v0.3 release for DaphneLib v0.3.0.
 
 ## Prerequisites
 
@@ -44,7 +44,7 @@ export DAPHNELIB_DIR_PATH='path-to/daphne/lib'
 
 ## Usage
 
-More script examples on [github](https://github.com/daphne-eu/daphne/tree/main/scripts/examples/daphnelib) and usage guide on [online docs](https://daphne-eu.github.io/daphne/DaphneLib/Overview/).
+More script examples on [github](https://github.com/daphne-eu/daphne/tree/main/scripts/examples/daphnelib) and usage guide in the [online docs](https://daphne-eu.github.io/daphne/DaphneLib/Overview/).
 
 ```python
 from daphne.context.daphne_context import DaphneContext
