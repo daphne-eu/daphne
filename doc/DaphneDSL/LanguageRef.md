@@ -547,6 +547,7 @@ A[..., ...] = ...; # copy-on-write: changes A, but no effect on B
 
 DaphneDSL supports block statements, conditional branching, and various kinds of loops.
 These control flow constructs can be nested arbitrarily.
+Besides that, the [`stop()` built-in function](/doc/DaphneDSL/Builtins.md) can be used to terminate the DaphneDSL script execution.
 
 #### Block statement
 

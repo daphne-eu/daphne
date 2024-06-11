@@ -94,6 +94,7 @@ set(TEST_SOURCES
         runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
+        runtime/local/kernels/CheckEqApproxTest.cpp
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CondMatMatMatTest.cpp
         runtime/local/kernels/CondMatMatScaTest.cpp
@@ -144,12 +145,13 @@ set(TEST_SOURCES
         runtime/local/kernels/SliceColTest.cpp
         runtime/local/kernels/SliceRowTest.cpp
         runtime/local/kernels/SolveTest.cpp
+        runtime/local/kernels/StopTest.cpp
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/ThetaJoinTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
+        
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
-        runtime/local/kernels/CheckEqApproxTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )

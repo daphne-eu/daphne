@@ -116,8 +116,7 @@ def createGEMMNodeTensors( M:matrix<f64>, m:si64 )
   -> matrix<f64>, matrix<f64>, matrix<f64>, matrix<f64>, matrix<f64>
 {
   #TODO update for new model layout and generalize
-  # TODO Support stop() in DaphneDSL (see #658).
-  print("GEMM not fully supported yet");
+  stop("GEMM not fully supported yet");
 
   nin = sum(M[1,]!=0); # num inner nodes
 
