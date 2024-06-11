@@ -143,6 +143,7 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
+        runtime/local/kernels/StopTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )

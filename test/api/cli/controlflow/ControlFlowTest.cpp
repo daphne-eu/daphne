@@ -23,6 +23,7 @@
 #include <sstream>
 #include <string>
 
+
 const std::string dirPath = "test/api/cli/controlflow/";
 
 #define MAKE_TEST_CASE(name, count) \
@@ -34,7 +35,26 @@ const std::string dirPath = "test/api/cli/controlflow/";
         } \
     }
 
+#define MAKE_FAILURE_TEST_CASE(name, count) \
+    TEST_CASE(name ", controlflow failure", TAG_INFERENCE) { \
+        for(unsigned i = 1; i <= count; i++) { \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
+                std::stringstream out; \
+                std::stringstream err; \
+                int status = runDaphne(out, err, "--explain", "llvm", (dirPath + name + "_" + std::to_string(i) + ".daphne").c_str()); \
+                CHECK(status == StatusCode::EXECUTION_ERROR); \
+                if (i == 1) { \
+                CHECK_THAT(out.str(), Catch::Contains("System stopped: Unspecified error occurred.")); \
+                } else { \
+                    CHECK_THAT(out.str(), Catch::Contains("System stopped: CUSTOM ERROR")); \
+                } \
+            } \
+        } \
+    }
+
 MAKE_TEST_CASE("if", 8)
 MAKE_TEST_CASE("for", 23)
 MAKE_TEST_CASE("while", 16)
 MAKE_TEST_CASE("nested", 26)
+
+MAKE_FAILURE_TEST_CASE("stop", 2)
