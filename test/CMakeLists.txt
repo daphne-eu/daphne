@@ -95,6 +95,10 @@ set(TEST_SOURCES
         runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
         runtime/local/kernels/ColBindTest.cpp
+        runtime/local/kernels/CondMatMatMatTest.cpp
+        runtime/local/kernels/CondMatMatScaTest.cpp
+        runtime/local/kernels/CondMatScaMatTest.cpp
+        runtime/local/kernels/CondMatScaScaTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/CTableTest.cpp
         runtime/local/kernels/DiagMatrixTest.cpp
@@ -108,6 +112,7 @@ set(TEST_SOURCES
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp
+        runtime/local/kernels/FillTest.cpp
         runtime/local/kernels/FilterColTest.cpp
         runtime/local/kernels/FilterRowTest.cpp
         runtime/local/kernels/GroupJoinTest.cpp
@@ -132,6 +137,7 @@ set(TEST_SOURCES
         runtime/local/kernels/ReverseTest.cpp
         runtime/local/kernels/RowBindTest.cpp
         runtime/local/kernels/SampleTest.cpp
+        runtime/local/kernels/SemiJoinTest.cpp
         runtime/local/kernels/SeqTest.cpp
         runtime/local/kernels/SetColLabelsTest.cpp
         runtime/local/kernels/SetColLabelsPrefixTest.cpp

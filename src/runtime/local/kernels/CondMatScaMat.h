@@ -95,7 +95,7 @@ struct CondMatScaMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, DenseMatrix
 // ----------------------------------------------------------------------------
 
 template<typename VTVal, typename VTCond>
-struct CondMatMatSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, Matrix<VTVal>> {
+struct CondMatScaMat<Matrix<VTVal>, Matrix<VTCond>, VTVal, Matrix<VTVal>> {
     static void apply(
         Matrix<VTVal> *& res,
         const Matrix<VTCond> * cond,
