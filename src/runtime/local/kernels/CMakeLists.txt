@@ -81,7 +81,7 @@ add_custom_command(
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
 )
 
-list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
+list(APPEND LIBS DataStructures IO IO_URING_LIB BLAS::BLAS MLIRParser)
 
 set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels
