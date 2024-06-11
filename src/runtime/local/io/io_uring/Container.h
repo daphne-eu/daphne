@@ -36,7 +36,7 @@ struct ThreadSafeStack {
     void Grow() {
         T *new_buffer = static_cast<T *>(std::malloc(sizeof(T) * capacity * 2));
         std::memcpy(new_buffer, data, sizeof(T) * size);
-        free(data);
+        std::free(data);
         data = new_buffer;
         capacity *= 2;
     }
@@ -140,14 +140,14 @@ struct ThreadSafeStack {
         uint64_t size_before_decrement = size--;
         std::memcpy(new_buffer, data, sizeof(T) * id);
         std::memcpy(new_buffer + id, data + id + 1, sizeof(T) * (size_before_decrement - id - 1));
-        free(data);
+        std::free(data);
         data = new_buffer;
         if constexpr (!allready_holding_lck) {
             lck.unlock();
         }
     }
 
-    ThreadSafeStack(uint64_t initial_capacity = default_initial_capacity) {
+    ThreadSafeStack(uint64_t initial_capacity = default_initial_capacity) : capacity(initial_capacity) {
         data = static_cast<T *>(std::malloc(sizeof(T) * initial_capacity));
     }
 
