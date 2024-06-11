@@ -658,6 +658,8 @@
 
             [["DenseMatrix", "uint8_t"], "uint8_t"], 
 
+            [["DenseMatrix", "int64_t"], "size_t"],
+
             [["DenseMatrix", "bool"], "bool"],
 
             ["Frame", "double"],
