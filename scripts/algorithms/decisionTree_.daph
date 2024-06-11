@@ -106,8 +106,7 @@ def computeImpurity(y2:matrix<f64>, I:matrix<f64>, impurity:str) -> matrix<f64>
     score = sum((I * res)^2, 0);                # sum((yhat-y)^2)
   }
   else
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: unsupported impurity measure: "+impurity);
+    stop("decisionTree: unsupported impurity measure: "+impurity);
   
   return score;
 }
@@ -208,20 +207,15 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
 
   # validation checks
   if( max_depth > 32 )
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: invalid max_depth > 32: "+max_depth);
+    stop("decisionTree: invalid max_depth > 32: "+max_depth);
   if( sum(X<=0) != 0 )
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: feature matrix X is not properly recoded/binned (values <= 0): "+sum(X<=0));
+    stop("decisionTree: feature matrix X is not properly recoded/binned (values <= 0): "+sum(X<=0));
   if( sum(abs(X-round(X))>1e-14) != 0 )
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: feature matrix X is not properly recoded/binned (non-integer): "+sum(abs(X-round(X))>1e-14));
+    stop("decisionTree: feature matrix X is not properly recoded/binned (non-integer): "+sum(abs(X-round(X))>1e-14));
   if( sum(y<=0) != 0 )
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: label vector y is not properly recoded/binned: "+sum(y<=0));
+    stop("decisionTree: label vector y is not properly recoded/binned: "+sum(y<=0));
   if(ncol(X) + 1 != ncol(ctypes))
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: row-vector of column types ctypes must have must have one entry per column of feature matrix X and one additional entry for the label vector y");
+    stop("decisionTree: row-vector of column types ctypes must have must have one entry per column of feature matrix X and one additional entry for the label vector y");
   # TODO Check if shapes are valid, e.g., if ctypes is a row vector  (would also help SystemDS).
   # TODO Check if the values in ctypes are all 1 or 2 (would also help SystemDS).
 

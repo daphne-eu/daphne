@@ -91,17 +91,13 @@ def randomForest(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
       + ", feature_frac=" + feature_frac + ", impurity=" + impurity + ", seed=" + seed + ".");
   }
   if(ncol(ctypes) != ncol(X)+1)
-    # TODO Support stop()-function (see #658).
-    print("randomForest: inconsistent num features (incl. label) and col types: "+ncol(X)+" vs "+ncol(ctypes)+".");
+    stop("randomForest: inconsistent num features (incl. label) and col types: "+ncol(X)+" vs "+ncol(ctypes)+".");
   if( sum(X<=0) != 0 )
-    # TODO Support stop()-function (see #658).
-    print("randomForest: feature matrix X is not properly recoded/binned: "+sum(X<=0));
+    stop("randomForest: feature matrix X is not properly recoded/binned: "+sum(X<=0));
   if(sum(y <= 0) != 0)
-    # TODO Support stop()-function (see #658).
-    print("randomForest: y is not properly recoded and binned (contiguous positive integers).");
+    stop("randomForest: y is not properly recoded and binned (contiguous positive integers).");
   if(aggMax(y) == 1)
-    # TODO Support stop()-function (see #658).
-    print("randomForest: y contains only one class label.");
+    stop("randomForest: y contains only one class label.");
 
   lseed = as.scalar<si64>(seed!=-1 ? seed : as.scalar(rand(1,1,0,as.si64(1e9),1,-1)));
   randSeeds = rand(3 * num_trees, 1, 0, as.si64(1e9), 1, lseed);
