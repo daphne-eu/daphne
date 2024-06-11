@@ -96,8 +96,13 @@ expr:
     | lhs=expr op='&&' rhs=expr # conjExpr
     | lhs=expr op='||' rhs=expr # disjExpr
     | cond=expr '?' thenExpr=expr ':' elseExpr=expr # condExpr
-    | '[' (literal (',' literal)*)? ']' # matrixLiteralExpr
+    | '[' (expr (',' expr)*)? ']' ('(' rows=expr? ',' cols=expr? ')')? # matrixLiteralExpr
+    | '{' (labels+=expr ':' cols+=expr (',' labels+=expr ':' cols+=expr)*)? '}' # colMajorFrameLiteralExpr
+    | '{' labels=frameRow (',' rows+=frameRow)* '}' # rowMajorFrameLiteralExpr
     ;
+
+frameRow:
+    '[' (expr (',' expr)*)? ']' ;
 
 indexing:
     '[' (rows=range)? ',' (cols=range)? ']' ;

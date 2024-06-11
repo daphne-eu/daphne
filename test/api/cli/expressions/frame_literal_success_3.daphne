@@ -1,0 +1,11 @@
+// Column-major frame literals with expressions
+
+testColLabel = "col 1";
+testColMat = [1, 2, 3];
+
+def testFunc() -> f64 {
+    return 1.1;
+}
+
+testFrame = {testColLabel : testColMat, "col 2" : [testFunc(), 1.1 + 1.1, 3.3]};
+print(testFrame);

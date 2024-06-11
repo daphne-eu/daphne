@@ -1,0 +1,2 @@
+// column is not a matrix
+print({"col 1" : 0});

@@ -75,7 +75,7 @@ Currently, DaphneDSL supports the following *abstract* **data types**:
 - floating-point numbers of various widths: `f64`, `f32`
 - signed and unsigned integers of various widths: `si64`, `si32`, `si8`, `ui64`, `ui32`, `ui8`
 - strings `str` *(currently only for scalars, support for matrix elements is still experimental)*
-- booleans `bool` *(currently only for scalars)*
+- booleans `bool` *(currently only for scalars and dense matrices)*
 
 Data types and value types can be combined, e.g.:
 
@@ -143,17 +143,50 @@ Special characters must be escaped using a backslash:
 
 ##### Matrix literals
 
-A matrix literal consists of a comma-separated list of scalar literals, enclosed in square braces.
-All scalars specified for the elements must be of the same type. <!--TODO relax this, infer the most general type-->
-Furthermore, all specified elements must be actual literals, i.e., expressions are not supported yet. <!--TODO support expressions for the elements (both compile-time constant and known-only-at-runtime-->
-The resulting matrix is always a column matrix, i.e., if *n* elements are specified, its shape is *(n x 1)*.
-Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can be used to modify the shape.
+A matrix literal consists of a comma-separated list of elements enclosed in square brackets,
+optionally followed by parentheses with a comma separated pair of dimensions (number of rows and/or columns).
+The elements and the dimensions can be complex expressions.
+The matrix's value type is the most general value type among its elements.
+Matrix literals are by default column matrices if no dimensions are specified.
+If only one dimension is given, the other one will be inferred automatically.
+Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can also be used to modify the shape of matrices.
 
 *Examples:*
 
 ```r
-[1.0, 0.0, -4.0]            # matrix<f64> with shape (3 x 1)
-reshape([1, 2, 3, 4], 1, 4) # matrix<si64> with shape (1 x 4)
+[1, 0, -4.0]                    # matrix<f64> with shape (3 x 1)
+[1, 2, sqrt(3), 4](1,)          # matrix<f64> with shape (1 x 4)
+[1, 2, 3, sum([4, 5])](2, 2)    # matrix<si64> with shape (2 x 2)
+```
+
+##### Frame literals
+
+Frame literals can be defined using either columns or rows and are enclosed in curly brackets.
+
+**Frame literals of columns** consist of comma-separated pairs of a `str`-typed label
+and a (n x 1) matrix, in the format `label: column`.
+Both labels and columns can be complex expressions.
+
+*Examples:*
+
+```r
+# frame with two columns: "col 1" of type f64 and "col 2" of type si64
+{"col 1": [1, 2, sqrt(3)], "col 2": seq(1, 3, 1)}
+# frame with two columns: "col 1" of type si64 and "col 2" of type f64
+{"col 1": [1, 2, 3], "col 2": [1.1, -2.2, 3.3]}
+```
+
+**Frame literals of rows** consist of comma-separated rows, whereby each row is enclosed in square brackets.
+The first row contains the `str`-typed column labels.
+All remaining rows represent the data of the frame.
+Both labels and elements of a row can be complex expressions.
+However, it is currently not possible to specify an entire row by an expression.
+
+*Examples:*
+
+```r
+# equivalent to the 2nd example above, specified by rows
+{["col 1", "col 2"], [1, 1.1], [2, -2.2], [3, 3.3]}
 ```
 
 #### Variable Expressions

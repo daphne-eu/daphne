@@ -1,0 +1,11 @@
+// Row-major frame literals with (limited) expressions
+// Row-major frame literals do not yet support row matrices passed as expressions
+
+testColLabel = "col 1";
+
+def testFunc() -> f64 {
+    return 1.1;
+}
+
+testFrame = {[testColLabel, "col 2"], [1, testFunc()], [2, 1.1 + 1.1], [3, 3.3]};
+print(testFrame);
