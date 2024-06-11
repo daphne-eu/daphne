@@ -1,0 +1,7 @@
+# Comparison of strings not known at compile-time (comparison normally evaluated by a run-time kernel).
+s = "";
+if(as.scalar(rand(1, 1, 0.0, 1.0, 1, -1)) < 0.42)
+    s = "abc";
+else
+    s = "def";
+print(s == "ghi");

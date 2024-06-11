@@ -721,13 +721,9 @@
         "kernelTemplate": {
             "header": "StringEq.h",
             "opName": "stringEq",
-            "returnType": "void",
+            "returnType": "bool",
             "templateParams": [],
             "runtimeParams": [
-                {
-                    "type": "bool *",
-                    "name": "res"
-                },
                 {
                     "type": "const char *",
                     "name": "lhs"

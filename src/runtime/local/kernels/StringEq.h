@@ -20,6 +20,6 @@
 
 #include <string_view>
 
-inline void stringEq(bool *res, const char *lhs, const char *rhs, DCTX(ctx)) {
-    *res = std::string_view(lhs) == std::string_view(rhs);
+inline bool stringEq(const char *lhs, const char *rhs, DCTX(ctx)) {
+    return std::string_view(lhs) == std::string_view(rhs);
 }
