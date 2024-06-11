@@ -1096,7 +1096,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsBetween(loc, func, numArgs, 0, 1);
         mlir::Value message;
         if (numArgs == 0) {
-            message = builder.create<mlir::daphne::ConstantOp>(loc, builder.getType<mlir::daphne::StringType>(), builder.getStringAttr("Unspecified error occurred."));
+            message = builder.create<mlir::daphne::ConstantOp>(loc, builder.getType<mlir::daphne::StringType>(), builder.getStringAttr("unspecified reason"));
         } else {
             message = args[0];
         }

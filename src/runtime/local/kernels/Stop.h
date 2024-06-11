@@ -16,13 +16,8 @@
 
 #pragma once
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_STOP_H
-#define SRC_RUNTIME_LOCAL_KERNELS_STOP_H
-
 #include <runtime/local/context/DaphneContext.h>
 
 void stop(const char *message, DCTX(ctx)) {
-    throw std::runtime_error(std::string("System stopped: ") + message);
+    throw std::runtime_error(std::string("system stopped: ") + message);
 }
-
-#endif

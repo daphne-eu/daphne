@@ -1,1 +1,2 @@
+# Stop with specified reason.
 stop("CUSTOM ERROR");

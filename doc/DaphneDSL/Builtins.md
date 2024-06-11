@@ -545,6 +545,10 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
     Note that the type of `arg` determines how to store the data; thus, it suffices to call `write()` (but `writeFrame()` and `writeMatrix()` can be used synonymously for consistency with reading).
     At the same time, this creates a `.meta`-file for the written file, so that it can be read again using `readMatrix()`/`readFrame()`.
 
+- **`stop`**`([message:str])`
+
+    Terminates the DaphneDSL script execution with the given optional message.
+
 ## Data preprocessing
 
 - **`oneHot`**`(arg:matrix, info:matrix<si64>)`
