@@ -1,0 +1,22 @@
+G = readMatrix($f);
+start = now();
+
+M = nrow(G);
+N = ncol(G);
+p = fill(1.0, M, 1);
+
+alpha = 0.85;
+one_minus_alpha = 1.0 - alpha;
+maxiter = 250;
+max_iteration = as.si64(maxiter);
+iter = 0;
+
+for (iter in 1:max_iteration) {
+  # sumP = fill(sum(p), nrow(p), 1);
+  # p = (G @ p) * alpha + (sumP) * (1.0 - alpha);
+  p = alpha * (G @ p) + (one_minus_alpha * (reshape(p, M, 1)));
+  p = p / sum(p);
+}
+
+end = now();
+print((end - start) / 1000000000.0);

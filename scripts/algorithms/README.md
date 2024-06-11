@@ -90,3 +90,17 @@ bin/daphne scripts/algorithms/pca.daph X=\"data/wine.csv\" K=2 center=true scale
 bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=10 c=5 i=3
 bin/daphne test/api/cli/algorithms/lm.daphne r=1000 c=100
 -->
+
+
+### Breadth First Search (bfs) 
+
+Under development. 
+JIT session error: Symbols not found: [ _ewAdd__DenseMatrix_double__DenseMatrix_double__CSRMatrix_double ]
+JIT-Engine invocation failed: Failed to materialize symbols: { (main, { main, _mlir__mlir_ciface_main, _mlir_ciface_main, _mlir_main }) }Program aborted due to an unhandled Error:
+Failed to materialize symbols: { (main, { main, _mlir__mlir_ciface_main, _mlir_ciface_main, _mlir_main }) }
+
+### K-Core (k-core)
+
+Under development.
+
+
