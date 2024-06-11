@@ -21,3 +21,5 @@ add_library(IO_URING_LIB
         io_uring/IO_URing.cpp
         io_uring/IO_Threadpool.cpp)
 target_link_libraries(IO_URING_LIB PRIVATE liburing.a Threads::Threads)
+target_include_directories(IO_URING_LIB PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/installed/lib")
+target_include_directories(IO_URING_LIB PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/installed/include")
