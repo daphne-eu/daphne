@@ -2771,6 +2771,10 @@ Assumes that a <code>.meta</code>-file is present for the specified <code>filena
 Note that the type of <code>arg</code> determines how to store the data; thus, it suffices to call <code>write()</code> (but <code>writeFrame()</code> and <code>writeMatrix()</code> can be used synonymously for consistency with reading).
 At the same time, this creates a <code>.meta</code>-file for the written file, so that it can be read again using <code>readMatrix()</code>/<code>readFrame()</code>.</p>
 </li>
+<li>
+<p><strong><code>stop</code></strong><code>([message:str])</code></p>
+<p>Terminates the DaphneDSL script execution with the given optional message.</p>
+</li>
 </ul>
 <h2 id="data-preprocessing">Data preprocessing</h2>
 <ul>
