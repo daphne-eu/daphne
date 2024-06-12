@@ -368,7 +368,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             }
             else
                 throw ErrorHandler::compilerError(loc, "DSLBuiltins",
-                        "arguments to frame() built-in function must be one or "
+                        "arguments to createFrame() built-in function must be one or "
                         "more matrices optionally followed by equally many "
                         "strings"
                 );
