@@ -145,7 +145,6 @@ struct trySparsityFromIthArg {
 // ****************************************************************************
 
 std::vector<double> daphne::tryInferSparsity(Operation *op) {
-//    op->dump();
     if(auto inferSparsityOp = llvm::dyn_cast<daphne::InferSparsity>(op))
         // If the operation implements the sparsity inference interface,
         // we apply that.
