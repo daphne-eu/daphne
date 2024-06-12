@@ -162,7 +162,7 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
     if( max_values < 1.0 && ncol(fP)>10 ) {
       # This cannot generate 0.0, as sparsity is set to 1; is that okay?
       rI2 = rand(ncol(fP), 1, 0.0, 1.0, 1, seed) <= (ncol(fP)^max_values/ncol(fP));
-      fP = fP[[, t(rI2)]];
+      fP = fP[[, rI2]];
       vI = vI[[rI2, ]];
     }
     P = fill(0, ncol(X2), ncol(fP));
