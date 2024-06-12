@@ -78,10 +78,11 @@ DaphneDSL's built-in functions can be categorized as follows:
     The parameter `withReplacement` determines if a value can be drawn multiple times (`true`) or not (`false`).
     The `seed` can be set to `-1` (randomly chooses a seed), or be provided explicitly to enable reproducible random values.
   
-- **`seq`**`(from:scalar, to:scalar, inc:scalar)`
+- **`seq`**`(from:scalar, to:scalar[, inc:scalar])`
 
     Generates a column matrix containing an arithmetic sequence of values starting at `from`, going through `to`, in increments of `inc`.
     Note that `from` may be greater than `to`, and `inc` may be negative.
+    The scalar `inc` is an optional argument and defaults to 1.
 
 ## Matrix/frame dimensions
 
