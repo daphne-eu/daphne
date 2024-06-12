@@ -157,17 +157,43 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
     # construct 0/1 predicate vectors with <= semantics
     # find rows that match at least one value and appear in I
     # (vectorized evaluation, each column in P is a split candidate)
-    fP = upperTri(fill(1,belen,belen), true, true);
+
+    # Note: Compared to SystemDS, we use a manual rewrite of the program in DAPHNE.
+    # In a direct translation, the matrix multiplication `X2 @ P` is the most
+    # expensive operation in this decision trees implementation. However, it can
+    # be rewritten as a cumsum along the rows on a column fragment of `X2`. This
+    # makes the algorithm significantly faster in DAPHNE (on a dense data
+    # representation). Understanding if this rewrite would also be beneficial in
+    # SystemDS would require further investigation, especially since SystemDS most
+    # likely uses sparse data representations at criticial points here.
+    # Consequently, a few lines below are commented out, since they are not
+    # needed anymore after this manual rewrite. Furthermore, `ncol(fP)` has
+    # been replaced by `belen`, since `fP` does not exist anymore after that
+    # manual rewrite.
+
+    # fP = upperTri(fill(1,belen,belen), true, true);
     vI = seq(1,belen,1);
-    if( max_values < 1.0 && ncol(fP)>10 ) {
+    rI2 = fill(1, belen, 1);
+    sampledFeatVals = false;
+    if( max_values < 1.0 && belen>10 ) {
       # This cannot generate 0.0, as sparsity is set to 1; is that okay?
-      rI2 = rand(ncol(fP), 1, 0.0, 1.0, 1, seed) <= (ncol(fP)^max_values/ncol(fP));
-      fP = fP[[, rI2]];
+      rI2 = as.si64(rand(belen, 1, 0.0, 1.0, 1, seed) <= (belen^max_values/belen));
+      # fP = fP[[, rI2]];
       vI = vI[[rI2, ]];
+      sampledFeatVals = true;
     }
-    P = fill(0, ncol(X2), ncol(fP));
-    P[beg - 1:end - 1,0:ncol(fP)] = fP;
-    Ileft = (t(X2 @ P) * I) != 0;
+
+    # Original from SystemDS.
+    # P = fill(0, ncol(X2), ncol(fP));
+    # P[beg - 1:end - 1,0:ncol(fP)] = fP;
+    # Ileft = (t(X2 @ P) * I) != 0;
+
+    # Manual rewrite for DAPHNE.
+    X2_ = X2[, beg - 1:end - 1];
+    if(sampledFeatVals)
+      X2_ = X2_[[, rI2]];
+    Ileft = (cumSum(t(X2_)) * I) != 0;
+
     Iright = (Ileft==0) * I;
 
     # compute information gain for all split candidates
