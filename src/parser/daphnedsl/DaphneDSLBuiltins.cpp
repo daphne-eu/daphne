@@ -433,7 +433,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         switch (numArgs)
         {
         case 2:{ // inc is not given, so it defaults to 1
-            inc = builder.create<ConstantOp>(loc, int64_t(1));;
+            // We use the least general numeric type si8 for inc,
+            // such that it never dominates from/to in type promotion.
+            mlir::Type si8 = builder.getIntegerType(8, true);
+            inc = builder.create<ConstantOp>(loc, si8, builder.getIntegerAttr(si8, 1));
             break;
         }
         case 3:{ // inc is given
