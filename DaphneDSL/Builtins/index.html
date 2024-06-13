@@ -2035,9 +2035,10 @@ The parameter <code>withReplacement</code> determines if a value can be drawn mu
 The <code>seed</code> can be set to <code>-1</code> (randomly chooses a seed), or be provided explicitly to enable reproducible random values.</p>
 </li>
 <li>
-<p><strong><code>seq</code></strong><code>(from:scalar, to:scalar, inc:scalar)</code></p>
+<p><strong><code>seq</code></strong><code>(from:scalar, to:scalar[, inc:scalar])</code></p>
 <p>Generates a column matrix containing an arithmetic sequence of values starting at <code>from</code>, going through <code>to</code>, in increments of <code>inc</code>.
-Note that <code>from</code> may be greater than <code>to</code>, and <code>inc</code> may be negative.</p>
+Note that <code>from</code> may be greater than <code>to</code>, and <code>inc</code> may be negative.
+The scalar <code>inc</code> is an optional argument and defaults to <code>1</code>.</p>
 </li>
 </ul>
 <h2 id="matrixframe-dimensions">Matrix/frame dimensions</h2>
