@@ -425,10 +425,28 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         );
     }
     if(func == "seq") {
-        checkNumArgsExact(loc, func, numArgs, 3);
+        checkNumArgsMin(loc, func, numArgs, 2); // The first two arguments are mandatory.
         mlir::Value from = args[0];
         mlir::Value to = args[1];
-        mlir::Value inc= args[2];
+        mlir::Value inc;                        // The third argument is optional.
+        
+        switch (numArgs)
+        {
+        case 2:{ // inc is not given, so it defaults to 1
+            // We use the least general numeric type si8 for inc,
+            // such that it never dominates from/to in type promotion.
+            mlir::Type si8 = builder.getIntegerType(8, true);
+            inc = builder.create<ConstantOp>(loc, si8, builder.getIntegerAttr(si8, 1));
+            break;
+        }
+        case 3:{ // inc is given
+            inc = args[2];
+            break;
+        }
+        default:
+            throw ErrorHandler::compilerError(loc, "DSLBuiltins", "seq(): unexpected number of arguments");
+        }
+
         return utils.retValWithInferedType(
                 builder.create<SeqOp>(
                         loc, utils.unknownType, from, to, inc
