@@ -23,6 +23,7 @@ This document describes how we do testing in DAPHNE.
 However, as it can be hard to trigger all possible uses of DAPHNE's internal C++ components from [DaphneDSL](/doc/DaphneDSL/LanguageRef.md) or [DaphneLib](/doc/DaphneLib/Overview.md) scripts, we also test some of those components in isolation.
 
 Thus, there are **two kinds of test cases** in DAPHNE:
+
 1. *Script-level test cases*, which invoke the entire DAPHNE system with some input script file.
 2. *Unit test cases*, which use individual C++ functions/classes of the DAPHNE source code.
 
@@ -99,7 +100,7 @@ Each test case has a *name* and one or multiple *tags* (think of groups/categori
 
     A list of all test tags can be found in [`test/tags.h`](/test/tags.h).
 
-- catch2 also supports complex combinations and set operations on test names and tags.
+- catch2 also supports **complex combinations and set operations** on test names and tags.
     See the [catch2 documentation](https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#specifying-which-tests-to-run) for details.
 
 #### Additional Useful Flags
@@ -132,6 +133,7 @@ Further information can be found there.
 Finding out what's going wrong and how to fix it requires the typical debugging skills, where most developers have their own ways and preferences.
 
 Some suggestions in the context of DAPHNE:
+
 - Look at the error messages produced by catch2, which indicate the name of the failing test case as well as the assertions that failed (including detailed information like the expected and found values). This output is often sufficient to narrow down the problem.
 - Try to change the code and/or the test case and execute only the affected test case separately (see above) to save time. For script-level test cases, it can be helpful to invoke the script outside the test suite (the scripts typically reside in `test/api/cli/`, make sure to use the same arguments as in the test suite).
 - Use [DAPHNE's logger](/doc/development/Logging.md) or custom print-outs to generate more debug output.
@@ -141,17 +143,20 @@ Some suggestions in the context of DAPHNE:
 
 Unfortunately, this can happen.
 **Possible reasons** include:
+
 - **Differences in the software setups of your system and the CI system.**
     The CI machine may have a different OS (version), C++ compiler (version), installed software packages (versions), etc.
     You can try to debug the failing tests in the CI's *OS/software* environment by using the CI container image as follows:
 
     *On the host (from the DAPHNE root directory):*
+
     ```bash
     docker pull daphneeu/github-action
     docker run -it --rm -w /daphne -v "$(pwd):/daphne" daphneeu/github-action:latest bash
     ```
 
     *In the container:*
+    
     ```bash
     # To avoid cmake complaints.
     ./build.sh --clean -y
