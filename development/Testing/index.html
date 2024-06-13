@@ -9,6 +9,8 @@
       
       
       
+        <link rel="prev" href="../WriteDocs/">
+      
       
       
       <link rel="icon" href="../../assets/logo_small.png">
@@ -240,10 +242,12 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../Contributing/" class="md-tabs__link">
           
   
@@ -873,23 +877,28 @@
       
   
   
+    
   
   
+  
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -900,7 +909,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Developers
@@ -1159,6 +1168,175 @@
 
               
             
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Testing
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Testing
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-test-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the Test Suite
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the Test Suite">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#background" class="md-nav__link">
+    <span class="md-ellipsis">
+      Background
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customizing-the-test-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customizing the Test Execution
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customizing the Test Execution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#controlling-which-tests-to-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controlling which Tests to Run
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-useful-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional Useful Flags
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daphne-specific-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      DAPHNE-specific Flags
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reacting-to-test-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reacting to Test Failures
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reacting to Test Failures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tests-fail-in-your-local-development-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tests Fail in Your Local Development Environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests-fail-in-the-ci-workflow-even-though-they-pass-in-your-local-development-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tests Fail in the CI Workflow (even though they pass in your local development environment)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-test-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Writing Test Cases
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1323,9 +1501,11 @@
 This document describes how we do testing in DAPHNE.</p>
 <p><strong>DAPHNE's testing philosophy</strong> is to mainly focus on end-to-end tests of the entire DAPHNE system, since that is what users care about and what, thus, ultimately matters.
 However, as it can be hard to trigger all possible uses of DAPHNE's internal C++ components from <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL</a> or <a href="/daphne/DaphneLib/Overview">DaphneLib</a> scripts, we also test some of those components in isolation.</p>
-<p>Thus, there are <strong>two kinds of test cases</strong> in DAPHNE:
-1. <em>Script-level test cases</em>, which invoke the entire DAPHNE system with some input script file.
-2. <em>Unit test cases</em>, which use individual C++ functions/classes of the DAPHNE source code.</p>
+<p>Thus, there are <strong>two kinds of test cases</strong> in DAPHNE:</p>
+<ol>
+<li><em>Script-level test cases</em>, which invoke the entire DAPHNE system with some input script file.</li>
+<li><em>Unit test cases</em>, which use individual C++ functions/classes of the DAPHNE source code.</li>
+</ol>
 <p>Both kinds of test cases are expressed using <a href="https://github.com/catchorg/Catch2">catch2</a>, a widely used C++ <strong>test framework</strong>.
 We use catch2 such that we don't need to reinvent the wheel for C++ testing (plus, learning about catch2 can help DAPHNE developers also in other software projects).
 Reading the <a href="https://github.com/catchorg/Catch2/blob/devel/docs/tutorial.md">catch2 documentation</a> is very worthwhile to better understand testing in DAPHNE.
@@ -1378,7 +1558,7 @@ Each test case has a <em>name</em> and one or multiple <em>tags</em> (think of g
 <p>A list of all test tags can be found in <a href="https://github.com/daphne-eu/daphne/tree/main/test/tags.h"><code>test/tags.h</code></a>.</p>
 </li>
 <li>
-<p>catch2 also supports complex combinations and set operations on test names and tags.
+<p>catch2 also supports <strong>complex combinations and set operations</strong> on test names and tags.
     See the <a href="https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#specifying-which-tests-to-run">catch2 documentation</a> for details.</p>
 </li>
 </ul>
@@ -1404,40 +1584,41 @@ Further information can be found there.</p>
 <h3 id="reacting-to-test-failures">Reacting to Test Failures</h3>
 <h4 id="tests-fail-in-your-local-development-environment">Tests Fail in Your Local Development Environment</h4>
 <p>Finding out what's going wrong and how to fix it requires the typical debugging skills, where most developers have their own ways and preferences.</p>
-<p>Some suggestions in the context of DAPHNE:
-- Look at the error messages produced by catch2, which indicate the name of the failing test case as well as the assertions that failed (including detailed information like the expected and found values). This output is often sufficient to narrow down the problem.
-- Try to change the code and/or the test case and execute only the affected test case separately (see above) to save time. For script-level test cases, it can be helpful to invoke the script outside the test suite (the scripts typically reside in <code>test/api/cli/</code>, make sure to use the same arguments as in the test suite).
-- Use <a href="/daphne/development/Logging">DAPHNE's logger</a> or custom print-outs to generate more debug output.
-- Use a debugger.</p>
+<p>Some suggestions in the context of DAPHNE:</p>
+<ul>
+<li>Look at the error messages produced by catch2, which indicate the name of the failing test case as well as the assertions that failed (including detailed information like the expected and found values). This output is often sufficient to narrow down the problem.</li>
+<li>Try to change the code and/or the test case and execute only the affected test case separately (see above) to save time. For script-level test cases, it can be helpful to invoke the script outside the test suite (the scripts typically reside in <code>test/api/cli/</code>, make sure to use the same arguments as in the test suite).</li>
+<li>Use <a href="/daphne/development/Logging">DAPHNE's logger</a> or custom print-outs to generate more debug output.</li>
+<li>Use a debugger.</li>
+</ul>
 <h4 id="tests-fail-in-the-ci-workflow-even-though-they-pass-in-your-local-development-environment">Tests Fail in the CI Workflow (even though they pass in your local development environment)</h4>
 <p>Unfortunately, this can happen.
-<strong>Possible reasons</strong> include:
-- <strong>Differences in the software setups of your system and the CI system.</strong>
+<strong>Possible reasons</strong> include:</p>
+<ul>
+<li>
+<p><strong>Differences in the software setups of your system and the CI system.</strong>
     The CI machine may have a different OS (version), C++ compiler (version), installed software packages (versions), etc.
     You can try to debug the failing tests in the CI's <em>OS/software</em> environment by using the CI container image as follows:</p>
-<div class="highlight"><pre><span></span><code>*On the host (from the DAPHNE root directory):*
-```bash
-docker pull daphneeu/github-action
-docker run -it --rm -w /daphne -v &quot;$(pwd):/daphne&quot; daphneeu/github-action:latest bash
-```
-
-*In the container:*
-```bash
-# To avoid cmake complaints.
-./build.sh --clean -y
-# Build the test cases (effectively all targets) using pre-built dependencies.
-./build.sh --no-deps --target run_tests
-# Run the tests and print which test is running.
-./test.sh -nb -d yes
-```
-
-If the test failures cannot be reproduced that way, they are most likely not due to OS/software environment reasons.
+<p><em>On the host (from the DAPHNE root directory):</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>pull<span class="w"> </span>daphneeu/github-action
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>-w<span class="w"> </span>/daphne<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="s2">:/daphne&quot;</span><span class="w"> </span>daphneeu/github-action:latest<span class="w"> </span>bash
 </code></pre></div>
-<ul>
-<li><strong>Differences in the hardware setups of your system and the CI system.</strong>
+<p><em>In the container:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># To avoid cmake complaints.</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>./build.sh<span class="w"> </span>--clean<span class="w"> </span>-y
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Build the test cases (effectively all targets) using pre-built dependencies.</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>./build.sh<span class="w"> </span>--no-deps<span class="w"> </span>--target<span class="w"> </span>run_tests
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Run the tests and print which test is running.</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>./test.sh<span class="w"> </span>-nb<span class="w"> </span>-d<span class="w"> </span>yes
+</code></pre></div>
+<p>If the test failures cannot be reproduced that way, they are most likely not due to OS/software environment reasons.</p>
+</li>
+<li>
+<p><strong>Differences in the hardware setups of your system and the CI system.</strong>
     The CI machine may have a different processor model, a different number of physical/virtual cores, a different memory/disk capacity etc.
     These differences could potentially have an impact on race conditions, the numerical stability of results, etc.
-    Ideally, DAPHNE should behave well in a reasonable range of hardware setups.</li>
+    Ideally, DAPHNE should behave well in a reasonable range of hardware setups.</p>
+</li>
 </ul>
 <h2 id="writing-test-cases">Writing Test Cases</h2>
 <p><em>Coming soon!</em></p>
