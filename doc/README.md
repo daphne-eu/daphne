@@ -34,6 +34,7 @@
 - [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
 - [Logging in DAPHNE](/doc/development/Logging.md)
 - [Profiling in DAPHNE](/doc/development/Profiling.md)
+- [Testing](/doc/development/Testing.md)
 
 ### Source Code Documentation
 
