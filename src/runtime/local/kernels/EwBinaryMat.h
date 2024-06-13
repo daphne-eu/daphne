@@ -101,7 +101,10 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         else {
             throw std::runtime_error("EwBinaryMat(Dense) - lhs and rhs must either "
                 "have the same dimensions, or one of them must be a row/column vector "
-                "with the width/height of the other");
+                "with the width/height of the other, but lhs has shape (" +
+                std::to_string(numRowsLhs) + " x " + std::to_string(numColsLhs) +
+                ") and rhs has shape (" + std::to_string(numRowsRhs) + " x " +
+                std::to_string(numColsRhs) + ")");
         }
     }
 };

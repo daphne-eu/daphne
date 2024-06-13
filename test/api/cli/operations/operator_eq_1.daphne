@@ -1,0 +1,5 @@
+# Comparison of strings known at compile-time (could be evaluated at compile-time by constant folding).
+print("abc" == "abc");
+print("abc" == "ab" + "c");
+print("abc" == "def");
+print("abc" == "de" + "f");

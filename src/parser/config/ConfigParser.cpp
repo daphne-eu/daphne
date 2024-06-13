@@ -61,7 +61,7 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_USE_FIXED_TILE_SIZES))
         config.matmul_use_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_USE_FIXED_TILE_SIZES).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES))
-        config.matmul_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES).get<std::vector<unsigned>>(); 
+        config.matmul_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES).get<std::vector<unsigned>>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR))
         config.matmul_unroll_factor = jf.at(DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_JAM_FACTOR))
@@ -143,6 +143,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
     }
     if (keyExists(jf, DaphneConfigJsonParams::FORCE_CUDA))
         config.force_cuda = jf.at(DaphneConfigJsonParams::FORCE_CUDA).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::SPARSITY_THRESHOLD))
+        config.sparsity_threshold = jf.at(DaphneConfigJsonParams::SPARSITY_THRESHOLD).get<float>();
 }
 
 bool ConfigParser::keyExists(const nlohmann::json& j, const std::string& key) {

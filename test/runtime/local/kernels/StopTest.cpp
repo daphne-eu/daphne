@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The DAPHNE Consortium
+ * Copyright 2021 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#pragma once
+#include <runtime/local/kernels/Stop.h>
 
-#include <runtime/local/context/DaphneContext.h>
+#include <catch.hpp>
+#include "run_tests.h"
 
-#include <string_view>
-
-inline bool stringEq(const char *lhs, const char *rhs, DCTX(ctx)) {
-    return std::string_view(lhs) == std::string_view(rhs);
+TEST_CASE ("Stop - check throws") {
+    REQUIRE_THROWS_AS((stop("Custom Message", nullptr)), std::runtime_error);
 }

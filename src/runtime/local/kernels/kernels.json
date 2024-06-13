@@ -658,6 +658,8 @@
 
             [["DenseMatrix", "uint8_t"], "uint8_t"], 
 
+            [["DenseMatrix", "int64_t"], "size_t"],
+
             [["DenseMatrix", "bool"], "bool"],
 
             ["Frame", "double"],
@@ -721,13 +723,9 @@
         "kernelTemplate": {
             "header": "StringEq.h",
             "opName": "stringEq",
-            "returnType": "void",
+            "returnType": "bool",
             "templateParams": [],
             "runtimeParams": [
-                {
-                    "type": "bool *",
-                    "name": "res"
-                },
                 {
                     "type": "const char *",
                     "name": "lhs"
@@ -2567,6 +2565,21 @@
             [["DenseMatrix", "uint8_t"]],
             ["Frame"]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Stop.h",
+            "opName": "stop",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "const char *",
+                    "name": "message"
+                }
+            ]
+        },
+        "instantiations": [[]]
     },
     {
         "kernelTemplate": {

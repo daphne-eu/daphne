@@ -133,7 +133,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     if (selectMatrixRepresentations_)
         pm.addNestedPass<mlir::func::FuncOp>(
-            mlir::daphne::createSelectMatrixRepresentationsPass());
+            mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass(
             "IR after selecting matrix representations:"));

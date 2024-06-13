@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Fix working dir permissions
       run: chown root:root .
@@ -56,7 +56,7 @@ jobs:
       run: bin/daphne scripts/examples/hello-world.daph
 
     - name: 'Upload Artifact'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: daphne
         path: |

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The DAPHNE Consortium
+ * Copyright 2023 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@
 
 #include <runtime/local/context/DaphneContext.h>
 
-#include <string_view>
-
-inline bool stringEq(const char *lhs, const char *rhs, DCTX(ctx)) {
-    return std::string_view(lhs) == std::string_view(rhs);
+void stop(const char *message, DCTX(ctx)) {
+    throw std::runtime_error(std::string("system stopped: ") + message);
 }

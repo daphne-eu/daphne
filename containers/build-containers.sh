@@ -107,11 +107,6 @@ DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu${ubuntuVersion}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
 
-# testing new ubuntu base on dev images
-ubuntuVersion=22.04
-BASE_IMAGE=ubuntu:${ubuntuVersion}
-DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu${ubuntuVersion}
-build_daphne -dev
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_BASE
 ubuntuVersion=20.04
 
@@ -125,12 +120,6 @@ DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
 
-# testing new ubuntu base on dev images
-ubuntuVersion=22.04
-CUDA_TAG=${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}
-BASE_IMAGE=nvidia/cuda:$CUDA_TAG
-DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
-build_daphne -dev
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_CUDA
 ubuntuVersion=20.04
 
