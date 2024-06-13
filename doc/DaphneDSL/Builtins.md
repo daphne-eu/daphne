@@ -82,7 +82,7 @@ DaphneDSL's built-in functions can be categorized as follows:
 
     Generates a column matrix containing an arithmetic sequence of values starting at `from`, going through `to`, in increments of `inc`.
     Note that `from` may be greater than `to`, and `inc` may be negative.
-    The scalar `inc` is an optional argument and defaults to 1.
+    The scalar `inc` is an optional argument and defaults to `1`.
 
 ## Matrix/frame dimensions
 
