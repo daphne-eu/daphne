@@ -1078,6 +1078,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value filename = args[1];
         return builder.create<WriteOp>(loc, arg, filename).getOperation();
     }
+    if(func == "typeof") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+        mlir::Value arg = args[0];
+        return static_cast<mlir::Value>(builder.create<TypeOfOp>(loc, StringType::get(builder.getContext()), arg));
+    }
     if(func == "receiveFromNumpy") {
         checkNumArgsExact(loc, func, numArgs, 5);
         

@@ -2721,6 +2721,41 @@
     },
     {
         "kernelTemplate": {
+            "header": "TypeOf.h",
+            "opName": "typeof",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "char *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            ["size_t"],
+            ["double"],
+            ["float"],
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["bool"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "SaveDaphneLibResult.h",
             "opName": "saveDaphneLibResult",
             "returnType": "void",

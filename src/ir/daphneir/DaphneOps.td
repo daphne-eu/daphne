@@ -1356,6 +1356,11 @@ def Daphne_PrintOp : Daphne_Op<"print"> {
     let results = (outs); // no results
 }
 
+def Daphne_TypeOfOp : Daphne_Op<"typeof"> {
+    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame]>:$arg);
+    let results = (outs StrScalar:$res);
+}
+
 // TODO Take asynchronous read into account.
 def Daphne_ReadOp : Daphne_Op<"read", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
