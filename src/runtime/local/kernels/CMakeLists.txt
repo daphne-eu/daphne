@@ -15,7 +15,7 @@
 # Specifies how to generate the file "kernels.cpp" (which resides in the build
 # directory) as the basis for the pre-compiled kernels library.
 
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -82,7 +82,7 @@ add_custom_command(
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
 )
 
-list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
+list(APPEND LIBS DataStructures IO IO_URING_LIB BLAS::BLAS MLIRParser)
 
 set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels

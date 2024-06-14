@@ -554,6 +554,7 @@ fi
 #******************************************************************************
 # #8 Download and install third-party dependencies if requested (default is yes, omit with --no-deps))
 #******************************************************************************
+
 if [ $WITH_DEPS -gt 0 ]; then
     LLVM_ARCH=X86
     # optimizes for multiple x86_64 architectures
@@ -587,8 +588,9 @@ if [ $WITH_DEPS -gt 0 ]; then
 
 
     #------------------------------------------------------------------------------
-    # PAPI (Performance Application Programming Interface)
+    # 8.1 PAPI (Performance Application Programming Interface)
     #------------------------------------------------------------------------------
+
     papiDirName="papi-$papiVersion"
     papiTarName="${papiDirName}.tar.gz"
     papiInstDirName=$installPrefix
@@ -615,8 +617,9 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # hwloc
+    # 8.2 hwloc
     #------------------------------------------------------------------------------
+
     hwlocDirName="hwloc-$hwlocVersion"
     hwlocTarName="${hwlocDirName}.tar.gz"
     hwlocInstDirName=$installPrefix
@@ -639,8 +642,9 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.1 Antlr4 (parser)
+    # #8.3 Antlr4 (parser)
     #------------------------------------------------------------------------------
+
     antlrJarName="antlr-${antlrVersion}-complete.jar"
     antlrCppRuntimeDirName="antlr4-cpp-runtime-${antlrVersion}-source"
     antlrCppRuntimeZipName="${antlrCppRuntimeDirName}.zip"
@@ -691,10 +695,11 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.2 catch2 (unit test framework)
+    # #8.4 catch2 (unit test framework)
     #------------------------------------------------------------------------------
     # Download catch2 release zip (if necessary), and unpack the single header file
     # (if necessary).
+    
     catch2Name="catch2"
     catch2ZipName="v$catch2Version.zip"
     catch2SingleHeaderInstalledPath=$installPrefix/include/catch.hpp
@@ -716,8 +721,9 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.3 OpenBLAS (basic linear algebra subprograms)
+    # #8.5 OpenBLAS (basic linear algebra subprograms)
     #------------------------------------------------------------------------------
+    
     openBlasDirName="OpenBLAS-$openBlasVersion"
     openBlasZipName="${openBlasDirName}.zip"
     openBlasInstDirName=$installPrefix
@@ -742,8 +748,9 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.4 nlohmann/json (library for JSON parsing)
+    # #8.6 nlohmann/json (library for JSON parsing)
     #------------------------------------------------------------------------------
+    
     nlohmannjsonDirName=nlohmannjson
     nlohmannjsonSingleHeaderName=json.hpp
     dep_nlohmannjson=("nlohmannjson_v${nlohmannjsonVersion}" "v1")
@@ -759,8 +766,9 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.5 abseil (compiled separately to apply a patch)
+    # #8.7 abseil (compiled separately to apply a patch)
     #------------------------------------------------------------------------------
+    
     abslPath=$sourcePrefix/abseil-cpp
     dep_absl=("absl_v${abslVersion}" "v1")
 
@@ -782,8 +790,9 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.6 MPI (Default is MPI library is OpenMPI but cut can be any)
+    # #8.8 MPI (Default is MPI library is OpenMPI but cut can be any)
     #------------------------------------------------------------------------------
+    
     MPIZipName=openmpi-$openMPIVersion.tar.gz
     MPIInstDirName=$installPrefix
     dep_mpi=("openmpi_v${openMPIVersion}" "v1")
@@ -806,8 +815,9 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build OpenMPI again"
     fi
     #------------------------------------------------------------------------------
-    # #8.7 gRPC
+    # #8.9 gRPC
     #------------------------------------------------------------------------------
+
     grpcDirName="grpc"
     grpcInstDir=$installPrefix
     dep_grpc=("grpc_v${grpcVersion}" "v1")
@@ -844,9 +854,11 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build GRPC again."
     fi
+    
     #------------------------------------------------------------------------------
-    # #8.8 Arrow / Parquet
+    # #8.10 Arrow / Parquet
     #------------------------------------------------------------------------------
+    
     arrowDirName="apache-arrow-$arrowVersion"
     arrowArtifactFileName=$arrowDirName.tar.gz
     dep_arrow=("arrow_v${arrowVersion}" "v1")
@@ -880,9 +892,11 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build Arrow again."
     fi
+
     #------------------------------------------------------------------------------
-    # spdlog
+    # 8.11 spdlog
     #------------------------------------------------------------------------------
+
     spdlogDirName="spdlog-$spdlogVersion"
     spdlogArtifactFileName=$spdlogDirName.tar.gz
     if ! is_dependency_downloaded "spdlog_v${spdlogVersion}"; then
@@ -901,9 +915,11 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build spdlog again."
     fi
+
     #------------------------------------------------------------------------------
-    # Eigen
+    # 8.12 Eigen
     #------------------------------------------------------------------------------
+
     eigenDirName="eigen-${eigenVersion}"
     if ! is_dependency_downloaded "eigen_v${eigenVersion}"; then
       wget https://gitlab.com/libeigen/eigen/-/archive/${eigenVersion}/eigen-${eigenVersion}.tar.bz2 -qP "${cacheDir}"
@@ -922,7 +938,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.9 Build MLIR
+    # #8.13 Build MLIR
     #------------------------------------------------------------------------------
     # We rarely need to build MLIR/LLVM, only during the first build of the
     # prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
@@ -979,6 +995,41 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build MLIR/LLVM again."
     fi
+
+    #------------------------------------------------------------------------------
+    # 8.14 Liburing
+    #------------------------------------------------------------------------------
+
+    liburingDirName="liburing-$liburingVersion"
+    liburingTarName="${liburingDirName}.tar.gz"
+    liburingInstDirName=$installPrefix
+
+    liburing_cc=$([ "$CC" = "" ] && echo "gcc" || echo "$CC")
+    liburing_cxx=$([ "$CXX" = "" ] && echo "g++" || echo "$CXX")
+
+    if ! is_dependency_downloaded "liburing_v${liburingVersion}"; then
+        daphne_msg "Get liburing version ${liburingVersion}"
+        wget "https://github.com/axboe/liburing/archive/refs/tags/${liburingTarName}" \
+            -qO "${cacheDir}/${liburingTarName}"
+        mkdir "$sourcePrefix/$liburingDirName"
+        tar -xf "$cacheDir/$liburingTarName" -C "$sourcePrefix/$liburingDirName" --strip-components=1
+        dependency_download_success "liburing_v${liburingVersion}"
+    fi
+    if ! is_dependency_installed "liburing_v${liburingVersion}"; then
+        cd "$sourcePrefix/$liburingDirName"
+        ./configure --cc="$liburing_cc" --cxx="$liburing_cxx" --prefix="$liburingInstDirName"
+        make -j"$(nproc)"
+        cp ./src/liburing.a "$installPrefix/lib/"
+        cp -r ./src/include/* "$installPrefix/include"
+        cd - > /dev/null
+        dependency_install_success "liburing_v${liburingVersion}"
+    else
+        daphne_msg "No need to build liburing again."
+    fi
+
+    #------------------------------------------------------------------------------
+    # 8.14 Fetch bitstreams
+    #------------------------------------------------------------------------------
 
     if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
         FPGAOPENCL_BISTREAM_DIR="$projectRoot/src/runtime/local/kernels/FPGAOPENCL/bitstreams"
