@@ -322,8 +322,8 @@ TEST_CASE("CheckEq, frames", TAG_KERNELS) {
     }
     SECTION("diff inst, same schema, same cont, same labels") {
         auto c3 = genGivenVals<DenseMatrix<VT2>>(numRows, {VT2(8.8), VT2(9.9), VT2(1.0), VT2(2.0)});
-        std::string * labels1 =  new std::string[3] {"ab", "cde", "fghi"};
-        std::string * labels2 =  new std::string[3] {"ab", "cde", "fghi"};
+        auto labels1 =  new std::string[3] {"ab", "cde", "fghi"};
+        auto labels2 =  new std::string[3] {"ab", "cde", "fghi"};
         frame1 = DataObjectFactory::create<Frame>(cols, labels1);
         std::vector<Structure *> cols2 = {c0, c1, c3};
         auto frame2 = DataObjectFactory::create<Frame>(cols2, labels2);
@@ -333,8 +333,8 @@ TEST_CASE("CheckEq, frames", TAG_KERNELS) {
     }
     SECTION("diff inst, same schema, same cont, diff labels") {
         auto c3 = genGivenVals<DenseMatrix<VT2>>(numRows, {VT2(8.8), VT2(9.9), VT2(1.0), VT2(2.0)});
-        std::string * labels1 =  new std::string[3] {"ab", "cde", "fghi"};
-        std::string * labels2 =  new std::string[3] {"ab", "cde", "fxyz"};
+        auto labels1 =  new std::string[3] {"ab", "cde", "fghi"};
+        auto labels2 =  new std::string[3] {"ab", "cde", "fxyz"};
         frame1 = DataObjectFactory::create<Frame>(cols, labels1);
         std::vector<Structure *> cols2 = {c0, c1, c3};
         auto frame2 = DataObjectFactory::create<Frame>(cols2, labels2);
