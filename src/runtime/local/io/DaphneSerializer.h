@@ -608,7 +608,7 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
         if (chunkSize <= bufferIdx)
             return bufferIdx;
 
-        const size_t *colIdxs = arg->getColIdxs(0);
+        const size_t *colIdxs = arg->getColIdxsOfRow(0);
         if (serializeFromByte < serializationIdx + nzb * sizeof(size_t)) {
             size_t startOffset = serializeFromByte > serializationIdx ? serializeFromByte - serializationIdx : 0;
             size_t bytesToCopy = 0;
@@ -630,7 +630,7 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
         if (chunkSize <= bufferIdx)
             return bufferIdx;
 
-        const VT *vals = arg->getValues(0);
+        const VT *vals = arg->getRowValues(0);
         if (serializeFromByte < serializationIdx + nzb * sizeof(VT)) {
             size_t startOffset = serializeFromByte > serializationIdx ? serializeFromByte - serializationIdx : 0;
             size_t bytesToCopy = 0;

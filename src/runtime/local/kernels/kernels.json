@@ -3750,6 +3750,7 @@
             [["DenseMatrix", "uint8_t"]],
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
             ["Frame"]
         ]
     },

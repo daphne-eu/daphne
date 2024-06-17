@@ -23,20 +23,32 @@
 #include <atomic>
 
 /**
- * The DataPlacement struct binds an allocation descriptor to a range
+ * The DataPlacement struct binds allocation descriptors to a range
  * description and stores an ID of an instantiated object.
+ *
+ * The number of allocations varys depending on the data type (1 allocation of values of a dense matrix
+ * three allocations for values/col_idxs/row_ptrs of a CSR matrix)
  */
-struct DataPlacement {
+class DataPlacement {
     size_t dp_id;
 
     // used to generate object IDs
     static std::atomic_size_t instance_count;
 
-    std::unique_ptr<IAllocationDescriptor> allocation{};
+    std::vector<std::unique_ptr<IAllocationDescriptor>> allocations{};
 
     std::unique_ptr<Range> range{};
 
+  public:
     DataPlacement() = delete;
-    DataPlacement(std::unique_ptr<IAllocationDescriptor> _a, std::unique_ptr<Range> _r)
-        : dp_id(instance_count++), allocation(std::move(_a)), range(std::move(_r)) {}
+    DataPlacement(std::vector<std::unique_ptr<IAllocationDescriptor>> _a, std::unique_ptr<Range> _r)
+        : dp_id(instance_count++), allocations(std::move(_a)), range(std::move(_r)) {}
+
+    [[nodiscard]] size_t getID() const { return dp_id; }
+    std::string getLocation() { return allocations.front()->getLocation(); }
+    Range *getRange() { return range.get(); }
+    void setRange(Range *r) { range.reset(r); }
+    void setRange(std::unique_ptr<Range> r) { range = std::move(r); }
+    uint32_t getNumAllocations() { return allocations.size(); }
+    IAllocationDescriptor *getAllocation(uint32_t num) { return allocations[num].get(); }
 };

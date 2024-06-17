@@ -100,8 +100,8 @@ template <typename VT> struct Gemv<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<V
         memset(valuesRes, VT(0), sizeof(VT) * nr1 * nc2);
         for (size_t r = 0; r < nr1; r++) {
             const size_t rowNumNonZeros = mat->getNumNonZeros(r);
-            const size_t *rowColIdxs = mat->getColIdxs(r);
-            const VT *rowValues = mat->getValues(r);
+            const size_t *rowColIdxs = mat->getColIdxsOfRow(r);
+            const VT *rowValues = mat->getRowValues(r);
 
             const size_t rowIdxRes = r * rowSkipRes;
             for (size_t i = 0; i < rowNumNonZeros; i++) {

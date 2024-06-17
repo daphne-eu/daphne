@@ -125,7 +125,7 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
         }
 
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-            const VT *values = arg->getValues(rowIdx);
+            const VT *values = arg->getRowValues(rowIdx);
 
             const size_t numNonZerosInRow = arg->getNumNonZeros(rowIdx);
             for (size_t colIdx = 0; colIdx < numNonZerosInRow; colIdx++) {

@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/context/DistributedContext.h>
+
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #include <runtime/local/datastructures/Range.h>
@@ -54,8 +55,7 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
     // Here we provide the different implementations.
     // Another solution would be to make sure that every constructor is similar
     // so this would not be needed.
-    static ALLOCATOR CreateAllocatorDescriptor(DaphneContext *ctx, const std::string &addr,
-                                               const DistributedData &data) {
+    static ALLOCATOR CreateAllocatorDescriptor(DaphneContext* ctx, const std::string &addr, DistributedData& data) {
         if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorMPI>)
             return AllocationDescriptorMPI(std::stoi(addr), ctx, data);
         else if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorGRPC>)
@@ -106,25 +106,25 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
 
         DataPlacement *dp;
         if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(workerAddr))) {
-            auto data = dynamic_cast<ALLOCATOR &>(*(dp->allocation)).getDistributedData();
+            auto data = dynamic_cast<ALLOCATOR *>(dp->getAllocation(0))->getDistributedData();
 
             // Check if existing placement matches the same ranges we currently
             // need
             if (data.isPlacedAtWorker) {
-                auto existingRange = dp->range.get();
+                auto existingRange = dp->getRange();
                 if (*existingRange == range)
                     data.isPlacedAtWorker = true;
                 else {
-                    mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
+                    mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->getID(), &range);
                     data.isPlacedAtWorker = false;
                 }
             } else
-                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
+                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->getID(), &range);
             // TODO Currently we do not support distributing/splitting
             // by columns. When we do, this should be changed (e.g. Index(0,
             // taskIndex)) This can be decided based on DistributionSchema
             data.ix = GetDistributedIndex();
-            dynamic_cast<ALLOCATOR &>(*(dp->allocation)).updateDistributedData(data);
+            dynamic_cast<ALLOCATOR *>(dp->getAllocation(0))->updateDistributedData(data);
         } else { // Else, create new object metadata entry
             DistributedData data;
             // TODO Currently we do not support distributing/splitting
@@ -132,7 +132,9 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
             // taskIndex))
             data.ix = GetDistributedIndex();
             auto allocationDescriptor = CreateAllocatorDescriptor(dctx, workerAddr, data);
-            dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
+            std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+            allocations.emplace_back(&allocationDescriptor);
+            dp = mat->getMetaDataObject()->addDataPlacement(allocations, &range);
         }
         taskIndex++;
         return dp;
@@ -192,11 +194,13 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
                 // If dp already exists for this worker, update the range and
                 // data
                 if (auto dp = (*outputs[i])->getMetaDataObject()->getDataPlacementByLocation(workerAddr)) {
-                    (*outputs[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
-                    dynamic_cast<ALLOCATOR &>(*(dp->allocation)).updateDistributedData(data);
+                    (*outputs[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->getID(), &range);
+                    dynamic_cast<ALLOCATOR *>(dp->getAllocation(0))->updateDistributedData(data);
                 } else { // else create new dp entry
                     auto allocationDescriptor = CreateAllocatorDescriptor(dctx, workerAddr, data);
-                    ((*outputs[i]))->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
+                    std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+                    allocations.emplace_back(&allocationDescriptor);
+                    ((*outputs[i]))->getMetaDataObject()->addDataPlacement(allocations, &range);
                 }
             }
         }
