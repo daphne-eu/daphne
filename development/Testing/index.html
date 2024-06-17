@@ -14,7 +14,7 @@
       
       
       <link rel="icon" href="../../assets/logo_small.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.26">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
     
     
       
@@ -1326,6 +1326,63 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Writing Test Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview-of-the-testing-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview of the Testing Code
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing-script-level-test-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Writing Script-level Test Cases
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing-unit-test-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Writing Unit Test Cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing Unit Test Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests-for-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit Tests for Kernels
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations-and-outlook" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations and Outlook
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1476,6 +1533,63 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Writing Test Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview-of-the-testing-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview of the Testing Code
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing-script-level-test-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Writing Script-level Test Cases
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing-unit-test-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Writing Unit Test Cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing Unit Test Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests-for-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit Tests for Kernels
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations-and-outlook" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations and Outlook
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1506,7 +1620,7 @@ However, as it can be hard to trigger all possible uses of DAPHNE's internal C++
 <li><em>Script-level test cases</em>, which invoke the entire DAPHNE system with some input script file.</li>
 <li><em>Unit test cases</em>, which use individual C++ functions/classes of the DAPHNE source code.</li>
 </ol>
-<p>Both kinds of test cases are expressed using <a href="https://github.com/catchorg/Catch2">catch2</a>, a widely used C++ <strong>test framework</strong>.
+<p>Both kinds of test cases are expressed using <a href="https://github.com/catchorg/Catch2">catch2</a>, a widely used C++ <strong>testing framework</strong>.
 We use catch2 such that we don't need to reinvent the wheel for C++ testing (plus, learning about catch2 can help DAPHNE developers also in other software projects).
 Reading the <a href="https://github.com/catchorg/Catch2/blob/devel/docs/tutorial.md">catch2 documentation</a> is very worthwhile to better understand testing in DAPHNE.
 We use the same way to define tests for both script-level and unit tests to ensure a consistent test format and a unified test summary.</p>
@@ -1520,7 +1634,7 @@ To ensure that the code base passes the tests, the test suite is run as part of 
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># If you want to use pre-built dependencies (typical in a DAPHNE container):</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>./build.sh<span class="w"> </span>--no-deps<span class="w"> </span>--target<span class="w"> </span>run_tests<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./test.sh<span class="w"> </span>-nb
 </code></pre></div>
-<p>Ideally, the output looks as follows (the concrete number may have changed):</p>
+<p>Ideally, the output looks as follows (the concrete numbers may have changed):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>===============================================================================
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>All tests passed (416199 assertions in 1580 test cases)
 </code></pre></div>
@@ -1621,7 +1735,144 @@ Further information can be found there.</p>
 </li>
 </ul>
 <h2 id="writing-test-cases">Writing Test Cases</h2>
-<p><em>Coming soon!</em></p>
+<h3 id="overview-of-the-testing-code">Overview of the Testing Code</h3>
+<p>All testing code resides in the directory <code>test/</code>.
+The subdirectories of <code>test/</code> are (almost) the same as those of the source code directory <code>src/</code> and contain the test cases for the respective parts of the code base.</p>
+<ul>
+<li><code>test/</code><ul>
+<li><code>api/</code>: all script-level test cases<ul>
+<li><code>cli/</code>: command-line use of DAPHNE (DaphneDSL scripts)</li>
+<li><code>python</code>: Python API use of DAPHNE (DaphneLib Python scripts)</li>
+</ul>
+</li>
+<li><code>data/</code>: data sets to be used in script-level test cases</li>
+<li><code>codegen/</code>, <code>ir/</code>, <code>parser/</code>, <code>runtime/</code> (all remaining subdirectories): all unit test cases</li>
+<li><code>CMakeLists.txt</code>: list of all <code>cpp</code>-files containing test cases</li>
+<li><code>run_tests.h</code>/<code>.cpp</code>: source code of the test executable <code>run_tests</code> (including the catch2 main function), <em>rarely needs editing</em></li>
+<li><code>tags.h</code>: list of all test case tags</li>
+</ul>
+</li>
+</ul>
+<p>In the following, we give an <strong>overview on writing test cases</strong> in DAPHNE.
+The main goal is to enable developers to understand the way we write test cases in DAPHNE, rather than providing a detailed tutorial.
+<strong><em>There is already a multitude of existing test cases that can serve as concrete examples to learn from.</em></strong></p>
+<p><strong>To add a new test case</strong>, first identify the right spot in the directory hierarchy.
+Then, either create a new <code>*Test.cpp</code>-file (and add it to <code>test/CMakeLists.txt</code>) or extend an existing one.
+Within this <code>*Test.cpp</code>-file, you can add any logic required to perform your test, including helper functions etc.
+Create the individual <a href="https://github.com/catchorg/Catch2/blob/devel/docs/test-cases-and-sections.md">catch2 test cases</a> with macros like <code>TEST_CASE</code>, <code>TEMPLATE_TEST_CASE</code> and <code>TEMPLATE_PRODUCT_TEST_CASE</code>.
+Inside a test case, you can implement whatever you need to (a) set up the test fixture, (b) invoke the components to test, and (c) free any allocated resources.
+While test cases can be totally custom, we comment on frequent cases below.</p>
+<h3 id="writing-script-level-test-cases">Writing Script-level Test Cases</h3>
+<p><strong>Script-level test cases</strong> test the end-to-end use of DAPHNE by invoking DaphneDSL or DaphneLib scripts like users do.
+That way, we can involve the entire DAPHNE parser, compiler, and runtime stack into the test case.
+To that end, we invoke the <code>daphne</code> executable (DaphneDSL scripts) or <code>python3</code> (DaphneLib scripts) as separate processes from our C++ test cases, pass them all required arguments, and capture their status code as well as their output to <code>stdout</code> and <code>stderr</code>.
+We typically check if a given DaphneDSL/DaphneLib script:</p>
+<ol>
+<li>parses, compiles, and executes successfully (or fails in the expected way) (status code)</li>
+<li>yields the expected output (<code>stdout</code> and <code>stderr</code>)</li>
+</ol>
+<p>We offer a <strong>hierarchy of utilities</strong> for common tasks in <code>test/api/cli/Utils.h</code>/<code>.cpp</code>.
+These utilities work at slightly different abstraction levels.
+In case there is no utility function that exactly solves your case, you can still compose the lower-level utlities.
+In the following, we list just the most important ones, see the mentioned file for a detailed reference.</p>
+<ul>
+<li>
+<p><strong><code>runProgram</code></strong><code>(std::stringstream &amp; out, std::stringstream &amp; err, const char * execPath, Args ... args)</code></p>
+<p>Executes the specified program with the given arguments and captures <code>stdout</code>, <code>stderr</code>, and the status code.</p>
+<p>This is the basis for the other utility functions.</p>
+</li>
+<li>
+<p><strong><code>runDaphne</code></strong><code>(std::stringstream &amp; out, std::stringstream &amp; err, Args ... args)</code></p>
+<p>Executes DAPHNE's command line interface with the given arguments and captures <code>stdout</code>, <code>stderr</code>, and the status code.</p>
+</li>
+<li>
+<p><strong><code>runDaphneLib</code></strong><code>(std::stringstream &amp; out, std::stringstream &amp; err, const char * scriptPath, Args ... args)</code></p>
+<p>Executes the given Python script with the <code>python3</code> interpreter and captures <code>stdout</code>, <code>stderr</code>, and the status code.</p>
+</li>
+<li>
+<p><strong><code>runLIT</code></strong><code>(std::stringstream &amp;out, std::stringstream &amp;err, std::string dirPath,            Args... args)</code></p>
+<p>Executes the "run-lit.py" Python script in a directory and captures <code>stdout</code>, <code>stderr</code>, and the status code.</p>
+<p>Used for tests of <code>mlir</code>-files.</p>
+</li>
+<li>
+<p><strong><code>checkDaphneStatusCode</code></strong><code>(StatusCode exp, const std::string &amp; scriptFilePath, Args ... args)</code></p>
+<p>Checks whether executing the given DaphneDSL script with the command line interface of DAPHNE returns the given status code.</p>
+</li>
+<li>
+<p><strong><code>checkDaphneFails</code></strong><code>(const std::string &amp; scriptFilePath, Args ... args)</code></p>
+<p>Checks whether executing the given DaphneDSL script with the command line interface of DAPHNE fails.</p>
+</li>
+<li>
+<p><strong><code>compareDaphneToStr</code></strong><code>(const std::string &amp; exp, const std::string &amp; scriptFilePath, Args ... args)</code></p>
+<p>Compares the standard output of executing the given DaphneDSL script with the command line interface of DAPHNE to a reference text.</p>
+</li>
+<li>
+<p><strong><code>compareDaphneToRef</code></strong><code>(const std::string &amp; refFilePath, const std::string &amp; scriptFilePath, Args ... args)</code></p>
+<p>Compares the standard output of executing the given DaphneDSL script with the command line interface of DAPHNE to a reference text file.</p>
+</li>
+<li>
+<p><strong><code>compareDaphneToDaphneLib</code></strong><code>(const std::string &amp; pythonScriptFilePath, const std::string &amp; daphneDSLScriptFilePath, Args ... args)</code></p>
+<p>Compares the standard output of the given DaphneDSL script with that of the given Python/DaphneLib script.</p>
+</li>
+<li>
+<p><strong><code>compareDaphneToSelfRef</code></strong><code>(const std::string &amp;expScriptFilePath, const std::string &amp;actScriptFilePath, Args ... args)</code></p>
+<p>Compares the standard output of executing a given DaphneDSL script with the command line interface of DAPHNE to a (simpler) DaphneDSL script defining the expected behavior.</p>
+</li>
+</ul>
+<p><strong>Some more hints:</strong></p>
+<ul>
+<li>The <code>.cpp</code>-files of the DaphneDSL script-level test cases often define macros like <code>MAKE_TEST_CASE</code> and <code>MAKE_FAILURE_TEST_CASE</code>. These wrap the test case creation such that we can easily create families of similar test cases.</li>
+<li>Many of the script-level test cases have no highly descriptive names as that would be cumbersome. Instead, they are typically numbered. In that context, several of the utility functions mentioned above have a variant suffixed with <code>Simple</code> (e.g., <code>compareDaphneToRefSimple()</code>), which assumes a certain naming scheme of the test cases.</li>
+<li>Please put a comment line at the top of each DaphneDSL/DaphneLib script used in a script-level test case that briefly explains what is being tested. Note that the purpose of the test is otherwise not always obvious. Putting a comment helps to keep the test case up-to-date when the DAPHNE system changes.</li>
+<li>When using hand-written reference text files (e.g., with <code>compareDaphneToRef()</code>), note that there usually needs to be a newline at the end of the text file, as the DAPHNE output typically also ends with a newline. Otherwise, the test case fails even though the actual and expected outputs look quite similar at first glance.</li>
+</ul>
+<h3 id="writing-unit-test-cases">Writing Unit Test Cases</h3>
+<p>Unit test cases invoke individual C++ components of DAPHNE in isolation to test their behavior in various situations.
+We use unit tests mainly for internal data structures, kernels, file readers/writers, as well as some pieces of the DAPHNE compiler.</p>
+<h4 id="unit-tests-for-kernels">Unit Tests for Kernels</h4>
+<p>Unit tests for kernels are the most frequent kind of unit test case in DAPHNE.
+These tests reside in <code>test/runtime/local/kernels/</code>.
+For each DaphneIR operation <code>Xyz</code> (i.e., per <code>Xyz.h</code> in <code>src/runtime/local/kernels/</code>), there is one <code>XyzTest.cpp</code>-file.
+<a href="/daphne/development/ImplementBuiltinKernel">DAPHNE's kernels</a> make extensive use of C++ template metaprogramming.
+Thus, the test cases are usually defined by catch2's <code>TEMPLATE_TEST_CASE</code> or <code>TEMPLATE_PRODUCT_TEST_CASE</code>, but some also use the plain <code>TEST_CASE</code>.</p>
+<p>The <strong>typical structure</strong> of a unit test case for a kernel is as follows:</p>
+<ol>
+<li><em>Define multiple pairs of inputs and expected outputs.</em> These should include various regular and corner cases as well as cases with invalid arguments. <a href="https://github.com/catchorg/Catch2/blob/devel/docs/test-cases-and-sections.md">catch2 SECTION</a>s can be used to define such cases very concisely, with minimal code duplication.</li>
+<li><em>Call the kernel under test as a C++ function</em> with the given inputs and obtain the outputs.</li>
+<li><em>Compare the actual and expected outputs.</em> To this end, catch2 offers various <a href="https://github.com/catchorg/Catch2/blob/devel/docs/assertions.md">assertion macros</a>, such as <code>CHECK</code>, <code>REQUIRE</code>, <code>CHECK_FALSE</code>, <code>CHECK_THROWS</code> etc. In DAPHNE, the <code>==</code> operator can be used to compare entire DAPHNE matrices and frames, e.g., <code>*exp == *res</code>. The <code>checkEqApprox</code>-kernel can be used to take floating-point round-off errors into account when comparing DAPHNE data objects.</li>
+<li><em>Destroy all created data objects exactly once</em> using <code>DataObjectFactory::destroy()</code>.</li>
+</ol>
+<p>For steps 2 and 3, we often employ a separate <code>checkXyz()</code> helper function.</p>
+<p><strong>Some more hints:</strong></p>
+<ul>
+<li>Don't encode the types provided by <code>TEMPLATE_TEST_CASE</code> and <code>TEMPLATE_PRODUCT_TEST_CASE</code> in the test name manually; catch2 appends them automatically.</li>
+<li>The type of a particular instantiation of a <code>TEMPLATE_TEST_CASE</code> or <code>TEMPLATE_PRODUCT_TEST_CASE</code> is available as <code>TestType</code> within the test case. DAPHNE matrices further expose their value type as a member type <code>VT</code> (e.g., <code>TestType::VT</code>) and offer <code>withValueType&lt;VT&gt;</code> as a utility for getting the same data type with a different value type (e.g., <code>TestType::WithValueType&lt;double&gt;</code>). Furthermore, utilities from the STL header <code>&lt;type_traits&gt;</code> can be very helpful to manipulate C++ types.</li>
+<li>Small test matrices with hardcoded elements can easily be created by <code>genGivenVals()</code> (see <code>src/runtime/datagen/GenGivenVals.h</code>).</li>
+<li>All kernels (except for <code>createDaphneContext</code>) expect a <code>DaphneContext</code> as their last parameter. In the context of an invocation of the <code>daphne</code> executable, the <code>DaphneContext</code> is normally provided by the DAPHNE compiler/runtime. In unit test cases, it is typically fine to simply pass a <code>nullptr</code> as the context.</li>
+<li>Try to write the checks in a way such that catch2 produces helpful outputs in case of a failure. For instance, to check if a string <code>s</code> is empty, don't use <code>CHECK(s.empty())</code>, but rather do <code>CHECK(s == "")</code>, since the latter will include the contents of <code>s</code> in the failure indication, which is usually quite helpful. Furthermore, be aware that <code>REQUIRE</code> stops the test case execution on a failure, which also means that the following checks (which might produce helpful error indications) are not performed. Thus, consider using <code>CHECK</code> instead and use <code>REQUIRE</code> only when the following checks would not even be well-defined (e.g., you could require that something is not a <code>nullptr</code>).</li>
+</ul>
+<h2 id="limitations-and-outlook">Limitations and Outlook</h2>
+<p>DAPHNE's test suite is continuously under development and contributions are always welcome.
+Open topics include, but are not limited to:</p>
+<ul>
+<li><strong>Better test coverage</strong><ul>
+<li><em>Unit tests for kernels:</em><ul>
+<li>Systematic tests with view as inputs</li>
+<li>Systematic tests with zero-row/column inputs</li>
+<li>Systematic tests with invalid inputs</li>
+</ul>
+</li>
+<li><em>Script-level tests</em><ul>
+<li>Systematic tests with all combinations of arguments</li>
+<li>DSL fuzzing for testing a multitude of valid DaphneDSL/DaphneLib scripts</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Comparison to baseline systems</strong> to check correctness for complex scripts beyond hand-written expected results</li>
+<li><strong>Performance regression tests</strong> (see #208)</li>
+<li><strong>Specification of test cases</strong>: more concise ways, especially for many small script-level test cases</li>
+</ul>
 
 
 
