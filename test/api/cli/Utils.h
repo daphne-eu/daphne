@@ -176,7 +176,7 @@ pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ...
 }
 
 /**
- * @brief Executes the "run-lit.py" python script in a directory and
+ * @brief Executes the "run-lit.py" Python script in a directory and
  * captures `stdout`, `stderr`, and the status code.
  *
  * "run-lit.py" is required to run the LLVM tool llvm-lit in order to
@@ -240,7 +240,7 @@ int runDaphneLib(std::stringstream & out, std::stringstream & err, const char * 
 
 /**
  * @brief Checks whether executing the given DaphneDSL script with the command
- * line interface of the DAPHNE Prototype returns the given status code.
+ * line interface of DAPHNE returns the given status code.
  * 
  * @param exp The expected status code.
  * @param scriptFilePath The path to the DaphneDSL script file to execute.
@@ -265,7 +265,7 @@ void checkDaphneStatusCodeSimple(StatusCode exp, const std::string & dirPath, co
 
 /**
  * @brief Checks whether executing the given DaphneDSL script with the command
- * line interface of the DAPHNE Prototype fails.
+ * line interface of DAPHNE fails.
  * 
  * This is the case when the return code is not `StatusCode::SUCCESS`.
  * 
@@ -291,7 +291,7 @@ void checkDaphneFailsSimple(const std::string & dirPath, const std::string & nam
 
 /**
  * @brief Compares the standard output of executing the given DaphneDSL script
- * with the command line interface of the DAPHNE Prototype to a reference text.
+ * with the command line interface of DAPHNE to a reference text.
  * 
  * Also checks that the status code indicates a successful execution and that
  * nothing was printed to standard error.
@@ -362,7 +362,7 @@ void compareDaphneRunsNumerically(std::stringstream &left,
 
 /**
  * @brief Checks if the numerical values in the standard output of the given
- * DaphneDSL script run with the command line interface of the DAPHNE Prototype
+ * DaphneDSL script run with the command line interface of DAPHNE
  * are within a relative distance to a reference text.
  *
  * Also checks that the status code indicates a successful execution and that
@@ -395,7 +395,7 @@ void compareDaphneToStringNumerically(const std::string &exp,
 
 /**
  * @brief Compares the standard output of executing the given DaphneDSL script
- * with the command line interface of the DAPHNE Prototype to a reference text
+ * with the command line interface of DAPHNE to a reference text
  * file.
  * 
  * Also checks that the status code indicates a successful execution and that
@@ -499,7 +499,7 @@ void compareDaphneToDaphneLibSimple(const std::string & dirPath, const std::stri
 
 /**
  * @brief Compares the standard output of executing a given DaphneDSL script
- * with the command line interface of the DAPHNE Prototype, to a (simpler) DaphneDSL
+ * with the command line interface of DAPHNE, to a (simpler) DaphneDSL
  * script defining the expected behaviour.
  *
  * Also checks that the status code indicates a successful execution and that
