@@ -26,27 +26,24 @@
 
 class AllocationDescriptorMPI : public IAllocationDescriptor {
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_MPI;
-    int processRankID;
-    DaphneContext* ctx;
+    int processRankID{};
+    DaphneContext* ctx{};
     DistributedData distributedData;
     std::shared_ptr<std::byte> data;
 
 public:
-    AllocationDescriptorMPI() {} ;
-    AllocationDescriptorMPI(int id,
-                            DaphneContext* ctx, 
-                            DistributedData data) :  processRankID(id), ctx(ctx), distributedData(data) {} ;
+    AllocationDescriptorMPI() = default;
+    AllocationDescriptorMPI(int id, DaphneContext* ctx, DistributedData& data) :  processRankID(id), ctx(ctx),
+            distributedData(data) {}
 
-    ~AllocationDescriptorMPI() override {};
+    ~AllocationDescriptorMPI() override = default;
 
-    [[nodiscard]] ALLOCATION_TYPE getType() const override 
-    { return type; };
+    [[nodiscard]] ALLOCATION_TYPE getType() const override { return type; };
     
-    std::string getLocation() const override {
-        return std::to_string(processRankID); 
-    };
-    
-    void createAllocation(size_t size, bool zero) override {} ;
+    [[nodiscard]] std::string getLocation() const override { return std::to_string(processRankID); };
+
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor>  createAllocation(size_t size, bool zero) const override {}
+
     std::shared_ptr<std::byte> getData() override {return nullptr;} ;
 
     bool operator==(const IAllocationDescriptor* other) const override {
@@ -62,14 +59,13 @@ public:
     void transferTo(std::byte *src, size_t size) override { /* TODO */ };
     void transferFrom(std::byte *src, size_t size) override { /* TODO */ };
 
-    const DistributedIndex getDistributedIndex()
-    { return distributedData.ix; }    
-    const DistributedData getDistributedData()
-    { return distributedData; }
-    void updateDistributedData(DistributedData data_)
-    { distributedData = data_; }
-    int getRank()
-    { return processRankID; }
+    DistributedIndex getDistributedIndex() const { return distributedData.ix; }
+
+    DistributedData getDistributedData() { return distributedData; }
+
+    void updateDistributedData(DistributedData& data_) { distributedData = data_; }
+
+    int getRank() const { return processRankID; }
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H

@@ -96,11 +96,12 @@ class DenseMatrix : public Matrix<ValueType>
             int64_t colUpperExcl);
 
     /**
-     * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
+     * @brief Creates a `DenseMatrix` around an existing `DenseMatrix` without copying the data.
+     *        This is used in transpose and reshape operations for example;
      *
      * @param numRows The exact number of rows.
      * @param numCols The exact number of columns.
-     * @param values A `std::shared_ptr` to an existing array of values.
+     * @param src A source matrix
      */
     DenseMatrix(size_t numRows, size_t numCols, const DenseMatrix<ValueType>* src);
 
@@ -119,10 +120,10 @@ class DenseMatrix : public Matrix<ValueType>
             const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
             const size_t endPosExcl = pos(rowIdx, colIdx);
             if(startPosIncl < endPosExcl)
-                memset(values.get() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
+                memset(getValues() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
         }
         else {
-            auto v = values.get() + lastAppendedRowIdx * rowSkip;
+            auto v = getValues() + lastAppendedRowIdx * rowSkip;
             memset(v + lastAppendedColIdx + 1, 0, (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
             v += rowSkip;
             for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
@@ -136,39 +137,9 @@ class DenseMatrix : public Matrix<ValueType>
 
     void printValue(std::ostream & os, ValueType val) const;
 
-    void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
+    void alloc_shared_values(bool zero = false, std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
 
-
-    /**
-     * @brief The getValuesInternal method fetches a pointer to an allocation of values. Optionally a sub range
-     * can be specified.
-     *
-     * This method is called by the public getValues() methods either in const or non-const fashion. The const version
-     * returns a data pointer that is meant to be read-only. Read only access updates the list of up-to-date
-     * allocations (the latest_versions "list"). This way several copies of the data in various allocations can be
-     * kept without invalidating their copy. If the read write version of getValues() is used, the latest_versions
-     * list is cleared because a write to an allocation is assumed, which renders the other allocations of the
-     * same data out of sync.
-     *
-     * @param alloc_desc An instance of an IAllocationDescriptor derived class that is used to specify what type of
-     * allocation is requested. If no allocation descriptor is provided, a host allocation (plain main memory) is
-     * assumed by default.
-     *
-     * @param range An optional range describing which rows and columns of a matrix-like structure are requested.
-     * By default this is null and means all rows and columns.
-     * @return A tuple of three values is returned:
-     *         1: bool - is the returend allocation in the latest_versions list
-     *         2: size_t - the ID of the data placement (a structure relating an allocation to a range)
-     *         3: ValueType* - the pointer to the actual data
-     */
-
-    auto getValuesInternal(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr)
-    -> std::tuple<bool, size_t, ValueType*>;
-    
     [[nodiscard]] size_t offset() const { return this->row_offset * rowSkip + this->col_offset; }
-    
-    
-    ValueType* startAddress() const { return isPartialBuffer() ?  values.get() + offset() : values.get(); }
 
 public:
 
@@ -204,13 +175,7 @@ public:
      * @param range A Range object describing optionally requesting a sub range of a data structure.
      * @return A pointer to the data in the requested memory space
      */
-    const ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const
-    {
-        auto[isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
-        if(!isLatest)
-            this->mdo->addLatest(id);
-        return ptr;
-    }
+    const ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const;
 
     /**
      * @brief Fetch a pointer to the data held by this structure meant for read-write access.
@@ -221,22 +186,19 @@ public:
      * @param alloc_desc An allocation descriptor describing which type of memory is requested (e.g. main memory in
      * the current system, memory in an accelerator card or memory in another host)
      *
+     *
      * @param range A Range object describing optionally requesting a sub range of a data structure.
      * @return A pointer to the data in the requested memory space
      */
-    ValueType* getValues(IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
-        auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range);
-        if(!isLatest)
-            this->mdo->setLatest(id);
-        return ptr;
-    }
+    ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr);
     
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
         return values;
     }
     
     ValueType get(size_t rowIdx, size_t colIdx) const override {
-        return getValues()[pos(rowIdx, colIdx, isPartialBuffer())];
+        auto position = pos(rowIdx, colIdx, isPartialBuffer());
+        return getValues()[position];
     }
     
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
@@ -247,7 +209,7 @@ public:
     void prepareAppend() override {
         // The matrix might be empty.
         if (numRows != 0 && numCols != 0)
-            values.get()[0] = ValueType(0);
+            getValues()[0] = ValueType(0);
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
     }
@@ -256,7 +218,7 @@ public:
         // Set all cells since the last one that was appended to zero.
         fillZeroUntil(rowIdx, colIdx);
         // Set the specified cell.
-        values.get()[pos(rowIdx, colIdx)] = value;
+        getValues()[pos(rowIdx, colIdx)] = value;
         // Update append state.
         lastAppendedRowIdx = rowIdx;
         lastAppendedColIdx = colIdx;
@@ -302,41 +264,7 @@ public:
 
     [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
 
-    bool operator==(const DenseMatrix<ValueType> & rhs) const {
-        // Note that we do not use the generic `get` interface to matrices here since
-        // this operator is meant to be used for writing tests for, besides others,
-        // those generic interfaces.
-        
-        if(this == &rhs)
-            return true;
-        
-        const size_t numRows = this->getNumRows();
-        const size_t numCols = this->getNumCols();
-        
-        if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
-            return false;
-        
-        const ValueType* valuesLhs = this->getValues();
-        const ValueType* valuesRhs = rhs.getValues();
-        
-        const size_t rowSkipLhs = this->getRowSkip();
-        const size_t rowSkipRhs = rhs.getRowSkip();
-        
-        if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
-            return true;
-        
-        if(rowSkipLhs == numCols && rowSkipRhs == numCols)
-            return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
-        else {
-            for(size_t r = 0; r < numRows; r++) {
-                if(memcmp(valuesLhs, valuesRhs, numCols * sizeof(ValueType)))
-                    return false;
-                valuesLhs += rowSkipLhs;
-                valuesRhs += rowSkipRhs;
-            }
-            return true;
-        }
-    }
+    bool operator==(const DenseMatrix<ValueType> & rhs) const;
 
     size_t serialize(std::vector<char> &buf) const override;
 };
