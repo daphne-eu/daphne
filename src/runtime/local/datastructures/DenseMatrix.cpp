@@ -60,165 +60,75 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
         Matrix<ValueType>(maxNumRows, numCols), is_view(false), rowSkip(numCols),
         bufferSize(numRows*numCols*sizeof(ValueType)), lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
-    DataPlacement* new_data_placement;
-    if(allocInfo != nullptr) {
-        spdlog::debug("Creating {} x {} dense matrix of type: {}. Required memory: {} Mb",
-                numRows, numCols, static_cast<int>(allocInfo->getType()),
-                static_cast<float>(getBufferSize()) / (1048576));
-
-        new_data_placement = this->mdo->addDataPlacement(allocInfo);
-        new_data_placement->allocation->createAllocation(getBufferSize(), zero);
+    std::unique_ptr<IAllocationDescriptor> val_alloc;
+    if(!allocInfo) {
+        alloc_shared_values(zero);
+        auto bytes = std::reinterpret_pointer_cast<std::byte>(values);
+        val_alloc = AllocationDescriptorHost::createHostAllocation(bytes, getBufferSize(), zero);
     }
     else {
-        AllocationDescriptorHost myHostAllocInfo;
-        alloc_shared_values();
-        if(zero)
-            memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
-        new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
+        val_alloc = allocInfo->createAllocation(getBufferSize(), zero);
+
+        // ToDo: refactor data storage into memory management
+        if(allocInfo->getType() == ALLOCATION_TYPE::HOST) {
+            alloc_shared_values(zero);
+
+            auto bytes = std::reinterpret_pointer_cast<std::byte>(values);
+            dynamic_cast<AllocationDescriptorHost *>(val_alloc.get())->setData(bytes);
+        }
     }
-    this->mdo->addLatest(new_data_placement->dp_id);
+    spdlog::debug("Creating {} x {} dense matrix of type: {}. Required memory: {} Mb", numRows, numCols,
+            val_alloc->getTypeName(), static_cast<float>(getBufferSize()) / (1048576));
+
+    std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+    allocations.emplace_back(std::move(val_alloc));
+    auto p = this->mdo->addDataPlacement(allocations);
+    this->mdo->addLatest(p->getID());
 }
 
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values) :
         Matrix<ValueType>(numRows, numCols), is_view(false), rowSkip(numCols), values(values),
         bufferSize(numRows*numCols*sizeof(ValueType)), lastAppendedRowIdx(0), lastAppendedColIdx(0)  {
-    AllocationDescriptorHost myHostAllocInfo;
-    DataPlacement* new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
-    this->mdo->addLatest(new_data_placement->dp_id);
+    auto bytes = std::reinterpret_pointer_cast<std::byte>(values);
+
+    std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+    auto vec_alloc = AllocationDescriptorHost::createHostAllocation(bytes, getBufferSize(), false);
+    allocations.emplace_back(std::move(vec_alloc));
+
+    auto p = this->mdo->addDataPlacement(allocations);
+    this->mdo->addLatest(p->getID());
 }
 
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, int64_t rowLowerIncl, int64_t rowUpperExcl,
         int64_t colLowerIncl, int64_t colUpperExcl) : Matrix<ValueType>(rowUpperExcl - rowLowerIncl,
-        colUpperExcl - colLowerIncl),  is_view(true), bufferSize(numRows*numCols*sizeof(ValueType)),
-        lastAppendedRowIdx(0), lastAppendedColIdx(0)
-{
+        colUpperExcl - colLowerIncl),  is_view(true), rowSkip(src->rowSkip), bufferSize(numRows*numCols*sizeof(ValueType)),
+        lastAppendedRowIdx(0), lastAppendedColIdx(0) {
     validateArgs(src, rowLowerIncl, rowUpperExcl, colLowerIncl, colUpperExcl);
     
-    this->row_offset = rowLowerIncl;
-    this->col_offset = colLowerIncl;
-    rowSkip = src->rowSkip;
+    this->row_offset = isView() ? src->row_offset + rowLowerIncl : rowLowerIncl;
+    this->col_offset = isView() ? src->col_offset + colLowerIncl : colLowerIncl;
 
     // ToDo: manage host mem (values) in a data placement
     if(src->values) {
-        alloc_shared_values(src->values, offset());
         bufferSize = numRows*rowSkip*sizeof(ValueType);
+        this->values = src->values;
     }
-    this->clone_mdo(src);
+    this->mdo = src->mdo;
 }
 
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, const DenseMatrix<ValueType> *src) :
-        Matrix<ValueType>(numRows, numCols), is_view(false), rowSkip(numCols),
+        Matrix<ValueType>(numRows, numCols), is_view(src->is_view), rowSkip(src->getRowSkip()),
         bufferSize(numRows*numCols*sizeof(ValueType)), lastAppendedRowIdx(0), lastAppendedColIdx(0) {
-    if(src->values)
-        values = src->values;
-    this->clone_mdo(src);
-}
+    if(!is_view)
+        rowSkip = numCols;
 
-template<typename ValueType>
-auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* alloc_desc, const Range* range)
-        -> std::tuple<bool, size_t, ValueType*> {
-    // If no range information is provided we assume the full range that this matrix covers
-    if(range == nullptr || *range == Range(*this)) {
-        if(alloc_desc) {
-            auto ret = this->mdo->findDataPlacementByType(alloc_desc, range);
-            if(!ret) {
-                // find other allocation type X (preferably host allocation) to transfer from in latest_version
-
-                // tuple content: <is latest, latest-id, ptr-to-data-placement>
-                std::tuple<bool, size_t, ValueType *> result = std::make_tuple(false, 0, nullptr);
-                auto latest = this->mdo->getLatest();
-                DataPlacement *placement;
-                for (auto &placement_id: latest) {
-                    placement = this->mdo->getDataPlacementByID(placement_id);
-                    if(placement->range == nullptr || *(placement->range) == Range{0, 0, this->getNumRows(),
-                            this->getNumCols()}) {
-                        std::get<0>(result) = true;
-                        std::get<1>(result) = placement->dp_id;
-                        // prefer host allocation
-                        if(placement->allocation->getType() == ALLOCATION_TYPE::HOST) {
-                            std::get<2>(result) = reinterpret_cast<ValueType *>(values.get());
-                            break;
-                        }
-                    }
-                }
-
-                // if we found a data placement that is not in host memory, transfer it there before returning
-                if(std::get<0>(result) == true && std::get<2>(result) == nullptr) {
-                    AllocationDescriptorHost myHostAllocInfo;
-                    if(!values)
-                        this->alloc_shared_values();
-                    this->mdo->addDataPlacement(&myHostAllocInfo);
-                    placement->allocation->transferFrom(reinterpret_cast<std::byte *>(startAddress()), getBufferSize());
-                    std::get<2>(result) = startAddress();
-                }
-
-                // create new data placement
-                auto new_data_placement = const_cast<DenseMatrix<ValueType> *>(this)->mdo->addDataPlacement(alloc_desc);
-                new_data_placement->allocation->createAllocation(getBufferSize(), false);
-
-                // transfer to requested data placement
-                new_data_placement->allocation->transferTo(reinterpret_cast<std::byte *>(startAddress()), getBufferSize());
-                return std::make_tuple(false, new_data_placement->dp_id, reinterpret_cast<ValueType *>(
-                        new_data_placement->allocation->getData().get()));
-            }
-            else {
-                bool latest = this->mdo->isLatestVersion(ret->dp_id);
-                if(!latest) {
-                    ret->allocation->transferTo(reinterpret_cast<std::byte *>(startAddress()), getBufferSize());
-                }
-                return std::make_tuple(latest, ret->dp_id, reinterpret_cast<ValueType *>(ret->allocation->getData()
-                        .get()));
-            }
-        }
-        else {
-            // if no alloc info was provided we try to get/create a full host allocation and return that
-            std::tuple<bool, size_t, ValueType *> result = std::make_tuple(false, 0, nullptr);
-            auto latest = this->mdo->getLatest();
-            DataPlacement *placement;
-            for (auto &placement_id: latest) {
-                placement = this->mdo->getDataPlacementByID(placement_id);
-                
-                // only consider allocations covering full range of matrix
-                if(placement->range == nullptr || *(placement->range) == Range{this->row_offset, this->col_offset,
-                        this->getNumRows(), this->getNumCols()}) {
-                    std::get<0>(result) = true;
-                    std::get<1>(result) = placement->dp_id;
-                    // prefer host allocation
-                    if(placement->allocation->getType() == ALLOCATION_TYPE::HOST) {
-                        std::get<2>(result) = reinterpret_cast<ValueType *>(startAddress());
-                        break;
-                    }
-                }
-            }
-
-            // if we found a data placement that is not in host memory, transfer it there before returning
-            if(std::get<0>(result) == true && std::get<2>(result) == nullptr) {
-                AllocationDescriptorHost myHostAllocInfo;
-
-                // ToDo: this needs fixing in the context of matrix views
-                if(!values)
-                    const_cast<DenseMatrix<ValueType>*>(this)->alloc_shared_values();
-
-                this->mdo->addDataPlacement(&myHostAllocInfo);
-//                std::cout << "bufferSize: " << getBufferSize() << " RxRS: " << this->getNumRows() * this->getRowSkip() * sizeof(ValueType) << std::endl;
-//                if(getBufferSize() != this->getNumRows() * this->getRowSkip()) {
-//                    placement->allocation->transferFrom(reinterpret_cast<std::byte *>(startAddress()), this->getNumRows() * this->getRowSkip() * sizeof(ValueType));
-//                }
-//                else
-                    placement->allocation->transferFrom(reinterpret_cast<std::byte *>(startAddress()), getBufferSize());
-                std::get<2>(result) = startAddress();
-            }
-            if(std::get<2>(result) == nullptr)
-                throw std::runtime_error("No object meta data in matrix");
-            else
-                return result;
-        }
-    }
-    else
-        throw std::runtime_error("Range support under construction");
+    this->row_offset = src->row_offset;
+    this->col_offset = src->col_offset;
+    this->values = src->values;
+    this->mdo = src->mdo;
 }
 
 template <typename ValueType> void DenseMatrix<ValueType>::printValue(std::ostream & os, ValueType val) const {
@@ -238,14 +148,53 @@ template <>
 }
 
 template<typename ValueType>
-void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> src, size_t offset) {
+void DenseMatrix<ValueType>::alloc_shared_values(bool zero, std::shared_ptr<ValueType[]> src, size_t offset) {
     // correct since C++17: Calls delete[] instead of simple delete
     if(src) {
         values = std::shared_ptr<ValueType[]>(src, src.get() + offset);
     }
-    else
-//        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
-        values = std::shared_ptr<ValueType[]>(new ValueType[numRows * getRowSkip()]);
+    else {
+        values = std::shared_ptr<ValueType[]>(new ValueType[getBufferSize()]);
+        if(zero)
+            memset(values.get(), 0, getBufferSize());
+    }
+}
+
+template<typename ValueType>
+bool DenseMatrix<ValueType>::operator==(const DenseMatrix<ValueType> & rhs) const {
+    // Note that we do not use the generic `get` interface to matrices here since
+    // this operator is meant to be used for writing tests for, besides others,
+    // those generic interfaces.
+
+    if(this == &rhs)
+        return true;
+
+    const size_t numRows = this->getNumRows();
+    const size_t numCols = this->getNumCols();
+
+    if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+        return false;
+
+    const ValueType* valuesLhs = this->getValues();
+    const ValueType* valuesRhs = rhs.getValues();
+
+    size_t rowSkipLhs = this->getRowSkip();
+    size_t rowSkipRhs = rhs.getRowSkip();
+
+    if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
+        return true;
+
+    if(rowSkipLhs == numCols && rowSkipRhs == numCols)
+        return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
+    else {
+        for(size_t r = 0; r < numRows; r++) {
+            if(memcmp(valuesLhs, valuesRhs, numCols * sizeof(ValueType)) != 0)
+                return false;
+            valuesLhs += rowSkipLhs;
+            valuesRhs += rowSkipRhs;
+        }
+        return true;
+    }
 }
 
 template<typename ValueType>
@@ -257,6 +206,43 @@ template<>
 size_t DenseMatrix<bool>::serialize(std::vector<char> &buf) const{
     throw std::runtime_error("DenseMatrix<bool> serialization not implemented");
 }
+
+template<typename ValueType>
+const ValueType* DenseMatrix<ValueType>::getValues(const IAllocationDescriptor* alloc_desc, const Range* range) const {
+    const ValueType* ptr;
+    if(this->isPinned(alloc_desc)) {
+        ptr = reinterpret_cast<const ValueType*>(this->pinned_mem);
+    }
+    else {
+        this->pinned_mem = this->mdo->getData(0, alloc_desc, range);
+        ptr = reinterpret_cast<const ValueType*>(this->pinned_mem);
+        const_cast<DenseMatrix<ValueType>*>(this)->pin(alloc_desc);
+    }
+
+    if(isView())
+        return ptr + offset();
+    else
+        return ptr;
+}
+
+template<typename ValueType>
+ValueType* DenseMatrix<ValueType>::getValues(const IAllocationDescriptor* alloc_desc, const Range* range) {
+    ValueType* ptr;
+    if(this->isPinned(alloc_desc)) {
+        ptr = reinterpret_cast<ValueType*>(this->pinned_mem);
+    }
+    else {
+        this->pinned_mem = this->mdo->getData(0, alloc_desc, range);
+        ptr = reinterpret_cast<ValueType*>(this->pinned_mem);
+        this->pin(alloc_desc);
+    }
+
+    if(isView())
+        return ptr + offset();
+    else
+        return ptr;
+}
+
 
 // ----------------------------------------------------------------------------
 // const char* specialization

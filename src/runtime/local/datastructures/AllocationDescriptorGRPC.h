@@ -41,7 +41,7 @@ public:
     
     std::string getLocation() const override 
     {return workerAddress; };
-    void createAllocation(size_t size, bool zero) override {}
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor>  createAllocation(size_t size, bool zero) const override {}
     // TODO: Implement transferTo and transferFrom functions
     std::shared_ptr<std::byte> getData() override { 
         throw std::runtime_error("TransferTo/From functions are not implemented yet.");

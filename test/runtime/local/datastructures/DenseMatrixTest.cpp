@@ -175,8 +175,8 @@ TEST_CASE("DenseMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
     const size_t numColsOrig = 7;
     const size_t numCellsOrig = numRowsOrig * numColsOrig;
     
-    DenseMatrix<ValueType> * mOrig = DataObjectFactory::create<DenseMatrix<ValueType>>(numRowsOrig, numColsOrig, true);
-    DenseMatrix<ValueType> * mSub = DataObjectFactory::create<DenseMatrix<ValueType>>(mOrig, 3, 5, 1, 4);
+    auto mOrig = DataObjectFactory::create<DenseMatrix<ValueType>>(numRowsOrig, numColsOrig, true);
+    auto mSub = DataObjectFactory::create<DenseMatrix<ValueType>>(mOrig, 3, 5, 1, 4);
     
     // Sub-matrix dimensions are as expected.
     CHECK(mSub->getNumRows() == 2);
@@ -184,8 +184,8 @@ TEST_CASE("DenseMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
     CHECK(mSub->getRowSkip() == numColsOrig);
 
     // Sub-matrix shares data array with original.
-    ValueType * valuesOrig = mOrig->getValues();
-    ValueType * valuesSub = mSub->getValues();
+    ValueType* valuesOrig = mOrig->getValues();
+    ValueType* valuesSub = mSub->getValues();
     CHECK((valuesSub >= valuesOrig && valuesSub < valuesOrig + numCellsOrig));
     valuesSub[0] = 123;
     CHECK(valuesOrig[3 * numColsOrig + 1] == 123);

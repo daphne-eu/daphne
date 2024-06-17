@@ -39,13 +39,17 @@ protected:
     size_t col_offset{};
     size_t numRows;
     size_t numCols;
+    mutable ALLOCATION_TYPE pinned_allocation{};
+    mutable std::byte* pinned_mem{};
 
     Structure(size_t numRows, size_t numCols);
 
     mutable std::shared_ptr<MetaDataObject> mdo;
 
-    void clone_mdo(const Structure* src);
-    
+    [[nodiscard]] bool isPinned(const IAllocationDescriptor* alloc_desc) const;
+
+    void pin(const IAllocationDescriptor* alloc_desc);
+
 public:
     virtual ~Structure() = default;
 
