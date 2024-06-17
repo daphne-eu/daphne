@@ -35,6 +35,7 @@ private:
     friend void DataObjectFactory::destroy(const DataType * obj);
 
 protected:
+    // offset in number of rows/cols (used with views)
     size_t row_offset{};
     size_t col_offset{};
     size_t numRows;

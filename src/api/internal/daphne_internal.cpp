@@ -92,7 +92,7 @@ void handleSignals(int signal) {
     auto callstacksReturned = backtrace(callstack, callstackMaxSize);
     backtrace_symbols_fd(callstack, callstacksReturned, STDOUT_FILENO);
     gSignalStatus = signal;
-    longjmp(return_from_handler, gSignalStatus);
+    longjmp(return_from_handler, gSignalStatus); // NOLINT(*-err52-cpp)
 }
 
 int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int *id, DaphneUserConfig& user_config){
@@ -526,7 +526,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 #ifndef USE_MPI
     throw std::runtime_error("you are trying to use the MPI backend. But, Daphne was not build with --mpi option\n");    
 #else
-        MPI_Init(NULL,NULL);
+        MPI_Init(nullptr,nullptr);
         MPI_Comm_rank(MPI_COMM_WORLD, id);
         int size=0;
         MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -652,7 +652,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         tpBegExec = clock::now();
 
         // set jump address for catching exceptions in kernel libraries via signal handling
-        if(setjmp(return_from_handler) == 0) {
+        if(setjmp(return_from_handler) == 0) { // NOLINT(*-err52-cpp)
             auto error = engine->invoke("main");
             if (error) {
                 llvm::errs() << "JIT-Engine invocation failed: " << error;

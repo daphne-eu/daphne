@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H
-#define SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -110,8 +109,8 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
 
-        const size_t rowLowerIncl_Size = static_cast<const size_t>(rowLowerIncl);
-        const size_t rowUpperExcl_Size = static_cast<const size_t>(rowUpperExcl);
+        const auto rowLowerIncl_Size = static_cast<const size_t>(rowLowerIncl);
+        const auto rowUpperExcl_Size = static_cast<const size_t>(rowUpperExcl);
         
         validateArgsInsertRow(rowLowerIncl_Size, rowLowerIncl, rowUpperExcl_Size, rowUpperExcl,
                     numRowsArg, numColsArg, numRowsIns, numColsIns);
@@ -179,12 +178,10 @@ struct InsertRow<Matrix<VT>, Matrix<VT>, VTSel> {
         for (size_t r = rowLowerIncl_Size; r < rowUpperExcl_Size; ++r)
             for (size_t c = 0; c < numColsArg; ++c)
                 res->append(r, c, ins->get(r - rowLowerIncl_Size, c));
-                
+
         for (size_t r = rowUpperExcl_Size; r < numRowsArg; ++r)
             for (size_t c = 0; c < numColsArg; ++c)
                 res->append(r, c, arg->get(r, c));
         res->finishAppend();
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H
