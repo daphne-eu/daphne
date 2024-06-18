@@ -323,6 +323,14 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
     }
 }
 
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::BatchNorm2DTestForwardOp::inferShape() {
+    auto shapeX = getShape(getInput());
+    auto numRows = shapeX.first;
+    auto numCols = shapeX.second;
+    return {{numRows, numCols}};
+}
+
 std::vector<std::pair<ssize_t, ssize_t>> daphne::Conv2DForwardOp::inferShape() {
     auto shapeX = getShape(getInput());
     auto shapeW = getShape(getFilter());
