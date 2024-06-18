@@ -68,9 +68,7 @@ X_relu = relu(X_bn);
 t_end_relu = now();
 W2 = rand(32, C*Fsize*Fsize, 0.0, 1.0, 1.0, seed);
 b2 = rand(1, 32, 0.0, 1.0, 1.0, seed);
-X_relu_rnd=rand(N,32*4*760, 0.0, 256.0,1.0,seed);
-print("X_relu_rnd dims: ",0) ;print(nrow(X_relu_rnd),0);print("x",0);print(ncol(X_relu_rnd));
-
+X_relu=rand(N,32*4*760, 0.0, 256.0,1.0,seed);
 X_conv2, Hout2, Wout2 = conv2d(X_relu, W2, N, 32, 3, 759, Fsize, Fsize, 1, 1, 1, 1, b2);
 t_end_conv2 = now();
 gamma = rand(32, 1, 1.0, 1.0, 1.0, seed);
@@ -80,18 +78,13 @@ ema_var = rand(32, 1, 1.0, 1.0, 1.0, seed);
 X_bn2 = batch_norm2d(X_conv2, gamma, beta, ema_mean, ema_var, eps);
 t_end_bn2 = now();
 X_relu2 = relu(X_bn2);
-dX_relu2 = relu_back(X_relu2, X_bn2);
-
-print("sum(dX_relu2): ", 0, 0);print(sum(dX_relu2));
-print("dX_relu2 dims: ",0) ;print(nrow(dX_relu2),0);print("x",0);print(ncol(dX_relu2));
-
 t_end_relu2 = now();
 X_pool,Hpool,Wpool=max_pool2d(X_relu2,N,32,4,760,2,2,2,2,0,0);
 t_end_pool = now();
-W3=rand(24320, 100,0.0,1.0,1.0,seed);
+W3=rand(100,24320,0.0,1.0,1.0,seed);
 b3=rand(1,100,0.0,1.0,1.0,seed);
 X_pool=rand(2,24320,0.0,1.0,1.0,seed);
-X_affine1=affine(X_pool,W3,b3);
+#X_affine1=affine(X_pool,W3,b3);
 t_end_affine1 = now();
 print("X dims: ",0) ;print(nrow(X),0);print("x",0);print(ncol(X));
 #print("X_conv",0); print(X_conv[fill(1,1,1),]);
