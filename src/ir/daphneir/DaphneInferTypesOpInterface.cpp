@@ -584,6 +584,16 @@ std::vector<Type> daphne::Conv2DForwardOp::inferTypes() {
     return {restype2, builder.getIndexType(), builder.getIndexType()};
 }
 
+std::vector<Type> daphne::BatchNorm2DTestForwardOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
+    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
+
+    // output matrix of same type as input, height/width dimensions as size/index type
+    return {restype2};
+}
+
 std::vector<Type> daphne::AvgPoolForwardOp::inferTypes() {
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
