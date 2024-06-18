@@ -148,6 +148,10 @@ In the following, we describe only the latter.
 - **`replace`**`(pattern, replacement)`
 - **`order`**`(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)`
 
+**Data preprocessing:**
+- **`oneHot`**`(info:matrix)`
+- **`bin`**`(numBins:int, Min = None, Max = None)`
+
 **Other matrix operations:**
 
 - **`diagVector`**`()`
