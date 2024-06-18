@@ -394,6 +394,17 @@ class Matrix(OperationNode):
     def outerGe(self, other: 'Matrix') -> 'Matrix':
         return Matrix(self.daphne_context, 'outerGe', [self, other])
     
+    def oneHot(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'oneHot', [self, other])
+    
+    def bin(self, numBins, Min = None, Max = None) -> 'Matrix':
+        if (Max is None and Min is not None ) or (Min is None and Max is not None):
+            raise RuntimeError("bin: Both min and max should be set, or both should be null.")
+        if Max and Min:
+            return Matrix(self.daphne_context, 'bin', [self, numBins, Min, Max])
+        else:
+            return Matrix(self.daphne_context, 'bin', [self, numBins])
+    
     def order(self, colIdxs: List[int], ascs: List[bool], returnIndexes: bool) -> 'Matrix':
         if len(colIdxs) != len(ascs):
             raise RuntimeError("order: the lists given for parameters colIdxs and ascs must have the same length")
