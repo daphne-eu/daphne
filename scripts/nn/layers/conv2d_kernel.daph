@@ -29,9 +29,9 @@
  * This implementation uses a built-in operator for higher performance.
  */
 
-import ("nn/util.dml") as "util";
+import "../util.daph" as "util";
 
-def forward(X:matrix, W:matrix, b:matrix, C, Hin, Win, Hf, Wf, strideh, stridew, padh, padw) -> matrix, si64, si64 {
+def forward(X:matrix, W:matrix, b:matrix, C, Hin, Win, Hf, Wf, strideh, stridew, padh, padw) -> matrix<f64>, si64, si64 {
   /*
    * Computes the forward pass for a 2D spatial convolutional layer with
    * F filters.  The input data has N examples, each represented as a 3D
@@ -69,18 +69,21 @@ def forward(X:matrix, W:matrix, b:matrix, C, Hin, Win, Hf, Wf, strideh, stridew,
    */
   N = nrow(X);
   F = nrow(W);
-  #Hout = floor((Hin + 2*padh - Hf)/strideh + 1);
-  #Wout = floor((Win + 2*padw - Wf)/stridew + 1);
+  Hout = floor((Hin + 2*padh - Hf)/strideh + 1);
+  Wout = floor((Win + 2*padw - Wf)/stridew + 1);
 
   # Convolution - built-in implementation
   #out = conv2d(X, W, input_shape=[N,C,Hin,Win], filter_shape=[F,C,Hf,Wf], stride=[strideh,stridew], padding=[padh,padw]);
-  out, Hout, Wout = conv2d(X, W, N, F, Hin, Win, Hf, Wf, strideh, stridew, padh, padw, b);
+  #out, Hout, Wout = conv2d(X, W, N, F, Hin, Win, Hf, Wf, strideh, stridew, padh, padw, b);
+    out = fill(0.0, N, F * Hout * Wout);
+
 print("conv2d: Hout: ",0,0); print(Hout);
 print("conv2d: Wout: ",0,0); print(Wout);
   # Add bias term to each output filter
   #done within conv2d
   #out = biasAdd(out, b);
   return out, as.si64(Hout), as.si64(Wout);
+  #return out, Hout, Wout;
 }
 
 #backward = function(matrix[double] dout, int Hout, int Wout,
