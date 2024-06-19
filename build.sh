@@ -762,14 +762,19 @@ if [ $WITH_DEPS -gt 0 ]; then
     # #8.5 abseil (compiled separately to apply a patch)
     #------------------------------------------------------------------------------
     abslPath=$sourcePrefix/abseil-cpp
+    if [ $(arch) == 'armv64'  ] || [ $(arch) == 'aarch64' ]; then
+        abslVersion=20211102.0
+    fi
     dep_absl=("absl_v${abslVersion}" "v1")
 
     if ! is_dependency_downloaded "${dep_absl[@]}"; then
         daphne_msg "Get abseil version ${abslVersion}"
         rm -rf "$abslPath"
         git clone --depth 1 --branch "$abslVersion" https://github.com/abseil/abseil-cpp.git "$abslPath"
-#        daphne_msg "Applying 0002-absl-stdmax-params.patch"
-#        patch -Np1 -i "${patchDir}/0002-absl-stdmax-params.patch" -d "$abslPath"
+        if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
+           daphne_msg "Applying 0002-absl-stdmax-params.patch"
+           patch -Np1 -i "${patchDir}/0002-absl-stdmax-params.patch" -d "$abslPath"
+        fi
         dependency_download_success "${dep_absl[@]}"
     fi
     if ! is_dependency_installed "${dep_absl[@]}"; then
