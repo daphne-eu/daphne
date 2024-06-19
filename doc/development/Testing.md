@@ -120,6 +120,7 @@ See the [catch2 documentation](https://github.com/catchorg/Catch2/blob/devel/doc
 The test script has several flags that control how the DAPHNE system and the test executable are built through the build script `build.sh`.
 
 - `--cuda`, `--fpgaopencl`, and `--mpi` switch on the respective feature of DAPHNE.
+- `--no-papi` switch off the respective feature of DAPHNE.
 - `--debug` builds DAPHNE with debug information.
 - `-nb` or `--no-build` builds DAPHNE with pre-compiled dependencies (available in the DAPHNE containers).
 

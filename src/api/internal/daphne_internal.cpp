@@ -557,7 +557,11 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     }
 
     if(enableProfiling) {
+#ifndef USE_PAPI
+        throw std::runtime_error("you are trying to use profiling, but daphne was built with --no-papi\n");
+#else
         user_config.enable_profiling = true;
+#endif
     }
 
     // For DaphneLib (Python API).

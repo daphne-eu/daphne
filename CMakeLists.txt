@@ -106,6 +106,12 @@ if(USE_MPI)
 endif()    
 ##########
 
+###### PAPI
+if(USE_PAPI)
+    add_definitions(-DUSE_PAPI)
+endif()
+##########
+
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
 include(CheckLanguage)
 check_language(CUDA)

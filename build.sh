@@ -59,6 +59,7 @@ function printHelp {
     echo "  --debug           Compile with support for debug mode"
     echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
     echo " --mpi             Compile with support for MPI"
+    echo "  --no-papi         Compile without support for PAPI"
 }
 
 #******************************************************************************
@@ -448,6 +449,7 @@ BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 BUILD_MPI="-DUSE_MPI=OFF"
+BUILD_PAPI="-DUSE_PAPI=ON"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
 
@@ -495,6 +497,10 @@ while [[ $# -gt 0 ]]; do
     --mpi)
         echo using MPI
         export BUILD_MPI="-DUSE_MPI=ON"
+        ;;
+    --no-papi)
+        echo not using PAPI
+        export BUILD_PAPI="-DUSE_PAPI=OFF"
         ;;
     --debug)
         echo building DEBUG version
@@ -589,29 +595,31 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     # PAPI (Performance Application Programming Interface)
     #------------------------------------------------------------------------------
-    papiDirName="papi-$papiVersion"
-    papiTarName="${papiDirName}.tar.gz"
-    papiInstDirName=$installPrefix
-    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
-        daphne_msg "Get PAPI version ${papiVersion}"
-        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
-            -qO "${cacheDir}/${papiTarName}"
-        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
-        dependency_download_success "papi_v${papiVersion}"
-    fi
-    if ! is_dependency_installed "papi_v${papiVersion}"; then
-        cd "$sourcePrefix/$papiDirName/src"
-        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
-        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
-            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
+    if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
+        papiDirName="papi-$papiVersion"
+        papiTarName="${papiDirName}.tar.gz"
+        papiInstDirName=$installPrefix
+        if ! is_dependency_downloaded "papi_v${papiVersion}"; then
+            daphne_msg "Get PAPI version ${papiVersion}"
+            wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
+                -qO "${cacheDir}/${papiTarName}"
+            tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
+            dependency_download_success "papi_v${papiVersion}"
+        fi
+        if ! is_dependency_installed "papi_v${papiVersion}"; then
+            cd "$sourcePrefix/$papiDirName/src"
+            # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
+            CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
+                --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
 
 
-        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
-        make install
-        cd - > /dev/null
-        dependency_install_success "papi_v${papiVersion}"
-    else
-        daphne_msg "No need to build PAPI again."
+            CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+            make install
+            cd - > /dev/null
+            dependency_install_success "papi_v${papiVersion}"
+        else
+            daphne_msg "No need to build PAPI again."
+        fi
     fi
 
     #------------------------------------------------------------------------------
@@ -1008,7 +1016,7 @@ daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
-    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI
+    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_PAPI
 
 cmake --build "$daphneBuildDir" --target "$target"
 
