@@ -906,9 +906,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#conversions-casts-and-copying" class="md-nav__link">
+  <a href="#conversions-and-casts" class="md-nav__link">
     <span class="md-ellipsis">
-      Conversions, casts and copying
+      Conversions and casts
     </span>
   </a>
   
@@ -1921,9 +1921,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#conversions-casts-and-copying" class="md-nav__link">
+  <a href="#conversions-and-casts" class="md-nav__link">
     <span class="md-ellipsis">
-      Conversions, casts and copying
+      Conversions and casts
     </span>
   </a>
   
@@ -2001,7 +2001,7 @@ Those library functions will internally be implemented using the built-in functi
 <li>Deep neural network</li>
 <li>Other matrix operations</li>
 <li>Extended relational algebra</li>
-<li>Conversions, casts and copying</li>
+<li>Conversions and casts</li>
 <li>Input/output</li>
 <li>Data preprocessing</li>
 <li>Measurements</li>
@@ -2743,14 +2743,10 @@ There must be as many <code>labels</code> as columns in <code>arg</code>.</p>
 <p>Prepends the given <code>prefix</code> to the labels of all columns in <code>arg</code>.</p>
 </li>
 </ul>
-<h2 id="conversions-casts-and-copying">Conversions, casts and copying</h2>
+<h2 id="conversions-and-casts">Conversions and casts</h2>
 <p>Note that DaphneDSL offers casts in form of the <code>as.()</code>-expression.
 See the <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL Language Reference</a> for details.</p>
 <ul>
-<li>
-<p><strong><code>copy</code></strong><code>(arg:matrix/frame)</code></p>
-<p>Creates a copy of <code>arg</code>.</p>
-</li>
 <li>
 <p><strong><code>quantize</code></strong><code>(arg:matrix&lt;f32&gt;, min:f32, max:f32)</code></p>
 <p>Performs a <code>min</code>/<code>max</code> quantization of the values in <code>arg</code>.
