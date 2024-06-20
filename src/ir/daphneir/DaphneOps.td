@@ -1272,6 +1272,14 @@ def Daphne_CopyOp : Daphne_Op<"copy", [
     let results = (outs MatrixOrFrame:$res);
 }
 
+def Daphne_RenameOp : Daphne_Op<"rename", [
+    TypeFromFirstArg
+]> {
+    let arguments = (ins AnyType:$arg);
+    let results = (outs AnyType:$res);
+    let hasCanonicalizeMethod = 1;
+}
+
 def Daphne_QuantizeOp : Daphne_Op<"quantize", [
     ShapeFromArg
 ]> {

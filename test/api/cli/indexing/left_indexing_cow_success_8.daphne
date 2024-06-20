@@ -1,0 +1,13 @@
+// Copy-on-write vs. loops, slightly more complex example.
+
+A = fill(1.0, 2, 2);
+B = A;
+print(A);
+print(B);
+  
+for(i in 0:1) {
+  x = sum(A, 0);
+  B[, i] = x;
+}
+print(A);
+print(B);

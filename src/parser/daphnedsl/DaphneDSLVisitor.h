@@ -89,6 +89,17 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
                                          const mlir::FunctionType &funcType,
                                          const std::string &functionName);
     
+    /**
+     * @brief Wraps the given SSA value into a RenameOp, if the given SSA value is
+     * already known to the symbol table by some variable name.
+     *
+     * This is important for DaphneDSL statements like `B = A;`, where `B` and `A`
+     * should both represent the same SSA value. However, we need a way to distinguish
+     * `A` and `B` in the IR during parsing to ensure that SSA value replacements in
+     * DaphneDSL loops are correct.
+     */
+    mlir::Value renameIf(mlir::Value v);
+
     void handleAssignmentPart(mlir::Location loc,
         const std::string & var,
         DaphneDSLGrammarParser::IndexingContext * idxCtx,

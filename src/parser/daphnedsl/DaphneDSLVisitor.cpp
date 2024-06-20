@@ -49,6 +49,15 @@
 // Utilities
 // ****************************************************************************
 
+mlir::Value DaphneDSLVisitor::renameIf(mlir::Value v) {
+    if(symbolTable.has(v))
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::RenameOp>(v.getLoc(), v.getType(), v)
+        );
+    else
+        return v;
+}
+
 void DaphneDSLVisitor::handleAssignmentPart(mlir::Location loc,
         const std::string & var,
         DaphneDSLGrammarParser::IndexingContext * idxCtx,
@@ -102,12 +111,13 @@ void DaphneDSLVisitor::handleAssignmentPart(mlir::Location loc,
                     mlir::daphne::NumColsOp
             >(utils.getLoc(idxCtx->start), obj, val, cols.second, llvm::isa<mlir::daphne::FrameType>(obj.getType()));
         else
-            obj = val;
+            // no left indexing `var[, ] = val;`
+            obj = renameIf(val);
 
         symbolTable.put(var, ScopedSymbolTable::SymbolInfo(obj, false));
     }
     else // no left indexing `var = val;`
-        symbolTable.put(var, ScopedSymbolTable::SymbolInfo(val, false));
+        symbolTable.put(var, ScopedSymbolTable::SymbolInfo(renameIf(val), false));
 }
 
 template<class ExtractAxOp, class SliceAxOp, class NumAxOp>
@@ -503,7 +513,6 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
             // TODO Use DaphneDSL types (not MLIR types) in error message.
             // TODO Adapt to the case of no else-branch in DaphneDSL (when there is no else in DaphneDSL,
             // "else" should not be mentioned in the error message).
-            // TODO The variable name may be ambiguous (two vars mapped to the same value).
             std::stringstream s;
             s << "type of variable `" << symbolTable.getSymbol(valThen, owThen)
                 << "` after if-statement is ambiguous, could be either " << tyThen
