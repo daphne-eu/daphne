@@ -45,7 +45,7 @@ DaphneDSL's built-in functions can be categorized as follows:
 - Deep neural network
 - Other matrix operations
 - Extended relational algebra
-- Conversions, casts and copying
+- Conversions and casts
 - Input/output
 - Data preprocessing
 - Measurements
@@ -494,14 +494,10 @@ We will support more variants of joins, including (left/right) outer joins, thet
 
     Prepends the given `prefix` to the labels of all columns in `arg`.
 
-## Conversions, casts and copying
+## Conversions and casts
 
 Note that DaphneDSL offers casts in form of the `as.()`-expression.
 See the [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md) for details.
-
-- **`copy`**`(arg:matrix/frame)`
-
-    Creates a copy of `arg`.
 
 - **`quantize`**`(arg:matrix<f32>, min:f32, max:f32)`
 

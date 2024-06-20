@@ -188,7 +188,7 @@ In the following, we describe only the latter.
 - **`print`**`()`
 - **`write`**`(file: str)`
 
-**Conversions, casts, and copying:**
+**Conversions and casts:**
 
 - **`toMatrix`**`(value_type="f64") -> Matrix`
 

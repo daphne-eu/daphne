@@ -1221,7 +1221,7 @@ def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix", [
 }
 
 // ****************************************************************************
-// Conversions, casts, and copying
+// Conversions and casts
 // ****************************************************************************
 
 def Daphne_ToStringOp : Daphne_Op<"toString", [DataTypeSca, ValueTypeStr]> {
@@ -1263,13 +1263,6 @@ def Daphne_CastOp : Daphne_Op<"cast", [
                 || (argFrmTy && resFrmTy && argFrmTy.isSpecializationOf(resFrmTy));
         }
     }];
-}
-
-def Daphne_CopyOp : Daphne_Op<"copy", [
-    TypeFromFirstArg
-]> {
-    let arguments = (ins MatrixOrFrame:$arg);
-    let results = (outs MatrixOrFrame:$res);
 }
 
 def Daphne_RenameOp : Daphne_Op<"rename", [

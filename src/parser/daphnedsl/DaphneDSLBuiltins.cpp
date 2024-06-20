@@ -1007,12 +1007,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
 
     // ********************************************************************
-    // Conversions, casts, and copying
+    // Conversions and casts
     // ********************************************************************
 
-    if(func == "copy") {
-        return createSameTypeUnaryOp<CopyOp>(loc, func, args);
-    }
     if(func == "quantize") {
         checkNumArgsExact(loc, func, args.size(), 3);
         mlir::Value arg = args[0];
