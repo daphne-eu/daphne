@@ -366,7 +366,7 @@ class DaphneContext(object):
 
         return Frame(self, 'createFrame', [*columns, *labels])
     
-    def seq(self, start, end, inc) -> Matrix:
+    def seq(self, start, end, inc = 1) -> Matrix:
         named_input_nodes = {'start':start, 'end':end, 'inc':inc}
         return Matrix(self, 'seq', [], named_input_nodes=named_input_nodes)
 
