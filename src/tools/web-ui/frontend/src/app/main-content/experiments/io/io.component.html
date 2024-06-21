@@ -1,0 +1,110 @@
+<div class="tab-pane fade show active">
+    <div class="container">
+        <div class="row">
+            <div class="col-6">
+                <div class="container">
+                    <form (submit)="onSubmit()">
+                        <div class="row">
+                            <div class="col">
+                            </div>
+                        </div>
+                        <div class="mt-4 row">
+                            <div class="col">
+                                <label>Deployment:</label>
+                                <select class="form-select" name="cluster" disabled aria-label="Cluster">                                
+                                    <option selected>Local</option>
+                                    <option disabled>Vega</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4 row">
+                            <div class="col d-flex" >
+                                <label for="customRange" class="form-label">
+                                    Workers: 
+                                    <b>
+                                    {{ numberOfNodes }}
+                                    </b>
+                                </label>                                
+                            </div>
+                        </div>                       
+                        <div class="mt-4 row">
+                            <div class="col">
+                                <label>Execution mode:</label>
+                                <select class="form-select" name="execution-type" aria-label="Execution Mode" [(ngModel)]="executionMode">                                
+                                    <option [value]="ExecutionMode.single_node">Single node HDFS</option>
+                                    <option [value]="ExecutionMode.distributed">Distributed HDFS</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="mt-4 row">
+                                    <div class="col">
+                                        <label for="inputSize">Input:</label>
+                                        <select class="form-select" id="inputSize" aria-label="Input size" [(ngModel)]="inputSize" name="inputSize">
+                                            <option value="small" [defaultSelected]="true">Small</option>                                            
+                                            <option value="large">Large</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-5 row">
+                            <div class="col">
+                                <button type="submit" class="btn btn-success" *ngIf="!running_daphne">Launch
+                                    workload</button>
+                                <button type="button" class="btn btn-danger" *ngIf="running_daphne" (click)="killDaphne()">Kill
+                                    workload</button>
+                            </div>
+                            <div class="col d-flex justify-content-start">
+                                <div class="alert alert-success" role="alert" *ngIf="show_success_alert">
+                                    Job completed
+                                </div>
+                                <div class="alert alert-danger" role="alert" *ngIf="show_canceled_alert">
+                                    Job canceled
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="col-6">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="output-tab" data-bs-toggle="tab" data-bs-target="#output"
+                            type="button" role="tab" aria-controls="output" aria-selected="true" (click)="selected_output_panel = 'output-panel'"
+                            [class.active] = "selected_output_panel === 'output-panel'"
+                            >
+                            Terminal output</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph"
+                            type="button" role="tab" aria-controls="graph" aria-selected="false" (click)="selected_output_panel = 'aggregate-statistics-panel'"
+                            [class.active] = "selected_output_panel === 'aggregate-statistics-panel'"
+                            >
+                            Aggregate statistics</button>
+                    </li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div class="tab-pane" id="output" role="tabpanel" aria-labelledby="output-tab" [ngClass]="{'active': selected_output_panel === 'output-panel'}">
+                        <div class="row mt-4"  >
+                            <div class="col" >
+                                <app-output-panel [text]="result_output"></app-output-panel>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="graph" role="tabpanel" aria-labelledby="graph-tab" [ngClass]="{'active': selected_output_panel === 'aggregate-statistics-panel'}">
+                        <div class="row mt-4" >
+                            <div class="col">
+                                <app-aggregate-statistics-panel [text]="agg_statistics"></app-aggregate-statistics-panel>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

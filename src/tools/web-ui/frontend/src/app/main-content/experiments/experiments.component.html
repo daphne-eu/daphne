@@ -1,0 +1,17 @@
+<hr>
+<div class="row pt-3">
+    <div class="col">
+    <ul class="nav nav-tabs justify-content-start">
+        <li class="nav-item">
+        <a class="nav-link" routerLinkActive="active" id="tab2" data-bs-toggle="tab" routerLink="communication">gRPC vs MPI</a>
+        </li>
+        <li class="nav-item">
+        <a class="nav-link" routerLinkActive="active" id="tab3" data-bs-toggle="tab" routerLink="io" [class.disabled]="!hdfsEnabled">HDFS</a>
+        </li>
+        <li class="nav-item">
+        <a class="nav-link" routerLinkActive="active" id="tab3" data-bs-toggle="tab" routerLink="hetero-hardware">CUDA</a>
+        </li>
+    </ul>
+    <router-outlet></router-outlet>      
+    </div>
+</div>
