@@ -1,0 +1,2 @@
+CSRMatrix(1x1, int64_t)
+CSRMatrix(1x1, double)
