@@ -58,7 +58,7 @@ function printHelp {
     echo "  --cuda            Compile with support for CUDA ops"
     echo "  --debug           Compile with support for debug mode"
     echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
-    echo " --mpi             Compile with support for MPI"
+    echo "  --mpi             Compile with support for MPI"
     echo "  --no-papi         Compile without support for PAPI"
 }
 
