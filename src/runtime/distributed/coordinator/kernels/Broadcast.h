@@ -83,9 +83,9 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
         LoadPartitioningDistributed<DT, AllocationDescriptorMPI> partioner(DistributionSchema::BROADCAST, mat, dctx);
         while (partioner.HasNextChunk()){
             auto dp = partioner.GetNextChunk();
-            auto rank = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getRank();
+            auto rank = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getRank();
             
-            if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getDistributedData().isPlacedAtWorker)
                 continue;
             
             // Minimum chunk size
@@ -121,13 +121,13 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             WorkerImpl::StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
             std::string address=std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
-            auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+            auto data = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getDistributedData();
             data.identifier = dataAcknowledgement.identifier;
             data.numRows = dataAcknowledgement.numRows;
             data.numCols = dataAcknowledgement.numCols;
             data.isPlacedAtWorker = true;
-            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
-
+            auto alloc = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0));
+            alloc->updateDistributedData(data);
         }
     }
 };
@@ -161,12 +161,12 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
         
         while(partioner.HasNextChunk()){
             auto dp = partioner.GetNextChunk();
-            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getDistributedData().isPlacedAtWorker)
                 continue;
             
-            auto address = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation();
+            auto address = dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getLocation();
             
-            StoredInfo storedInfo({dp->dp_id});
+            StoredInfo storedInfo({dp->getID()});
             caller.asyncStoreCall(address, storedInfo);
             // Minimum chunk size
             auto min_chunk_size = dctx->config.max_distributed_serialization_chunk_size < DaphneSerializer<DT>::length(mat) ? 
@@ -197,7 +197,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
             auto dp_id = response.storedInfo.dp_id;
             auto dp = mat->getMetaDataObject()->getDataPlacementByID(dp_id);
 
-            auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+            auto data = dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getDistributedData();
 
             auto storedData = response.result;
             data.identifier = storedData.identifier();
@@ -205,7 +205,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
             data.numCols = storedData.num_cols();
             data.isPlacedAtWorker = true;
 
-            dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);            
+            dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->updateDistributedData(data);
         }                
     };           
 };
@@ -235,10 +235,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
 
         while(partioner.HasNextChunk()){
             auto dp = partioner.GetNextChunk();
-            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getDistributedData().isPlacedAtWorker)
                 continue;
             
-            auto workerAddr = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation();
+            auto workerAddr = dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getLocation();
             std::thread t([=, &mat]() 
             {
                 // TODO Consider saving channels inside DaphneContext
@@ -273,7 +273,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
                 newData.numRows = storedData.num_rows();
                 newData.numCols = storedData.num_cols();
                 newData.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(newData);
+                dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->updateDistributedData(newData);
             });
             threads_vector.push_back(move(t));
         }

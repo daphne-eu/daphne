@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_INSERTCOL_H
-#define SRC_RUNTIME_LOCAL_KERNELS_INSERTCOL_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -110,8 +109,8 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
 
-        const size_t colLowerIncl_Size = static_cast<const size_t>(colLowerIncl);
-        const size_t colUpperExcl_Size = static_cast<const size_t>(colUpperExcl);
+        const auto colLowerIncl_Size = static_cast<const size_t>(colLowerIncl);
+        const auto colUpperExcl_Size = static_cast<const size_t>(colUpperExcl);
         
         validateArgsInsertCol(colLowerIncl_Size, colLowerIncl, colUpperExcl_Size, colUpperExcl,
                     numRowsArg, numColsArg, numRowsIns, numColsIns);
@@ -175,5 +174,3 @@ struct InsertCol<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
         res->finishAppend();
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H

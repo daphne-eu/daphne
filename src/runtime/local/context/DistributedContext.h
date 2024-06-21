@@ -17,6 +17,8 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
+#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #ifdef USE_MPI
     #include <runtime/distributed/worker/MPIHelper.h>
 #endif 
