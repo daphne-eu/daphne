@@ -1356,7 +1356,7 @@ def Daphne_PrintOp : Daphne_Op<"print"> {
     let results = (outs); // no results
 }
 
-def Daphne_TypeOfOp : Daphne_Op<"typeof"> {
+def Daphne_TypeOfOp : Daphne_Op<"typeOf"> {
     let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame]>:$arg);
     let results = (outs StrScalar:$res);
 }

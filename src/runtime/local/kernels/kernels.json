@@ -2721,8 +2721,43 @@
     },
     {
         "kernelTemplate": {
-            "header": "TypeOf.h",
-            "opName": "typeof",
+            "header": "TypeOfSca.h",
+            "opName": "typeOfSca",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "char *&",
+                    "name": "res"
+                },
+                {
+                    "type": "VT",
+                    "name": "type"
+                }
+            ]
+        },
+        "instantiations": [
+            ["double"],
+            ["float"],
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["bool"],
+            ["const char *"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "TypeOfObj.h",
+            "opName": "typeOfObj",
             "returnType": "void",
             "templateParams": [
                 {
@@ -2742,16 +2777,21 @@
             ]
         },
         "instantiations": [
-            ["size_t"],
-            ["double"],
-            ["float"],
-            ["int64_t"],
-            ["int32_t"],
-            ["int8_t"],
-            ["uint64_t"],
-            ["uint32_t"],
-            ["uint8_t"],
-            ["bool"]
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "size_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "uint8_t"]],
+            ["Frame"]
         ]
     },
     {
