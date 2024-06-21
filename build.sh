@@ -663,7 +663,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "Download Antlr v${antlrVersion} Runtime"
         wget https://www.antlr.org/download/${antlrCppRuntimeZipName} -qO "${cacheDir}/${antlrCppRuntimeZipName}"
         rm -rf "${sourcePrefix:?}/$antlrCppRuntimeDirName"
-        mkdir --parents "$sourcePrefix/$antlrCppRuntimeDirName"
+        mkdir -p "$sourcePrefix/$antlrCppRuntimeDirName"
         unzip -q "$cacheDir/$antlrCppRuntimeZipName" -d "$sourcePrefix/$antlrCppRuntimeDirName"
         dependency_download_success "${dep_antlr[@]}"
     fi
@@ -710,7 +710,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     
     if ! is_dependency_installed "${dep_catch2[@]}"; then
         daphne_msg "Get catch2 version ${catch2Version}"
-        mkdir --parents "${thirdpartyPath}/${catch2Name}"
+        mkdir -p "${thirdpartyPath}/${catch2Name}"
         cd "${thirdpartyPath}/${catch2Name}"
         if [ ! -f "$catch2ZipName" ] || [ ! -f "$catch2SingleHeaderInstalledPath" ]; then
             daphne_msg "Download catch2 version ${catch2Version}"
@@ -806,7 +806,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         wget "https://download.open-mpi.org/release/open-mpi/v4.1/$MPIZipName" -qO "${cacheDir}/${MPIZipName}"
         tar -xf "$cacheDir/$MPIZipName" --directory "$sourcePrefix"
         dependency_download_success "${dep_mpi[@]}"
-        mkdir --parents "$MPIInstDirName"
+        mkdir -p "$MPIInstDirName"
     fi
     if ! is_dependency_installed "${dep_mpi[@]}"; then
         cd "$sourcePrefix/openmpi-$openMPIVersion"
