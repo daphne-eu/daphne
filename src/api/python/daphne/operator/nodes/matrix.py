@@ -399,7 +399,7 @@ class Matrix(OperationNode):
     
     def bin(self, numBins, Min = None, Max = None) -> 'Matrix':
         if (Max is None and Min is not None ) or (Min is None and Max is not None):
-            raise RuntimeError("bin: Both min and max should be set, or both should be null.")
+            raise RuntimeError("bin: both min and max should be set, or both should be None")
         if Max and Min:
             return Matrix(self.daphne_context, 'bin', [self, numBins, Min, Max])
         else:

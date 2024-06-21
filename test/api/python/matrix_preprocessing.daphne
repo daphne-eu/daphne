@@ -13,7 +13,7 @@
 # limitations under the License.
 
 arg_m = reshape(seq(-2, 5), 2, 4);
-info_m = reshape(rbind(seq(-1, 0), seq(5, 6)), 1, 4);
+info_m = [-1, 0, 5, 6](1, 4);
 print(oneHot(arg_m, info_m));
 
 arg_m_2 = reshape(seq(10, 70, 10), 1, 7);
