@@ -1502,7 +1502,7 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 <p><strong>Generating data in DAPHNE:</strong></p>
 <ul>
 <li><strong><code>fill</code></strong><code>(arg, rows:int, cols:int) -&gt; Matrix</code></li>
-<li><strong><code>seq</code></strong><code>(start, end, inc) -&gt; Matrix</code></li>
+<li><strong><code>seq</code></strong><code>(start, end, inc = 1) -&gt; Matrix</code></li>
 <li><strong><code>rand</code></strong><code>(rows: int, cols: int, min: Union[float, int] = None, max: Union[float, int] = None, sparsity: Union[float, int] = 0, seed: Union[float, int] = 0) -&gt; Matrix</code></li>
 <li><strong><code>createFrame</code></strong><code>(columns: List[Matrix], labels: List[str] = None) -&gt; 'Frame'</code></li>
 <li><strong><code>diagMatrix</code></strong><code>(self, arg: Matrix) -&gt; 'Matrix'</code></li>
@@ -1607,6 +1607,9 @@ In the following, we describe only the latter.</p>
 <li><strong><code>replace</code></strong><code>(pattern, replacement)</code></li>
 <li><strong><code>order</code></strong><code>(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)</code></li>
 </ul>
+<p><strong>Data preprocessing:</strong>
+- <strong><code>oneHot</code></strong><code>(info:matrix)</code>
+- <strong><code>bin</code></strong><code>(numBins:int, Min = None, Max = None)</code></p>
 <p><strong>Other matrix operations:</strong></p>
 <ul>
 <li><strong><code>diagVector</code></strong><code>()</code></li>
