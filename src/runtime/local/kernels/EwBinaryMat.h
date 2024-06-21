@@ -16,15 +16,20 @@
 
 #pragma once
 
+#include "runtime/local/datastructures/Tensor.h"
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
 #include <cstddef>
+#include <vector>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -342,5 +347,91 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
             for (size_t c = 0; c < numCols; ++c)
                 res->append(r, c, func(lhs->get(r, c), rhs->get(r, c), ctx));
         res->finishAppend();
+    }
+};
+
+
+// ----------------------------------------------------------------------------
+// ContiguousTensor <- ContiguousTensor, ContiguousTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryMat<ContiguousTensor<VT>, ContiguousTensor<VT>, ContiguousTensor<VT>> {
+    static void apply(BinaryOpCode opCode, ContiguousTensor<VT> *& res, const ContiguousTensor<VT> * lhs, const ContiguousTensor<VT> * rhs, DCTX(ctx)) {
+        if (lhs->rank != rhs->rank) {
+            throw std::runtime_error("Rank missmatch of operand tensors");
+        }
+        if (lhs->tensor_shape != rhs->tensor_shape) {
+            throw std::runtime_error("Missmatch of shape of operand tensors");
+        }
+
+        res = DataObjectFactory::create<ContiguousTensor<VT>>(lhs->tensor_shape, InitCode::NONE);
+        
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+        for (size_t i=0; i < lhs->total_element_count; i++) {
+            res->data[i] = func(lhs->data[i], rhs->data[i], ctx);
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// ChunkedTensor <- ChunkedTensor, ChunkedTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryMat<ChunkedTensor<VT>, ChunkedTensor<VT>, ChunkedTensor<VT>> {
+    static void apply(BinaryOpCode opCode, ChunkedTensor<VT> *& res, const ChunkedTensor<VT> * lhs, const ChunkedTensor<VT> * rhs, DCTX(ctx)) {
+        if (lhs->rank != rhs->rank) {
+            throw std::runtime_error("Rank missmatch of operand tensors");
+        }
+        if (lhs->tensor_shape != rhs->tensor_shape) {
+            throw std::runtime_error("Missmatch of shape of operand tensors");
+        }
+        // TODO: not strictly neccesary but simplifies things here since we can simply go chunk-wise
+        if (lhs->tensor_shape != rhs->tensor_shape) {
+            throw std::runtime_error("Missmatch of shape of operand tensors");
+        }
+
+        res = DataObjectFactory::create<ChunkedTensor<VT>>(lhs->tensor_shape, lhs->chunk_shape, InitCode::NONE);
+        
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+        for (size_t i=0; i < lhs->total_chunk_count; i++) {
+            auto current_chunk_ids = lhs->getChunkIdsFromLinearChunkId(i);
+
+            VT* current_chunk_ptr_res = res->getPtrToChunk(current_chunk_ids);
+            VT* current_chunk_ptr_lhs = lhs->getPtrToChunk(current_chunk_ids);
+            VT* current_chunk_ptr_rhs = rhs->getPtrToChunk(current_chunk_ids);
+
+            if (!lhs->isPartialChunk(current_chunk_ids)) {
+                for (size_t j=0; j < lhs->chunk_element_count; j++) {
+                    current_chunk_ptr_res[j] = func(current_chunk_ptr_lhs[j], current_chunk_ptr_rhs[j], ctx);
+                }
+            } else {
+                auto valid_id_bounds = lhs->GetIdBoundsOfPartialChunk(current_chunk_ids);
+                auto strides = lhs->GetStridesOfPartialChunk(valid_id_bounds);
+                auto valid_element_count = lhs->GetElementCountOfPartialChunk(valid_id_bounds);
+
+                for (size_t i=0; i < valid_element_count; i++) {
+                    std::vector<size_t> element_ids;
+                    element_ids.resize(lhs->rank);
+
+                    int64_t tmp = i;
+                    for (int64_t j=lhs->rank-1; j >= 0; j--) {
+                        element_ids[j] = tmp / strides[j];
+                        tmp = tmp % strides[j];
+                    }
+                    size_t lin_id = 0;
+                    for (size_t j = 0; j < lhs->rank; j++) {
+                        lin_id += element_ids[j] * strides[j]; 
+                    }
+
+                    current_chunk_ptr_res[lin_id] = func(current_chunk_ptr_lhs[lin_id], current_chunk_ptr_rhs[lin_id], ctx);
+                }
+            }
+
+            res->chunk_materialization_flags[i] = true;
+        }
     }
 };

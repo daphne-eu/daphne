@@ -41,6 +41,8 @@ struct AggOpCodeUtils {
             case AggOpCode::PROD:
             case AggOpCode::MIN:
             case AggOpCode::MAX:
+            case AggOpCode::IDXMIN:
+            case AggOpCode::IDXMAX:
                 return true;
             case AggOpCode::MEAN:
             case AggOpCode::STDDEV:

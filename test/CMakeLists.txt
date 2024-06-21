@@ -87,6 +87,7 @@ set(TEST_SOURCES
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggCumTest.cpp
         runtime/local/kernels/AggRowTest.cpp
+        runtime/local/kernels/AggTensorTest.cpp
         runtime/local/kernels/BinTest.cpp
         runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
@@ -133,6 +134,7 @@ set(TEST_SOURCES
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/ReadTest.cpp
         runtime/local/kernels/RecodeTest.cpp
+        runtime/local/kernels/ReduceRankTest.cpp
         runtime/local/kernels/ReplaceTest.cpp
         runtime/local/kernels/ReshapeTest.cpp
         runtime/local/kernels/ReverseTest.cpp

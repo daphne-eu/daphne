@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
+#include "runtime/local/datastructures/Tensor.h"
+#include "runtime/local/kernels/BinaryOpCode.h"
+#include "runtime/local/kernels/EwBinarySca.h"
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/EwBinaryMat.h>
 
@@ -25,7 +31,6 @@
 #include <catch.hpp>
 
 #include <vector>
-
 #include <cstdint>
 
 #define TEST_NAME(opName) "EwBinaryMat (" opName ")"
@@ -342,4 +347,77 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     DT * res = nullptr;
     auto m = genGivenVals<DT>(1, {1});
     CHECK_THROWS(ewBinaryMat<DT, DT, DT>(static_cast<BinaryOpCode>(999), res, m, m, nullptr));
+}
+
+// Tensors
+
+TEMPLATE_TEST_CASE(TEST_NAME("Tensor-EwBinMat"), TAG_KERNELS, VALUE_TYPES) {
+    using DT1 = ContiguousTensor<TestType>;
+    using DT2 = ChunkedTensor<TestType>;
+    using VT = TestType;
+    
+    std::vector<BinaryOpCode> op_types = {
+        BinaryOpCode::ADD,
+        BinaryOpCode::SUB,
+        BinaryOpCode::MUL,
+        BinaryOpCode::DIV,
+        BinaryOpCode::MOD,
+
+        BinaryOpCode::POW,
+        BinaryOpCode::LOG,
+
+        BinaryOpCode::EQ,
+        BinaryOpCode::NEQ,
+        BinaryOpCode::GE,
+        BinaryOpCode::LE,
+        BinaryOpCode::GT,
+        BinaryOpCode::LT,
+
+        BinaryOpCode::MAX,
+        BinaryOpCode::MIN,
+
+        BinaryOpCode::OR,
+        BinaryOpCode::AND,
+    };
+    
+    std::vector<size_t> shape = {2,4,8,2};
+    std::vector<size_t> chunk_shape = {2,2,2,2};
+
+    auto cont_lhs = DataObjectFactory::create<DT1>(shape, InitCode::IOTA);
+    auto chunk_lhs = DataObjectFactory::create<DT2>(shape, chunk_shape, InitCode::IOTA);
+
+    auto cont_rhs = DataObjectFactory::create<DT1>(shape, InitCode::IOTA);
+    auto chunk_rhs = DataObjectFactory::create<DT2>(shape, chunk_shape, InitCode::IOTA);
+    for(size_t i=0; i < cont_rhs->total_element_count; i++) {
+        cont_rhs->data[i] += 42;
+        cont_rhs->data[i] *= 2;
+        chunk_rhs->data[i] += 42;
+        chunk_rhs->data[i] *= 2;
+    }
+
+    for (size_t i=0; i < op_types.size(); i++) {
+        DT1* cont_res = nullptr;
+        DT2* chunk_res = nullptr;
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT,VT,VT>(op_types[i]);
+
+        ewBinaryMat(op_types[i], cont_res, cont_lhs, cont_rhs, nullptr);
+        ewBinaryMat(op_types[i], chunk_res, chunk_lhs, chunk_rhs, nullptr);
+
+        bool success = true;
+        for (size_t j=0; j < cont_lhs->total_element_count; j++) {
+            auto expected1 = func(cont_lhs->data[j], cont_rhs->data[j], nullptr);
+            auto expected2 = func(chunk_lhs->data[j], chunk_rhs->data[j], nullptr);
+
+            if (cont_res->data[j] != expected1 || chunk_res->data[j] != expected2){
+                success = false;
+            }
+        }
+
+        REQUIRE(success);
+
+        DataObjectFactory::destroy(cont_res, chunk_res);
+    }
+
+    DataObjectFactory::destroy(chunk_lhs, chunk_rhs, cont_rhs, cont_lhs);
 }

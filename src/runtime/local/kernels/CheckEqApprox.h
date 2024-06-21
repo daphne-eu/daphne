@@ -19,6 +19,8 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Matrix.h>
 
@@ -247,5 +249,28 @@ struct CheckEqApprox<Matrix<VT>> {
         }        
          
         return true;
+    }
+};
+
+
+// ----------------------------------------------------------------------------
+// ContiguosTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CheckEqApprox<ContiguousTensor<VT>> {
+    static bool apply(const ContiguousTensor<VT> * lhs, const ContiguousTensor<VT> * rhs, double eps, DCTX(ctx)) {
+        return lhs-> template IsApproxEqual<double>(*rhs, eps);
+    }
+};
+
+// ----------------------------------------------------------------------------
+// ChunkedTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CheckEqApprox<ChunkedTensor<VT>> {
+    static bool apply(const ChunkedTensor<VT> * lhs, const ChunkedTensor<VT> * rhs, double eps, DCTX(ctx)) {
+        return lhs-> template IsApproxEqual<double>(*rhs, eps);
     }
 };

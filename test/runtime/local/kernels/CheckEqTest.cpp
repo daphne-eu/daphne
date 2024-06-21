@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "runtime/local/datastructures/Tensor.h"
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -344,4 +345,47 @@ TEST_CASE("CheckEq, frames", TAG_KERNELS) {
     }
 
     DataObjectFactory::destroy(frame1, c0, c1, c2);
+}
+
+TEST_CASE("CheckEq, ContiguousTensor", TAG_KERNELS) {
+    auto t1 = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({1,1,1,1}), InitCode::IOTA);
+    auto t2 = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({1,1,1,1}), InitCode::IOTA);
+    
+    REQUIRE(*t1 == *t2);
+
+    auto t3 = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({32,12,2,11,2}), InitCode::IOTA);
+    auto t4 = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({32,12,2,11,2}), InitCode::IOTA);
+    
+    REQUIRE(*t3 == *t4);
+
+    auto t5 = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({}), InitCode::IOTA);
+    auto t6 = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({}), InitCode::IOTA);
+    
+    REQUIRE(*t5 == *t6);
+
+    DataObjectFactory::destroy(t1,t2,t3,t4,t5,t6);
+}
+
+TEST_CASE("CheckEq, ChunkedTensor", TAG_KERNELS) {
+    auto t1 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({1,1,1,1}), std::vector<size_t>({1,1,1,1}), InitCode::IOTA);
+    auto t2 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({1,1,1,1}), std::vector<size_t>({1,1,1,1}), InitCode::IOTA);
+    
+    REQUIRE(*t1 == *t2);
+
+    auto t3 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({1,1,1,1}), std::vector<size_t>({10,2,2,4}), InitCode::IOTA);
+    auto t4 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({1,1,1,1}), std::vector<size_t>({10,2,2,4}), InitCode::IOTA);
+
+    REQUIRE(*t3 == *t4);
+
+    auto t5 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({32,12,2,11}), std::vector<size_t>({10,10,10,10}), InitCode::IOTA);
+    auto t6 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({32,12,2,11}), std::vector<size_t>({10,10,10,10}), InitCode::IOTA);
+
+    REQUIRE(*t5 == *t6);
+
+    auto t7 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({}), std::vector<size_t>({}), InitCode::IOTA);
+    auto t8 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({}), std::vector<size_t>({}), InitCode::IOTA);
+
+    REQUIRE(*t7 == *t8);
+
+    DataObjectFactory::destroy(t1,t2,t3,t4,t5,t6,t7,t8);
 }

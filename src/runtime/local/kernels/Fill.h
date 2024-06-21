@@ -19,6 +19,8 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Matrix.h>
 
 // ****************************************************************************
@@ -37,7 +39,43 @@ struct Fill {
 template<class DTRes, typename VTArg>
 void fill(DTRes *& res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
     Fill<DTRes, VTArg>::apply(res, arg, numRows, numCols, ctx);
-}
+};
+
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+
+template<class DTRes, typename VTArg>
+struct FillContiguousTensor {
+    static void apply(DTRes*& res, VTArg arg, size_t* tensor_shape, size_t rank, DCTX(ctx)) = delete;
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DTRes, typename VTArg>
+void fillContiguousTensor(DTRes*& res, VTArg arg, size_t* tensor_shape, size_t rank, DCTX(ctx)) {
+    FillContiguousTensor<DTRes, VTArg>::apply(res, arg, tensor_shape, rank, ctx);
+};
+
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+
+template<class DTRes, typename VTArg>
+struct FillChunkedTensor {
+    static void apply(DTRes*& res, VTArg arg, size_t* tensor_shape, size_t* chunk_shape, size_t rank, DCTX(ctx)) = delete;
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DTRes, typename VTArg>
+void fillChunkedTensor(DTRes*& res, VTArg arg, size_t* tensor_shape, size_t* chunk_shape, size_t rank, DCTX(ctx)) {
+    FillChunkedTensor<DTRes, VTArg>::apply(res, arg, tensor_shape, chunk_shape, rank, ctx);
+};
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -78,6 +116,39 @@ struct Fill<Matrix<VT>, VT> {
                 for (size_t c = 0; c < numCols; ++c)
                     res->append(r, c, arg);
             res->finishAppend();
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// ContiguousTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct FillContiguousTensor<ContiguousTensor<VT>, VT> {
+    static void apply(ContiguousTensor<VT>*& res, VT arg, size_t* tensor_shape, size_t rank, DCTX(ctx)) {
+        res = DataObjectFactory::create<ContiguousTensor<VT>>(
+            std::vector<size_t>(tensor_shape, tensor_shape + rank), InitCode::NONE);
+
+        for (size_t i = 0; i < res->total_element_count; ++i) {
+            res->data[i] = arg;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// ChunkedTensor
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct FillChunkedTensor<ChunkedTensor<VT>, VT> {
+    static void apply(ChunkedTensor<VT>*& res, VT arg, size_t* tensor_shape, size_t* chunk_shape, size_t rank, DCTX(ctx)) {
+        res = DataObjectFactory::create<ChunkedTensor<VT>>(std::vector<size_t>(tensor_shape, tensor_shape + rank),
+                                                           std::vector<size_t>(chunk_shape, chunk_shape + rank),
+                                                           InitCode::NONE);
+
+        for (size_t i = 0; i < res->total_size_in_elements; ++i) {
+            res->data[i] = arg;
         }
     }
 };

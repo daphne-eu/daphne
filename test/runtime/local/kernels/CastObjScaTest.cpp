@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "runtime/local/datastructures/ContiguousTensor.h"
+#include "runtime/local/datastructures/Tensor.h"
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -38,7 +40,7 @@ TEMPLATE_TEST_CASE("castObjSca, matrix to scalar", TAG_KERNELS, double, float, i
     }
 
     SECTION("DenseMatrix<double> to VTRes") {
-        VTRes exp = 2.2;
+        VTRes exp = static_cast<VTRes>(2.2);
         auto m0 = genGivenVals<DenseMatrix<double>>(1, {static_cast<double>(exp)});
         res = castObjSca<VTRes, DenseMatrix<double>>(m0, nullptr);
         CHECK(res == exp); 
@@ -51,7 +53,7 @@ TEMPLATE_TEST_CASE("castObjSca, frame to scalar", TAG_KERNELS, double, float, in
 
     Frame* arg = nullptr;
     SECTION("Frame[double] to VTRes") {
-        VTRes exp = 2.2;
+        VTRes exp = static_cast<VTRes>(2.2);
 
         auto m0 = genGivenVals<DenseMatrix<double>>(1, {static_cast<double>(exp)});
         std::vector<Structure *> cols = {m0};
@@ -74,4 +76,47 @@ TEMPLATE_TEST_CASE("castObjSca, frame to scalar", TAG_KERNELS, double, float, in
         DataObjectFactory::destroy(m0);
     }
     DataObjectFactory::destroy(arg);
+}
+
+
+TEMPLATE_TEST_CASE("castObjSca, ContiguousTensor to scalar", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+    using VTRes = TestType;
+
+    using VTArg1 = double;
+    using VTArg2 = uint32_t;
+
+    auto t1 = DataObjectFactory::create<ContiguousTensor<VTArg1>>(std::vector<size_t>({}), InitCode::NONE);
+    t1->data[0] = static_cast<VTArg1>(42.42);
+
+    VTRes res1 = castObjSca<VTRes, ContiguousTensor<VTArg1>>(t1, nullptr);
+
+    REQUIRE(res1 == static_cast<VTRes>(static_cast<VTArg1>(42.42)));
+    
+    auto t2 = DataObjectFactory::create<ContiguousTensor<VTArg2>>(std::vector<size_t>({}), InitCode::NONE);
+    t2->data[0] = static_cast<VTArg2>(42.42);
+
+    VTRes res2 = castObjSca<VTRes, ContiguousTensor<VTArg2>>(t2, nullptr);
+
+    REQUIRE(res2 == static_cast<VTRes>(static_cast<VTArg2>(42.42)));
+}
+
+TEMPLATE_TEST_CASE("castObjSca, ChunkedTensor to scalar", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+    using VTRes = TestType;
+
+    using VTArg1 = double;
+    using VTArg2 = uint32_t;
+
+    auto t1 = DataObjectFactory::create<ChunkedTensor<VTArg1>>(std::vector<size_t>({}), std::vector<size_t>({}), InitCode::NONE);
+    t1->data[0] = static_cast<VTArg1>(42.42);
+
+    VTRes res1 = castObjSca<VTRes, ChunkedTensor<VTArg1>>(t1, nullptr);
+
+    REQUIRE(res1 == static_cast<VTRes>(static_cast<VTArg1>(42.42)));
+    
+    auto t2 = DataObjectFactory::create<ChunkedTensor<VTArg2>>(std::vector<size_t>({}), std::vector<size_t>({}), InitCode::NONE);
+    t2->data[0] = static_cast<VTArg2>(42.42);
+
+    VTRes res2 = castObjSca<VTRes, ChunkedTensor<VTArg2>>(t2, nullptr);
+
+    REQUIRE(res2 == static_cast<VTRes>(static_cast<VTArg2>(42.42)));
 }

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "runtime/local/datastructures/ChunkedTensor.h"
+#include "runtime/local/datastructures/ContiguousTensor.h"
+#include <cmath>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -79,4 +82,58 @@ TEMPLATE_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, double, float, in
         
         DataObjectFactory::destroy(m0, exp, res);
     }
+}
+
+TEMPLATE_TEST_CASE("castScaObj, scalar -> ContiguousTensor", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+    using VTRes = TestType;
+
+    using VTArg1 = double;
+    using VTArg2 = uint32_t;
+
+    VTArg1 val1 = static_cast<VTArg1>(42.42);
+    VTArg2 val2 = static_cast<VTArg2>(42.42);
+
+    VTRes exp1 = static_cast<VTRes>(val1);
+    VTRes exp2 = static_cast<VTRes>(val2);
+
+    ContiguousTensor<VTRes>* res1 = nullptr;
+    ContiguousTensor<VTRes>* res2 = nullptr;
+
+    castScaObj<ContiguousTensor<VTRes>, VTArg1>(res1, val1, nullptr);
+    castScaObj<ContiguousTensor<VTRes>, VTArg2>(res2, val2, nullptr);
+
+    REQUIRE(res1 != nullptr);
+    REQUIRE(res1->data[0] == static_cast<VTRes>(exp1));
+    REQUIRE(res1->rank == 0);
+
+    REQUIRE(res2 != nullptr);
+    REQUIRE(res2->data[0] == static_cast<VTRes>(exp2));
+    REQUIRE(res2->rank == 0);
+}
+
+TEMPLATE_TEST_CASE("castScaObj, scalar -> ChunkedTensor", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+    using VTRes = TestType;
+
+    using VTArg1 = double;
+    using VTArg2 = uint32_t;
+
+    VTArg1 val1 = static_cast<VTArg1>(42.42);
+    VTArg2 val2 = static_cast<VTArg2>(42.42);
+
+    VTRes exp1 = static_cast<VTRes>(val1);
+    VTRes exp2 = static_cast<VTRes>(val2);
+
+    ChunkedTensor<VTRes>* res1 = nullptr;
+    ChunkedTensor<VTRes>* res2 = nullptr;
+
+    castScaObj<ChunkedTensor<VTRes>, VTArg1>(res1, val1, nullptr);
+    castScaObj<ChunkedTensor<VTRes>, VTArg2>(res2, val2, nullptr);
+
+    REQUIRE(res1 != nullptr);
+    REQUIRE(res1->data[0] == static_cast<VTRes>(exp1));
+    REQUIRE(res1->rank == 0);
+
+    REQUIRE(res2 != nullptr);
+    REQUIRE(res2->data[0] == static_cast<VTRes>(exp2));
+    REQUIRE(res2->rank == 0);
 }

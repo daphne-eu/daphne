@@ -17,9 +17,13 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_CASTSCAOBJ_H
 #define SRC_RUNTIME_LOCAL_KERNELS_CASTSCAOBJ_H
 
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/Tensor.h"
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -70,6 +74,30 @@ struct CastScaObj<Frame, VTArg> {
         std::vector<Structure *> cols = {col};
         res = DataObjectFactory::create<Frame>(cols, nullptr);
         
+    }
+};
+
+// ----------------------------------------------------------------------------
+// ContiguosTensor <- Scalar
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct CastScaObj<ContiguousTensor<VTRes>, VTArg> {
+    static void apply(ContiguousTensor<VTRes> *& res, const VTArg arg, DCTX(ctx)) {
+        res = DataObjectFactory::create<ContiguousTensor<VTRes>>(std::vector<size_t>({}), InitCode::NONE);
+        res->data[0] = static_cast<VTRes>(arg);
+    }
+};
+
+// ----------------------------------------------------------------------------
+// ChunkedTensor <- Scalar
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct CastScaObj<ChunkedTensor<VTRes>, VTArg> {
+    static void apply(ChunkedTensor<VTRes> *& res, const VTArg arg, DCTX(ctx)) {
+        res = DataObjectFactory::create<ChunkedTensor<VTRes>>(std::vector<size_t>({}), std::vector<size_t>({}), InitCode::NONE);
+        res->data[0] = static_cast<VTRes>(arg);
     }
 };
 

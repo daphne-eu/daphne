@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string_view>
+
 enum class BinaryOpCode {
     // Arithmetic.
     ADD,  // addition

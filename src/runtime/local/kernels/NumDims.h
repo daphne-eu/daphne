@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_NUMCELLS_H
-#define SRC_RUNTIME_LOCAL_KERNELS_NUMCELLS_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_NUMDIMS_H
+#define SRC_RUNTIME_LOCAL_KERNELS_NUMDIMS_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Structure.h>
@@ -23,9 +23,9 @@
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-//
-size_t numCells(const Structure * arg, DCTX(ctx)) {
-    return arg->getNumItems();
+
+size_t numDims(const Structure * arg, DCTX(ctx)) {
+    return arg->getNumDims();
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_NUMCELLS_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_NUMDIMS_H

@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#include "runtime/local/kernels/EwUnarySca.h"
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/EwUnaryMat.h>
 #include <runtime/local/datagen/GenGivenVals.h>
@@ -27,8 +30,8 @@
 #include <catch.hpp>
 
 #include <limits>
-
 #include <cstdint>
+#include <vector>
 
 #define TEST_NAME(opName) "EwUnaryMat (" opName ")"
 #define DATA_TYPES DenseMatrix, Matrix
@@ -560,4 +563,64 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     CHECK_THROWS(ewUnaryMat<DT, DT>(static_cast<UnaryOpCode>(999), exp, arg, nullptr));
 
     DataObjectFactory::destroy(arg);
+}
+
+// Tensors
+
+TEMPLATE_TEST_CASE(TEST_NAME("Tensor-EwBinMat"), TAG_KERNELS, VALUE_TYPES) {
+    using DT1 = ContiguousTensor<TestType>;
+    using DT2 = ChunkedTensor<TestType>;
+    using VT = TestType;
+    
+    std::vector<UnaryOpCode> op_types = {
+        UnaryOpCode::COS,
+        UnaryOpCode::SIN,
+        UnaryOpCode::TAN,
+        UnaryOpCode::COSH,
+        UnaryOpCode::SINH,
+        UnaryOpCode::TANH,
+
+        UnaryOpCode::EXP,
+        UnaryOpCode::LN,
+
+        UnaryOpCode::SQRT,
+
+        UnaryOpCode::ABS,
+        UnaryOpCode::FLOOR,
+        UnaryOpCode::CEIL,
+        UnaryOpCode::SIGN,
+        UnaryOpCode::ROUND,
+    };
+    
+    std::vector<size_t> shape = {2,4,8,2};
+    std::vector<size_t> chunk_shape = {2,2,2,2};
+
+    auto cont = DataObjectFactory::create<DT1>(shape, InitCode::IOTA);
+    auto chunk = DataObjectFactory::create<DT2>(shape, chunk_shape, InitCode::IOTA);
+
+    for (size_t i=0; i < op_types.size(); i++) {
+        DT1* cont_res = nullptr;
+        DT2* chunk_res = nullptr;
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT,VT>(op_types[i]);
+
+        ewUnaryMat(op_types[i], cont_res, cont, nullptr);
+        ewUnaryMat(op_types[i], chunk_res, chunk, nullptr);
+
+        bool success = true;
+        for (size_t j=0; j < cont->total_element_count; j++) {
+            auto expected1 = func(cont->data[j], nullptr);
+            auto expected2 = func(chunk->data[j], nullptr);
+
+            if (cont_res->data[j] != expected1 || chunk_res->data[j] != expected2){
+                success = false;
+            }
+        }
+
+        REQUIRE(success);
+
+        DataObjectFactory::destroy(cont_res, chunk_res);
+    }
+
+    DataObjectFactory::destroy(chunk, cont);
 }
