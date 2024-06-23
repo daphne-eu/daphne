@@ -62,7 +62,7 @@ std::ostream& operator<<(std::ostream& out, const ZarrDatatype& dt);
 std::ostream& operator<<(std::ostream& out, ZarrFileMetaData& zm);
 
 std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string &chunk_key_to_test,
-                                                           const std::string &dim_seperator,
+                                                           const std::string &dim_separator,
                                                            const std::vector<size_t> &tensor_shape,
                                                            const std::vector<size_t> &amount_of_chunks_per_dim);
 

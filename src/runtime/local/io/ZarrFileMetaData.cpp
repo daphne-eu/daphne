@@ -1,4 +1,20 @@
-#include <runtime/local/io/ZarrFileMetadata.h>
+/*
+ * Copyright 2024 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
+#include <runtime/local/io/ZarrFileMetaData.h>
 
 #include <iostream>
 #include <optional>
@@ -103,10 +119,10 @@ std::ostream& operator<<(std::ostream& out, ZarrFileMetaData& zm) {
     return out;
 }
 
-enum struct ZarrParseCharState { IsNumeral, IsSeperator, IsInvalid };
+enum struct ZarrParseCharState { IsNumeral, IsSeparator, IsInvalid };
 
 std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& chunk_key_to_test,
-                                                           const std::string& dim_seperator,
+                                                           const std::string& dim_separator,
                                                            const std::vector<size_t>& tensor_shape,
                                                            const std::vector<size_t>& amount_of_chunks_per_dim) {
     std::vector<uint64_t> parsed_chunk_ids;
@@ -118,8 +134,8 @@ std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& ch
         if (std::isdigit(chunk_key_to_test[i])) {
             current_char_state = ZarrParseCharState::IsNumeral;
         } else {
-            if (chunk_key_to_test[i] == dim_seperator[0]) {
-                current_char_state = ZarrParseCharState::IsSeperator;
+            if (chunk_key_to_test[i] == dim_separator[0]) {
+                current_char_state = ZarrParseCharState::IsSeparator;
             } else {
                 current_char_state = ZarrParseCharState::IsInvalid;
             }
@@ -142,7 +158,7 @@ std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& ch
                     parsed_chunk_ids.push_back(static_cast<uint64_t>(chunk_id));
                 }
                 break;
-            case IsSeperator:
+            case IsSeparator:
                 if (tmp.size() == 0) {
                     // encountered separator without preceding number
                     return std::nullopt;
@@ -171,12 +187,12 @@ std::optional<std::vector<size_t>> GetChunkIdsFromChunkKey(const std::string& ch
     return parsed_chunk_ids;
 }
 
-std::string GetChunkKeyFromChunkIds(const std::string& dim_seperator, const std::vector<size_t>& chunk_ids) {
+std::string GetChunkKeyFromChunkIds(const std::string& dim_separator, const std::vector<size_t>& chunk_ids) {
     std::string key;
     for (size_t i=0; i<chunk_ids.size(); i++) {
         key += std::to_string(chunk_ids[i]);
         if (i != (chunk_ids.size() - 1)) {
-          key += dim_seperator;
+            key += dim_separator;
         }
     }
     return key;

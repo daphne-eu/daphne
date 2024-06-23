@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef ZARR_IO_H
-#define ZARR_IO_H
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
@@ -36,7 +35,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/ChunkedTensor.h>
-#include <runtime/local/io/ZarrFileMetadata.h>
+#include <runtime/local/io/ZarrFileMetaData.h>
 #include <runtime/local/io/ZarrUtils.h>
 #include <parser/metadata/ZarrFileMetaDataParser.h>
 
@@ -80,8 +79,8 @@ void readZarr(DTRes *&res, const char *filename, const std::vector<std::pair<siz
 
 // To read the entire file:
 
-// Reads an entire tensor contained in a zarr "file/archive" into a chunked tensor. Both the tensor_shape and chunk_shape
-// are determined by the zarr file. For reading only a portion see the partialRead functions.
+// Reads an entire tensor contained in a Zarr "file/archive" into a chunked tensor. Both the tensor_shape and chunk_shape
+// are determined by the Zarr file. For reading only a portion see the partialRead functions.
 template<typename VT>
 struct ReadZarr<ChunkedTensor<VT>> {
     static void apply(ChunkedTensor<VT> *&res, const char *filename, const ZarrFileMetaData& zfmd, std::shared_ptr<spdlog::logger> log) {
@@ -143,21 +142,21 @@ struct ReadZarr<ContiguousTensor<VT>> {
 
 // To read the file partially:
 
-// Read a part of a tensor in a zarr "file/archive" into a chunked tensor. The section to be read is indicated by the
+// Read a part of a tensor in a Zarr "file/archive" into a chunked tensor. The section to be read is indicated by the
 // element_id_ranges parameter.
-// The chunk_shape specified in the zarr file will always also be the chunk shape of the resulting tensor.
+// The chunk_shape specified in the Zarr file will always also be the chunk shape of the resulting tensor.
 // The resulting tensor will have the shape implied by the range, e.g. reading from a tensor with tensor_shape = {20,20}
 // and chunk_shape {10,10}, with the ranges [0,10),[10,20) will result in a chunked tensor with tensor_shape = {10,10}
 // and chunk_shape = {10,10}
 // Id ranges that do not match up with the boundaries of a chunk will always result in all resulting partial chunks still
-// being read completely from file. The resulting tensor will be, similar to the example above trunked and or diced to
+// being read completely from file. The resulting tensor will be, similar to the example above, trunked and or diced to
 // the requested tensor_shape. If the id range does not align on the right boundary (i.e. a partial overhanging chunk
-// this does not further costs beyond the "full" read from file for that partial chunk. 
+// this does not have further costs beyond the "full" read from file for that partial chunk. 
 // Example: Same file as above. Id range [0,12), [10,12) -> resulting tensor_shape {12,2}, but still with chunking {10,10}
 // If the range does not match the left boundary the tensor is diced to fit the requested range, which in this case is
-// a expensive change to the memory layout.
+// an expensive change to the memory layout.
 // Example: Same file as above. Id range [1,13), [11,13) -> also results in tensor_shape {12,2}, but of course with
-// different elements and notably requires the expensive dice operation mentioned above
+// different elements and notably requires the expensive dice operation mentioned above.
 // Todo: change this to immediately use a tensor of the correct size rather then using a "full" sized tensor followed by
 // a dice to avoid the memcpies and allocs
 template<typename VT>
@@ -198,7 +197,7 @@ struct PartialReadZarr<ChunkedTensor<VT>> {
 
                 break;
             }
-            case Has_left_side_trunkated:{
+            case Has_left_side_truncated:{
                 res = initial_tensor->tryDice(element_id_ranges, initial_tensor->chunk_shape);
                 if (res == nullptr) {
                     throw std::runtime_error("PartialReadZarr->ChunkedTensor: Dice to final shape failed");
@@ -251,7 +250,7 @@ void readTouchedChunks(
     std::shared_ptr<spdlog::logger> log) {
     if (element_id_range.size() != zfmd.shape.size()) {
         throw std::runtime_error("PartialReadZarr->ChunkedTensor: Number of chunk ranges does not match tensor dim");
-     }
+    }
 
     CheckZarrMetaDataVT<VT>(zfmd.data_type);
 
@@ -325,12 +324,10 @@ void readChunk(
         throw std::runtime_error("ReadZarr->ChunkedTensor: failed to read chunk file.");
     }
 
-    // Files endianness does not match the native endianness -> byte reverse every read element in the read chunk
+    // File's endianness does not match the native endianness -> byte reverse every read element in the read chunk
     if (endian_missmatch) {
         ReverseArray(dest->data.get(), chunk_size_in_bytes / sizeof(VT));
     }
 
     dest->chunk_materialization_flags[dest->getLinearChunkIdFromChunkIds(dest_chunk_ids)] = true;
 }
-
-#endif    // ZARR_IO_H

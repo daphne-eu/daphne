@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -13,7 +29,7 @@
 #include <fcntl.h>
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/ChunkedTensor.h>
-#include <runtime/local/io/ZarrFileMetadata.h>
+#include <runtime/local/io/ZarrFileMetaData.h>
 #include <runtime/local/io/ZarrUtils.h>
 #include <parser/metadata/ZarrFileMetaDataParser.h>
 
@@ -82,7 +98,7 @@ std::shared_ptr<spdlog::logger> GetZarrLogger() {
 ChunkAlignment CheckAlignment(const std::vector<uint64_t>& chunk_shape, const std::vector<std::pair<uint64_t,uint64_t>>& element_ranges) {
     for(size_t i=0; i < chunk_shape.size(); i++) {
         if (std::get<0>(element_ranges[i]) % chunk_shape[i] != 0) {
-            return ChunkAlignment::Has_left_side_trunkated;
+            return ChunkAlignment::Has_left_side_truncated;
         }
     }
     for(size_t i=0; i < chunk_shape.size(); i++) {

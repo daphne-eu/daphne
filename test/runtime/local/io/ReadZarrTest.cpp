@@ -20,7 +20,7 @@
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/io/ReadZarr.h>
-#include <runtime/local/io/ZarrFileMetadata.h>
+#include <runtime/local/io/ZarrFileMetaData.h>
 
 #include <tags.h>
 

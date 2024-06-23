@@ -19,7 +19,7 @@
 #include <fstream>
 #include <string>
 
-#include <runtime/local/io/ZarrFileMetadata.h>
+#include <runtime/local/io/ZarrFileMetaData.h>
 #include <nlohmannjson/json.hpp>
 #include <stdexcept>
 
@@ -61,7 +61,7 @@ ZarrFileMetaData ZarrFileMetaDataParser::readMetaData(const std::string& filenam
     std::ifstream zarr_meta_file(filename + ZARR_KEY_FILE_EXTENSION);
 
     if (!zarr_meta_file.good() || !zarr_meta_file.is_open()) {
-        throw std::runtime_error("Error while opening Zarr meta data file");
+        throw std::runtime_error("Error while opening Zarr meta data file `" + filename + "`");
     }
     auto zarr_metadata = json::parse(zarr_meta_file);
 
