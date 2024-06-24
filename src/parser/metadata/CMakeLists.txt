@@ -14,4 +14,5 @@
 
 add_library(DaphneMetaDataParser STATIC
         MetaDataParser.cpp
+        ZarrFileMetaDataParser.cpp
 )
