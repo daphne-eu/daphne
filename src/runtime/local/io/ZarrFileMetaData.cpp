@@ -50,7 +50,7 @@ std::ostream& operator<<(std::ostream& out, const ZarrDatatype& dt) {
             out << "\"double\"";
             break;
         case FP32:
-            out << "\"double\"";
+            out << "\"float\"";
             break;
         case INT64:
             out << "\"int64_t\"";
