@@ -174,9 +174,17 @@ struct MinOp<float> {
  */
 template<typename T>
 struct MaxOp {
-	__device__  __forceinline__ T operator()(T a, T b) const;
-	__device__  __forceinline__ static T exec(const T& a, const T& b);
-	__device__  __forceinline__ static T init();
+    __device__  __forceinline__ T operator()(T a, T b) const {
+        return a > b ? a : b;
+    }
+
+    __device__  __forceinline__ static T exec(T const & a, T volatile const & b) {
+        return a > b ? a : b;
+    }
+
+    __device__  __forceinline__ static T init() {
+        return MaxNeutralElement<T>::get();
+    }
 };
 
 template<>
