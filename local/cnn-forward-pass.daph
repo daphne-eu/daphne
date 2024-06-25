@@ -40,12 +40,13 @@ F = 16;
 seed = 42;
 
 t_start = now();
-X = rand(N, Isize1*Isize2*C, 0.0, 256.0, 1.0, seed);
+#X = rand(N, Isize1*Isize2*C, 0.0, 256.0, 1.0, seed);
+#write(X, "data/test_input.csv");
 # print("X:",0); print(X);
 # print("X dims: ",0) ;print(nrow(X),0);print("x",0);print(ncol(X));
 
 # Uncomment, to alternatively read pre generated input
-# X = readMatrix("test_input.csv");
+X = readMatrix("data/test_input.csv");
 # N = as.si64(nrow(X));
 # t_end_read = now();
 # print("Time input read:  ",0);print(as.f32((t_end_read - t_start)) * msec_factor,0);print(" ms");
@@ -66,10 +67,10 @@ X_bn = batch_norm2d(X_conv, gamma, beta, ema_mean, ema_var, eps);
 t_end_bn = now();
 X_relu = relu(X_bn);
 t_end_relu = now();
-W2 = rand(32, C*Fsize*Fsize, 0.0, 1.0, 1.0, seed);
-b2 = rand(1, 32, 0.0, 1.0, 1.0, seed);
+W2 = rand(F, C*Fsize*Fsize, 0.0, 1.0, 1.0, seed);
+b2 = rand(1, F, 0.0, 1.0, 1.0, seed);
 X_relu=rand(N,32*4*760, 0.0, 256.0,1.0,seed);
-X_conv2, Hout2, Wout2 = conv2d(X_relu, W2, N, 32, 3, 759, Fsize, Fsize, 1, 1, 1, 1, b2);
+X_conv2, Hout2, Wout2 = conv2d(X_relu, W2, N, F, 3, 759, Fsize, Fsize, 1, 1, 1, 1, b2);
 t_end_conv2 = now();
 gamma = rand(32, 1, 1.0, 1.0, 1.0, seed);
 beta = fill(0.0, 32, 1);

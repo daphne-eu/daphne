@@ -62,6 +62,8 @@ def forward(X:matrix, C, Hin, Win, Hf, Wf, strideh, stridew, padh, padw) -> matr
    *  - Hout: Output height.
    *  - Wout: Output width.
    */
+print("max_pool2d forward");
+
   N = nrow(X);
   Hout = floor((Hin + 2*padh - Hf)/strideh + 1);
   Wout = floor((Win + 2*padw - Wf)/stridew + 1);
@@ -126,6 +128,7 @@ def backward(dout:matrix, Hout, Wout, X:matrix, C, Hin, Win, Hf, Wf, strideh, st
    * Outputs:
    *  - dX: Gradient wrt `X`, of shape (N, C*Hin*Win).
    */
+print("max_pool2d backward");
   N = nrow(X);
   pad_value = -1.0/0.0;  # in max pooling we pad with -infinity
 

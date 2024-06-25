@@ -35,7 +35,7 @@ public:
         if(data.use_count()) {
             if (data.use_count() == 2) {
 //                std::cerr << "cudaFree alloc_id=" << alloc_id << " use_count=" << data.use_count() << std::endl;
-                if(alloc_id != 29)
+//                if(alloc_id != 29)
                     CUDAContext::get(dctx, device_id)->free(alloc_id);
             }
 //            else

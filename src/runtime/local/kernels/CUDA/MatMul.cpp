@@ -15,7 +15,6 @@
  */
 
 #include "MatMul.h"
-//#include "Gemv.h"
 #include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 
 namespace CUDA {
