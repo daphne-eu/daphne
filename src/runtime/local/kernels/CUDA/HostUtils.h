@@ -98,7 +98,8 @@ template<typename T>
 struct CudaDeleter {
     void operator()(T* dev_ptr) const { del(dev_ptr); };
     static void del(T* dev_ptr) {
-        cudaFree(reinterpret_cast<void*>(dev_ptr));
+//        cudaFree(reinterpret_cast<void*>(dev_ptr));
+//        dev_ptr = nullptr;
     }
 };
 
