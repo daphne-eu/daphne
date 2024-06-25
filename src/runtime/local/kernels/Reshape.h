@@ -58,9 +58,8 @@ struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
         if(numRows * numCols != arg->getNumRows() * arg->getNumCols())
             throw std::runtime_error("reshape must retain the number of cells");
 
-        if(arg->getRowSkip() == arg->getNumCols() && arg->isView() == false) {
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg);
-        }
+        if(arg->getRowSkip() == arg->getNumCols() && arg->isView() == false && arg->getValuesSharedPtr())
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg->getValuesSharedPtr());
         else {
             if(res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
