@@ -23,6 +23,12 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server_builder.h>
 
+#include <runtime/local/io/HDFS/ReadHDFSCsv.h>
+#include <runtime/local/io/HDFS/ReadDaphneHDFS.h>
+#include <runtime/local/io/HDFS/WriteHDFSCsv.h>
+#include <runtime/local/io/HDFS/WriteDaphneHDFS.h>
+
+
 WorkerImplGRPCSync::WorkerImplGRPCSync(const std::string& addr, DaphneUserConfig& _cfg) : WorkerImpl(_cfg)
 
 {
@@ -122,5 +128,42 @@ grpc::Status WorkerImplGRPCSync::Transfer(::grpc::ServerContext *context,
     Structure *mat = WorkerImpl::Transfer(info);
     bufferLength = DaphneSerializer<Structure>::serialize(mat, buffer);
     response->set_bytes(buffer.data(), bufferLength);
+    return ::grpc::Status::OK;
+}
+
+
+grpc::Status WorkerImplGRPCSync::ReadHDFS(::grpc::ServerContext *context,
+                          const ::distributed::HDFSFile *request,
+                         ::distributed::StoredData *response)
+{
+    KernelDispatchMapping mappings;
+    Statistics stats;
+    DaphneContext ctx(cfg, mappings, stats);
+    DenseMatrix<double> *res = DataObjectFactory::create<DenseMatrix<double>>(request->num_rows(), request->num_cols(), false);
+    if (request->filename().find("csv") != std::string::npos)
+        readHDFSCsv(res, request->filename().c_str(), request->num_rows(), request->num_cols(), ',', &ctx, request->start_row());
+    else if (request->filename().find("dbdf") != std::string::npos)
+        readDaphneHDFS(res, request->filename().c_str(), &ctx, request->start_row());
+    auto storedInfo = WorkerImpl::Store(dynamic_cast<Structure*>(res));
+
+    response->set_identifier(storedInfo.identifier);
+    response->set_num_rows(storedInfo.numRows);
+    response->set_num_cols(storedInfo.numCols);
+    return ::grpc::Status::OK;
+}
+
+grpc::Status WorkerImplGRPCSync::WriteHDFS(::grpc::ServerContext *context,
+                          const ::distributed::HDFSWriteInfo *request,
+                         ::distributed::Empty *response)
+{
+    KernelDispatchMapping mappings;
+    Statistics stats;
+    DaphneContext ctx(cfg, mappings, stats);
+    StoredInfo si({request->matrix().identifier(), request->matrix().num_rows(), request->matrix().num_cols()});
+    auto mat = dynamic_cast<DenseMatrix<double>*>(WorkerImpl::Transfer(si));
+    if (request->dirname().find("csv") != std::string::npos)
+        writeHDFSCsv(mat, request->dirname().c_str(), &ctx);
+    else if (request->dirname().find("dbdf") != std::string::npos)
+        writeDaphneHDFS(mat, request->dirname().c_str(), &ctx);
     return ::grpc::Status::OK;
 }

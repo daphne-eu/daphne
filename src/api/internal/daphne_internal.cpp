@@ -125,6 +125,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     static OptionCategory daphneOptions("DAPHNE Options");
     static OptionCategory schedulingOptions("Advanced Scheduling Knobs");
     static OptionCategory distributedBackEndSetupOptions("Distributed Backend Knobs");
+    static OptionCategory HDFSOptions("HDFS Knobs");
 
 
     // Options ----------------------------------------------------------------
@@ -146,6 +147,22 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                                             ),
                                             init(std::numeric_limits<int>::max() - 1024)
                                         );
+
+    // HDFS knobs
+    static opt<bool> use_hdfs(
+        "enable-hdfs", cat(HDFSOptions),
+        desc("Enable HDFS filesystem")
+    );
+    static opt<string> hdfs_Address(
+        "hdfs-ip", cat(HDFSOptions),
+        desc("IP of the HDFS filesystem (including port)."),
+        init("")
+    );
+    static opt<string> hdfs_username(
+        "hdfs-username", cat(HDFSOptions),
+        desc("Username of the HDFS filesystem."),
+        init("")
+    );
 
     
     // Scheduling options
@@ -397,6 +414,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     visibleCategories.push_back(&daphneOptions);
     visibleCategories.push_back(&schedulingOptions);
     visibleCategories.push_back(&distributedBackEndSetupOptions);
+    visibleCategories.push_back(&HDFSOptions);
     
     HideUnrelatedOptions(visibleCategories);
 
@@ -477,7 +495,22 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_SYNC &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_ASYNC)
             spdlog::warn("No backend has been selected. Wiil use the default 'MPI'");
     }
-    user_config.max_distributed_serialization_chunk_size = maxDistrChunkSize;    
+    user_config.max_distributed_serialization_chunk_size = maxDistrChunkSize;  
+
+    // only overwrite with non-defaults
+    if (use_hdfs) {
+        user_config.use_hdfs = use_hdfs;
+    }
+    if (hdfs_Address != "") {
+        user_config.hdfs_Address = hdfs_Address;
+    }
+    if (hdfs_username != "") {
+        user_config.hdfs_username = hdfs_username;
+    }
+    if (user_config.use_hdfs && (user_config.hdfs_Address == "" || user_config.hdfs_username == "")){
+        spdlog::warn("HDFS is enabled, but the HDFS IP address or username were not provided.");
+    }
+
     for (auto explain : explainArgList) {
         switch (explain) {
             case kernels:

@@ -67,7 +67,7 @@ public:
      * keys or if the file doesn't contain all the metadata.
      */
     static FileMetaData readMetaData(const std::string& filename);
-
+    static FileMetaData readMetaDataFromString(const std::string& str);
     /**
      * @brief Saves the file meta data to the specified file. 
      * 
@@ -76,6 +76,7 @@ public:
      * @throws std::runtime_error Thrown if the specified file could not be openn.
      */
     static void writeMetaData(const std::string& filename, const FileMetaData& metaData);
+    static std::string writeMetaDataToString(const FileMetaData& metaData);
 
 private:
     /**

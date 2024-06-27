@@ -20,16 +20,33 @@
 #include "WorkerImpl.h"
 #include "WorkerImplGRPCAsync.h"
 #include "WorkerImplGRPCSync.h"
+#include <parser/config/ConfigParser.h>
 
 
 int main(int argc, char *argv[])
 {
     DaphneUserConfig user_config{};
+    std::string configFile = "WorkerConfig.json";
+
+    if (argc == 3) {
+        configFile = argv[2];
+    }
+
+    try {
+        if (ConfigParser::fileExists(configFile)) {
+            ConfigParser::readUserConfig(configFile, user_config);
+        }
+    }
+    catch(std::exception & e) {
+        spdlog::error("Parser error while reading worker config:\n{}", e.what());
+        spdlog::error("You can create a WorkerConfig.json to configure the worker.\n");
+    }
+
     user_config.resolveLibDir();
     auto logger = std::make_unique<DaphneLogger>(user_config);
 
-    if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " <Address:Port>" << std::endl;
+    if (argc < 2 || argc > 3) {
+        std::cout << "Usage: " << argv[0] << " <Address:Port> [ConfigFile]" << std::endl;
         exit(1);
     }
     auto addr = argv[1];
