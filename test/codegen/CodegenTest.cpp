@@ -31,10 +31,11 @@ TEST_CASE("codegen", TAG_CODEGEN TAG_MATMUL) {
 
     int status = runLIT(out, err, dirPath);
 
-
-    spdlog::info("runLIT return status: " + std::to_string(status));
-    spdlog::info("runLIT out:\n" + out.str());
-    spdlog::info("runLIT err:\n" + err.str());
+    if (status != StatusCode::SUCCESS) {
+        std::cout << "runLIT return status: " << std::to_string(status) << "\n";
+        std::cout << "runLIT out:\n" << out.str() << "\n";
+        std::cout << "runLIT err:\n" << err.str() << "\n";
+    }
 
     CHECK(status == StatusCode::SUCCESS);
 }
