@@ -160,10 +160,29 @@ class Matrix(OperationNode):
     def __matmul__(self, other: 'Matrix') -> 'Matrix':
         return Matrix(self.daphne_context, '@', [self, other])
 
-    def __getitem__(self,  pos):
-        if not isinstance(pos, int):
-            i, x = pos
-            return Matrix(self.daphne_context,'',[self, i, x], brackets=True)
+    def __getitem__(self,  key):
+        # if key is not a tuple or the length of key is smaller than 2 then,
+        #  one dimension is not specified
+        if not isinstance(key, tuple) or len(key) < 2:
+            raise TypeError("Specifying just one dimension is not allowed.")
+        
+        if not(isinstance(key[0], slice) or isinstance(key[0], int)) or not(
+               isinstance(key[1], slice) or isinstance(key[1], int)):
+            raise TypeError("keys must be an integer or a slice")
+        
+        if isinstance(key[0], slice):
+            # create a string for slicing based on slice´s start and stop for row index
+            row_index = (f'{key[0].start}' if key[0].start is not None else '') + ':' + (f'{key[0].stop}' if key[0].stop is not None else '') 
+        else:
+            row_index = key[0]
+        
+        if isinstance(key[1], slice):
+             # create a string for slicing based on slice´s start and stop for column index
+            column_index = (f'{key[1].start}' if key[1].start is not None else '') + ':' + (f'{key[1].stop}' if key[1].stop is not None else '')
+        else:
+            column_index = key[1]
+        
+        return Matrix(self.daphne_context, None, [self, row_index, column_index], brackets=True)
 
     def sum(self, axis: int = None) -> 'OperationNode':
         """Calculate sum of matrix.
