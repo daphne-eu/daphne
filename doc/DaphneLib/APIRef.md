@@ -149,6 +149,7 @@ In the following, we describe only the latter.
 - **`order`**`(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)`
 
 **Data preprocessing:**
+
 - **`oneHot`**`(info:matrix)`
 - **`bin`**`(numBins:int, Min = None, Max = None)`
 
@@ -161,6 +162,10 @@ In the following, we describe only the latter.
 
 - **`print`**`()`
 - **`write`**`(file: str)`
+
+**Conversions and casts:**
+
+- **`asType`**`(dtype=None, vtype=None) -> Matrix`
 
 ### `Frame` API Reference
 
