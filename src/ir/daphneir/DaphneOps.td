@@ -906,7 +906,7 @@ def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"NN_Avg_Forward", [ DeclareOp
 // ----------------------------------------------------------------------------
 // Softmax
 // ----------------------------------------------------------------------------
-def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward", [ CUDASupport ]> {
+def Daphne_SoftmaxForwardOp : Daphne_Op<"NN_Softmax_Forward", [ TypeFromFirstArg, ShapeFromArg, CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
 
     let results = (outs MatrixOf<[FloatScalar]>:$data);
