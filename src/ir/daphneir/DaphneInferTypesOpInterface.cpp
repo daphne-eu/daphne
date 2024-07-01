@@ -97,7 +97,7 @@ std::vector<Type> daphne::CastOp::inferTypes() {
             // of the result.
             // TODO double-check if it is really a scalar
             resVt = argTy;
-         
+
         return {daphne::MatrixType::get(getContext(), resVt)};
     }
 
@@ -441,7 +441,7 @@ std::vector<Type> daphne::SliceColOp::inferTypes() {
 
             for(ssize_t pos = loInPos; pos < upExPos; pos++)
                 resColTys.push_back(srcColTys[pos]);
-                
+
             resTy = daphne::FrameType::get(getContext(), resColTys);
         }
         else
@@ -488,7 +488,7 @@ std::vector<Type> daphne::CondOp::inferTypes() {
     else { // cond is a scalar // TODO check if it is really a scalar
         Type thenTy = getThenVal().getType();
         Type elseTy = getElseVal().getType();
-        
+
         // Remove any properties of matrix/frame except for the value types,
         // such that they don't interfere with the type comparison below,
         // and since we don't want them in the inferred type.
@@ -582,6 +582,26 @@ std::vector<Type> daphne::Conv2DForwardOp::inferTypes() {
 
     // output matrix of same type as input, height/width dimensions as size/index type
     return {restype2, builder.getIndexType(), builder.getIndexType()};
+}
+
+std::vector<Type> daphne::AffineForwardOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
+    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
+
+    // output matrix of same type as input, height/width dimensions as size/index type
+    return {restype2};
+}
+
+std::vector<Type> daphne::BatchNorm2DTestForwardOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
+    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
+
+    // output matrix of same type as input, height/width dimensions as size/index type
+    return {restype2};
 }
 
 std::vector<Type> daphne::AvgPoolForwardOp::inferTypes() {

@@ -78,7 +78,7 @@ public:
     void* getCUDNNWorkspace(size_t size);
 
     [[nodiscard]] size_t getMemBudget() const { return mem_budget; }
-    int getMaxNumThreads();
+    int getMaxNumThreads() const;
     static CUDAContext* get(DaphneContext* ctx, size_t id) { return dynamic_cast<CUDAContext*>(ctx->getCUDAContext(id)); }
 
     std::shared_ptr<std::byte> malloc(size_t size, bool zero, size_t& id);
@@ -97,7 +97,8 @@ public:
 
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
-    cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
+    // ToDo: move these to the allocation descriptor
+    cudnnTensorDescriptor_t src_tensor_desc{}, src2_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
     cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
     cudnnFilterDescriptor_t filter_desc{};
     cudnnActivationDescriptor_t  activation_desc{};

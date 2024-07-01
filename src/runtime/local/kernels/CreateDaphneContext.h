@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/context/DaphneContext.h>
+#include <api/cli/DaphneUserConfig.h>
 
 #include <cstdint>
 

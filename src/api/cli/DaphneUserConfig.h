@@ -19,10 +19,12 @@
 
 #include <api/daphnelib/DaphneLibResult.h>
 #include <compiler/catalog/KernelCatalog.h>
-#include <runtime/local/vectorized/LoadPartitioningDefs.h>
+#include <runtime/local/context/IContext.h>
 #include <runtime/local/datastructures/IAllocationDescriptor.h>
+#include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include <util/LogConfig.h>
 #include <util/DaphneLogger.h>
+
 class DaphneLogger;
 
 #include <vector>
@@ -116,6 +118,8 @@ struct DaphneUserConfig {
     DaphneLibResult* result_struct = nullptr;
     
     KernelCatalog kernelCatalog;
+
+    IContext* dctx_ptr{};
 
     /**
      * @brief Replaces the prefix `"{exedir}/"` in the field `libdir` by the path
