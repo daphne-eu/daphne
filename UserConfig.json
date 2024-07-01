@@ -33,11 +33,11 @@
     },
     "force_cuda": true,
     "logging": [
-        { "log-level-limit": "TRACE" },
+        { "log-level-limit": "INFO" },
         {
             "comment": "This configuration controls logging in the GPU compiler pass only",
             "name": "compiler::cuda",
-            "level": "DEBUG",
+            "level": "INFO",
             "filename": "compiler-trace-cuda.txt",
             "format": "%^[%L %n]:%$ %v"
         },
@@ -51,14 +51,14 @@
         {
             "comment": "DAPHNE runtime logs",
             "name": "runtime",
-            "level": "TRACE",
+            "level": "DEBUG",
             "filename": "",
             "format": "%^[%n %L]:%$ %v"
         },
         {
             "comment": "DAPHNE compiler logs",
             "name": "compiler",
-            "level": "DEBUG",
+            "level": "INFO",
             "filename": "",
             "format": "%^[%n %L]:%$ %v"
         },
