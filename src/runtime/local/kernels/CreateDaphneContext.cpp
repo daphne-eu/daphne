@@ -20,7 +20,7 @@
 void createDaphneContext(DaphneContext *&res, uint64_t configPtr,
                          uint64_t dispatchMappingPtr, uint64_t statisticsPtr) {
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
-        if(config->dctx_ptr) {
+    if(config->dctx_ptr) {
         res = reinterpret_cast<DaphneContext*>(config->dctx_ptr);
     }
     else {
@@ -30,5 +30,6 @@ void createDaphneContext(DaphneContext *&res, uint64_t configPtr,
         if (config->log_ptr != nullptr)
             config->log_ptr->registerLoggers();
         res = new DaphneContext(*config, *dispatchMapping, *statistics);
+        config->dctx_ptr = reinterpret_cast<IContext*>(res);
     }
 }
