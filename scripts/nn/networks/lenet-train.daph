@@ -28,14 +28,14 @@
  */
 
 # Imports
-import "nn/layers/affine.daph" as "affine";
-import "nn/layers/conv2d.daph" as "conv2d";
-#import "nn/layers/conv2d_kernel.daph" as "conv2d";
+import "nn/layers/affine.daph" as "affine_cpu";
+#import "nn/layers/conv2d.daph" as "conv2d";
+import "nn/layers/conv2d_kernel.daph" as "conv2d";
 import "nn/layers/cross_entropy_loss.daph" as "cross_entropy_loss";
 import "nn/layers/dropout.daph" as "dropout";
 import "nn/layers/l2_reg.daph" as "l2_reg";
-import "nn/layers/max_pool2d.daph" as "max_pool2d";
-#import "nn/layers/max_pool2d_kernel.daph" as "max_pool2d";
+#import "nn/layers/max_pool2d.daph" as "max_pool2d";
+import "nn/layers/max_pool2d_kernel.daph" as "max_pool2d";
 import "nn/layers/relu.daph" as "relu";
 import "nn/optim/sgd_nesterov.daph" as "sgd_nesterov";
 import "nn/layers/softmax.daph" as "softmax";
@@ -109,12 +109,14 @@ print("predict fwd layer 1 done");
     outp2, Houtp2, Woutp2 = max_pool2d.forward(outr2, F2, Houtp1, Woutp1, 2, 2, 2, 2, 0, 0);
 print("predict fwd layer 2 done");
     ## layer 3:  affine3 -> relu3 -> dropout
-    outa3 = affine.forward(outp2, W3, b3);
+#    outa3 = affine.forward(outp2, W3, b3);
+outa3 = affine(outp2, W3, b3);
     outr3 = relu.forward(outa3);
     outd3, maskd3 = dropout.forward(outr3, 0.5, -1);
 print("predict fwd layer 3 done");
     ## layer 4:  affine4 -> softmax
-    outa4 = affine.forward(outd3, W4, b4);
+    #outa4 = affine.forward(outd3, W4, b4);
+    outa4 = affine(outd3, W4, b4);
     probs_batch = softmax.forward(outa4);
 print("predict fwd layer 4 done");
     # Store predictions
@@ -163,16 +165,16 @@ def train(X:matrix, Y:matrix, X_val:matrix, Y_val:matrix, C, Hin, Win, epochs)
   stride = 1;
   pad = 2;  # For same dimensions, (Hf - stride) / 2
 
-  F1 = 32.0;  # num conv filters in conv1
-  F2 = 64.0;  # num conv filters in conv2
+  F1 = 16.0;  # num conv filters in conv1
+  F2 = 32.0;  # num conv filters in conv2
   N3 = 512;  # num nodes in affine3
   # Note: affine4 has K nodes, which is equal to the number of target dimensions (num classes)
   seed = 42;
 
   W1, b1 = conv2d.init(F1, C, Hf, Wf, seed);  # inputs: (N, C*Hin*Win)
   W2, b2 = conv2d.init(F2, F1, Hf, Wf, seed);  # inputs: (N, F1*(Hin/2)*(Win/2))
-  W3, b3 = affine.init(F2*(Hin/2/2)*(Win/2/2), N3, seed);  # inputs: (N, F2*(Hin/2/2)*(Win/2/2))
-  W4, b4 = affine.init(N3, K, -1);  # inputs: (N, N3)
+  W3, b3 = affine_cpu.init(F2*(Hin/2/2)*(Win/2/2), N3, seed);  # inputs: (N, F2*(Hin/2/2)*(Win/2/2))
+  W4, b4 = affine_cpu.init(N3, K, -1);  # inputs: (N, N3)
   dW1 = fill(0.0, nrow(W1), ncol(W1));
   dW2 = fill(0.0, nrow(W2), ncol(W2));
   dW3 = fill(0.0, nrow(W3), ncol(W3));
@@ -226,12 +228,14 @@ print("train fwd layer 1 done");
       outp2, Houtp2, Woutp2 = max_pool2d.forward(outr2, F2, Houtp1, Woutp1, 2, 2, 2, 2, 0, 0);
 print("train fwd layer 2 done");
       ## layer 3:  affine3 -> relu3 -> dropout
-      outa3 = affine.forward(outp2, W3, b3);
+      #outa3 = affine.forward(outp2, W3, b3);
+      outa3 = affine(outp2, W3, b3);
       outr3 = relu.forward(outa3);
       outd3, maskd3 = dropout.forward(outr3, 0.5, -1);
 print("train fwd layer 3 done");
       ## layer 4:  affine4 -> softmax
-      outa4 = affine.forward(outd3, W4, b4);
+      #outa4 = affine.forward(outd3, W4, b4);
+      outa4 = affine(outd3, W4, b4);
       probs = softmax.forward(outa4);
 print("train fwd layer 4 done");
       # Compute loss & accuracy for training & validation data every 100 iterations.
@@ -262,12 +266,12 @@ print("train fwd layer 4 done");
 
       ## layer 4:  affine4 -> softmax
       douta4 = softmax.backward(dprobs, outa4);
-      doutd3, dW4, db4 = affine.backward(douta4, outr3, W4, b4);
+      doutd3, dW4, db4 = affine_cpu.backward(douta4, outr3, W4, b4);
 print("train back layer 4 done");
       ## layer 3:  affine3 -> relu3 -> dropout
       doutr3 = dropout.backward(doutd3, outr3, 0.5, maskd3);
       douta3 = relu.backward(doutr3, outa3);
-      doutp2, dW3, db3 = affine.backward(douta3, outp2, W3, b3);
+      doutp2, dW3, db3 = affine_cpu.backward(douta3, outp2, W3, b3);
 print("train back layer 3 done");
       ## layer 2: conv2 -> relu2 -> pool2
       #      doutr2 = max_pool2d.backward(doutp2, Houtp2, Woutp2, outr2, F2, Houtc2, Woutc2, /*Hf=*/2, /*Wf=*/2,
