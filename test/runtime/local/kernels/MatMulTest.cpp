@@ -16,11 +16,15 @@
 
 #include "run_tests.h"
 
+#include <cstdint>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/MatMul.h>
+#include <runtime/local/kernels/SliceRow.h>
+#include <runtime/local/kernels/SliceCol.h>
+
 
 #include <tags.h>
 
@@ -43,7 +47,7 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     auto dctx = setupContextAndLogger();
 
     using DT = TestType;
-    
+
     auto m0 = genGivenVals<DT>(3, {
         0, 0, 0,
         0, 0, 0,
@@ -208,6 +212,11 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DATA_TYPES), (VALU
         5,
         0
     });
+    auto v7 = genGivenVals<DT>(1, {
+        1, 2, 3
+    });
+    auto v8 = genGivenVals<DT>(1, {14});
+
 
     checkMatMul(m0, m0, m1,  dctx.get(), true, true);
     checkMatMul(m2, m3, m4,  dctx.get(), true, true);
@@ -215,8 +224,50 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DATA_TYPES), (VALU
     checkMatMul(m3, v3, v4,  dctx.get(), true);
     checkMatMul(m2, v5, v6,  dctx.get(), true);
     checkMatMul(m3, m3, m5,  dctx.get(), false, true);
-
+    checkMatMul(v1, v7, v8,  dctx.get(), true, true);
 
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("MatMul after slicing", TAG_KERNELS "[new]", (DenseMatrix), (float, double, int32_t, int64_t)){
+    using DT = TestType;
+    auto dctx = setupContextAndLogger();
+    auto argMatrix = genGivenVals<DT>(4, {
+        1, 2, 3, 4,
+        5, 6, 7, 8,
+        9, 10, 11, 12,
+        13, 14, 15, 16
+        });
+    DT*  resMatrix3x4=nullptr;
+    DT*  resMatrix3x3=nullptr;
+    DT*  resMatrix3x1=nullptr;
+    DT*  resMatrix1x3=nullptr;
+    sliceRow(resMatrix3x4, argMatrix, 0, 3, nullptr);
+    sliceCol(resMatrix3x3, resMatrix3x4, 0, 3, nullptr);
+    sliceCol(resMatrix3x1, resMatrix3x4, 0, 1, nullptr);
+    sliceRow(resMatrix1x3, resMatrix3x3, 0, 1, nullptr);
+
+    auto exp0 = genGivenVals<DT>(3, {
+        38,  44,  50,
+        98, 116, 134,
+        158, 188, 218,
+    });
+    auto exp1 = genGivenVals<DT>(3, {
+        38,  98, 158,
+    });
+    auto exp2 = genGivenVals<DT>(1, {
+        107
+    });
+    auto exp3 = genGivenVals<DT>(1, {
+        38
+    });
+
+
+    checkMatMul(resMatrix3x3, resMatrix3x3, exp0,  dctx.get(), false, false);
+    checkMatMul(resMatrix3x3, resMatrix3x1, exp1,  dctx.get(), false, false);
+    checkMatMul(resMatrix3x1, resMatrix3x1, exp2,  dctx.get(), true, false);
+    checkMatMul(resMatrix3x1, resMatrix1x3, exp3,  dctx.get(), true, true);
+    DataObjectFactory::destroy(argMatrix);
+    DataObjectFactory::destroy(resMatrix3x3);
 }
 

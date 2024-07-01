@@ -27,7 +27,7 @@ module {
 }
 
 module {
-  func.func @single() {
+  func.func @float() {
     %0 = "daphne.constant"() {value = true} : () -> i1
     %1 = "daphne.constant"() {value = 10 : index} : () -> index
     %2 = "daphne.constant"() {value = 1000000 : si64} : () -> si64

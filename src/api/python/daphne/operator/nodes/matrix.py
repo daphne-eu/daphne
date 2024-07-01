@@ -434,3 +434,14 @@ class Matrix(OperationNode):
     
     def print(self):
         return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)
+    
+    def asType(self, dtype=None, vtype=None):
+        if dtype is None and vtype is None:
+            raise RuntimeError("you must specify the target data type and/or value type")
+        elif dtype is not None and vtype is None:
+            op = f"as.{dtype}"
+        elif dtype is None and vtype is not None:
+            op = f"as.{vtype}"
+        elif dtype is not None and vtype is not None:
+            op = f"as.{dtype}<{vtype}>"
+        return OperationNode(self.daphne_context, op, [self])

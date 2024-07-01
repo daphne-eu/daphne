@@ -95,12 +95,12 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
       res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
     }
 
-    char *line;
     size_t cell = 0;
     VT * valuesRes = res->getValues();
 
     for(size_t r = 0; r < numRows; r++) {
-      line = getLine(file);
+      if (getFileLine(file) == -1)
+        throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
       // TODO Assuming that the given numRows is available, this should never
       // happen.
 //      if (line == NULL)
@@ -109,7 +109,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
       size_t pos = 0;
       for(size_t c = 0; c < numCols; c++) {
         VT val;
-        convertCstr(line + pos, &val);
+        convertCstr(file->line + pos, &val);
         
         // TODO This assumes that rowSkip == numCols.
         valuesRes[cell++] = val;
@@ -119,7 +119,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
         // we wouldn't have to search for that ourselves, just would need to
         // check if it is really the delimiter.
         if(c < numCols - 1) {
-            while(line[pos] != delim) pos++;
+            while(file->line[pos] != delim) pos++;
             pos++; // skip delimiter
         }
       }
@@ -169,17 +169,17 @@ private:
         auto *colIdxs = res->getColIdxs();
         auto *values = res->getValues();
 
-        char *line;
         size_t pos;
         uint64_t row;
         uint64_t col;
         for (size_t i = 0; i < numNonZeros; ++i) {
-            line = getLine(file);
-            convertCstr(line, &row);
+            if (getFileLine(file) == -1)
+              throw std::runtime_error("ReadCOOSorted::apply: getFileLine failed");
+            convertCstr(file->line, &row);
             pos = 0;
-            while(line[pos] != delim) pos++;
+            while(file->line[pos] != delim) pos++;
             pos++; // skip delimiter
-            convertCstr(line + pos, &col);
+            convertCstr(file->line + pos, &col);
 
             rowOffsets[row + 1] += 1;
             values[i] = 1;
@@ -251,7 +251,6 @@ template <> struct ReadCsvFile<Frame> {
       res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
     }
 
-    char *line;
     size_t row = 0, col = 0;
 
     uint8_t ** rawCols = new uint8_t * [numCols];
@@ -262,51 +261,55 @@ template <> struct ReadCsvFile<Frame> {
     }
 
     while (1) {
-      line = getLine(file);
-      if (line == NULL)
+      ssize_t ret = getFileLine(file);
+      if (file->read == EOF)
         break;
+      if (file->line == NULL)
+        break;
+      if (ret == -1)
+        throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
 
       size_t pos = 0;
       while (1) {
         switch (colTypes[col]) {
         case ValueTypeCode::SI8:
           int8_t val_si8;
-          convertCstr(line + pos, &val_si8);
+          convertCstr(file->line + pos, &val_si8);
           reinterpret_cast<int8_t *>(rawCols[col])[row] = val_si8;
           break;
         case ValueTypeCode::SI32:
           int32_t val_si32;
-          convertCstr(line + pos, &val_si32);
+          convertCstr(file->line + pos, &val_si32);
           reinterpret_cast<int32_t *>(rawCols[col])[row] = val_si32;
           break;
         case ValueTypeCode::SI64:
           int64_t val_si64;
-          convertCstr(line + pos, &val_si64);
+          convertCstr(file->line + pos, &val_si64);
           reinterpret_cast<int64_t *>(rawCols[col])[row] = val_si64;
           break;
         case ValueTypeCode::UI8:
           uint8_t val_ui8;
-          convertCstr(line + pos, &val_ui8);
+          convertCstr(file->line + pos, &val_ui8);
           reinterpret_cast<uint8_t *>(rawCols[col])[row] = val_ui8;
           break;
         case ValueTypeCode::UI32:
           uint32_t val_ui32;
-          convertCstr(line + pos, &val_ui32);
+          convertCstr(file->line + pos, &val_ui32);
           reinterpret_cast<uint32_t *>(rawCols[col])[row] = val_ui32;
           break;
         case ValueTypeCode::UI64:
           uint64_t val_ui64;
-          convertCstr(line + pos, &val_ui64);
+          convertCstr(file->line + pos, &val_ui64);
           reinterpret_cast<uint64_t *>(rawCols[col])[row] = val_ui64;
           break;
         case ValueTypeCode::F32:
           float val_f32;
-          convertCstr(line + pos, &val_f32);
+          convertCstr(file->line + pos, &val_f32);
           reinterpret_cast<float *>(rawCols[col])[row] = val_f32;
           break;
         case ValueTypeCode::F64:
           double val_f64;
-          convertCstr(line + pos, &val_f64);
+          convertCstr(file->line + pos, &val_f64);
           reinterpret_cast<double *>(rawCols[col])[row] = val_f64;
           break;
         default:
@@ -321,7 +324,7 @@ template <> struct ReadCsvFile<Frame> {
         // return a pointer to the first character after the parsed input, then
         // we wouldn't have to search for that ourselves, just would need to
         // check if it is really the delimiter.
-        while(line[pos] != delim) pos++;
+        while(file->line[pos] != delim) pos++;
         pos++; // skip delimiter
       }
 
