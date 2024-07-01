@@ -34,6 +34,15 @@ namespace CUDA::Convolution {
         const VT* d_input = data->getValues(&alloc_desc);
         const VT* d_filter = filter->getValues(&alloc_desc);
 
+        auto chw_in = num_channels * img_h * img_w;
+        auto fhw_in = num_channels * filter_h * filter_w;
+
+        ctx->logger->debug("conv2d dims: X[N,C*Hin*Win]: X[{},{}],"
+                           "W[F,C*Hf*Wf]: W[{},{}]", data->getNumRows(), chw_in, filter->getNumRows(), fhw_in);
+        ctx->logger->debug("N:{} F:{}, Hin:{} Win:{} Hf:{} Wf:{} stride_h:{} stride_w:{} pad_h:{} pad_w:{}",
+                           data->getNumRows(), filter->getNumRows(), img_h,img_w, filter_h,filter_w, stride_h, stride_w, pad_h, pad_w);
+        ctx->logger->debug("batch_size:{} num_channels:{}", batch_size, num_channels);
+
         cudnnConvolutionFwdAlgo_t algo;
 
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->template getCUDNNDataType<VT>(), batch_size,
@@ -113,6 +122,7 @@ namespace CUDA::Convolution {
                 ctx->dst_tensor_desc, d_res));
         CHECK_CUDART(cudaDeviceSynchronize());
 
+#if 0
         if(bias) {
             if (bias != filter) {
                 const VT *d_bias = bias->getValues(&alloc_desc);
@@ -130,6 +140,8 @@ namespace CUDA::Convolution {
 
             }
         }
+#endif
+
     }
 
     template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
