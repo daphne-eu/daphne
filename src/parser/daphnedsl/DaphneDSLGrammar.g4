@@ -79,8 +79,9 @@ functionRetTypes: funcTypeDef (',' funcTypeDef)*;
 funcTypeDef: (dataTy=DATA_TYPE ('<' elTy=VALUE_TYPE '>')? | scalarTy=VALUE_TYPE);
 
 expr:
-    literal # literalExpr
-    | '$' arg=IDENTIFIER # argExpr
+    op=('+'|'-') rhs=expr # unaryPlusMinusExpr
+    | literal # literalExpr
+    | '$' arg=expr # argExpr
     | (( IDENTIFIER '.' )* IDENTIFIER) # identifierExpr
     | '(' expr ')' # paranthesesExpr
     | ( ns=IDENTIFIER '.' )* func=IDENTIFIER ('::' kernel=IDENTIFIER)? '(' (expr (',' expr)*)? ')' # callExpr
@@ -161,7 +162,7 @@ VALUE_TYPE:
     ) ;
 
 INT_LITERAL:
-    ('0' | '-'? NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)* ('l' | 'u' | 'ull' | 'z')?);
+    (('0' | NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)* ('l' | 'u' | 'ull' | 'z')?)('l' | 'u' | 'ull' | 'z')?) ;
 
 FLOAT_LITERAL:
     (
