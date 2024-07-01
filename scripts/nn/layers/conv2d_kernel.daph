@@ -78,7 +78,7 @@ print("conv2d_kernel forward");
   N = nrow(X);
   F = nrow(W);
 
-  out, Hout, Wout = conv2d(X, W, N, F, Hin, Win, Hf, Wf, strideh, stridew, padh, padw, b);
+  out, Hout, Wout = conv2d(X, W, N, C, Hin, Win, Hf, Wf, strideh, stridew, padh, padw, b);
 
   return out, as.si64(Hout), as.si64(Wout);
 }
