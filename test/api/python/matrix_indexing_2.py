@@ -28,10 +28,13 @@ daphne_context = DaphneContext()
 
 m1 = daphne_context.fill(123, 10, 10)
 
+m1[0, 0] = daphne_context.fill(1, 1, 1)
+m1[0, 0].print().compute()
+
 m1[0:5, 0] = daphne_context.fill(0, 5, 1)
 m1[0:5, 0].print().compute()
 
-m1[:5, 0]=daphne_context.fill(1, 5, 1)
+m1[:5, 0] = daphne_context.fill(1, 5, 1)
 m1[:5, 0].print().compute()
 
 m1[0:, 0] = daphne_context.fill(2, 10, 1)

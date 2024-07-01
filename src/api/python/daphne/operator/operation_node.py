@@ -60,7 +60,7 @@ class OperationNode(DAGNode):
                 unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None,
                 named_input_nodes: Dict[str, VALID_INPUT_TYPES]=None, 
                 output_type:OutputType = OutputType.MATRIX, is_python_local_data: bool = False,
-                brackets: bool = False):
+                brackets: bool = False, left_brackets: bool = False):
         if unnamed_input_nodes is None:
             unnamed_input_nodes = []
         if named_input_nodes is None:
@@ -76,6 +76,7 @@ class OperationNode(DAGNode):
         self.daphnedsl_name = ""
         self._is_python_local_data = is_python_local_data
         self._brackets = brackets
+        self._left_brackets = left_brackets
         self._output_type = output_type
 
     def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False):
@@ -241,6 +242,10 @@ class OperationNode(DAGNode):
           os.remove(os.path.join(TMP_PATH, f))
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str])->str:
+        if self._left_brackets:
+            line_1 = f'{unnamed_input_vars[0]}[{",".join(unnamed_input_vars[2:])}] = {unnamed_input_vars[1]};'
+            line_2 = f'{var_name} = {unnamed_input_vars[0]};'
+            return line_1 + "\n" + line_2
         if self._brackets:
             return f'{var_name}={unnamed_input_vars[0]}[{",".join(unnamed_input_vars[1:])}];'
         if self.operation in BINARY_OPERATIONS:
