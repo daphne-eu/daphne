@@ -17,7 +17,7 @@
 #include "Softmax.h"
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
-namespace CUDA::Softmax {
+namespace CUDA::NN::Softmax {
 
     template<typename DTRes, typename DTArg>
     void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {

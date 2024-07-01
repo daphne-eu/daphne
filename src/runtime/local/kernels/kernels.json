@@ -3915,7 +3915,7 @@
     {
         "kernelTemplate": {
             "header": "Softmax.h",
-            "opName": "Softmax::Forward",
+            "opName": "NN::Softmax::Forward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
