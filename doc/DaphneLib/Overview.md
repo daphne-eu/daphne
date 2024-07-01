@@ -194,6 +194,44 @@ X.sqrt()
 X.cbind(Y)
 ```
 
+#### Indexing
+
+The value of an expression can also be assigned to a _partition_ of an _existing data object_. This is done by (left) indexing, whose syntax is similar to (right) indexing in expressions.
+
+Currently, left indexing is supported only for matrices. Furthermore, the rows/columns cannot be addressed by arbitrary positions lists or bit vectors (yet).
+
+_Examples:_
+
+```python
+from daphne.context.daphne_context import DaphneContext
+
+daphne_context = DaphneContext()
+
+m1 = daphne_context.fill(123, 10, 10)
+
+m1[0, 0] = daphne_context.fill(3, 1, 1)
+m1[0, 0].print().compute()
+
+m1[0:5, 0] = daphne_context.fill(0, 5, 1)
+m1[0:5, 0].print().compute()
+
+m1[:5, 0] = daphne_context.fill(1, 5, 1)
+m1[:5, 0].print().compute()
+
+m1[0:, 0] = daphne_context.fill(2, 10, 1)
+m1[0:, 0].print().compute()
+```
+
+
+
+The following conditions must be fulfilled:
+
+* The left-hand-side variable must have been initialized.
+* The left-hand-side variable must be of data type matrix.
+* The right-hand-side expression must return a matrix.
+* The shapes of the partition addressed on the left-hand side and the return value of the right-hand-side expression must match.
+* The value type of the left-hand-side and right-hand-side matrices must match.
+
 ## Data Exchange with other Python Libraries
 
 DaphneLib supports efficient data exchange with other well-known Python libraries, in both directions.
