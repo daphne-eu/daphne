@@ -88,3 +88,14 @@ TEST_CASE("Ways of specifying script arguments", TAG_SCRIPTARGS) {
     CHECK(out.str() == "1\n2\n3\n4\n");
     CHECK(err.str() == "");
 }
+
+// TODO While DAPHNE does not evaluate the expressions provided as script arguments,
+// these invalid script arguments are not properly detected, either. DAPHNE succeeds
+// with unexpected results (see #773).
+#if 0
+TEST_CASE("Don't support general expressions as script arguments", TAG_SCRIPTARGS) {
+    const std::string scriptPath = dirPath + "printSingleArg.daphne";
+    checkDaphneFails(scriptPath.c_str(), "--args", "foo=10+10");
+    checkDaphneFails(scriptPath.c_str(), "--args", "foo=sin(1.23)");
+}
+#endif
