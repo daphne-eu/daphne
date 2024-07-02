@@ -228,6 +228,8 @@ public:
     antlrcpp::Any visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) override;
 
     antlrcpp::Any visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) override;
+
+    antlrcpp::Any visitMinusExpr(DaphneDSLGrammarParser::MinusExprContext *ctx) override;
     
     antlrcpp::Any visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) override;
     
@@ -262,8 +264,6 @@ public:
     antlrcpp::Any visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) override;
 
     antlrcpp::Any visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext * ctx) override;
-
-     antlrcpp::Any visitUnaryPlusMinusExpr(DaphneDSLGrammarParser::UnaryPlusMinusExprContext *ctx) override;
 };
 
 #endif //SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H

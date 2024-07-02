@@ -794,17 +794,35 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
             "argument " + arg + " referenced, but not provided as a command line argument"
         );
 
+    bool hasMinus;
+    std::string litStr;
+    if(!it->second.empty() && it->second[0] == '-') {
+        hasMinus = true;
+        litStr = it->second.substr(1);
+    }
+    else {
+        hasMinus = false;
+        litStr = it->second;
+    }
+
     // Parse the string that was passed as the value for this argument on the
     // command line as a DaphneDSL literal.
     // TODO: fix for string literals when " are not escaped or not present
-    std::istringstream stream(it->second);
+    std::istringstream stream(litStr);
     antlr4::ANTLRInputStream input(stream);
     input.name = "argument"; // TODO Does this make sense?
     DaphneDSLGrammarLexer lexer(&input);
     antlr4::CommonTokenStream tokens(&lexer);
     DaphneDSLGrammarParser parser(&tokens);
+    DaphneDSLGrammarParser::LiteralContext * literalCtx = parser.literal();
 
-    return visit(parser.expr());
+    mlir::Value lit = visitLiteral(literalCtx);
+    if(!hasMinus)
+        return lit;
+    else
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwMinusOp>(
+            utils.getLoc(ctx->start), utils.unknownType, lit
+        ));
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
@@ -1233,6 +1251,21 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser:
     // object.
 
     return obj;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitMinusExpr(DaphneDSLGrammarParser::MinusExprContext *ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = utils.getLoc(ctx->op);
+    mlir::Value arg = utils.valueOrError(visit(ctx->arg));
+    
+    if(op == "-")
+        return utils.retValWithInferedType(
+            builder.create<mlir::daphne::EwMinusOp>(loc, utils.unknownType, arg)
+        );
+    if(op == "+")
+        return arg;
+    
+    throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) {
@@ -1757,13 +1790,17 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
                     static_cast<std::size_t>(std::stoll(litStr))));
         }
         else {
-                if(std::stoull(litStr) == (std::numeric_limits<int64_t>::max() + 1ull))
-                // handle edge case int64::min which is 1 bigger than int64::max
-                    return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
-                            static_cast<int64_t>(std::numeric_limits<int64_t>::min())));
-                else
-                    return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
-                            static_cast<int64_t>(std::stoll(litStr))));
+            // Note that a leading minus of a numeric literal is not parsed as part of the literal itself,
+            // but handled separately as a unary minus operator. Thus, this visitor actually sees the
+            // number without the minus. This is problematic when a DaphneDSL script contains the minimum
+            // int64 value -2^63, because without the minus, 2^63 is beyond the range of int64, as the
+            // maximum int64 value is 2^63 - 1. Thus, we need a special case here.
+            if(std::stoull(litStr) == (std::numeric_limits<int64_t>::max() + 1ull))
+                return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
+                        static_cast<int64_t>(std::numeric_limits<int64_t>::min())));
+            else
+                return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
+                        static_cast<int64_t>(std::stoll(litStr))));
         }
     }
     if(auto lit = ctx->FLOAT_LITERAL()) {
@@ -2203,32 +2240,4 @@ antlrcpp::Any DaphneDSLVisitor::visitReturnStatement(DaphneDSLGrammarParser::Ret
         returns.push_back(utils.valueOrError(visit(expr)));
     }
     return builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->start), returns);
-}
-
-antlrcpp::Any DaphneDSLVisitor::visitUnaryPlusMinusExpr(DaphneDSLGrammarParser::UnaryPlusMinusExprContext *ctx) {
-    std::string op = ctx->op->getText();
-    mlir::Location loc = utils.getLoc(ctx->op);
-
-    if(op == "-") {
-        auto v = utils.valueOrError(visit(ctx->rhs));
-        if(v.getType().isInteger(32) || v.getType().isInteger(64)) {
-            return utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc,
-            builder.create<mlir::daphne::ConstantOp>(loc, v.getType(),builder.getIntegerAttr(v.getType(),-1)),
-                    utils.valueOrError(visit(ctx->rhs))));
-        }
-        else if (v.getType().isF32()) {
-            return utils.retValWithInferedType(
-                    builder.create<mlir::daphne::EwMulOp>(loc, builder.create<mlir::daphne::ConstantOp>(
-                    loc, v.getType(),builder.getF32FloatAttr(-1)), utils.valueOrError(visit(ctx->rhs))));
-        }
-        else {
-            return utils.retValWithInferedType(
-                    builder.create<mlir::daphne::EwMulOp>(loc, builder.create<mlir::daphne::ConstantOp>(
-                            loc, v.getType(),builder.getF64FloatAttr(-1)), utils.valueOrError(visit(ctx->rhs))));
-        }
-    }
-    else if(op == "+")
-        return utils.valueOrError(visit(ctx->rhs));
-    else
-        throw std::runtime_error("visitUnaryPlusMinusExpr accepts only + or - as prefix to a numeric literal");
 }

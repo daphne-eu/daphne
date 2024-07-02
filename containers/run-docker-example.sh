@@ -19,8 +19,8 @@ echo "Add sudo to docker invocation if needed in your setup"
 
 ARCH=X86-64
 DOCKER_IMAGE=daphneeu/daphne-dev
-#DOCKER_TAG=latest_${ARCH}_BASE
-DOCKER_TAG=latest_${ARCH}_CUDA
+DOCKER_TAG=latest_${ARCH}_BASE
+#DOCKER_TAG=latest_${ARCH}_CUDA
 if [ $(arch) == 'armv64'  ] || [ $(arch) == 'aarch64' ]; then
     DOCKER_TAG=v0.2_ARMV8_BASE_ubuntu20.04
 fi
@@ -46,8 +46,8 @@ LD_LIBRARY_PATH=$CUDA_PATH/lib64:$DAPHNE_ROOT/lib:/usr/local/lib:$LD_LIBRARY_PAT
 PATH=/opt/nvidia/nsight-compute/2023.2.2/host/target-linux-x64:$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
 
 # uncomment the appropriate to pass GPU devices to the container (goes hand in hand with DOCKER_TAG)
-#DEVICE_FLAGS=""
-DEVICE_FLAGS="--gpus all"
+DEVICE_FLAGS=""
+#DEVICE_FLAGS="--gpus all"
 
 # this might be needed if a debugging session is run in the container
 DEBUG_FLAGS=""
