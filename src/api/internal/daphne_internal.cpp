@@ -323,6 +323,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     enum ExplainArgs {
       kernels,
       llvm,
+      loop_vectorization,
       parsing,
       parsing_simplified,
       property_inference,
@@ -344,6 +345,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
+            clEnumVal(loop_vectorization, "Show DaphneIR after loop vectorization"),
             clEnumVal(select_matrix_repr, "Show DaphneIR after selecting physical matrix representations"),
             clEnumVal(phy_op_selection, "Show DaphneIR after selecting physical operators"),
             clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
@@ -485,6 +487,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
             case llvm:
                 user_config.explain_llvm = true;
+                break;
+            case loop_vectorization:
+                user_config.explain_loop_vectorization = true;
                 break;
             case parsing:
                 user_config.explain_parsing = true;

@@ -80,6 +80,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_kernels = jf.at(DaphneConfigJsonParams::EXPLAIN_KERNELS).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_LLVM))
         config.explain_llvm = jf.at(DaphneConfigJsonParams::EXPLAIN_LLVM).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_LOOP_VECTORIZATION))
+        config.explain_llvm = jf.at(DaphneConfigJsonParams::EXPLAIN_LOOP_VECTORIZATION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PARSING))
         config.explain_parsing = jf.at(DaphneConfigJsonParams::EXPLAIN_PARSING).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PARSING_SIMPLIFIED))
