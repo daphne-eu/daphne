@@ -192,6 +192,12 @@ class Matrix(OperationNode):
         """
         return Matrix(self.daphne_context,'sqrt', [self])
     
+    def isNan(self) -> 'OperationNode':
+        """Checks if argument is of type Nan. Returns 1 if argument is Nan, 0 otherwise.
+        :return: `Matrix` representing operation
+        """
+        return Matrix(self.daphne_context,'isNan', [self])
+    
     def round(self) -> 'OperationNode':
         return Matrix(self.daphne_context, 'round', [self])
         

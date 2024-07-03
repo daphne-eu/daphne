@@ -520,6 +520,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "atan")
         return createUnaryOp<EwAtanOp>(loc, func, args);
 
+    // --------------------------------------------------------------------
+    // Other Utility Functions
+    // --------------------------------------------------------------------
+    if (func == "isNan")
+        return createUnaryOp<EwIsNanOp>(loc, func, args);
+
+
     // ********************************************************************
     // Elementwise binary
     // ********************************************************************

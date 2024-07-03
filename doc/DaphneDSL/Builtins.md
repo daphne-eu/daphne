@@ -143,6 +143,12 @@ The following built-in functions all follow the same scheme:
 | **`floor`** | round down |
 | **`ceil`** | round up |
 
+### Other Utilities
+
+| function | meaning |
+| ----- | -------------------------------------- |
+|**`isNan`**| returns 1 if argument is nan, 0 otherwise |
+
 ## Elementwise binary
 
 DaphneDSL supports various elementwise binary operations.

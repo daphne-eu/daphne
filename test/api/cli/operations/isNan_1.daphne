@@ -1,0 +1,4 @@
+print(isNan(3));
+print(isNan(nan));
+X = t([1, nan, 0, inf, 99.9, nan]);
+print(isNan(X));

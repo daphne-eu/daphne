@@ -40,6 +40,8 @@ enum class UnaryOpCode {
     FLOOR,
     CEIL,
     ROUND,
+    // Other Utilities
+    ISNAN
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H

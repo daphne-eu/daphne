@@ -549,6 +549,68 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERN
 }
 
 // ****************************************************************************
+// Other Utilities
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(7, {
+        1,
+        std::numeric_limits<VT>::quiet_NaN(),
+        0,
+        std::numeric_limits<VT>::infinity(),
+        99,
+        -99,
+        std::numeric_limits<VT>::quiet_NaN()
+    });
+
+    auto exp = genGivenVals<DT>(7, {
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    });
+
+    checkEwUnaryMat(UnaryOpCode::ISNAN, arg, exp);
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan, floating-point specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(7, {
+        1,
+        std::numeric_limits<VT>::quiet_NaN(),
+        0,
+        std::numeric_limits<VT>::infinity(),
+        99.9,
+        -99.9,
+        std::numeric_limits<VT>::quiet_NaN()
+    });
+
+    auto exp = genGivenVals<DT>(7, {
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+    });
+
+    checkEwUnaryMat(UnaryOpCode::ISNAN, arg, exp);
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+// ****************************************************************************
 // Invalid op-code
 // ****************************************************************************
 

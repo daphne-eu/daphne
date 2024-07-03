@@ -237,6 +237,26 @@ TEMPLATE_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERNELS, FP_
 }
 
 // ****************************************************************************
+// Other Utilities
+// ****************************************************************************
+TEMPLATE_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, FP_VALUE_TYPES) {
+    using VT = TestType;
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(1, 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(std::numeric_limits<VT>::quiet_NaN(), 1);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(std::numeric_limits<VT>::infinity(), 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(99, 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(-99, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("isNan, floating-point-specific"), TAG_KERNELS, FP_VALUE_TYPES) {
+    using VT = TestType;
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(1, 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(std::numeric_limits<VT>::quiet_NaN(), 1);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(std::numeric_limits<VT>::infinity(), 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(99.9, 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(-99.9, 0);
+}
+// ****************************************************************************
 // Invalid op-code
 // ****************************************************************************
 

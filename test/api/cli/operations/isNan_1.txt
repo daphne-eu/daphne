@@ -1,0 +1,4 @@
+0
+1
+DenseMatrix(1x6, double)
+0 1 0 0 0 1
