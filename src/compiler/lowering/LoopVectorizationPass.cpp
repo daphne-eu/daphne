@@ -33,8 +33,14 @@ class LoopVectorizationPass
 
     StringRef getArgument() const final { return "loop-vectorization"; }
     StringRef getDescription() const final {
-        return "Replace loops with indexed matrix accesses by their "
-               "corresponding element wise matrix operations whenever possible";
+        return "Replace loops that contain elementwise indexed matrix accesses "
+               "(within nested loops whose bounds correspond to the matrix "
+               "dimensions) by their corresponding element wise matrix "
+               "operations whenever possible. Implemented for all built in "
+               "unary and binary operations according to the language "
+               "reference. Not implemented for casts or aggregations, because "
+               "both of these require more sophisticated handling of types. "
+               "Only runs if the results of the loop can all be vectorized.";
     }
 };
 
