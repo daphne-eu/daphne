@@ -272,7 +272,7 @@ class InnerLoop : public scf::ForOp {
     }
 
     std::optional<mlir::Value> buildVectorized(mlir::Operation *op) {
-        if (auto sliceColOp = dyn_cast<daphne::SliceColOp>(*op)) {
+        if (auto sliceColOp = dyn_cast<daphne::SliceColOp>(op)) {
             if (auto access = ijAccess(sliceColOp)) {
                 auto built_val =
                     builder
@@ -284,15 +284,15 @@ class InnerLoop : public scf::ForOp {
                 builtVals.push_back(built_val);
                 return built_val;
             }
-        } else if (auto constantOp = dyn_cast<daphne::ConstantOp>(*op)) {
+        } else if (auto constantOp = dyn_cast<daphne::ConstantOp>(op)) {
             return constantOp.getResult();
-        } else if (auto ewAddOp = dyn_cast<daphne::EwAddOp>(*op)) {
+        } else if (auto ewAddOp = dyn_cast<daphne::EwAddOp>(op)) {
             return vectorizeBinOp(ewAddOp);
-        } else if (auto ewMulOp = dyn_cast<daphne::EwMulOp>(*op)) {
+        } else if (auto ewMulOp = dyn_cast<daphne::EwMulOp>(op)) {
             return vectorizeBinOp(ewMulOp);
-        } else if (auto ewSubOp = dyn_cast<daphne::EwSubOp>(*op)) {
+        } else if (auto ewSubOp = dyn_cast<daphne::EwSubOp>(op)) {
             return vectorizeBinOp(ewSubOp);
-        } else if (auto ewDivOp = dyn_cast<daphne::EwDivOp>(*op)) {
+        } else if (auto ewDivOp = dyn_cast<daphne::EwDivOp>(op)) {
             auto lhs = buildVectorized(ewDivOp.getOperand(0).getDefiningOp());
             auto rhs = buildVectorized(ewDivOp.getOperand(1).getDefiningOp());
 
@@ -308,59 +308,59 @@ class InnerLoop : public scf::ForOp {
             }
 
             return std::nullopt;
-        } else if (auto ewPowOp = dyn_cast<daphne::EwPowOp>(*op)) {
+        } else if (auto ewPowOp = dyn_cast<daphne::EwPowOp>(op)) {
             return vectorizeBinOpLmatrix(ewPowOp);
-        } else if (auto ewModOp = dyn_cast<daphne::EwModOp>(*op)) {
+        } else if (auto ewModOp = dyn_cast<daphne::EwModOp>(op)) {
             return vectorizeBinOpLmatrix(ewModOp);
-        } else if (auto ewAndOp = dyn_cast<daphne::EwAndOp>(*op)) {
+        } else if (auto ewAndOp = dyn_cast<daphne::EwAndOp>(op)) {
             return vectorizeBinOpLmatrix(ewAndOp);
-        } else if (auto ewOrOp = dyn_cast<daphne::EwOrOp>(*op)) {
+        } else if (auto ewOrOp = dyn_cast<daphne::EwOrOp>(op)) {
             return vectorizeBinOpLmatrix(ewOrOp);
-        } else if (auto ewLogOp = dyn_cast<daphne::EwLogOp>(*op)) {
+        } else if (auto ewLogOp = dyn_cast<daphne::EwLogOp>(op)) {
             return vectorizeBinOpLmatrix(ewLogOp);
-        } else if (auto ewMinOp = dyn_cast<daphne::EwMinOp>(*op)) {
+        } else if (auto ewMinOp = dyn_cast<daphne::EwMinOp>(op)) {
             return vectorizeBinOpLmatrix(ewMinOp);
-        } else if (auto ewMaxOp = dyn_cast<daphne::EwMaxOp>(*op)) {
+        } else if (auto ewMaxOp = dyn_cast<daphne::EwMaxOp>(op)) {
             return vectorizeBinOpLmatrix(ewMaxOp);
-        } else if (auto ewLeOp = dyn_cast<daphne::EwLeOp>(*op)) {
+        } else if (auto ewLeOp = dyn_cast<daphne::EwLeOp>(op)) {
             return vectorizeBinOpLmatrix(ewLeOp);
-        } else if (auto ewLtOp = dyn_cast<daphne::EwLtOp>(*op)) {
+        } else if (auto ewLtOp = dyn_cast<daphne::EwLtOp>(op)) {
             return vectorizeBinOpLmatrix(ewLtOp);
-        } else if (auto ewGeOp = dyn_cast<daphne::EwGeOp>(*op)) {
+        } else if (auto ewGeOp = dyn_cast<daphne::EwGeOp>(op)) {
             return vectorizeBinOpLmatrix(ewGeOp);
-        } else if (auto ewGtOp = dyn_cast<daphne::EwGtOp>(*op)) {
+        } else if (auto ewGtOp = dyn_cast<daphne::EwGtOp>(op)) {
             return vectorizeBinOpLmatrix(ewGtOp);
-        } else if (auto ewEqOp = dyn_cast<daphne::EwEqOp>(*op)) {
+        } else if (auto ewEqOp = dyn_cast<daphne::EwEqOp>(op)) {
             return vectorizeBinOpLmatrix(ewEqOp);
-        } else if (auto ewNeqOp = dyn_cast<daphne::EwNeqOp>(*op)) {
+        } else if (auto ewNeqOp = dyn_cast<daphne::EwNeqOp>(op)) {
             return vectorizeBinOpLmatrix(ewNeqOp);
-        } else if (auto ewAbsOp = dyn_cast<daphne::EwAbsOp>(*op)) {
+        } else if (auto ewAbsOp = dyn_cast<daphne::EwAbsOp>(op)) {
             return vectorizeUnOp(ewAbsOp);
-        } else if (auto ewSignOp = dyn_cast<daphne::EwSignOp>(*op)) {
+        } else if (auto ewSignOp = dyn_cast<daphne::EwSignOp>(op)) {
             return vectorizeUnOp(ewSignOp);
-        } else if (auto ewExpOp = dyn_cast<daphne::EwExpOp>(*op)) {
+        } else if (auto ewExpOp = dyn_cast<daphne::EwExpOp>(op)) {
             return vectorizeUnOp(ewExpOp);
-        } else if (auto ewLnOp = dyn_cast<daphne::EwLnOp>(*op)) {
+        } else if (auto ewLnOp = dyn_cast<daphne::EwLnOp>(op)) {
             return vectorizeUnOp(ewLnOp);
-        } else if (auto ewSqrtOp = dyn_cast<daphne::EwSqrtOp>(*op)) {
+        } else if (auto ewSqrtOp = dyn_cast<daphne::EwSqrtOp>(op)) {
             return vectorizeUnOp(ewSqrtOp);
-        } else if (auto ewSinOp = dyn_cast<daphne::EwSinOp>(*op)) {
+        } else if (auto ewSinOp = dyn_cast<daphne::EwSinOp>(op)) {
             return vectorizeUnOp(ewSinOp);
-        } else if (auto ewCosOp = dyn_cast<daphne::EwCosOp>(*op)) {
+        } else if (auto ewCosOp = dyn_cast<daphne::EwCosOp>(op)) {
             return vectorizeUnOp(ewCosOp);
-        } else if (auto ewTanOp = dyn_cast<daphne::EwTanOp>(*op)) {
+        } else if (auto ewTanOp = dyn_cast<daphne::EwTanOp>(op)) {
             return vectorizeUnOp(ewTanOp);
-        } else if (auto ewAsinOp = dyn_cast<daphne::EwAsinOp>(*op)) {
+        } else if (auto ewAsinOp = dyn_cast<daphne::EwAsinOp>(op)) {
             return vectorizeUnOp(ewAsinOp);
-        } else if (auto ewAcosOp = dyn_cast<daphne::EwAcosOp>(*op)) {
+        } else if (auto ewAcosOp = dyn_cast<daphne::EwAcosOp>(op)) {
             return vectorizeUnOp(ewAcosOp);
-        } else if (auto ewAtanOp = dyn_cast<daphne::EwAtanOp>(*op)) {
+        } else if (auto ewAtanOp = dyn_cast<daphne::EwAtanOp>(op)) {
             return vectorizeUnOp(ewAtanOp);
-        } else if (auto ewSinhOp = dyn_cast<daphne::EwSinhOp>(*op)) {
+        } else if (auto ewSinhOp = dyn_cast<daphne::EwSinhOp>(op)) {
             return vectorizeUnOp(ewSinhOp);
-        } else if (auto ewCoshOp = dyn_cast<daphne::EwCoshOp>(*op)) {
+        } else if (auto ewCoshOp = dyn_cast<daphne::EwCoshOp>(op)) {
             return vectorizeUnOp(ewCoshOp);
-        } else if (auto ewTanhOp = dyn_cast<daphne::EwTanhOp>(*op)) {
+        } else if (auto ewTanhOp = dyn_cast<daphne::EwTanhOp>(op)) {
             return vectorizeUnOp(ewTanhOp);
         }
 
