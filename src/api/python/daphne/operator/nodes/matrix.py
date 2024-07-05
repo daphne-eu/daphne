@@ -162,8 +162,8 @@ class Matrix(OperationNode):
         return Matrix(self.daphne_context, '@', [self, other])
 
     def __getitem__(self,  key):
-        if not isinstance(key, tuple) or len(key) < 2:
-            raise TypeError("Specifying just one dimension is not allowed.")
+        if not isinstance(key, tuple) or len(key) != 2:
+            raise TypeError("you must specify exactly two dimensions")
         
         if not(isinstance(key[0], slice) or isinstance(key[0], int)) or not(
                isinstance(key[1], slice) or isinstance(key[1], int)):
@@ -176,7 +176,7 @@ class Matrix(OperationNode):
             row_index = key[0]
         
         if isinstance(key[1], slice):
-             # create a string for slicing based on slice´s start and stop for column index
+            # create a string for slicing based on slice´s start and stop for column index
             column_index = (f'{key[1].start}' if key[1].start is not None else '') + ':' + (f'{key[1].stop}' if key[1].stop is not None else '')
         else:
             column_index = key[1]
@@ -184,12 +184,11 @@ class Matrix(OperationNode):
         return Matrix(self.daphne_context, None, [self, row_index, column_index], brackets=True)
 
     def __setitem__(self, key, value):
-
-        if not isinstance(key, tuple) or len(key) < 2:
-            raise TypeError("Specifying just one dimension is not allowed.")
+        if not isinstance(key, tuple) or len(key) != 2:
+            raise TypeError("you must specify exactly two dimensions")
         
         if not(isinstance(key[0], slice) or isinstance(key[0], int)) or not(
-            isinstance(key[1], slice) or isinstance(key[1], int)):
+               isinstance(key[1], slice) or isinstance(key[1], int)):
             raise TypeError("keys must be an integer or a slice")
         
         if isinstance(key[0], slice):

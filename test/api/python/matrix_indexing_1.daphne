@@ -1,4 +1,4 @@
-m1 = fill(123, 10, 10);
+m1 = reshape(seq(1, 100), 10, 10);
 
 # Only row
 print(m1[0, :]);
@@ -6,14 +6,13 @@ print(m1[0:5, :]);
 print(m1[0:, :]);
 print(m1[:5, :]);
 
-
 # Only col
 print(m1[:, 0]);
 print(m1[:, 0:5]);
 print(m1[:, 0:]);
 print(m1[:, :5]);
 
-#Row and col - corresponding variants
+# Row and col
 print(m1[0:5, 0]);
 print(m1[0, 0:5]);
 print(m1[0, 0]);

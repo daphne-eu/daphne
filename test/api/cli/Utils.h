@@ -298,7 +298,6 @@ void checkDaphneFailsSimple(const std::string & dirPath, const std::string & nam
  * 
  * @param exp The expected output on stdout.
  * @param scriptFilePath The path to the DaphneDSL script file to execute.
- * output.
  * @param args The arguments to pass in addition to the script's path. Note
  * that script arguments must be passed via the `--args` option for this
  * utility function. Despite the variadic template, each element should be of
@@ -309,6 +308,34 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
+
+    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
+    // checks of out and err still run and provide useful messages. For err,
+    // don't check empty(), because then catch2 doesn't display the error
+    // output.
+    CHECK(status == StatusCode::SUCCESS);
+    CHECK(out.str() == exp);
+    CHECK(err.str() == "");
+}
+
+/**
+ * @brief Compares the standard output of executing the given Python/DaphneLib
+ * script to a reference text.
+ * 
+ * Also checks that the status code indicates a successful execution and that
+ * nothing was printed to standard error.
+ * 
+ * @param exp The expected output on stdout.
+ * @param scriptFilePath The path to the Python/DaphneLib script file to execute.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ */
+template<typename... Args>
+void compareDaphneLibToStr(const std::string & exp, const std::string & scriptFilePath, Args ... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphneLib(out, err, scriptFilePath.c_str(), args...);
 
     // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
     // checks of out and err still run and provide useful messages. For err,
