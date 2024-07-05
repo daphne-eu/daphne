@@ -21,6 +21,7 @@
 
 enum class UnaryOpCode {
     // Arithmetic/general math.
+    MINUS,
     ABS,
     SIGN, // signum (-1, 0, +1)
     SQRT,

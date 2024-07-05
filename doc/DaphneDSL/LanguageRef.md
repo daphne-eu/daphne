@@ -225,6 +225,7 @@ DaphneDSL currently supports the following binary operators:
 
 | Operator | Meaning |
 | --- | --- |
+| `-`, `+` | additive inverse (unary operators) |
 | `@` | matrix multiplication (highest precedence) |
 | `^` | exponentiation |
 | `%` | modulo |
@@ -234,12 +235,12 @@ DaphneDSL currently supports the following binary operators:
 | `&&` | logical AND |
 | `\|\|` | logical OR (lowest precedence) |
 
-*We plan to add more operators, including unary operators.*
+*We plan to add more unary and binary operators in the future.*
 
 *Matrix multiplication (`@`):*
 The inputs must be matrices of compatible shapes, and the output is always a matrix.
 
-*All other operators:*
+*All other binary operators:*
 The following table shows which combinations of inputs are allowed and which result they yield:
 
 | Left input | Right input | Result | Details |
