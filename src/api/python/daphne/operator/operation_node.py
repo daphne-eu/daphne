@@ -42,7 +42,7 @@ import ctypes
 import json
 import os
 import time
-from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
+from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -60,11 +60,14 @@ class OperationNode(DAGNode):
                 unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None,
                 named_input_nodes: Dict[str, VALID_INPUT_TYPES]=None, 
                 output_type:OutputType = OutputType.MATRIX, is_python_local_data: bool = False,
-                brackets: bool = False, left_brackets: bool = False):
+                brackets: bool = False, left_brackets: bool = False,
+                consumer_list: List['OperationNode'] = None, current_node_input_indx: int = 0):
         if unnamed_input_nodes is None:
             unnamed_input_nodes = []
         if named_input_nodes is None:
             named_input_nodes = []
+        if consumer_list is None:
+            self.consumer_list = []
         self.daphne_context = daphne_context
         self.operation = operation
         self._unnamed_input_nodes = unnamed_input_nodes
@@ -78,6 +81,16 @@ class OperationNode(DAGNode):
         self._brackets = brackets
         self._left_brackets = left_brackets
         self._output_type = output_type
+
+        # This attribute indicate the parent's index in unnamed_input_nodes.
+        self._current_node_input_indx = current_node_input_indx
+
+        # Add this node to the consumer lists of all the nodes it uses  
+        if len(self._unnamed_input_nodes) > 0:
+            self._unnamed_input_nodes[current_node_input_indx].consumer_list.append(self)
+    
+    def update_parent_node_in_input_list(self, new_node):
+        self._unnamed_input_nodes[self._current_node_input_indx] = new_node
 
     def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False):
         """
