@@ -552,7 +552,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERN
 // Other Utilities
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (int32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 

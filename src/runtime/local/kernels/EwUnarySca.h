@@ -168,7 +168,7 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::FLOOR, floor(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::CEIL, std::ceil(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::ROUND, round(arg));
 // Other Utilities
-MAKE_EW_UNARY_SCA(UnaryOpCode::ISNAN, std::isnan(arg) ? 1 : 0);
+MAKE_EW_UNARY_SCA(UnaryOpCode::ISNAN, std::isnan(arg));
 
 #undef MAKE_EW_UNARY_SCA_CLOSED_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR
