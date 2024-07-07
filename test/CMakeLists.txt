@@ -105,6 +105,16 @@ set(TEST_SOURCES
         runtime/local/kernels/DiagMatrixTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
         runtime/local/kernels/DNNPoolingTest.cpp
+
+        runtime/local/kernels/DNNConvolutionTest.cpp
+        runtime/local/kernels/DNNConv2DBackwardDataTest.cpp
+        runtime/local/kernels/DNNConv2DBackwardFilterTest.cpp
+        runtime/local/kernels/DNNBatchNormTest.cpp
+        runtime/local/kernels/DNNBatchNorm2DTrainForwardTest.cpp
+        runtime/local/kernels/DNNBatchNorm2DBackwardTest.cpp
+        runtime/local/kernels/DNNBiasAddForwardTest.cpp
+        runtime/local/kernels/DNNPoolingBackwardTest.cpp
+
         runtime/local/kernels/EigenCalTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryObjScaTest.cpp

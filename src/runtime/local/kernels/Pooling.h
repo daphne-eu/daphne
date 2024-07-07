@@ -59,6 +59,29 @@ namespace NN::Pooling {
         static inline bool isMAX() { return true; }
     };
 
+    template<typename VT>
+    struct GetPaddedData {
+        static inline void
+        run(const VT *data, VT *padded_data, VT *selected_data, size_t pad_w, size_t pad_h, size_t img_w, size_t img_h, size_t padded_img_w, uint32_t off) {
+            uint32_t j = 0; uint32_t k = 0; uint32_t padded_index = 0;uint32_t data_index = 0;
+            for (j = 0; j < img_h * img_w; j++)
+                selected_data[j] = data[off + j];
+                                   
+            for (j = 0; j < (pad_h * padded_img_w); j++, padded_index++)
+                padded_data[padded_index] = 0;
+            for (j = 0; j < img_h; j++){
+                for (k = 0; k < pad_w; k++, padded_index++)
+                    padded_data[padded_index] = 0;                        
+                for (k = 0; k < img_w; k++, data_index++, padded_index++)
+                    padded_data[padded_index] = selected_data[data_index];
+                for (k = 0; k < pad_w; k++, padded_index++)
+                    padded_data[padded_index] = 0;
+                }
+                for (j = 0; j < (pad_h * padded_img_w); j++, padded_index++)
+                    padded_data[padded_index] = 0;
+        }
+    };
+
     template<template<typename> class OP, typename DTRes, typename DTArg>
     struct Forward {
         static void apply(DTRes *&res, size_t& res_h, size_t& res_w,

@@ -1,0 +1,207 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#pragma once
+
+#include <runtime/local/context/DaphneContext.h>
+
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+
+#include <limits>
+#include <random>
+#include <type_traits>
+
+#include <cstddef>
+#include <cstdint>
+
+#include <iostream>
+
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+
+template <class DTRes, class DTArg>
+struct Conv2DBackwardData
+{
+    static void apply(const DTArg *filter,
+                      const DTArg *&output,
+                      const size_t stride_h, const size_t stride_w,
+                      const size_t pad_h, const size_t pad_w,
+                      const size_t input_batch_size,
+                      const size_t input_num_channels,
+                      const size_t input_h, const size_t input_w,
+                      const size_t filter_num_filters,
+                      const size_t filter_num_channels,
+                      const size_t filter_h, const size_t filter_w,
+                      DTRes *&data,
+                      DCTX(dctx)) = delete;
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template <class DTRes, class DTArg>
+void conv2DBackwardData(const DTArg *filter,
+                        const DTArg *&output,
+                        const size_t stride_h, const size_t stride_w,
+                        const size_t pad_h, const size_t pad_w,
+                        const size_t input_batch_size,
+                        const size_t input_num_channels,
+                        const size_t input_h, const size_t input_w,
+                        const size_t filter_num_filters,
+                        const size_t filter_num_channels,
+                        const size_t filter_h, const size_t filter_w,
+                        DTRes *&data,
+                        DCTX(dctx))
+{
+    Conv2DBackwardData<DTRes, DTArg>::apply(
+        filter, output, stride_h, stride_w, pad_h, pad_w,
+        input_batch_size, input_num_channels, input_h, input_w,
+        filter_num_filters, filter_num_channels, filter_h, filter_w,
+        data, dctx);
+}
+
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT>
+static inline void
+GetLossGradientMatrix(const VT *output, VT *loss_gradient_matrix,
+                      size_t output_h, size_t output_w, size_t filter_h, size_t filter_w,
+                      size_t matrix_h, size_t matrix_w, size_t stride_h, size_t stride_w, uint32_t off)
+{
+    for (uint32_t i = 0; i < matrix_h * matrix_w; i++)
+        loss_gradient_matrix[i] = 0;
+    uint32_t init = (filter_h - 1) * matrix_w + filter_w - 1;
+    uint32_t io = 0;
+    for (uint32_t h = 0; h < filter_h; h++)
+        for (uint32_t w = 0; w < filter_w; w++, io++)
+            loss_gradient_matrix[init + h * stride_h * matrix_w + w * stride_w] = output[off + io];
+}
+
+template <typename VT>
+static inline void
+GetRotatedFilter(const VT *filter, VT *rotated_filter,
+                 size_t filter_h, size_t filter_w, uint32_t off)
+{
+    for (uint32_t i = 0; i < filter_h * filter_w; i++)
+        rotated_filter[i] = filter[off + filter_h * filter_w - i - 1];
+}
+
+uint32_t getPQ1(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent)
+{
+    uint32_t padded_image_extent = img_extent + 2 * pad_extent;
+    return (padded_image_extent - filter_extent) / stride_extent + 1;
+}
+
+template <typename VTRes, typename VTArg>
+struct Conv2DBackwardData<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
+{
+
+    static void
+    apply(const DenseMatrix<VTArg> *filter,
+          const DenseMatrix<VTArg> *output,
+          const size_t stride_h, const size_t stride_w,
+          const size_t pad_h, const size_t pad_w,
+          const size_t input_batch_size,
+          const size_t input_num_channels,
+          const size_t input_h, const size_t input_w,
+          const size_t filter_num_filters,
+          const size_t filter_num_channels,
+          const size_t filter_h, const size_t filter_w,
+          DenseMatrix<VTRes> *&data,
+          DCTX(dctx))
+    {
+        auto HW = input_h * input_w;
+        auto C = input_num_channels;
+        auto CHW = C * HW;
+        // padded height/width
+        auto P = getPQ1(input_h, filter_h, pad_h, stride_h);
+        auto Q = getPQ1(input_w, filter_w, pad_w, stride_w);
+        auto C_new = filter->getNumRows();
+        auto PQ = P * Q;
+        auto CPQ = C_new * PQ;
+        auto output_h = P;
+        auto output_w = Q;
+        auto o_CHW = filter_num_filters * output_h * output_w;
+        auto o_HW = output_h * output_w;
+
+        auto start = 0;
+        auto stop = input_batch_size;
+
+        auto ii = start * CHW;
+        auto oi = start * CPQ;
+
+        auto off_f = 0;
+        auto f_CHW = C * filter_h * filter_w;
+
+        auto padded_img_h = input_h + 2 * pad_h;
+        auto padded_img_w = input_w + 2 * pad_w;
+
+        auto matrix_h = filter_h + padded_img_h - 1;
+        auto matrix_w = filter_w + padded_img_w - 1;
+
+        DenseMatrix<VTArg> *rotated_filter = DataObjectFactory::create<DenseMatrix<VTArg>>(1, filter_h * filter_w, true);
+        DenseMatrix<VTArg> *loss_gradient_matrix = DataObjectFactory::create<DenseMatrix<VTArg>>(1, matrix_h * matrix_w, true);
+        
+        if (data == nullptr)
+        {
+            data = DataObjectFactory::create<DenseMatrix<VTArg>>(input_batch_size, input_num_channels * input_h * input_w, true);
+        }
+
+        u_int32_t i_h, f_h, i_w, f_w, off_o, off_i, off_m = 0;
+        for (uint32_t i = start; i < stop; i++)
+            for (uint32_t c_input = 0; c_input < input_num_channels; c_input++)
+            {
+                for (uint32_t c_output = 0; c_output < filter_num_filters; c_output++)
+                {
+                    off_f = c_output * f_CHW + c_input * filter_h * filter_w;
+                    GetRotatedFilter(filter->getValues(), rotated_filter->getValues(), filter_h, filter_w, off_f);
+                    off_o = oi + (i - start) * o_CHW + c_output * o_HW;
+                    GetLossGradientMatrix(output->getValues(), loss_gradient_matrix->getValues(), output_h, output_w,
+                                          filter_h, filter_w, matrix_h, matrix_w, stride_h, stride_w, off_o);
+                    // off_i = ii + (i - start) * C*padded_img_h*padded_img_w + c_input * padded_img_h*padded_img_w;
+                    // for (i_h = 0; i_h < padded_img_h; i_h++)
+                    //     for (f_h = 0; f_h < filter_h; f_h++)
+                    //         for (i_w = 0; i_w < padded_img_w; i_w++)
+                    //             for (f_w = 0; f_w < filter_w; f_w++){
+                    //                 off_m = (i_h + f_h) * matrix_w + i_w + f_w;
+                    //                 padded_data->getValues()[off_i+i_h * padded_img_w + i_w]
+                    //                 = padded_data->getValues()[off_i+i_h * padded_img_w + i_w]
+                    //                 + loss_gradient_matrix->getValues()[off_m]
+                    //                 * rotated_filter->getValues()[f_h * filter_w + f_w];
+                    //             }
+
+                    off_i = ii + (i - start) * CHW + c_input * HW;
+                    for (i_h = pad_h; i_h < pad_h + input_h; i_h++)
+                        for (f_h = 0; f_h < filter_h; f_h++)
+                            for (i_w = pad_w; i_w < pad_h + input_w; i_w++)
+                                for (f_w = 0; f_w < filter_w; f_w++)
+                                {
+                                    off_m = (i_h + f_h) * matrix_w + i_w + f_w;
+                                    data->getValues()[off_i + (i_h - pad_h) * input_w + i_w - pad_w] = data->getValues()[off_i + (i_h - pad_h) * input_w + i_w - pad_w] + loss_gradient_matrix->getValues()[off_m] * rotated_filter->getValues()[f_h * filter_w + f_w];
+                                }
+                }
+            }
+    }
+};

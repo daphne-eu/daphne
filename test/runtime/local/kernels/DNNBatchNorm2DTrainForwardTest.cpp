@@ -23,6 +23,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include "runtime/local/kernels/CUDA/BatchNorm.h"
 
+#include <cassert>
 #include <catch.hpp>
 #include <tags.h>
 
@@ -61,7 +62,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::BatchNorm::Forward", TAG_DNN, (DenseMatrix), (
 #include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include "runtime/local/kernels/BatchNorm2DTestForward.h"
+#include "runtime/local/kernels/BatchNorm2DTrainForward.h"
 
 #include <cassert>
 #include <catch.hpp>
@@ -72,22 +73,49 @@ void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, co
         DaphneContext* dctx)
 {
     DT* res = nullptr;
+    DT* new_emaMean = nullptr;
+    DT* new_emaVar = nullptr;
+    DT* Mean = nullptr;
+    DT* invVar = nullptr;
     typename DT::VT epsilon = 1e-5;
-    BatchNorm2DTestForward<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
+    typename DT::VT mu = 1;
+    Batch2DTrainForward<DT, DT>::apply(res, new_emaMean, new_emaVar, Mean, invVar, in, gamma, beta, ema_mean, ema_var, epsilon, mu, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("batch_norm_test_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("batch_norm_train_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
-    auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
-    auto gamma = genGivenVals<DT>(1, { 1 });
-    auto beta = genGivenVals<DT>(1, { 0 });
-    auto ema_mean = genGivenVals<DT>(1, { 0 });
-    auto ema_var = genGivenVals<DT>(1, { 1 });
+    auto input = genGivenVals<DT>(2, { -3, -2, -1, 0, 1, 2, 3, 4, 5,
+                                    -3, -2, -1, 0, 1, 2, 3, 4, 5,
+                                    -3, -2, -1, 0, 1, 2, 3, 4, 5,
+                                    -3, -2, -1, 0, 1, 2, 3, 4, 5,
+                                    -3, -2, -1, 0, 1, 2, 3, 4, 5,
+                                    -3, -2, -1, 0, 1, 2, 3, 4, 5});
+    auto gamma = genGivenVals<DT>(3, { 1, 1, 1 });
+    auto beta = genGivenVals<DT>(3, { 0, 0, 0 });
+    auto ema_mean = genGivenVals<DT>(3, { 0, 0, 0 });
+    auto ema_var = genGivenVals<DT>(1, { 1, 1, 1 });
 
-    auto result = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
+    auto result = genGivenVals<DT>(2, { -1.5492, -1.1619, -0.7746,
+                                    -0.3873,  0.0000,  0.3873,
+                                    0.7746,  1.1619,  1.5492,
+                                    -1.5492, -1.1619, -0.7746,
+                                    -0.3873,  0.0000,  0.3873,
+                                    0.7746,  1.1619,  1.5492,
+                                    -1.5492, -1.1619, -0.7746,
+                                    -0.3873,  0.0000,  0.3873,
+                                    0.7746,  1.1619,  1.5492,
+                                    -1.5492, -1.1619, -0.7746,
+                                    -0.3873,  0.0000,  0.3873,
+                                    0.7746,  1.1619,  1.5492,
+                                    -1.5492, -1.1619, -0.7746,
+                                    -0.3873,  0.0000,  0.3873,
+                                    0.7746,  1.1619,  1.5492,
+                                    -1.5492, -1.1619, -0.7746,
+                                    -0.3873,  0.0000,  0.3873,
+                                    0.7746,  1.1619,  1.5492});
 
     check(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
 
