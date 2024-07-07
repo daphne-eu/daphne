@@ -556,7 +556,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (int32
     using DT = TestType;
     using VT = typename DT::VT;
 
-    auto arg = genGivenVals<DT>(6, {
+    auto arg = genGivenVals<DT>(7, {
         1,
         std::numeric_limits<VT>::quiet_NaN(),
         0,
