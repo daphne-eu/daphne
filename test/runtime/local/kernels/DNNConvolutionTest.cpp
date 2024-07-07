@@ -54,3 +54,80 @@ TEMPLATE_PRODUCT_TEST_CASE("conv_fwd", TAG_DNN, (DenseMatrix), (float, double)) 
 }
 
 #endif // USE_CUDA
+
+#include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/CheckEq.h>
+
+#include <cassert>
+#include <tags.h>
+#include <catch.hpp>
+
+#include <runtime/local/kernels/Conv2DForward.h>
+
+template<class DT>
+void checkConv2DForward(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
+    DT* res = nullptr;
+    size_t out_h;
+    size_t out_w;
+    auto bias = genGivenVals<DT>(1, {0});
+    // Conv2DForward<DT, DT>::apply(res, out_h, out_w, in, filter, bias, in->getNumRows(), 1, 3, 3, 2, 2,
+    //         1, 1, 0, 0, dctx);
+    // Conv2DForward<DT, DT>::apply(res, out_h, out_w, in, filter, bias, in->getNumRows(), 3, 3, 3, 2, 2,
+    //         1, 1, 1, 1, dctx);
+    Conv2DForward<DT, DT>::apply(res, out_h, out_w, in, filter, bias, in->getNumRows(), 3, 3, 3, 2, 2,
+            2, 2, 1, 1, dctx);
+    // CUDA::Convolution::Forward<DT, DT>::apply(res, out_h, out_w, in, filter, nullptr, in->getNumRows(), 1, 3, 3, 2, 2,
+    //         1, 1, 0, 0, dctx);
+    CHECK(*res == *exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("conv_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+    auto dctx = setupContextAndLogger();
+    using DT = TestType;
+
+    // auto input = genGivenVals<DT>(1, { 1, 2, 3, 4, 5, 6, 7, 8, 9});
+    // auto filter = genGivenVals<DT>(1, { 1, 0, 0, 1});
+
+    auto input = genGivenVals<DT>(2, { 1, 2, 3, 
+                                       4, 5, 6, 
+                                       7, 8, 9, 
+                                       
+                                       10, 11, 12, 
+                                       13, 14, 15, 
+                                       16, 17, 18, 
+                                       
+                                       19, 20, 21, 
+                                       22, 23, 24, 
+                                       25, 26, 27,
+                                       
+                                       1, 2, 3, 
+                                       4, 5, 6, 
+                                       7, 8, 9, 
+                                       
+                                       10, 11, 12, 
+                                       13, 14, 15, 
+                                       16, 17, 18, 
+                                       
+                                       19, 20, 21, 
+                                       22, 23, 24, 
+                                       25, 26, 27,});
+
+    auto filter = genGivenVals<DT>(1, { 1, 0, 
+                                        0, 1, 
+                                        
+                                        1, 0, 
+                                        0, 1, 
+                                        
+                                        1, 0, 
+                                        0, 1});
+
+    // expected output when used with settings filter 2x2, stride 1x1, padding 0x0
+    // auto result = genGivenVals<DT>(1, { 6, 8, 12, 14 });
+    auto result = genGivenVals<DT>(2, { 30, 36, 48, 96, 30, 36, 48, 96 });
+
+    checkConv2DForward(input, filter, result, dctx.get());
+
+    DataObjectFactory::destroy(input);
+    DataObjectFactory::destroy(result);
+}

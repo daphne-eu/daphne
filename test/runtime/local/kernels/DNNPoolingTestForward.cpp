@@ -17,28 +17,7 @@
 #include "run_tests.h"
 
 #include <runtime/local/datagen/GenGivenVals.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
-
-#ifdef USE_CUDA
-    #include <runtime/local/kernels/CUDA/Pooling.h>
-    #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
-#else
-    #include <runtime/local/kernels/Pooling.h>
-    #include <runtime/local/kernels/MaxPoolForward.h>
-    #include <runtime/local/kernels/AvgPoolForward.h>
-
-    // #include <runtime/local/kernels/AvgPoolBackward.h>
-    // #include <runtime/local/kernels/Conv2DBackwardFilter.h>
-    // #include <runtime/local/kernels/BatchNorm2DBackward.h>
-
-#endif
-
-#include <tags.h>
-
-#include <catch.hpp>
-
-#include <vector>
+#include <runtime/local/kernels/Pooling.h>
 
 template<typename DT>
 DT* genInput() {
@@ -58,16 +37,11 @@ void checkPoolingForward(const DT* in, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
     size_t out_h;
     size_t out_w;
-#ifdef USE_CUDA
-    CUDA::NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
-#else
-    //NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
     NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 2, 2, 1, 1, dctx);
-#endif
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("NN::Pooling::AVG::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
     auto dctx = setupContextAndLogger();
@@ -96,14 +70,10 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
     DataObjectFactory::destroy(out_f2x2_s2x2_p1x1);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("NN::Pooling::MAX::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
     auto dctx = setupContextAndLogger();
-
-#ifdef USE_CUDA
-    CUDA::createCUDAContext(dctx.get());
-#endif
 
     // two rgb "images" of 5x5 pixels
     auto inputs = genInput<DT>();
@@ -152,14 +122,15 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, doubl
             52, 53, 54, 54,
             52, 53, 54, 54
     });
-auto out_f2x2_s2x2_p1x1 = genGivenVals<DT>(2, {1., 3., 5., 11.,  13.,  15.,
+
+    auto out_f2x2_s2x2_p1x1 = genGivenVals<DT>(2, {1., 3., 5., 11.,  13.,  15.,
           21.,  23.,  25., 26.,  28.,  30., 36.,  38.,  40., 46.,  48.,  50.,
             51.,  53.,  55., 61.,  63.,  65., 71.,  73.,  75.,
          76.,  78.,  80., 86.,  88.,  90.,96.,  98., 100., 101., 103., 105., 111., 113., 115.,
         121., 123., 125., 126., 128., 130., 136., 138., 140., 146., 148., 150.
     });
+
     checkPoolingForward<NN::Pooling::MAX>(inputs, out_f2x2_s2x2_p1x1, dctx.get());
-    //check<NN::Pooling::MAX>(inputs_p1x1, out_f2x2_s1x1_p1x1, dctx.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(out_f2x2_s1x1_p0x0);
