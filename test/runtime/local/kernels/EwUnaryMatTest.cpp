@@ -556,14 +556,14 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (int32
     using DT = TestType;
     using VT = typename DT::VT;
 
-    auto arg = genGivenVals<DT>(7, {
+    auto arg = genGivenVals<DT>(6, {
         1,
         std::numeric_limits<VT>::quiet_NaN(),
         0,
         std::numeric_limits<VT>::infinity(),
+        -std::numeric_limits<VT>::infinity(),
         99,
-        -99,
-        std::numeric_limits<VT>::quiet_NaN()
+        -99, 
     });
 
     auto exp = genGivenVals<DT>(7, {
@@ -585,24 +585,28 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan, floating-point specific"), TAG_KERN
     using DT = TestType;
     using VT = typename DT::VT;
 
-    auto arg = genGivenVals<DT>(7, {
+    auto arg = genGivenVals<DT>(9, {
         1,
         std::numeric_limits<VT>::quiet_NaN(),
         0,
         std::numeric_limits<VT>::infinity(),
+        -std::numeric_limits<VT>::infinity(), 
         99.9,
         -99.9,
-        std::numeric_limits<VT>::quiet_NaN()
+        std::numeric_limits<VT>::quiet_NaN(),
+        std::numeric_limits<VT>::denorm_min()
     });
 
-    auto exp = genGivenVals<DT>(7, {
+    auto exp = genGivenVals<DT>(9, {
         0,
         1,
         0,
         0,
         0,
         0,
-        1
+        0,
+        1,
+        0
     });
 
     checkEwUnaryMat(UnaryOpCode::ISNAN, arg, exp);
