@@ -1,0 +1,39 @@
+// unary '-' for additive inverse.
+
+print("scalar");
+# single minus
+print(-2);
+print(-2.2);
+# single plus
+print(+2);
+print(+2.2);
+# double minus (cancels out)
+print(--2);
+print(--2.2);
+# double plus (cancels out)
+print(++2);
+print(++2.2);
+# mix of plus and minus
+print(+-2);
+print(+-2.2);
+print(+-+2);
+print(+-+2.2);
+
+print("matrix");
+# single minus
+print(-[2]);
+print(-[2.2]);
+# single plus
+print(+[2]);
+print(+[2.2]);
+# double minus (cancels out)
+print(--[2]);
+print(--[2.2]);
+# double plus (cancels out)
+print(++[2]);
+print(++[2.2]);
+# mix of plus and minus
+print(+-[2]);
+print(+-[2.2]);
+print(+-+[2]);
+print(+-+[2.2]);

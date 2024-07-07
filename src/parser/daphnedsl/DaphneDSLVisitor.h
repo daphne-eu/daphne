@@ -228,6 +228,8 @@ public:
     antlrcpp::Any visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) override;
 
     antlrcpp::Any visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) override;
+
+    antlrcpp::Any visitMinusExpr(DaphneDSLGrammarParser::MinusExprContext *ctx) override;
     
     antlrcpp::Any visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) override;
     

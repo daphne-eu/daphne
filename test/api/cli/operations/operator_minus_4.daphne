@@ -1,0 +1,19 @@
+// unary '-' for additive inverse, interplay with other operators.
+
+a = 2;
+print("interplay with binary plus/minus");
+print(1 + -a);
+print(1 + +a);
+print(1 - -a);
+print(1 - +a);
+print(-1 + -a);
+print(-1 + +a);
+print(-1 - -a);
+print(-1 - +a);
+
+print("interplay with other operators");
+print(-log(8, 2));
+print(-sum([1, 2, 3]));
+print(-[10, 20, 30][1, 0]);
+print(-(3 * 5));
+print(10.0^-3);

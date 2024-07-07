@@ -208,6 +208,7 @@ class Daphne_EwUnaryOp<string name, Type scalarType, list<Trait> traits = []> : 
 // Arithmetic/general math
 // ----------------------------------------------------------------------------
 
+// TODO EwMinusOp: Should an unsigned integer argument yield a signed integer result?
 def Daphne_EwMinusOp : Daphne_EwUnaryOp<"ewMinus", NumScalar, [ValueTypeFromFirstArg]>;
 def Daphne_EwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar, [ValueTypeFromFirstArg]>;
 def Daphne_EwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar, [ValueTypeFromFirstArg]>;
