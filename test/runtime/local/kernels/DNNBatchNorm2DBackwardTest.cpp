@@ -25,6 +25,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include "runtime/local/kernels/BatchNorm2DBackward.h"
 #include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/CheckEqApprox.h>
 
 #include <cassert>
 #include <catch.hpp>
@@ -41,10 +42,14 @@ const DT* exp2, const DT* exp3, DaphneContext* dctx)
     typename DT::VT epsilon = 1e-5;
     BatchNorm2DBackward<DT, DT>::apply(dX, dGamma, dBeta, mean, invVar, in, dOut, gamma, epsilon, dctx);
 
-    CHECK(Approx(*(dX->getValues())).epsilon(epsilon) == *(exp1->getValues()));
-    // CHECK(*dX == *exp1);
-    CHECK(Approx(*(dGamma->getValues())).epsilon(epsilon) == *(exp2->getValues()));
-    CHECK(Approx(*(dBeta->getValues())).epsilon(epsilon) == *(exp3->getValues()));
+    // CHECK(Approx(*(dX->getValues())).epsilon(epsilon) == *(exp1->getValues()));
+    // // CHECK(*dX == *exp1);
+    // CHECK(Approx(*(dGamma->getValues())).epsilon(epsilon) == *(exp2->getValues()));
+    // CHECK(Approx(*(dBeta->getValues())).epsilon(epsilon) == *(exp3->getValues()));
+
+    CHECK(checkEqApprox(dX, exp1, 1e-5, nullptr));
+    CHECK(checkEqApprox(dGamma, exp2, 1e-4, nullptr));
+    CHECK(checkEqApprox(dBeta, exp3, 1e-5, nullptr));
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
