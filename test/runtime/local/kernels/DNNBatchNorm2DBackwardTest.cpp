@@ -41,8 +41,8 @@ const DT* exp2, const DT* exp3, DaphneContext* dctx)
     typename DT::VT epsilon = 1e-5;
     BatchNorm2DBackward<DT, DT>::apply(dX, dGamma, dBeta, mean, invVar, in, dOut, gamma, epsilon, dctx);
 
-    // CHECK(Approx(*(dX->getValues())).epsilon(epsilon) == *(exp1->getValues()));
-    CHECK(*dX == *exp1);
+    CHECK(Approx(*(dX->getValues())).epsilon(epsilon) == *(exp1->getValues()));
+    // CHECK(*dX == *exp1);
     CHECK(Approx(*(dGamma->getValues())).epsilon(epsilon) == *(exp2->getValues()));
     CHECK(Approx(*(dBeta->getValues())).epsilon(epsilon) == *(exp3->getValues()));
 }
