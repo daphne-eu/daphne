@@ -219,6 +219,7 @@ struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     res->getValues()[oi + (i - start) * CPQ + c_new * PQ + l] += bias->getValues()[c_new];
             }            
         }
-            
+        DataObjectFactory::destroy(padded_data);
+        DataObjectFactory::destroy(selected_data);    
     }
 };

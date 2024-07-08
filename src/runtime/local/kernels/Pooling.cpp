@@ -125,7 +125,8 @@ namespace NN::Pooling {
                 }
                     
         }
-
+        DataObjectFactory::destroy(padded_data);
+        DataObjectFactory::destroy(selected_data); 
     }
 
     template struct Forward<AVG, DenseMatrix<float>, DenseMatrix<float>>;

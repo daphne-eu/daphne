@@ -134,5 +134,7 @@ struct MaxPoolBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                 for (uint32_t i = 0; i < padded_img_h * padded_img_w; i++)
                     res_padded->getValues()[i] = 0;
             }
+        DataObjectFactory::destroy(res_padded);
+        DataObjectFactory::destroy(input_padded); 
     }
 };

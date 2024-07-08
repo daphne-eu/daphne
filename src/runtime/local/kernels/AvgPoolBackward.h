@@ -130,7 +130,7 @@ struct AvgPoolBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     dPooling_padded->getValues()[i] = 0;
             }
                 
-
+        DataObjectFactory::destroy(dPooling_padded);
     }
     
 };

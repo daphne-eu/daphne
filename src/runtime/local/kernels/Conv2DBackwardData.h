@@ -203,5 +203,7 @@ struct Conv2DBackwardData<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                                 }
                 }
             }
+        DataObjectFactory::destroy(rotated_filter);
+        DataObjectFactory::destroy(loss_gradient_matrix);
     }
 };
