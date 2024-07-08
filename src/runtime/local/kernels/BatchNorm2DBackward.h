@@ -85,9 +85,9 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
         auto HW = CHW / C;
         VTArg m = stop * HW;
 
-        auto minus_half = -static_cast<typename DenseMatrix<VTArg>::VT>(1) / static_cast<typename DenseMatrix<VTArg>::VT>(2);
+        auto half = static_cast<typename DenseMatrix<VTArg>::VT>(1) / static_cast<typename DenseMatrix<VTArg>::VT>(2);
         auto const_2_m = static_cast<typename DenseMatrix<VTArg>::VT>(2) / m;
-        auto const_1_m = static_cast<typename DenseMatrix<VTArg>::VT>(1) / m;
+        // auto const_1_m = static_cast<typename DenseMatrix<VTArg>::VT>(1) / m;
 
         auto off = 0;
         // VTArg sum_dBeta = 0, sum_dGamma = 0, dVar = 0, dMean = 0, dX_hat = 0;
@@ -115,7 +115,7 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     dX_hat = dout->getValues()[off] * gamma->getValues()[c];
                     dVar -= dX_hat
                             * (in->getValues()[off] - mean->getValues()[c])
-                            * 0.5 * std::pow(invVar->getValues()[c], 3);
+                            * half * std::pow(invVar->getValues()[c], 3);
                     // std::cout<<std::pow(invVar->getValues()[c], 3)<<std::endl;
                     // double iivar = invVar->getValues()[c];
                     // double ivar = iivar * iivar * iivar;
@@ -140,10 +140,7 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     dX->getValues()[off] = dX_hat * invVar->getValues()[c]
                                     + dVar * const_2_m * (in->getValues()[off] - mean->getValues()[c])
                                     + dMean / m;
-                }
-            std::cout<<dMean<<std::endl;
-            std::cout<<dVar<<std::endl;
-            std::cout<<std::endl;    
+                }  
         }
     }
 };
