@@ -49,7 +49,7 @@ struct BatchNorm2DBackward {
 
 template<class DTRes, class DTArg>
 void batchNorm2DBackward(   DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta,
-                            DTArg *mean, DTArg *invVar, 
+                            const DTArg *mean, const DTArg *invVar, 
                             const DTArg *in, const DTArg *dout, 
                             const DTArg *gamma, const size_t eps, DCTX(dctx)) {
     BatchNorm2DBackward<DTRes, DTArg>::apply(dX, dGamma, dBeta, mean, invVar, in, dout, gamma, eps, dctx);

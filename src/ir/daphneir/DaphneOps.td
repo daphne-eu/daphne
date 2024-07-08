@@ -807,6 +807,26 @@ def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"BatchNorm_Forward", [ CUDASuppo
     let results = (outs MatrixOf<[FloatScalar]>:$output);
 }
 
+def Daphne_BatchNorm2DTrainForwardOp : Daphne_Op<"BatchNorm_Forward", [ CUDASupport ]> {
+    let arguments = (ins
+            MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
+            MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps, FloatScalar:$mu);
+    let results = (outs MatrixOf<[FloatScalar]>:$output,
+                        MatrixOf<[FloatScalar]>:$new_emaMean,
+                        MatrixOf<[FloatScalar]>:$new_emaVar,
+                        MatrixOf<[FloatScalar]>:$Mean,
+                        MatrixOf<[FloatScalar]>:$invVar);
+}
+
+def Daphne_BatchNorm2DBackwardOp : Daphne_Op<"BatchNorm_Backward", [ CUDASupport ]> {
+    let arguments = (ins
+            MatrixOf<[FloatScalar]>:$mean, MatrixOf<[FloatScalar]>:$invVar, MatrixOf<[FloatScalar]>:$input,
+            MatrixOf<[FloatScalar]>:$dout, MatrixOf<[FloatScalar]>:$gamma, FloatScalar:$eps);
+    let results = (outs MatrixOf<[FloatScalar]>:$dX,
+                        MatrixOf<[FloatScalar]>:$dGamma,
+                        MatrixOf<[FloatScalar]>:$dBeta);
+}
+
 // ----------------------------------------------------------------------------
 // Bias Addition
 // ----------------------------------------------------------------------------
