@@ -25,6 +25,7 @@
 #include <type_traits>
 #include <vector>
 #include <optional>
+#include <random>
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Tensor.h>
@@ -97,11 +98,21 @@ class ContiguousTensor : public Tensor<ValueType> {
                 }
                 break;
             }
+            case InitCode::RAND: {
+                std::random_device rd;
+                std::mt19937_64 rng(rd());
+                std::uniform_real_distribution<double> dist(0.0, 255.0);
+
+                for (size_t i = 0; i < this->total_element_count; i++) {
+                    data.get()[i] = static_cast<ValueType>(dist(rng));
+                }
+                break;
+            }
         }
     };
     
     template<typename VTArg>
-    ContiguousTensor(const ContiguousTensor<VTArg> *other)
+    explicit ContiguousTensor(const ContiguousTensor<VTArg> *other)
         : Tensor<ValueType>::Tensor(other->tensor_shape), strides(other->strides) {
         // workarround for old versions of gcc with template specialization bug
         //https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85282
@@ -115,7 +126,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         }
     };
 
-    ContiguousTensor(const DenseMatrix<ValueType> *other)
+    explicit ContiguousTensor(const DenseMatrix<ValueType> *other)
         : Tensor<ValueType>::Tensor(other->getNumRows(), other->getNumCols()), data(other->getValuesSharedPtr()) {
         strides = {1, other->getRowSkip()};
         for(size_t i=0; i<this->rank; i++) {
@@ -126,7 +137,7 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     // Copies passed data
-    ContiguousTensor(ValueType *input_data, const std::vector<size_t> &tensor_shape)
+    explicit ContiguousTensor(ValueType *input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape),
           data(new ValueType[this->total_element_count], std::default_delete<ValueType[]>()) {
         strides.resize(this->rank);
@@ -147,7 +158,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         std::memcpy(data.get(), input_data, this->total_element_count * sizeof(ValueType));
     }
 
-    ContiguousTensor(std::shared_ptr<ValueType[]>& input_data, const std::vector<size_t> &tensor_shape)
+    explicit ContiguousTensor(std::shared_ptr<ValueType[]>& input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape) {
         data = input_data;
         strides.resize(this->rank);
@@ -167,7 +178,7 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     // Takes ownership of data
-    ContiguousTensor(std::unique_ptr<ValueType[]> input_data, const std::vector<size_t> &tensor_shape)
+    explicit ContiguousTensor(std::unique_ptr<ValueType[]> input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape), data(std::move(input_data)) {
         strides.resize(this->rank);
         if (this->rank > 0) {
@@ -191,13 +202,29 @@ class ContiguousTensor : public Tensor<ValueType> {
     
     public:
 
-    bool operator==(const ContiguousTensor<ValueType> &rhs) const {
+    template<typename VT>
+    bool IsApproxEqual(const ContiguousTensor<ValueType> &rhs, VT eps) const {
         if (this->tensor_shape != rhs.tensor_shape) {
             return false;
         }
 
-        return !static_cast<bool>(
-          std::memcmp(data.get(), rhs.data.get(), this->total_element_count * sizeof(ValueType)));
+        bool exact_compare = eps == static_cast<VT>(0);
+
+        if (exact_compare) {
+            return !static_cast<bool>(
+              std::memcmp(data.get(), rhs.data.get(), this->total_element_count * sizeof(ValueType)));
+        }
+
+        for (size_t i=0; i<this->total_element_count; i++) {
+            if (eps < std::abs(static_cast<VT>(data[i]) - static_cast<VT>(rhs.data[i]))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool operator==(const ContiguousTensor<ValueType> &rhs) const {
+        return IsApproxEqual<double>(rhs, static_cast<double>(0));
     }
 
     DenseMatrix<ValueType> *tryToGetDenseMatrix() const {

@@ -627,3 +627,69 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     auto arg = genGivenVals<DT>(1, {1});
     CHECK_THROWS(ewBinaryObjSca<DT, DT, typename DT::VT>(static_cast<BinaryOpCode>(999), res, arg, 1, nullptr));
 }
+
+// Tensors
+
+TEMPLATE_TEST_CASE(TEST_NAME("Tensor-EwBinObjSca"), TAG_KERNELS, VALUE_TYPES) {
+    using DT1 = ContiguousTensor<TestType>;
+    using DT2 = ChunkedTensor<TestType>;
+    using VT = TestType;
+    
+    std::vector<BinaryOpCode> op_types = {
+        BinaryOpCode::ADD,
+        BinaryOpCode::SUB,
+        BinaryOpCode::MUL,
+        BinaryOpCode::DIV,
+        BinaryOpCode::MOD,
+
+        BinaryOpCode::POW,
+        BinaryOpCode::LOG,
+
+        BinaryOpCode::EQ,
+        BinaryOpCode::NEQ,
+        BinaryOpCode::GE,
+        BinaryOpCode::LE,
+        BinaryOpCode::GT,
+        BinaryOpCode::LT,
+
+        BinaryOpCode::MAX,
+        BinaryOpCode::MIN,
+
+        BinaryOpCode::OR,
+        BinaryOpCode::AND,
+    };
+    
+    std::vector<size_t> shape = {2,4,8,2};
+    std::vector<size_t> chunk_shape = {2,2,2,2};
+
+    auto cont_lhs = DataObjectFactory::create<DT1>(shape, InitCode::IOTA);
+    auto chunk_lhs = DataObjectFactory::create<DT2>(shape, chunk_shape, InitCode::IOTA);
+
+    VT rhs = 42 * 42;
+
+    for (size_t i=0; i < op_types.size(); i++) {
+        DT1* cont_res = nullptr;
+        DT2* chunk_res = nullptr;
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT,VT,VT>(op_types[i]);
+
+        ewBinaryObjSca(op_types[i], cont_res, cont_lhs, rhs, nullptr);
+        ewBinaryObjSca(op_types[i], chunk_res, chunk_lhs, rhs, nullptr);
+
+        bool success = true;
+        for (size_t j=0; j < cont_lhs->total_element_count; j++) {
+            auto expected1 = func(cont_lhs->data[j], rhs, nullptr);
+            auto expected2 = func(chunk_lhs->data[j], rhs, nullptr);
+
+            if (cont_res->data[j] != expected1 || chunk_res->data[j] != expected2){
+                success = false;
+            }
+        }
+
+        REQUIRE(success);
+
+        DataObjectFactory::destroy(cont_res, chunk_res);
+    }
+
+    DataObjectFactory::destroy(chunk_lhs, cont_lhs);
+}

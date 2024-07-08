@@ -19,6 +19,8 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -86,5 +88,35 @@ struct CastObjSca<VTRes, Frame> {
             throw std::runtime_error("CastObjSca::apply: unknown value type code");
 
         return res;
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Scalar  <- ContiguousTensor
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct CastObjSca<VTRes, ContiguousTensor<VTArg>> {
+    static VTRes apply(const ContiguousTensor<VTArg> * arg, DCTX(ctx)) {
+        if (arg->rank != 0) {
+            throw std::runtime_error("Attempted to cast tensor of non-0 rank to scalar type");
+        }
+        
+        return static_cast<VTRes>(arg->data[0]);
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Scalar  <- ChunkedTensor
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+struct CastObjSca<VTRes, ChunkedTensor<VTArg>> {
+    static VTRes apply(const ChunkedTensor<VTArg> * arg, DCTX(ctx)) {
+        if (arg->rank != 0) {
+            throw std::runtime_error("Attempted to cast tensor of non-0 rank to scalar type");
+        }
+        
+        return static_cast<VTRes>(arg->data[0]);
     }
 };

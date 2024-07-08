@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/Tensor.h"
 #include <bits/stdint-intn.h>
 #include <bits/stdint-uintn.h>
 #include <catch.hpp>
 #include <cmath>
+#include <limits>
 #include <tags.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/HasSpecialValue.h>
 
 #define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define TENSOR_TYPES ContiguousTensor, ChunkedTensor
 
 TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS, (DATA_TYPES), (uint32_t)) {
 
@@ -128,4 +134,60 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - floating point", TAG_KERNELS, (DAT
         CHECK(hasSpecialValue(infinityMat, inf, nullptr));
         CHECK_FALSE(hasSpecialValue(infinityMat, sigNaN, nullptr));
     }
+}
+
+TEST_CASE("HasSpecialValue - ContiguousTensor") {
+    auto t_0 = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({2,44,2}), InitCode::ZERO);
+    auto t_iota = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({2,44,2}), InitCode::IOTA);
+    auto t_sig = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({2,44,2}), InitCode::IOTA);
+    auto t_quiet = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({2,44,2}), InitCode::IOTA);
+    auto t_inf = DataObjectFactory::create<ContiguousTensor<double>>(std::vector<size_t>({2,44,2}), InitCode::IOTA);
+
+
+    REQUIRE(hasSpecialValue(t_0, 0, nullptr));
+    REQUIRE(!hasSpecialValue(t_0, 1, nullptr));
+
+    REQUIRE(hasSpecialValue(t_iota, 42, nullptr));
+    REQUIRE(!hasSpecialValue(t_iota, -1.0, nullptr));
+
+    t_sig->data[2] = std::numeric_limits<double>::signaling_NaN();
+    t_quiet->data[3] = std::numeric_limits<double>::quiet_NaN();
+    t_inf->data[0] =  std::numeric_limits<double>::infinity();
+    
+    REQUIRE(hasSpecialValue(t_sig, std::numeric_limits<double>::signaling_NaN(), nullptr));
+    REQUIRE(!hasSpecialValue(t_0, std::numeric_limits<double>::signaling_NaN(), nullptr));
+
+    REQUIRE(hasSpecialValue(t_quiet, std::numeric_limits<double>::quiet_NaN(), nullptr));
+    REQUIRE(!hasSpecialValue(t_0, std::numeric_limits<double>::quiet_NaN(), nullptr));
+
+    REQUIRE(hasSpecialValue(t_inf, std::numeric_limits<double>::infinity(), nullptr));
+    REQUIRE(!hasSpecialValue(t_iota, std::numeric_limits<double>::infinity(), nullptr));
+}
+
+TEST_CASE("HasSpecialValue - ChunkedTensor") {
+    auto t_0 = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({2,44,2}), std::vector<size_t>({2,2,2}), InitCode::ZERO);
+    auto t_iota = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({2,44,2}), std::vector<size_t>({2,2,2}), InitCode::IOTA);
+    auto t_sig = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({2,44,2}), std::vector<size_t>({2,2,2}), InitCode::IOTA);
+    auto t_quiet = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({2,44,2}), std::vector<size_t>({2,2,2}), InitCode::IOTA);
+    auto t_inf = DataObjectFactory::create<ChunkedTensor<double>>(std::vector<size_t>({2,44,2}), std::vector<size_t>({2,2,2}), InitCode::IOTA);
+
+
+    REQUIRE(hasSpecialValue(t_0, 0, nullptr));
+    REQUIRE(!hasSpecialValue(t_0, 1, nullptr));
+
+    REQUIRE(hasSpecialValue(t_iota, 42, nullptr));
+    REQUIRE(!hasSpecialValue(t_iota, -1.0, nullptr));
+
+    t_sig->data[2] = std::numeric_limits<double>::signaling_NaN();
+    t_quiet->data[3] = std::numeric_limits<double>::quiet_NaN();
+    t_inf->data[0] =  std::numeric_limits<double>::infinity();
+    
+    REQUIRE(hasSpecialValue(t_sig, std::numeric_limits<double>::signaling_NaN(), nullptr));
+    REQUIRE(!hasSpecialValue(t_0, std::numeric_limits<double>::signaling_NaN(), nullptr));
+
+    REQUIRE(hasSpecialValue(t_quiet, std::numeric_limits<double>::quiet_NaN(), nullptr));
+    REQUIRE(!hasSpecialValue(t_0, std::numeric_limits<double>::quiet_NaN(), nullptr));
+
+    REQUIRE(hasSpecialValue(t_inf, std::numeric_limits<double>::infinity(), nullptr));
+    REQUIRE(!hasSpecialValue(t_iota, std::numeric_limits<double>::infinity(), nullptr));
 }
