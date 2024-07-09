@@ -98,37 +98,14 @@ julia --project=connected_components/julia/ connected_components/julia/connected
 
 ### Breadth First Search (`bfs` folder)
 
-I don't recall. I think there is a missing kernel.
-My notes say:
-
-```
-Apptainer> ./daphne-src/bin/daphne  --select-matrix-repr benchmark_scripts/bfs/daph/bfs.daph f=\"matrices/amazon0601/amazon0601_ones.mtx\"
-JIT session error: Symbols not found: [ _ewAdd__DenseMatrix_double__DenseMatrix_double__CSRMatrix_double ]
-JIT-Engine invocation failed: Failed to materialize symbols: { (main, { main, _mlir__mlir_ciface_main, _mlir_ciface_main, _mlir_main }) }Program aborted due to an unhandled Error:
-Failed to materialize symbols: { (main, { main, _mlir__mlir_ciface_main, _mlir_ciface_main, _mlir_main }) }
-```
-
 ### Connected Components (`connected_components` folder)
-
-OK
 
 ### K-Core (`k-core` folder)
 
-Ok for everything but DAPHNE
-
 ### N-Body Simulation (`nbody` folder)
 
-Started the implementations, but needs to be checked for all the implementations.
+Needs to be checked double checked for all the implementations.
 
 ### Pagerank (`pagerank` folder)
 
-OK for everything but DAPHNE (see [https://github.com/daphne-eu/daphne/issues/697](https://github.com/daphne-eu/daphne/issues/697))
-
-### Single Source Shortest Path (`sssp` folder)
-
-Started the implementation for Julia.
-
-### Triangle Count (`triangle_count` folder)
-
-OK for everything but DAPHNE: needs the sparse by sparse matrix multiplication which is not yet available in DAPHNE
-
+### Triangle Count (TC) (`tc` folder)
