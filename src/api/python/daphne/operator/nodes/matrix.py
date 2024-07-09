@@ -46,7 +46,7 @@ class Matrix(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', operation:str, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
                 named_input_nodes:Dict[str, VALID_INPUT_TYPES]=None, 
                 local_data: np.array = None, brackets:bool = False, left_brackets: bool = False, copy: bool = False,
-                consumer_list: List['OperationNode'] = None, current_node_input_indx: int = 0)->'Matrix':
+                consumer_list: List['OperationNode'] = None)->'Matrix':
         self.__copy = copy
         is_python_local_data = False
         if local_data is not None:
@@ -55,7 +55,7 @@ class Matrix(OperationNode):
             is_python_local_data = True
         else:
             self._np_array = None
-        super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets, left_brackets, consumer_list, current_node_input_indx)
+        super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets, left_brackets, consumer_list)
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
@@ -127,37 +127,37 @@ class Matrix(OperationNode):
         return Matrix(self.daphne_context, '<', [self, other])
 
     def __rlt__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, '<', [other, self], current_node_input_indx = 1)
+        return Matrix(self.daphne_context, '<', [other, self])
 
     def __le__(self, other) -> 'Matrix':
         return Matrix(self.daphne_context, '<=', [self, other])
 
     def __rle__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, '<=', [other, self], current_node_input_indx = 1)
+        return Matrix(self.daphne_context, '<=', [other, self])
 
     def __gt__(self, other) -> 'Matrix':
         return Matrix(self.daphne_context, '>', [self, other])
 
     def __rgt__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, '>', [other, self], current_node_input_indx = 1)
+        return Matrix(self.daphne_context, '>', [other, self])
 
     def __ge__(self, other) -> 'Matrix':
         return Matrix(self.daphne_context, '>=', [self, other])
 
     def __rge__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, '>= ', [other, self], current_node_input_indx = 1)
+        return Matrix(self.daphne_context, '>= ', [other, self])
 
     def __eq__(self, other) -> 'Matrix':
         return Matrix(self.daphne_context, '==', [self, other])
 
     def __req__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, '==', [other, self], current_node_input_indx = 1)
+        return Matrix(self.daphne_context, '==', [other, self])
 
     def __ne__(self, other) -> 'Matrix':
         return Matrix(self.daphne_context, '!=', [self, other])
 
     def __rne__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, '!=', [other, self], current_node_input_indx = 1)
+        return Matrix(self.daphne_context, '!=', [other, self])
 
     def __matmul__(self, other: 'Matrix') -> 'Matrix':
         return Matrix(self.daphne_context, '@', [self, other])
@@ -210,7 +210,7 @@ class Matrix(OperationNode):
         #   Finally, change the state of the current DAG node to an operation for left indexing.
         new_node = copy.deepcopy(self)
         for consumer in self.consumer_list:
-            consumer.update_parent_node_in_input_list(new_node)
+            consumer.update_node_in_input_list(new_node, self)
         self.__dict__ = Matrix(new_node.daphne_context, None, [new_node, value, row_index, column_index], left_brackets=True).__dict__
 
     def sum(self, axis: int = None) -> 'OperationNode':

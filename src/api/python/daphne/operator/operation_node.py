@@ -61,7 +61,7 @@ class OperationNode(DAGNode):
                 named_input_nodes: Dict[str, VALID_INPUT_TYPES]=None, 
                 output_type:OutputType = OutputType.MATRIX, is_python_local_data: bool = False,
                 brackets: bool = False, left_brackets: bool = False,
-                consumer_list: List['OperationNode'] = None, current_node_input_indx: int = 0):
+                consumer_list: List['OperationNode'] = None):
         if unnamed_input_nodes is None:
             unnamed_input_nodes = []
         if named_input_nodes is None:
@@ -83,14 +83,13 @@ class OperationNode(DAGNode):
         self._output_type = output_type
 
         # This attribute indicate the parent's index in unnamed_input_nodes.
-        self._current_node_input_indx = current_node_input_indx
-
-        # Add this node to the consumer lists of all the nodes it uses  
-        if len(self._unnamed_input_nodes) > 0:
-            self._unnamed_input_nodes[current_node_input_indx].consumer_list.append(self)
-    
-    def update_parent_node_in_input_list(self, new_node):
-        self._unnamed_input_nodes[self._current_node_input_indx] = new_node
+        for i in range(len(unnamed_input_nodes)):
+            if isinstance(unnamed_input_nodes[i], OperationNode):
+                self._unnamed_input_nodes[i].consumer_list.append(self)
+              
+    def update_node_in_input_list(self, new_node, current_node):
+        current_index = self._unnamed_input_nodes.index(current_node)
+        self._unnamed_input_nodes[current_index] = new_node
 
     def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False):
         """
