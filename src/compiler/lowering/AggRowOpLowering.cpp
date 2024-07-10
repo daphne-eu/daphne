@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /*
 #include "compiler/utils/LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
@@ -33,8 +34,10 @@
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
 */
+#include <iostream>
 
-// #include "compiler/utils/CompilerUtils.h"
+
+#include "compiler/utils/CompilerUtils.h"
 #include "compiler/utils/LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
@@ -42,7 +45,7 @@
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
-// #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
+#include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
@@ -50,11 +53,13 @@
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
@@ -67,8 +72,8 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
-// #include "llvm/ADT/APFloat.h"
-// #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/ArrayRef.h"
 
 using namespace mlir;
 
@@ -76,8 +81,9 @@ class SumRowOpLowering : public OpConversionPattern<daphne::RowAggSumOp> {
 public:
     using OpConversionPattern::OpConversionPattern;
 
-    SumRowOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
-            : mlir::OpConversionPattern<daphne::RowAggSumOp>(typeConverter, ctx) {
+    explicit SumRowOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
+            : mlir::OpConversionPattern<daphne::RowAggSumOp>(typeConverter, ctx,
+                                                                PatternBenefit(1)) { // determine benfit
         this->setDebugName("SumRowOpLowering");
     }
 
@@ -93,52 +99,62 @@ public:
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
 
-        MemRefType memRefType = mlir::MemRefType::get({numRows, numCols}, matrixElementType);
-        auto memRef = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
-            op->getLoc(), memRefType, adaptor.getArg());
+        MemRefType argMemRefType = mlir::MemRefType::get({numRows, numCols}, matrixElementType);
+        [[maybe_unused]] mlir::Value argMatrix = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+            loc, argMemRefType, adaptor.getArg());
 
         if (matrixElementType.isIntOrIndex()) {
-            IntegerType signlessType = rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth());
+            [[maybe_unused]] IntegerType signlessType = rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth());
             // Reserve memory for result
-            [[maybe_unused]] memref::AllocOp res = rewriter.create<memref::AllocOp>(loc, MemRefType::get({numRows, 1}, signlessType));
 
             // ...
 
             return success();
         } else if (matrixElementType.isF64() || matrixElementType.isF32()) {
             // Reserve memory for result
-            memref::AllocOp res = rewriter.create<memref::AllocOp>(loc, MemRefType::get({numRows, 1}, matrixElementType));
+            // mlir::Value outputMemref = insertMemRefAlloc(mlir::MemRefType::get({numRows, 1}, matrixElementType), loc, rewriter);
+            // mlir::Value outputMemref = rewriter.create<memref::AllocaOp>(loc, MemRefType::get({numRows, 1}, matrixElementType));
+            // affineFillMemRef(0.0, rewriter, loc, {numRows, 1}, getContext(), outputMemref, matrixElementType);
+            
+            // attempt with linalg
+            auto initOutputTensor = rewriter.create<tensor::EmptyOp>(loc, ArrayRef<int64_t>{numRows, 1}, matrixElementType).getResult();
+            auto fillVal = rewriter.create<arith::ConstantOp>(loc, FloatAttr::get(matrixElementType, 0.0));
+            mlir::Value outputTensor = rewriter.create<linalg::FillOp>(loc, ValueRange{fillVal}, initOutputTensor).getResult(0);
 
             // Create index mappings for input and res
-            // Identity map
-            AffineMap inputMap = AffineMap::get(2, 0,
-                                    {rewriter.getAffineDimExpr(0),
-                                    rewriter.getAffineDimExpr(1)},
-                                    getContext());
+            AffineMap inputMap = AffineMap::getMultiDimIdentityMap(2, getContext());
             // i, j -> i, 0
             AffineMap outputMap = AffineMap::get(2, 0,
                                     {rewriter.getAffineDimExpr(0),
                                     rewriter.getAffineConstantExpr(0)},
                                     getContext());
-            SmallVector<AffineMap, 2> indexingMaps = {inputMap, outputMap};
+            SmallVector<AffineMap, 2> indexingMaps{inputMap, outputMap};
             SmallVector<utils::IteratorType, 2> iteratorTypes = {utils::IteratorType::parallel, utils::IteratorType::reduction};
 
             // Build linalg generic op
-            rewriter.create<linalg::GenericOp>(
-                loc,
-                res.getType(),
-                memRef, // convert to ValueRange ?
-                res,
-                indexingMaps,
-                iteratorTypes,
-                [&](OpBuilder &nestedOpBuilder, Location nestedLoc, ValueRange arg) {
-                    Value cumSum = nestedOpBuilder.create<arith::AddFOp>(nestedLoc, arg[0], arg[1]);
-                    nestedOpBuilder.create<linalg::YieldOp>(nestedLoc, cumSum);
-                } // , missing attributes ?
-            );
+            auto genericOp = rewriter.create<linalg::GenericOp>(
+                    loc,
+                    // MemRefType::get({numRows, 1}, matrixElementType),
+                    outputTensor.getType(),
+                    ValueRange{argMatrix},
+                    ValueRange{outputTensor},
+                    indexingMaps,
+                    iteratorTypes,
+                    [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+                        Value cumSum = OpBuilderNested.create<arith::AddFOp>(locNested, arg[1], arg[0]);
+                        // Value cumSum = OpBuilderNested.create<linalg::AddOp>(locNested, arg[0], arg[1]);
+                        OpBuilderNested.create<linalg::YieldOp>(locNested, cumSum);
+                    } // , missing attributes ?
+                );
+
+            // auto outputMemref = rewriter.create<bufferization::AllocTensorOp>(loc, MemRefType::get({numRows, 1}, matrixElementType), genericOp.getResult(0)); // RankedTensorType, ArrayRef<int64_t>
+            auto outputMemref = rewriter.create<bufferization::ToMemrefOp>(loc, MemRefType::get({numRows, 1}, matrixElementType), genericOp.getResult(0));
 
             rewriter.create<daphne::DecRefOp>(loc, adaptor.getArg());
-            rewriter.replaceOp(op, res->getResults());
+
+            auto outputDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, outputMemref, op.getType());
+            // auto outputDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, outputMemref, op.getType()); // inc ref?
+            rewriter.replaceOp(op, outputDenseMatrix);
 
             return success();
         } else {
@@ -160,7 +176,7 @@ struct AggRowLoweringPass : public mlir::PassWrapper<AggRowLoweringPass,
                                                     mlir::OperationPass<mlir::ModuleOp>> {
     explicit AggRowLoweringPass() {}
 
-    StringRef getArgument() const final { return "lower-agg"; }
+    StringRef getArgument() const final { return "lower-agg-row"; }
     StringRef getDescription() const final {
         return "Lowers AggRow operators to a set of affine loops and performs "
                "the aggregation on a MemRef which is created from the input "
@@ -169,7 +185,9 @@ struct AggRowLoweringPass : public mlir::PassWrapper<AggRowLoweringPass,
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
         registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                        mlir::memref::MemRefDialect>();
+                        mlir::memref::MemRefDialect, mlir::linalg::LinalgDialect,
+                        mlir::bufferization::BufferizationDialect,
+                        mlir::tensor::TensorDialect>();
     }
     void runOnOperation() final;
     };
@@ -196,6 +214,8 @@ void AggRowLoweringPass::runOnOperation() {
     target.addLegalDialect<mlir::LLVM::LLVMDialect>();
     target.addLegalDialect<daphne::DaphneDialect>();
     target.addLegalDialect<BuiltinDialect>();
+    target.addLegalDialect<tensor::TensorDialect>();
+    target.addLegalDialect<mlir::bufferization::BufferizationDialect>();
 
     target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
     target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();

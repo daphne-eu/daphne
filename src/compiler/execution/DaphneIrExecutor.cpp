@@ -289,6 +289,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createDaphneOptPass());
     pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
+    pm.addPass(mlir::daphne::createPrintIRPass("before AggRowSum"));
     pm.addPass(mlir::daphne::createAggRowOpLoweringPass());
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
