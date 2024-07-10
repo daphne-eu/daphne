@@ -199,6 +199,8 @@ Nevertheless, there are cases when more details are required, e.g., when DAPHNE 
 
 Please ensure that your development system meets the following requirements before trying to build DAPHNE.
 Note that the DAPHNE container images already ship with all these dependencies installed.
+There is a [convenience script](/install-ubuntu-packages.sh) to install all necessary dependencies to compile DAPHNE on Ubuntu distributions.
+However, in order to use optional features, such as CUDA or FPGA support, the respective requirements listed below still need to be installed separately.
 
 **(*)**
 You can view the version numbers as an orientation rather than a strict requirement.
@@ -206,12 +208,13 @@ Newer versions should work as well, older versions might work as well.
 
 #### Operating system
 
-| OS         | distribution/version known to work (*) | Comment                                                                    |
-|------------|----------------------------------------|----------------------------------------------------------------------------|
-| GNU/Linux  | Manjaro                                | Last checked in January 2023                                               ||
-| GNU/Linux  | Ubuntu 20.04 - 22.10                   | All versions in that range work. 20.04 needs CMake installed from Snap.    |
-| GNU/Linux  | Ubuntu 18.04                           | Used with Intel PAC D5005 FPGA, custom toolchain needed                    |
-| MS Windows | 10 Build 19041, 11                     | Should work in Ubuntu WSL, using the provided Docker images is recommended |
+| OS         | distribution/version known to work (*) | Comment                                                                             |
+|------------|----------------------------------------|-------------------------------------------------------------------------------------|
+| GNU/Linux  | Manjaro                                | Last checked in April 2024                                                          |
+| GNU/Linux  | Ubuntu 20.04 - 24.04                   | All versions in that range work. 20.04 needs CMake installed from Snap.             |
+| GNU/Linux  | Ubuntu 18.04                           | Used with Intel PAC D5005 FPGA, [custom toolchain](/doc/BuildEnvironment.md) needed |
+| GNU/Linux | RHEL 8 | [Custom toolchain](/doc/BuildEnvironment.md) needed                                 |
+| MS Windows | 10 Build 19041, 11                     | Works on Ubuntu WSL2, using the provided Docker images is recommended               |
 
 ##### Windows
 
@@ -222,30 +225,32 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 
 | tool/lib                             | version known to work (*)    | comment                                                                                                                                 |
 |--------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| GCC/G++                              | 9.3.0                        | Last checked version: 12.2                                                                                                              |
 | clang                                | 10.0.0                       |                                                                                                                                         |
 | cmake                                | 3.20                         | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
+| GCC/G++                              | 9.3.0                        | Last checked version: 13.2 (compiles with warnings)                                                                                     |
+| gfortran                             | 9.3.0                        |                                                                                                                                         |
 | git                                  | 2.25.1                       |                                                                                                                                         |
-| libssl-dev                           | 1.1.1                        | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
+| java (e.g. openjdk)                  | 11 (1.7 should be fine)      |                                                                                                                                         |
+| jq                                   |                              | json commandline processor used in docker image generation scripts.                                                                     |
 | libpfm4-dev                          | 4.10                         | This dependency is needed for profiling support [DAPHNE-#479]                                                                           |
+| libssl-dev                           | 1.1.1                        | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
 | lld                                  | 10.0.0                       |                                                                                                                                         |
+| llvm-10-tools                        | 10, 15, 18                   | `apt` provides up to `llvm-10-tools` for Ubuntu 20.04 whereas 22.04 / 24.04 require a newer version such as `llvm-15-tools`.            |
 | ninja                                | 1.10.0                       |                                                                                                                                         |
-| pkg-config                           | 0.29.1                       |                                                                                                                                         |
-| python3                              | 3.8.5                        |                                                                                                                                         |
 | numpy                                | 1.19.5                       |                                                                                                                                         |
 | pandas                               | 0.25.3                       |                                                                                                                                         |
-| java (e.g. openjdk)                  | 11 (1.7 should be fine)      |                                                                                                                                         |
-| gfortran                             | 9.3.0                        |                                                                                                                                         |
+| pkg-config                           | 0.29.1                       |                                                                                                                                         |
+| python3                              | 3.8.5                        |                                                                                                                                         |
+| unzip                                | 6.0                          |                                                                                                                                         |
 | uuid-dev                             |                              |                                                                                                                                         |
-| llvm-10-tools                        | 10, 15                       | On Ubuntu 22.04 you may need to install a newer `llvm-*-tools` version, such as `llvm-15-tools`.                                        |
-| wget                                 |                              | Used to fetch additional dependencies and other artefacts                                                                               |
-| jq                                   |                              | json commandline processor used in docker image generation scripts                                                                      |
+| wget                                 |                              | Used to fetch additional dependencies and other artefacts.                                                                              |
+| zlib1g-dev                           |                              | Needed to satisfy cmake dependencies.                                                                                                   |
 | ***                                  | ***                          | ***                                                                                                                                     |
 | CUDA SDK                             | 11.7.1                       | Optional for CUDA ops                                                                                                                   |
-| OneAPI SDK                           | 2022.x                       | Optional for OneAPI ops                                                                                                                 |
 | Intel FPGA SDK or OneAPI FPGA Add-On | 2022.x                       | Optional for FPGAOPENCL ops                                                                                                             |
-| tensorflow                           | 2.13.1                       | Optional for data exchange between DaphneLib and TensorFlow |
-| torch                                | 2.3.0+cu121                  | Optional for data exchange between DaphneLib and PyTorch |
+| OneAPI SDK                           | 2022.x                       | Optional for OneAPI ops                                                                                                                 |
+| tensorflow                           | 2.13.1                       | Optional for data exchange between DaphneLib and TensorFlow                                                                             |
+| torch                                | 2.3.0+cu121                  | Optional for data exchange between DaphneLib and PyTorch                                                                                |
 
 #### Hardware
 
