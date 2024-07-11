@@ -341,7 +341,12 @@ The following built-in functions all follow the same scheme:
 
 ## Matrix decomposition & co
 
-We plan to support various matrix decompositions like **`eigen`**, **`lu`**, **`qr`**, and **`svd`**.
+- **`eigen`**`(arg:matrix)`
+
+    Calculates the eigenvalues and eigenvectors of the given matrix.
+    This built-in function has two results: (1) the eigenvalues as a column matrix, and (2) the eigenvectors as a matrix, where each column is an eigenvector.
+
+We plan to support additional matrix decompositions like **`lu`**, **`qr`**, and **`svd`** in the future.
 
 ## Deep neural network
 
