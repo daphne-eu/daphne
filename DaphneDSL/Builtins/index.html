@@ -2627,7 +2627,14 @@ The parameter <code>returnIndexes</code> determines whether to return the sorted
 </li>
 </ul>
 <h2 id="matrix-decomposition-co">Matrix decomposition &amp; co</h2>
-<p>We plan to support various matrix decompositions like <strong><code>eigen</code></strong>, <strong><code>lu</code></strong>, <strong><code>qr</code></strong>, and <strong><code>svd</code></strong>.</p>
+<ul>
+<li>
+<p><strong><code>eigen</code></strong><code>(arg:matrix)</code></p>
+<p>Calculates the eigenvalues and eigenvectors of the given matrix.
+This built-in function has two results: (1) the eigenvalues as a column matrix, and (2) the eigenvectors as a matrix, where each column is an eigenvector.</p>
+</li>
+</ul>
+<p>We plan to support additional matrix decompositions like <strong><code>lu</code></strong>, <strong><code>qr</code></strong>, and <strong><code>svd</code></strong> in the future.</p>
 <h2 id="deep-neural-network">Deep neural network</h2>
 <p>Note that most of these operations only have a CUDNN-based kernel for GPU execution at the moment.</p>
 <ul>
