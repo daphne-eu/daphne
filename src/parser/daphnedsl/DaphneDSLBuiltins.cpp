@@ -1115,7 +1115,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         } else {
             message = args[0];
         }
-        return builder.create<StopOp>(loc, message);
+        return builder.create<StopOp>(loc, message).getOperation();
     } 
 
     // --------------------------------------------------------------------

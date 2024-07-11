@@ -441,7 +441,7 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
                 ctx->IDENTIFIER(0)->getText(),
                 ctx->indexing(0),
                 symbolTable,
-                utils.valueOrError(rhsAny)
+                utils.valueOrError(utils.getLoc(ctx->expr()->start), rhsAny)
         );
         return nullptr;
     }
@@ -472,7 +472,7 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
-    mlir::Value cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
+    mlir::Value cond = utils.castBoolIf(valueOrErrorOnVisit(ctx->cond));
 
     mlir::Location loc = utils.getLoc(ctx->start);
 
@@ -590,13 +590,13 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         // Make the body's updates visible to the condition.
         symbolTable.put(ow);
 
-        cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
+        cond = utils.castBoolIf(valueOrErrorOnVisit(ctx->cond));
 
         symbolTable.popScope();
     }
     else { // It's a while loop.
         builder.setInsertionPointToEnd(beforeBlock);
-        cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
+        cond = utils.castBoolIf(valueOrErrorOnVisit(ctx->cond));
 
         builder.setInsertionPointToEnd(afterBlock);
         symbolTable.pushScope();
@@ -673,13 +673,13 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     mlir::Type t = builder.getIntegerType(64, true);
 
     // Parse from, to, and step.
-    mlir::Value from = utils.castIf(t, utils.valueOrError(visit(ctx->from)));
-    mlir::Value to = utils.castIf(t, utils.valueOrError(visit(ctx->to)));
+    mlir::Value from = utils.castIf(t, valueOrErrorOnVisit(ctx->from));
+    mlir::Value to = utils.castIf(t, valueOrErrorOnVisit(ctx->to));
     mlir::Value step;
     mlir::Value direction; // count upwards (+1) or downwards (-1)
     if(ctx->step) {
         // If the step is given, parse it and derive the counting direction.
-        step = utils.castIf(t, utils.valueOrError(visit(ctx->step)));
+        step = utils.castIf(t, valueOrErrorOnVisit(ctx->step));
         direction = builder.create<mlir::daphne::EwSignOp>(loc, t, step);
     }
     else {
@@ -842,7 +842,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::Iden
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::ParanthesesExprContext * ctx) {
-    return utils.valueOrError(visit(ctx->expr()));
+    return valueOrErrorOnVisit(ctx->expr());
 }
 
 bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type paramTy) const {
@@ -979,7 +979,7 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
 
     std::vector<mlir::Value> args;
 
-    auto argVal = utils.valueOrError(visit(ctx->expr(0)));
+    auto argVal = valueOrErrorOnVisit(ctx->expr(0));
     args.push_back(argVal);
 
     auto argMatTy = argVal.getType().dyn_cast<mlir::daphne::MatrixType>();
@@ -1015,7 +1015,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     // Parse arguments.
     std::vector<mlir::Value> args_vec;
     for(unsigned i = 0; i < ctx->expr().size(); i++)
-        args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
+        args_vec.push_back(valueOrErrorOnVisit(ctx->expr(i)));
 
     auto maybeUDF = findMatchingUDF(func, args_vec, loc);
     if (maybeUDF) {
@@ -1093,7 +1093,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                 vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
             else
             {
-                vt = utils.valueOrError(visit(ctx->expr())).getType();
+                vt = valueOrErrorOnVisit(ctx->expr()).getType();
                 if(llvm::isa<mlir::daphne::FrameType>(vt))
                     // TODO Instead of using the value type of the first frame
                     // column as the value type of the matrix, we should better
@@ -1115,7 +1115,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
             else {
                 // TODO This fragment should be factored out, such that we can
                 // reuse it for matrix/frame/scalar.
-                mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
+                mlir::Type argType = valueOrErrorOnVisit(ctx->expr()).getType();
                 if(llvm::isa<mlir::daphne::MatrixType>(argType))
                     colTypes = {argType.dyn_cast<mlir::daphne::MatrixType>().getElementType()};
                 else if(llvm::isa<mlir::daphne::FrameType>(argType))
@@ -1135,7 +1135,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
             {
                 // TODO This fragment should be factored out, such that we can
                 // reuse it for matrix/frame/scalar.
-                mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
+                mlir::Type argType = valueOrErrorOnVisit(ctx->expr()).getType();
                 if(llvm::isa<mlir::daphne::MatrixType>(argType))
                     resType = argType.dyn_cast<mlir::daphne::MatrixType>().getElementType();
                 else if(llvm::isa<mlir::daphne::FrameType>(argType))
@@ -1155,7 +1155,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
     else if(ctx->VALUE_TYPE())
     { // Data type shall be retained
         mlir::Type vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
-        mlir::Type argTy = utils.valueOrError(visit(ctx->expr())).getType();
+        mlir::Type argTy = valueOrErrorOnVisit(ctx->expr()).getType();
         if(llvm::isa<mlir::daphne::MatrixType>(argTy))
             resType = utils.matrixOf(vt);
         else if(llvm::isa<mlir::daphne::FrameType>(argTy))
@@ -1180,26 +1180,26 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
     return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
             utils.getLoc(ctx->start),
             resType,
-            utils.valueOrError(visit(ctx->expr()))
+            valueOrErrorOnVisit(ctx->expr())
     ));
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) {
-    mlir::Value obj = utils.valueOrError(visit(ctx->obj));
+    mlir::Value obj = valueOrErrorOnVisit(ctx->obj);
 
     if(ctx->rows) // rows specified
         obj = builder.create<mlir::daphne::FilterRowOp>(
                 utils.getLoc(ctx->rows->start),
                 obj.getType(),
                 obj,
-                utils.valueOrError(visit(ctx->rows))
+                valueOrErrorOnVisit(ctx->rows)
         );
     if(ctx->cols) // cols specified
         obj = builder.create<mlir::daphne::FilterColOp>(
                 utils.getLoc(ctx->cols->start),
                 obj.getType(), // TODO Not correct for frames, see #484.
                 obj,
-                utils.valueOrError(visit(ctx->cols))
+                valueOrErrorOnVisit(ctx->cols)
         );
 
     // Note: If rows and cols are specified, we create two filter steps.
@@ -1213,7 +1213,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) {
-    mlir::Value obj = utils.valueOrError(visit(ctx->obj));
+    mlir::Value obj = valueOrErrorOnVisit(ctx->obj);
 
     auto indexing = visit(ctx->idx).as<std::pair<
             std::pair<bool, antlrcpp::Any>,
@@ -1250,7 +1250,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser:
 antlrcpp::Any DaphneDSLVisitor::visitMinusExpr(DaphneDSLGrammarParser::MinusExprContext *ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value arg = utils.valueOrError(visit(ctx->arg));
+    mlir::Value arg = valueOrErrorOnVisit(ctx->arg);
     
     if(op == "-")
         return utils.retValWithInferedType(
@@ -1265,8 +1265,8 @@ antlrcpp::Any DaphneDSLVisitor::visitMinusExpr(DaphneDSLGrammarParser::MinusExpr
 antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
+    mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if(op == "@") {
         mlir::Value f = builder.create<mlir::daphne::ConstantOp>(loc, false);
@@ -1281,8 +1281,8 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
 antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
+    mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if(op == "^")
         return utils.retValWithInferedType(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
@@ -1293,8 +1293,8 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
 antlrcpp::Any DaphneDSLVisitor::visitModExpr(DaphneDSLGrammarParser::ModExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
+    mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if(op == "%")
         return utils.retValWithInferedType(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
@@ -1305,8 +1305,8 @@ antlrcpp::Any DaphneDSLVisitor::visitModExpr(DaphneDSLGrammarParser::ModExprCont
 antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
+    mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if(op == "*")
         return utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
@@ -1319,8 +1319,8 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
 antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
+    mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if(op == "+")
         // Note that we use '+' for both addition (EwAddOp) and concatenation
@@ -1339,8 +1339,8 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
 antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
+    mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if(op == "==")
         return utils.retValWithInferedType(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
@@ -1361,8 +1361,8 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
 antlrcpp::Any DaphneDSLVisitor::visitConjExpr(DaphneDSLGrammarParser::ConjExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
+    mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if(op == "&&")
         return utils.retValWithInferedType(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
@@ -1373,8 +1373,8 @@ antlrcpp::Any DaphneDSLVisitor::visitConjExpr(DaphneDSLGrammarParser::ConjExprCo
 antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
+    mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if(op == "||")
         return utils.retValWithInferedType(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
@@ -1386,9 +1386,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCondExpr(DaphneDSLGrammarParser::CondExprCo
     return static_cast<mlir::Value>(builder.create<mlir::daphne::CondOp>(
             utils.getLoc(ctx->start),
             utils.unknownType,
-            utils.valueOrError(visit(ctx->cond)),
-            utils.valueOrError(visit(ctx->thenExpr)),
-            utils.valueOrError(visit(ctx->elseExpr))
+            valueOrErrorOnVisit(ctx->cond),
+            valueOrErrorOnVisit(ctx->thenExpr),
+            valueOrErrorOnVisit(ctx->elseExpr)
     ));
 }
 
@@ -1507,15 +1507,15 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     else {
         numMatElems = (ctx->rows && ctx->cols) ? ctx->expr().size() - 2 : ctx->expr().size() - 1;
         if (ctx->cols && ctx->rows) {
-            cols = utils.valueOrError(visit(ctx->cols));
-            rows = utils.valueOrError(visit(ctx->rows));
+            cols = valueOrErrorOnVisit(ctx->cols);
+            rows = valueOrErrorOnVisit(ctx->rows);
         }
         else if (ctx->cols) {
-            cols = utils.valueOrError(visit(ctx->cols));
+            cols = valueOrErrorOnVisit(ctx->cols);
             rows = builder.create<mlir::daphne::EwDivOp>(loc, builder.create<mlir::daphne::ConstantOp>(loc, numMatElems), cols);
         }
         else {
-            rows = utils.valueOrError(visit(ctx->rows));
+            rows = valueOrErrorOnVisit(ctx->rows);
             cols = builder.create<mlir::daphne::EwDivOp>(loc, builder.create<mlir::daphne::ConstantOp>(loc, numMatElems), rows);
         }
     }
@@ -1530,7 +1530,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     values.reserve(numMatElems);
     valueTypes.reserve(numMatElems);
     for (size_t i = 0; i < numMatElems; ++i) {
-        mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
+        mlir::Value currentValue = valueOrErrorOnVisit(ctx->expr(i));
         values.emplace_back(currentValue);
         valueTypes.emplace_back(currentValue.getType());
     }
@@ -1599,8 +1599,8 @@ antlrcpp::Any DaphneDSLVisitor::visitColMajorFrameLiteralExpr(DaphneDSLGrammarPa
     columnMatElemType.reserve(colCount);
 
     for (size_t i = 0; i < colCount; ++i) {
-        mlir::Value label = utils.valueOrError(visit(ctx->labels[i]));
-        mlir::Value mat = utils.valueOrError(visit(ctx->cols[i]));
+        mlir::Value label = valueOrErrorOnVisit(ctx->labels[i]);
+        mlir::Value mat = valueOrErrorOnVisit(ctx->cols[i]);
 
         if (label.getType() != utils.strType)
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
@@ -1729,7 +1729,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFrameRow(DaphneDSLGrammarParser::FrameRowCo
     values.reserve(elementCount);
     types.reserve(elementCount);
     for (size_t i = 0; i < elementCount; ++i) {
-        mlir::Value currentValue = utils.valueOrError(visit(ctx->expr(i)));
+        mlir::Value currentValue = valueOrErrorOnVisit(ctx->expr(i));
         values.emplace_back(currentValue);
         types.emplace_back(currentValue.getType());
     }
@@ -1748,10 +1748,10 @@ antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingCo
 
 antlrcpp::Any DaphneDSLVisitor::visitRange(DaphneDSLGrammarParser::RangeContext * ctx) {
     if(ctx->pos)
-        return std::make_pair(true, antlrcpp::Any(utils.valueOrError(visit(ctx->pos))));
+        return std::make_pair(true, antlrcpp::Any(valueOrErrorOnVisit(ctx->pos)));
     else {
-        mlir::Value posLowerIncl = ctx->posLowerIncl ? utils.valueOrError(visit(ctx->posLowerIncl)) : nullptr;
-        mlir::Value posUpperExcl = ctx->posUpperExcl ? utils.valueOrError(visit(ctx->posUpperExcl)) : nullptr;
+        mlir::Value posLowerIncl = ctx->posLowerIncl ? valueOrErrorOnVisit(ctx->posLowerIncl) : nullptr;
+        mlir::Value posUpperExcl = ctx->posUpperExcl ? valueOrErrorOnVisit(ctx->posUpperExcl) : nullptr;
         return std::make_pair(
                 posLowerIncl != nullptr || posUpperExcl != nullptr,
                 antlrcpp::Any(std::make_pair(posLowerIncl, posUpperExcl))
@@ -2230,7 +2230,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFuncTypeDef(DaphneDSLGrammarParser::FuncTyp
 antlrcpp::Any DaphneDSLVisitor::visitReturnStatement(DaphneDSLGrammarParser::ReturnStatementContext *ctx) {
     std::vector<mlir::Value> returns;
     for(auto expr: ctx->expr()) {
-        returns.push_back(utils.valueOrError(visit(expr)));
+        returns.push_back(valueOrErrorOnVisit(expr));
     }
     return builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->start), returns);
 }

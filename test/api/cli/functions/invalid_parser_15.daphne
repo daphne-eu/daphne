@@ -1,8 +1,3 @@
-// invalid number of results when used with binary operator (expecting 1, getting 0)
+// invalid number of results (of built-in function) when used in call expression (expecting 1, getting 0)
 
-def f(a:si64) {
-    return;
-}
-
-x = f(123) + 1;
-print(x);
+print(stop("error"));

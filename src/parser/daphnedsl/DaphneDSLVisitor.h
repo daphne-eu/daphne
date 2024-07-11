@@ -168,6 +168,11 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     mlir::Value buildColMatrixFromValues(mlir::Location loc, const std::vector<mlir::Value> & values,
                                     const std::vector<mlir::Type> & valueTypes, mlir::Type matrixVt);
 
+    template<class Context>
+    mlir::Value valueOrErrorOnVisit(Context * ctx) {
+        return utils.valueOrError(utils.getLoc(ctx->start), visit(ctx));
+    }
+
     std::shared_ptr<spdlog::logger> logger;
 
 public:
