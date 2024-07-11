@@ -412,7 +412,7 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
         symbolTable.put(origScope);
         
         importedFiles = origImportedFiles;
-        
+
         for(std::pair<std::string, mlir::func::FuncOp> funcSymbol : functionsSymbolMap)
             if(funcSymbol.first.find('.') == std::string::npos)
                 origFuncMap.insert({finalPrefix + funcSymbol.first, funcSymbol.second});
@@ -969,7 +969,7 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
                 "called 'handleMapOpCall' for function "
                  + func + " instead of 'map'"
         );
-    
+
     if (ctx->expr().size() != 2) {
         throw ErrorHandler::compilerError(loc, "DSLVisitor",
                 "built-in function 'map' expects exactly 2 argument(s), but got " +
@@ -1018,7 +1018,6 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
         args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
 
     auto maybeUDF = findMatchingUDF(func, args_vec, loc);
-
     if (maybeUDF) {
         if(hasKernelHint)
             throw ErrorHandler::compilerError(
@@ -1028,18 +1027,13 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
             );
 
         auto funcTy = maybeUDF->getFunctionType();
-        auto co = builder
-            .create<mlir::daphne::GenericCallOp>(loc,
-                maybeUDF->getSymName(),
-                args_vec,
-                funcTy.getResults());
+        auto co = builder.create<mlir::daphne::GenericCallOp>(loc, maybeUDF->getSymName(), args_vec, funcTy.getResults());
         if(funcTy.getNumResults() > 1)
             return co.getResults();
-        else
-            // If the UDF has no return values, the value returned here
-            // is invalid. But that seems to be okay, since it is never
-            // used as a mlir::Value in that case.
+        else if(funcTy.getNumResults() == 1)
             return co.getResult(0);
+        else
+            return nullptr;
     }
 
     // Create DaphneIR operation for the built-in function.
@@ -1047,7 +1041,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
 
     if(hasKernelHint) {
         std::string kernel = ctx->kernel->getText();
-        
+
         // We deliberately don't check if the specified kernel
         // is registered for the created kind of operation,
         // since this is checked in RewriteToCallKernelOpPass.
@@ -1487,7 +1481,7 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, const
         // Maybe later these InsertOps can be fused into a single one
         // or replaced with InsertOps that support scalar input.
         result = static_cast<mlir::Value>(builder.create<mlir::daphne::InsertRowOp>(loc, utils.matrixOf(matrixVt),
-                                result, 
+                                result,
                                 ins,
                                 builder.create<mlir::daphne::ConstantOp>(loc, idx),
                                 builder.create<mlir::daphne::ConstantOp>(loc, idx+1)));
@@ -1496,7 +1490,7 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, const
     return result;
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {    
+antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {
     mlir::Location loc = utils.getLoc(ctx->start);
     mlir::Value rows;
     mlir::Value cols;
@@ -1511,7 +1505,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
         rows = builder.create<mlir::daphne::ConstantOp>(loc, static_cast<size_t>(ctx->expr().size()));
     }
     else {
-        numMatElems = (ctx->rows && ctx->cols) ? ctx->expr().size() - 2 : ctx->expr().size() - 1; 
+        numMatElems = (ctx->rows && ctx->cols) ? ctx->expr().size() - 2 : ctx->expr().size() - 1;
         if (ctx->cols && ctx->rows) {
             cols = utils.valueOrError(visit(ctx->cols));
             rows = utils.valueOrError(visit(ctx->rows));
@@ -1540,7 +1534,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
         values.emplace_back(currentValue);
         valueTypes.emplace_back(currentValue.getType());
     }
-    
+
     mlir::Type valueType = mostGeneralVt(valueTypes);
     mlir::Value colMatrix;
 
@@ -1581,7 +1575,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     else {
         throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
     }
-    
+
     // TODO: omit ReshapeOp if rows=1 (not always known at parse-time)
     mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::ReshapeOp>(loc, utils.matrixOf(valueType), colMatrix, rows, cols));
 
@@ -1593,7 +1587,7 @@ antlrcpp::Any DaphneDSLVisitor::visitColMajorFrameLiteralExpr(DaphneDSLGrammarPa
 
     size_t labelCount = ctx->labels.size();
     size_t colCount = ctx->cols.size();
-    
+
     if (labelCount != colCount)
         throw ErrorHandler::compilerError(loc, "DSLVisitor", "frame literals must have an equal number of column labels and column matrices");
 
@@ -1619,7 +1613,7 @@ antlrcpp::Any DaphneDSLVisitor::visitColMajorFrameLiteralExpr(DaphneDSLGrammarPa
     }
 
     mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), columnMatElemType);
-    
+
     mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, columnMatrices, parsedLabels));
 
     return result;
@@ -1722,7 +1716,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarPa
     }
 
     mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
-    
+
     mlir::Value result = static_cast<mlir::Value>(builder.create<mlir::daphne::CreateFrameOp>(loc, frameColTypes, colValues, parsedLabels));
 
     return result;
@@ -2133,11 +2127,10 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     visitBlockStatement(ctx->bodyStmt);
 
     rectifyEarlyReturns(funcBlock);
-    if(funcBlock->getOperations().empty()
-        || !funcBlock->getOperations().back().hasTrait<mlir::OpTrait::IsTerminator>()) {
+
+    if(funcBlock->getOperations().empty() || !funcBlock->getOperations().back().hasTrait<mlir::OpTrait::IsTerminator>()) {
         builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));
     }
-
     auto terminator = funcBlock->getTerminator();
     auto returnOpTypes = terminator->getOperandTypes();
     if(!functionOperation) {

@@ -1,14 +1,8 @@
-// overloading typed functions with different number of results, but same arguments
+// invalid number of results when used in assignment statement (expecting 1, getting 0)
 
-def f(a:si64) -> si64 {
-    return a + 1;
-}
-def f(a:si64) -> si64, si64 {
-    return a + 1, a + 2;
+def f(a:si64) {
+    return;
 }
 
-x = f(100);
+x = f(123);
 print(x);
-y, z, = f(200);
-print(y);
-print(z);
