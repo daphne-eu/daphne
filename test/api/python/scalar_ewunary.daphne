@@ -39,4 +39,6 @@ print(atan(s));
 print(sinh(s));
 print(cosh(s));
 print(tanh(s));
+
 print(isNan(s));
+print(isNan(nan));

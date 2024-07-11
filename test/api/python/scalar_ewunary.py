@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from daphne.context.daphne_context import DaphneContext
+import math
 
 dc = DaphneContext()
 
@@ -46,4 +47,6 @@ s.sum().atan().print().compute()
 s.sum().sinh().print().compute()
 s.sum().cosh().print().compute()
 s.sum().tanh().print().compute()
+
 s.sum().isNan().print().compute()
+dc.fill(math.nan, 1, 1).cbind(dc.fill(1.0, 1, 1)).sum().isNan().print().compute()

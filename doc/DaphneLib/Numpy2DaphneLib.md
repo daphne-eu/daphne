@@ -216,8 +216,6 @@ Porting for other Numpy versions may be possible by following similar lines of t
 
 - `numpy.`**`isnan`**`(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature]) = <ufunc 'isnan'>`
 
-    *Note: `isNan()` is not supported in DAPHNE yet (see #768).*
-
     *Parameters*
     
     - `x`: supported

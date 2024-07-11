@@ -193,10 +193,10 @@ class Matrix(OperationNode):
         return Matrix(self.daphne_context,'sqrt', [self])
     
     def isNan(self) -> 'OperationNode':
-        """Checks if argument is of type Nan. Returns 1 if argument is Nan, 0 otherwise.
-        :return: `Matrix` representing operation
+        """Elementwise check for NaN values in this matrix (resulting in 1 if the element is NaN, 0 otherwise).
+        :return: `Matrix` A node representing the isNan operation.
         """
-        return Matrix(self.daphne_context,'isNan', [self])
+        return Matrix(self.daphne_context, 'isNan', [self])
     
     def round(self) -> 'OperationNode':
         return Matrix(self.daphne_context, 'round', [self])

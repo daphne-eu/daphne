@@ -186,7 +186,7 @@ class Scalar(OperationNode):
         return Scalar(self.daphne_context, 'atan', [self])
     
     def isNan(self) -> 'Scalar':
-        return Scalar(self.daphne_context,'isNan', [self])
+        return Scalar(self.daphne_context, 'isNan', [self])
     
     def pow(self, other) -> 'Scalar':
         return Scalar(self.daphne_context, 'pow', [self, other])

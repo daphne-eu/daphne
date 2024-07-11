@@ -41,7 +41,7 @@ enum class UnaryOpCode {
     FLOOR,
     CEIL,
     ROUND,
-    // Other Utilities
+    // Comparison.
     ISNAN
 };
 

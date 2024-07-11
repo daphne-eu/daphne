@@ -223,6 +223,7 @@ In the following, we describe only the latter.
 - **`sinh`**`()`
 - **`cosh`**`()`
 - **`tanh`**`()`
+- **`isNan`**`()`
 
 **Elementwise binary:**
 
