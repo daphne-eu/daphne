@@ -82,7 +82,7 @@ class OperationNode(DAGNode):
         self._left_brackets = left_brackets
         self._output_type = output_type
 
-        # This attribute indicate the parent's index in unnamed_input_nodes.
+        # add this node to the consumer lists of all the nodes it uses.
         for i in range(len(unnamed_input_nodes)):
             if isinstance(unnamed_input_nodes[i], OperationNode):
                 self._unnamed_input_nodes[i].consumer_list.append(self)

@@ -166,8 +166,8 @@ class Matrix(OperationNode):
         if not isinstance(key, tuple) or len(key) != 2:
             raise TypeError("you must specify exactly two dimensions")
         
-        if not(isinstance(key[0], slice) or isinstance(key[0], int)) or not(
-               isinstance(key[1], slice) or isinstance(key[1], int)):
+        if not(isinstance(key[0], slice) or isinstance(key[0], int), isinstance(key[0], Matrix)) or not(
+               isinstance(key[1], slice) or isinstance(key[1], int), isinstance(key[1], Matrix)):
             raise TypeError("keys must be an integer or a slice")
         
         if isinstance(key[0], slice):
@@ -206,7 +206,7 @@ class Matrix(OperationNode):
         
         # As this function doesn't return anything,
         #   Firstly, create a new_node that is a copy of the current DAG node.
-        #   Secondly, update the input of all consumers of the current node, to the new node.
+        #   Secondly, update the input nodes of all consumers of the current node, to use the new node instead.
         #   Finally, change the state of the current DAG node to an operation for left indexing.
         new_node = copy.deepcopy(self)
         for consumer in self.consumer_list:
