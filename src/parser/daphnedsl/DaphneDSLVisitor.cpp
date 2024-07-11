@@ -1014,13 +1014,8 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
 
     // Parse arguments.
     std::vector<mlir::Value> args_vec;
-    for(unsigned i = 0; i < ctx->expr().size(); i++) {
-        auto a = visit(ctx->expr(i));
-        if(a.isNotNull()) {
-            auto b = utils.valueOrError(a);
-            args_vec.push_back(b);
-        }
-    }
+    for(unsigned i = 0; i < ctx->expr().size(); i++)
+        args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
 
     auto maybeUDF = findMatchingUDF(func, args_vec, loc);
     if (maybeUDF) {
@@ -1038,9 +1033,6 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
         else if(funcTy.getNumResults() == 1)
             return co.getResult(0);
         else
-            // If the UDF has no return values, the value returned here
-            // is invalid. But that seems to be okay, since it is never
-            // used as a mlir::Value in that case.
             return nullptr;
     }
 
