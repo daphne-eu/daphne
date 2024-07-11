@@ -244,6 +244,12 @@ def Daphne_EwAsinOp : Daphne_EwUnaryOp<"ewAsin", NumScalar, [ValueTypeFromArgsFP
 def Daphne_EwAcosOp : Daphne_EwUnaryOp<"ewAcos", NumScalar, [ValueTypeFromArgsFP]>;
 def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", NumScalar, [ValueTypeFromArgsFP]>;
 
+// ----------------------------------------------------------------------------
+// Comparison
+// ----------------------------------------------------------------------------
+
+def Daphne_EwIsNanOp : Daphne_EwUnaryOp<"ewIsnan", NumScalar, [ValueTypeFromFirstArg]>;
+
 // ****************************************************************************
 // Elementwise binary
 // ****************************************************************************

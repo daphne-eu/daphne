@@ -81,6 +81,8 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
         MAKE_CASE(UnaryOpCode::FLOOR)
         MAKE_CASE(UnaryOpCode::CEIL)
         MAKE_CASE(UnaryOpCode::ROUND)
+        // Comparison.
+        MAKE_CASE(UnaryOpCode::ISNAN)
         #undef MAKE_CASE
         default:
             throw std::runtime_error("unknown UnaryOpCode");
@@ -167,6 +169,8 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::TANH, tanh(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::FLOOR, floor(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::CEIL, std::ceil(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::ROUND, round(arg));
+// Comparison.
+MAKE_EW_UNARY_SCA(UnaryOpCode::ISNAN, std::isnan(arg));
 
 #undef MAKE_EW_UNARY_SCA_CLOSED_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR
