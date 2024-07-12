@@ -1499,3 +1499,31 @@ mlir::LogicalResult mlir::daphne::RenameOp::canonicalize(
     rewriter.replaceOp(op, op.getArg());
     return mlir::success();
 }
+
+mlir::LogicalResult mlir::daphne::IsNanOp::canonicalize(
+    mlir::daphne::IsNanOp op, PatternRewriter &rewriter) {
+
+    auto inputType = op.getMatrix().getType();
+
+    // Replace the isNan operation on a matrix with a fill operation that fills the matrix with zeros.
+    if (auto matrixType = inputType.dyn_cast<mlir::daphne::MatrixType>()) {
+        if (matrixType.getElementType().isIntOrIndex()) {
+            auto numRows = rewriter.create<mlir::daphne::NumRowsOp>(op.getLoc(), op.getMatrix());
+            auto numCols = rewriter.create<mlir::daphne::NumColsOp>(op.getLoc(), op.getMatrix());
+            
+            rewriter.replaceOpWithNewOp<mlir::daphne::FillOp>(
+                op, op.getType(), rewriter.getI64IntegerAttr(0), numRows, numCols);
+
+            return mlir::success();
+        }
+    }
+    // If the input is a scalar replace it with a constant zero
+    else if (inputType.isIntOrIndex()) {
+        rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
+            op, op.getType(), rewriter.getI64IntegerAttr(0));
+
+        return mlir::success();
+    }
+
+    return mlir::failure();
+}
