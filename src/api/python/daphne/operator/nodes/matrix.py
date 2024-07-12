@@ -168,7 +168,7 @@ class Matrix(OperationNode):
         
         if not(isinstance(key[0], slice) or isinstance(key[0], int), isinstance(key[0], Matrix)) or not(
                isinstance(key[1], slice) or isinstance(key[1], int), isinstance(key[1], Matrix)):
-            raise TypeError("keys must be an integer or a slice")
+            raise TypeError("keys must be an integer, slice or Matrix")
         
         if isinstance(key[0], slice):
             # create a string for slicing based on slice´s start and stop for row index
