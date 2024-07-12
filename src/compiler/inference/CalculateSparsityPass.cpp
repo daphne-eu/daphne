@@ -7,15 +7,19 @@
 #include <mlir/IR/Operation.h>
 #include <mlir/Pass/Pass.h>
 
+#include <nlohmann/json.hpp>
+#include <fstream>
 #include <stdexcept>
 #include <memory>
 #include <vector>
 #include <utility>
 
 using namespace mlir;
+using json = nlohmann::json;
 
 namespace {
     class CalculateSparsityPass : public PassWrapper<CalculateSparsityPass, OperationPass<func::FuncOp>> {
+        json sparsityResults;
 
         std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
             if(auto matType = op->getResult(0).getType().dyn_cast<daphne::MatrixType>()) {
@@ -52,6 +56,10 @@ namespace {
             auto totalElementsF32 = builder.create<arith::UIToFPOp>(loc, totalElements, builder.getF32Type());
             auto sparsity = builder.create<arith::DivFOp>(loc, zeroElementsF32, totalElementsF32);
 
+            // Store the sparsity in the results JSON
+            std::string opName = op->getName().getStringRef().str();
+            sparsityResults[opName].push_back(sparsity.getType().cast<arith::ConstantOp>().value().convertToFloat());
+
             op->getResult(0).replaceAllUsesWith(sparsity);
         }
 
@@ -61,6 +69,10 @@ namespace {
         void runOnOperation() override {
             func::FuncOp f = getOperation();
             f.walk<WalkOrder::PreOrder>(walkOp);
+
+            std::ofstream file("sparsity_results.json");
+            file << sparsityResults.dump(4); // Pretty print with 4 spaces
+            file.close();
         }
 
         StringRef getArgument() const final { return "calculate-sparsity"; }
@@ -71,5 +83,3 @@ namespace {
 std::unique_ptr<Pass> daphne::createCalculateSparsityPass() {
     return std::make_unique<CalculateSparsityPass>();
 }
-
-static PassRegistration<CalculateSparsityPass> pass("calculate-sparsity", "Calculate the sparsity of matrix operations");
