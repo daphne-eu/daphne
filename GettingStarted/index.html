@@ -1926,7 +1926,9 @@ If required, you can find more details for custom setups later in this document.
 Nevertheless, there are cases when more details are required, e.g., when DAPHNE shall be run natively, without one of the pre-built containers.</p>
 <h3 id="system-requirements">System Requirements</h3>
 <p>Please ensure that your development system meets the following requirements before trying to build DAPHNE.
-Note that the DAPHNE container images already ship with all these dependencies installed.</p>
+Note that the DAPHNE container images already ship with all these dependencies installed.
+There is a <a href="https://github.com/daphne-eu/daphne/tree/main/install-ubuntu-packages.sh">convenience script</a> to install all necessary dependencies to compile DAPHNE on Ubuntu distributions.
+However, in order to use optional features, such as CUDA or FPGA support, the respective requirements listed below still need to be installed separately.</p>
 <p><strong>(*)</strong>
 You can view the version numbers as an orientation rather than a strict requirement.
 Newer versions should work as well, older versions might work as well.</p>
@@ -1943,22 +1945,27 @@ Newer versions should work as well, older versions might work as well.</p>
 <tr>
 <td>GNU/Linux</td>
 <td>Manjaro</td>
-<td>Last checked in January 2023</td>
+<td>Last checked in April 2024</td>
 </tr>
 <tr>
 <td>GNU/Linux</td>
-<td>Ubuntu 20.04 - 22.10</td>
+<td>Ubuntu 20.04 - 24.04</td>
 <td>All versions in that range work. 20.04 needs CMake installed from Snap.</td>
 </tr>
 <tr>
 <td>GNU/Linux</td>
 <td>Ubuntu 18.04</td>
-<td>Used with Intel PAC D5005 FPGA, custom toolchain needed</td>
+<td>Used with Intel PAC D5005 FPGA, <a href="/daphne/BuildEnvironment">custom toolchain</a> needed</td>
+</tr>
+<tr>
+<td>GNU/Linux</td>
+<td>RHEL 8</td>
+<td><a href="/daphne/BuildEnvironment">Custom toolchain</a> needed</td>
 </tr>
 <tr>
 <td>MS Windows</td>
 <td>10 Build 19041, 11</td>
-<td>Should work in Ubuntu WSL, using the provided Docker images is recommended</td>
+<td>Works on Ubuntu WSL2, using the provided Docker images is recommended</td>
 </tr>
 </tbody>
 </table>
@@ -1976,11 +1983,6 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 </thead>
 <tbody>
 <tr>
-<td>GCC/G++</td>
-<td>9.3.0</td>
-<td>Last checked version: 12.2</td>
-</tr>
-<tr>
 <td>clang</td>
 <td>10.0.0</td>
 <td></td>
@@ -1991,14 +1993,29 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 <td>On Ubuntu 20.04, install by <code>sudo snap install cmake --classic</code> to fulfill the version requirement; <code>apt</code> provides only version 3.16.3.</td>
 </tr>
 <tr>
+<td>GCC/G++</td>
+<td>9.3.0</td>
+<td>Last checked version: 13.2 (compiles with warnings)</td>
+</tr>
+<tr>
+<td>gfortran</td>
+<td>9.3.0</td>
+<td></td>
+</tr>
+<tr>
 <td>git</td>
 <td>2.25.1</td>
 <td></td>
 </tr>
 <tr>
-<td>libssl-dev</td>
-<td>1.1.1</td>
-<td>Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)</td>
+<td>java (e.g. openjdk)</td>
+<td>11 (1.7 should be fine)</td>
+<td></td>
+</tr>
+<tr>
+<td>jq</td>
+<td></td>
+<td>json commandline processor used in docker image generation scripts.</td>
 </tr>
 <tr>
 <td>libpfm4-dev</td>
@@ -2006,23 +2023,23 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 <td>This dependency is needed for profiling support [DAPHNE-#479]</td>
 </tr>
 <tr>
+<td>libssl-dev</td>
+<td>1.1.1</td>
+<td>Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)</td>
+</tr>
+<tr>
 <td>lld</td>
 <td>10.0.0</td>
 <td></td>
 </tr>
 <tr>
+<td>llvm-10-tools</td>
+<td>10, 15, 18</td>
+<td><code>apt</code> provides up to <code>llvm-10-tools</code> for Ubuntu 20.04 whereas 22.04 / 24.04 require a newer version such as <code>llvm-15-tools</code>.</td>
+</tr>
+<tr>
 <td>ninja</td>
 <td>1.10.0</td>
-<td></td>
-</tr>
-<tr>
-<td>pkg-config</td>
-<td>0.29.1</td>
-<td></td>
-</tr>
-<tr>
-<td>python3</td>
-<td>3.8.5</td>
 <td></td>
 </tr>
 <tr>
@@ -2036,13 +2053,18 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 <td></td>
 </tr>
 <tr>
-<td>java (e.g. openjdk)</td>
-<td>11 (1.7 should be fine)</td>
+<td>pkg-config</td>
+<td>0.29.1</td>
 <td></td>
 </tr>
 <tr>
-<td>gfortran</td>
-<td>9.3.0</td>
+<td>python3</td>
+<td>3.8.5</td>
+<td></td>
+</tr>
+<tr>
+<td>unzip</td>
+<td>6.0</td>
 <td></td>
 </tr>
 <tr>
@@ -2051,19 +2073,14 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 <td></td>
 </tr>
 <tr>
-<td>llvm-10-tools</td>
-<td>10, 15</td>
-<td>On Ubuntu 22.04 you may need to install a newer <code>llvm-*-tools</code> version, such as <code>llvm-15-tools</code>.</td>
-</tr>
-<tr>
 <td>wget</td>
 <td></td>
-<td>Used to fetch additional dependencies and other artefacts</td>
+<td>Used to fetch additional dependencies and other artefacts.</td>
 </tr>
 <tr>
-<td>jq</td>
+<td>zlib1g-dev</td>
 <td></td>
-<td>json commandline processor used in docker image generation scripts</td>
+<td>Needed to satisfy cmake dependencies.</td>
 </tr>
 <tr>
 <td>***</td>
@@ -2076,14 +2093,14 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 <td>Optional for CUDA ops</td>
 </tr>
 <tr>
-<td>OneAPI SDK</td>
-<td>2022.x</td>
-<td>Optional for OneAPI ops</td>
-</tr>
-<tr>
 <td>Intel FPGA SDK or OneAPI FPGA Add-On</td>
 <td>2022.x</td>
 <td>Optional for FPGAOPENCL ops</td>
+</tr>
+<tr>
+<td>OneAPI SDK</td>
+<td>2022.x</td>
+<td>Optional for OneAPI ops</td>
 </tr>
 <tr>
 <td>tensorflow</td>
