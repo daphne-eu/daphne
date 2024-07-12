@@ -50,9 +50,9 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createEwOpLoweringPass();
     std::unique_ptr<Pass> createModOpLoweringPass();
     std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
+    std::unique_ptr<Pass> createCalculateSparsityPass();
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createDaphneOptPass();
-    std::unique_ptr<Pass> createCalculateSparsityPass();
     std::unique_ptr<OperationPass<ModuleOp>> createMatMulOpLoweringPass(bool matmul_tile,
         int matmul_vec_size_bits = 0,
         std::vector<unsigned> matmul_fixed_tile_sizes = {},

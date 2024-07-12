@@ -9,6 +9,7 @@
 
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <iostream> // Include for debugging output
 #include <stdexcept>
 #include <memory>
 #include <vector>
@@ -23,6 +24,7 @@ namespace {
 
         std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
             if(auto matType = op->getResult(0).getType().dyn_cast<daphne::MatrixType>()) {
+                std::cout << "Calculating sparsity for operation: " << op->getName().getStringRef().str() << std::endl;
                 calculateSparsity(op, matType);
             }
 
@@ -58,7 +60,11 @@ namespace {
 
             // Store the sparsity in the results JSON
             std::string opName = op->getName().getStringRef().str();
-            sparsityResults[opName].push_back(sparsity.getType().cast<arith::ConstantOp>().value().convertToFloat());
+            double sparsityValue = sparsity.getType().cast<arith::ConstantOp>().value().convertToFloat();
+            if (sparsityResults.find(opName) == sparsityResults.end()) {
+                sparsityResults[opName] = json::array();
+            }
+            sparsityResults[opName].push_back(sparsityValue);
 
             op->getResult(0).replaceAllUsesWith(sparsity);
         }
@@ -67,12 +73,15 @@ namespace {
         CalculateSparsityPass() {}
 
         void runOnOperation() override {
+            std::cout << "Starting CalculateSparsityPass on function: " << getOperation().getName().str() << std::endl;
             func::FuncOp f = getOperation();
             f.walk<WalkOrder::PreOrder>(walkOp);
 
+            // Write the results to a JSON file
             std::ofstream file("sparsity_results.json");
             file << sparsityResults.dump(4); // Pretty print with 4 spaces
             file.close();
+            std::cout << "Finished CalculateSparsityPass on function: " << getOperation().getName().str() << std::endl;
         }
 
         StringRef getArgument() const final { return "calculate-sparsity"; }
