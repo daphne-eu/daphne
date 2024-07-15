@@ -122,7 +122,7 @@ namespace CUDA::Convolution {
                 ctx->dst_tensor_desc, d_res));
         CHECK_CUDART(cudaDeviceSynchronize());
 
-#if 0
+#if 1
         if(bias) {
             if (bias != filter) {
                 const VT *d_bias = bias->getValues(&alloc_desc);
