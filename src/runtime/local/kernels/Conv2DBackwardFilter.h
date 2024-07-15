@@ -109,7 +109,7 @@ GetGradientMatrix(  VT *matrix, const VT *output,
 
 template <typename VT>
 static inline void
-GetRotatedFilter(const VT *filter, VT *rotated_filter,
+GetRotatedFilter1(const VT *filter, VT *rotated_filter,
                  size_t filter_h, size_t filter_w, uint32_t off)
 {
     for (uint32_t i = 0; i < filter_h * filter_w; i++)
@@ -118,7 +118,7 @@ GetRotatedFilter(const VT *filter, VT *rotated_filter,
 
 template <typename VT>
 static inline void
-Padding(VT *padded_input, const VT *input, size_t pad_h, size_t pad_w, size_t img_w, size_t img_h, uint32_t off)
+Padding6(VT *padded_input, const VT *input, size_t pad_h, size_t pad_w, size_t img_w, size_t img_h, uint32_t off)
 {
     auto padded_w = img_w + 2 * pad_w;
     for (uint32_t i = 0; i < img_h * img_w; i++)
@@ -141,8 +141,8 @@ struct Conv2DBackwardFilter<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
 {
 
     static void
-    apply(  DenseMatrix<VTArg> *&dFilter,
-            const DenseMatrix<VTRes> *input,
+    apply(  DenseMatrix<VTRes> *&dFilter,
+            const DenseMatrix<VTArg> *input,
             const DenseMatrix<VTArg> *output,
             const size_t stride_h, const size_t stride_w,
             const size_t pad_h, const size_t pad_w,
@@ -194,7 +194,7 @@ struct Conv2DBackwardFilter<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                 for (uint32_t i = start; i < stop; i++)
                 {
                     auto off_input = i * CHW + c * HW;
-                    Padding(padded_matrix->getValues(), input->getValues(), pad_h, pad_w, input_w, input_h, off_input);
+                    Padding6(padded_matrix->getValues(), input->getValues(), pad_h, pad_w, input_w, input_h, off_input);
                     auto off_output = i * o_CHW + f * o_HW;
                     GetGradientMatrix(gradient_matrix->getValues(), output->getValues(), output_h, output_w, filter_h, filter_w, padded_img_h, padded_img_w, stride_h, stride_w, off_output);
 

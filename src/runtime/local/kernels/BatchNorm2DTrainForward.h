@@ -36,14 +36,14 @@
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-struct Batch2DTrainForward {
+struct BatchNorm2DTrainForward {
     static void apply(  DTRes *&res, 
                         DTRes *&new_emaMean, DTRes *&new_emaVar,
                         DTRes *&mean, DTRes *&invVar, 
                         const DTArg *in, 
                         const DTArg *gamma, const DTArg *beta,
                         const DTArg *emaMean, const DTArg *emaVar, 
-                        const size_t eps, const size_t mu,
+                        const typename DTArg::VT eps, const typename DTArg::VT mu,
                         DCTX(dctx)) = delete;
 };
 
@@ -52,15 +52,15 @@ struct Batch2DTrainForward {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void batch2DTrainForward(   DTRes *&res, 
+void batchNorm2DTrainForward(   DTRes *&res, 
                             DTRes *&new_emaMean, DTRes *&new_emaVar,
                             DTRes *&mean, DTRes *&invVar, 
                             const DTArg *in, 
                             const DTArg *gamma, const DTArg *beta,
                             const DTArg *emaMean, const DTArg *emaVar, 
-                            const size_t eps, const size_t mu,
+                            const typename DTArg::VT eps, const typename DTArg::VT mu,
                             DCTX(dctx)) {
-    Batch2DTrainForward<DTRes, DTArg>::apply(res, new_emaMean, new_emaVar, mean, invVar, in, gamma, beta, emaMean, emaVar, eps, mu, dctx);
+    BatchNorm2DTrainForward<DTRes, DTArg>::apply(res, new_emaMean, new_emaVar, mean, invVar, in, gamma, beta, emaMean, emaVar, eps, mu, dctx);
 }
 
 // ****************************************************************************
@@ -72,7 +72,7 @@ void batch2DTrainForward(   DTRes *&res,
 // ----------------------------------------------------------------------------
 
 template <typename VTRes, typename VTArg>
-struct Batch2DTrainForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
+struct BatchNorm2DTrainForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
 {
     static void 
     apply(  DenseMatrix<VTRes> *&res,
@@ -85,7 +85,7 @@ struct Batch2DTrainForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
             const DenseMatrix<VTArg> *beta,
             const DenseMatrix<VTArg> *emaMean,
             const DenseMatrix<VTArg> *emaVar,
-            const size_t eps, const size_t mu, DCTX(dctx))
+            const VTArg eps, const VTArg mu, DCTX(dctx))
     {
         
         auto start = 0;

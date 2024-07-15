@@ -4136,5 +4136,851 @@
         "instantiations": [
             []
         ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "Conv2DForward.h",
+            "opName": "conv2DForward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "size_t&",
+                    "name": "res_h"
+                },
+                {
+                    "type": "size_t&",
+                    "name": "res_w"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "filter"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "bias"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "batch_size"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_w"
+                },
+
+                {
+                    "type": "const size_t",
+                    "name": "filter_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_w"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "Conv2DBackwardData.h",
+            "opName": "conv2DBackwardData",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DTArg *",
+                    "name": "filter"
+                },
+                {
+                    "type": "const DTArg *&",
+                    "name": "output"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "input_batch_size"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "input_num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "input_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "input_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_num_filters"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_w"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "data"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "Conv2DBackwardFilter.h",
+            "opName": "conv2DBackwardFilter",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "dFilter"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "input"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "output"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "input_batch_size"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "input_num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "input_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "input_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_num_filters"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "filter_w"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "AvgPoolForward.h",
+            "opName": "avgPoolForward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "size_t&",
+                    "name": "res_h"
+                },
+                {
+                    "type": "size_t&",
+                    "name": "res_w"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "batch_size"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pool_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pool_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_w"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "AvgPoolBackward.h",
+            "opName": "avgPoolBackward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "input"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "dOut"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "batch_size"
+                },
+                
+                {
+                    "type": "const size_t",
+                    "name": "num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pool_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pool_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_w"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "MaxPoolForward.h",
+            "opName": "maxPoolForward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "size_t&",
+                    "name": "res_h"
+                },
+                {
+                    "type": "size_t&",
+                    "name": "res_w"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "batch_size"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pool_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pool_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_w"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "MaxPoolBackward.h",
+            "opName": "maxPoolBackward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "input"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "dOut"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "batch_size"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "num_channels"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "img_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pool_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pool_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "stride_w"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_h"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "pad_w"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "BiasAddForward.h",
+            "opName": "biasAddForward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "input"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "bias"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "BatchNorm2DTestForward.h",
+            "opName": "batchNorm2DTestForward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "in"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "gamma"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "beta"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "ema_mean"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "ema_var"
+                },
+                {
+                    "type": "const typename DTArg::VT",
+                    "name": "eps"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "BatchNorm2DTrainForward.h",
+            "opName": "batchNorm2DTrainForward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "new_emaMean"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "new_emaVar"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "Mean"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "invVar"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "in"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "gamma"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "beta"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "ema_mean"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "ema_var"
+                },
+                {
+                    "type": "const typename DTArg::VT",
+                    "name": "eps"
+                },
+                {
+                    "type": "const typename DTArg::VT",
+                    "name": "mu"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
+    },
+
+    {
+        "kernelTemplate": {
+            "header": "BatchNorm2DBackward.h",
+            "opName": "batchNorm2DBackward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "dX"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "dGamma"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "dBeta"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "mean"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "invVar"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "in"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "dout"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "gamma"
+                },
+                {
+                    "type": "const typename DTArg::VT",
+                    "name": "eps"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
     }
+   
 ]

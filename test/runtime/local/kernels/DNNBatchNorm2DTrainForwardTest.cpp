@@ -41,7 +41,7 @@ void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, co
     DT* invVar = nullptr;
     typename DT::VT epsilon = 1e-5;
     typename DT::VT mu = 1;
-    Batch2DTrainForward<DT, DT>::apply(res, new_emaMean, new_emaVar, Mean, invVar, in, gamma, beta, ema_mean, ema_var, epsilon, mu, dctx);
+    BatchNorm2DTrainForward<DT, DT>::apply(res, new_emaMean, new_emaVar, Mean, invVar, in, gamma, beta, ema_mean, ema_var, epsilon, mu, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 

@@ -38,7 +38,7 @@
 template<class DTRes, class DTArg>
 struct BatchNorm2DTestForward {
     static void apply(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta,
-                      const DTArg *emaMean, const DTArg *emaVar, const size_t eps,
+                      const DTArg *emaMean, const DTArg *emaVar, const typename DTArg::VT eps,
                       DCTX(dctx)) = delete;
 };
 
@@ -48,7 +48,7 @@ struct BatchNorm2DTestForward {
 
 template<class DTRes, class DTArg>
 void batchNorm2DTestForward(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta,
-                    const DTArg *emaMean, const DTArg *emaVar, const size_t eps, DCTX(dctx)) {
+                    const DTArg *emaMean, const DTArg *emaVar, const typename DTArg::VT eps, DCTX(dctx)) {
     BatchNorm2DTestForward<DTRes, DTArg>::apply(res, in, gamma, beta, emaMean, emaVar, eps, dctx);
 }
 
@@ -91,7 +91,7 @@ struct BatchNorm2DTestForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
           const DenseMatrix<VTArg> *beta,
           const DenseMatrix<VTArg> *emaMean,
           const DenseMatrix<VTArg> *emaVar,
-          const size_t eps, DCTX(dctx))
+          const VTArg eps, DCTX(dctx))
     {
         
         auto start = 0;

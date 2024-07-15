@@ -40,7 +40,7 @@ struct Conv2DForward {
     static void apply(DTRes *&res, size_t& res_h, size_t& res_w,
                           const DTArg *data, const DTArg *filter, const DTArg *bias,
                           const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
-                          const size_t num_filters, const size_t filter_h, const size_t filter_w, 
+                          const size_t filter_h, const size_t filter_w, 
                           const size_t stride_h, const size_t stride_w, 
                           const size_t pad_h, const size_t pad_w,  DCTX(dctx)) = delete;
 };
@@ -53,12 +53,12 @@ template<class DTRes, class DTArg>
 void conv2DForward(DTRes *&res, size_t& res_h, size_t& res_w,
                         const DTArg *data, const DTArg *filter, const DTArg *bias,
                         const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
-                        const size_t num_filters, const size_t filter_h, const size_t filter_w, 
+                        const size_t filter_h, const size_t filter_w, 
                         const size_t stride_h, const size_t stride_w, 
                         const size_t pad_h, const size_t pad_w, DCTX(dctx)) {
     Conv2DForward<DTRes, DTArg>::apply(res, res_h, res_w,
                         data, filter, bias, batch_size, num_channels, img_h, img_w,
-                        num_filters, filter_h, filter_w, 
+                        filter_h, filter_w, 
                         stride_h, stride_w, 
                         pad_h, pad_w, dctx);
 }
@@ -128,7 +128,7 @@ struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
           const DenseMatrix<VTArg> *filter, 
           const DenseMatrix<VTArg> *bias,
           const size_t batch_size, const size_t num_channels, 
-          const size_t img_h, const size_t img_w,       
+          const size_t img_h, const size_t img_w,     
           const size_t filter_h, const size_t filter_w,
           const size_t stride_h, const size_t stride_w,
           const size_t pad_h, const size_t pad_w,  

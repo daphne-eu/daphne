@@ -40,7 +40,7 @@ struct BatchNorm2DBackward {
     static void apply(  DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta,
                         const DTArg *mean, const DTArg *invVar, 
                         const DTArg *in, const DTArg *dout,
-                        const DTArg *gamma, const size_t eps, DCTX(dctx)) = delete;
+                        const DTArg *gamma, const typename DTArg::VT eps, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -51,7 +51,7 @@ template<class DTRes, class DTArg>
 void batchNorm2DBackward(   DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta,
                             const DTArg *mean, const DTArg *invVar, 
                             const DTArg *in, const DTArg *dout, 
-                            const DTArg *gamma, const size_t eps, DCTX(dctx)) {
+                            const DTArg *gamma, const typename DTArg::VT eps, DCTX(dctx)) {
     BatchNorm2DBackward<DTRes, DTArg>::apply(dX, dGamma, dBeta, mean, invVar, in, dout, gamma, eps, dctx);
 }
 
@@ -75,7 +75,7 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
             const DenseMatrix<VTArg> *in,
             const DenseMatrix<VTArg> *dout, 
             const DenseMatrix<VTArg> *gamma,
-            const size_t eps, DCTX(dctx))
+            const VTArg eps, DCTX(dctx))
     {
         
         auto start = 0;
