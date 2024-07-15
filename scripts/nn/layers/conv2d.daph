@@ -78,14 +78,16 @@ def forward(X:matrix, W:matrix, b:matrix, C, Hin, Win, Hf, Wf, strideh, stridew,
 
   # Create output volume
   out = fill(0.0, N, F * Hout * Wout);
-
+print("F*Hout*Wout:");
+print(F + "*" + Hout + "*" + Wout+"=",0);print(F*Hout*Wout);
   # Convolution - im2col implementation
   for (n in 0:N - 1) {  # all examples
     #Xn = reshape(X[n,], C, Hin * Win);  # reshape
 Xn = fill(0.0, C, Hin * Win);
+print("Padding image #"+n);
     # Pad image
     Xn_padded = util.pad_image(Xn, Hin, Win, padh, padw, 0.0);  # shape (C, (Hin+2*padh)*(Win+2*padw))
-
+print("Transforming image #"+n+" with im2col");
     # Extract local image patches into columns with im2col, of shape (C*Hf*Wf, Hout*Wout)
     Xn_padded_cols = util.im2col(Xn_padded, Hin+2*padh, Win+2*padw, Hf, Wf, strideh, stridew);
 
