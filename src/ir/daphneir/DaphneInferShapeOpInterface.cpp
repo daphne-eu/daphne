@@ -340,8 +340,11 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::BatchNorm2DTestForwardOp::infer
 std::vector<std::pair<ssize_t, ssize_t>> daphne::Conv2DForwardOp::inferShape() {
     auto shapeX = getShape(getInput());
     auto shapeW = getShape(getFilter());
+
     auto Hin = CompilerUtils::constantOrDefault<size_t>(getInputHeight(), 1);
     auto Win = CompilerUtils::constantOrDefault<size_t>(getInputWidth(), 1);
+//    auto Hin = shapeX.first;
+//    auto Win = shapeX.second;
     auto Hf = CompilerUtils::constantOrDefault<size_t>(getFilterHeight(), 1);
     auto Wf = CompilerUtils::constantOrDefault<size_t>(getFilterWidth(), 1);
     auto padh = CompilerUtils::constantOrDefault<size_t>(getPadHeight(), 1);
@@ -357,7 +360,8 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::Conv2DForwardOp::inferShape() {
     ssize_t numCols = F == -1 ? -1 : F * Hout * Wout;
 
     // op output is [mat, scalar, scalar] for the convolved data and its dimensions
-    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+//    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+    return {{-1, -1}, std::make_pair(1, 1), std::make_pair(1, 1)};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::AvgPoolForwardOp::inferShape() {
@@ -377,7 +381,8 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::AvgPoolForwardOp::inferShape() 
     auto numCols = C * Hout * Wout;
 
     // op output is [mat, scalar, scalar] for the convolved data and its dimensions
-    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+//    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+    return {{-1, -1}, std::make_pair(1, 1), std::make_pair(1, 1)};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::MaxPoolForwardOp::inferShape() {
@@ -397,7 +402,8 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::MaxPoolForwardOp::inferShape() 
     auto numCols = C * Hout * Wout;
 
     // op output is [mat, scalar, scalar] for the convolved data and its dimensions
-    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+//    return {{numRows, numCols}, std::make_pair(1, 1), std::make_pair(1, 1)};
+    return {{-1, -1}, std::make_pair(1, 1), std::make_pair(1, 1)};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CTableOp::inferShape() {
