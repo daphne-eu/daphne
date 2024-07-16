@@ -144,6 +144,8 @@ The results of these expressions again represent DAPHNE matrices/frames/scalars.
 
 ### Python Operators
 
+#### Binary Operators
+
 DaphneLib currently supports the following binary operators on DAPHNE matrices/frames/scalars:
 
 | Operator | Meaning |
@@ -177,8 +179,43 @@ In the future, we will fully support *scalar-`op`-matrix* operations as well as 
 
 *Examples:*
 
-```r
+```python
 1.5 * X @ y + 0.001
+```
+
+#### Indexing
+
+DaphneLib supports right and left indexing on DAPHNE matrices using Python's square bracket `[]` operator to extract elements from a matrix or set elements into a matrix, respectively.
+
+Extracting elements (right indexing) supports indexing by integer (e.g., `3`), slice (e.g, `:`, `:3`, `1:4`), or a DaphneLib column matrix of positions (do not need to be unique or sorted).
+The extracted elements are always returned as a DaphneLib matrix, even if it is just a single element.
+
+Setting elements (left indexing) currently only supports indexing by integer and slice.
+The elements to insert must always be provided as a DaphneLib matrix, even if it is just a single element.
+
+*Examples:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+
+dc = DaphneContext()
+
+# 10x5 matrix containing the numbers from 0 to 49.
+X = dc.seq(0, 49).reshape(10, 5)
+
+# Extract rows from 1 (inclusive) to 4 (exclusive).
+X[1:4, :].print().compute()
+
+# Extract column 3.
+X[:, 3].print().compute()
+
+# Extract columns 2 (inclusive) to 4 (exclusive) of rows [0, 3, 6].
+rowIdxs = dc.seq(0, 6, 3)
+X[rowIdxs, 2:4].print().compute()
+
+# Set columns 1 (inclusive) to 4 (exclusive) of row 3 to zero.
+X[3, 1:4] = dc.fill(0, 1, 3)
+X.print().compute()
 ```
 
 ### Matrix/Frame/Scalar Methods
@@ -188,7 +225,7 @@ A comprehensive list can be found in the [DaphneLib API reference](/doc/DaphneLi
 
 *Examples:*
 
-```r
+```python
 X.t()
 X.sqrt()
 X.cbind(Y)
