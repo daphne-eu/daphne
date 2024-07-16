@@ -294,8 +294,6 @@ Porting for other Numpy versions may be possible by following similar lines of t
 
     *Example 2* (draw 2d array from 1d array with replacement)
 
-    - Note that this example doesn't work in DaphneLib yet, since right indexing is still missing (see #657).
-
     - Numpy
 
         ```python
@@ -306,12 +304,10 @@ Porting for other Numpy versions may be possible by following similar lines of t
 
         ```python
         # Assumes that `X` is a column (m x 1) matrix.
-        Y = X[dc.sample(X.nrow(), 3 * 2, True), ].reshape(3, 2)
+        Y = X[dc.sample(X.nrow(), 3 * 2, True), :].reshape(3, 2)
         ```
 
 - `numpy.`**`random.permutation`**`(x)`
-
-    *Note: Doesn't work in DaphneLib yet, since right indexing is still missing (see #657).*
 
     *Parameters*
     
@@ -329,7 +325,9 @@ Porting for other Numpy versions may be possible by following similar lines of t
     - DaphneLib
 
         ```python
-        Y = X[dc.sample(X.nrow(), X.rnow(), False), ]
+        nr = X.nrow()
+        nc = X.ncol()
+        Y = X.reshape(X.ncell(), 1)[dc.sample(X.ncell(), X.ncell(), False), :].reshape(nr, nc)
         ```
 
 - `numpy.`**`repeat`**`(a, repeats, axis=None)`
@@ -376,14 +374,12 @@ Porting for other Numpy versions may be possible by following similar lines of t
 
 - `numpy.`**`tile`**`(A, reps)`
 
-    *Note that this doesn't work in DaphneLib yet, as right indexing is still missing (see #657).*
-
     *Parameters*
     
     - `A`: supported
         - Only 2d matrices are supported.
     - `reps`: supported
-        - Only scalars and 2x1 matrices are supported, i.e., repetition along row dimension or row and column dimension.
+        - Only scalars and 2x1 matrices are supported, i.e., repetition along row and/or column dimension.
 
     *Example*
 
@@ -396,7 +392,7 @@ Porting for other Numpy versions may be possible by following similar lines of t
     - DaphneLib
 
         ```python
-        Y = X[dc.seq(0, X.nrow() * 3).mod(X.nrow()), dc.seq(0, X.ncol() * 2).mod(X.ncol())]
+        Y = X[dc.seq(0, X.nrow() * 3 - 1).mod(X.nrow()), dc.seq(0, X.ncol() * 2 - 1).mod(X.ncol())]
         ```
 
 <!-- TODO

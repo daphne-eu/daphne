@@ -2439,7 +2439,8 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], "double"],
-            [["DenseMatrix", "int64_t"], "int64_t"]
+            [["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "size_t"], "size_t"]
         ]
     },
     {
