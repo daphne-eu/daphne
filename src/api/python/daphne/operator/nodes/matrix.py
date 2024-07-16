@@ -166,8 +166,8 @@ class Matrix(OperationNode):
         if not isinstance(key, tuple) or len(key) != 2:
             raise TypeError("you must specify exactly two dimensions")
         
-        if not(isinstance(key[0], slice) or isinstance(key[0], int), isinstance(key[0], Matrix)) or not(
-               isinstance(key[1], slice) or isinstance(key[1], int), isinstance(key[1], Matrix)):
+        if not(isinstance(key[0], slice) or isinstance(key[0], int), isinstance(key[0], Matrix)) or \
+            not(isinstance(key[1], slice) or isinstance(key[1], int), isinstance(key[1], Matrix)):
             raise TypeError("keys must be an integer, slice or Matrix")
         
         if isinstance(key[0], slice):
@@ -188,8 +188,8 @@ class Matrix(OperationNode):
         if not isinstance(key, tuple) or len(key) != 2:
             raise TypeError("you must specify exactly two dimensions")
         
-        if not(isinstance(key[0], slice) or isinstance(key[0], int)) or not(
-               isinstance(key[1], slice) or isinstance(key[1], int)):
+        if not(isinstance(key[0], slice) or isinstance(key[0], int)) or \
+            not(isinstance(key[1], slice) or isinstance(key[1], int)):
             raise TypeError("keys must be an integer or a slice")
         
         if isinstance(key[0], slice):
@@ -204,10 +204,12 @@ class Matrix(OperationNode):
         else:
             column_index = key[1]
         
-        # As this function doesn't return anything,
+        # As __setitem__() cannot return anything, but we still want to add a DAPHNE operation to the DAG:
         #   Firstly, create a new_node that is a copy of the current DAG node.
         #   Secondly, update the input nodes of all consumers of the current node, to use the new node instead.
         #   Finally, change the state of the current DAG node to an operation for left indexing.
+        # TODO Can it happen that deepcopy() copies numpy data backing this Matrix node?
+        #      If so, we should prevent that for performance reasons.
         new_node = copy.deepcopy(self)
         for consumer in self.consumer_list:
             consumer.update_node_in_input_list(new_node, self)

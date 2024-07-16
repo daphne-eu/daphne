@@ -144,6 +144,8 @@ The results of these expressions again represent DAPHNE matrices/frames/scalars.
 
 ### Python Operators
 
+#### Binary Operators
+
 DaphneLib currently supports the following binary operators on DAPHNE matrices/frames/scalars:
 
 | Operator | Meaning |
@@ -177,8 +179,43 @@ In the future, we will fully support *scalar-`op`-matrix* operations as well as 
 
 *Examples:*
 
-```r
+```python
 1.5 * X @ y + 0.001
+```
+
+#### Indexing
+
+DaphneLib supports right and left indexing on DAPHNE matrices using Python's square bracket `[]` operator to extract elements from a matrix or set elements into a matrix, respectively.
+
+Extracting elements (right indexing) supports indexing by integer (e.g., `3`), slice (e.g, `:`, `:3`, `1:4`), or a DaphneLib column matrix of positions (do not need to be unique or sorted).
+The extracted elements are always returned as a DaphneLib matrix, even if it is just a single element.
+
+Setting elements (left indexing) currently only supports indexing by integer and slice.
+The elements to insert must always be provided as a DaphneLib matrix, even if it is just a single element.
+
+*Examples:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+
+dc = DaphneContext()
+
+# 10x5 matrix containing the numbers from 0 to 49.
+X = dc.seq(0, 49).reshape(10, 5)
+
+# Extract rows from 1 (inclusive) to 4 (exclusive).
+X[1:4, :].print().compute()
+
+# Extract column 3.
+X[:, 3].print().compute()
+
+# Extract columns 2 (inclusive) to 4 (exclusive) of rows [0, 3, 6].
+rowIdxs = dc.seq(0, 6, 3)
+X[rowIdxs, 2:4].print().compute()
+
+# Set columns 1 (inclusive) to 4 (exclusive) of row 3 to zero.
+X[3, 1:4] = dc.fill(0, 1, 3)
+X.print().compute()
 ```
 
 ### Matrix/Frame/Scalar Methods
@@ -188,49 +225,11 @@ A comprehensive list can be found in the [DaphneLib API reference](/doc/DaphneLi
 
 *Examples:*
 
-```r
+```python
 X.t()
 X.sqrt()
 X.cbind(Y)
 ```
-
-#### Indexing
-
-The value of an expression can also be assigned to a _partition_ of an _existing data object_. This is done by (left) indexing, whose syntax is similar to (right) indexing in expressions.
-
-Currently, left indexing is supported only for matrices. Furthermore, the rows/columns cannot be addressed by arbitrary positions lists or bit vectors (yet).
-
-_Examples:_
-
-```python
-from daphne.context.daphne_context import DaphneContext
-
-daphne_context = DaphneContext()
-
-m1 = daphne_context.fill(123, 10, 10)
-
-m1[0, 0] = daphne_context.fill(3, 1, 1)
-m1[0, 0].print().compute()
-
-m1[0:5, 0] = daphne_context.fill(0, 5, 1)
-m1[0:5, 0].print().compute()
-
-m1[:5, 0] = daphne_context.fill(1, 5, 1)
-m1[:5, 0].print().compute()
-
-m1[0:, 0] = daphne_context.fill(2, 10, 1)
-m1[0:, 0].print().compute()
-```
-
-
-
-The following conditions must be fulfilled:
-
-* The left-hand-side variable must have been initialized.
-* The left-hand-side variable must be of data type matrix.
-* The right-hand-side expression must return a matrix.
-* The shapes of the partition addressed on the left-hand side and the return value of the right-hand-side expression must match.
-* The value type of the left-hand-side and right-hand-side matrices must match.
 
 ## Data Exchange with other Python Libraries
 
