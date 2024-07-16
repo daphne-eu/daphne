@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/logo_small.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.28">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.29">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.6543a935.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.76a95c52.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -754,6 +754,30 @@
       Python Operators
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Python Operators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#binary-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Binary Operators
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#indexing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Indexing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1505,6 +1529,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Python Operators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#binary-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Binary Operators
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#indexing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Indexing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -1705,6 +1753,7 @@ More precisely, DAPHNE matrices and frames can be obtained in the following ways
 </ul>
 <p>The results of these expressions again represent DAPHNE matrices/frames/scalars.</p>
 <h3 id="python-operators">Python Operators</h3>
+<h4 id="binary-operators">Binary Operators</h4>
 <p>DaphneLib currently supports the following binary operators on DAPHNE matrices/frames/scalars:</p>
 <table>
 <thead>
@@ -1792,15 +1841,43 @@ The following table shows which combinations of inputs are allowed and which res
 <p><strong>(*)</strong> <em>Scalar-<code>op</code>-matrix</em> operations are so far only supported for <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>; for <code>/</code> only if the matrix is of a floating-point value type.</p>
 <p>In the future, we will fully support <em>scalar-<code>op</code>-matrix</em> operations as well as row/column-matrices as the left-hand-side operands.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="m">1.5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">0.001</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="mf">1.5</span> <span class="o">*</span> <span class="n">X</span> <span class="o">@</span> <span class="n">y</span> <span class="o">+</span> <span class="mf">0.001</span>
+</code></pre></div>
+<h4 id="indexing">Indexing</h4>
+<p>DaphneLib supports right and left indexing on DAPHNE matrices using Python's square bracket <code>[]</code> operator to extract elements from a matrix or set elements into a matrix, respectively.</p>
+<p>Extracting elements (right indexing) supports indexing by integer (e.g., <code>3</code>), slice (e.g, <code>:</code>, <code>:3</code>, <code>1:4</code>), or a DaphneLib column matrix of positions (do not need to be unique or sorted).
+The extracted elements are always returned as a DaphneLib matrix, even if it is just a single element.</p>
+<p>Setting elements (left indexing) currently only supports indexing by integer and slice.
+The elements to insert must always be provided as a DaphneLib matrix, even if it is just a single element.</p>
+<p><em>Examples:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># 10x5 matrix containing the numbers from 0 to 49.</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">X</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">seq</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">49</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># Extract rows from 1 (inclusive) to 4 (exclusive).</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Extract column 3.</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">X</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="c1"># Extract columns 2 (inclusive) to 4 (exclusive) of rows [0, 3, 6].</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">rowIdxs</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">seq</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="n">X</span><span class="p">[</span><span class="n">rowIdxs</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="c1"># Set columns 1 (inclusive) to 4 (exclusive) of row 3 to zero.</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="n">X</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="n">X</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="matrixframescalar-methods">Matrix/Frame/Scalar Methods</h3>
 <p>DaphneLib's classes <code>Matrix</code>, <code>Frame</code>, and <code>Scalar</code> offer a range of methods to call DAPHNE built-in functions.
 A comprehensive list can be found in the <a href="/daphne/DaphneLib/APIRef#building-complex-computations">DaphneLib API reference</a>.</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nf">X.t</span><span class="p">()</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nf">X.sqrt</span><span class="p">()</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nf">X.cbind</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">X</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">X</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">X</span><span class="o">.</span><span class="n">cbind</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="data-exchange-with-other-python-libraries">Data Exchange with other Python Libraries</h2>
 <p>DaphneLib supports efficient data exchange with other well-known Python libraries, in both directions.
@@ -1812,277 +1889,277 @@ If the result of the computation in DAPHNE is a matrix, <code>compute()</code> r
 By default, the data transfer is via shared memory (and in many cases zero-copy).</p>
 <h3 id="data-exchange-with-numpy">Data Exchange with numpy</h3>
 <p><em>Example:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Create data in numpy.</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">8.0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">X</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;How DAPHNE sees the data from numpy:&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">X</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="c1"># Add 100 to each value in X.</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">X</span> <span class="o">=</span> <span class="n">X</span> <span class="o">+</span> <span class="mf">100.0</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100 to each value, back in Python:&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="nb">print</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Create data in numpy.</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">8.0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">X</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;How DAPHNE sees the data from numpy:&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">X</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="c1"># Add 100 to each value in X.</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">X</span> <span class="o">=</span> <span class="n">X</span> <span class="o">+</span> <span class="mf">100.0</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100 to each value, back in Python:&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="nb">print</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
 </code></pre></div>
 <p><em>Run by:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/data-exchange-numpy.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/data-exchange-numpy.py
 </code></pre></div>
 <p><em>Output:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>How DAPHNE sees the data from numpy:
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>DenseMatrix(2x4, double)
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>0 1 2 3
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>4 5 6 7
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>Result of adding 100 to each value, back in Python:
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>[[100. 101. 102. 103.]
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a> [104. 105. 106. 107.]]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>How DAPHNE sees the data from numpy:
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>DenseMatrix(2x4, double)
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>0 1 2 3
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>4 5 6 7
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>Result of adding 100 to each value, back in Python:
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>[[100. 101. 102. 103.]
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a> [104. 105. 106. 107.]]
 </code></pre></div>
 <h3 id="data-exchange-with-pandas">Data Exchange with pandas</h3>
 <p><em>Example:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># Create data in pandas.</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.2</span><span class="p">,</span> <span class="mf">3.3</span><span class="p">]})</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">F</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;How DAPHNE sees the data from pandas:&quot;</span><span class="p">)</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="n">F</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>
-<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="c1"># Append F to itself.</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">F</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">rbind</span><span class="p">(</span><span class="n">F</span><span class="p">)</span>
-<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>
-<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
-<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of appending the frame to itself, back in Python:&quot;</span><span class="p">)</span>
-<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="nb">print</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="c1"># Create data in pandas.</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.2</span><span class="p">,</span> <span class="mf">3.3</span><span class="p">]})</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">F</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;How DAPHNE sees the data from pandas:&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="n">F</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="c1"># Append F to itself.</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="n">F</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">rbind</span><span class="p">(</span><span class="n">F</span><span class="p">)</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of appending the frame to itself, back in Python:&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="nb">print</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
 </code></pre></div>
 <p><em>Run by:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/data-exchange-pandas.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/data-exchange-pandas.py
 </code></pre></div>
 <p><em>Output:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>How DAPHNE sees the data from pandas:
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>Frame(3x2, [a:int64_t, b:double])
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>1 1.1
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>2 -2.2
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>3 3.3
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>Result of appending the frame to itself, back in Python:
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>   a    b
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>0  2 -2.2
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>1  3  3.3
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>2  1  1.1
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>3  2 -2.2
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>4  3  3.3
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>How DAPHNE sees the data from pandas:
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>Frame(3x2, [a:int64_t, b:double])
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>1 1.1
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>2 -2.2
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>3 3.3
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>Result of appending the frame to itself, back in Python:
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>   a    b
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>0  2 -2.2
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>1  3  3.3
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>2  1  1.1
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>3  2 -2.2
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>4  3  3.3
 </code></pre></div>
 <h3 id="data-exchange-with-tensorflow">Data Exchange with TensorFlow</h3>
 <p><em>Example:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;========== 2D TENSOR EXAMPLE ==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="c1"># Create data in TensorFlow/numpy.</span>
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">t2d</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>
-<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original 2d tensor in TensorFlow:&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">t2d</span><span class="p">)</span>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
-<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="n">T2D</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_tensorflow</span><span class="p">(</span><span class="n">t2d</span><span class="p">)</span>
-<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
-<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">How DAPHNE sees the 2d tensor from TensorFlow:&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="n">T2D</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
-<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>
-<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="c1"># Add 100 to each value in T2D.</span>
-<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="n">T2D</span> <span class="o">=</span> <span class="n">T2D</span> <span class="o">+</span> <span class="mf">100.0</span>
-<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>
-<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
-<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python:&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a><span class="nb">print</span><span class="p">(</span><span class="n">T2D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asTensorFlow</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>
-<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">========== 3D TENSOR EXAMPLE ==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a>
-<a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a><span class="c1"># Create data in TensorFlow/numpy.</span>
-<a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a><span class="n">t3d</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
-<a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a>
-<a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original 3d tensor in TensorFlow:&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a><span class="nb">print</span><span class="p">(</span><span class="n">t3d</span><span class="p">)</span>
-<a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a>
-<a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
-<a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a><span class="n">T3D</span><span class="p">,</span> <span class="n">T3D_shape</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_tensorflow</span><span class="p">(</span><span class="n">t3d</span><span class="p">,</span> <span class="n">return_shape</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a>
-<a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">How DAPHNE sees the 3d tensor from TensorFlow:&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a><span class="n">T3D</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
-<a id="__codelineno-11-41" name="__codelineno-11-41" href="#__codelineno-11-41"></a>
-<a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a><span class="c1"># Add 100 to each value in T3D.</span>
-<a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a><span class="n">T3D</span> <span class="o">=</span> <span class="n">T3D</span> <span class="o">+</span> <span class="mf">100.0</span>
-<a id="__codelineno-11-44" name="__codelineno-11-44" href="#__codelineno-11-44"></a>
-<a id="__codelineno-11-45" name="__codelineno-11-45" href="#__codelineno-11-45"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
-<a id="__codelineno-11-46" name="__codelineno-11-46" href="#__codelineno-11-46"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python:&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-47" name="__codelineno-11-47" href="#__codelineno-11-47"></a><span class="nb">print</span><span class="p">(</span><span class="n">T3D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asTensorFlow</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-<a id="__codelineno-11-48" name="__codelineno-11-48" href="#__codelineno-11-48"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python (with original shape):&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-49" name="__codelineno-11-49" href="#__codelineno-11-49"></a><span class="nb">print</span><span class="p">(</span><span class="n">T3D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asTensorFlow</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">T3D_shape</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;========== 2D TENSOR EXAMPLE ==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="c1"># Create data in TensorFlow/numpy.</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="n">t2d</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original 2d tensor in TensorFlow:&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">t2d</span><span class="p">)</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="n">T2D</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_tensorflow</span><span class="p">(</span><span class="n">t2d</span><span class="p">)</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">How DAPHNE sees the 2d tensor from TensorFlow:&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="n">T2D</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="c1"># Add 100 to each value in T2D.</span>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="n">T2D</span> <span class="o">=</span> <span class="n">T2D</span> <span class="o">+</span> <span class="mf">100.0</span>
+<a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>
+<a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
+<a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python:&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a><span class="nb">print</span><span class="p">(</span><span class="n">T2D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asTensorFlow</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a>
+<a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">========== 3D TENSOR EXAMPLE ==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a>
+<a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a><span class="c1"># Create data in TensorFlow/numpy.</span>
+<a id="__codelineno-12-31" name="__codelineno-12-31" href="#__codelineno-12-31"></a><span class="n">t3d</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+<a id="__codelineno-12-32" name="__codelineno-12-32" href="#__codelineno-12-32"></a>
+<a id="__codelineno-12-33" name="__codelineno-12-33" href="#__codelineno-12-33"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original 3d tensor in TensorFlow:&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-34" name="__codelineno-12-34" href="#__codelineno-12-34"></a><span class="nb">print</span><span class="p">(</span><span class="n">t3d</span><span class="p">)</span>
+<a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>
+<a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
+<a id="__codelineno-12-37" name="__codelineno-12-37" href="#__codelineno-12-37"></a><span class="n">T3D</span><span class="p">,</span> <span class="n">T3D_shape</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_tensorflow</span><span class="p">(</span><span class="n">t3d</span><span class="p">,</span> <span class="n">return_shape</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-12-38" name="__codelineno-12-38" href="#__codelineno-12-38"></a>
+<a id="__codelineno-12-39" name="__codelineno-12-39" href="#__codelineno-12-39"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">How DAPHNE sees the 3d tensor from TensorFlow:&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-40" name="__codelineno-12-40" href="#__codelineno-12-40"></a><span class="n">T3D</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-12-41" name="__codelineno-12-41" href="#__codelineno-12-41"></a>
+<a id="__codelineno-12-42" name="__codelineno-12-42" href="#__codelineno-12-42"></a><span class="c1"># Add 100 to each value in T3D.</span>
+<a id="__codelineno-12-43" name="__codelineno-12-43" href="#__codelineno-12-43"></a><span class="n">T3D</span> <span class="o">=</span> <span class="n">T3D</span> <span class="o">+</span> <span class="mf">100.0</span>
+<a id="__codelineno-12-44" name="__codelineno-12-44" href="#__codelineno-12-44"></a>
+<a id="__codelineno-12-45" name="__codelineno-12-45" href="#__codelineno-12-45"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
+<a id="__codelineno-12-46" name="__codelineno-12-46" href="#__codelineno-12-46"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python:&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-47" name="__codelineno-12-47" href="#__codelineno-12-47"></a><span class="nb">print</span><span class="p">(</span><span class="n">T3D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asTensorFlow</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-12-48" name="__codelineno-12-48" href="#__codelineno-12-48"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python (with original shape):&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-49" name="__codelineno-12-49" href="#__codelineno-12-49"></a><span class="nb">print</span><span class="p">(</span><span class="n">T3D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asTensorFlow</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">T3D_shape</span><span class="p">))</span>
 </code></pre></div>
 <p><em>Run by:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/data-exchange-tensorflow.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/data-exchange-tensorflow.py
 </code></pre></div>
 <p><em>Output (random numbers may vary):</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>========== 2D TENSOR EXAMPLE ==========
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>Original 2d tensor in TensorFlow:
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>tf.Tensor(
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>[[0.09682179 0.09636572 0.78658016 0.68227129]
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a> [0.64356184 0.96337785 0.07931763 0.97951051]], shape=(2, 4), dtype=float64)
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
-<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>How DAPHNE sees the 2d tensor from TensorFlow:
-<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>DenseMatrix(2x4, double)
-<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>0.0968218 0.0963657 0.78658 0.682271
-<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>0.643562 0.963378 0.0793176 0.979511
-<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>
-<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>Result of adding 100, back in Python:
-<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>tf.Tensor(
-<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>[[100.09682179 100.09636572 100.78658016 100.68227129]
-<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a> [100.64356184 100.96337785 100.07931763 100.97951051]], shape=(2, 4), dtype=float64)
-<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>
-<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>========== 3D TENSOR EXAMPLE ==========
-<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>
-<a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>Original 3d tensor in TensorFlow:
-<a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>tf.Tensor(
-<a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a>[[[0.40088013 0.02324858]
-<a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a>  [0.87607911 0.91645907]]
-<a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a>
-<a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a> [[0.10591184 0.92419294]
-<a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a>  [0.5397723  0.24957817]]], shape=(2, 2, 2), dtype=float64)
-<a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a>
-<a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a>How DAPHNE sees the 3d tensor from TensorFlow:
-<a id="__codelineno-13-29" name="__codelineno-13-29" href="#__codelineno-13-29"></a>DenseMatrix(2x4, double)
-<a id="__codelineno-13-30" name="__codelineno-13-30" href="#__codelineno-13-30"></a>0.40088 0.0232486 0.876079 0.916459
-<a id="__codelineno-13-31" name="__codelineno-13-31" href="#__codelineno-13-31"></a>0.105912 0.924193 0.539772 0.249578
-<a id="__codelineno-13-32" name="__codelineno-13-32" href="#__codelineno-13-32"></a>
-<a id="__codelineno-13-33" name="__codelineno-13-33" href="#__codelineno-13-33"></a>Result of adding 100, back in Python:
-<a id="__codelineno-13-34" name="__codelineno-13-34" href="#__codelineno-13-34"></a>tf.Tensor(
-<a id="__codelineno-13-35" name="__codelineno-13-35" href="#__codelineno-13-35"></a>[[100.40088013 100.02324858 100.87607911 100.91645907]
-<a id="__codelineno-13-36" name="__codelineno-13-36" href="#__codelineno-13-36"></a> [100.10591184 100.92419294 100.5397723  100.24957817]], shape=(2, 4), dtype=float64)
-<a id="__codelineno-13-37" name="__codelineno-13-37" href="#__codelineno-13-37"></a>
-<a id="__codelineno-13-38" name="__codelineno-13-38" href="#__codelineno-13-38"></a>Result of adding 100, back in Python (with original shape):
-<a id="__codelineno-13-39" name="__codelineno-13-39" href="#__codelineno-13-39"></a>tf.Tensor(
-<a id="__codelineno-13-40" name="__codelineno-13-40" href="#__codelineno-13-40"></a>[[[100.40088013 100.02324858]
-<a id="__codelineno-13-41" name="__codelineno-13-41" href="#__codelineno-13-41"></a>  [100.87607911 100.91645907]]
-<a id="__codelineno-13-42" name="__codelineno-13-42" href="#__codelineno-13-42"></a>
-<a id="__codelineno-13-43" name="__codelineno-13-43" href="#__codelineno-13-43"></a> [[100.10591184 100.92419294]
-<a id="__codelineno-13-44" name="__codelineno-13-44" href="#__codelineno-13-44"></a>  [100.5397723  100.24957817]]], shape=(2, 2, 2), dtype=float64)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>========== 2D TENSOR EXAMPLE ==========
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>Original 2d tensor in TensorFlow:
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>tf.Tensor(
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>[[0.09682179 0.09636572 0.78658016 0.68227129]
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a> [0.64356184 0.96337785 0.07931763 0.97951051]], shape=(2, 4), dtype=float64)
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>How DAPHNE sees the 2d tensor from TensorFlow:
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>DenseMatrix(2x4, double)
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>0.0968218 0.0963657 0.78658 0.682271
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>0.643562 0.963378 0.0793176 0.979511
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>Result of adding 100, back in Python:
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>tf.Tensor(
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>[[100.09682179 100.09636572 100.78658016 100.68227129]
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a> [100.64356184 100.96337785 100.07931763 100.97951051]], shape=(2, 4), dtype=float64)
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>========== 3D TENSOR EXAMPLE ==========
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>Original 3d tensor in TensorFlow:
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>tf.Tensor(
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>[[[0.40088013 0.02324858]
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>  [0.87607911 0.91645907]]
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a> [[0.10591184 0.92419294]
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>  [0.5397723  0.24957817]]], shape=(2, 2, 2), dtype=float64)
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>How DAPHNE sees the 3d tensor from TensorFlow:
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>DenseMatrix(2x4, double)
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>0.40088 0.0232486 0.876079 0.916459
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>0.105912 0.924193 0.539772 0.249578
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>
+<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>Result of adding 100, back in Python:
+<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>tf.Tensor(
+<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>[[100.40088013 100.02324858 100.87607911 100.91645907]
+<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a> [100.10591184 100.92419294 100.5397723  100.24957817]], shape=(2, 4), dtype=float64)
+<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>
+<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a>Result of adding 100, back in Python (with original shape):
+<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a>tf.Tensor(
+<a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>[[[100.40088013 100.02324858]
+<a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a>  [100.87607911 100.91645907]]
+<a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a>
+<a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a> [[100.10591184 100.92419294]
+<a id="__codelineno-14-44" name="__codelineno-14-44" href="#__codelineno-14-44"></a>  [100.5397723  100.24957817]]], shape=(2, 2, 2), dtype=float64)
 </code></pre></div>
 <h3 id="data-exchange-with-pytorch">Data Exchange with PyTorch</h3>
 <p><em>Example:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">import</span> <span class="nn">torch</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;========== 2D TENSOR EXAMPLE ==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="c1"># Create data in PyTorch/numpy.</span>
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="n">t2d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>
-<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original 2d tensor in PyTorch:&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">t2d</span><span class="p">)</span>
-<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>
-<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
-<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="n">T2D</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_pytorch</span><span class="p">(</span><span class="n">t2d</span><span class="p">)</span>
-<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>
-<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">How DAPHNE sees the 2d tensor from PyTorch:&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="n">T2D</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
-<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>
-<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="c1"># Add 100 to each value in T2D.</span>
-<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="n">T2D</span> <span class="o">=</span> <span class="n">T2D</span> <span class="o">+</span> <span class="mf">100.0</span>
-<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>
-<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
-<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python:&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a><span class="nb">print</span><span class="p">(</span><span class="n">T2D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asPyTorch</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>
-<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">========== 3D TENSOR EXAMPLE ==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>
-<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a><span class="c1"># Create data in PyTorch/numpy.</span>
-<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="n">t3d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
-<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>
-<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original 3d tensor in PyTorch:&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a><span class="nb">print</span><span class="p">(</span><span class="n">t3d</span><span class="p">)</span>
-<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>
-<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
-<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a><span class="n">T3D</span><span class="p">,</span> <span class="n">T3D_shape</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_pytorch</span><span class="p">(</span><span class="n">t3d</span><span class="p">,</span> <span class="n">return_shape</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a>
-<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">How DAPHNE sees the 3d tensor from PyTorch:&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a><span class="n">T3D</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
-<a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a>
-<a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a><span class="c1"># Add 100 to each value in T3D.</span>
-<a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a><span class="n">T3D</span> <span class="o">=</span> <span class="n">T3D</span> <span class="o">+</span> <span class="mf">100.0</span>
-<a id="__codelineno-14-44" name="__codelineno-14-44" href="#__codelineno-14-44"></a>
-<a id="__codelineno-14-45" name="__codelineno-14-45" href="#__codelineno-14-45"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
-<a id="__codelineno-14-46" name="__codelineno-14-46" href="#__codelineno-14-46"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python:&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-47" name="__codelineno-14-47" href="#__codelineno-14-47"></a><span class="nb">print</span><span class="p">(</span><span class="n">T3D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asPyTorch</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-<a id="__codelineno-14-48" name="__codelineno-14-48" href="#__codelineno-14-48"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python (with original shape):&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-49" name="__codelineno-14-49" href="#__codelineno-14-49"></a><span class="nb">print</span><span class="p">(</span><span class="n">T3D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asPyTorch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">T3D_shape</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span> <span class="nn">daphne.context.daphne_context</span> <span class="kn">import</span> <span class="n">DaphneContext</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">import</span> <span class="nn">torch</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DaphneContext</span><span class="p">()</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;========== 2D TENSOR EXAMPLE ==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="c1"># Create data in PyTorch/numpy.</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="n">t2d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original 2d tensor in PyTorch:&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">t2d</span><span class="p">)</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="n">T2D</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_pytorch</span><span class="p">(</span><span class="n">t2d</span><span class="p">)</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">How DAPHNE sees the 2d tensor from PyTorch:&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="n">T2D</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="c1"># Add 100 to each value in T2D.</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="n">T2D</span> <span class="o">=</span> <span class="n">T2D</span> <span class="o">+</span> <span class="mf">100.0</span>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a>
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python:&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="nb">print</span><span class="p">(</span><span class="n">T2D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asPyTorch</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a>
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">========== 3D TENSOR EXAMPLE ==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a><span class="c1"># Create data in PyTorch/numpy.</span>
+<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a><span class="n">t3d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>
+<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original 3d tensor in PyTorch:&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a><span class="nb">print</span><span class="p">(</span><span class="n">t3d</span><span class="p">)</span>
+<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a>
+<a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="c1"># Transfer data to DaphneLib (lazily evaluated).</span>
+<a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a><span class="n">T3D</span><span class="p">,</span> <span class="n">T3D_shape</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">from_pytorch</span><span class="p">(</span><span class="n">t3d</span><span class="p">,</span> <span class="n">return_shape</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a>
+<a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">How DAPHNE sees the 3d tensor from PyTorch:&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a><span class="n">T3D</span><span class="o">.</span><span class="n">print</span><span class="p">()</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+<a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a>
+<a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a><span class="c1"># Add 100 to each value in T3D.</span>
+<a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a><span class="n">T3D</span> <span class="o">=</span> <span class="n">T3D</span> <span class="o">+</span> <span class="mf">100.0</span>
+<a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a>
+<a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a><span class="c1"># Compute in DAPHNE, transfer result back to Python.</span>
+<a id="__codelineno-15-46" name="__codelineno-15-46" href="#__codelineno-15-46"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python:&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-47" name="__codelineno-15-47" href="#__codelineno-15-47"></a><span class="nb">print</span><span class="p">(</span><span class="n">T3D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asPyTorch</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-15-48" name="__codelineno-15-48" href="#__codelineno-15-48"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Result of adding 100, back in Python (with original shape):&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-49" name="__codelineno-15-49" href="#__codelineno-15-49"></a><span class="nb">print</span><span class="p">(</span><span class="n">T3D</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">asPyTorch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">T3D_shape</span><span class="p">))</span>
 </code></pre></div>
 <p><em>Run by:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/data-exchange-pytorch.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>python3<span class="w"> </span>scripts/examples/daphnelib/data-exchange-pytorch.py
 </code></pre></div>
 <p><em>Output (random numbers may vary):</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>========== 2D TENSOR EXAMPLE ==========
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>Original 2d tensor in PyTorch:
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>tensor([[0.1205, 0.8747, 0.1717, 0.0216],
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>        [0.7999, 0.6932, 0.4386, 0.0873]], dtype=torch.float64)
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>How DAPHNE sees the 2d tensor from PyTorch:
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>DenseMatrix(2x4, double)
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>0.120505 0.874691 0.171693 0.0215546
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>0.799858 0.693205 0.438637 0.0872659
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>
-<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>Result of adding 100, back in Python:
-<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>tensor([[100.1205, 100.8747, 100.1717, 100.0216],
-<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>        [100.7999, 100.6932, 100.4386, 100.0873]], dtype=torch.float64)
-<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>
-<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>========== 3D TENSOR EXAMPLE ==========
-<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>
-<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>Original 3d tensor in PyTorch:
-<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>tensor([[[0.5474, 0.9653],
-<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>         [0.7891, 0.0573]],
-<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>
-<a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>        [[0.4116, 0.6326],
-<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>         [0.3148, 0.3607]]], dtype=torch.float64)
-<a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>
-<a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>How DAPHNE sees the 3d tensor from PyTorch:
-<a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>DenseMatrix(2x4, double)
-<a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a>0.547449 0.965315 0.78909 0.0572619
-<a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a>0.411593 0.632629 0.314841 0.360657
-<a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a>
-<a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a>Result of adding 100, back in Python:
-<a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a>tensor([[100.5474, 100.9653, 100.7891, 100.0573],
-<a id="__codelineno-16-32" name="__codelineno-16-32" href="#__codelineno-16-32"></a>        [100.4116, 100.6326, 100.3148, 100.3607]], dtype=torch.float64)
-<a id="__codelineno-16-33" name="__codelineno-16-33" href="#__codelineno-16-33"></a>
-<a id="__codelineno-16-34" name="__codelineno-16-34" href="#__codelineno-16-34"></a>Result of adding 100, back in Python (with original shape):
-<a id="__codelineno-16-35" name="__codelineno-16-35" href="#__codelineno-16-35"></a>tensor([[[100.5474, 100.9653],
-<a id="__codelineno-16-36" name="__codelineno-16-36" href="#__codelineno-16-36"></a>         [100.7891, 100.0573]],
-<a id="__codelineno-16-37" name="__codelineno-16-37" href="#__codelineno-16-37"></a>
-<a id="__codelineno-16-38" name="__codelineno-16-38" href="#__codelineno-16-38"></a>        [[100.4116, 100.6326],
-<a id="__codelineno-16-39" name="__codelineno-16-39" href="#__codelineno-16-39"></a>         [100.3148, 100.3607]]], dtype=torch.float64)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>========== 2D TENSOR EXAMPLE ==========
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>Original 2d tensor in PyTorch:
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>tensor([[0.1205, 0.8747, 0.1717, 0.0216],
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>        [0.7999, 0.6932, 0.4386, 0.0873]], dtype=torch.float64)
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>How DAPHNE sees the 2d tensor from PyTorch:
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>DenseMatrix(2x4, double)
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>0.120505 0.874691 0.171693 0.0215546
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>0.799858 0.693205 0.438637 0.0872659
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>Result of adding 100, back in Python:
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>tensor([[100.1205, 100.8747, 100.1717, 100.0216],
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>        [100.7999, 100.6932, 100.4386, 100.0873]], dtype=torch.float64)
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>
+<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>========== 3D TENSOR EXAMPLE ==========
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>
+<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>Original 3d tensor in PyTorch:
+<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>tensor([[[0.5474, 0.9653],
+<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>         [0.7891, 0.0573]],
+<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>
+<a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>        [[0.4116, 0.6326],
+<a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>         [0.3148, 0.3607]]], dtype=torch.float64)
+<a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>
+<a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>How DAPHNE sees the 3d tensor from PyTorch:
+<a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>DenseMatrix(2x4, double)
+<a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>0.547449 0.965315 0.78909 0.0572619
+<a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>0.411593 0.632629 0.314841 0.360657
+<a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>
+<a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>Result of adding 100, back in Python:
+<a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>tensor([[100.5474, 100.9653, 100.7891, 100.0573],
+<a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>        [100.4116, 100.6326, 100.3148, 100.3607]], dtype=torch.float64)
+<a id="__codelineno-17-33" name="__codelineno-17-33" href="#__codelineno-17-33"></a>
+<a id="__codelineno-17-34" name="__codelineno-17-34" href="#__codelineno-17-34"></a>Result of adding 100, back in Python (with original shape):
+<a id="__codelineno-17-35" name="__codelineno-17-35" href="#__codelineno-17-35"></a>tensor([[[100.5474, 100.9653],
+<a id="__codelineno-17-36" name="__codelineno-17-36" href="#__codelineno-17-36"></a>         [100.7891, 100.0573]],
+<a id="__codelineno-17-37" name="__codelineno-17-37" href="#__codelineno-17-37"></a>
+<a id="__codelineno-17-38" name="__codelineno-17-38" href="#__codelineno-17-38"></a>        [[100.4116, 100.6326],
+<a id="__codelineno-17-39" name="__codelineno-17-39" href="#__codelineno-17-39"></a>         [100.3148, 100.3607]]], dtype=torch.float64)
 </code></pre></div>
 <h2 id="known-limitations">Known Limitations</h2>
 <p>DaphneLib is still in an early development stage.
