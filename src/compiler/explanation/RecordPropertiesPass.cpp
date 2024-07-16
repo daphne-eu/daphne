@@ -7,10 +7,10 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Transforms/Passes.h"
 #include <sstream>
+#include <ir/daphneir/Passes.h>
 #include <ir/daphneir/Daphne.h>
 
 using namespace mlir;
-using namespace mlir::OpTrait;
 
 
 // Utility to generate a unique ID string
@@ -25,7 +25,7 @@ std::string generateUniqueID() {
 void captureProperties(Operation *op, OpBuilder &builder) {
     // Example: Capture type information
     Type resultType = op->getResult(0).getType();
-    op->setAttr("result_type", TypeAttr::get(resultType));
+    op->setAttr("daphne.result_type", TypeAttr::get(resultType));
 
     // Capture shape using the DaphneInferShapeOpInterface
     if (auto inferShapeOp = llvm::dyn_cast<daphne::InferShape>(op)) {
@@ -36,7 +36,7 @@ void captureProperties(Operation *op, OpBuilder &builder) {
                 shapeAttrs.push_back(builder.getI64ArrayAttr({shape.first, shape.second}));
             }
             ArrayAttr shapeArrayAttr = builder.getArrayAttr(shapeAttrs);
-            op->setAttr("shape", shapeArrayAttr);
+            op->setAttr("daphne.shape", shapeArrayAttr);
         }
     }
 
@@ -49,7 +49,7 @@ void captureProperties(Operation *op, OpBuilder &builder) {
                 sparsityAttrs.push_back(builder.getF64FloatAttr(sparsity));
             }
             ArrayAttr sparsityArrayAttr = builder.getArrayAttr(sparsityAttrs);
-            op->setAttr("sparsity", sparsityArrayAttr);
+            op->setAttr("daphne.sparsity", sparsityArrayAttr);
         }
     }
 }
@@ -70,9 +70,9 @@ public:
                 return;
 
             // Set unique ID if not already set
-            if (!op->hasAttr("id")) {
+            if (!op->hasAttr("daphne.id")) {
                 std::string id = generateUniqueID();
-                op->setAttr("id", builder.getStringAttr(id));
+                op->setAttr("daphne.id", builder.getStringAttr(id));
             }
 
             // Record properties
@@ -83,7 +83,7 @@ public:
                 recordOp->getResult(0).setType(result.getType());
 
                 // Propagate the ID to RecordOp
-                recordOp->setAttr("id", op->getAttr("id"));
+                recordOp->setAttr("daphne.id", op->getAttr("daphne.id"));
 
                 // Capture and propagate additional properties
                 captureProperties(recordOp.getOperation(), builder);
@@ -92,6 +92,7 @@ public:
     }
 };
 
-std::unique_ptr<Pass> createRecordPropertiesPass() {
+std::unique_ptr<Pass> daphne::createRecordPropertiesPass() {
+
     return std::make_unique<RecordPropertiesPass>();
 }

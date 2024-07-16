@@ -218,7 +218,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addPass(mlir::createReconcileUnrealizedCastsPass());
     if (userConfig_.explain_llvm)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering:"));
-    pm.addPass(createRecordPropertiesPass());
+    pm.addPass(mlir::daphne::createRecordPropertiesPass());
     // Initialize the use of each distinct kernels library to false.
     usedLibPaths = userConfig_.kernelCatalog.getLibPaths();
     
@@ -321,5 +321,5 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after codegen pipeline"));
-    pm.addPass(createRecordPropertiesPass());
+    pm.addPass(mlir::daphne::createRecordPropertiesPass());
 }
