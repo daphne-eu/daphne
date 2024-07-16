@@ -1594,6 +1594,26 @@ def Daphne_StopProfilingOp : Daphne_Op<"stopProfiling"> {
 }
 
 // ****************************************************************************
+// Property Recording
+// ****************************************************************************
+
+def Daphne_RecordOp : Daphne_Op<"record"> {
+    let arguments = (ins AnyType:$input);
+    let results = (outs AnyType:$output);
+
+    let summary = "Records properties of an operation.";
+    let description = [{
+        This operation records properties of an operation.
+    }];
+
+    let builders = [
+        OpBuilder<(ins "Value":$input), [{
+            build($_builder, $_state, input.getType(), input);
+        }]>
+    ];
+}
+
+// ****************************************************************************
 // Old operations
 // ****************************************************************************
 // These are currently still need for the prototype to work. They will be

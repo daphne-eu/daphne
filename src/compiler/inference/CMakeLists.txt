@@ -17,7 +17,6 @@ add_mlir_dialect_library(MLIRDaphneInference
     InferencePass.cpp
     SelectMatrixRepresentationsPass.cpp
     TypeInferenceUtils.cpp
-    CalculateSparsityPass.cpp
 
     DEPENDS
     MLIRDaphne
