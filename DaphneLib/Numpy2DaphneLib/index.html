@@ -1674,9 +1674,6 @@ Will be directly supported in DaphneLib in the future.</p>
 <p><em>Example 2</em> (draw 2d array from 1d array with replacement)</p>
 <ul>
 <li>
-<p>Note that this example doesn't work in DaphneLib yet, since right indexing is still missing (see #657).</p>
-</li>
-<li>
 <p>Numpy</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
@@ -1684,14 +1681,13 @@ Will be directly supported in DaphneLib in the future.</p>
 <li>
 <p>DaphneLib</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Assumes that `X` is a column (m x 1) matrix.</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">dc</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">nrow</span><span class="p">(),</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">dc</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">nrow</span><span class="p">(),</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="p">:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
 </li>
 </ul>
 </li>
 <li>
 <p><code>numpy.</code><strong><code>random.permutation</code></strong><code>(x)</code></p>
-<p><em>Note: Doesn't work in DaphneLib yet, since right indexing is still missing (see #657).</em></p>
 <p><em>Parameters</em></p>
 <ul>
 <li><code>x</code>: supported<ul>
@@ -1708,7 +1704,9 @@ Will be directly supported in DaphneLib in the future.</p>
 </li>
 <li>
 <p>DaphneLib</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">dc</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">nrow</span><span class="p">(),</span> <span class="n">X</span><span class="o">.</span><span class="n">rnow</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span> <span class="p">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">nr</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">nrow</span><span class="p">()</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">nc</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">ncol</span><span class="p">()</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">ncell</span><span class="p">(),</span> <span class="mi">1</span><span class="p">)[</span><span class="n">dc</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">ncell</span><span class="p">(),</span> <span class="n">X</span><span class="o">.</span><span class="n">ncell</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span> <span class="p">:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nr</span><span class="p">,</span> <span class="n">nc</span><span class="p">)</span>
 </code></pre></div>
 </li>
 </ul>
@@ -1762,7 +1760,6 @@ Will be directly supported in DaphneLib in the future.</p>
 </li>
 <li>
 <p><code>numpy.</code><strong><code>tile</code></strong><code>(A, reps)</code></p>
-<p><em>Note that this doesn't work in DaphneLib yet, as right indexing is still missing (see #657).</em></p>
 <p><em>Parameters</em></p>
 <ul>
 <li><code>A</code>: supported<ul>
@@ -1770,7 +1767,7 @@ Will be directly supported in DaphneLib in the future.</p>
 </ul>
 </li>
 <li><code>reps</code>: supported<ul>
-<li>Only scalars and 2x1 matrices are supported, i.e., repetition along row dimension or row and column dimension.</li>
+<li>Only scalars and 2x1 matrices are supported, i.e., repetition along row and/or column dimension.</li>
 </ul>
 </li>
 </ul>
@@ -1783,7 +1780,7 @@ Will be directly supported in DaphneLib in the future.</p>
 </li>
 <li>
 <p>DaphneLib</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">dc</span><span class="o">.</span><span class="n">seq</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">nrow</span><span class="p">()</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">nrow</span><span class="p">()),</span> <span class="n">dc</span><span class="o">.</span><span class="n">seq</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">ncol</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">ncol</span><span class="p">())]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">dc</span><span class="o">.</span><span class="n">seq</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">nrow</span><span class="p">()</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">nrow</span><span class="p">()),</span> <span class="n">dc</span><span class="o">.</span><span class="n">seq</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">ncol</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">ncol</span><span class="p">())]</span>
 </code></pre></div>
 </li>
 </ul>
