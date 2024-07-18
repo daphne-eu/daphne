@@ -318,6 +318,48 @@ namespace {
             return specializedFunc;
         }
 
+        bool shouldSpecializeFunction(func::FuncOp function) {
+            if (function.getNumArguments() <= 2 && !isUntypedFunction(function)) {
+                return true;
+            }
+            return false;
+        }
+
+        void cleanupIR(ModuleOp module) {
+            std::set<std::string> usedFunctions;
+            module.walk([&](func::FuncOp funcOp) {
+                usedFunctions.insert(funcOp.getSymName().str());
+            });
+
+            for (const auto& entry : functions) {
+                if (usedFunctions.find(entry.first) == usedFunctions.end()) {
+                    entry.second.erase();
+                }
+            }
+
+            // Further steps: merge equal functions and generalize similar functions
+        }
+
+        void inlineFunctions(ModuleOp module) {
+            module.walk([&](func::FuncOp funcOp) {
+                // Inlining small functions or functions that are called once
+                if (funcOp.getBody().front().getOperations().size() <= 5 && called.count(funcOp) == 1) {
+                    // Clone the function body
+                    OpBuilder builder(funcOp.getBody().front().getTerminator());
+                    BlockAndValueMapping mapping;
+                    for (auto &arg : funcOp.getArguments()) {
+                        mapping.map(arg, builder.create<llvm::ilist_arg>());
+                    }
+
+                    // Replace calls with the cloned body
+                    for (auto call : llvm::make_early_inc_range(llvm::reverse(call)))
+                        called[call->getOperation()];
+
+                    funcOp.getBody().front().getTerminator().eraseFromParent();
+                }
+            });
+        }
+
         /**
          * @brief Recursively specializes all functions within a `FuncOp` based on calls to the functions
          * @param function The `FuncOp` to scan for function specializations
@@ -336,7 +378,7 @@ namespace {
                             return CompilerUtils::constantOfAnyType(v) != nullptr;
                         }
                 );
-                if(isFunctionTemplate(calledFunction) || hasConstantInput) {
+                if(isFunctionTemplate(calledFunction) || hasConstantInput || shouldSpecializeFunction(calledFunction)) {
                     func::FuncOp specializedFunc = createOrReuseSpecialization(callOp.getOperandTypes(), callOp.getOperands(), calledFunction, callOp.getLoc());
                     callOp.setCalleeAttr(specializedFunc.getSymNameAttr());
                     if(fixResultTypes(callOp->getResults(), specializedFunc.getFunctionType())) {
@@ -398,7 +440,32 @@ namespace {
         }
 
     public:
-        void runOnOperation() final;
+        void runOnOperation() final {
+        auto module = getOperation();
+
+        module.walk([&](func::FuncOp funcOp) {
+            functions.insert({funcOp.getSymName().str(), funcOp});
+        });
+
+        std::vector<func::FuncOp> entryFunctions;
+        for (const auto &entry : functions) {
+            entryFunctions.push_back(entry.second);
+        }
+
+        for (const auto &function : entryFunctions) {
+            if (isFunctionTemplate(function) || visited.count(function) || templateFunctions.count(function))
+                continue;
+            try {
+                inferTypesInFunction(function);
+                specializeCallsInFunction(function);
+            } catch (const std::exception &e) {
+                logger->error("Error during specialization: {}", e.what());
+            }
+        }
+
+        cleanupIR(module);
+        inlineFunctions(module);
+    }
 
     StringRef getArgument() const final { return "specialize-generic-funcs"; }
     StringRef getDescription() const final { return "TODO"; }
