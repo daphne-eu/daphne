@@ -778,6 +778,102 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return static_cast<mlir::Value>(builder.create<mlir::daphne::SoftmaxForwardOp>(loc, input_data.getType(), input_data));
     }
 
+    if (func == "batch_norm2d_backward") {
+        checkNumArgsExact(loc, func, numArgs, 6);
+        mlir::Value mean = args[0];
+        mlir::Value invVar = args[1];
+        mlir::Value in = args[2];
+        mlir::Value dout = args[3];
+        mlir::Value gamma = args[4];
+        mlir::Value eps = args[5];
+        return builder.create<mlir::daphne::BatchNorm2DBackwardOp>(loc, 
+            dout.getType(), dout.getType(), dout.getType(), mean, invVar, in, dout, gamma, eps).getResults();
+            
+    }
+
+    if (func == "conv2d_backward_filter") {
+        checkNumArgsExact(loc, func, numArgs, 14);
+        mlir::Value input = args[0];
+        mlir::Value output = args[1];
+        mlir::Value stride_h = utils.castSizeIf(args[2]);
+        mlir::Value stride_w = utils.castSizeIf(args[3]);
+        mlir::Value pad_h = utils.castSizeIf(args[4]);
+        mlir::Value pad_w = utils.castSizeIf(args[5]);
+        mlir::Value input_batch_size = utils.castSizeIf(args[6]);
+        mlir::Value input_num_channels = utils.castSizeIf(args[7]);
+        mlir::Value input_h = utils.castSizeIf(args[8]);
+        mlir::Value input_w = utils.castSizeIf(args[9]);
+        mlir::Value filter_num_filters = utils.castSizeIf(args[10]);
+        mlir::Value filter_num_channels = utils.castSizeIf(args[11]);
+        mlir::Value filter_h = utils.castSizeIf(args[12]);
+        mlir::Value filter_w = utils.castSizeIf(args[13]);
+
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::Conv2DBackwardFilterOp>(loc, output.getType(),
+            input, output, stride_h, stride_w, pad_h, pad_w,
+            input_batch_size, input_num_channels, input_h, input_w,
+            filter_num_filters, filter_num_channels, filter_h, filter_w));
+    }
+
+    if (func == "conv2d_backward_data") {
+        checkNumArgsExact(loc, func, numArgs, 14);
+        mlir::Value filter = args[0];
+        mlir::Value output = args[1];
+        mlir::Value stride_h = args[2];
+        mlir::Value stride_w = utils.castSizeIf(args[3]);
+        mlir::Value pad_h = utils.castSizeIf(args[4]);
+        mlir::Value pad_w = utils.castSizeIf(args[5]);
+        mlir::Value input_batch_size = utils.castSizeIf(args[6]);
+        mlir::Value input_num_channels = utils.castSizeIf(args[7]);
+        mlir::Value input_h = utils.castSizeIf(args[8]);
+        mlir::Value input_w = utils.castSizeIf(args[9]);
+        mlir::Value filter_num_filters = utils.castSizeIf(args[10]);
+        mlir::Value filter_num_channels = utils.castSizeIf(args[11]);
+        mlir::Value filter_h = utils.castSizeIf(args[12]);
+        mlir::Value filter_w = utils.castSizeIf(args[13]);       
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::Conv2DBackwardDataOp>(loc, output.getType(),
+            filter, output, stride_h, stride_w, pad_h, pad_w,
+            input_batch_size, input_num_channels, input_h, input_w,
+            filter_num_filters, filter_num_channels, filter_h, filter_w));
+    }
+
+if (func == "avg_pool2d_backward") {
+        checkNumArgsExact(loc, func, numArgs, 12);
+        mlir::Value input = args[0];
+        mlir::Value dOut = args[1];
+        mlir::Value batch_size = utils.castSizeIf(args[2]);
+        mlir::Value num_channels = utils.castSizeIf(args[3]);
+        mlir::Value img_h = utils.castSizeIf(args[4]);
+        mlir::Value img_w = utils.castSizeIf(args[5]);
+        mlir::Value pool_h = utils.castSizeIf(args[6]);
+        mlir::Value pool_w = utils.castSizeIf(args[7]);
+        mlir::Value stride_h = utils.castSizeIf(args[8]);
+        mlir::Value stride_w = utils.castSizeIf(args[9]);
+        mlir::Value pad_h = utils.castSizeIf(args[10]);
+        mlir::Value pad_w = utils.castSizeIf(args[11]);
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::AvgPoolBackwardOp>(loc, dOut.getType(),
+            input, dOut, batch_size, num_channels, img_h, img_w, pool_h, pool_w, stride_h, stride_w, pad_h, pad_w));
+    }
+
+    if (func == "max_pool2d_backward") {
+        checkNumArgsExact(loc, func, numArgs, 12);
+        mlir::Value input = args[0];
+        mlir::Value dOut = args[1];
+        mlir::Value batch_size = utils.castSizeIf(args[2]);
+        mlir::Value num_channels = utils.castSizeIf(args[3]);
+        mlir::Value img_h = utils.castSizeIf(args[4]);
+        mlir::Value img_w = utils.castSizeIf(args[5]);
+        mlir::Value pool_h = utils.castSizeIf(args[6]);
+        mlir::Value pool_w = utils.castSizeIf(args[7]);
+        mlir::Value stride_h = utils.castSizeIf(args[8]);
+        mlir::Value stride_w = utils.castSizeIf(args[9]);
+        mlir::Value pad_h = utils.castSizeIf(args[10]);
+        mlir::Value pad_w = utils.castSizeIf(args[11]);
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::MaxPoolBackwardOp>(loc, dOut.getType(),
+            input, dOut, batch_size, num_channels, img_h, img_w, pool_h, pool_w, stride_h, stride_w, pad_h, pad_w));
+    }
+
+    
+
     // ********************************************************************
     // Other matrix operations
     // ********************************************************************

@@ -38,7 +38,7 @@ template <class DTRes, class DTArg>
 struct Conv2DBackwardData
 {
     static void apply(const DTArg *filter,
-                      const DTArg *&output,
+                      const DTArg *output,
                       const size_t stride_h, const size_t stride_w,
                       const size_t pad_h, const size_t pad_w,
                       const size_t input_batch_size,
@@ -57,7 +57,7 @@ struct Conv2DBackwardData
 
 template <class DTRes, class DTArg>
 void conv2DBackwardData(const DTArg *filter,
-                        const DTArg *&output,
+                        const DTArg *output,
                         const size_t stride_h, const size_t stride_w,
                         const size_t pad_h, const size_t pad_w,
                         const size_t input_batch_size,

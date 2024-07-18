@@ -903,6 +903,26 @@ def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"NN_Avg_Forward", [ DeclareOp
                                                                        DeclareOpInterfaceMethods<InferShapeOpInterface>,
                                                                        CUDASupport ]>;
 
+def Daphne_AvgPoolBackwardOp : Daphne_Op<"avgPoolBackward", [ CUDASupport ]> {
+    let arguments = (ins
+        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$dOut,
+        Size:$batch_size, Size:$num_channels, Size:$img_h, Size:$img_w,
+        Size:$pool_h, Size:$pool_w,
+        Size:$stride_h, Size:$stride_w, Size:$pad_h, Size:$pad_w
+    );
+    let results = (outs MatrixOf<[FloatScalar]>:$res);
+}
+
+def Daphne_MaxPoolBackwardOp : Daphne_Op<"maxPoolBackward", [ CUDASupport ]> {
+    let arguments = (ins
+        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$dOut,
+        Size:$batch_size, Size:$num_channels, Size:$img_h, Size:$img_w,
+        Size:$pool_h, Size:$pool_w,
+        Size:$stride_h, Size:$stride_w, Size:$pad_h, Size:$pad_w
+    );
+    let results = (outs MatrixOf<[FloatScalar]>:$res);
+}
+
 // ----------------------------------------------------------------------------
 // Softmax
 // ----------------------------------------------------------------------------
