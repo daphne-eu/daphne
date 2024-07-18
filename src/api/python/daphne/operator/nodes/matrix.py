@@ -482,3 +482,6 @@ class Matrix(OperationNode):
         elif dtype is not None and vtype is not None:
             op = f"as.{dtype}<{vtype}>"
         return OperationNode(self.daphne_context, op, [self])
+
+    def ifElse(self, thenVal: Union['Matrix', 'Scalar'], elseVal: Union['Matrix', 'Scalar']) -> 'Matrix':
+        return Matrix(self.daphne_context, 'ifElse', [self, thenVal, elseVal])

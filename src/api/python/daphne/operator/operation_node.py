@@ -265,6 +265,11 @@ class OperationNode(DAGNode):
                 named_input_vars) == 0, 'named parameters can not be used with binary operations'
             assert len(unnamed_input_vars)==2, 'Binary operations need exactly two input variables'
             return f'{var_name}={unnamed_input_vars[0]} {self.operation} {unnamed_input_vars[1]};'
+        if self.operation == "ifElse":
+            assert len(
+                named_input_vars) == 0, 'named parameters can not be used with ifElse operation'
+            assert len(unnamed_input_vars)==3, 'ifElse operation needs exactly three input variables'
+            return f'{var_name}={unnamed_input_vars[0]} ? {unnamed_input_vars[1]} : {unnamed_input_vars[2]};'
         inputs_comma_sep = create_params_string(unnamed_input_vars, named_input_vars).format(file_name=var_name)
         if self.output_type == OutputType.NONE:
             return f'{self.operation}({inputs_comma_sep});'
