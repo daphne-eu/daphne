@@ -46,12 +46,13 @@ namespace CUDA {
 
         auto N = res->getNumItems();
 
+        SumOp<VT> sumOp;
+        CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, SumOp<VT>>, 0, 0));
+        gridSize = (N + blockSize - 1) / blockSize;
+
         // ToDo: use templates instead of this if-else madness
         if (opCode == BinaryOpCode::ADD) {
-            SumOp<VT> op;
-            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, SumOp<VT>>, 0, 0));
-            gridSize = (N + blockSize - 1) / blockSize;
-            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, sumOp);
         }
         else if (opCode == BinaryOpCode::MUL) {
             ProductOp<VT> op;
@@ -87,6 +88,10 @@ namespace CUDA {
             MinOp<VT> op;
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));
             gridSize = (N + blockSize - 1) / blockSize;
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
+        }
+        else if (opCode == BinaryOpCode::NEQ) {
+            NeqOp<VT> op;
             ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
         else {
