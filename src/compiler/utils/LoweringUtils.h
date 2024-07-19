@@ -73,5 +73,3 @@ mlir::Type convertFloat(mlir::FloatType floatType);
 mlir::Type convertInteger(mlir::IntegerType intType);
 
 mlir::Operation *findLastUseOfSSAValue(mlir::Value &v);
-
-void log_properties(const std::string &op_id);

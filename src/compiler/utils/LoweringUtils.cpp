@@ -217,8 +217,3 @@ mlir::Operation *findLastUseOfSSAValue(mlir::Value &v) {
 
     return lastUseOp;
 }
-
-void log_properties(const std::string &op_id) {
-    // Example logging implementation
-    std::cout << "Logging properties for operation ID: " << op_id << std::endl;
-}

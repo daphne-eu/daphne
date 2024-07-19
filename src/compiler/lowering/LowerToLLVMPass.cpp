@@ -561,58 +561,6 @@ public:
     }
 };
 
-class RecordOpLowering : public OpConversionPattern<daphne::RecordOp> {
-public:
-    using OpConversionPattern::OpConversionPattern;
-
-    LogicalResult
-    matchAndRewrite(daphne::RecordOp op, OpAdaptor adaptor,
-                    ConversionPatternRewriter &rewriter) const override 
-    {
-        Location loc = op.getLoc();
-        Value input = adaptor.getInput();
-
-        llvm::outs() << "Input type: ";
-        input.getType().print(llvm::outs());
-        llvm::outs() << "\n";
-        
-        // Get the op_id attribute
-        auto opIdAttr = op->getAttrOfType<StringAttr>("op_id");
-        if (!opIdAttr) {
-            return failure();
-        }
-        std::string opId = opIdAttr.getValue().str();
-
-        // Create a call to the logging function
-        auto module = op->getParentOfType<ModuleOp>();
-        auto i8Type = rewriter.getI8Type();
-        auto i8PtrType = LLVM::LLVMPointerType::get(i8Type);
-        auto logFuncType = LLVM::LLVMFunctionType::get(rewriter.getNoneType(), {i8PtrType}, false);
-        auto logFunc = module.lookupSymbol<LLVM::LLVMFuncOp>("log_properties");
-        if (!logFunc) {
-            PatternRewriter::InsertionGuard insertGuard(rewriter);
-            rewriter.setInsertionPointToStart(module.getBody());
-            logFunc = rewriter.create<LLVM::LLVMFuncOp>(loc, "log_properties", logFuncType);
-        }
-
-        // Create a global string for the op_id
-        auto opIdGlobal = rewriter.create<LLVM::GlobalOp>(
-            loc, i8PtrType, false, LLVM::Linkage::Internal, "op_id_" + opId, rewriter.getStringAttr(opId));
-
-        // Load the op_id string
-        auto opIdPtr = rewriter.create<LLVM::AddressOfOp>(loc, opIdGlobal);
-        auto opIdCharPtr = rewriter.create<LLVM::BitcastOp>(loc, i8PtrType, opIdPtr);
-
-        // Create a call operation to the logging function
-        rewriter.create<LLVM::CallOp>(loc, logFunc, ArrayRef<Value>({opIdCharPtr}));
-
-        // Replace RecordOp with the original input
-        
-        rewriter.replaceOp(op, {input});
-        return success();
-    }
-};
-
 class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::VectorizedPipelineOp>
 {
     const DaphneUserConfig& cfg;
@@ -1049,7 +997,6 @@ void DaphneLowerToLLVMPass::runOnOperation()
     target.addLegalOp<ModuleOp>();
 
     // for trivial casts no lowering to kernels -> higher benefit
-    patterns.insert<RecordOpLowering>(&getContext());
     patterns.insert<CastOpLowering>(&getContext(), 2);
     patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering>(
         typeConverter, &getContext());
