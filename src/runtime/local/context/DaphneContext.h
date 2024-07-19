@@ -71,6 +71,7 @@ struct DaphneContext {
     DaphneUserConfig& config;
     KernelDispatchMapping& dispatchMapping;
     Statistics& stats;
+    PropertyLogger& propertyLogger;
 
     std::shared_ptr<spdlog::logger> logger;
 

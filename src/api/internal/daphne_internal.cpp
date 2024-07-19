@@ -31,6 +31,7 @@
 #include <util/DaphneLogger.h>
 #include <util/KernelDispatchMapping.h>
 #include <util/Statistics.h>
+#include <util/PropertyLogger.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -375,6 +376,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         "statistics", cat(daphneOptions),
         desc("Enables runtime statistics output."));
 
+    static opt<bool> enablePropertyRecording(
+        "record-Properties", cat(daphneOptions),
+        desc("records runtime propertties and outputs it in JSON."));
+
     static opt<bool> enableProfiling (
             "enable-profiling", cat(daphneOptions),
             desc("Enable profiling support")
@@ -520,6 +525,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     }
 
     user_config.statistics = enableStatistics;
+    user_config.record_properties = enablePropertyRecording;
 
     if(user_config.use_distributed && distributedBackEndSetup==ALLOCATION_TYPE::DIST_MPI)
     {
@@ -697,6 +703,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     if (user_config.statistics)
         Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
+
+    if (user_config.property_logging)
+        PropertyLogger::instance().savePropertiesAsJson("properties.json");
 
     return StatusCode::SUCCESS;
 }
