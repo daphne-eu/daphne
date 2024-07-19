@@ -245,6 +245,7 @@ def Handle : Daphne_Type<"Handle"> {
 def StrScalar : Daphne_Type<"String"> {
     let summary = "string";
 }
+def MatrixOrFrameOrString : AnyTypeOf<[Matrix, Frame, StrScalar, Unknown]>;
 
 def SIntScalar : AnyTypeOf<[SI8, SI32, SI64, Unknown], "signed integer">;
 def UIntScalar : AnyTypeOf<[UI8, UI32, UI64, Unknown], "unsigned integer">;

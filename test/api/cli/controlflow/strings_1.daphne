@@ -1,0 +1,9 @@
+// Get a string from a string literal, pass it to a function, and get back a modified string.
+
+def foo(s:str) -> str {
+    return s + 123;
+}
+
+s = "abc"; # string literal, no kernel call
+s = foo(s);
+print(s);

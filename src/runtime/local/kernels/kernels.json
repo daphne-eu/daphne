@@ -933,6 +933,10 @@
                 {
                     "type": "uint64_t",
                     "name": "statisticsPtr"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "stringRefCountPtr"
                 }
             ]
         },
@@ -3453,16 +3457,22 @@
             "header": "IncRef.h",
             "opName": "incRef",
             "returnType": "void",
-            "templateParams": [],
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
             "runtimeParams": [
                 {
-                    "type": "const Structure *",
+                    "type": "const DTArg *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            []
+            ["Structure"],
+            ["char"]
         ]
     },
     {
@@ -3470,16 +3480,22 @@
             "header": "DecRef.h",
             "opName": "decRef",
             "returnType": "void",
-            "templateParams": [],
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
             "runtimeParams": [
                 {
-                    "type": "const Structure *",
+                    "type": "const DTArg *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            []
+            ["Structure"],
+            ["char"]
         ]
     },
     {

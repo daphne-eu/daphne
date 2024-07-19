@@ -1481,7 +1481,8 @@ def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
     let arguments = (ins
                     UI64 : $userConfigPtr,
                     UI64 : $dispatchMappingPtr,
-                    UI64 : $statisticsPtr);
+                    UI64 : $statisticsPtr,
+                    UI64 : $stringRefCountPtr);
     let results = (outs DaphneContext : $ctx);
 }
 
@@ -1575,14 +1576,14 @@ def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
 def Daphne_IncRefOp : Daphne_Op<"incRef"> {
     let summary = "Increases the reference counter of the underlying runtime data object.";
 
-    let arguments = (ins MatrixOrFrame:$arg);
+    let arguments = (ins MatrixOrFrameOrString:$arg);
     let results = (outs); // no results
 }
 
 def Daphne_DecRefOp : Daphne_Op<"decRef"> {
     let summary = "Decreases the reference counter of the underlying runtime data object and frees it if the reference counter becomes zero.";
 
-    let arguments = (ins MatrixOrFrame:$arg);
+    let arguments = (ins MatrixOrFrameOrString:$arg);
     let results = (outs); // no results
 }
 
