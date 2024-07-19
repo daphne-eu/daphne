@@ -237,6 +237,17 @@ namespace {
 
     private:
         /**
+         * @brief Check wether a specialized function exists already (make sure no duplicates exist)
+         * @param templateFunction The template function
+         * @param uniqueFuncName The unique function name (the unique function name contains important informations such as input parameters)
+         * @return false for not existing and true for existing
+         */
+        bool checkExistingSpecializedFunc(std::string uniqueFunName) {
+            return functions.find(uniqueFuncName) != functions.end()
+        }
+
+
+        /**
          * @brief Create a specialized version of the template function.
          * @param templateFunction The template function.
          * @param specializedTypes The specialized function arguments
@@ -250,8 +261,9 @@ namespace {
 
             auto uniqueFuncName = uniqueSpecializedFuncName(templateFunction.getSymName().str(), specializedTypes, operands);
             specializedFunc.setName(uniqueFuncName);
-            functions.insert({uniqueFuncName, specializedFunc});
-
+            if(checkExistingSpecializedFunc(uniqueFuncName)) {
+                functions.insert({uniqueFuncName, specializedFunc});
+            }
             // change argument types
             specializedFunc
                 .setType(builder.getFunctionType(specializedTypes, specializedFunc.getFunctionType().getResults()));
