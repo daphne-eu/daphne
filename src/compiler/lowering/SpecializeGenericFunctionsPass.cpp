@@ -80,9 +80,38 @@ namespace {
         );
     }
 
-    std::string uniqueSpecializedFuncName(const std::string &functionName) {
+    std::string uniqueSpecializedFuncName(const std::string &functionName, TypeRange inputTypes, ValueRange inputValues) {
         static unsigned functionUniqueId = 0;
-        return functionName + "-" + std::to_string(++functionUniqueId);
+        
+        // Creating an empty string to store the new unique specialized function name
+        std::string name = functionName;
+
+        // Iterating over types and values to use them
+        for (auto it : llvm::enumerate(llvm::zip(inputTypes, inputValues))) {
+            auto index = it.index();
+            auto type = std::get<0>(it.value());
+            auto value = std::get<1>(it.value());
+
+            // Converting type to string
+            std::string typeStr;
+            llvm::raw_string_ostream typeStream(typeStr);
+            type.print(typeStream);
+            std::string typeName = typeStream.str();
+
+            // Converting value to string
+            std::string valueStr;
+            llvm::raw_string_ostream valueStream(valueStr);
+            value.print(valueStream);
+            std::string valueName = valueStream.str();
+
+            // Append type and value to the general name
+            name += "-" + typeName + "=" + valueName;
+        }
+
+        // Appending unique ID
+        name += "-" + std::to_string(++functionUniqueId);
+        
+        return name;
     }
 
     /**
@@ -219,7 +248,7 @@ namespace {
             auto specializedFunc = templateFunction.clone();
             builder.insert(specializedFunc);
 
-            auto uniqueFuncName = uniqueSpecializedFuncName(templateFunction.getSymName().str());
+            auto uniqueFuncName = uniqueSpecializedFuncName(templateFunction.getSymName().str(), specializedTypes, operands);
             specializedFunc.setName(uniqueFuncName);
             functions.insert({uniqueFuncName, specializedFunc});
 
