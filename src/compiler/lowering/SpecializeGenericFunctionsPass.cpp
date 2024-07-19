@@ -110,8 +110,8 @@ namespace {
 
         // Appending unique ID
         name += "-" + std::to_string(++functionUniqueId);
-
-      return name;
+        
+        return name;
     }
 
     /**
