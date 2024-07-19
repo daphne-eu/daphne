@@ -161,6 +161,13 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
 // Matrix/frame dimensions
 // ****************************************************************************
 
+def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
+  let arguments = (ins MatrixOf<[AnyScalar]>:$arg);
+  let results = (outs FloatScalar:$res);
+
+  let hasCanonicalizeMethod = 1;
+}
+
 class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeSca, ValueTypeSize, Pure
 ])> {
