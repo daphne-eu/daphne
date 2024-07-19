@@ -1,0 +1,21 @@
+<div class="container justify-content-center align-items-center main-container">
+
+  <div class="row pb-5">
+    <div class="col d-flex justify-content-center">
+      <img src="assets/DaphneRuntime.png" width="400">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <ul class="nav nav-tabs justify-content-start">
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" id="tab1" data-bs-toggle="tab" routerLink="daphne-execution">Daphne Execution</a>
+        </li>        
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" id="tab2" data-bs-toggle="tab" routerLink="experiments">Experiments</a>
+        </li>        
+      </ul>
+      <router-outlet></router-outlet>      
+    </div>
+  </div>
+</div>
