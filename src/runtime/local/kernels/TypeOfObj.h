@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,14 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
+
+#include <string>
+
+#include <cstring>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -25,9 +32,8 @@
 
 template<class DTArg>
 struct TypeOfObj {
-    static void apply(char *& res, const DTArg *arg, DCTX(ctx)) = delete;
+    static void apply(char *& res, const DTArg * arg, DCTX(ctx)) = delete;
 };
-
 
 // ****************************************************************************
 // Convenience function
@@ -38,32 +44,38 @@ void typeOfObj(char *& res, const DTArg * arg, DCTX(ctx)) {
     TypeOfObj<DTArg>::apply(res, arg, ctx);
 }
 
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
+
 // ----------------------------------------------------------------------------
-// DenseMatrix, scalar
+// DenseMatrix
 // ----------------------------------------------------------------------------
 
 template<typename VT>
 struct TypeOfObj<DenseMatrix<VT>> {
     static void apply(char *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
-        char *scaType = nullptr;
-        typeOfSca(scaType, VT{}, ctx);
-        std::string typeName = std::string("DenseMatrix(") + std::to_string(arg->getNumRows()) + "x" + std::to_string(arg->getNumCols()) + ", " + scaType + ")";
-        res = new char[typeName.size() + 1];
+        const std::string typeName = std::string("DenseMatrix(") + std::to_string(arg->getNumRows())
+            + "x" + std::to_string(arg->getNumCols()) + ", "
+            + ValueTypeUtils::cppNameFor<VT> + ")";
+        if (res == nullptr)
+            res = new char[typeName.size() + 1];
         std::memcpy(res, typeName.c_str(), typeName.size() + 1);
     }
 };
 
 // ----------------------------------------------------------------------------
-// CSRMatrix, scalar
+// CSRMatrix
 // ----------------------------------------------------------------------------
 
 template<typename VT>
 struct TypeOfObj<CSRMatrix<VT>> {
     static void apply(char *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
-        char *scaType = nullptr;
-        typeOfSca(scaType, VT{}, ctx);
-        std::string typeName = std::string("CSRMatrix(") + std::to_string(arg->getNumRows()) + "x" + std::to_string(arg->getNumCols()) + ", " + scaType + ")";
-        res = new char[typeName.size() + 1];
+        const std::string typeName = std::string("CSRMatrix(") + std::to_string(arg->getNumRows())
+            + "x" + std::to_string(arg->getNumCols()) + ", "
+            + ValueTypeUtils::cppNameFor<VT> + ")";
+        if (res == nullptr)
+            res = new char[typeName.size() + 1];
         std::memcpy(res, typeName.c_str(), typeName.size() + 1);
     }
 };
@@ -75,8 +87,9 @@ struct TypeOfObj<CSRMatrix<VT>> {
 template<>
 struct TypeOfObj<Frame> {
     static void apply(char *& res, const Frame * arg, DCTX(ctx)) {
-        std::string typeName = std::string("Frame(") + std::to_string(arg->getNumRows()) + "x" + std::to_string(arg->getNumCols()) + ", " + ValueTypeUtils::cppNameForCode(arg->getColumnType(0)) + ")";
-        res = new char[typeName.size() + 1];
+        const std::string typeName = std::string("Frame(") + std::to_string(arg->getNumRows()) + "x" + std::to_string(arg->getNumCols()) + ", " + ValueTypeUtils::cppNameForCode(arg->getColumnType(0)) + ")";
+        if (res == nullptr)
+            res = new char[typeName.size() + 1];
         std::memcpy(res, typeName.c_str(), typeName.size() + 1);
     }
 };
