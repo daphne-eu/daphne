@@ -2560,6 +2560,7 @@
             [["DenseMatrix", "int64_t"], "int64_t"],
             [["DenseMatrix", "uint8_t"], "uint8_t"],
             [["CSRMatrix", "double"], "double"],
+            [["CSRMatrix", "float"], "float"],
             [["CSRMatrix", "int64_t"], "int64_t"]
         ]
     },
@@ -2737,7 +2738,7 @@
                 },
                 {
                     "type": "VT",
-                    "name": "type"
+                    "name": "arg"
                 }
             ]
         },

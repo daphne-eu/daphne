@@ -1,8 +1,0 @@
-print(typeOf({"col 1": [as.si8(0)]}));
-print(typeOf({"col 1": [as.si32(0)]}));
-print(typeOf({"col 1": [as.si64(0)]}));
-print(typeOf({"col 1": [as.ui8(0)]}));
-print(typeOf({"col 1": [as.ui32(0)]}));
-print(typeOf({"col 1": [as.ui64(0)]}));
-print(typeOf({"col 1": [as.f32(0)]}));
-print(typeOf({"col 1": [as.f64(0)]}));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,14 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
+#include <string>
+
+#include <cstring>
 
 template<typename VT>
-void typeOfSca(char *& res, VT arg, DCTX(ctx)) {
-        std::string typeName = ValueTypeUtils::cppNameFor<VT>;
+void typeOfSca(char *& res, const VT arg, DCTX(ctx)) {
+    const std::string typeName = ValueTypeUtils::cppNameFor<VT>;
+    if (res == nullptr)
         res = new char[typeName.size() + 1];
-        std::memcpy(res, typeName.c_str(), typeName.size() + 1);
+    std::memcpy(res, typeName.c_str(), typeName.size() + 1);
 }
