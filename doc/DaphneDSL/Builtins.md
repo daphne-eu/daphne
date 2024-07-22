@@ -46,6 +46,7 @@ DaphneDSL's built-in functions can be categorized as follows:
 - Other matrix operations
 - Extended relational algebra
 - Conversions and casts
+- Type information
 - Input/output
 - Data preprocessing
 - Measurements
@@ -521,6 +522,14 @@ See the [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md) for detail
     Performs a `min`/`max` quantization of the values in `arg`.
     The result matrix is of value type `ui8`.
 
+## Type information
+
+- **`typeOf`**`(arg:scalar/matrix/frame)`
+
+    Returns a string with the data type of `arg`, which can be a scalar, matrix, or a frame containing mixed value types.
+    For matrices and frames, this includes their dimensions and value type or value type per column in the case of frames.
+    Value types are named after their C++ representation.
+
 ## Input/output
 
 DAPHNE supports local file I/O for various file formats.
@@ -542,10 +551,6 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
     Prints the given scalar, matrix, or frame `arg` to `stdout`.
     The parameter `newline` is optional; `true` (the default) means a new line is started after `arg`, `false` means no new line is started.
     The parameter `toStderr` is optional; `true` means the text is printed to `stderr`, `false` (the default) means it is printed to `stdout`.
-
-- **`typeOf`**`(arg:scalar/matrix/frame)`
-
-    Prints the C++ representation of the given argument, which can be a scalar, matrix, or a frame containing mixed value types.
 
 - **`readFrame`**`(filename:str)`
 
