@@ -156,9 +156,17 @@ def backward(dout:matrix, Hout, Wout, X:matrix, W:matrix, b:matrix, C, Hin, Win,
     db = db + sum(doutn,0);
 
     # Compute dX
-    dXn_padded_cols = t(W) @ doutn;  # shape (C*Hf*Wf, Hout*Wout)
+    tW = t(W);
+    #print(tW);
+    #print(doutn);
+    dXn_padded_cols = tW @ doutn;  # shape (C*Hf*Wf, Hout*Wout)
+#print(dXn_padded_cols);
     dXn_padded = util.col2im(dXn_padded_cols, C, Hin+2*padh, Win+2*padw, Hf, Wf, strideh, stridew, 0 /*"add"*/);
+
+    #print(dXn_padded);
+
     dXn = util.unpad_image(dXn_padded, Hin, Win, padh, padw);
+
     dX[n,] = reshape(dXn, 1, C * Hin * Win);  # reshape
   }
   return dX, dW, db;

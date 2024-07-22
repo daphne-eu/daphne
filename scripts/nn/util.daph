@@ -143,9 +143,13 @@ def col2im(img_cols:matrix, C, Hin, Win, Hf, Wf, strideh, stridew, reduction) ->
     for (wout in 0:Wout - 1) {  # all output columns
       win_ = wout * stridew;
       # Extract a local patch of the input image corresponding spatially to the filter sizes.
-      img_patch = reshape(img_cols[,hout * Wout + wout], C, Hf * Wf);  # zeros
+      p = hout * Wout + wout;
+      #print("patch: " + p);
+      img_patch = reshape(img_cols[,p], C, Hf * Wf);  # zeros
+      #print(img_patch);
       for (c in 0:C - 1) {  # all channels
         img_patch_slice = reshape(img_patch[c,], Hf, Wf);  # reshape
+        #print(img_patch_slice);
         if (reduction == 0 /*"add"*/) {
           img_slice = fill(0.0, Hin, Win);
           img_slice[hin_:(hin_ + Hf), win_:(win_ + Wf)] = img_patch_slice;

@@ -29,8 +29,10 @@ print(W);
 #Xconv1, Hout1, Wout1 = conv2d.forward(X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
 Xconv2, Hout2, Wout2 = conv2d_dsl.forward(X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
 
+#print("\n\n---Start---Convolution debug outputs:\n");
 #dXconv1, dW1, db1 = conv2d.backward(Xconv1, Hout1, Wout1, X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
 dXconv2, dW2, db2 = conv2d_dsl.backward(Xconv2, Hout2, Wout2, X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+#print("\n\n---End-----Convolution debug outputs:\n");
 
 print("\nX dims: ",0) ;print(nrow(X),0);print("x",0);print(ncol(X));
 #print("Xconv1 dims: ",0) ;print(nrow(Xconv1),0);print("x",0);print(ncol(Xconv1));
