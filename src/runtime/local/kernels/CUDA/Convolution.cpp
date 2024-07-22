@@ -60,16 +60,12 @@ namespace CUDA::Convolution {
         int upscaleA[convDims] = {1,1};
         cudnnDataType_t convDataType = ctx->template getCUDNNDataType<VT>();
 
-        // ToDo: Math are done in FP32 when tensor are in FP16.
-//        if (ctx->data_type == CUDNN_DATA_HALF) {
-//            convDataType = CUDNN_DATA_FLOAT;
-//        }
 
         CHECK_CUDNN(cudnnSetConvolutionMathType(ctx->conv_desc, CUDNN_TENSOR_OP_MATH));
-//        CHECK_CUDNN(cudnnSetConvolutionNdDescriptor(ctx->conv_desc, convDims, padA, filterStrideA, upscaleA,
-//                CUDNN_CROSS_CORRELATION, convDataType));
         CHECK_CUDNN(cudnnSetConvolutionNdDescriptor(ctx->conv_desc, convDims, padA, filterStrideA, upscaleA,
-                                                    CUDNN_CONVOLUTION, convDataType));
+                CUDNN_CROSS_CORRELATION, convDataType));
+//        CHECK_CUDNN(cudnnSetConvolutionNdDescriptor(ctx->conv_desc, convDims, padA, filterStrideA, upscaleA,
+//                                                    CUDNN_CONVOLUTION, convDataType));
         CHECK_CUDNN(cudnnGetConvolutionNdForwardOutputDim(ctx->conv_desc, ctx->src_tensor_desc, ctx->filter_desc,
                 tensorDims, tensorOuputDimA));
 

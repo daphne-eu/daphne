@@ -74,7 +74,7 @@ def forward(X:matrix, W:matrix, b:matrix, C, Hin, Win, Hf, Wf, strideh, stridew,
    *  - Wout: Output width.
    */
 
-print("conv2d_kernel forward");
+#print("conv2d_kernel forward");
   N = nrow(X);
   F = nrow(W);
 
