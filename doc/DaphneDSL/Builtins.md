@@ -543,6 +543,10 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
     The parameter `newline` is optional; `true` (the default) means a new line is started after `arg`, `false` means no new line is started.
     The parameter `toStderr` is optional; `true` means the text is printed to `stderr`, `false` (the default) means it is printed to `stdout`.
 
+- **`typeOf`**`(arg:scalar/matrix/frame)`
+
+    Prints the C++ representation of the given argument, which can be a scalar, matrix, or a frame containing mixed value types.
+
 - **`readFrame`**`(filename:str)`
 
     Reads the file `filename` into a frame.

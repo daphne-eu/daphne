@@ -87,7 +87,15 @@ struct TypeOfObj<CSRMatrix<VT>> {
 template<>
 struct TypeOfObj<Frame> {
     static void apply(char *& res, const Frame * arg, DCTX(ctx)) {
-        const std::string typeName = std::string("Frame(") + std::to_string(arg->getNumRows()) + "x" + std::to_string(arg->getNumCols()) + ", " + ValueTypeUtils::cppNameForCode(arg->getColumnType(0)) + ")";
+        std::string typeName = std::string("Frame(") + std::to_string(arg->getNumRows()) + "x" + std::to_string(arg->getNumCols()) + ", [";
+        const std::string * labels = arg->getLabels();
+        for (size_t i = 0; i < arg->getNumCols(); i++) {
+            typeName += labels[i] + ":" + ValueTypeUtils::cppNameForCode(arg->getColumnType(i));
+            if (i < arg->getNumCols() - 1 ) {
+                typeName += ", ";
+            }
+        }
+        typeName += "])";
         if (res == nullptr)
             res = new char[typeName.size() + 1];
         std::memcpy(res, typeName.c_str(), typeName.size() + 1);
