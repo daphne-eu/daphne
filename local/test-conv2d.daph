@@ -26,19 +26,33 @@ print(W);
 #write(X, "/daphne/conv2d_daph_X.csv");
 #write(W, "/daphne/conv2d_daph_W.csv");
 
-X_conv1, Hout1, Wout1 = conv2d.forward(X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
-X_conv2, Hout2, Wout2 = conv2d_dsl.forward(X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+#Xconv1, Hout1, Wout1 = conv2d.forward(X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+Xconv2, Hout2, Wout2 = conv2d_dsl.forward(X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+
+#dXconv1, dW1, db1 = conv2d.backward(Xconv1, Hout1, Wout1, X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+dXconv2, dW2, db2 = conv2d_dsl.backward(Xconv2, Hout2, Wout2, X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
 
 print("\nX dims: ",0) ;print(nrow(X),0);print("x",0);print(ncol(X));
-print("X_conv1 dims: ",0) ;print(nrow(X_conv1),0);print("x",0);print(ncol(X_conv1));
-print("X_conv2 dims: ",0) ;print(nrow(X_conv2),0);print("x",0);print(ncol(X_conv2));
-print("conv1 output dims(Hout/Wout): ",0);print(Hout1,0);print("x",0);print(Wout1);
+#print("Xconv1 dims: ",0) ;print(nrow(Xconv1),0);print("x",0);print(ncol(Xconv1));
+print("Xconv2 dims: ",0) ;print(nrow(Xconv2),0);print("x",0);print(ncol(Xconv2));
+#print("conv1 output dims(Hout/Wout): ",0);print(Hout1,0);print("x",0);print(Wout1);
 print("conv2 output dims(Hout/Wout): ",0);print(Hout2,0);print("x",0);print(Wout2);
-print("\n--- X_conv1: ",0);
-print(X_conv1);
-print("--- X_conv2: ",0);
-print(X_conv2);
-diff = X_conv1 - X_conv2 < 10e-13;
-print("\nSame output cells(< 10e-13): ",0);
-print(diff);
-print("Same output cells: ",0);print(sum(diff),0);print("/",0);print(ncol(diff));print("");
+#print("\n--- Xconv1: ",0);
+#print(Xconv1);
+print("--- Xconv2: ",0);
+print(Xconv2);
+#diff = Xconv1 - Xconv2 < 10e-13;
+#print("\nSame output cells(< 10e-13): ",0);
+#print(diff);
+#print("Same output cells: ",0);print(sum(diff),0);print("/",0);print(ncol(diff));print("");
+
+print("dXconv2 dims: ",0) ;print(nrow(dXconv2),0);print("x",0);print(ncol(dXconv2));
+print("dW2 dims: ",0) ;print(nrow(dW2),0);print("x",0);print(ncol(dW2));
+print("db2 dims: ",0) ;print(nrow(db2),0);print("x",0);print(ncol(db2));
+
+print("--- dXconv2: ",0);
+print(dXconv2);
+print("--- dW2: ",0);
+print(dW2);
+print("--- db2: ",0);
+print(db2);
