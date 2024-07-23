@@ -478,6 +478,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Arithmetic/general math
     // --------------------------------------------------------------------
 
+    if(func == "minus")
+        return createUnaryOp<EwMinusOp>(loc, func, args);
     if(func == "abs")
         return createUnaryOp<EwAbsOp>(loc, func, args);
     if(func == "sign")

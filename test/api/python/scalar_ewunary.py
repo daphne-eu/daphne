@@ -20,6 +20,10 @@ dc = DaphneContext()
 # TODO Currently, we cannot simply construct a DaphneLib scalar from a Python scalar.
 # Thus, we use a work-around here by taking the sum of a 1x1 matrix with the desired value.
 
+(-dc.fill(1, 1, 1)).sum().print().compute()
+(-dc.fill(0, 1, 1)).sum().print().compute()
+(-dc.fill(-3.3, 1, 1)).sum().print().compute()
+
 dc.fill(1, 1, 1).sum().abs().print().compute()
 dc.fill(0, 1, 1).sum().abs().print().compute()
 dc.fill(-3.3, 1, 1).sum().abs().print().compute()
@@ -30,6 +34,7 @@ dc.fill(-3.3, 1, 1).sum().sign().print().compute()
 
 s = dc.fill(0.99, 1, 1)
 
+(-s.sum()).print().compute()
 s.sum().exp().print().compute()
 s.sum().ln().print().compute()
 s.sum().sqrt().print().compute()
