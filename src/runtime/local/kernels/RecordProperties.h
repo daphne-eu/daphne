@@ -14,35 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_LOG_PROPERTIES_H
-#define SRC_RUNTIME_LOCAL_KERNELS_LOG_PROPERTIES_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_RECORD_PROPERTIES_H
+#define SRC_RUNTIME_LOCAL_KERNELS_RECORD_PROPERTIES_H
 
+#include <cstddef>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/SparseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
-#include <iostream>
 #include <string>
 #include <typeinfo>
-#include <unordered_map>
-#include <variant>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
+template<class DT>
 struct RecordProperties {
-    static void apply(DTRes *& res, const DTArg * arg, const std::string &op_id, DCTX(ctx)) = delete;
+    static void apply(const DT * res, const char* &op_id, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void recordProperties(DTRes *& res, const DTArg * arg, const std::string &op_id, DCTX(ctx)) {
-    RecordProperties<DTRes, DTArg>::apply(res, arg, op_id, ctx);
+template<class DT>
+void recordProperties(const DT * res, const char* &op_id, DCTX(ctx)) {
+    RecordProperties<DT>::apply(res, op_id, ctx);
 }
 
 // ****************************************************************************
@@ -54,11 +52,18 @@ void recordProperties(DTRes *& res, const DTArg * arg, const std::string &op_id,
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct RecordProperties<void, DenseMatrix<VT>> {
-    static void apply(void *& res, const DenseMatrix<VT> * arg, const std::string &op_id, DCTX(ctx)) {
-        const size_t numRows = arg->getNumRows();
-        const size_t numCols = arg->getNumCols();
-        const size_t nnz = arg->getNumNonZeros();
+struct RecordProperties<DenseMatrix<VT>> {
+    static void apply(const DenseMatrix<VT> * res, const char* &op_id, DCTX(ctx)) {
+        const size_t numRows = res->getNumRows();
+        const size_t numCols = res->getNumCols();
+        size_t nnz = 0;
+        
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numCols; c++) {
+                ++nnz;
+            }
+        }
+
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
 
         ctx->propertyLogger.logProperty(op_id, "shape", std::make_pair(numRows, numCols));
@@ -69,33 +74,24 @@ struct RecordProperties<void, DenseMatrix<VT>> {
 };
 
 // ----------------------------------------------------------------------------
-// SparseMatrix Record Implementation
+// CSR Record Implementation
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct RecordProperties<void, SparseMatrix<VT>> {
-    static void apply(void *& res, const SparseMatrix<VT> * arg, const std::string &op_id, DCTX(ctx)) {
-        const size_t numRows = arg->getNumRows();
-        const size_t numCols = arg->getNumCols();
-        const size_t nnz = arg->getNumNonZeros();
+struct RecordProperties<CSRMatrix<VT>> {
+    static void apply(const CSRMatrix<VT> * res, const char* &op_id, DCTX(ctx)) {
+        const size_t numRows = res->getNumRows();
+        const size_t numCols = res->getNumCols();
+
+        const size_t nnz = res->getNumNonZeros();
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
 
-        ctx->propertyLogger.logProperty(op_id, "shape", std::make_pair(numRows, numCols));
+        std::pair<size_t, size_t> shapes = {numRows, numCols};
+        ctx->propertyLogger.logProperty(op_id, "shape", shapes);
         ctx->propertyLogger.logProperty(op_id, "cardinality", numRows * numCols);
-        ctx->propertyLogger.logProperty(op_id, "type", "SparseMatrix<" + std::string(typeid(VT).name()) + ">");
+        ctx->propertyLogger.logProperty(op_id, "type", "CSRMatrix<" + std::string(typeid(VT).name()) + ">");
         ctx->propertyLogger.logProperty(op_id, "sparsity", sparsity);
     }
 };
 
-// ----------------------------------------------------------------------------
-// General DataObject Record Implementation
-// ----------------------------------------------------------------------------
-
-template<typename DTArg>
-struct RecordProperties<void, DTArg> {
-    static void apply(void *& res, const DTArg * arg, const std::string &op_id, DCTX(ctx)) {
-        ctx->propertyLogger.logProperty(op_id, "type", typeid(DTArg).name());
-    }
-};
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_LOG_PROPERTIES_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_RECORD_PROPERTIES_H

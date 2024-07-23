@@ -1470,7 +1470,8 @@ def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
     let arguments = (ins
                     UI64 : $userConfigPtr,
                     UI64 : $dispatchMappingPtr,
-                    UI64 : $statisticsPtr);
+                    UI64 : $statisticsPtr,
+                    UI64 : $propertyLoggerPtr);
     let results = (outs DaphneContext : $ctx);
 }
 

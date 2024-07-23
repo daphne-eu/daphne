@@ -1,25 +1,24 @@
-#include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Builders.h"
-#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Attributes.h"
-#include "mlir/IR/DialectImplementation.h"
 #include "mlir/Pass/Pass.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/Transforms/Passes.h"
 #include <sstream>
 #include <ir/daphneir/Passes.h>
 #include <ir/daphneir/Daphne.h>
 
 using namespace mlir;
 
-std::string generateUniqueID() {
+const char* generateUniqueID() {
     static int64_t currentID = 0;
+    static std::vector<std::string> ids;
+
     std::stringstream ss;
     ss << "op_id_" << currentID++;
-    return ss.str();
+    ids.push_back(ss.str());
+
+    return ids.back().c_str();
 }
 
-void captureProperties(Operation *op, OpBuilder &builder) {s
+void captureProperties(Operation *op, OpBuilder &builder) {
     Type resultType = op->getResult(0).getType();
     op->setAttr("daphne.result_type", TypeAttr::get(resultType));
 
@@ -61,7 +60,7 @@ public:
                 return;
 
             if (!op->hasAttr("daphne.id")) {
-                std::string id = generateUniqueID();
+                const char* id = generateUniqueID();
                 op->setAttr("daphne.id", builder.getStringAttr(id));
             }
 

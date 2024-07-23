@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <util/PropertyLogger.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 #include <util/KernelDispatchMapping.h>
@@ -59,7 +60,10 @@ void InsertDaphneContextPass::runOnOperation()
             reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())),
         builder.create<daphne::ConstantOp>(
             loc,
-            reinterpret_cast<uint64_t>(&Statistics::instance())));
+            reinterpret_cast<uint64_t>(&Statistics::instance())),
+        builder.create<daphne::ConstantOp>(
+            loc,
+            reinterpret_cast<uint64_t>(&PropertyLogger::instance())));
 #ifdef USE_CUDA
     if(user_config.use_cuda) {
         builder.create<daphne::CreateCUDAContextOp>(loc);

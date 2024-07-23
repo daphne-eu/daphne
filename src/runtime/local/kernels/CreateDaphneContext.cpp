@@ -18,12 +18,13 @@
 #include "util/KernelDispatchMapping.h"
 
 void createDaphneContext(DaphneContext *&res, uint64_t configPtr,
-                         uint64_t dispatchMappingPtr, uint64_t statisticsPtr) {
+                         uint64_t dispatchMappingPtr, uint64_t statisticsPtr, uint64_t propertyLoggerPtr) {
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
     auto dispatchMapping =
         reinterpret_cast<KernelDispatchMapping *>(dispatchMappingPtr);
     auto statistics = reinterpret_cast<Statistics *>(statisticsPtr);
+    auto propertyLogger = reinterpret_cast<PropertyLogger *>(propertyLoggerPtr);
     if (config->log_ptr != nullptr)
         config->log_ptr->registerLoggers();
-    res = new DaphneContext(*config, *dispatchMapping, *statistics);
+    res = new DaphneContext(*config, *dispatchMapping, *statistics, *propertyLogger);
 }

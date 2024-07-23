@@ -19,9 +19,9 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <util/KernelDispatchMapping.h>
 #include <util/Statistics.h>
+#include <util/PropertyLogger.h>
 
 #include <vector>
-#include <iostream>
 #include <memory>
 
 #include "IContext.h"
@@ -77,8 +77,9 @@ struct DaphneContext {
 
     explicit DaphneContext(DaphneUserConfig &config,
                            KernelDispatchMapping &dispatchMapping,
-                           Statistics &stats)
-        : config(config), dispatchMapping(dispatchMapping), stats(stats) {
+                           Statistics &stats,
+                           PropertyLogger &propertyLogger)
+        : config(config), dispatchMapping(dispatchMapping), stats(stats), propertyLogger(propertyLogger) {
         logger = spdlog::get("runtime");
     }
 

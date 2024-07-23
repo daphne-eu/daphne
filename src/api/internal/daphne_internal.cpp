@@ -525,7 +525,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     }
 
     user_config.statistics = enableStatistics;
-    user_config.record_properties = enablePropertyRecording;
+    user_config.enable_property_recording = enablePropertyRecording;
 
     if(user_config.use_distributed && distributedBackEndSetup==ALLOCATION_TYPE::DIST_MPI)
     {
@@ -704,7 +704,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     if (user_config.statistics)
         Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
 
-    if (user_config.property_logging)
+    if (user_config.enable_property_recording)
         PropertyLogger::instance().savePropertiesAsJson("properties.json");
 
     return StatusCode::SUCCESS;
