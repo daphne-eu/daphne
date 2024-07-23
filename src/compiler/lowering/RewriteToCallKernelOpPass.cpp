@@ -215,6 +215,20 @@ namespace
             // the operands of the given operation, if it has a variadic operand.
             std::vector<Value> kernelArgs;
 
+            if (llvm::isa<daphne::RecordOp>(op))
+            {
+                llvm::outs() << "Argument Types:\n";
+                for (auto argTy : opArgTys) {
+                    argTy.print(llvm::outs());
+                    llvm::outs() << "\n";
+                }
+
+                llvm::outs() << "Result Type:\n";
+                for (auto resTy : opResTys) {
+                    resTy.print(llvm::outs());
+                    llvm::outs() << "\n";
+                }
+            }
             // *****************************************************************************
             // Prepare the kernel look-up and the creation of the CallKernelOp
             // *****************************************************************************

@@ -2062,7 +2062,7 @@
     {
         "kernelTemplate": {
             "header": "RecordProperties.h",
-            "opName": "recordProperties",
+            "opName": "record",
             "returnType": "void",
             "templateParams": [
                 {

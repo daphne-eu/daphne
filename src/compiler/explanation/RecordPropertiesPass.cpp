@@ -12,8 +12,6 @@
 
 using namespace mlir;
 
-
-// Utility to generate a unique ID string
 std::string generateUniqueID() {
     static int64_t currentID = 0;
     std::stringstream ss;
@@ -21,13 +19,10 @@ std::string generateUniqueID() {
     return ss.str();
 }
 
-// Function to capture properties and set them as attributes on the operation
-void captureProperties(Operation *op, OpBuilder &builder) {
-    // Example: Capture type information
+void captureProperties(Operation *op, OpBuilder &builder) {s
     Type resultType = op->getResult(0).getType();
     op->setAttr("daphne.result_type", TypeAttr::get(resultType));
 
-    // Capture shape using the DaphneInferShapeOpInterface
     if (auto inferShapeOp = llvm::dyn_cast<daphne::InferShape>(op)) {
         auto shapes = inferShapeOp.inferShape();
         if (!shapes.empty()) {
@@ -40,7 +35,6 @@ void captureProperties(Operation *op, OpBuilder &builder) {
         }
     }
 
-    // Capture sparsity using the DaphneInferSparsityOpInterface
     if (auto inferSparsityOp = llvm::dyn_cast<daphne::InferSparsity>(op)) {
         auto sparsities = inferSparsityOp.inferSparsity();
         if (!sparsities.empty()) {
@@ -57,42 +51,35 @@ void captureProperties(Operation *op, OpBuilder &builder) {
 // Pass to record properties and assign unique IDs to operations
 class RecordPropertiesPass : public PassWrapper<RecordPropertiesPass, OperationPass<func::FuncOp>> {
 public:
-    StringRef getArgument() const final { return "record-properties"; }
-    StringRef getDescription() const final { return "Records properties of operations."; }
 
     void runOnOperation() override {
         func::FuncOp func = getOperation();
         OpBuilder builder(func.getContext());
 
         func.walk([&](Operation *op) {
-            // Skip the RecordOp itself to avoid recursion
             if (isa<daphne::RecordOp>(op))
                 return;
 
-            // Set unique ID if not already set
             if (!op->hasAttr("daphne.id")) {
                 std::string id = generateUniqueID();
                 op->setAttr("daphne.id", builder.getStringAttr(id));
             }
 
-            // Record properties
             for (Value result : op->getResults()) {
                 builder.setInsertionPointAfter(op);
                 auto recordOp = builder.create<daphne::RecordOp>(op->getLoc(), result);
                 recordOp->setOperand(0, result);
                 recordOp->getResult(0).setType(result.getType());
 
-                // Propagate the ID to RecordOp
                 recordOp->setAttr("daphne.id", op->getAttr("daphne.id"));
 
-                // Capture and propagate additional properties
                 captureProperties(recordOp.getOperation(), builder);
             }
-        });
+        }        
+        );
     }
 };
 
 std::unique_ptr<Pass> daphne::createRecordPropertiesPass() {
-
     return std::make_unique<RecordPropertiesPass>();
 }

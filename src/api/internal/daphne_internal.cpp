@@ -377,7 +377,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         desc("Enables runtime statistics output."));
 
     static opt<bool> enablePropertyRecording(
-        "record-Properties", cat(daphneOptions),
+        "enable_property_recording", cat(daphneOptions),
         desc("records runtime propertties and outputs it in JSON."));
 
     static opt<bool> enableProfiling (
