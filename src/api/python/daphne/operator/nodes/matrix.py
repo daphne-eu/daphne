@@ -215,6 +215,9 @@ class Matrix(OperationNode):
             consumer.update_node_in_input_list(new_node, self)
         self.__dict__ = Matrix(new_node.daphne_context, None, [new_node, value, row_index, column_index], left_brackets=True).__dict__
 
+    def __neg__(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'minus', [self])
+
     def sum(self, axis: int = None) -> 'OperationNode':
         """Calculate sum of matrix.
         :param axis: can be 0 or 1 to do either row or column sums
