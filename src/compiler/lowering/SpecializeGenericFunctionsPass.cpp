@@ -242,8 +242,8 @@ namespace {
          * @param uniqueFuncName The unique function name (the unique function name contains important informations such as input parameters)
          * @return false for not existing and true for existing
          */
-        bool checkExistingSpecializedFunc(std::string uniqueFunName) {
-            return functions.find(uniqueFuncName) != functions.end()
+        bool checkExistingSpecializedFunc(std::string uniqueFuncName) {
+            return functions.find(uniqueFuncName) != functions.end();
         }
 
 
