@@ -262,7 +262,10 @@ namespace CUDA {
                 binary_op_codes[static_cast<int>(opCode)], gridSize, blockSize, gridSize*blockSize, N);
     }
 
-    template struct EwBinaryMat<DenseMatrix<long>, DenseMatrix<long>, DenseMatrix<long>>;
-    template struct EwBinaryMat<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>;
     template struct EwBinaryMat<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>;
+    template struct EwBinaryMat<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>;
+    template struct EwBinaryMat<DenseMatrix<int64_t>, DenseMatrix<int64_t>, DenseMatrix<int64_t>>;
+    template struct EwBinaryMat<DenseMatrix<int32_t>, DenseMatrix<int32_t>, DenseMatrix<int32_t>>;
+    template struct EwBinaryMat<DenseMatrix<uint32_t>, DenseMatrix<uint32_t>, DenseMatrix<uint32_t>>;
+    template struct EwBinaryMat<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, DenseMatrix<uint64_t>>;
 }
