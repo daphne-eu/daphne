@@ -85,4 +85,7 @@ namespace CUDA {
     template struct EwBinaryObjSca<DenseMatrix<double>, DenseMatrix<double>, double>;
     template struct EwBinaryObjSca<DenseMatrix<float>, DenseMatrix<float>, float>;
     template struct EwBinaryObjSca<DenseMatrix<int64_t>, DenseMatrix<int64_t>, int64_t>;
+    template struct EwBinaryObjSca<DenseMatrix<int32_t>, DenseMatrix<int32_t>, int32_t>;
+    template struct EwBinaryObjSca<DenseMatrix<uint32_t>, DenseMatrix<uint32_t>, uint32_t>;
+    template struct EwBinaryObjSca<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, uint64_t>;
 }
