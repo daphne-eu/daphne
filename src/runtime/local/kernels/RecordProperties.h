@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expargs or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -31,7 +31,7 @@
 
 template<class DT>
 struct RecordProperties {
-    static void apply(const DT * res, const char* &op_id, DCTX(ctx)) = delete;
+    static void apply(const DT * arg, int64_t op_id, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,8 +39,8 @@ struct RecordProperties {
 // ****************************************************************************
 
 template<class DT>
-void recordProperties(const DT * res, const char* &op_id, DCTX(ctx)) {
-    RecordProperties<DT>::apply(res, op_id, ctx);
+void recordProperties(const DT * arg, int64_t op_id, DCTX(ctx)) {
+    RecordProperties<DT>::apply(arg, op_id, ctx);
 }
 
 // ****************************************************************************
@@ -53,9 +53,9 @@ void recordProperties(const DT * res, const char* &op_id, DCTX(ctx)) {
 
 template<typename VT>
 struct RecordProperties<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT> * res, const char* &op_id, DCTX(ctx)) {
-        const size_t numRows = res->getNumRows();
-        const size_t numCols = res->getNumCols();
+    static void apply(const DenseMatrix<VT> * arg, int64_t op_id, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
         size_t nnz = 0;
         
         for(size_t r = 0; r < numRows; r++) {
@@ -79,11 +79,11 @@ struct RecordProperties<DenseMatrix<VT>> {
 
 template<typename VT>
 struct RecordProperties<CSRMatrix<VT>> {
-    static void apply(const CSRMatrix<VT> * res, const char* &op_id, DCTX(ctx)) {
-        const size_t numRows = res->getNumRows();
-        const size_t numCols = res->getNumCols();
+    static void apply(const CSRMatrix<VT> * arg, int64_t op_id, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
 
-        const size_t nnz = res->getNumNonZeros();
+        const size_t nnz = arg->getNumNonZeros();
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
 
         std::pair<size_t, size_t> shapes = {numRows, numCols};

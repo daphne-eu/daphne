@@ -11,7 +11,7 @@
 using PropertyValue = std::variant<std::string, size_t, std::pair<size_t,size_t>>;
 
 struct PropertyLogger {
-    std::unordered_map<std::string, std::unordered_map<std::string, PropertyValue>> properties;
+    std::unordered_map<int64_t, std::unordered_map<std::string, PropertyValue>> properties;
     std::mutex mutex;
 
     PropertyLogger(const PropertyLogger&) = delete;
@@ -22,7 +22,7 @@ struct PropertyLogger {
         return instance;
     }
 
-    void logProperty(const std::string& opId, const std::string& key, const PropertyValue& value) {
+    void logProperty(int64_t opId, const std::string& key, const PropertyValue& value) {
         std::lock_guard<std::mutex> lock(mutex);
         properties[opId][key] = value;
     }
@@ -32,7 +32,7 @@ struct PropertyLogger {
         {
             std::lock_guard<std::mutex> lock(mutex);
             for (const auto& opEntry : properties) {
-                const std::string& opId = opEntry.first;
+                const int64_t opId = opEntry.first;
                 const auto& propMap = opEntry.second;
 
                 nlohmann::json propJson;

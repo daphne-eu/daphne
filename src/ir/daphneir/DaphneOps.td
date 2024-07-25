@@ -1598,20 +1598,14 @@ def Daphne_StopProfilingOp : Daphne_Op<"stopProfiling"> {
 // Property Recording
 // ****************************************************************************
 
-def Daphne_RecordOp : Daphne_Op<"record"> {
-    let arguments = (ins AnyType:$input);
-    let results = (outs AnyType:$output);
+def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
+    let arguments = (ins MatrixOrU:$arg, SI64:$op_id);
+    let results = (outs);
 
     let summary = "Records properties of an operation.";
     let description = [{
         This operation records properties of an operation.
     }];
-
-    let builders = [
-        OpBuilder<(ins "Value":$input), [{
-            build($_builder, $_state, input.getType(), input);
-        }]>
-    ];
 }
 
 // ****************************************************************************

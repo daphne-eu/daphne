@@ -196,6 +196,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     // lead to double frees etc.
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
+    pm.addPass(mlir::daphne::createRecordPropertiesPass());
 
     if (userConfig_.use_obj_ref_mgnt)
         pm.addNestedPass<mlir::func::FuncOp>(
@@ -212,7 +213,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addPass(mlir::createConvertSCFToCFPass());
     pm.addNestedPass<mlir::func::FuncOp>(
         mlir::LLVM::createRequestCWrappersPass());
-    pm.addPass(mlir::daphne::createRecordPropertiesPass());
     pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
     pm.addPass(mlir::createReconcileUnrealizedCastsPass());
     if (userConfig_.explain_llvm)

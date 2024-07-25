@@ -2080,7 +2080,7 @@
                     "name": "arg"
                 },
                 {
-                    "type": "const char *",
+                    "type": "int64_t",
                     "name": "op_id"
                 }
             ]
