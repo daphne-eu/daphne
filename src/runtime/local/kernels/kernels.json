@@ -797,6 +797,10 @@
                 {
                     "type": "uint64_t",
                     "name": "statisticsPtr"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "propertyLoggerPtr"
                 }
             ]
         },
@@ -2062,13 +2066,9 @@
     {
         "kernelTemplate": {
             "header": "RecordProperties.h",
-            "opName": "record",
+            "opName": "recordProperties",
             "returnType": "void",
             "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
                 {
                     "name": "DTArg",
                     "isDataType": true
@@ -2076,20 +2076,12 @@
             ],
             "runtimeParams": [
                 {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
                     "type": "const DTArg *",
                     "name": "arg"
                 },
                 {
-                    "type": "const std::string &",
+                    "type": "const char *",
                     "name": "op_id"
-                },
-                {
-                    "type": "DaphneContext *",
-                    "name": "ctx"
                 }
             ]
         },

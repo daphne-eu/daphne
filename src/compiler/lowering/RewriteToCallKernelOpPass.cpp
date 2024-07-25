@@ -214,7 +214,7 @@ namespace
             // The operands to use for the CallKernelOp to be created. These may differ from
             // the operands of the given operation, if it has a variadic operand.
             std::vector<Value> kernelArgs;
-
+            
             // *****************************************************************************
             // Prepare the kernel look-up and the creation of the CallKernelOp
             // *****************************************************************************
