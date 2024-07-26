@@ -95,6 +95,18 @@ class DataTypeFrm : public TraitBase<ConcreteOp, DataTypeFrm> {};
 // ----------------------------------------------------------------------------
 
 /**
+ * @brief The value type (of the single result) is suitable for a comparison
+ * result.
+ *
+ * Like ValueTypeFromArgs, but if any argument is of string value type, then
+ * the result value type is si64.
+ * 
+ * Assumes that the operation has always exactly one result.
+ */
+template<class ConcreteOp>
+class ValueTypeCmp : public TraitBase<ConcreteOp, ValueTypeCmp> {};
+
+/**
  * @brief The value type (of the single result) is always the same as the value
  * type of the first argument.
  * 
