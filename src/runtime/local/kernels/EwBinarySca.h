@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYSCA_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 
 #include <algorithm>
@@ -57,8 +58,18 @@ using EwBinaryScaFuncPtr = VTRes (*)(VTLhs, VTRhs, DCTX());
  */
 template<typename VTRes, typename VTLhs, typename VTRhs>
 EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCode) {
+    // The template instantiation of EwBinarySca must be guarded by the
+    // if-constexpr on supportsBinaryOp, such that we don't try to compile
+    // C++ code that is not applicable to the value types VTLhs and VTRgs (e.g., an
+    // arithmetic operation on strings).
+
+    EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> res = nullptr;
     switch (opCode) {
-#define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
+        #define MAKE_CASE(opCode) \
+            case opCode: \
+                if constexpr(supportsBinaryOp<opCode, VTRes, VTLhs, VTRhs>) \
+                    res = &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply; \
+                break;
         // Arithmetic.
         MAKE_CASE(BinaryOpCode::ADD)
         MAKE_CASE(BinaryOpCode::SUB)
@@ -80,10 +91,21 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         // Logical.
         MAKE_CASE(BinaryOpCode::AND)
         MAKE_CASE(BinaryOpCode::OR)
-#undef MAKE_CASE
+        #undef MAKE_CASE
         default:
-            throw std::runtime_error("unknown BinaryOpCode");
+            throw std::runtime_error(
+                "unknown BinaryOpCode: " + std::to_string(static_cast<int>(opCode))
+            );
     }
+    if(!res)
+        throw std::runtime_error(
+            "the binary operation " + std::string(binary_op_codes[static_cast<int>(opCode)]) +
+            " is not supported on the value types " +
+            ValueTypeUtils::cppNameFor<VTRes> + " (res), " +
+            ValueTypeUtils::cppNameFor<VTLhs> + " (lhs), and " +
+            ValueTypeUtils::cppNameFor<VTRhs> + " (rhs)"
+        );
+    return res;
 }
 
 // ****************************************************************************
