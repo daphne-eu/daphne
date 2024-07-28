@@ -566,7 +566,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
     if(func == "concat") {
         checkNumArgsExact(loc, func, numArgs, 2);
-        return static_cast<mlir::Value>(builder.create<ConcatOp>(
+        return static_cast<mlir::Value>(builder.create<EwConcatOp>(
                 loc, StringType::get(builder.getContext()), args[0], args[1]
         ));
     }

@@ -91,6 +91,8 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         // Logical.
         MAKE_CASE(BinaryOpCode::AND)
         MAKE_CASE(BinaryOpCode::OR)
+        // Strings.
+        MAKE_CASE(BinaryOpCode::CONCAT)
         #undef MAKE_CASE
         default:
             throw std::runtime_error(
@@ -162,12 +164,35 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::LT , lhs <  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::LE , lhs <= rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GT , lhs >  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GE , lhs >= rhs)
+template<typename TRes>
+struct EwBinarySca<BinaryOpCode::EQ, TRes, const char *, const char *> {
+    inline static TRes apply(const char * lhs, const char * rhs, DCTX(ctx)) {
+        return std::string_view(lhs) == std::string_view(rhs);
+    }
+};
 // Min/max.
 MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs))
 MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs))
 // Logical.
 MAKE_EW_BINARY_SCA(BinaryOpCode::AND, lhs && rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::OR , lhs || rhs)
+// Strings.
+template<>
+struct EwBinarySca<BinaryOpCode::CONCAT, const char *, const char *, const char *> {
+    inline static const char * apply(const char * lhs, const char * rhs, DCTX(ctx)) {
+        const auto lenLhs = std::string_view(lhs).size();
+        const auto lenRhs = std::string_view(rhs).size();
+        const auto lenRes = lenLhs + lenRhs;
+        
+        char* res = new char[lenRes + 1];
+        
+        std::memcpy(res         , lhs, lenLhs);
+        std::memcpy(res + lenLhs, rhs, lenRhs);
+        res[lenRes] = '\0';
+
+        return res;
+    }
+};
 
 #undef MAKE_EW_BINARY_SCA
 
