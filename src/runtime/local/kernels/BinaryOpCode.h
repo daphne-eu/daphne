@@ -44,6 +44,8 @@ enum class BinaryOpCode {
     OR,
     // Bitwise.
     BITWISE_AND,
+    // Strings.
+    CONCAT
 };
 
 /**
@@ -63,7 +65,9 @@ static std::string_view binary_op_codes[] = {
     // Logical.
     "AND", "OR",
     // Bitwise.
-    "BITWISE_AND"
+    "BITWISE_AND",
+    // Strings.
+    "CONCAT"
 };
 
 // ****************************************************************************
@@ -147,6 +151,8 @@ SUPPORT_NUMERIC_INT(int8_t)
 SUPPORT_NUMERIC_INT(uint64_t)
 SUPPORT_NUMERIC_INT(uint32_t)
 SUPPORT_NUMERIC_INT(uint8_t)
+template<> constexpr bool supportsBinaryOp<BinaryOpCode::CONCAT, const char *, const char *, const char *> = true;
+template<> constexpr bool supportsBinaryOp<BinaryOpCode::EQ, int64_t, const char *, const char *> = true;
 
 // Undefine helper macros.
 #undef SUPPORT
