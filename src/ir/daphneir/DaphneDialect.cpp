@@ -611,6 +611,26 @@ mlir::Attribute constFoldBinaryOp(mlir::Location loc, mlir::Type resultType, llv
     }
     return {};
 }
+template<class AttrElementT,
+    class ElementValueT = typename AttrElementT::ValueType,
+    class CalculationT = std::function<ElementValueT(const ElementValueT &)>>
+mlir::Attribute constFoldUnaryOp(mlir::Location loc, mlir::Type resultType, llvm::ArrayRef<mlir::Attribute> operands,
+                                 const CalculationT &calculate) {
+    if (operands.size() != 1)
+        throw ErrorHandler::compilerError(loc,
+                    "CanonicalizerPass (constFoldUnaryOp)",
+                    "unary op takes one operand but " + std::to_string(operands.size()) + " were given");
+
+    if (!operands[0])
+        return {};
+
+    if (llvm::isa<AttrElementT>(operands[0])) {
+        auto operand = operands[0].cast<AttrElementT>();
+
+        return AttrElementT::get(resultType, calculate(operand.getValue()));
+    }
+    return {};
+}
 
 // ****************************************************************************
 // Fold implementations
@@ -742,6 +762,19 @@ mlir::OpFoldResult mlir::daphne::EwDivOp::fold(FoldAdaptor adaptor) {
         if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, uintOp))
             return res;
     }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwMinusOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
+    auto intOp = [](const llvm::APInt &a) { return -a; };
+    auto floatOp = [](const llvm::APFloat &a) { return -a; };
+
+    if (auto res = constFoldUnaryOp<IntegerAttr>(getLoc(), getType(), operands, intOp))
+        return res;
+    if (auto res = constFoldUnaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
+        return res;
+
     return {};
 }
 
@@ -1524,4 +1557,22 @@ mlir::LogicalResult mlir::daphne::RenameOp::canonicalize(
     // this operation during DaphneDSL parsing.
     rewriter.replaceOp(op, op.getArg());
     return mlir::success();
+}
+
+
+/**
+ * @brief Replaces `--a` by `a` (`a` scalar).
+ *
+ * @param op
+ * @param rewriter
+ * @return
+ */
+mlir::LogicalResult mlir::daphne::EwMinusOp::canonicalize(
+        mlir::daphne::EwMinusOp op, PatternRewriter &rewriter
+) {
+    if (auto innerOp = op.getOperand().getDefiningOp<mlir::daphne::EwMinusOp>()) {
+        rewriter.replaceOp(op, innerOp.getOperand());
+        return mlir::success();
+    }
+    return mlir::failure();
 }
