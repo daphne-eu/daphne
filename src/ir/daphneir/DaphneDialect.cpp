@@ -914,56 +914,17 @@ mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-// TODO This is duplicated from EwConcatOp. Actually, ConcatOp itself is only
-// a temporary workaround, so it should be removed altogether later.
-mlir::OpFoldResult mlir::daphne::ConcatOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
-
-    if (operands.size() != 2)
-        throw ErrorHandler::compilerError(
-                this->getLoc(), "CanonicalizerPass (mlir::daphne::ConcatOp::fold)",
-                "binary op takes two operands but " + std::to_string(operands.size()) + " were given");
-
-    if(!operands[0] || !operands[1])
-        return {};
-
-    if(llvm::isa<StringAttr>(operands[0]) && isa<StringAttr>(operands[1])) {
-        auto lhs = operands[0].cast<StringAttr>();
-        auto rhs = operands[1].cast<StringAttr>();
-
-        auto concated = lhs.getValue().str() + rhs.getValue().str();
-        return StringAttr::get(concated, getType());
-    }
-    return {};
-}
-
-mlir::OpFoldResult mlir::daphne::StringEqOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
-
-    if (operands.size() != 2)
-        throw ErrorHandler::compilerError(
-                this->getLoc(), "CanonicalizerPass (mlir::daphne::StringEqOp::fold)",
-                "binary op takes two operands but " + std::to_string(operands.size()) + " were given");
-
-    if (!operands[0] || !operands[1] || !llvm::isa<StringAttr>(operands[0]) ||
-        !isa<StringAttr>(operands[1])) {
-        return {};
-    }
-
-    auto lhs = operands[0].cast<StringAttr>();
-    auto rhs = operands[1].cast<StringAttr>();
-
-    return mlir::BoolAttr::get(getContext(), lhs.getValue() == rhs.getValue());
-}
-
 mlir::OpFoldResult mlir::daphne::EwEqOp::fold(FoldAdaptor adaptor) {
     ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
+    auto strOp = [](const llvm::StringRef &a, const llvm::StringRef &b) { return a == b; };
     // TODO: fix bool return
     if(auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
         return res;
     if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, intOp))
+        return res;
+    if(auto res = constFoldBinaryOp<StringAttr, IntegerAttr>(getLoc(), IntegerType::get(getContext(), 64, IntegerType::SignednessSemantics::Signed), operands, strOp))
         return res;
     return {};
 }
@@ -1211,30 +1172,6 @@ struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::Dist
     }
 };
 
-// The EwBinarySca kernel does not handle string types in any way. In order to
-// support simple string equivalence checks this canonicalizer rewrites the
-// EwEqOp to the StringEqOp if one of the operands is of daphne::StringType.
-mlir::LogicalResult mlir::daphne::EwEqOp::canonicalize(
-    mlir::daphne::EwEqOp op, PatternRewriter &rewriter) {
-    mlir::Value lhs = op.getLhs();
-    mlir::Value rhs = op.getRhs();
-
-    const bool lhsIsStr = llvm::isa<mlir::daphne::StringType>(lhs.getType());
-    const bool rhsIsStr = llvm::isa<mlir::daphne::StringType>(rhs.getType());
-
-    if (!lhsIsStr && !rhsIsStr) return mlir::failure();
-
-    mlir::Type strTy = mlir::daphne::StringType::get(rewriter.getContext());
-    if (!lhsIsStr)
-        lhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, lhs);
-    if (!rhsIsStr)
-        rhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, rhs);
-
-    rewriter.replaceOpWithNewOp<mlir::daphne::StringEqOp>(
-        op, rewriter.getI1Type(), lhs, rhs);
-    return mlir::success();
-}
-
 /**
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
  * and (2) `a + X` by `X + a` (`a` scalar, `X` matrix/frame).
@@ -1264,7 +1201,7 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(
             lhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, lhs);
         if(!rhsIsStr)
             rhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, rhs);
-        rewriter.replaceOpWithNewOp<mlir::daphne::ConcatOp>(op, strTy, lhs, rhs);
+        rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, strTy, lhs, rhs);
         return mlir::success();
     }
     else {

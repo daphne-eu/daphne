@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYSCA_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 
 #include <algorithm>
@@ -57,8 +58,18 @@ using EwBinaryScaFuncPtr = VTRes (*)(VTLhs, VTRhs, DCTX());
  */
 template<typename VTRes, typename VTLhs, typename VTRhs>
 EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCode) {
+    // The template instantiation of EwBinarySca must be guarded by the
+    // if-constexpr on supportsBinaryOp, such that we don't try to compile
+    // C++ code that is not applicable to the value types VTLhs and VTRgs (e.g., an
+    // arithmetic operation on strings).
+
+    EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> res = nullptr;
     switch (opCode) {
-#define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
+        #define MAKE_CASE(opCode) \
+            case opCode: \
+                if constexpr(supportsBinaryOp<opCode, VTRes, VTLhs, VTRhs>) \
+                    res = &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply; \
+                break;
         // Arithmetic.
         MAKE_CASE(BinaryOpCode::ADD)
         MAKE_CASE(BinaryOpCode::SUB)
@@ -80,10 +91,23 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         // Logical.
         MAKE_CASE(BinaryOpCode::AND)
         MAKE_CASE(BinaryOpCode::OR)
-#undef MAKE_CASE
+        // Strings.
+        MAKE_CASE(BinaryOpCode::CONCAT)
+        #undef MAKE_CASE
         default:
-            throw std::runtime_error("unknown BinaryOpCode");
+            throw std::runtime_error(
+                "unknown BinaryOpCode: " + std::to_string(static_cast<int>(opCode))
+            );
     }
+    if(!res)
+        throw std::runtime_error(
+            "the binary operation " + std::string(binary_op_codes[static_cast<int>(opCode)]) +
+            " is not supported on the value types " +
+            ValueTypeUtils::cppNameFor<VTRes> + " (res), " +
+            ValueTypeUtils::cppNameFor<VTLhs> + " (lhs), and " +
+            ValueTypeUtils::cppNameFor<VTRhs> + " (rhs)"
+        );
+    return res;
 }
 
 // ****************************************************************************
@@ -140,12 +164,35 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::LT , lhs <  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::LE , lhs <= rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GT , lhs >  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GE , lhs >= rhs)
+template<typename TRes>
+struct EwBinarySca<BinaryOpCode::EQ, TRes, const char *, const char *> {
+    inline static TRes apply(const char * lhs, const char * rhs, DCTX(ctx)) {
+        return std::string_view(lhs) == std::string_view(rhs);
+    }
+};
 // Min/max.
 MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs))
 MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs))
 // Logical.
 MAKE_EW_BINARY_SCA(BinaryOpCode::AND, lhs && rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::OR , lhs || rhs)
+// Strings.
+template<>
+struct EwBinarySca<BinaryOpCode::CONCAT, const char *, const char *, const char *> {
+    inline static const char * apply(const char * lhs, const char * rhs, DCTX(ctx)) {
+        const auto lenLhs = std::string_view(lhs).size();
+        const auto lenRhs = std::string_view(rhs).size();
+        const auto lenRes = lenLhs + lenRhs;
+        
+        char* res = new char[lenRes + 1];
+        
+        std::memcpy(res         , lhs, lenLhs);
+        std::memcpy(res + lenLhs, rhs, lenRhs);
+        res[lenRes] = '\0';
+
+        return res;
+    }
+};
 
 #undef MAKE_EW_BINARY_SCA
 
