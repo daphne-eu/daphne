@@ -64,6 +64,7 @@ set(TEST_SOURCES
         codegen/MatMulAccuracyTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
+        api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
 
         parser/config/ConfigParserTest.cpp
 
