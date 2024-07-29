@@ -21,12 +21,15 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <stdexcept>
 
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <unordered_map>
+#include <string>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -44,6 +47,16 @@ struct OneHot {
 template<class DTRes, class DTArg>
 void oneHot(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
     OneHot<DTRes, DTArg>::apply(res, arg, info, ctx);
+}
+
+template<class DTRes>
+void oneHot(DTRes *& res, const DenseMatrix<std::string> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+    OneHot<DTRes, DenseMatrix<std::string>>::apply(res, arg, info, ctx);
+}
+
+template<class DTRes>
+void oneHot(DTRes *& res, const DenseMatrix<FixedStr16> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+    OneHot<DTRes, DenseMatrix<FixedStr16>>::apply(res, arg, info, ctx);
 }
 
 // ****************************************************************************
@@ -119,6 +132,66 @@ struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
             valuesArg += rowSkipArg;
             valuesRes += rowSkipRes;
         }
+    }
+};
+
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- DenseMatrix<string>
+// ----------------------------------------------------------------------------
+template<typename VT>
+struct OneHot<DenseMatrix<VT>, DenseMatrix<std::string>> {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<std::string> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+        auto recode_result = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsArg, false);
+        
+        VT * valuesRes = recode_result->getValues();
+        const std::string * valuesArg = arg->getValues();
+
+        // Recode arg with string elements to a dense matrix based on indices without ordering
+        for(size_t cArg = 0; cArg < numColsArg; cArg++){
+            std::unordered_map<std::string, size_t> firstIndexMap;
+            for(size_t r = 0; r < numRows; r++){
+                size_t value_index = (numColsArg * r) + cArg;
+                if (firstIndexMap.find(valuesArg[value_index]) == firstIndexMap.end()){
+                    firstIndexMap[valuesArg[value_index]] = r;
+                }
+                valuesRes[value_index] = VT(firstIndexMap[valuesArg[value_index]]);
+            }
+        }
+
+        //call oneHot with recoded matrix as arg
+        oneHot(res, recode_result, info, ctx);
+
+    }
+};
+
+template<typename VT>
+struct OneHot<DenseMatrix<VT>, DenseMatrix<FixedStr16>> {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<FixedStr16> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+        auto recode_result = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsArg, false);
+        
+        VT * valuesRes = recode_result->getValues();
+        const FixedStr16 * valuesArg = arg->getValues();
+
+        // Recode arg with string elements to a dense matrix based on indices without ordering
+        for(size_t cArg = 0; cArg < numColsArg; cArg++){
+            std::unordered_map<FixedStr16, size_t> firstIndexMap;
+            for(size_t r = 0; r < numRows; r++){
+                size_t value_index = (numColsArg * r) + cArg;
+                if (firstIndexMap.find(valuesArg[value_index]) == firstIndexMap.end()){
+                    firstIndexMap[valuesArg[value_index]] = r;
+                }
+                valuesRes[value_index] = VT(firstIndexMap[valuesArg[value_index]]);
+            }
+        }
+
+        //call oneHot with recoded matrix as arg
+        oneHot(res, recode_result, info, ctx);
+
     }
 };
 
