@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -52,9 +53,9 @@ struct Fill<DenseMatrix<VT>, VT> {
     static void apply(DenseMatrix<VT> *& res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
 
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == ValueTypeUtils::default_value<VT>);
 
-        if(arg != 0) {
+        if(arg != ValueTypeUtils::default_value<VT>) {
             VT *valuesRes = res->getValues();
             for(auto i = 0ul; i < res->getNumItems(); ++i)
                 valuesRes[i] = arg;
