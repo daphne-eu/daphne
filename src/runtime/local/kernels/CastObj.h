@@ -22,6 +22,7 @@
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
+#include <runtime/local/kernels/CastSca.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -177,12 +178,12 @@ public:
             // a single dense array of values, we can simply 
             // perform cast in one loop over that array.
             for(size_t idx = 0; idx < numCols*numRows; idx++)
-                resVals[idx] = static_cast<VTRes>(argVals[idx]);
+               resVals[idx] = castSca<VTRes, VTArg>(argVals[idx], nullptr);
         else
             // res and arg might be views into a larger DenseMatrix.
             for(size_t r = 0; r < numRows; r++) {
                 for(size_t c = 0; c < numCols; c++)
-                    resVals[c] = static_cast<VTRes>(argVals[c]);
+                    resVals[c] = castSca<VTRes, VTArg>(argVals[c], nullptr);
                 resVals += res->getRowSkip();
                 argVals += arg->getRowSkip();
             }
