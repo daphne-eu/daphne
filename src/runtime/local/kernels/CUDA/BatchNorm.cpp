@@ -50,6 +50,7 @@ namespace CUDA::NN::BatchNorm {
         CHECK_CUDNN(cudnnDeriveBNTensorDescriptor(ctx->bn_tensor_desc, ctx->src_tensor_desc, ctx->bn_mode));
 
         if(train) {
+            //ToDo: resultSaveMean, resultSaveInvVariance
             CHECK_CUDNN(cudnnBatchNormalizationForwardTraining(ctx->getCUDNNHandle(), ctx->bn_mode, &blend_alpha,
                                                                &blend_beta, ctx->src_tensor_desc, d_input, ctx->dst_tensor_desc, d_res, ctx->bn_tensor_desc,
                                                                d_gamma, d_beta, mu, d_ema_mean, d_ema_var, eps, nullptr,
