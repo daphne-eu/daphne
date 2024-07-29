@@ -72,3 +72,40 @@ inline void convertCstr(const char * x, uint8_t *v) { *v = atoi(x); }
 inline void convertCstr(const char * x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char * x, uint64_t *v) { *v = atoi(x); }
 
+
+inline size_t setCString(const char * str, std::string *res,const char delim){
+    size_t pos = 0;
+    bool is_multiLine = (str[0] == '"') ? true : false;
+    if(is_multiLine) pos++;
+
+    int is_not_end = 1;
+    while (is_not_end && *(str + pos + 1))
+    {
+      pos++;
+      /* 
+      ** if str contains line breaks or a field separator, then
+      ** it must be enclosed in double quotes. So we skip all
+      ** characters till we get another double quotes.  
+      ** If a double quote is inside the str, must be escaped 
+      ** using another double quote.
+      */
+      is_not_end -= (is_multiLine && *(str + pos) == '"' && *(str + pos + 1) != '"');
+      pos += (is_multiLine && *(str + pos) == '"' && *(str + pos + 1) == '"');
+      
+      // str do not contain line breaks or a field separator so,
+      // the end of the str is a delim.
+      is_not_end -= (!is_multiLine && *(str + pos) == delim);
+    }
+
+    // if str is the last column, then it do not end with a delim
+    if(is_not_end) pos--;
+
+    if(is_multiLine)
+      res->append(str + 1, pos - 1);
+    else
+      res->append(str, pos);
+    
+    if(is_multiLine) pos++;
+    
+    return pos;
+}
