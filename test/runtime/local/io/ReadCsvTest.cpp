@@ -267,3 +267,36 @@ TEST_CASE("ReadCsv, varying columns", TAG_IO) {
   DataObjectFactory::destroy(m);
 
 }
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_TYPES)){
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 4;
+  size_t numCols = 3;
+
+  char filename[] = "./test/runtime/local/io/ReadCsvSTR.csv";
+  char delim = ',';
+
+  readCsv(m, filename, numRows, numCols, delim);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(0, 0) == "John, Doe");
+  CHECK(m->get(1, 0) == "Jane, Smith");
+  CHECK(m->get(2, 0) == "Alice, John");
+  CHECK(m->get(3, 0) == "Bob, Brown");
+
+  CHECK(m->get(0, 1) == "28");
+  CHECK(m->get(1, 1) == "34");
+  CHECK(m->get(2, 1) == "29");
+  CHECK(m->get(3, 1) == "45");
+
+  CHECK(m->get(0, 2) == "Software Dev");
+  CHECK(m->get(1, 2) == "Graphic Design");
+  CHECK(m->get(2, 2) == "Data Science");
+  CHECK(m->get(3, 2) == "Managing");
+
+  DataObjectFactory::destroy(m);
+}
