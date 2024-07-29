@@ -52,15 +52,19 @@ namespace CUDA {
     }
 
     template<class VT, class OP>
-    __global__ void ewBinMatCVec(VT *res, const VT *lhs, const VT *rhs, size_t dim, size_t N, OP op) {
+    __global__ void ewBinMatCVec(VT *res, const VT *lhs, const VT *rhs, int dim_, size_t N, OP op) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto ltid = tid;
 //	while(ltid < N) {
         if(ltid < N) {
-//		if(ltid == 9)
-//			printf("C ltid=%d ltidim=%d\n", ltid, ltid/dim);
-            res[ltid] = op(lhs[ltid], rhs[ltid / dim]);
+            printf("ltid=%d, dim_=%d\n", ltid, dim_);
+//            auto r_idx = static_cast<float>(ltid) / static_cast<float>(dim_);
+auto r_idx = 0;
+            if(ltid < 5)
+                printf("C ltid=%d dim=%d r_idx=%f lhs=%f rhs=%f\n", ltid, dim_, r_idx, lhs[ltid], rhs[static_cast<size_t>(r_idx)]);
+            res[ltid] = op(lhs[ltid], rhs[static_cast<size_t>(r_idx)]);
 //		ltid += gridDim.x;
+
         }
     }
 

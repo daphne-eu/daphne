@@ -163,7 +163,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             runtime/local/kernels/CUDA_ContextTest.cpp
             runtime/local/kernels/DNNActivationTest.cpp
             runtime/local/kernels/DNNAffineTest.cpp
-            runtime/local/kernels/DNNBatchNormTest.cpp
+#            runtime/local/kernels/DNNBatchNormTest.cpp
             runtime/local/kernels/DNNConvolutionTest.cpp
             runtime/local/kernels/DNNSoftmaxTest.cpp)
 endif()

@@ -22,10 +22,11 @@
 #include "runtime/local/datastructures/DenseMatrix.h"
 #include "HostUtils.h"
 
-namespace CUDA::BatchNorm {
+namespace CUDA::NN::BatchNorm {
     template<typename DTRes, typename DTArg>
     struct Forward {
-        static void apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta, const DTArg *ema_mean,
-                const DTArg *ema_var, typename DTArg::VT eps, DCTX(dctx));
+        static void apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta, const size_t num_channels,
+                const size_t img_h, const size_t img_w, const bool train, DTArg *ema_mean,  DTArg *ema_var,
+                double mu, double eps, DCTX(dctx));
     };
 }

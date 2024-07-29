@@ -29,13 +29,7 @@
 
 import "../util.daph" as "util";
 
-#forward = function(matrix[double] X, matrix[double] gamma, matrix[double] beta,
-#                   int C, int Hin, int Win, string mode,
-#                   matrix[double] ema_mean, matrix[double] ema_var,
-#                   double mu, double eps)
-#    return (matrix[double] out, matrix[double] ema_mean_upd, matrix[double] ema_var_upd,
-#            matrix[double] cache_mean, matrix[double] cache_inv_var) {
-def forward(X:matrix, gamma:matrix, beta:matrix, C, Hin, Win, mode, ema_mean:matrix, ema_var:matrix, mu, eps)
+def forward(X:matrix, gamma:matrix, beta:matrix, C, Hin, Win, train, ema_mean:matrix, ema_var:matrix, mu, eps)
         -> matrix, matrix, matrix, matrix, matrix {
   /*
    * Computes the forward pass for a 2D (spatial) batch normalization
@@ -65,7 +59,7 @@ def forward(X:matrix, gamma:matrix, beta:matrix, C, Hin, Win, mode, ema_mean:mat
    *  - C: Number of input channels (dimensionality of input depth).
    *  - Hin: Input height.
    *  - Win: Input width.
-   *  - mode: 'train' or 'test' to indicate if the model is currently
+   *  - train: indicate if the model is currently
    *      being trained or tested.  During training, the current batch
    *      mean and variance will be used to normalize the inputs, while
    *      during testing, the exponential average of the mean and
@@ -97,7 +91,7 @@ def forward(X:matrix, gamma:matrix, beta:matrix, C, Hin, Win, mode, ema_mean:mat
   ema_mean_upd = ema_mean;
   ema_var_upd = ema_var;
 
-  if (mode == 0) {
+  if (train == true) {
     # Compute channel-wise mean and variance
     # Since we don't have tensors, we will compute the means and variances in a piece-wise fashion.
     #  - mean of total group is mean of subgroup means
