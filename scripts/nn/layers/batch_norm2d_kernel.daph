@@ -89,11 +89,6 @@ def forward(X:matrix, gamma:matrix, beta:matrix, C, Hin, Win, train, ema_mean:ma
   return out, ema_mean_upd, ema_var_upd, cache_mean, cache_inv_var;
 }
 
-#backward = function(matrix[double] dout,
-#                    matrix[double] cache_mean, matrix[double] cache_inv_var,
-#                    matrix[double] X, matrix[double] gamma,
-#                    int C, int Hin, int Win, double eps)
-#      return (matrix[double] dX, matrix[double] dgamma, matrix[double] dbeta) {
 def backward(dout:matrix, cache_mean:matrix, cache_inv_var:matrix, X:matrix, gamma:matrix, C, Hin, Win, eps) -> matrix, matrix, matrix {
   /*
    * Computes the backward pass for a 2D (spatial) batch normalization
@@ -129,9 +124,6 @@ def backward(dout:matrix, cache_mean:matrix, cache_inv_var:matrix, X:matrix, gam
     return dX, dgamma, dbeta;
 }
 
-#init = function(int C)
-#    return (matrix[double] gamma, matrix[double] beta,
-#            matrix[double] ema_mean, matrix[double] ema_var) {
 def init(C) -> matrix, matrix, matrix, matrix {
   /*
    * Initialize the parameters of this layer.

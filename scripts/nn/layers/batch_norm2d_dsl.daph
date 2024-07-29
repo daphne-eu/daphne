@@ -96,28 +96,10 @@ def forward(X:matrix, gamma:matrix, beta:matrix, C, Hin, Win, train, ema_mean:ma
     # Since we don't have tensors, we will compute the means and variances in a piece-wise fashion.
     #  - mean of total group is mean of subgroup means
     #  - variance is the mean of the subgroup variances + the variance of the subgroup means
-    tmp1 = mean(X,1);
-    print("tmp1:",0);print(tmp1);
-    #print("tmp1:",0);print(tmp1);
-    #subgrp_means = fill(tmp1, C, Hin*Win);
-    #subgrp_means = fill(0.0, C, Hin*Win);
-    #subgrp_means = reshape(tmp1,C,Hin*Win);
     subgrp_means = reshape(mean(X,1), C, Hin*Win);
-    tmp2 = var(X,1) * ((N - 1)/N);
-    print("tmp2:",0);print(tmp2);
-    print("subgrp_means:",0);print(subgrp_means);
-    print("sum(subgrp_means):",0);print(sum(subgrp_means));
-
-    #subgrp_vars = as.matrix<f64>(fill(tmp2, C, Hin*Win));  # uncorrected variances
-    #subgrp_vars =  fill(0.0, C, Hin*Win);
     subgrp_vars = reshape(var(X,1) * ((N - 1)/N), C, Hin*Win);
     mean_ = mean(subgrp_means,0);  # shape (C, 1)
-    tmp3 = (((Hin*Win) - 1.0)/(Hin*Win));
-    print("tmp3:",0);print(tmp3);
-    tmpA2 = var(subgrp_means,0);
-    print("rowVars(subgrp_means): ",0);print(tmpA2);
-    var_ = mean(subgrp_vars,0) + tmpA2;# * tmp3;  # shape (C, 1)
-    print("var_ mode 0:",0);print(var_);
+    var_ = mean(subgrp_vars,0) + var(subgrp_means,0);  # * (((Hin*Win) - 1.0)/(Hin*Win)); #This is different from the SysDS implementation  # shape (C, 1)
 
     # Update moving averages
     ema_mean_upd = mu*ema_mean + (1 - mu)*mean_;
@@ -133,38 +115,24 @@ print("var_:",0);print(var_);
   # Save variable for backward pass
   cache_mean = mean_;
   cache_inv_var = 1/sqrt(var_+eps);
-print("cache_inv_var:",0);print(cache_inv_var);
   # Normalize, shift, and scale
   # norm = (X-mean)*(var_+eps)^(-1/2)
   #      = (X-mean) / sqrt(var_+eps)
   #centered = bias_add(X, -mean_);  # shape (N, C*Hin*Win)
   centered = X - mean_;
-  print("centered:",0);
-  print(centered);
   #norm = bias_multiply(centered, cache_inv_var);  # shape (N, C*Hin*Win)
   norm = centered * cache_inv_var;
-  print("norm:",0);
-  print(norm);
   gamma_vec = fill(1.0, N, C*Hin*Win)* gamma;
   beta_vec = fill(1.0, N, C*Hin*Win)* beta;
 
   # out = norm*gamma + beta
   #scaled = bias_multiply(norm, gamma);  # shape (N, C*Hin*Win)
   scaled = norm * gamma_vec;
-  print("scaled:",0);
-  print(scaled);
   #out = bias_add(scaled, beta);  # shape (N, C*Hin*Win)
   out = scaled + beta_vec;
-  print("out:",0);
-  print(out);
   return out, ema_mean_upd, ema_var_upd, cache_mean, cache_inv_var;
 }
 
-#backward = function(matrix[double] dout,
-#                    matrix[double] cache_mean, matrix[double] cache_inv_var,
-#                    matrix[double] X, matrix[double] gamma,
-#                    int C, int Hin, int Win, double eps)
-#      return (matrix[double] dX, matrix[double] dgamma, matrix[double] dbeta) {
 def backward(dout:matrix, cache_mean:matrix, cache_inv_var:matrix, X:matrix, gamma:matrix, C, Hin, Win, eps) -> matrix, matrix, matrix {
   /*
    * Computes the backward pass for a 2D (spatial) batch normalization
@@ -200,9 +168,6 @@ def backward(dout:matrix, cache_mean:matrix, cache_inv_var:matrix, X:matrix, gam
     return dX, dgamma, dbeta;
 }
 
-#init = function(int C)
-#    return (matrix[double] gamma, matrix[double] beta,
-#            matrix[double] ema_mean, matrix[double] ema_var) {
 def init(C) -> matrix, matrix, matrix, matrix {
   /*
    * Initialize the parameters of this layer.
