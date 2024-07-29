@@ -200,3 +200,116 @@ TEST_CASE("DenseMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
         DataObjectFactory::destroy(mOrig);
     }
 }
+
+TEMPLATE_TEST_CASE("DenseMatrix_FixedStr", TAG_DATASTRUCTURES, ALL_STRING_VALUE_TYPES) {
+
+    using ValueType = TestType;
+
+    using expectedStrings = const std::vector<ValueType>;
+
+    // We do not use operator == to compare to a matrix created by genGivenVals()
+    // here, since this would rely on the functionality we want to test.
+    auto compareMatToArr = [](const DenseMatrix<ValueType>* mat, const expectedStrings& exp){
+        for(size_t r = 0; r < mat->getNumRows(); r++)
+            for(size_t c = 0; c < mat->getNumCols(); c++)
+                if((mat->get(r,c) != exp[r*mat->getNumCols() + c]))
+                    return false;
+        return true;
+    };
+    
+    SECTION("creat"){
+        const size_t numRows = 10000;
+        const size_t numCols = 2000;
+        
+        DenseMatrix<ValueType>* m = DataObjectFactory::create<DenseMatrix<ValueType>>(numRows, numCols, false);
+        
+        ValueType* values = m->getValues();
+        const size_t numCells = numRows * numCols;
+        
+        for(size_t i = 0; i < numCells; i++)
+            values[i] = ValueType();
+        
+        DataObjectFactory::destroy(m);
+    }
+    
+    SECTION("Append"){
+        const size_t numRows = 3;
+        const size_t numCols = 4;
+
+        DenseMatrix<ValueType> * m = DataObjectFactory::create<DenseMatrix<ValueType>>(numRows, numCols, false);
+        expectedStrings exp = {ValueType("0"), ValueType(""), ValueType(""),  ValueType("3"), 
+                                ValueType("10"), ValueType(""), ValueType(""), ValueType("13"),
+                                ValueType("20"), ValueType(""), ValueType(""), ValueType("23")};
+        m->prepareAppend();
+
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++)
+                if(c % 3 == 0)
+                    m->append(r, c, ValueType(std::to_string(r*10+c).c_str()));
+        
+        m->finishAppend();
+        
+        CHECK(compareMatToArr(m, exp));
+        
+        DataObjectFactory::destroy<DenseMatrix<ValueType>>(m);
+    }
+
+    SECTION("Set") {
+        const size_t numRows = 3;
+        const size_t numCols = 4;
+        expectedStrings exp1 = {ValueType(""), ValueType("1"), ValueType(""), ValueType("3"),
+                                ValueType(""), ValueType("11"), ValueType(""), ValueType("13"),
+                                ValueType(""), ValueType("21"), ValueType(""), ValueType("23")};
+
+        expectedStrings exp2 = {ValueType("0"), ValueType("1") ,ValueType("2"), ValueType("3"),
+                                ValueType("10"), ValueType("11"), ValueType("12"), ValueType("13"),
+                                ValueType("20"), ValueType("21"), ValueType("22"), ValueType("23")};
+        DenseMatrix<ValueType> * m = DataObjectFactory::create<DenseMatrix<ValueType>>(numRows, numCols, false);
+
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++){
+                size_t num = r*10+c;
+                if(num % 2){
+                    m->set(r, c, ValueType(std::to_string(num).c_str()));
+                }
+            }
+        
+        CHECK(compareMatToArr(m, exp1));
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++){
+                size_t num = r*10+c;
+                if(!(num % 2)){
+                    m->set(r, c, ValueType(std::to_string(num).c_str()));
+                }
+            }
+        
+        CHECK(compareMatToArr(m, exp2));
+
+        DataObjectFactory::destroy(m);
+    }
+
+    SECTION("View") {
+        const size_t numRows = 3;
+        const size_t numCols = 4;
+        expectedStrings exp1 = {ValueType("1"), ValueType("2"), ValueType("11"), "12"};
+        expectedStrings exp2 = {ValueType("1"), ValueType("2"), ValueType("11"), ValueType(std::string(5, 'X').c_str())};
+        expectedStrings exp3 = {ValueType("0"), ValueType("1"), ValueType("2"), ValueType("3"),
+                                ValueType("10"), ValueType("11"), ValueType(std::string(5, 'X').c_str()), ValueType("13"),
+                                ValueType("20"), ValueType("21"), ValueType("22"), ValueType("23")};
+        DenseMatrix<ValueType> * m = DataObjectFactory::create<DenseMatrix<ValueType>>(numRows, numCols, false);
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++)
+                m->set(r, c, ValueType(std::to_string(r*10+c).c_str()));
+        auto mView = DataObjectFactory::create<DenseMatrix<ValueType>>(m, 0, 2, 1, 3);
+        CHECK(compareMatToArr(mView, exp1));
+        
+        mView->set(1, 1, ValueType(std::string(5, 'X').c_str()));
+        CHECK(compareMatToArr(mView, exp2));
+        
+        CHECK(compareMatToArr(m, exp3));
+
+        DataObjectFactory::destroy(m);
+        DataObjectFactory::destroy(mView);
+    }
+
+}
