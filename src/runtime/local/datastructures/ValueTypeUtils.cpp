@@ -62,6 +62,8 @@ template<> const ValueTypeCode ValueTypeUtils::codeFor<uint32_t> = ValueTypeCode
 template<> const ValueTypeCode ValueTypeUtils::codeFor<uint64_t> = ValueTypeCode::UI64;
 template<> const ValueTypeCode ValueTypeUtils::codeFor<float>  = ValueTypeCode::F32;
 template<> const ValueTypeCode ValueTypeUtils::codeFor<double> = ValueTypeCode::F64;
+template<> const ValueTypeCode ValueTypeUtils::codeFor<std::string> = ValueTypeCode::STR;
+template<> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr16> = ValueTypeCode::FixSTR;
 
 template<> const std::string ValueTypeUtils::cppNameFor<int8_t>   = "int8_t";
 template<> const std::string ValueTypeUtils::cppNameFor<int32_t>  = "int32_t";
@@ -73,6 +75,8 @@ template<> const std::string ValueTypeUtils::cppNameFor<float>  = "float";
 template<> const std::string ValueTypeUtils::cppNameFor<double> = "double";
 template<> const std::string ValueTypeUtils::cppNameFor<bool> = "bool";
 template<> const std::string ValueTypeUtils::cppNameFor<const char*> = "const char*";
+template<> const std::string ValueTypeUtils::cppNameFor<std::string> = "std::string";
+template<> const std::string ValueTypeUtils::cppNameFor<FixedStr16> = "FixedStr";
 
 template<> const std::string ValueTypeUtils::irNameFor<int8_t>   = "si8";
 template<> const std::string ValueTypeUtils::irNameFor<int32_t>  = "si32";
@@ -83,6 +87,18 @@ template<> const std::string ValueTypeUtils::irNameFor<uint64_t> = "ui64";
 template<> const std::string ValueTypeUtils::irNameFor<float>  = "f32";
 template<> const std::string ValueTypeUtils::irNameFor<double> = "f64";
     
+template<> const int8_t ValueTypeUtils::default_value<int8_t>   = 0;
+template<> const int32_t ValueTypeUtils::default_value<int32_t>  = 0;
+template<> const int64_t ValueTypeUtils::default_value<int64_t>  = 0;
+template<> const uint8_t ValueTypeUtils::default_value<uint8_t>  = 0;
+template<> const uint32_t ValueTypeUtils::default_value<uint32_t> = 0;
+template<> const uint64_t ValueTypeUtils::default_value<uint64_t> = 0;
+template<> const float ValueTypeUtils::default_value<float>  = 0;
+template<> const double ValueTypeUtils::default_value<double> = 0;
+template<> const bool ValueTypeUtils::default_value<bool> = 0;
+template<> const std::string ValueTypeUtils::default_value<std::string> = std::string("");
+template<> const FixedStr16 ValueTypeUtils::default_value<FixedStr16> = FixedStr16();
+
 const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
     switch(type) {
         case ValueTypeCode::SI8:  return cppNameFor<int8_t>;
