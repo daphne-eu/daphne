@@ -97,15 +97,12 @@ inline size_t setCString(const char * str, std::string *res,const char delim){
       is_not_end -= (!is_multiLine && *(str + pos) == delim);
     }
 
-    // if str is the last column, then it do not end with a delim
-    if(is_not_end) pos--;
-
     if(is_multiLine)
       res->append(str + 1, pos - 1);
     else
       res->append(str, pos);
     
     if(is_multiLine) pos++;
-    
+
     return pos;
 }
