@@ -17,6 +17,7 @@
 #pragma once
 
 #include <runtime/local/datastructures/ValueTypeCode.h>
+#include <runtime/local/datastructures/FixedSizeStringValueType.h>
 
 #include <iostream>
 #include <string>
@@ -32,6 +33,9 @@
     uint8_t, uint32_t, uint64_t, \
     float, double
 
+#define ALL_STRING_VALUE_TYPES\
+        std::string, FixedStr16
+
 struct ValueTypeUtils {
 
     static size_t sizeOf(ValueTypeCode type);
@@ -40,7 +44,10 @@ struct ValueTypeUtils {
 
     template<typename ValueType>
     static const ValueTypeCode codeFor;
-    
+
+    template<typename ValueType>
+    static const ValueType default_value;
+
     template<typename ValueType>
     static const std::string cppNameFor;
     
@@ -60,6 +67,8 @@ template<> const ValueTypeCode ValueTypeUtils::codeFor<uint32_t>;
 template<> const ValueTypeCode ValueTypeUtils::codeFor<uint64_t>;
 template<> const ValueTypeCode ValueTypeUtils::codeFor<float>;
 template<> const ValueTypeCode ValueTypeUtils::codeFor<double>;
+template<> const ValueTypeCode ValueTypeUtils::codeFor<std::string>;
+template<> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr16>;
 
 template<> const std::string ValueTypeUtils::cppNameFor<int8_t>;
 template<> const std::string ValueTypeUtils::cppNameFor<int32_t>;
@@ -81,3 +90,13 @@ template<> const std::string ValueTypeUtils::irNameFor<uint64_t>;
 template<> const std::string ValueTypeUtils::irNameFor<float>;
 template<> const std::string ValueTypeUtils::irNameFor<double>;
 
+template<> const int8_t ValueTypeUtils::default_value<int8_t>;
+template<> const int32_t ValueTypeUtils::default_value<int32_t>;
+template<> const int64_t ValueTypeUtils::default_value<int64_t>;
+template<> const uint8_t ValueTypeUtils::default_value<uint8_t>;
+template<> const uint32_t ValueTypeUtils::default_value<uint32_t>;
+template<> const uint64_t ValueTypeUtils::default_value<uint64_t>;
+template<> const float ValueTypeUtils::default_value<float>;
+template<> const double ValueTypeUtils::default_value<double>;
+template<> const std::string ValueTypeUtils::default_value<std::string>;
+template<> const FixedStr16 ValueTypeUtils::default_value<FixedStr16>;
