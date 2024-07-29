@@ -119,18 +119,23 @@ class DenseMatrix : public Matrix<ValueType>
             const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
             const size_t endPosExcl = pos(rowIdx, colIdx);
             if(startPosIncl < endPosExcl)
-                memset(values.get() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
+                std::fill(values.get()+ startPosIncl, values.get() + endPosExcl,
+                          ValueType(ValueTypeUtils::default_value<ValueType>));
         }
         else {
             auto v = values.get() + lastAppendedRowIdx * rowSkip;
-            memset(v + lastAppendedColIdx + 1, 0, (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
+            std::fill(v + lastAppendedColIdx + 1, v + numCols,
+                      ValueType(ValueTypeUtils::default_value<ValueType>));
+            
             v += rowSkip;
             for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
-                memset(v, 0, numCols * sizeof(ValueType));
+                std::fill(v, v + (numCols),
+                          ValueType(ValueTypeUtils::default_value<ValueType>));
                 v += rowSkip;
             }
             if(colIdx)
-                memset(v, 0, (colIdx - 1) * sizeof(ValueType));
+                std::fill(v, v + (colIdx - 1),
+                          ValueType(ValueTypeUtils::default_value<ValueType>));
         }
     }
 
@@ -247,7 +252,7 @@ public:
     void prepareAppend() override {
         // The matrix might be empty.
         if (numRows != 0 && numCols != 0)
-            values.get()[0] = ValueType(0);
+            values.get()[0] =  ValueType(ValueTypeUtils::default_value<ValueType>);
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
     }
@@ -271,7 +276,7 @@ public:
                 (lastAppendedColIdx + 1 < numCols)
             )
         )
-            append(numRows - 1, numCols - 1, ValueType(0));
+            append(numRows - 1, numCols - 1, ValueType(ValueTypeUtils::default_value<ValueType>));
     }
 
     void print(std::ostream & os) const override {
