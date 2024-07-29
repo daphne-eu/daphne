@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_CASTSCA_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <cstring>
 
@@ -67,6 +68,22 @@ struct CastSca<const char *, VTArg> {
         strncpy(res, str.c_str(), len);
         res[len] = 0;
         return res;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// scalar <- string
+// ----------------------------------------------------------------------------
+template<typename VTRes>
+struct CastSca<VTRes, std::string> {
+    static VTRes apply(std::string arg, DCTX(ctx)) {
+        return static_cast<VTRes>(std::stold(arg));
+    }
+};
+template<typename VTRes>
+struct CastSca<VTRes, FixedStr16> {
+    static VTRes apply(FixedStr16 arg, DCTX(ctx)) {
+        return static_cast<VTRes>(std::stold(arg.buffer));
     }
 };
 
