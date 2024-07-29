@@ -64,3 +64,43 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALU
 
     DataObjectFactory::destroy(exp, res);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE("FillString", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)){
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    size_t numRows = 3;
+    size_t numCols = 4;
+
+    SECTION("empty_string"){
+        DenseMatrix<VT> * res = nullptr;
+        VT arg = VT("");
+
+        auto * exp = genGivenVals<DenseMatrix<VT>>(3, {
+            VT(""), VT(""), VT(""), VT(""),
+            VT(""), VT(""), VT(""), VT(""),
+            VT(""), VT(""), VT(""), VT("")
+        });
+
+        fill(res, arg, numRows, numCols, nullptr);
+        CHECK(*exp == *res);
+
+        DataObjectFactory::destroy(res, exp);
+    }
+
+    SECTION("not_empty_string"){
+        DenseMatrix<VT> * res = nullptr;
+        VT arg = VT("abc");
+
+        auto * exp = genGivenVals<DenseMatrix<VT>>(3, {
+            VT("abc"), VT("abc"), VT("abc"), VT("abc"),
+            VT("abc"), VT("abc"), VT("abc"), VT("abc"),
+            VT("abc"), VT("abc"), VT("abc"), VT("abc")
+        });
+
+        fill(res, arg, numRows, numCols, nullptr);
+        CHECK(*exp == *res);
+
+        DataObjectFactory::destroy(res, exp);
+    }
+}
