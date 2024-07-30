@@ -65,6 +65,7 @@ struct DaphneUserConfig {
     bool debug_llvm = false;
     bool explain_kernels = false;
     bool explain_llvm = false;
+    bool explain_loop_vectorization = false;
     bool explain_parsing = false;
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;

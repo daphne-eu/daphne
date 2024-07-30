@@ -33,6 +33,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     MapOpLowering.cpp
     MatMulOpLowering.cpp
     AggAllOpLowering.cpp
+    LoopVectorizationPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

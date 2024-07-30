@@ -131,6 +131,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
     pm.addPass(mlir::createCanonicalizerPass());
 
+    pm.addPass(mlir::daphne::createLoopVectorizationPass());
+    if (userConfig_.explain_loop_vectorization)
+        pm.addPass(
+            mlir::daphne::createPrintIRPass("IR after loop vectorization:"));
+
     if (selectMatrixRepresentations_)
         pm.addNestedPass<mlir::func::FuncOp>(
             mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
