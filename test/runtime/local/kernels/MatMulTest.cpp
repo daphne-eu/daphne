@@ -20,7 +20,6 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/MatMul.h>
 #include <runtime/local/kernels/SliceRow.h>
 #include <runtime/local/kernels/SliceCol.h>
@@ -43,7 +42,7 @@ void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp, DCTX(dctx), boo
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (CSRMatrix, DATA_TYPES), (VALUE_TYPES)) {
     auto dctx = setupContextAndLogger();
 
     using DT = TestType;
