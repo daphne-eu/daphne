@@ -7,53 +7,45 @@
 
 using namespace mlir;
 
-
-int64_t generateUniqueID() {
-    static int64_t currentID = 1;
+uint32_t generateUniqueID() {
+    static uint32_t currentID = 1;
     return currentID++;
 }
 
 class RecordPropertiesPass : public PassWrapper<RecordPropertiesPass, OperationPass<func::FuncOp>> {
 public:
-
     void runOnOperation() override {
         func::FuncOp func = getOperation();
         OpBuilder builder(func.getContext());
 
         func.walk([&](Operation *op) {
-            if (isa<daphne::RecordPropertiesOp>(op) || isa<func::FuncOp>(op))
+            if (isa<daphne::RecordPropertiesOp>(op) || isa<func::FuncOp>(op) || op->hasAttr("daphne.value_ids"))
                 return;
 
-            bool hasMatrixResult = false;
+            SmallVector<Attribute, 4> valueIDs;
             for (Value result : op->getResults()) {
                 if (result.getType().isa<daphne::MatrixType>()) {
-                    hasMatrixResult = true;
-                    break;
+                    uint32_t id = generateUniqueID();
+                    valueIDs.push_back(builder.getUI32IntegerAttr(id));
+
+                    builder.setInsertionPointAfter(op);
+
+                    auto idConstant = builder.create<mlir::daphne::ConstantOp>(
+                        op->getLoc(),
+                        builder.getIntegerType(32, /*isSigned=*/false),
+                        builder.getUI32IntegerAttr(id)
+                    );
+
+                    builder.create<daphne::RecordPropertiesOp>(
+                        op->getLoc(), result, idConstant
+                    );
                 }
             }
 
-            if (hasMatrixResult && !op->hasAttr("daphne.op_id")) {
-                int64_t id = generateUniqueID();
-                op->setAttr("daphne.op_id", builder.getI64IntegerAttr(id));
-                
-                for (Value result: op->getResults()){  
-                    if (result.getType().isa<daphne::MatrixType>()) {
-                        builder.setInsertionPointAfter(op);
-
-                        auto idConstant = builder.create<mlir::daphne::ConstantOp>(
-                            op->getLoc(), 
-                            builder.getIntegerType(64, /*isSigned=*/true), 
-                            builder.getI64IntegerAttr(id)
-                        );
-
-                        builder.create<daphne::RecordPropertiesOp>(
-                            op->getLoc(), result, idConstant
-                        );
-
-                    }    
-                }
+            if (!valueIDs.empty()) {
+                op->setAttr("daphne.value_ids", builder.getArrayAttr(valueIDs));
             }
-        });   
+        });
     }
 };
 

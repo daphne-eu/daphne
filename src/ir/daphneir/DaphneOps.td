@@ -1599,7 +1599,7 @@ def Daphne_StopProfilingOp : Daphne_Op<"stopProfiling"> {
 // ****************************************************************************
 
 def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
-    let arguments = (ins MatrixOrU:$arg, SI64:$op_id);
+    let arguments = (ins MatrixOrU:$arg, UI32:$value_id);
     let results = (outs);
 
     let summary = "Records properties of an operation.";

@@ -43,6 +43,14 @@ def PrintIR : Pass<"print-ir", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createPrintIRPass()";
 }
 
+def RecordPropertiesPass : Pass<"record-properties", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createRecordPropertiesPass()";
+  }
+
+def InsertPropertiesPass : Pass<"insert-properties", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createInsertPropertiesPass()";
+  }
+
 def RewriteSqlOpPass : Pass<"rewrite-sqlop", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
 }

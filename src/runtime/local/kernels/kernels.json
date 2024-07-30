@@ -2080,8 +2080,8 @@
                     "name": "arg"
                 },
                 {
-                    "type": "int64_t",
-                    "name": "op_id"
+                    "type": "uint32_t",
+                    "name": "value_id"
                 }
             ]
         },

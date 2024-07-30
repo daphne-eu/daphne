@@ -380,6 +380,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         "enable_property_recording", cat(daphneOptions),
         desc("records runtime propertties and outputs it in JSON."));
 
+    static opt<bool> enablePropertyInsert(
+        "enable_property_insert", cat(daphneOptions),
+        desc("inserts runtime propertties from properties.json of previous run."));
+
     static opt<bool> enableProfiling (
             "enable-profiling", cat(daphneOptions),
             desc("Enable profiling support")
@@ -526,6 +530,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     user_config.statistics = enableStatistics;
     user_config.enable_property_recording = enablePropertyRecording;
+    user_config.enable_property_insert = enablePropertyInsert;
 
     if(user_config.use_distributed && distributedBackEndSetup==ALLOCATION_TYPE::DIST_MPI)
     {

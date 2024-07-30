@@ -15,6 +15,7 @@
 add_mlir_dialect_library(MLIRDaphneExplain
     PrintIRPass.cpp
     RecordPropertiesPass.cpp
+    InsertPropertiesPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

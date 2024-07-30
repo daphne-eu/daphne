@@ -25,6 +25,7 @@
     "explain_obj_ref_mgnt": false,
     "explain_mlir_codegen": false,
     "enable_property_recording": false,
+    "enable_property_insert": false,
     "taskPartitioningScheme": "STATIC",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,

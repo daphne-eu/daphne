@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_RECORD_PROPERTIES_H
 
 #include <cstddef>
+#include <memory>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -31,7 +32,7 @@
 
 template<class DT>
 struct RecordProperties {
-    static void apply(const DT * arg, int64_t op_id, DCTX(ctx)) = delete;
+    static void apply(const DT * arg, uint32_t value_id, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,8 +40,8 @@ struct RecordProperties {
 // ****************************************************************************
 
 template<class DT>
-void recordProperties(const DT * arg, int64_t op_id, DCTX(ctx)) {
-    RecordProperties<DT>::apply(arg, op_id, ctx);
+void recordProperties(const DT * arg, uint32_t value_id, DCTX(ctx)) {
+    RecordProperties<DT>::apply(arg, value_id, ctx);
 }
 
 // ****************************************************************************
@@ -53,44 +54,44 @@ void recordProperties(const DT * arg, int64_t op_id, DCTX(ctx)) {
 
 template<typename VT>
 struct RecordProperties<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT> * arg, int64_t op_id, DCTX(ctx)) {
+    static void apply(const DenseMatrix<VT>* arg, uint32_t value_id, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         size_t nnz = 0;
-        
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++) {
-                ++nnz;
+
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++) {
+                if (arg->get(r, c) != 0) {
+                    ++nnz;
+                }
             }
         }
 
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
 
-        ctx->propertyLogger.logProperty(op_id, "shape", std::make_pair(numRows, numCols));
-        ctx->propertyLogger.logProperty(op_id, "cardinality", numRows * numCols);
-        ctx->propertyLogger.logProperty(op_id, "type", "DenseMatrix<" + std::string(typeid(VT).name()) + ">");
-        ctx->propertyLogger.logProperty(op_id, "sparsity", sparsity);
+        //ctx->propertyLogger.logProperty(value_id, std::make_unique<StringProperty>("type", "DenseMatrix<" + std::string(typeid(VT).name()) + ">"));
+        ctx->propertyLogger.logProperty(value_id, std::make_unique<SparsityProperty>(sparsity));
+        //ctx->propertyLogger.logProperty(value_id, std::make_unique<NNZProperty>(nnz));
     }
 };
 
 // ----------------------------------------------------------------------------
-// CSR Record Implementation
+// CSRMatrix Record Implementation
 // ----------------------------------------------------------------------------
 
 template<typename VT>
 struct RecordProperties<CSRMatrix<VT>> {
-    static void apply(const CSRMatrix<VT> * arg, int64_t op_id, DCTX(ctx)) {
+    static void apply(const CSRMatrix<VT>* arg, uint32_t value_id, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         const size_t nnz = arg->getNumNonZeros();
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
 
-        std::pair<size_t, size_t> shapes = {numRows, numCols};
-        ctx->propertyLogger.logProperty(op_id, "shape", shapes);
-        ctx->propertyLogger.logProperty(op_id, "cardinality", numRows * numCols);
-        ctx->propertyLogger.logProperty(op_id, "type", "CSRMatrix<" + std::string(typeid(VT).name()) + ">");
-        ctx->propertyLogger.logProperty(op_id, "sparsity", sparsity);
+        //ctx->propertyLogger.logProperty(value_id, std::make_unique<SizeTProperty>("cardinality", numRows * numCols));
+        //ctx->propertyLogger.logProperty(value_id, std::make_unique<StringProperty>("type", "CSRMatrix<" + std::string(typeid(VT).name()) + ">"));
+        ctx->propertyLogger.logProperty(value_id, std::make_unique<SparsityProperty>(sparsity));
+        //ctx->propertyLogger.logProperty(value_id, std::make_unique<NNZProperty>(nnz));
     }
 };
 

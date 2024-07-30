@@ -77,6 +77,7 @@ struct DaphneUserConfig {
     bool explain_mlir_codegen = false;
     bool statistics = false;
     bool enable_property_recording = false;
+    bool enable_property_insert = false;
 
     bool force_cuda = false;
 

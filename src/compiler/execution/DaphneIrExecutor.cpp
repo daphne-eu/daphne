@@ -196,8 +196,13 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     // lead to double frees etc.
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
-    pm.addPass(mlir::daphne::createRecordPropertiesPass());
 
+    if(userConfig_.enable_property_recording)
+        pm.addPass(mlir::daphne::createRecordPropertiesPass());
+    
+    if(userConfig_.enable_property_insert)
+        pm.addPass(mlir::daphne::createInsertPropertiesPass("properties.json"));
+    
     if (userConfig_.use_obj_ref_mgnt)
         pm.addNestedPass<mlir::func::FuncOp>(
             mlir::daphne::createManageObjRefsPass());
