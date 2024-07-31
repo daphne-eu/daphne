@@ -330,17 +330,14 @@ public:
         if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
             return true;
         
-        if(rowSkipLhs == numCols && rowSkipRhs == numCols)
-            return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
-        else {
-            for(size_t r = 0; r < numRows; r++) {
-                if(memcmp(valuesLhs, valuesRhs, numCols * sizeof(ValueType)))
-                    return false;
-                valuesLhs += rowSkipLhs;
-                valuesRhs += rowSkipRhs;
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
+                if (*(valuesLhs + c) != *(valuesRhs + c)) return false;
             }
-            return true;
+            valuesLhs += rowSkipLhs;
+            valuesRhs += rowSkipRhs;
         }
+        return true;
     }
 
     size_t serialize(std::vector<char> &buf) const override;
