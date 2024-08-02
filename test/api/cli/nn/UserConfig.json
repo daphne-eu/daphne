@@ -6,7 +6,7 @@
     "matmul_unroll_factor": 1,
     "matmul_unroll_jam_factor": 4,
     "matmul_num_vec_registers": 16,
-    "use_cuda": true,
+    "use_cuda": false,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
     "cuda_fuse_any": false,
@@ -33,7 +33,7 @@
     },
     "force_cuda": true,
     "logging": [
-        { "log-level-limit": "INFO" },
+        { "log-level-limit": "WARN" },
         {
             "comment": "This configuration controls logging in the GPU compiler pass only",
             "name": "compiler::cuda",

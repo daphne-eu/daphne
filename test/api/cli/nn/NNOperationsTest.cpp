@@ -34,24 +34,27 @@ const std::string expected_output = "diff: 0\n";
  * 3...kernel forward
  * 4...kernel backward
  */
+
+//                    const std::string expected_result = std::string("expected=\"") + dirPath + base_name + std::string(".csv\"");
+//                    const std::string args = "input=\"test/data/mnist20/mnist20_features.csv\",eps=1e-9f," + expected_result;
 #define MAKE_TEST_CASE(name, count) \
     TEST_CASE(name, TAG_DNN) { \
         for(unsigned i = 1; i <= count; i++) { \
             DYNAMIC_SECTION(name "_" << i << ".daph") { \
                     const std::string base_name = name + std::string("_") + std::to_string(i); \
                     const std::string script_name =  base_name + std::string(".daph"); \
-                    const std::string expected_result = std::string("expected=\"") + dirPath + base_name + std::string(".csv\""); \
-                    const std::string args = "input=\"test/data/mnist20/mnist20_features.csv\",eps=1e-9f," + expected_result; \
-                    compareDaphneToStr(expected_output, dirPath + script_name, "--config", "UserConfig.json", "--args", args.c_str()); \
+                    compareDaphneToStr(expected_output, dirPath + script_name, "--config", "test/api/cli/nn/UserConfig.json"); \
             } \
         } \
     }
 
-MAKE_TEST_CASE("activation_relu_dsl", 1)
+MAKE_TEST_CASE("activation_relu_dsl", 2)
+MAKE_TEST_CASE("conv2d_dsl", 2)
+MAKE_TEST_CASE("conv2d_kernel", 2)
+
 /*
 MAKE_TEST_CASE("affine_dsl", 1)
 MAKE_TEST_CASE("batchnorm2d_dsl", 1)
-MAKE_TEST_CASE("conv2d_dsl", 1)
 MAKE_TEST_CASE("dropout_dsl", 1)
 MAKE_TEST_CASE("loss_dsl", 1)
 MAKE_TEST_CASE("pooling", 1)
