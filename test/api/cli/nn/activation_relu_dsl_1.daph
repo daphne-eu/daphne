@@ -1,0 +1,20 @@
+def compare_matrices(A:matrix, B:matrix, eps) -> si64 {
+
+  #diff = A - B;
+  #print(diff);
+  diff1 = sum(abs(A - B) > eps);
+  return diff1;
+}
+
+import "nn/layers/relu_dsl.daph" as "relu";
+
+input = readMatrix($input);
+
+expected = readMatrix($expected);
+
+result = relu.forward(input);
+#writeMatrix(result, "relu_fwd.csv");
+diff = compare_matrices(result, expected, $eps);
+
+print("diff: ", 0); print(diff);
+#print(result);

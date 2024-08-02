@@ -36,7 +36,7 @@ import "nn/layers/dropout.daph" as "dropout";
 import "nn/layers/l2_reg.daph" as "l2_reg";
 #import "nn/layers/max_pool2d.daph" as "max_pool2d";
 import "nn/layers/max_pool2d_kernel.daph" as "max_pool2d";
-import "nn/layers/relu.daph" as "relu";
+import "nn/layers/relu_dsl.daph" as "relu";
 import "nn/optim/sgd_nesterov.daph" as "sgd_nesterov";
 import "nn/layers/softmax.daph" as "softmax";
 
