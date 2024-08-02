@@ -96,6 +96,13 @@ struct FixedStr16 {
         return std::strncmp(buffer, other.buffer, N) > 0;
     }
 
+    // Concatenation operator
+    friend std::string operator+(const FixedStr16& lhs, const FixedStr16& rhs) {
+        std::string result(lhs.buffer);
+        result.append(rhs.buffer);
+        return result;
+    }
+
     // Serialization function
     void serialize(std::vector<char>& outBuffer) const {
         outBuffer.insert(outBuffer.end(), buffer, buffer + N);
@@ -125,6 +132,25 @@ struct FixedStr16 {
     // C-string method for compatibility
     std::string to_string() const {
         return std::string(buffer, size());
+    }
+
+    // Compare method similar to std::string::compare
+    int compare(const FixedStr16& other) const {
+        return std::strncmp(buffer, other.buffer, N);
+    }
+
+    // Convert to lowercase
+    FixedStr16 lower() const {
+        FixedStr16 result;
+        std::transform(buffer, buffer + N, result.buffer, [](unsigned char c) { return std::tolower(c); });
+        return result;
+    }
+
+    // Convert to uppercase
+    FixedStr16 upper() const {
+        FixedStr16 result;
+        std::transform(buffer, buffer + N, result.buffer, [](unsigned char c) { return std::toupper(c); });
+        return result;
     }
 };
 

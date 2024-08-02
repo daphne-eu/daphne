@@ -94,6 +94,11 @@ static constexpr bool supportsBinaryOp = false;
 #define SUPPORT(Op, VT) \
     template<> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VT, VT, VT> = true;
 
+// Generates code specifying that the binary operation `Op` should be supported on
+// the value type VTLhs and VTRhs with result VTRes for string value type.
+#define SUPPORT_STRING(Op, VTRes, VTLhs, VTRhs) \
+    template<> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VTRes, VTLhs, VTRhs> = true;
+
 // Generates code specifying that all binary operations of a certain category should be
 // supported on the given value type `VT` (for the result and the two arguments, for simplicity).
 #define SUPPORT_ARITHMETIC(VT) \
@@ -125,6 +130,19 @@ static constexpr bool supportsBinaryOp = false;
 #define SUPPORT_BITWISE(VT) \
     /* Bitwise. */ \
     SUPPORT(BITWISE_AND, VT)
+#define SUPPORT_COMPARISONS_STRING(VTLhs, VTRhs) \
+    /* string Comparisons operations. */ \
+    SUPPORT_STRING(LT, int, VTLhs, VTRhs) \
+    SUPPORT_STRING(GT, int, VTLhs, VTRhs) 
+#define SUPPORT_EQUALITY_STRING(VTLhs, VTRhs) \
+    /* string Comparisons operations. */ \
+    SUPPORT_STRING(EQ, int, VTLhs, VTRhs) \
+    SUPPORT_STRING(NEQ, int, VTLhs, VTRhs)
+#define SUPPORT_CONCAT_STRING(VTLhs, VTRhs) \
+    /* string concatenation operations. */ \
+    /*  Since the result may not fit in FixedStr16,*/ \
+    /*  it always return std::string*/ \
+    SUPPORT_STRING(CONCAT, std::string, VTLhs, VTRhs)
 
 // Generates code specifying that all binary operations typically supported on a certain
 // category of value types should be supported on the given value type `VT`
@@ -153,9 +171,17 @@ SUPPORT_NUMERIC_INT(uint32_t)
 SUPPORT_NUMERIC_INT(uint8_t)
 template<> constexpr bool supportsBinaryOp<BinaryOpCode::CONCAT, const char *, const char *, const char *> = true;
 template<> constexpr bool supportsBinaryOp<BinaryOpCode::EQ, int64_t, const char *, const char *> = true;
+// strings binary operations
+SUPPORT_EQUALITY_STRING(std::string, std::string)
+SUPPORT_EQUALITY_STRING(FixedStr16, FixedStr16)
+SUPPORT_COMPARISONS_STRING(std::string, std::string)
+SUPPORT_COMPARISONS_STRING(FixedStr16, FixedStr16)
+SUPPORT_CONCAT_STRING(std::string, std::string)
+SUPPORT_CONCAT_STRING(FixedStr16, FixedStr16)
 
 // Undefine helper macros.
 #undef SUPPORT
+#undef SUPPORT_STRING
 #undef SUPPORT_ARITHMETIC
 #undef SUPPORT_EQUALITY
 #undef SUPPORT_COMPARISONS
@@ -163,3 +189,6 @@ template<> constexpr bool supportsBinaryOp<BinaryOpCode::EQ, int64_t, const char
 #undef SUPPORT_BITWISE
 #undef SUPPORT_NUMERIC_FP
 #undef SUPPORT_NUMERIC_INT
+#undef SUPPORT_EQUALITY_STRING
+#undef SUPPORT_COMPARISONS_STRING
+#undef SUPPORT_CONCAT_STRING
