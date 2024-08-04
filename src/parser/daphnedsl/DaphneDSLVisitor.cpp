@@ -794,27 +794,41 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
             "argument " + arg + " referenced, but not provided as a command line argument"
         );
 
-    bool hasMinus;
-    std::string litStr;
-    if(!it->second.empty() && it->second[0] == '-') {
+    std::string argValue = it->second;
+    bool hasMinus = false;
+    if (!argValue.empty() && argValue[0] == '-') {
         hasMinus = true;
-        litStr = it->second.substr(1);
-    }
-    else {
-        hasMinus = false;
-        litStr = it->second;
+        argValue = argValue.substr(1);
     }
 
-    // Parse the string that was passed as the value for this argument on the
-    // command line as a DaphneDSL literal.
+    // Parse the argument value as a literal
     // TODO: fix for string literals when " are not escaped or not present
-    std::istringstream stream(litStr);
+    std::istringstream stream(argValue);
     antlr4::ANTLRInputStream input(stream);
-    input.name = "argument"; // TODO Does this make sense?
+    input.name = "argument";
     DaphneDSLGrammarLexer lexer(&input);
     antlr4::CommonTokenStream tokens(&lexer);
     DaphneDSLGrammarParser parser(&tokens);
-    DaphneDSLGrammarParser::LiteralContext * literalCtx = parser.literal();
+
+    CancelingErrorListener errorListener;
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(&errorListener);
+    parser.removeErrorListeners();
+    parser.addErrorListener(&errorListener);
+
+    DaphneDSLGrammarParser::LiteralContext * literalCtx = nullptr;
+    try {
+        literalCtx = parser.literal();
+        if (tokens.LA(1) != antlr4::Token::EOF) {
+            // Ensure entire input is consumed; if not, it's not a valid literal
+            throw std::runtime_error("Extra input after literal");
+        }
+    }
+    catch (std::exception & e) {
+        throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor",
+            "Invalid literal value for argument '" + arg + "': " + argValue
+        );
+    }
 
     mlir::Value lit = visitLiteral(literalCtx);
     if(!hasMinus)
