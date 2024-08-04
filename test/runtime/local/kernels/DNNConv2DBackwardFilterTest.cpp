@@ -30,7 +30,7 @@
 #include <runtime/local/kernels/Conv2DBackwardFilter.h>
 
 template<class DT>
-void check(const DT* input, const DT* dOutput, const DT* exp, DaphneContext* dctx) {
+void checkConv2DBackwardFilter(const DT* input, const DT* dOutput, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
     Conv2DBackwardFilter<DT, DT>::apply(res, input, dOutput, 2, 2, 1, 1, 1, 3, 3, 3, 2, 3, 2, 2, dctx);
     CHECK(*res == *exp);
@@ -68,7 +68,7 @@ TEMPLATE_PRODUCT_TEST_CASE("conv_bwd_filter", TAG_DNN, (DenseMatrix), (float, do
                                         40, 76, 76, 144,
                                         40, 76, 76, 144 });
 
-    check(input, dOutput, result, dctx.get());
+    checkConv2DBackwardFilter(input, dOutput, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);

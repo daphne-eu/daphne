@@ -66,7 +66,7 @@ TEMPLATE_PRODUCT_TEST_CASE("conv_fwd", TAG_DNN, (DenseMatrix), (float, double)) 
 #include <runtime/local/kernels/Conv2DForward.h>
 
 template<class DT>
-void check(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
+void checkConv2DForward(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
     size_t out_h;
     size_t out_w;
@@ -126,7 +126,7 @@ TEMPLATE_PRODUCT_TEST_CASE("conv_fwd", TAG_DNN, (DenseMatrix), (float, double)) 
     // auto result = genGivenVals<DT>(1, { 6, 8, 12, 14 });
     auto result = genGivenVals<DT>(2, { 30, 36, 48, 96, 30, 36, 48, 96 });
 
-    check(input, filter, result, dctx.get());
+    checkConv2DForward(input, filter, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);

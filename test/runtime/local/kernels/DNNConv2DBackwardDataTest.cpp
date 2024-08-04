@@ -31,7 +31,7 @@
 #include <runtime/local/kernels/Conv2DBackwardData.h>
 
 template<class DT>
-void check(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
+void checkConv2DBackwardData(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
     Conv2DBackwardData<DT, DT>::apply(filter, in, 2, 2, 1, 1, 1, 3, 3, 3, 2, 3, 2, 2, res, dctx);
     CHECK(*res == *exp);
@@ -61,7 +61,7 @@ TEMPLATE_PRODUCT_TEST_CASE("conv_bwd_data", TAG_DNN, (DenseMatrix), (float, doub
                                         38, 0, 48, 0, 56, 0, 58, 0, 68,
                                         44, 0, 56, 0, 68, 0, 68, 0, 80 });
 
-    check(input, filter, result, dctx.get());
+    checkConv2DBackwardData(input, filter, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
