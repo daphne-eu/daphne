@@ -119,7 +119,7 @@ struct BatchNorm2DTrainForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     off = i * CHW + c * HW + j;
                     mean =  mean + in->getValues()[off] / (stop * HW);
                 }
-            // std::cout<<mean<<std::endl;
+
             var = 0;
             for(uint32_t i = start; i < stop; i++)
                 for(uint32_t j = 0; j < HW; j++)
@@ -127,7 +127,7 @@ struct BatchNorm2DTrainForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     off = i * CHW + c * HW + j;
                     var =  var + std::pow((in->getValues()[off] - mean), 2) / (stop * HW);
                 }
-            // std::cout<<var<<std::endl;
+
             Mean->getValues()[c] = mean;
             invVar->getValues()[c] = 1 / std::sqrt(var + eps);
             new_emaMean->getValues()[c] = (1 - mu) * emaMean->getValues()[c] + mu * mean;

@@ -32,7 +32,7 @@
 #include <tags.h>
 
 template<class DT>
-void check(const DT* in, const DT* dOut, const DT* gamma, const DT* mean, const DT* invVar, const DT* exp1, 
+void checkBatchNorm2DBackward(const DT* in, const DT* dOut, const DT* gamma, const DT* mean, const DT* invVar, const DT* exp1, 
 const DT* exp2, const DT* exp3, DaphneContext* dctx)
 {
     DT* dX = nullptr;
@@ -84,7 +84,7 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix), (float, dou
     auto res2 = genGivenVals<DT>(3, {8.9442, 8.9442, 8.9442 });
     auto res3 = genGivenVals<DT>(3, {20, 52, 84 });
 
-    check(in, dOut, gamma, mean, invVar, res1, res2, res3, dctx.get());
+    checkBatchNorm2DBackward(in, dOut, gamma, mean, invVar, res1, res2, res3, dctx.get());
 
     DataObjectFactory::destroy(in);
     DataObjectFactory::destroy(dOut);

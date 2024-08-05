@@ -31,6 +31,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "Padding.h"
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -81,43 +83,6 @@ ConvOp(VT initial_value, const VT *in, const VT *filter, uint32_t in_start, uint
     return ret + initial_value;
 }
 
-template <typename VT>
-static inline void
-GetPaddedData(const VT *data, VT *padded_data, VT *selected_data,
-              size_t pad_w, size_t pad_h,
-              size_t img_w, size_t img_h, size_t padded_img_w, uint32_t off)
-{
-    uint32_t j = 0;
-    uint32_t k = 0;
-    uint32_t padded_index = 0;
-    uint32_t data_index = 0;
-    for (j = 0; j < img_h * img_w; j++)
-        selected_data[j] = data[off + j];
-
-    for (j = 0; j < (pad_h * padded_img_w); j++, padded_index++)
-        padded_data[padded_index] = 0;
-    for (j = 0; j < img_h; j++)
-    {
-        for (k = 0; k < pad_w; k++, padded_index++)
-            padded_data[padded_index] = 0;
-        for (k = 0; k < img_w; k++, data_index++, padded_index++)
-            padded_data[padded_index] = selected_data[data_index];
-        for (k = 0; k < pad_w; k++, padded_index++)
-            padded_data[padded_index] = 0;
-    }
-    for (j = 0; j < (pad_h * padded_img_w); j++, padded_index++)
-        padded_data[padded_index] = 0;
-}
-
-uint32_t getPQ4(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent) {
-        uint32_t padded_image_extent = img_extent + 2 * pad_extent;
-        // float result = static_cast<float>(padded_image_extent - filter_extent) / stride_extent + 1;
-        // std::cout<< std::ceil(result)<<std::endl;
-        // return std::ceil(result);
-        return (padded_image_extent - filter_extent) / stride_extent + 1;
-    }
-
-
 template <typename VTRes, typename VTArg>
 struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
 {
@@ -138,8 +103,8 @@ struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
         auto C = num_channels;        
         auto CHW = C * HW;
         // padded height/width
-        auto P = getPQ4(img_h, filter_h, pad_h, stride_h);
-        auto Q = getPQ4(img_w, filter_w, pad_w, stride_w);
+        auto P = getPQ(img_h, filter_h, pad_h, stride_h);
+        auto Q = getPQ(img_w, filter_w, pad_w, stride_w);
         auto C_new = filter->getNumRows();
         auto PQ = P * Q;
         auto CPQ = C_new * PQ;
@@ -158,35 +123,13 @@ struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
         auto padded_img_h = img_h + 2 * pad_h;
         auto padded_img_w = img_w + 2 * pad_w;
         DenseMatrix<VTArg> *padded_data = DataObjectFactory::create<DenseMatrix<VTArg>>(1, padded_img_h * padded_img_w, true);
-        DenseMatrix<VTArg> *selected_data = DataObjectFactory::create<DenseMatrix<VTArg>>(1, HW, true);
 
         if (res == nullptr)
         {
             res = DataObjectFactory::create<DenseMatrix<VTArg>>(batch_size, CPQ, true);
         }
-/*         for (uint32_t i = start; i < stop; i++)
-        {
-            for (uint32_t c_new = 0, off_o = oi + (i - start) * CPQ; c_new < C_new; c_new++, off_f += f_CHW)
-            {
-                for (uint32_t c = 0, off_i = ii + (i - start) * CHW; c < C; c++, off_i += HW)
-                {
-                    GetPaddedData<VTArg>(data->getValues(), padded_data->getValues(), selected_data->getValues(),
-                                              pad_w, pad_h, img_w, img_h,
-                                              padded_img_w, off_i);
-                    for (uint32_t p = 0, off_oo = off_o; p < P; p++, off_oo += Q)
-                        for (uint32_t h = p * stride_h, k = 0; h < std::min(p * stride_h + filter_h, padded_img_h); h++, k++)
-                            for (uint32_t q = 0, off2 = h * padded_img_w; q < Q; q++)
-                                res->getValues()[off_oo + q] = ConvOp<VTArg>(
-                                    res->getValues()[off_oo + q], padded_data->getValues(), filter->getValues(),
-                                    off2 + q * stride_w, off_f + k * filter_w,
-                                    std::min(filter_w, padded_img_w - q * stride_w));
-                }
-                for (u_int32_t l = 0; l < PQ; l++)
-                    res->getValues()[off_o - PQ + l] += bias->getValues()[c_new];
-            }            
-        } */
 
-        u_int32_t p, h, q, w, off_o, off_i_padded, off_i = 0;
+        u_int32_t off_o, off_i_padded, off_i = 0;
         for (uint32_t i = start; i < stop; i++)
         {            
             for (uint32_t c_new = 0; c_new < C_new; c_new++)
@@ -194,21 +137,17 @@ struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                 for (uint32_t c = 0; c < C; c++)
                 {
                     off_i = ii + (i - start) * CHW + c * HW;
-                    GetPaddedData<VTArg>(data->getValues(), padded_data->getValues(), selected_data->getValues(),
-                                              pad_w, pad_h, img_w, img_h,
-                                              padded_img_w, off_i);
 
-                    for (p = 0; p < P; p++)
-                        for (h = 0; h < std::min(filter_h, padded_img_h - p * stride_h); h++)
-                            for (q = 0; q < Q; q++)
-                                for(w = 0; w < std::min(filter_w, padded_img_w - q * stride_w); w++)
+                    Padding(padded_data->getValues(), data->getValues(), pad_h, pad_w, img_w, img_h, off_i);
+
+                    for (u_int32_t p = 0; p < P; p++)
+                        for (u_int32_t h = 0; h < std::min(filter_h, padded_img_h - p * stride_h); h++)
+                            for (u_int32_t q = 0; q < Q; q++)
+                                for(u_int32_t w = 0; w < std::min(filter_w, padded_img_w - q * stride_w); w++)
                                 {
                                     off_o = oi + (i - start) * CPQ + c_new * PQ + p * Q + q;
                                     off_i_padded = (p * stride_h + h) * padded_img_w + q * stride_w + w;
                                     off_f = c_new * f_CHW + c * filter_h * filter_w + h * filter_w + w;
-
-                                    // std::cout<<padded_data->getValues()[off_i_padded]<<" "<<filter->getValues()[off_f]<<std::endl;
-                                    // std::cout<<filter->getValues()[off_f]<<std::endl;
 
                                     res->getValues()[off_o] = res->getValues()[off_o] 
                                                             + padded_data->getValues()[off_i_padded]
@@ -219,7 +158,6 @@ struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     res->getValues()[oi + (i - start) * CPQ + c_new * PQ + l] += bias->getValues()[c_new];
             }            
         }
-        DataObjectFactory::destroy(padded_data);
-        DataObjectFactory::destroy(selected_data);    
+        DataObjectFactory::destroy(padded_data);   
     }
 };

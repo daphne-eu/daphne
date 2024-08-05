@@ -90,11 +90,11 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
         // auto const_1_m = static_cast<typename DenseMatrix<VTArg>::VT>(1) / m;
 
         auto off = 0;
-        // VTArg sum_dBeta = 0, sum_dGamma = 0, dVar = 0, dMean = 0, dX_hat = 0;
-        double sum_dBeta = 0., sum_dGamma = 0.;
+        VTArg sum_dBeta = 0, sum_dGamma = 0, dVar = 0, dMean = 0, dX_hat = 0;
+        /* double sum_dBeta = 0., sum_dGamma = 0.;
         double dVar = 0.; 
         double dMean = 0.; 
-        double dX_hat = 0.;
+        double dX_hat = 0.; */
 
         if (dX == nullptr)
             dX = DataObjectFactory::create<DenseMatrix<VTArg>>(stop, CHW, true);
@@ -116,10 +116,6 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     dVar -= dX_hat
                             * (in->getValues()[off] - mean->getValues()[c])
                             * half * std::pow(invVar->getValues()[c], 3);
-                    // std::cout<<std::pow(invVar->getValues()[c], 3)<<std::endl;
-                    // double iivar = invVar->getValues()[c];
-                    // double ivar = iivar * iivar * iivar;
-                    // std::cout<<ivar<<std::endl;
                 }
             dBeta->getValues()[c] = sum_dBeta;
             dGamma->getValues()[c] = sum_dGamma;

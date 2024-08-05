@@ -30,6 +30,8 @@
 
 #include <iostream>
 
+#include "Padding.h"
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -107,35 +109,6 @@ GetGradientMatrix(  VT *matrix, const VT *output,
         }
 }
 
-template <typename VT>
-static inline void
-GetRotatedFilter1(const VT *filter, VT *rotated_filter,
-                 size_t filter_h, size_t filter_w, uint32_t off)
-{
-    for (uint32_t i = 0; i < filter_h * filter_w; i++)
-        rotated_filter[i] = filter[off + filter_h * filter_w - i - 1];
-}
-
-template <typename VT>
-static inline void
-Padding6(VT *padded_input, const VT *input, size_t pad_h, size_t pad_w, size_t img_w, size_t img_h, uint32_t off)
-{
-    auto padded_w = img_w + 2 * pad_w;
-    for (uint32_t i = 0; i < img_h * img_w; i++)
-        padded_input[i] = 0;
-    
-    auto start = pad_h * padded_w + pad_w;
-    for (uint32_t i = 0, j = 0; i < img_h; i++)
-        for (uint32_t k = 0; k < img_w; k++, j++)
-            padded_input[start + i * padded_w + k] = input[off + j];
-}
-
-uint32_t getPQ2(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent)
-{
-    uint32_t padded_image_extent = img_extent + 2 * pad_extent;
-    return (padded_image_extent - filter_extent) / stride_extent + 1;
-}
-
 template <typename VTRes, typename VTArg>
 struct Conv2DBackwardFilter<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
 {
@@ -158,8 +131,8 @@ struct Conv2DBackwardFilter<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
         auto C = input_num_channels;
         auto CHW = C * HW;
         // padded height/width
-        auto P = getPQ2(input_h, filter_h, pad_h, stride_h);
-        auto Q = getPQ2(input_w, filter_w, pad_w, stride_w);
+        auto P = getPQ(input_h, filter_h, pad_h, stride_h);
+        auto Q = getPQ(input_w, filter_w, pad_w, stride_w);
 
         auto output_h = P;
         auto output_w = Q;
@@ -194,7 +167,7 @@ struct Conv2DBackwardFilter<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                 for (uint32_t i = start; i < stop; i++)
                 {
                     auto off_input = i * CHW + c * HW;
-                    Padding6(padded_matrix->getValues(), input->getValues(), pad_h, pad_w, input_w, input_h, off_input);
+                    Padding(padded_matrix->getValues(), input->getValues(), pad_h, pad_w, input_w, input_h, off_input);
                     auto off_output = i * o_CHW + f * o_HW;
                     GetGradientMatrix(gradient_matrix->getValues(), output->getValues(), output_h, output_w, filter_h, filter_w, padded_img_h, padded_img_w, stride_h, stride_w, off_output);
 

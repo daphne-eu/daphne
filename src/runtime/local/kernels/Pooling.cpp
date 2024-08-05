@@ -15,15 +15,14 @@
  */
 
 #include "Pooling.h"
+#include "Padding.h"
 
 namespace NN::Pooling {
 
-    uint32_t getPQ(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent) {
-        uint32_t padded_image_extent = img_extent + 2 * pad_extent;
-        return (padded_image_extent - filter_extent) / stride_extent + 1;
-    }
-
-    
+    // uint32_t getPQ(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent) {
+    //     uint32_t padded_image_extent = img_extent + 2 * pad_extent;
+    //     return (padded_image_extent - filter_extent) / stride_extent + 1;
+    // }
 
     template<template<typename> class OP, typename DTRes, typename DTArg>
     void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, size_t& res_h, size_t& res_w,
@@ -52,8 +51,6 @@ namespace NN::Pooling {
         auto padded_img_h = img_h + 2 * pad_h;
         auto padded_img_w = img_w + 2 * pad_w;
         DTArg *padded_data = DataObjectFactory::create<DTArg>(1, padded_img_h * padded_img_w, true);
-        DTArg *selected_data = DataObjectFactory::create<DTArg>(1, HW, true);
-        // uint32_t j = 0; uint32_t k = 0; uint32_t padded_index = 0;uint32_t data_index = 0;
         
         if (res == nullptr) {
             res = DataObjectFactory::create<DTRes>(batch_size, CPQ, true);
@@ -93,28 +90,8 @@ namespace NN::Pooling {
         else{
             for (uint32_t i = start; i < stop; i++)
                 for (uint32_t c = 0, off = ii + (i - start) * CHW, oix = oi + (i - start) * CPQ; c < C; c++, off += HW){
-                    /*for (j = 0; j < HW; j++)
-                        selected_data->getValues()[j] = data->getValues()[off + j];
-                                   
-                    for (j = 0; j < (pad_h * padded_img_w); j++, padded_index++)
-                        padded_data->getValues()[padded_index] = 0;
-                    for (j = 0; j < img_h; j++){
-                        for (k = 0; k < pad_w; k++, padded_index++)
-                            padded_data->getValues()[padded_index] = 0;                        
-                        for (k = 0; k < img_w; k++, data_index++, padded_index++)
-                            padded_data->getValues()[padded_index] = selected_data->getValues()[data_index];
-                        for (k = 0; k < pad_w; k++, padded_index++)
-                            padded_data->getValues()[padded_index] = 0;
-                    }
-                    for (j = 0; j < (pad_h * padded_img_w); j++, padded_index++)
-                        padded_data->getValues()[padded_index] = 0;  */                    
-                                         
 
-                    GetPaddedData<typename DTArg::VT>::run(data->getValues(),
-                                                           padded_data->getValues(),
-                                                           selected_data->getValues(),
-                                                           pad_w, pad_h, img_w, img_h,
-                                                           padded_img_w, off);
+                    Padding(padded_data->getValues(), data->getValues(), pad_h, pad_w, img_w, img_h, off);
 
                     for (uint32_t p = 0; p < P; p++, oix += Q)
                         for (uint32_t h = p * stride_h; h < std::min(p * stride_h + pool_h, padded_img_h); h++)
@@ -126,7 +103,6 @@ namespace NN::Pooling {
                     
         }
         DataObjectFactory::destroy(padded_data);
-        DataObjectFactory::destroy(selected_data); 
     }
 
     template struct Forward<AVG, DenseMatrix<float>, DenseMatrix<float>>;

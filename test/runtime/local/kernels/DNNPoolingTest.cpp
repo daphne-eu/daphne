@@ -54,7 +54,7 @@ DT* genInput() {
 }
 
 template<template<typename> class OP, class DT>
-void check(const DT* in, const DT* exp, DaphneContext* dctx) {
+void checkPoolingForward(const DT* in, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
     size_t out_h;
     size_t out_w;
@@ -89,7 +89,7 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
           34.2500,  70.0000,  72.0000, 19.0000,  38.7500,  39.7500, 41.7500,  85.0000,  87.0000,
           46.7500,  95.0000,  97.0000, 25.2500,  51.2500,  52.2500, 54.2500, 110.0000, 112.0000,
           59.2500, 120.0000, 122.0000, 31.5000,  63.7500,  64.7500, 66.7500, 135.0000, 137.0000, 71.7500, 145.0000, 147.0000});
-    check<NN::Pooling::AVG>(inputs, out_f2x2_s2x2_p1x1, dctx.get());
+    checkPoolingForward<NN::Pooling::AVG>(inputs, out_f2x2_s2x2_p1x1, dctx.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(out_f2x2_s1x1_p0x0);
@@ -158,7 +158,7 @@ auto out_f2x2_s2x2_p1x1 = genGivenVals<DT>(2, {1., 3., 5., 11.,  13.,  15.,
          76.,  78.,  80., 86.,  88.,  90.,96.,  98., 100., 101., 103., 105., 111., 113., 115.,
         121., 123., 125., 126., 128., 130., 136., 138., 140., 146., 148., 150.
     });
-    check<NN::Pooling::MAX>(inputs, out_f2x2_s2x2_p1x1, dctx.get());
+    checkPoolingForward<NN::Pooling::MAX>(inputs, out_f2x2_s2x2_p1x1, dctx.get());
     //check<NN::Pooling::MAX>(inputs_p1x1, out_f2x2_s1x1_p1x1, dctx.get());
 
     DataObjectFactory::destroy(inputs);

@@ -68,7 +68,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::BatchNorm::Forward", TAG_DNN, (DenseMatrix), (
 #include <tags.h>
 
 template<class DT>
-void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, const DT* ema_var, const DT* exp,
+void checkBatchNorm2DTestForward(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, const DT* ema_var, const DT* exp,
         DaphneContext* dctx)
 {
     DT* res = nullptr;
@@ -89,7 +89,7 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_test_fwd", TAG_DNN, (DenseMatrix), (float
 
     auto result = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
 
-    check(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
+    checkBatchNorm2DTestForward(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);

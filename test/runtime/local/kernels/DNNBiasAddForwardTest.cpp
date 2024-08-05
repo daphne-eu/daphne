@@ -31,7 +31,7 @@
 #include <tags.h>
 
 template<class DT>
-void check(const DT* input, const DT* bias, const DT* exp, DaphneContext* dctx)
+void checkBiasAddForward(const DT* input, const DT* bias, const DT* exp, DaphneContext* dctx)
 {
     DT* res = nullptr;
     BiasAddForward<DT, DT>::apply(res, input, bias, dctx);
@@ -60,7 +60,7 @@ TEMPLATE_PRODUCT_TEST_CASE("bias_add_fwd", TAG_DNN, (DenseMatrix), (float, doubl
                                         7, 8, 9, 10,
                                         12, 13, 14, 15});
 
-    check(input, bias, result, dctx.get());
+    checkBiasAddForward(input, bias, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(bias);

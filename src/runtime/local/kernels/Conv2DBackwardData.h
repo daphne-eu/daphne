@@ -30,6 +30,8 @@
 
 #include <iostream>
 
+#include "Padding.h"
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -100,18 +102,12 @@ GetLossGradientMatrix(const VT *output, VT *loss_gradient_matrix,
 }
 
 template <typename VT>
-static inline void
+static void
 GetRotatedFilter(const VT *filter, VT *rotated_filter,
                  size_t filter_h, size_t filter_w, uint32_t off)
 {
     for (uint32_t i = 0; i < filter_h * filter_w; i++)
         rotated_filter[i] = filter[off + filter_h * filter_w - i - 1];
-}
-
-uint32_t getPQ1(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent)
-{
-    uint32_t padded_image_extent = img_extent + 2 * pad_extent;
-    return (padded_image_extent - filter_extent) / stride_extent + 1;
 }
 
 template <typename VTRes, typename VTArg>
@@ -136,8 +132,8 @@ struct Conv2DBackwardData<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
         auto C = input_num_channels;
         auto CHW = C * HW;
         // padded height/width
-        auto P = getPQ1(input_h, filter_h, pad_h, stride_h);
-        auto Q = getPQ1(input_w, filter_w, pad_w, stride_w);
+        auto P = getPQ(input_h, filter_h, pad_h, stride_h);
+        auto Q = getPQ(input_w, filter_w, pad_w, stride_w);
         auto C_new = filter->getNumRows();
         auto PQ = P * Q;
         auto CPQ = C_new * PQ;
@@ -169,7 +165,7 @@ struct Conv2DBackwardData<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
             data = DataObjectFactory::create<DenseMatrix<VTArg>>(input_batch_size, input_num_channels * input_h * input_w, true);
         }
 
-        u_int32_t i_h, f_h, i_w, f_w, off_o, off_i, off_m = 0;
+        uint32_t off_o, off_i, off_m = 0;
         for (uint32_t i = start; i < stop; i++)
             for (uint32_t c_input = 0; c_input < input_num_channels; c_input++)
             {
@@ -180,23 +176,11 @@ struct Conv2DBackwardData<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
                     off_o = oi + (i - start) * o_CHW + c_output * o_HW;
                     GetLossGradientMatrix(output->getValues(), loss_gradient_matrix->getValues(), output_h, output_w,
                                           filter_h, filter_w, matrix_h, matrix_w, stride_h, stride_w, off_o);
-                    // off_i = ii + (i - start) * C*padded_img_h*padded_img_w + c_input * padded_img_h*padded_img_w;
-                    // for (i_h = 0; i_h < padded_img_h; i_h++)
-                    //     for (f_h = 0; f_h < filter_h; f_h++)
-                    //         for (i_w = 0; i_w < padded_img_w; i_w++)
-                    //             for (f_w = 0; f_w < filter_w; f_w++){
-                    //                 off_m = (i_h + f_h) * matrix_w + i_w + f_w;
-                    //                 padded_data->getValues()[off_i+i_h * padded_img_w + i_w]
-                    //                 = padded_data->getValues()[off_i+i_h * padded_img_w + i_w]
-                    //                 + loss_gradient_matrix->getValues()[off_m]
-                    //                 * rotated_filter->getValues()[f_h * filter_w + f_w];
-                    //             }
-
                     off_i = ii + (i - start) * CHW + c_input * HW;
-                    for (i_h = pad_h; i_h < pad_h + input_h; i_h++)
-                        for (f_h = 0; f_h < filter_h; f_h++)
-                            for (i_w = pad_w; i_w < pad_h + input_w; i_w++)
-                                for (f_w = 0; f_w < filter_w; f_w++)
+                    for (u_int32_t i_h = pad_h; i_h < pad_h + input_h; i_h++)
+                        for (u_int32_t f_h = 0; f_h < filter_h; f_h++)
+                            for (u_int32_t i_w = pad_w; i_w < pad_h + input_w; i_w++)
+                                for (u_int32_t f_w = 0; f_w < filter_w; f_w++)
                                 {
                                     off_m = (i_h + f_h) * matrix_w + i_w + f_w;
                                     data->getValues()[off_i + (i_h - pad_h) * input_w + i_w - pad_w] = data->getValues()[off_i + (i_h - pad_h) * input_w + i_w - pad_w] + loss_gradient_matrix->getValues()[off_m] * rotated_filter->getValues()[f_h * filter_w + f_w];

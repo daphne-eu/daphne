@@ -31,7 +31,7 @@
 #include <tags.h>
 
 template<class DT>
-void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, const DT* ema_var, const DT* exp,
+void checkBatchNorm2DTrainForward(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, const DT* ema_var, const DT* exp,
         DaphneContext* dctx)
 {
     DT* res = nullptr;
@@ -79,7 +79,7 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_train_fwd", TAG_DNN, (DenseMatrix), (floa
                                     -0.3873,  0.0000,  0.3873,
                                     0.7746,  1.1619,  1.5492});
 
-    check(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
+    checkBatchNorm2DTrainForward(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
