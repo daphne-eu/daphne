@@ -1181,6 +1181,28 @@ mlir::LogicalResult mlir::daphne::NumCellsOp::canonicalize(
 }
 
 /**
+ * @brief Replaces SparsityOp by a constant, if the sparsity of the input is known
+ * (e.g., due to sparsity inference).
+ */
+mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(
+        mlir::daphne::SparsityOp op, PatternRewriter &rewriter
+) {
+    double sparsity = -1.0;
+
+    mlir::Type inTy = op.getArg().getType();
+    if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
+        sparsity = t.getSparsity();
+
+    if(sparsity != -1) {
+        rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
+                op, sparsity
+        );
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
  * @brief Replaces a `DistributeOp` by a `DistributedReadOp`, if its input
  * value (a) is defined by a `ReadOp`, and (b) is not used elsewhere.
  * @param context
