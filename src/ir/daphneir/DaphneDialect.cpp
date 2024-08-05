@@ -1191,7 +1191,7 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(
 
     if(sparsity != -1) {
         rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
-                op, rewriter.getF64Type(), rewriter.getFloatAttr(rewriter.getF64Type(), sparsity)
+                op, sparsity
         );
         return mlir::success();
     }

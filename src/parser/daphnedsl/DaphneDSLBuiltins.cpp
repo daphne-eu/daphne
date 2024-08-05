@@ -464,7 +464,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createNumOp<NumColsOp>(loc, func, args);
     if(func == "ncell")
         return createNumOp<NumCellsOp>(loc, func, args);
-    
     if(func == "sparsity") {
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value arg = args[0];

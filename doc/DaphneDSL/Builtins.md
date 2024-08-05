@@ -100,6 +100,11 @@ The following built-in functions allow to find out the shape/dimensions of matri
 
     Returns the number of cells in `arg`.
     This is the product of the number of rows and the number of columns.
+  
+- **`sparsity`**`(arg:matrix)`
+
+    Returns the DAPHNE compiler's *estimate* of the argument's sparsity.
+    Note that this value may deviate from the *actual* sparsity of the data at run-time.
 
 ## Elementwise unary
 

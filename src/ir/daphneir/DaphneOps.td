@@ -161,13 +161,6 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
 // Matrix/frame dimensions
 // ****************************************************************************
 
-def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
-  let arguments = (ins MatrixOf<[AnyScalar]>:$arg);
-  let results = (outs FloatScalar:$res);
-
-  let hasCanonicalizeMethod = 1;
-}
-
 class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeSca, ValueTypeSize, Pure
 ])> {
@@ -180,6 +173,13 @@ class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !list
 def Daphne_NumRowsOp : Daphne_NumOp<"numRows">;
 def Daphne_NumColsOp : Daphne_NumOp<"numCols">;
 def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
+
+def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
+  let arguments = (ins MatrixOf<[AnyScalar]>:$arg);
+  let results = (outs FloatScalar:$res);
+
+  let hasCanonicalizeMethod = 1;
+}
 
 // ****************************************************************************
 // Matrix multiplication
