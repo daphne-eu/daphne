@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/logo_small.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.31">
     
     
       
@@ -2095,6 +2095,11 @@ The scalar <code>inc</code> is an optional argument and defaults to <code>1</cod
 <p><strong><code>ncell</code></strong><code>(arg:matrix/frame)</code></p>
 <p>Returns the number of cells in <code>arg</code>.
 This is the product of the number of rows and the number of columns.</p>
+</li>
+<li>
+<p><strong><code>sparsity</code></strong><code>(arg:matrix)</code></p>
+<p>Returns the DAPHNE compiler's <em>estimate</em> of the argument's sparsity.
+Note that this value may deviate from the <em>actual</em> sparsity of the data at run-time.</p>
 </li>
 </ul>
 <h2 id="elementwise-unary">Elementwise unary</h2>
