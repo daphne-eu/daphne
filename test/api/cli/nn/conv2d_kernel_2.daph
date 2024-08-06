@@ -1,0 +1,32 @@
+
+import "nn/layers/conv2d_kernel.daph" as "conv2d";
+import "./test_utils.daph" as "util";
+
+# number of "images"
+N=13;
+
+#image size
+Hin=13;
+Win=13;
+F=7;
+C=3;
+Hf=5;
+Wf=5;
+stride = 1;
+pad = 2;
+
+X = readMatrix("test/data/nn_validation/X.csv");
+W = readMatrix("test/data/nn_validation/WC.csv");
+b = readMatrix("test/data/nn_validation/bC.csv");
+outC = readMatrix("test/data/nn_validation/outC.csv");
+Hout = sqrt(ncol(outC) / F);
+Wout = Hout;
+
+exp_dX = readMatrix("test/data/nn_validation/doutC.csv");
+exp_dW = readMatrix("test/data/nn_validation/dWC.csv");
+exp_db = readMatrix("test/data/nn_validation/dbC.csv");
+
+dX, dW, dB = conv2d.backward(outC, Hout, Wout, X, W, b, C, Hin, Win, Hf, Wf, stride, stride, pad, pad);
+
+diff = util.compare_matrices(dX, exp_dX) + util.compare_matrices(W, exp_dW) + util.compare_matrices(b, exp_db);
+print("diff: ", 0); print(diff);

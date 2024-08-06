@@ -1,0 +1,8 @@
+
+def compare_matrices(A:matrix, B:matrix) -> si64 {
+    eps = 1e-9f;
+    diff1 = abs(A - B);
+    diff2 = diff1 > eps;
+    #print(diff1);
+    return sum(diff2);
+}

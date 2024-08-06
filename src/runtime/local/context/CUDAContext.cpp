@@ -27,6 +27,7 @@ void CUDAContext::destroy() {
     CHECK_CUDART(cudaStreamDestroy(cusolver_stream));
     CHECK_CUDNN(cudnnDestroyPoolingDescriptor(pooling_desc));
     CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_tensor_desc));
+    CHECK_CUDNN(cudnnDestroyTensorDescriptor(src2_tensor_desc));
     CHECK_CUDNN(cudnnDestroyTensorDescriptor(dst_tensor_desc));
     CHECK_CUDNN(cudnnDestroyTensorDescriptor(bn_tensor_desc));
     CHECK_CUDNN(cudnnDestroyActivationDescriptor(activation_desc));
@@ -50,12 +51,12 @@ void CUDAContext::init() {
 
     logger->info("Using CUDA device {}: {}\n\tAvailable mem: {} Total mem: {} using {}% -> {}", device_id,
             device_properties.name, available, total, mem_usage * 100, mem_budget);
-
     CHECK_CUBLAS(cublasCreate(&cublas_handle));
     CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
     CHECK_CUDNN(cudnnCreate(&cudnn_handle));
     CHECK_CUDNN(cudnnCreatePoolingDescriptor(&pooling_desc));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_tensor_desc));
+    CHECK_CUDNN(cudnnCreateTensorDescriptor(&src2_tensor_desc));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&dst_tensor_desc));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&bn_tensor_desc));
     CHECK_CUDNN(cudnnCreateActivationDescriptor(&activation_desc));
@@ -67,7 +68,6 @@ void CUDAContext::init() {
     CHECK_CUSOLVER(cusolverDnSetStream(cusolver_handle, cusolver_stream));
 
     getCUDNNWorkspace(64 * 1024 * 1024);
-
 //    CHECK_CUBLAS(cublasLtCreate(&cublaslt_Handle));
 //    CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));
 }
@@ -133,7 +133,7 @@ std::shared_ptr<std::byte> CUDAContext::malloc(size_t size, bool zero, size_t& i
     std::byte* dev_ptr;
     CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&dev_ptr), size));
     allocations.emplace(id, std::shared_ptr<std::byte>(dev_ptr, CudaDeleter<std::byte>()));
-
+//    allocations.emplace(id, std::shared_ptr<std::byte>(dev_ptr));
     if(zero)
         CHECK_CUDART(cudaMemset(dev_ptr, 0, size));
     return allocations.at(id);
@@ -141,10 +141,22 @@ std::shared_ptr<std::byte> CUDAContext::malloc(size_t size, bool zero, size_t& i
 
 void CUDAContext::free(size_t id) {
     // ToDo: handle reuse
-    CHECK_CUDART(cudaFree(allocations.at(id).get()));
-    allocations.erase(id);
+    auto to_be_freed = allocations.at(id).get();
+
+    if(to_be_freed) {
+        CHECK_CUDART(cudaDeviceSynchronize());
+
+        CHECK_CUDART(cudaFree(to_be_freed));
+        allocations.erase(id);
+    }
+    else
+        throw std::runtime_error("problem running cudaFree() on null");
 }
 
-int CUDAContext::getMaxNumThreads() {
+int CUDAContext::getMaxNumThreads() const {
     return device_properties.maxThreadsPerBlock;
+}
+
+int CUDAContext::getMaxNumBlocks() const {
+    return device_properties.maxGridSize[0];
 }

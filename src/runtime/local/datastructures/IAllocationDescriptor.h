@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <string_view>
 
 // An alphabetically sorted wishlist of supported allocation types ;-)
 // Supporting all of that is probably unmaintainable :-/
@@ -36,6 +37,11 @@ enum class ALLOCATION_TYPE {
     NUM_ALLOC_TYPES
 };
 
+// string representation of enum
+static std::string_view allocation_types[] = { "DIST_GRPC", "DIST_GRPC_ASYNC", "DIST_GRPC_SYNC", "DIST_MPI", "DIST_SPARK",
+                                              "GPU_CUDA", "GPU_HIP", "HOST", "HOST_PINNED_CUDA", "FPGA_INT", "FPGA_XLX",
+                                              "ONEAPI", "NUM_ALLOC_TYPES" };
+
 /**
  * @brief The IAllocationDescriptor interface class describes an abstract interface to handle memory allocations
  *
@@ -47,14 +53,19 @@ enum class ALLOCATION_TYPE {
  * the allocator.
  */
 class IAllocationDescriptor {
+protected:
+    size_t size = 0;
 public:
     virtual ~IAllocationDescriptor() = default;
     [[nodiscard]] virtual ALLOCATION_TYPE getType() const = 0;
-    virtual void createAllocation(size_t size, bool zero) = 0;
-    virtual std::string getLocation() const = 0;
+    [[nodiscard]] virtual std::unique_ptr<IAllocationDescriptor> createAllocation(size_t size, bool zero)  const = 0;
+    [[nodiscard]] virtual std::string getLocation() const = 0;
     virtual std::shared_ptr<std::byte> getData() = 0;
     virtual void transferTo(std::byte* src, size_t size) = 0;
     virtual void transferFrom(std::byte* dst, size_t size) = 0;
     [[nodiscard]] virtual std::unique_ptr<IAllocationDescriptor> clone() const = 0;
     virtual bool operator==(const IAllocationDescriptor* other) const { return (getType() == other->getType()); }
+    [[nodiscard]] virtual size_t getSize() const { return size; };
+
+    virtual std::string_view getTypeName() const { return allocation_types[static_cast<int>(getType())]; }
 };

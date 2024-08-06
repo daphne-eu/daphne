@@ -86,7 +86,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             for (size_t i = 0; i < numInputs; i++)
             {
                 auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
-                auto distrData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                auto distrData = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getDistributedData();
                 
                 MPIHelper::StoredInfo storedData({distrData.identifier, distrData.numRows, distrData.numCols});                
                 task.inputs.push_back(storedData);
@@ -105,12 +105,12 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                 auto resMat = *res[idx++];
                 auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(std::to_string(rank));
 
-                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                auto data = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getDistributedData();
                 data.identifier = info.identifier;
                 data.numRows = info.numRows;
                 data.numCols = info.numCols;
                 data.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);                                                
+                dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->updateDistributedData(data);
             }
         }
     }
@@ -151,7 +151,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DTRes, const Structu
             distributed::Task task;
             for (size_t i = 0; i < numInputs; i++){
                 auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
-                auto distrData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+                auto distrData = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getDistributedData();
 
                 distributed::StoredData protoData;
                 protoData.set_identifier(distrData.identifier);
@@ -179,12 +179,12 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DTRes, const Structu
                 auto resMat = *res[o];
                 auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(addr);
 
-                auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+                auto data = dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getDistributedData();
                 data.identifier = computeResult.outputs()[o].stored().identifier();
                 data.numRows = computeResult.outputs()[o].stored().num_rows();
                 data.numCols = computeResult.outputs()[o].stored().num_cols();
                 data.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);                                                
+                dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->updateDistributedData(data);                                                
             }            
         }                
     }
@@ -225,7 +225,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes, const Structur
             distributed::Task task;
             for (size_t i = 0; i < numInputs; i++){
                 auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
-                auto distrData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+                auto distrData = dynamic_cast<AllocationDescriptorMPI*>(dp->getAllocation(0))->getDistributedData();
 
                 distributed::StoredData protoData;
                 protoData.set_identifier(distrData.identifier);
@@ -250,15 +250,15 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes, const Structur
                     auto resMat = *res[o];
                     auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(addr);
 
-                    auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+                    auto data = dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->getDistributedData();
                     data.identifier = computeResult.outputs()[o].stored().identifier();
                     data.numRows = computeResult.outputs()[o].stored().num_rows();
                     data.numCols = computeResult.outputs()[o].stored().num_cols();
                     data.isPlacedAtWorker = true;
-                    dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);                                                
+                    dynamic_cast<AllocationDescriptorGRPC*>(dp->getAllocation(0))->updateDistributedData(data);                                                
                 }
             });
-            threads_vector.push_back(move(t));           
+            threads_vector.push_back(std::move(t));
         }
         for (auto &thread : threads_vector)
             thread.join();

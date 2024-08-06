@@ -1,0 +1,60 @@
+
+import "nn/layers/conv2d_kernel.daph" as "conv2d";
+import "nn/layers/conv2d.daph" as "conv2d_dsl"; #returns segFault (issue #77)
+
+# num images
+N = 1;
+Himg = 8;
+Wimg = 8;
+#channels
+C = 1;
+# seed for random input generation
+seed = 42;
+F = 1;
+Hf = 3;
+Wf = 3;
+stride = 1;
+pad = 2;
+
+X = rand(N, C * Himg * Wimg, 0.0, 256.0, 0.8, seed);
+W = rand(F, C * Hf * Wf, 0.0, 1.0, 1.0, seed);
+b = fill(0.0, F, 1);
+print("\n--- X: ",0);
+print(X);
+print("--- W: ",0);
+print(W);
+#write(X, "/daphne/conv2d_daph_X.csv");
+#write(W, "/daphne/conv2d_daph_W.csv");
+
+#Xconv1, Hout1, Wout1 = conv2d.forward(X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+Xconv2, Hout2, Wout2 = conv2d_dsl.forward(X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+
+#print("\n\n---Start---Convolution debug outputs:\n");
+#dXconv1, dW1, db1 = conv2d.backward(Xconv1, Hout1, Wout1, X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+dXconv2, dW2, db2 = conv2d_dsl.backward(Xconv2, Hout2, Wout2, X, W, b, C, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+#print("\n\n---End-----Convolution debug outputs:\n");
+
+print("\nX dims: ",0) ;print(nrow(X),0);print("x",0);print(ncol(X));
+#print("Xconv1 dims: ",0) ;print(nrow(Xconv1),0);print("x",0);print(ncol(Xconv1));
+print("Xconv2 dims: ",0) ;print(nrow(Xconv2),0);print("x",0);print(ncol(Xconv2));
+#print("conv1 output dims(Hout/Wout): ",0);print(Hout1,0);print("x",0);print(Wout1);
+print("conv2 output dims(Hout/Wout): ",0);print(Hout2,0);print("x",0);print(Wout2);
+#print("\n--- Xconv1: ",0);
+#print(Xconv1);
+print("--- Xconv2: ",0);
+print(Xconv2);
+#diff = Xconv1 - Xconv2 < 10e-13;
+#print("\nSame output cells(< 10e-13): ",0);
+#print(diff);
+#print("Same output cells: ",0);print(sum(diff),0);print("/",0);print(ncol(diff));print("");
+
+print("dXconv2 dims: ",0) ;print(nrow(dXconv2),0);print("x",0);print(ncol(dXconv2));
+print("dW2 dims: ",0) ;print(nrow(dW2),0);print("x",0);print(ncol(dW2));
+print("db2 dims: ",0) ;print(nrow(db2),0);print("x",0);print(ncol(db2));
+
+print("--- dXconv2: ",0);
+print(dXconv2);
+print("--- dW2: ",0);
+print(dW2);
+print("--- db2: ",0);
+print(db2);

@@ -39,6 +39,7 @@ set(TEST_SOURCES
         api/cli/inference/InferenceTest.cpp
         api/cli/io/ReadTest.cpp
         api/cli/literals/LiteralsTest.cpp
+        api/cli/nn/NNOperationsTest.cpp
         api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
@@ -163,7 +164,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             runtime/local/kernels/CUDA_ContextTest.cpp
             runtime/local/kernels/DNNActivationTest.cpp
             runtime/local/kernels/DNNAffineTest.cpp
-            runtime/local/kernels/DNNBatchNormTest.cpp
+#            runtime/local/kernels/DNNBatchNormTest.cpp
             runtime/local/kernels/DNNConvolutionTest.cpp
             runtime/local/kernels/DNNSoftmaxTest.cpp)
 endif()

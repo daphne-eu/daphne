@@ -1,0 +1,14 @@
+
+import "nn/layers/relu_dsl.daph" as "relu";
+import "./test_utils.daph" as "util";
+
+eps=1e-9f;
+
+X = readMatrix("test/data/nn_validation/X.csv");
+outR = readMatrix("test/data/nn_validation/outR.csv");
+expected = readMatrix("test/data/nn_validation/doutR.csv");
+
+result = relu.backward(outR, X);
+
+diff = util.compare_matrices(result, expected);
+print("diff: ", 0); print(diff);

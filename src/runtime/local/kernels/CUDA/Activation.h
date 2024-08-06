@@ -30,4 +30,9 @@ namespace CUDA::NN::Activation {
     struct Forward {
         static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
     };
+
+    template<typename OP, typename DTRes, typename DTArg>
+    struct Backward {
+        static void apply(DTRes *&res, const DTArg *grad_in, const DTArg *data_in, DCTX(dctx));
+    };
 }
