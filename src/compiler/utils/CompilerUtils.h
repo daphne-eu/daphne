@@ -176,6 +176,14 @@ public:
                 return "Structure";
             else
                 return "Frame";
+        else if(auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
+            if(generalizeToStructure)
+                return "Structure";
+            else {
+                const std::string dtName = mlirTypeToCppTypeName(lstTy.getElementType(), angleBrackets, false);
+                return angleBrackets ? ("List<" + dtName + ">") : ("List_" + dtName);
+            }
+        }
         else if(llvm::isa<mlir::daphne::StringType>(t))
             // This becomes "const char *" (which makes perfect sense for
             // strings) when inserted into the typical "const DT *" template of

@@ -1,0 +1,8 @@
+List(3, DenseMatrix, double)
+DenseMatrix(1x1, double)
+1
+DenseMatrix(2x1, double)
+3
+2
+DenseMatrix(1x2, double)
+-2 -5

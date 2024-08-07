@@ -1,0 +1,9 @@
+// Arguments to append/remove stay unchanged.
+
+l1 = createList([1]);
+l2 = append(l1, [2]);
+l3, e = remove(l2, 0);
+
+print(l1);
+print(l2);
+print(l3);

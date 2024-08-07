@@ -108,9 +108,9 @@ void processValue(OpBuilder builder, Value v) {
         builder.setInsertionPointAfter(defOp);
         builder.create<daphne::IncRefOp>(v.getLoc(), v);
     }
-        
 
-    if(!llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::StringType>(v.getType()))
+    if (!llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType,
+                   daphne::StringType>(v.getType()))
         return;
 
     Operation* decRefAfterOp = nullptr;
@@ -176,7 +176,7 @@ void processValue(OpBuilder builder, Value v) {
 
 /**
  * @brief Inserts an `IncRefOp` for the given value if its type is a DAPHNE
- * data type (matrix, frame, string).
+ * data type (matrix, frame, list, string).
  *
  * If the type is unknown, throw an exception.
  *
@@ -185,7 +185,7 @@ void processValue(OpBuilder builder, Value v) {
  */
 void incRefIfObj(Value v, OpBuilder & b) {
     Type t = v.getType();
-    if(llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::StringType>(t))
+    if(llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(t))
         b.create<daphne::IncRefOp>(v.getLoc(), v);
     else if(llvm::isa<daphne::UnknownType>(t))
         throw ErrorHandler::compilerError(
@@ -196,7 +196,8 @@ void incRefIfObj(Value v, OpBuilder & b) {
 
 /**
  * @brief Inserts an `IncRefOp` for each operand of the given operation whose
- * type is a DAPHNE data type (matrix, frame, string), right before the operation.
+ * type is a DAPHNE data type (matrix, frame, list, string), right before the
+ * operation.
  *
  * @param op
  * @param b
