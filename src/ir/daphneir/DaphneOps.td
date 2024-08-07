@@ -1352,7 +1352,7 @@ def Daphne_PrintOp : Daphne_Op<"print"> {
     // TODO We might change it to only accept scalars here and enforce toString
     // for matrices and frames. But currently, we need it like that for the
     // rest of the program.
-    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame, AnyMemRef, Unknown]>:$arg, BoolScalar:$newline, BoolScalar:$err);
+    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame, List, AnyMemRef, Unknown]>:$arg, BoolScalar:$newline, BoolScalar:$err);
     let results = (outs); // no results
 }
 
@@ -1579,14 +1579,14 @@ def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
 def Daphne_IncRefOp : Daphne_Op<"incRef"> {
     let summary = "Increases the reference counter of the underlying runtime data object.";
 
-    let arguments = (ins MatrixOrFrameOrString:$arg);
+    let arguments = (ins AnyTypeOf<[MatrixOrFrameOrString, List]>:$arg);
     let results = (outs); // no results
 }
 
 def Daphne_DecRefOp : Daphne_Op<"decRef"> {
     let summary = "Decreases the reference counter of the underlying runtime data object and frees it if the reference counter becomes zero.";
 
-    let arguments = (ins MatrixOrFrameOrString:$arg);
+    let arguments = (ins AnyTypeOf<[MatrixOrFrameOrString, List]>:$arg);
     let results = (outs); // no results
 }
 
@@ -1606,6 +1606,46 @@ def Daphne_StopProfilingOp : Daphne_Op<"stopProfiling"> {
 
     let arguments = (ins); //no arguments
     let results = (outs); // no results
+}
+
+// ****************************************************************************
+// List operations
+// ****************************************************************************
+
+def Daphne_CreateListOp : Daphne_Op<"createList", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "Creates a new list from the given elements";
+
+    let arguments = (ins Variadic<MatrixOrU>:$elems);
+    let results = (outs ListOrU:$res);
+}
+
+def Daphne_LengthOp : Daphne_Op<"length", [
+    DataTypeSca, ValueTypeSize
+]> {
+    let summary = "Returns the number of elements in the given list";
+    
+    let arguments = (ins ListOrU:$arg);
+    let results = (outs Size:$res);
+}
+
+def Daphne_AppendOp : Daphne_Op<"append", [
+    TypeFromFirstArg
+]> {
+    let summary = "Appends the given element to the end of the given list";
+    
+    let arguments = (ins ListOrU:$argList, MatrixOrU:$elem);
+    let results = (outs ListOrU:$resList);
+}
+
+def Daphne_RemoveOp : Daphne_Op<"remove", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "Removes and returns the element at the specified index from the given list";
+    
+    let arguments = (ins ListOrU:$argList, Size:$idx);
+    let results = (outs ListOrU:$resList, MatrixOrU:$elem);
 }
 
 // ****************************************************************************

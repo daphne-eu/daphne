@@ -226,6 +226,16 @@ def MatrixOrFrame : AnyTypeOf<[Matrix, Frame, Unknown]>;
 def MatrixOrU : AnyTypeOf<[Matrix, Unknown]>;
 def FrameOrU : AnyTypeOf<[Frame, Unknown]>;
 
+def List : Daphne_Type<"List"> {
+    let summary = "list";
+
+    let parameters = (ins
+        "::mlir::Type":$elementType
+    );
+}
+
+def ListOrU : AnyTypeOf<[List, Unknown]>;
+
 // ****************************************************************************
 // Distributed types
 // ****************************************************************************

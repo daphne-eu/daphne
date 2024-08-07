@@ -49,6 +49,7 @@ DaphneDSL's built-in functions can be categorized as follows:
 - Input/output
 - Data preprocessing
 - Measurements
+- List operations
 
 ## Data generation
 
@@ -652,3 +653,24 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 - **`now`**`()`
 
     Returns the current time since the epoch in nano seconds.
+
+## List operations
+
+- **`createList`**`(elm:matrix, ...)`
+
+    Creates and returns a new list from the given elements `elm`.
+    At least one element must be specified.
+
+- **`length`**`(lst:list)`
+
+    Returns the number of elements in the given list `lst`.
+
+- **`append`**`(lst:list, elm:matrix)`
+
+    Appends the given matrix `elm` to the given list `lst`.
+    Returns the result as a new list (the argument list stays unchanged).
+
+- **`remove`**`(lst:list, idx:size)`
+
+    Removes the element at position `idx` (counting starts at zero) from the given list `lst`.
+    Returns (1) the result as a new list (the argument list stays unchanged), and (2) the removed element.

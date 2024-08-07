@@ -1249,9 +1249,46 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return static_cast<mlir::Value>(builder.create<MapOp>(
             loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>()
         ));
-
     }
 
+    // ****************************************************************************
+    // List operations
+    // ****************************************************************************
+
+    if(func == "createList") {
+        checkNumArgsMin(loc, func, numArgs, 1);
+
+        return static_cast<mlir::Value>(builder.create<CreateListOp>(
+            loc, utils.unknownType, args
+        ));
+    }
+    if(func == "length") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+
+        return static_cast<mlir::Value>(builder.create<LengthOp>(
+            loc, utils.sizeType, args[0]
+        ));
+    }
+    if(func == "append") {
+        checkNumArgsExact(loc, func, numArgs, 2);
+
+        mlir::Value list = args[0];
+        mlir::Value elem = args[1];
+
+        return static_cast<mlir::Value>(builder.create<AppendOp>(
+            loc, utils.unknownType, list, elem
+        ));
+    }
+    if(func == "remove") {
+        checkNumArgsExact(loc, func, numArgs, 2);
+
+        mlir::Value list = args[0];
+        mlir::Value idx = utils.castSizeIf(args[1]);
+
+        return builder.create<RemoveOp>(
+            loc, utils.unknownType, utils.unknownType, list, idx
+        ).getResults();
+    }
 
     // ********************************************************************
 

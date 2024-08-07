@@ -299,6 +299,9 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
             os << '?';
         os << '>';
     }
+    else if (auto t = type.dyn_cast<mlir::daphne::ListType>()) {
+        os << "List<" << t.getElementType() << '>';
+    }
     else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
         os << "Handle<" << handle.getDataType() << ">";
     }

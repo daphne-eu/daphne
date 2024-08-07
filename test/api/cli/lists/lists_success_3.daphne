@@ -1,0 +1,20 @@
+// Create a list, append, and remove some elements.
+
+l = createList([1], [2, 22]);
+print(length(l));
+print(l);
+print("");
+
+l = append(l, [3, 33, 333]);
+print(length(l));
+print(l);
+print("");
+
+l = append(l, [4, 44, 444, 4444]);
+print(length(l));
+print(l);
+print("");
+
+l, e = remove(l, 1);
+print(length(l));
+print(l);

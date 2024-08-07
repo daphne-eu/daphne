@@ -41,6 +41,7 @@
 #define TAG_IO "[io]"
 #define TAG_KERNELS "[kernels]"
 #define TAG_DNN "[dnn]"
+#define TAG_LISTS "[lists]"
 #define TAG_LITERALS "[literals]"
 #define TAG_OPERATIONS "[operations]"
 #define TAG_PARSER "[parser]"

@@ -297,41 +297,20 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
   # we (a) emulate lists by matrices to which we add and remove rows/columns (the "lists" part),
   # and (b) split the data structure into its four components (the "of lists" part).
   #queue = list(list(1,I,X2,y2)); # node IDs / data indicators
-  queue_nID = as.matrix(1); # "list" of scalars (one scalar per row)
-  queue_sizeni = as.matrix<si64>(ncol(I)); # "list" of scalars indicating the #cols of each element in queue_nI (one scalar per row)
-  queue_nI = I; # "list" of row-vectors with different #cols (all row-vectors in the list cbinded)
-  queue_sizeX2y2 = as.matrix<si64>(nrow(X2)); # "list" of scalars indicating the #rows of each element in queue_X2 and queue_y2 (one scalar per row)
-  queue_X2 = X2; # "list" of matrices with different #rows (all matrices in the list rbinded)
-  queue_y2 = y2; # "list" of matrices with different #rows (all matrices in the list rbinded)
+  queue_nID = createList([1]);
+  queue_nI = createList(I);
+  queue_X2 = createList(X2);
+  queue_y2 = createList(y2);
   # TODO .0 should not be necessary.
   maxPath = 1.0;
-  while( nrow(queue_nID) > 0 ) {
+  while( length(queue_nID) > 0 ) {
     # pop next node from queue for splitting
-    nID = as.scalar(queue_nID[0, ]);
-    sizeni = as.scalar(queue_sizeni[0, ]);
-    nI = queue_nI[, :sizeni];
-    sizeX2y2 = as.scalar(queue_sizeX2y2[0, ]);
-    X2 = queue_X2[:sizeX2y2, ];
-    y2 = queue_y2[:sizeX2y2, ];
-    # TODO Instead of this if-then-else, it should be valid to slice rows 1:1 on 1 row, result should be 0 rows
-    if(nrow(queue_nID) > 1) {
-      queue_nID = queue_nID[1:, ];
-      queue_sizeni = queue_sizeni[1: ,];
-      queue_nI = queue_nI[, sizeni:];
-      queue_sizeX2y2 = queue_sizeX2y2[1:, ];
-      queue_X2 = queue_X2[sizeX2y2:, ];
-      queue_y2 = queue_y2[sizeX2y2:, ];
-    }
-    else {
-      # Create 0-row matrices for "lists" along the row axis
-      # and 0-col matrices for "lists" along the column axis.
-      queue_nID = fill(1, 0, 1);
-      queue_sizeni = fill(1, 0, 1);
-      queue_nI = fill(1.0, 1, 0);
-      queue_sizeX2y2 = fill(1, 0, 1);
-      queue_X2 = fill(1.0, 0, ncol(X2));
-      queue_y2 = fill(1.0, 0, ncol(y2));
-    }
+    queue_nID, nIDmat = remove(queue_nID, 0);
+    # TODO <si64> should not be necessary here.
+    nID = as.scalar<si64>(nIDmat);
+    queue_nI, nI = remove(queue_nI, 0);
+    queue_X2, X2 = remove(queue_X2, 0);
+    queue_y2, y2 = remove(queue_y2, 0);
     if(verbose)
       print("decisionTree: attempting split of node "+nID+" ("+sum(nI)+" rows)");
 
@@ -365,12 +344,10 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
     # split data, finalize or recurse
     if( validSplit ) {
       if( sum(Ileft) >= min_split && floor(log(IDleft,2))+2 < max_depth ) {
-        queue_nID = rbind(queue_nID, as.matrix(IDleft));
-        queue_sizeni = rbind(queue_sizeni, as.matrix<si64>(ncol(Ileft)));
-        queue_nI = cbind(queue_nI, Ileft);
-        queue_sizeX2y2 = rbind(queue_sizeX2y2, as.matrix<si64>(nrow(X2)));
-        queue_X2 = rbind(queue_X2, X2);
-        queue_y2 = rbind(queue_y2, y2);
+        queue_nID = append(queue_nID, as.matrix(IDleft));
+        queue_nI = append(queue_nI, Ileft);
+        queue_X2 = append(queue_X2, X2);
+        queue_y2 = append(queue_y2, y2);
       }
       else {
         # TODO as.bool() should not be necessary, should be casted automatically (see #661).
@@ -378,12 +355,10 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
         M[,2*IDleft - 1] = as.matrix(computeLeafLabel(y2, Ileft, as.bool(classify), verbose));
       }
       if( sum(Iright) >= min_split && floor(log(IDright,2))+2 < max_depth ) {
-        queue_nID = rbind(queue_nID, as.matrix(IDright));
-        queue_sizeni = rbind(queue_sizeni, as.matrix<si64>(ncol(Iright)));
-        queue_nI = cbind(queue_nI, Iright);
-        queue_sizeX2y2 = rbind(queue_sizeX2y2, as.matrix<si64>(nrow(X2)));
-        queue_X2 = rbind(queue_X2, X2);
-        queue_y2 = rbind(queue_y2, y2);
+        queue_nID = append(queue_nID, as.matrix(IDright));
+        queue_nI = append(queue_nI, Iright);
+        queue_X2 = append(queue_X2, X2);
+        queue_y2 = append(queue_y2, y2);
       }
       else {
         # TODO as.bool() should not be necessary, should be casted automatically (see #661).
