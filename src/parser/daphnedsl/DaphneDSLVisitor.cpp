@@ -1324,11 +1324,11 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
 
     if(op == "+")
         // Note that we use '+' for both addition (EwAddOp) and concatenation
-        // (ConcatOp). The choice is made based on the types of the operands
-        // (if one operand is a string, we choose ConcatOp). However, the types
+        // (EwConcatOp). The choice is made based on the types of the operands
+        // (if one operand is a string, we choose EwConcatOp). However, the types
         // might not be known at this point in time. Thus, we always create an
         // EwAddOp here. Note that EwAddOp has a canonicalize method rewriting
-        // it to ConcatOp if necessary.
+        // it to EwConcatOp if necessary.
         return utils.retValWithInferedType(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
     if(op == "-")
         return utils.retValWithInferedType(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));

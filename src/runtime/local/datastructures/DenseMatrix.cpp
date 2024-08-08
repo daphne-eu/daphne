@@ -73,7 +73,7 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
         AllocationDescriptorHost myHostAllocInfo;
         alloc_shared_values();
         if(zero)
-            memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
+            std::fill(values.get(), values.get() + maxNumRows * numCols, ValueType(ValueTypeUtils::default_value<ValueType>));
         new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
     }
     this->mdo->addLatest(new_data_placement->dp_id);
@@ -334,3 +334,6 @@ template class DenseMatrix<unsigned int>;
 template class DenseMatrix<unsigned long>;
 template class DenseMatrix<bool>;
 template class DenseMatrix<const char*>;
+template class DenseMatrix<std::string>;
+template class DenseMatrix<FixedStr16>;
+

@@ -18,11 +18,13 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 
 #include <limits>
 #include <stdexcept>
 #include <sstream>
+#include <algorithm>
 
 #include <cmath>
 
@@ -58,8 +60,18 @@ using EwUnaryScaFuncPtr = VTRes (*)(VTArg, DCTX());
  */
 template<typename VTRes, typename VTArg>
 EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
+    // The template instantiation of EwUnarySca must be guarded by the
+    // if-constexpr on supportsUnaryOp, such that we don't try to compile
+    // C++ code that is not applicable to the value type VTArg (e.g., an
+    // arithmetic operation on strings).
+
+    EwUnaryScaFuncPtr<VTRes, VTArg> res = nullptr;
     switch(opCode) {
-        #define MAKE_CASE(opCode) case opCode: return &EwUnarySca<opCode, VTRes, VTArg>::apply;
+        #define MAKE_CASE(opCode) \
+            case opCode: \
+                if constexpr(supportsUnaryOp<opCode, VTRes, VTArg>) \
+                    res = &EwUnarySca<opCode, VTRes, VTArg>::apply; \
+                break;
         // Arithmetic/general math.
         MAKE_CASE(UnaryOpCode::MINUS)
         MAKE_CASE(UnaryOpCode::ABS)
@@ -83,10 +95,23 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
         MAKE_CASE(UnaryOpCode::ROUND)
         // Comparison.
         MAKE_CASE(UnaryOpCode::ISNAN)
+        // String
+        MAKE_CASE(UnaryOpCode::LOWER)
+        MAKE_CASE(UnaryOpCode::UPPER)
         #undef MAKE_CASE
         default:
-            throw std::runtime_error("unknown UnaryOpCode");
+            throw std::runtime_error(
+                "unknown UnaryOpCode: " + std::to_string(static_cast<int>(opCode))
+            );
     }
+    if(!res)
+        throw std::runtime_error(
+            "the unary operation " + std::string(unary_op_codes[static_cast<int>(opCode)]) +
+            " is not supported on the value types " +
+            ValueTypeUtils::cppNameFor<VTRes> + " (res) and " +
+            ValueTypeUtils::cppNameFor<VTArg> + "(arg)"
+        );
+    return res;
 }
 
 // ****************************************************************************
@@ -108,6 +133,17 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
 // ****************************************************************************
 // (Partial) template specializations for different op codes
 // ****************************************************************************
+
+#define MAKE_EW_UNARY_STRING(opCode, expr) \
+    template<> \
+    struct EwUnarySca<opCode, std::string, std::string> { \
+        inline static std::string apply(std::string arg, DCTX(ctx)) { \
+            std::string new_string = arg; \
+            std::transform(new_string.begin(), new_string.end(), new_string.begin(), \
+                           static_cast<int(*)(int)>(expr)); \
+            return new_string; \
+        } \
+    };
 
 #define MAKE_EW_UNARY_SCA(opCode, expr) \
     template<typename TRes, typename TArg> \
@@ -171,9 +207,15 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::CEIL, std::ceil(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::ROUND, round(arg));
 // Comparison.
 MAKE_EW_UNARY_SCA(UnaryOpCode::ISNAN, std::isnan(arg));
+// String.
+MAKE_EW_UNARY_SCA(UnaryOpCode::LOWER, arg.lower())
+MAKE_EW_UNARY_SCA(UnaryOpCode::UPPER, arg.upper())
+MAKE_EW_UNARY_STRING(UnaryOpCode::LOWER, std::tolower)
+MAKE_EW_UNARY_STRING(UnaryOpCode::UPPER, std::toupper)
 
 #undef MAKE_EW_UNARY_SCA_CLOSED_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA
+#undef MAKE_EW_UNARY_STRING
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H

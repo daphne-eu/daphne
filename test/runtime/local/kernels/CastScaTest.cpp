@@ -47,3 +47,24 @@ TEST_CASE("castSca, actual casts", TAG_KERNELS) {
     CHECK(castSca<bool, double>(-123.4, nullptr) == true);
     CHECK(castSca<bool, double>(0.0, nullptr) == false);
 }
+TEST_CASE("castSca, actual casts std::string to numbers", TAG_KERNELS) {
+
+    CHECK(castSca<int64_t, std::string>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, std::string>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, std::string>("0", nullptr) == 0);
+    CHECK(castSca<double, std::string>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, std::string>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, std::string>("0.0", nullptr) == 0.0);
+    CHECK(castSca<long, std::string>("9223372036854775807", nullptr) == 9223372036854775807);
+    CHECK(castSca<long, std::string>("-9223372036854775807", nullptr) == -9223372036854775807);
+
+    CHECK(castSca<int64_t, FixedStr16>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, FixedStr16>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, FixedStr16>("0", nullptr) == 0);
+    CHECK(castSca<double, FixedStr16>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, FixedStr16>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, FixedStr16>("0.0", nullptr) == 0.0);
+    CHECK(castSca<long, FixedStr16>("922337203685477", nullptr) == 922337203685477);
+    CHECK(castSca<long, FixedStr16>("-92233720368547", nullptr) == -92233720368547);
+
+}

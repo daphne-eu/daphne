@@ -34,6 +34,13 @@
 // CSRMatrix currently only supports ADD and MUL opCodes
 #define DATA_TYPES_NO_CSR DenseMatrix, Matrix
 
+template<class DTarg, class DTres>
+void checkEwBinaryMat(BinaryOpCode opCode, const DTarg * lhs, const DTarg * rhs, const DTres * exp) {
+    DTres * res = nullptr;
+    ewBinaryMat<DTres, DTarg, DTarg>(opCode, res, lhs, rhs, nullptr);
+    CHECK(*res == *exp);
+}
+
 template<class DT>
 void checkEwBinaryMat(BinaryOpCode opCode, const DT * lhs, const DT * rhs, const DT * exp) {
     DT * res = nullptr;
@@ -203,6 +210,40 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (
 // Comparisons
 // ****************************************************************************
 
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(2, {VT("1"), VT("2"), VT("abc"),  VT("abcd"), VT("ABCD"), VT("34ab")});
+    auto m2 = genGivenVals<DT>(2, {VT("1"), VT("0"), VT("3"),  VT("abcd"), VT("abcd"), VT("34ab")});
+    auto m3 = genGivenVals<DenseMatrix<int>>(2, { 1, 0, 0, 1, 1, 1});
+    
+    SECTION("matrix") {
+        checkEwBinaryMat(BinaryOpCode::EQ, m1, m2, m3);
+    }
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(2, {VT("1"), VT("2"), VT("abc"),  VT("abcd"), VT("ABCD"), VT("34ab")});
+    auto m2 = genGivenVals<DT>(2, {VT("1"), VT("0"), VT("3"),  VT("abcd"), VT("abcd"), VT("34ab")});
+    auto m3 = genGivenVals<DenseMatrix<int>>(2, { 0, 1, 1, 0, 0, 0});
+    
+    SECTION("matrix") {
+        checkEwBinaryMat(BinaryOpCode::NEQ, m1, m2, m3);
+    }
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
     using DT = TestType;
     
@@ -239,6 +280,23 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (V
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(3, {VT("1"), VT("2"), VT("1"),  VT("abc"), VT("abcd"), VT("abcd"), VT("abcd"), VT("ABC"), VT("35abcd")});
+    auto m2 = genGivenVals<DT>(3, {VT("1"), VT("0"), VT("3"),  VT("abcd"), VT("abce"), VT("abcd"), VT("abc"), VT("abc"), VT("30abcd")});
+    auto m3 = genGivenVals<DenseMatrix<int>>(3, { 0, 0, 1, 1, 1, 0, 0, 0, 0});
+    
+    SECTION("matrix") {
+        checkEwBinaryMat(BinaryOpCode::LT, m1, m2, m3);
+    }
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
     using DT = TestType;
     
@@ -261,6 +319,23 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (V
     checkEwBinaryMat(BinaryOpCode::GT, m1, m2, m3);
     
     DataObjectFactory::destroy(m1, m2, m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(3, {VT("1"), VT("2"), VT("1"),  VT("abc"), VT("abcd"), VT("abcd"), VT("abcd"), VT("ABC"), VT("35abcd")});
+    auto m2 = genGivenVals<DT>(3, {VT("1"), VT("0"), VT("3"),  VT("abcd"), VT("abce"), VT("abcd"), VT("abc"), VT("abc"), VT("30abcd")});
+    auto m3 = genGivenVals<DenseMatrix<int>>(3, {0, 1, 0, 0, 0, 0, 1, 0, 1});
+    
+    SECTION("matrix") {
+        checkEwBinaryMat(BinaryOpCode::GT, m1, m2, m3);
+    }
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
@@ -331,6 +406,28 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (V
     checkEwBinaryMat(BinaryOpCode::OR, m1, m2, m3);
     
     DataObjectFactory::destroy(m1, m2, m3);
+}
+
+// ****************************************************************************
+// string.
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("concat"), TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    using VTr = std::string;
+    
+    auto m1 = genGivenVals<DT>(2, {VT("1"), VT("2"),  VT(""), VT(""),    VT("ab"), VT("abcd")});
+    auto m2 = genGivenVals<DT>(2, {VT(""),  VT("0"),  VT(""), VT("abc"), VT("ce"), VT("abcd")});
+    auto m3 = genGivenVals<DenseMatrix<VTr>>(2, {VTr("1"), VTr("20"), VTr(""), VTr("abc"), VTr("abce"), VTr("abcdabcd")});
+    
+    SECTION("matrix") {
+        checkEwBinaryMat(BinaryOpCode::CONCAT, m1, m2, m3);
+    }
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
 }
 
 // ****************************************************************************
