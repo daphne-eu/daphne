@@ -2193,7 +2193,7 @@ Its syntax is inspired by C/Java-like languages.</p>
 <h2 id="variables">Variables</h2>
 <p>Variables are used to refer to values.</p>
 <p><strong>Valid identifiers</strong> start with a letter (<code>a-z</code>, <code>A-Z</code>) or an underscore (<code>_</code>) that can be followed by any number of letters (<code>a-z</code>, <code>A-Z</code>), underscores (<code>_</code>), and decimal digits (<code>0-9</code>).</p>
-<p>The following reserved keywords must not be used as identifiers: <code>if</code>, <code>else</code>, <code>while</code>, <code>do</code>, <code>for</code>, <code>in</code>, <code>true</code>, <code>false</code>, <code>as</code>, <code>def</code>, <code>return</code>, <code>import</code>, <code>matrix</code>, <code>frame</code>, <code>scalar</code>, <code>f64</code>, <code>f32</code>, <code>si64</code>, <code>si8</code>, <code>ui64</code>, <code>ui32</code>, <code>ui8</code>, <code>str</code>, <code>nan</code>, and <code>inf</code>.</p>
+<p>The following reserved keywords must not be used as identifiers: <code>if</code>, <code>else</code>, <code>while</code>, <code>do</code>, <code>for</code>, <code>in</code>, <code>true</code>, <code>false</code>, <code>as</code>, <code>def</code>, <code>return</code>, <code>import</code>, <code>matrix</code>, <code>frame</code>, <code>scalar</code>, <code>list</code>, <code>f64</code>, <code>f32</code>, <code>si64</code>, <code>si8</code>, <code>ui64</code>, <code>ui32</code>, <code>ui8</code>, <code>str</code>, <code>nan</code>, and <code>inf</code>.</p>
 <p><em>Examples:</em></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>X
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>y
@@ -2210,6 +2210,7 @@ Variables must have been assigned to before they are used in an expression.</p>
 <li><code>matrix</code>: homogeneous value type for all cells</li>
 <li><code>frame</code>: a table with columns of potentially different value types</li>
 <li><code>scalar</code>: a single value</li>
+<li><code>list</code>: an ordered sequence of elements of homogeneous data/value type; currently, only matrices can be elements of lists</li>
 </ul>
 <p><strong>Value types</strong> specify the representation of individual values. We currently support:</p>
 <ul>

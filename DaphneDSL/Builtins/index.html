@@ -950,6 +950,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#list-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      List operations
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1995,6 +2004,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#list-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      List operations
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2044,6 +2062,7 @@ Those library functions will internally be implemented using the built-in functi
 <li>Input/output</li>
 <li>Data preprocessing</li>
 <li>Measurements</li>
+<li>List operations</li>
 </ul>
 <h2 id="data-generation">Data generation</h2>
 <ul>
@@ -2942,6 +2961,28 @@ Specifying <code>min</code> and <code>max</code> is optional; if they are omitte
 <li>
 <p><strong><code>now</code></strong><code>()</code></p>
 <p>Returns the current time since the epoch in nano seconds.</p>
+</li>
+</ul>
+<h2 id="list-operations">List operations</h2>
+<ul>
+<li>
+<p><strong><code>createList</code></strong><code>(elm:matrix, ...)</code></p>
+<p>Creates and returns a new list from the given elements <code>elm</code>.
+At least one element must be specified.</p>
+</li>
+<li>
+<p><strong><code>length</code></strong><code>(lst:list)</code></p>
+<p>Returns the number of elements in the given list <code>lst</code>.</p>
+</li>
+<li>
+<p><strong><code>append</code></strong><code>(lst:list, elm:matrix)</code></p>
+<p>Appends the given matrix <code>elm</code> to the given list <code>lst</code>.
+Returns the result as a new list (the argument list stays unchanged).</p>
+</li>
+<li>
+<p><strong><code>remove</code></strong><code>(lst:list, idx:size)</code></p>
+<p>Removes the element at position <code>idx</code> (counting starts at zero) from the given list <code>lst</code>.
+Returns (1) the result as a new list (the argument list stays unchanged), and (2) the removed element.</p>
 </li>
 </ul>
 
