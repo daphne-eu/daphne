@@ -1119,6 +1119,15 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
         return mlir::failure();
     }
 
+    // ToDo: This check prevents merging transpose into matrix multiplication because that is not yet supported by our
+    //   sparse kernels.
+    // ToDo: bring user config here for sparsity threshold or properly use MatrixRepresentation
+    if(auto t = rhs.getType().dyn_cast<mlir::daphne::MatrixType>()) {
+        auto sparsity = t.getSparsity();
+        if(sparsity < 0.25)
+            return mlir::failure();
+    }
+
 #if 0
     // TODO Adapt PhyOperatorSelectionPass once this code is turned on again.
     if(lhsTransposeOp) {
