@@ -34,10 +34,7 @@
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
 */
-#include <iostream>
 
-
-#include "compiler/utils/CompilerUtils.h"
 #include "compiler/utils/LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
@@ -45,25 +42,28 @@
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
-#include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
+// #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
-#include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
-#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
-#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+// #include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
+// #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
+// #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+// #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
+// #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Dialect/Tensor/IR/Tensor.h"
+// #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/IR/AffineMap.h"
+#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/UseDefLists.h"
 #include "mlir/IR/Value.h"
@@ -72,7 +72,6 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/ArrayRef.h"
 
 using namespace mlir;
@@ -80,6 +79,7 @@ using namespace mlir;
 class SumRowOpLowering : public OpConversionPattern<daphne::RowAggSumOp> {
 public:
     using OpConversionPattern::OpConversionPattern;
+    // using mlir::RewritePattern::rewrite;
 
     explicit SumRowOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
             : mlir::OpConversionPattern<daphne::RowAggSumOp>(typeConverter, ctx,
@@ -100,61 +100,83 @@ public:
         ssize_t numCols = matrixType.getNumCols();
 
         MemRefType argMemRefType = mlir::MemRefType::get({numRows, numCols}, matrixElementType);
-        [[maybe_unused]] mlir::Value argMatrix = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+        mlir::Value argMatrix = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
             loc, argMemRefType, adaptor.getArg());
 
         if (matrixElementType.isIntOrIndex()) {
-            [[maybe_unused]] IntegerType signlessType = rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth());
+            IntegerType signlessType = rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth());
             // Reserve memory for result
+            Value resMemref = rewriter.create<mlir::memref::AllocOp>(loc, mlir::MemRefType::get({numRows, 1}, matrixElementType));
 
-            // ...
+            auto outerLoop = rewriter.create<AffineForOp>(loc, 0, numRows, 1);
+
+            rewriter.setInsertionPointToStart(outerLoop.getBody());
+            {
+                Value rowSum = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(signlessType));
+                auto innerLoop = rewriter.create<AffineForOp>(loc, 0, numCols, 1, ValueRange{rowSum});
+                
+                rewriter.setInsertionPointToStart(innerLoop.getBody());
+                {
+                    SmallVector<Value, 2> loopIvs;
+                    loopIvs.push_back(outerLoop.getInductionVar());
+                    loopIvs.push_back(innerLoop.getInductionVar());
+
+                    Value currentElem = rewriter.createOrFold<memref::LoadOp>(loc, argMatrix, loopIvs);
+                    currentElem = this->typeConverter->materializeTargetConversion(rewriter, loc, signlessType, ValueRange{currentElem});
+
+                    Value runningSum = rewriter.create<arith::AddIOp>(loc, innerLoop.getRegionIterArgs()[0], currentElem);
+                    rewriter.create<AffineYieldOp>(loc, runningSum);
+                }
+                rewriter.setInsertionPointAfter(innerLoop);
+
+                auto castedRes = this->typeConverter->materializeTargetConversion(rewriter, loc, matrixElementType, ValueRange{innerLoop.getResult(0)});
+                rewriter.create<AffineStoreOp>(loc, castedRes, resMemref, ValueRange{outerLoop.getInductionVar(), rewriter.create<arith::ConstantIndexOp>(loc, 0)});
+            }
+            rewriter.setInsertionPointAfter(outerLoop);
+            
+            auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
+            rewriter.create<daphne::DecRefOp>(loc, adaptor.getArg());
+            rewriter.replaceOp(op, resDenseMatrix);
 
             return success();
         } else if (matrixElementType.isF64() || matrixElementType.isF32()) {
             // Reserve memory for result
-            // mlir::Value outputMemref = insertMemRefAlloc(mlir::MemRefType::get({numRows, 1}, matrixElementType), loc, rewriter);
-            // mlir::Value outputMemref = rewriter.create<memref::AllocaOp>(loc, MemRefType::get({numRows, 1}, matrixElementType));
-            // affineFillMemRef(0.0, rewriter, loc, {numRows, 1}, getContext(), outputMemref, matrixElementType);
+            Value resMemref = rewriter.create<mlir::memref::AllocOp>(loc, mlir::MemRefType::get({numRows, 1}, matrixElementType));
+
+            auto outerLoop = rewriter.create<AffineForOp>(loc, 0, numRows, 1);
+
+            rewriter.setInsertionPointToStart(outerLoop.getBody());
+            {
+                Value rowSum = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(matrixElementType));
+                auto innerLoop = rewriter.create<AffineForOp>(loc, 0, numCols, 1, ValueRange{rowSum});
+                rewriter.setInsertionPointToStart(innerLoop.getBody());
+                { 
+                    SmallVector<Value, 2> loopIvs;
+                    loopIvs.push_back(outerLoop.getInductionVar());
+                    loopIvs.push_back(innerLoop.getInductionVar());
+
+                    Value currentElem = rewriter.createOrFold<memref::LoadOp>(loc, argMatrix, loopIvs);
+
+                    // rowSum = rewriter.create<arith::AddFOp>(loc, rowSum, currentElem);
+                    Value runningSum = rewriter.create<arith::AddFOp>(loc, innerLoop.getRegionIterArgs()[0], currentElem);
+                    rewriter.create<AffineYieldOp>(loc, runningSum);
+                }
+                rewriter.setInsertionPointAfter(innerLoop);
+
+                // i, j -> i, 0
+                // AffineMap outputMap = AffineMap::get(2, 0,
+                //                         {rewriter.getAffineDimExpr(0),
+                //                         rewriter.getAffineConstantExpr(0)},
+                //                         getContext());
+                // rewriter.create<AffineStoreOp>(loc, innerLoop->getResult(0), resMemref, outputMap, loopIvs);
+                rewriter.create<AffineStoreOp>(loc, innerLoop.getResult(0), resMemref, ValueRange{outerLoop.getInductionVar(), rewriter.create<arith::ConstantIndexOp>(loc, 0)});
+                // empty yield is generated by for loop
+            }
+            rewriter.setInsertionPointAfter(outerLoop);
             
-            // attempt with linalg
-            auto initOutputTensor = rewriter.create<tensor::EmptyOp>(loc, ArrayRef<int64_t>{numRows, 1}, matrixElementType).getResult();
-            auto fillVal = rewriter.create<arith::ConstantOp>(loc, FloatAttr::get(matrixElementType, 0.0));
-            mlir::Value outputTensor = rewriter.create<linalg::FillOp>(loc, ValueRange{fillVal}, initOutputTensor).getResult(0);
-
-            // Create index mappings for input and res
-            AffineMap inputMap = AffineMap::getMultiDimIdentityMap(2, getContext());
-            // i, j -> i, 0
-            AffineMap outputMap = AffineMap::get(2, 0,
-                                    {rewriter.getAffineDimExpr(0),
-                                    rewriter.getAffineConstantExpr(0)},
-                                    getContext());
-            SmallVector<AffineMap, 2> indexingMaps{inputMap, outputMap};
-            SmallVector<utils::IteratorType, 2> iteratorTypes = {utils::IteratorType::parallel, utils::IteratorType::reduction};
-
-            // Build linalg generic op
-            auto genericOp = rewriter.create<linalg::GenericOp>(
-                    loc,
-                    // MemRefType::get({numRows, 1}, matrixElementType),
-                    outputTensor.getType(),
-                    ValueRange{argMatrix},
-                    ValueRange{outputTensor},
-                    indexingMaps,
-                    iteratorTypes,
-                    [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
-                        Value cumSum = OpBuilderNested.create<arith::AddFOp>(locNested, arg[1], arg[0]);
-                        // Value cumSum = OpBuilderNested.create<linalg::AddOp>(locNested, arg[0], arg[1]);
-                        OpBuilderNested.create<linalg::YieldOp>(locNested, cumSum);
-                    } // , missing attributes ?
-                );
-
-            // auto outputMemref = rewriter.create<bufferization::AllocTensorOp>(loc, MemRefType::get({numRows, 1}, matrixElementType), genericOp.getResult(0)); // RankedTensorType, ArrayRef<int64_t>
-            auto outputMemref = rewriter.create<bufferization::ToMemrefOp>(loc, MemRefType::get({numRows, 1}, matrixElementType), genericOp.getResult(0));
-
+            auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
             rewriter.create<daphne::DecRefOp>(loc, adaptor.getArg());
-
-            auto outputDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, outputMemref, op.getType());
-            // auto outputDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, outputMemref, op.getType()); // inc ref?
-            rewriter.replaceOp(op, outputDenseMatrix);
+            rewriter.replaceOp(op, resDenseMatrix);
 
             return success();
         } else {
@@ -185,9 +207,7 @@ struct AggRowLoweringPass : public mlir::PassWrapper<AggRowLoweringPass,
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
         registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                        mlir::memref::MemRefDialect, mlir::linalg::LinalgDialect,
-                        mlir::bufferization::BufferizationDialect,
-                        mlir::tensor::TensorDialect>();
+                        mlir::memref::MemRefDialect>();
     }
     void runOnOperation() final;
     };
@@ -208,14 +228,10 @@ void AggRowLoweringPass::runOnOperation() {
 
     target.addLegalDialect<mlir::memref::MemRefDialect>();
     target.addLegalDialect<mlir::arith::ArithDialect>();
-    target.addLegalDialect<mlir::scf::SCFDialect>();
     target.addLegalDialect<mlir::AffineDialect>();
-    target.addLegalDialect<mlir::linalg::LinalgDialect>();
     target.addLegalDialect<mlir::LLVM::LLVMDialect>();
     target.addLegalDialect<daphne::DaphneDialect>();
     target.addLegalDialect<BuiltinDialect>();
-    target.addLegalDialect<tensor::TensorDialect>();
-    target.addLegalDialect<mlir::bufferization::BufferizationDialect>();
 
     target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
     target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();

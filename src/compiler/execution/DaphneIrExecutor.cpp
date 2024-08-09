@@ -289,12 +289,12 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createDaphneOptPass());
     pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("before AggRowSum"));
     pm.addPass(mlir::daphne::createAggRowOpLoweringPass());
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
+    // pm.addNestedPass<mlir::func::FuncOp>(mlir::createAffineParallelizePass());
 
     if (!userConfig_.use_mlir_hybrid_codegen) {
         pm.addPass(mlir::daphne::createMatMulOpLoweringPass(
