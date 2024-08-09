@@ -378,11 +378,11 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     static opt<bool> enablePropertyRecording(
         "enable_property_recording", cat(daphneOptions),
-        desc("records runtime propertties and outputs it in JSON."));
+        desc("records runtime properties and outputs it in JSON."));
 
     static opt<bool> enablePropertyInsert(
         "enable_property_insert", cat(daphneOptions),
-        desc("inserts runtime propertties from properties.json of previous run."));
+        desc("inserts runtime properties from properties.json of previous run."));
 
     static opt<bool> enableProfiling (
             "enable-profiling", cat(daphneOptions),

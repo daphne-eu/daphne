@@ -108,6 +108,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         if (userConfig_.explain_property_inference)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
 
+
         try {
             if (failed(pm.run(module))) {
                 module->dump();
@@ -130,6 +131,12 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     // run only three iterations of both passes (see #173).
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
     pm.addPass(mlir::createCanonicalizerPass());
+
+    if(userConfig_.enable_property_recording)
+        pm.addPass(mlir::daphne::createRecordPropertiesPass());
+    
+    if(userConfig_.enable_property_insert)
+        pm.addPass(mlir::daphne::createInsertPropertiesPass("properties.json"));
 
     if (selectMatrixRepresentations_)
         pm.addNestedPass<mlir::func::FuncOp>(
@@ -197,11 +204,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
 
-    if(userConfig_.enable_property_recording)
-        pm.addPass(mlir::daphne::createRecordPropertiesPass());
-    
-    if(userConfig_.enable_property_insert)
-        pm.addPass(mlir::daphne::createInsertPropertiesPass("properties.json"));
+
     
     if (userConfig_.use_obj_ref_mgnt)
         pm.addNestedPass<mlir::func::FuncOp>(

@@ -1,0 +1,13 @@
+// Input arguments x and y are the matrix filenames
+
+X = readMatrix("case2_matrix1.csv");
+Y = readMatrix("case2_matrix2.csv");
+
+t1 = now();
+Z = X + Y;
+res = sqrt(Z);
+t2 = now();
+t3 = t2-t1;
+
+print(sum(res));
+print("timestamp: " + t3);

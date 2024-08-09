@@ -1,0 +1,19 @@
+num_rows = 10000;
+num_cols = 10000;
+
+// Case 2: NNZs on opposite positions
+// Ändern von Cbind und Rand und Matrizen einlesen
+a = fill(0, num_rows, num_cols * 0.5);
+b = rand(num_rows, num_cols * 0.5, 1, 10, 0.75, 42);
+X = cbind(a,b);
+Y = cbind(b,a);
+
+t1 = now();
+Z = X + Y;
+res = sqrt(Z);
+t2 = now();
+t3 = t2-t1;
+
+print(sum(res));
+print("Operation 2");
+print("timestamp: " + t3);

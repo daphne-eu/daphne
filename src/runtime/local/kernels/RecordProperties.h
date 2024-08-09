@@ -68,10 +68,7 @@ struct RecordProperties<DenseMatrix<VT>> {
         }
 
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
-
-        //ctx->propertyLogger.logProperty(value_id, std::make_unique<StringProperty>("type", "DenseMatrix<" + std::string(typeid(VT).name()) + ">"));
         ctx->propertyLogger.logProperty(value_id, std::make_unique<SparsityProperty>(sparsity));
-        //ctx->propertyLogger.logProperty(value_id, std::make_unique<NNZProperty>(nnz));
     }
 };
 
@@ -88,10 +85,7 @@ struct RecordProperties<CSRMatrix<VT>> {
         const size_t nnz = arg->getNumNonZeros();
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
 
-        //ctx->propertyLogger.logProperty(value_id, std::make_unique<SizeTProperty>("cardinality", numRows * numCols));
-        //ctx->propertyLogger.logProperty(value_id, std::make_unique<StringProperty>("type", "CSRMatrix<" + std::string(typeid(VT).name()) + ">"));
         ctx->propertyLogger.logProperty(value_id, std::make_unique<SparsityProperty>(sparsity));
-        //ctx->propertyLogger.logProperty(value_id, std::make_unique<NNZProperty>(nnz));
     }
 };
 

@@ -1,0 +1,16 @@
+// Case 3: NNZ at random positions
+num_rows = 10000;
+num_cols = 10000;
+
+// Case 1: NNZ on same positions
+X = rand(num_rows, num_cols, 1, 10, 0.2);
+Y = rand(num_rows, num_cols, 1, 10, 0.2);
+
+t1 = now();
+Z = sqrt(X + Y);
+t2 = now();
+t3 = t2-t1;
+
+print(sum(Z));
+print("Operation 1");
+print("timestamp: " + t3);
