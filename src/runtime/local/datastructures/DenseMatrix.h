@@ -174,6 +174,10 @@ public:
 
     template<typename NewValueType>
     using WithValueType = DenseMatrix<NewValueType>;
+
+    static std::string getName() {
+        return "DenseMatrix";
+    }
     
     [[nodiscard]] bool isPartialBuffer() const { return bufferSize != this->getNumRows() * this->getRowSkip() * sizeof(ValueType); }
 

@@ -87,36 +87,52 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
 template<typename VT>
 struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
-        const size_t numRows = arg->getNumRows();
-        const size_t numCols = arg->getNumCols();
-        
-        if(res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numCols, numRows, arg->getNumNonZeros(), false);
-        
-        const VT * valuesArg = arg->getValues();
-        const size_t * colIdxsArg = arg->getColIdxs();
-        const size_t * rowOffsetsArg = arg->getRowOffsets();
-        
-        VT * valuesRes = res->getValues();
-        VT * const valuesResInit = valuesRes;
-        size_t * colIdxsRes = res->getColIdxs();
-        size_t * rowOffsetsRes = res->getRowOffsets();
-        
-        auto* curRowOffsets = new size_t[numRows + 1];
-        memcpy(curRowOffsets, rowOffsetsArg, (numRows + 1) * sizeof(size_t));
-        
-        rowOffsetsRes[0] = 0;
-        for(size_t c = 0; c < numCols; c++) {
-            for(size_t r = 0; r < numRows; r++)
-                if(curRowOffsets[r] < rowOffsetsArg[r + 1] && colIdxsArg[curRowOffsets[r]] == c) {
-                    *valuesRes++ = valuesArg[curRowOffsets[r]];
-                    *colIdxsRes++ = r;
-                    curRowOffsets[r]++;
-                }
-            rowOffsetsRes[c + 1] = valuesRes - valuesResInit;
+      // Implementation inspired by SciPy
+      // https://github.com/scipy/scipy/blob/8a64c938ddf1ae4c02a08d2c5e38daeb8d061d38/scipy/sparse/sparsetools/csr.h#L608
+      const size_t numRows = arg->getNumRows();
+      const size_t numCols = arg->getNumCols();
+
+      if(res == nullptr)
+        res = DataObjectFactory::create<CSRMatrix<VT>>(numCols, numRows, arg->getNumNonZeros(), false);
+
+      const VT * valuesArg = arg->getValues();
+      const size_t * colIdxsArg = arg->getColIdxs();
+      const size_t * rowOffsetsArg = arg->getRowOffsets();
+
+      const size_t numNonZeros = arg->getNumNonZeros();
+
+      VT * valuesRes = res->getValues();
+      size_t * colIdxsRes = res->getColIdxs();
+      size_t * rowOffsetsRes = res->getRowOffsets();
+
+      std::fill(rowOffsetsRes, rowOffsetsRes + numCols, 0);
+
+      for (size_t row = 0; row < numRows; row++)
+        for (size_t j = rowOffsetsArg[row]; j < rowOffsetsArg[row + 1]; j++)
+          rowOffsetsRes[colIdxsArg[j]]++;
+
+      for (size_t col = 0, cumsum = 0; col < numCols; col++) {
+        size_t tmp = rowOffsetsRes[col];
+        rowOffsetsRes[col] = cumsum;
+        cumsum += tmp;
+      }
+      rowOffsetsRes[numCols] = numNonZeros;
+
+      for (size_t row = 0; row < numRows; row++) {
+        for (size_t j = rowOffsetsArg[row]; j < rowOffsetsArg[row + 1]; j++) {
+          size_t col = colIdxsArg[j];
+          size_t dest = rowOffsetsRes[col];
+          colIdxsRes[dest] = row;
+          valuesRes[dest] = valuesArg[j];
+          rowOffsetsRes[col]++;
         }
-        
-        delete[] curRowOffsets;
+      }
+
+      for (size_t col = 0, last = 0; col < numCols + 1; col++) {
+        size_t tmp = rowOffsetsRes[col];
+        rowOffsetsRes[col] = last;
+        last = tmp;
+      }
     }
 };
 

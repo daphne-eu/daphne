@@ -1,0 +1,9 @@
+// Get a string from a kernel, pass it to a function, and get back a modified string.
+
+def foo(s:str) -> str {
+    return s + " is my favorite number";
+}
+
+s = as.str(123); # kernel call (but could be constant folded in the future)
+s = foo(s);
+print(s);

@@ -80,6 +80,7 @@ namespace {
         );
     }
 
+
     std::string uniqueSpecializedFuncName(const std::string &functionName, TypeRange inputTypes, ValueRange inputValues) {
         static unsigned functionUniqueId = 0;
         
@@ -107,10 +108,6 @@ namespace {
             // Append type and value to the general name
             name += "-" + typeName + "=" + valueName;
         }
-
-        // Appending unique ID
-        name += "-" + std::to_string(++functionUniqueId);
-        
         return name;
     }
 
@@ -237,17 +234,6 @@ namespace {
 
     private:
         /**
-         * @brief Check wether a specialized function exists already (make sure no duplicates exist)
-         * @param templateFunction The template function
-         * @param uniqueFuncName The unique function name (the unique function name contains important informations such as input parameters)
-         * @return false for not existing and true for existing
-         */
-        bool checkExistingSpecializedFunc(std::string uniqueFuncName) {
-            return functions.find(uniqueFuncName) != functions.end();
-        }
-
-
-        /**
          * @brief Create a specialized version of the template function.
          * @param templateFunction The template function.
          * @param specializedTypes The specialized function arguments
@@ -261,9 +247,8 @@ namespace {
 
             auto uniqueFuncName = uniqueSpecializedFuncName(templateFunction.getSymName().str(), specializedTypes, operands);
             specializedFunc.setName(uniqueFuncName);
-            if(checkExistingSpecializedFunc(uniqueFuncName)) {
-                functions.insert({uniqueFuncName, specializedFunc});
-            }
+            functions.insert({uniqueFuncName, specializedFunc});
+
             // change argument types
             specializedFunc
                 .setType(builder.getFunctionType(specializedTypes, specializedFunc.getFunctionType().getResults()));
@@ -307,27 +292,11 @@ namespace {
          * @param templateFunction The template function called by the call operation
          * @return either an existing and matching `FuncOp`, `nullptr` otherwise
          */
-        func::FuncOp tryReuseExistingSpecialization(TypeRange operandTypes, ValueRange operands, func::FuncOp templateFunction) {
-            if(userConfig.use_ipa_const_propa) {
-                // If any call operand is a compile-time constant scalar, we don't reuse an existing specialization,
-                // but create a new one while propagating the constant to the function body.
-                // TODO We could reuse a former specialization that uses the same constant.
-                for(Value v : operands)
-                    if(CompilerUtils::constantOfAnyType(v))
-                        return nullptr;
+        func::FuncOp tryReuseExistingSpecialization(std::string specializedName) {
+            auto it = functions.find(specializedName);
+            if(it != functions.end()) {
+                return it->second;
             }
-
-            // Try to find a reusable function specialization based on types and data properties.
-            auto eqIt = specializedVersions.equal_range(templateFunction.getSymName().str());
-            for(auto it = eqIt.first ; it != eqIt.second ; ++it) {
-                auto specializedFunc = it->second;
-
-                if(callTypesMatchFunctionTypes(specializedFunc.getFunctionType(), operandTypes)) {
-                    // reuse existing specialized function
-                    return specializedFunc;
-                }
-            }
-
             return nullptr;
         }
 
@@ -342,11 +311,11 @@ namespace {
          */
         func::FuncOp createOrReuseSpecialization(TypeRange operandTypes, ValueRange operands, func::FuncOp calledFunction, mlir::Location callLoc) {
             // check for existing specialization that matches
-            func::FuncOp specializedFunc = tryReuseExistingSpecialization(operandTypes, operands, calledFunction);
+            auto specializedTypes = getSpecializedFuncArgTypes(calledFunction.getFunctionType(), operandTypes, calledFunction.getSymName().str(), callLoc); 
+            auto specializedName = uniqueSpecializedFuncName(calledFunction.getSymName().str(), specializedTypes,operands );
+            func::FuncOp specializedFunc = tryReuseExistingSpecialization(specializedName);
             if(!specializedFunc) {
                 // Create specialized function
-                auto specializedTypes =
-                    getSpecializedFuncArgTypes(calledFunction.getFunctionType(), operandTypes, calledFunction.getSymName().str(), callLoc);
                 specializedFunc = createSpecializedFunction(calledFunction, specializedTypes, operands);
             }
             if(logger->should_log(spdlog::level::debug)) {

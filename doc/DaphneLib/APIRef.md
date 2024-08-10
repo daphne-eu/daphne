@@ -168,6 +168,10 @@ In the following, we describe only the latter.
 
 - **`asType`**`(dtype=None, vtype=None) -> Matrix`
 
+**Conditional:**
+
+- **`ifElse`**`(thenVal: Union['Matrix', 'Scalar'], elseVal: Union['Matrix', 'Scalar'])`
+
 ### `Frame` API Reference
 
 **Frame dimensions:**

@@ -153,6 +153,10 @@ public:
 
     template<typename NewValueType>
     using WithValueType = CSRMatrix<NewValueType>;
+
+    static std::string getName() {
+        return "CSRMatrix";
+    }
     
     void shrinkNumRows(size_t numRows) {
         if (numRows > this->numRows)

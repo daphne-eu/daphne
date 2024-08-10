@@ -1,0 +1,22 @@
+IR after parsing and some simplifications:
+module {
+  func.func @main() {
+    %0 = "daphne.constant"() {value = 5 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = -5 : si64} : () -> si64
+    %2 = "daphne.constant"() {value = -2 : si64} : () -> si64
+    %3 = "daphne.constant"() {value = -6 : si64} : () -> si64
+    %4 = "daphne.constant"() {value = 2 : si64} : () -> si64
+    %5 = "daphne.constant"() {value = false} : () -> i1
+    %6 = "daphne.constant"() {value = true} : () -> i1
+    "daphne.print"(%2, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.print"(%4, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.print"(%4, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.print"(%4, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.print"(%2, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.print"(%2, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.print"(%3, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.print"(%1, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.print"(%0, %6, %5) : (si64, i1, i1) -> ()
+    "daphne.return"() : () -> ()
+  }
+}

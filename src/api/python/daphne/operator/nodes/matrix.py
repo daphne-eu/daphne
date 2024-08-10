@@ -215,6 +215,9 @@ class Matrix(OperationNode):
             consumer.update_node_in_input_list(new_node, self)
         self.__dict__ = Matrix(new_node.daphne_context, None, [new_node, value, row_index, column_index], left_brackets=True).__dict__
 
+    def __neg__(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'minus', [self])
+
     def sum(self, axis: int = None) -> 'OperationNode':
         """Calculate sum of matrix.
         :param axis: can be 0 or 1 to do either row or column sums
@@ -473,12 +476,34 @@ class Matrix(OperationNode):
         return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)
     
     def asType(self, dtype=None, vtype=None):
+        # TODO We import Frame here (not at the top of the file) to avoid a circular import.
+        # Maybe we can find a better solution.
+        from daphne.operator.nodes.frame import Frame
+
         if dtype is None and vtype is None:
             raise RuntimeError("you must specify the target data type and/or value type")
         elif dtype is not None and vtype is None:
-            op = f"as.{dtype}"
+            params = [self.daphne_context, f"as.{dtype}", [self]]
+            if dtype == "matrix":
+                return Matrix(*params)
+            elif dtype == "frame":
+                return Frame(*params)
+            elif dtype == "scalar":
+                return Scalar(*params)
+            else:
+                raise RuntimeError(f"invalid data type: '{dtype}', use 'matrix', 'frame', or 'scalar'")
         elif dtype is None and vtype is not None:
-            op = f"as.{vtype}"
+            return Matrix(self.daphne_context, f"as.{vtype}", [self])
         elif dtype is not None and vtype is not None:
-            op = f"as.{dtype}<{vtype}>"
-        return OperationNode(self.daphne_context, op, [self])
+            params = [self.daphne_context, f"as.{dtype}<{vtype}>", [self]]
+            if dtype == "matrix":
+                return Matrix(*params)
+            elif dtype == "frame":
+                return Frame(*params)
+            elif dtype == "scalar":
+                return Scalar(*params)
+            else:
+                raise RuntimeError(f"invalid data type: '{dtype}', use 'matrix', 'frame', or 'scalar'")
+
+    def ifElse(self, thenVal: Union['Matrix', 'Scalar'], elseVal: Union['Matrix', 'Scalar']) -> 'Matrix':
+        return Matrix(self.daphne_context, 'ifElse', [self, thenVal, elseVal])

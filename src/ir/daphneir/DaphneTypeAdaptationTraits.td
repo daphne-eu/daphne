@@ -22,5 +22,6 @@ include "mlir/IR/OpBase.td"
 def CastArgsToResType: NativeOpTrait<"CastArgsToResType">;
 def CastFirstTwoArgsToResType: NativeOpTrait<"CastFirstTwoArgsToResType">;
 def CastArgsToResTypeRandMatrixOp: NativeOpTrait<"CastArgsToResTypeRandMatrixOp">;
+def CastArgsToMostGeneralArgType: NativeOpTrait<"CastArgsToMostGeneralArgType">;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPEADAPTATIONTRAITS_TD
