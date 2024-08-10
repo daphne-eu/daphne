@@ -29,7 +29,7 @@
 #include <tags.h>
 
 template<class DT>
-void checkBatchNorm2DBackward(const DT* in, const DT* dOut, const DT* gamma, const DT* mean, const DT* invVar, const DT* exp1, 
+void checkBatchNorm2DBackwardCUDA(const DT* in, const DT* dOut, const DT* gamma, const DT* mean, const DT* invVar, const DT* exp1, 
 const DT* exp2, const DT* exp3, DaphneContext* dctx) {
     DT* dX = nullptr;
     DT* dGamma = nullptr;
@@ -37,10 +37,12 @@ const DT* exp2, const DT* exp3, DaphneContext* dctx) {
 
     typename DT::VT epsilon = 1e-5;
     CUDA::BatchNorm::Backward<DT, DT>::apply(dX, dGamma, dBeta, mean, invVar, in, dOut, gamma, epsilon, dctx);
-    CHECK(*res == *exp);
+    CHECK(checkEqApprox(dX, exp1, 1e-5, nullptr));
+    CHECK(checkEqApprox(dGamma, exp2, 1e-4, nullptr));
+    CHECK(checkEqApprox(dBeta, exp3, 1e-5, nullptr));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd_cuda", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
@@ -72,8 +74,8 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix), (float, dou
     auto res2 = genGivenVals<DT>(3, {8.9442, 8.9442, 8.9442 });
     auto res3 = genGivenVals<DT>(3, {20, 52, 84 });
 
-    checkBatchNorm2DBackward(in, dOut, gamma, mean, invVar, res1, res2, res3, dctx.get());
-    std::cout<<"gpu"<<std::endl;
+    checkBatchNorm2DBackwardCUDA(in, dOut, gamma, mean, invVar, res1, res2, res3, dctx.get());
+    //std::cout<<"gpu"<<std::endl;
 
     DataObjectFactory::destroy(in);
     DataObjectFactory::destroy(dOut);
