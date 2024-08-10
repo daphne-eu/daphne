@@ -63,8 +63,8 @@ namespace CUDA::BatchNorm {
         auto ctx = CUDAContext::get(dctx, deviceID);
         AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
         using VT = typename DTRes::VT;
-        const size_t N = data->getNumRows();
-        const size_t CHW = data->getNumCols();
+        const size_t N = in->getNumRows();
+        const size_t CHW = in->getNumCols();
         const size_t C = gamma->getNumRows();
         const size_t HW = CHW / C;
         auto H = static_cast<size_t>(std::sqrt(HW));
@@ -87,11 +87,11 @@ namespace CUDA::BatchNorm {
         CHECK_CUDNN(cudnnDeriveBNTensorDescriptor(ctx->bn_scale_bias_tensor_desc, ctx->src_tensor_desc, ctx->bn_mode));
 
         if (dX == nullptr)
-            dX = DataObjectFactory::create<DenseMatrix<VTArg>>(N, CHW, false, &alloc_desc);
+            dX = DataObjectFactory::create<DenseMatrix<VT>>(N, CHW, false, &alloc_desc);
         if (dGamma == nullptr)
-            dGamma = DataObjectFactory::create<DenseMatrix<VTArg>>(C, 1, false, &alloc_desc);
+            dGamma = DataObjectFactory::create<DenseMatrix<VT>>(C, 1, false, &alloc_desc);
         if (dBeta == nullptr)
-            dBeta = DataObjectFactory::create<DenseMatrix<VTArg>>(C, 1, false, &alloc_desc);
+            dBeta = DataObjectFactory::create<DenseMatrix<VT>>(C, 1, false, &alloc_desc);
 
         VT* d_dX = dX->getValues(&alloc_desc);
         VT* d_dGamma = dGamma->getValues(&alloc_desc);
@@ -100,10 +100,10 @@ namespace CUDA::BatchNorm {
         CHECK_CUDNN(cudnnBatchNormalizationBackward(ctx->getCUDNNHandle(), 
                                                     ctx->bn_mode,
                                                     &alphaDataDiff, &betaDataDiff, &alphaParamDiff, &betaParamDiff,
-                                                    src_tensor_desc, d_in,
-                                                    dy_tensor_desc, d_dout,
-                                                    dst_tensor_desc, d_dX,
-                                                    bn_scale_bias_tensor_desc, d_gamma, d_dGamma, d_dBeta,
+                                                    ctx->src_tensor_desc, d_in,
+                                                    ctx->dy_tensor_desc, d_dout,
+                                                    ctx->dst_tensor_desc, d_dX,
+                                                    ctx->bn_scale_bias_tensor_desc, d_gamma, d_dGamma, d_dBeta,
                                                     eps,
                                                     d_mean, d_invVar));
         std::cout<<"cuda"<<std::endl;

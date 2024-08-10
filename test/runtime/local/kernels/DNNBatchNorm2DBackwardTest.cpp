@@ -73,6 +73,7 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix), (float, dou
     auto res3 = genGivenVals<DT>(3, {20, 52, 84 });
 
     checkBatchNorm2DBackward(in, dOut, gamma, mean, invVar, res1, res2, res3, dctx.get());
+    std::cout<<"gpu"<<std::endl;
 
     DataObjectFactory::destroy(in);
     DataObjectFactory::destroy(dOut);
@@ -91,6 +92,7 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix), (float, dou
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include "runtime/local/kernels/BatchNorm2DBackward.h"
+#include "runtime/local/kernels/CUDA/BatchNorm.h"
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 
@@ -155,7 +157,7 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix), (float, dou
 
     checkBatchNorm2DBackward(in, dOut, gamma, mean, invVar, res1, res2, res3, dctx.get());
 
-    std::cout<<"cpu"<<std::endl;
+    //std::cout<<"cpu"<<std::endl;
 
     DataObjectFactory::destroy(in);
     DataObjectFactory::destroy(dOut);
