@@ -106,7 +106,7 @@ namespace CUDA::BatchNorm {
                                                     ctx->bn_scale_bias_tensor_desc, d_gamma, d_dGamma, d_dBeta,
                                                     eps,
                                                     d_mean, d_invVar));
-        std::cout<<"cuda"<<std::endl;
+
     }
 
     template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
