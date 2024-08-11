@@ -68,6 +68,7 @@ const std::string dirPath = "test/api/python/";
 
 MAKE_TEST_CASE("data_transfer_numpy_1")
 MAKE_TEST_CASE("data_transfer_numpy_2")
+MAKE_TEST_CASE("data_transfer_numpy_3")
 MAKE_TEST_CASE("data_transfer_pandas_1")
 MAKE_TEST_CASE("data_transfer_pandas_2")
 MAKE_TEST_CASE("data_transfer_pandas_3_series")
