@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <iostream>
+#include <ostream>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -105,6 +107,45 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 std::to_string(numRowsLhs) + " x " + std::to_string(numColsLhs) +
                 ") and rhs has shape (" + std::to_string(numRowsRhs) + " x " +
                 std::to_string(numColsRhs) + ")");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- CSRMatrix, DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryMat<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        
+        if((numRows != rhs->getNumRows() && rhs->getNumRows() != 1) || (numCols != rhs->getNumCols() && rhs->getNumCols() != 1))
+            throw std::runtime_error("EwBinaryMat(Dense) - lhs and rhs must have the same dimensions (or broadcast)");
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+        
+        VT * valuesRes = res->getValues();
+        
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+        
+        switch(opCode) {
+            case BinaryOpCode::ADD: { // Add operation
+                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                    const size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
+                    auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
+                    for(size_t colIdx = 0; colIdx < numCols; colIdx++) {
+                        auto lhsVal = lhs->get(rowIdx, colIdx);
+                        auto rhsVal = rhs->get(rhsRow, colIdx);
+                        valuesRes[rowIdx * numCols + colIdx] = func(lhsVal, rhsVal, ctx);
+                    }
+                }
+                break;
+            }
+            default:
+                throw std::runtime_error("EwBinaryMat(Dense) - unsupported BinaryOpCode");
         }
     }
 };
@@ -283,37 +324,62 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         rowOffsetsRes[0] = 0;
 
         switch(opCode) {
-        case BinaryOpCode::MUL: { // intersect non-zero cells
-            for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-                size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
-                if(nnzRowLhs) {
-                    // intersect within row
-                    const VT * valuesRowLhs = lhs->getValues(rowIdx);
-                    VT * valuesRowRes = res->getValues(rowIdx);
-                    const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
-                    size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
-                    auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
-                    size_t posRes = 0;
-                    for (size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
-                        auto rhsCol = (rhs->getNumCols() == 1 ? 0 : colIdxsRowLhs[posLhs]);
-                        auto rVal = rhs->get(rhsRow, rhsCol);
-                        if(rVal != 0) {
-                            valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rVal, ctx);
+            case BinaryOpCode::MUL: { // intersect non-zero cells
+                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                    size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
+                    if(nnzRowLhs) {
+                        // intersect within row
+                        const VT * valuesRowLhs = lhs->getValues(rowIdx);
+                        VT * valuesRowRes = res->getValues(rowIdx);
+                        const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
+                        size_t posRes = 0;
+                        for (size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
+                            auto rhsCol = (rhs->getNumCols() == 1 ? 0 : colIdxsRowLhs[posLhs]);
+                            auto rVal = rhs->get(rhsRow, rhsCol);
+                            if(rVal != 0) {
+                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rVal, ctx);
+                                colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                posRes++;
+                            }
+                        }
+                        rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes;
+                    }
+                    else
+                        // empty row in result
+                        rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx];
+                }
+                break;
+            }
+            
+            case BinaryOpCode::ADD: {
+                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                    size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
+                    if(nnzRowLhs) {
+                        const VT * valuesRowLhs = lhs->getValues(rowIdx);
+                        VT * valuesRowRes = res->getValues(rowIdx);
+                        const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
+                        size_t posRes = 0;
+                        for(size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
+                            auto rhsCol = (rhs->getNumCols() == 1 ? 0 : colIdxsRowLhs[posLhs]);
+                            valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rhs->get(rhsRow, rhsCol), ctx);
                             colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                             posRes++;
                         }
+                        rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes;
+                    } else {
+                        rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx];
                     }
-                    rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes;
                 }
-                else
-                    // empty row in result
-                    rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx];
+                break;
             }
-            break;
-        }
-        default:
-            throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
-        }
+
+            default:
+                throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
+            }
 
         // TODO Update number of non-zeros in result in the end.
     }

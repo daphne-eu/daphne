@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/kernels/EwUnarySca.h>
@@ -74,6 +75,90 @@ struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
         }
     }
 };
+
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- CSRMatrix
+// ----------------------------------------------------------------------------
+template<typename VT>
+struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        const size_t numNonZeros = arg->getNumNonZeros();
+
+        // Ensure res is initialized with enough space
+        if (res == nullptr) {
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros * 1.5, false);
+        }
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        size_t* rowOffsetsRes = res->getRowOffsets();
+        rowOffsetsRes[0] = 0;
+
+        size_t posRes = 0;  // Track the position in the result matrix's values and colIdxs arrays
+
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+            size_t nnzRowArg = arg->getNumNonZeros(rowIdx);
+            const VT* valuesRowArg = arg->getValues(rowIdx);
+            const size_t* colIdxsRowArg = arg->getColIdxs(rowIdx);
+
+            for (size_t posArg = 0; posArg < nnzRowArg; ++posArg) {
+                VT value = func(valuesRowArg[posArg], ctx);
+
+                // Store non-zero values in result matrix
+                if (value != VT(0)) {
+                    if (posRes >= res->getMaxNumNonZeros()) {
+                        // Resize the result matrix to accommodate more non-zero values
+                        resizeResultMatrix(res, posRes + nnzRowArg);
+                    }
+                    res->getValues()[posRes] = value;
+                    res->getColIdxs()[posRes] = colIdxsRowArg[posArg];
+                    posRes++;
+                }
+            }
+
+            // Handle zero values that become non-zero
+            for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
+                if (std::find(colIdxsRowArg, colIdxsRowArg + nnzRowArg, colIdx) == colIdxsRowArg + nnzRowArg) {
+                    // colIdx not found in the current non-zero column indices
+                    VT value = func(VT(0), ctx);  // Apply function to a zero value
+                    if (value != VT(0)) {
+                        if (posRes >= res->getMaxNumNonZeros()) {
+                            // Resize the result matrix to accommodate more non-zero values
+                            resizeResultMatrix(res, posRes + 1);
+                        }
+                        res->getValues()[posRes] = value;
+                        res->getColIdxs()[posRes] = colIdx;
+                        posRes++;
+                    }
+                }
+            }
+
+            rowOffsetsRes[rowIdx + 1] = posRes;
+        }
+    }
+
+private:
+    static void resizeResultMatrix(CSRMatrix<VT>*& res, size_t newMaxNumNonZeros) {
+        // Create a new matrix with the increased size
+        size_t numRows = res->getNumRows();
+        size_t numCols = res->getNumCols();
+        CSRMatrix<VT>* newRes = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, newMaxNumNonZeros, false);
+
+        // Copy the existing data to the new matrix
+        std::memcpy(newRes->getValues(), res->getValues(), res->getNumNonZeros() * sizeof(VT));
+        std::memcpy(newRes->getColIdxs(), res->getColIdxs(), res->getNumNonZeros() * sizeof(size_t));
+        std::memcpy(newRes->getRowOffsets(), res->getRowOffsets(), (numRows + 1) * sizeof(size_t));
+
+        // Replace the old matrix with the new one
+        DataObjectFactory::destroy(res);
+        res = newRes;
+    }
+};
+
+
 
 // ----------------------------------------------------------------------------
 // Matrix <- Matrix
