@@ -668,11 +668,17 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         }
     }
     catch (std::runtime_error& re) {
-        spdlog::error("Execution error: {}", re.what());
+        if(daphneLibRes != nullptr) // For DaphneLib (Python API), error message is handled later in script.py.
+           daphneLibRes->error_message = std::string(re.what());
+        else
+            spdlog::error("Execution error: {}", re.what());
         return StatusCode::EXECUTION_ERROR;
     }
     catch(std::exception & e){
-        spdlog::error("Execution error: {}", e.what());
+        if(daphneLibRes != nullptr) // For DaphneLib (Python API), error message is handled later in script.py.
+            daphneLibRes->error_message = std::string(e.what());
+        else
+            spdlog::error("Execution error: {}", e.what());
         return StatusCode::EXECUTION_ERROR;
     }
     clock::time_point tpEnd = clock::now();
