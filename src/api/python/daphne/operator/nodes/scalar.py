@@ -133,6 +133,9 @@ class Scalar(OperationNode):
 
     def __rne__(self, other) -> 'Scalar':
         return Scalar(self.daphne_context, '!=', [other, self])
+
+    def __neg__(self) -> 'Scalar':
+        return Scalar(self.daphne_context, 'minus', [self])
     
     def abs(self) -> 'Scalar':
         return Scalar(self.daphne_context, 'abs', [self])
@@ -186,7 +189,7 @@ class Scalar(OperationNode):
         return Scalar(self.daphne_context, 'atan', [self])
     
     def isNan(self) -> 'Scalar':
-        return Scalar(self.daphne_context,'isNan', [self])
+        return Scalar(self.daphne_context, 'isNan', [self])
     
     def pow(self, other) -> 'Scalar':
         return Scalar(self.daphne_context, 'pow', [self, other])

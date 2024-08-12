@@ -20,6 +20,7 @@
 #include <util/KernelDispatchMapping.h>
 #include <util/Statistics.h>
 #include <util/PropertyLogger.h>
+#include <util/StringRefCount.h>
 
 #include <vector>
 #include <memory>
@@ -58,7 +59,6 @@ struct DaphneContext {
     std::vector<std::unique_ptr<IContext>> cuda_contexts;
     std::vector<std::unique_ptr<IContext>> fpga_contexts;
 
-
     std::unique_ptr<IContext> distributed_context;
 
     /**
@@ -72,14 +72,16 @@ struct DaphneContext {
     KernelDispatchMapping& dispatchMapping;
     Statistics& stats;
     PropertyLogger& propertyLogger;
+    StringRefCounter& stringRefCount;
 
     std::shared_ptr<spdlog::logger> logger;
 
     explicit DaphneContext(DaphneUserConfig &config,
                            KernelDispatchMapping &dispatchMapping,
                            Statistics &stats,
-                           PropertyLogger &propertyLogger)
-        : config(config), dispatchMapping(dispatchMapping), stats(stats), propertyLogger(propertyLogger) {
+                           PropertyLogger &propertyLogger,
+                           StringRefCounter &stringRefCount)
+        : config(config), dispatchMapping(dispatchMapping), stats(stats),  propertyLogger(propertyLogger), stringRefCount(stringRefCnt) {
         logger = spdlog::get("runtime");
     }
 
@@ -92,8 +94,6 @@ struct DaphneContext {
         }
         cuda_contexts.clear();
         fpga_contexts.clear();
-
-
     }
 
 #ifdef USE_CUDA
@@ -126,4 +126,6 @@ struct DaphneContext {
     }
 
     [[nodiscard]] DaphneUserConfig &getUserConfig() const { return config; }
+
+
 };

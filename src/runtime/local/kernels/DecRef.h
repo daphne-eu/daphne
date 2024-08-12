@@ -14,19 +14,44 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_DECREF_H
-#define SRC_RUNTIME_LOCAL_KERNELS_DECREF_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Structure.h>
 
 // ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+
+template<class DTArg>
+struct DecRef {
+    static void apply(const DTArg * arg, DCTX(ctx)) = delete;
+};
+
+template<>
+struct DecRef<Structure> {
+    static void apply(const Structure* arg, DCTX(ctx)) {
+        DataObjectFactory::destroy(arg);
+    }
+};
+
+template<>
+struct DecRef<char> {
+    static void apply(const char* arg, DCTX(ctx)) {
+        // Decrease the reference counter. If it became zero, delete the string.
+        if(!ctx->stringRefCount.dec(arg)) {
+            delete [] arg;
+        }
+    }
+};
+
+// ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-void decRef(const Structure * arg, DCTX(ctx)) {
-    DataObjectFactory::destroy(arg);
+template<class DTArg>
+void decRef(const DTArg * arg, DCTX(ctx)) {
+    DecRef<DTArg>::apply(arg, ctx);
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_DECREF_H

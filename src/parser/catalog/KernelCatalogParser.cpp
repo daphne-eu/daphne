@@ -52,6 +52,7 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext * mctx) {
     for(mlir::Type st : scalarTypes) {
         // Scalar type.
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(st), st);
+
         // Matrix type for DenseMatrix.
         // TODO This should have withRepresentation(mlir::daphne::MatrixRepresentation::Dense).
         mlir::Type mtDense = mlir::daphne::MatrixType::get(mctx, st);
@@ -59,6 +60,14 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext * mctx) {
         // Matrix type for CSRMatrix.
         mlir::Type mtCSR = mlir::daphne::MatrixType::get(mctx, st).withRepresentation(mlir::daphne::MatrixRepresentation::Sparse);
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtCSR), mtCSR);
+
+        // List type for list of DenseMatrix.
+        mlir::Type ltDense = mlir::daphne::ListType::get(mctx, mtDense);
+        typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(ltDense), ltDense);
+        // List type for list of CSRMatrix.
+        mlir::Type ltCSR = mlir::daphne::ListType::get(mctx, mtCSR);
+        typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(ltCSR), ltCSR);
+
         // MemRef type.
         if(!st.isa<mlir::daphne::StringType>()) {
             // DAPHNE's StringType is not supported as the element type of a MemRef.

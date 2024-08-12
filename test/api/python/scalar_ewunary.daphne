@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+print(-1);
+print(-0);
+print(--3.3);
+
 print(abs(1));
 print(abs(0));
 print(abs(-3.3));
@@ -22,6 +26,7 @@ print(sign(-3.3));
 
 s = 0.99;
 
+print(-s);
 print(exp(s));
 print(ln(s));
 print(sqrt(s));
@@ -39,4 +44,6 @@ print(atan(s));
 print(sinh(s));
 print(cosh(s));
 print(tanh(s));
+
 print(isNan(s));
+print(isNan(nan));

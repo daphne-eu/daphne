@@ -129,3 +129,53 @@ struct MatMul<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         res->finishAppend();
     }
 };
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- CSRMatrix, CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct MatMul<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> { // ToDo: support transpose
+    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, bool transa, bool transb, DCTX(ctx)) {
+        const size_t nr1 = lhs->getNumRows();
+        const size_t nc1 = lhs->getNumCols();
+        const size_t nr2 = rhs->getNumRows();
+        const size_t nc2 = rhs->getNumCols();
+
+        if(nc1 != nr2)
+            throw std::runtime_error("#cols of lhs and #rows of rhs must be the same");
+
+        // TODO: Better estimation of the number of non-zeros
+        size_t estimationNumNonZeros = lhs->getNumNonZeros() * rhs->getNumNonZeros();
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VT>>(nr1, nc2, estimationNumNonZeros, true);
+
+        const VT* valuesLhs = lhs->getValues();
+        const size_t* colIdxsLhs = lhs->getColIdxs();
+        const size_t* rowOffsetsLhs = lhs->getRowOffsets();
+
+        const VT* valuesRhs = rhs->getValues();
+        const size_t* colIdxsRhs = rhs->getColIdxs();
+        const size_t* rowOffsetsRhs = rhs->getRowOffsets();
+
+        for (size_t row = 0; row < nr1; row++) {
+            for (size_t col = 0; col < nc2; col++) {
+                VT sum = VT(0);
+                // Dot product between the row `row` of Lhs and the col `col` of Rhs
+                for (size_t j = rowOffsetsLhs[row]; j < rowOffsetsLhs[row + 1]; j++) {
+                    size_t k = colIdxsLhs[j];
+                    // For this we need to find the values Rhs[k, col]
+                    // (we already have Lhs[row, k])
+                    size_t i = rowOffsetsRhs[k];
+                    size_t endRhsRow = rowOffsetsRhs[k + 1];
+                    // We are scanning the k^{th} row of Rhs to find a value at the col `col`
+                    while (i < endRhsRow && colIdxsRhs[i] < col)
+                        i++;
+                    if (i < endRhsRow && colIdxsRhs[i] == col)
+                        sum += valuesLhs[j] * valuesRhs[i];
+                }
+                res->set(row, col, sum);
+            }
+        }
+    }
+};

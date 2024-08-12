@@ -30,6 +30,8 @@ add_library(Util
         Statistics.cpp
         PropertyLogger.h
         PropertyLogger.cpp
+		StringRefCount.h
+		StringRefCount.cpp
         )
 
 target_link_libraries(Util PRIVATE spdlog::spdlog)

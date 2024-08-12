@@ -13,8 +13,13 @@
 # limitations under the License.
 
 from daphne.context.daphne_context import DaphneContext
+import math
 
 dc = DaphneContext()
+
+(-dc.fill(1, 1, 1)).print().compute()
+(-dc.fill(0, 1, 1)).print().compute()
+(-dc.fill(-3.3, 1, 1)).print().compute()
 
 dc.fill(1, 1, 1).abs().print().compute()
 dc.fill(0, 1, 1).abs().print().compute()
@@ -26,6 +31,7 @@ dc.fill(-3.3, 1, 1).sign().print().compute()
 
 m = dc.fill(0.99, 1, 1)
 
+(-m).print().compute()
 m.exp().print().compute()
 m.ln().print().compute()
 m.sqrt().print().compute()
@@ -43,4 +49,6 @@ m.atan().print().compute()
 m.sinh().print().compute()
 m.cosh().print().compute()
 m.tanh().print().compute()
+
 m.isNan().print().compute()
+dc.fill(math.nan, 1, 1).isNan().print().compute()

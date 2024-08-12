@@ -38,6 +38,7 @@ set(TEST_SOURCES
         api/cli/indexing/IndexingTest.cpp
         api/cli/inference/InferenceTest.cpp
         api/cli/io/ReadTest.cpp
+        api/cli/lists/ListsTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
@@ -64,6 +65,7 @@ set(TEST_SOURCES
         codegen/MatMulAccuracyTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
+        api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
 
         parser/config/ConfigParserTest.cpp
 

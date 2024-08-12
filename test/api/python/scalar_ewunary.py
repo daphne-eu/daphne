@@ -13,11 +13,16 @@
 # limitations under the License.
 
 from daphne.context.daphne_context import DaphneContext
+import math
 
 dc = DaphneContext()
 
 # TODO Currently, we cannot simply construct a DaphneLib scalar from a Python scalar.
 # Thus, we use a work-around here by taking the sum of a 1x1 matrix with the desired value.
+
+(-dc.fill(1, 1, 1)).sum().print().compute()
+(-dc.fill(0, 1, 1)).sum().print().compute()
+(-dc.fill(-3.3, 1, 1)).sum().print().compute()
 
 dc.fill(1, 1, 1).sum().abs().print().compute()
 dc.fill(0, 1, 1).sum().abs().print().compute()
@@ -29,6 +34,7 @@ dc.fill(-3.3, 1, 1).sum().sign().print().compute()
 
 s = dc.fill(0.99, 1, 1)
 
+(-s.sum()).print().compute()
 s.sum().exp().print().compute()
 s.sum().ln().print().compute()
 s.sum().sqrt().print().compute()
@@ -46,4 +52,6 @@ s.sum().atan().print().compute()
 s.sum().sinh().print().compute()
 s.sum().cosh().print().compute()
 s.sum().tanh().print().compute()
+
 s.sum().isNan().print().compute()
+dc.fill(math.nan, 1, 1).cbind(dc.fill(1.0, 1, 1)).sum().isNan().print().compute()

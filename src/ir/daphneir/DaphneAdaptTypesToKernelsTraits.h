@@ -28,6 +28,9 @@ class CastFirstTwoArgsToResType : public TraitBase<ConcreteOp, CastFirstTwoArgsT
 template<class ConcreteOp>
 class CastArgsToResTypeRandMatrixOp : public TraitBase<ConcreteOp, CastArgsToResTypeRandMatrixOp> {};
 
+template<class ConcreteOp>
+class CastArgsToMostGeneralArgType : public TraitBase<ConcreteOp, CastArgsToMostGeneralArgType> {};
+
 }
 
 #endif //SRC_IR_DAPHNEIR_DAPHNEADAPTTYPESTOKERNELSTRAITS_H

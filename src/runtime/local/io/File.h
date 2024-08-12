@@ -75,6 +75,7 @@ inline void closeFile(File *f) {
   if (f->line) {
     free(f->line);
   }
+  free(f);
 }
 
 inline ssize_t getFileLine(File *f) {

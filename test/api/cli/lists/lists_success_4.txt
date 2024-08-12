@@ -1,0 +1,11 @@
+List(1, DenseMatrix, int64_t)
+DenseMatrix(1x1, int64_t)
+1
+List(2, DenseMatrix, int64_t)
+DenseMatrix(1x1, int64_t)
+1
+DenseMatrix(1x1, int64_t)
+2
+List(1, DenseMatrix, int64_t)
+DenseMatrix(1x1, int64_t)
+2

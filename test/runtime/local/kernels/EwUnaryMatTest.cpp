@@ -31,7 +31,7 @@
 #include <cstdint>
 
 #define TEST_NAME(opName) "EwUnaryMat (" opName ")"
-#define DATA_TYPES DenseMatrix, Matrix
+#define DATA_TYPES DenseMatrix, Matrix, CSRMatrix
 #define VALUE_TYPES int32_t, double
 
 template<typename DTRes, typename DTArg>
@@ -549,27 +549,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERN
 }
 
 // ****************************************************************************
-// Other Utilities
+// Comparison
 // ****************************************************************************
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (int32_t)) {
     using DT = TestType;
-    using VT = typename DT::VT;
 
-    auto arg = genGivenVals<DT>(7, {
+    auto arg = genGivenVals<DT>(4, {
         1,
-        std::numeric_limits<VT>::quiet_NaN(),
         0,
-        std::numeric_limits<VT>::infinity(),
-        -std::numeric_limits<VT>::infinity(),
         99,
         -99, 
     });
 
-    auto exp = genGivenVals<DT>(7, {
-        0,
-        0,
-        0,
+    auto exp = genGivenVals<DT>(4, {
         0,
         0,
         0,

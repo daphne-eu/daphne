@@ -19,12 +19,11 @@
 #include <ir/daphneir/Passes.h>
 #include <util/KernelDispatchMapping.h>
 #include <util/Statistics.h>
+#include <util/StringRefCount.h>
 
 #include <mlir/Pass/Pass.h>
 
 using namespace mlir;
-
-#include <iostream>
 
 /**
  * @brief Inserts a DaphneIR `CreateDaphneContextOp` and a
@@ -51,19 +50,14 @@ void InsertDaphneContextPass::runOnOperation()
     Location loc = f.getLoc();
 
     // Insert a CreateDaphneContextOp as the first operation in the block.
-    builder.create<daphne::CreateDaphneContextOp>(
-        loc, daphne::DaphneContextType::get(&getContext()),
-        builder.create<daphne::ConstantOp>(
-            loc, reinterpret_cast<uint64_t>(&user_config)),
-        builder.create<daphne::ConstantOp>(
-            loc,
-            reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())),
-        builder.create<daphne::ConstantOp>(
-            loc,
-            reinterpret_cast<uint64_t>(&Statistics::instance())),
-        builder.create<daphne::ConstantOp>(
-            loc,
-            reinterpret_cast<uint64_t>(&PropertyLogger::instance())));
+    builder.create<daphne::CreateDaphneContextOp>(loc, daphne::DaphneContextType::get(&getContext()),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&user_config)),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&Statistics::instance())),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&StringRefCounter::instance())),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&PropertyLogger::instance())));
+
+
 #ifdef USE_CUDA
     if(user_config.use_cuda) {
         builder.create<daphne::CreateCUDAContextOp>(loc);
@@ -77,7 +71,6 @@ void InsertDaphneContextPass::runOnOperation()
         builder.create<daphne::CreateFPGAContextOp>(loc);
     }
 #endif
-
  
     // Insert a DestroyDaphneContextOp as the last operation in the block, but
     // before the block's terminator.

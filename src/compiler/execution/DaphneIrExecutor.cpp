@@ -132,15 +132,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
     pm.addPass(mlir::createCanonicalizerPass());
 
-    if(userConfig_.enable_property_recording)
-        pm.addPass(mlir::daphne::createRecordPropertiesPass());
-    
-    if(userConfig_.enable_property_insert)
-        pm.addPass(mlir::daphne::createInsertPropertiesPass("properties.json"));
+    if (selectMatrixRepresentations_) {
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
+    }
 
-    if (selectMatrixRepresentations_)
-        pm.addNestedPass<mlir::func::FuncOp>(
-            mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass(
             "IR after selecting matrix representations:"));

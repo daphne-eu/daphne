@@ -17,14 +17,25 @@
 #include "CreateDaphneContext.h"
 #include "util/KernelDispatchMapping.h"
 
+<<<<<<< HEAD
 void createDaphneContext(DaphneContext *&res, uint64_t configPtr,
                          uint64_t dispatchMappingPtr, uint64_t statisticsPtr, uint64_t propertyLoggerPtr) {
+=======
+void createDaphneContext(DaphneContext *&res, uint64_t configPtr, uint64_t dispatchMappingPtr, uint64_t statisticsPtr,
+        uint64_t stringRefCountPtr) {
+>>>>>>> ewBinarySparsityOps
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
-    auto dispatchMapping =
-        reinterpret_cast<KernelDispatchMapping *>(dispatchMappingPtr);
+    auto dispatchMapping = reinterpret_cast<KernelDispatchMapping *>(dispatchMappingPtr);
     auto statistics = reinterpret_cast<Statistics *>(statisticsPtr);
+<<<<<<< HEAD
     auto propertyLogger = reinterpret_cast<PropertyLogger *>(propertyLoggerPtr);
     if (config->log_ptr != nullptr)
         config->log_ptr->registerLoggers();
     res = new DaphneContext(*config, *dispatchMapping, *statistics, *propertyLogger);
+=======
+    auto stringRefCounter = reinterpret_cast<StringRefCounter*>(stringRefCountPtr);
+    if (config->log_ptr != nullptr)
+        config->log_ptr->registerLoggers();
+    res = new DaphneContext(*config, *dispatchMapping, *statistics, *stringRefCounter);
+>>>>>>> ewBinarySparsityOps
 }

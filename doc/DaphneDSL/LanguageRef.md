@@ -45,7 +45,7 @@ Variables are used to refer to values.
 
 **Valid identifiers** start with a letter (`a-z`, `A-Z`) or an underscore (`_`) that can be followed by any number of letters (`a-z`, `A-Z`), underscores (`_`), and decimal digits (`0-9`).
 
-The following reserved keywords must not be used as identifiers: `if`, `else`, `while`, `do`, `for`, `in`, `true`, `false`, `as`, `def`, `return`, `import`, `matrix`, `frame`, `scalar`, `f64`, `f32`, `si64`, `si8`, `ui64`, `ui32`, `ui8`, `str`, `nan`, and `inf`.
+The following reserved keywords must not be used as identifiers: `if`, `else`, `while`, `do`, `for`, `in`, `true`, `false`, `as`, `def`, `return`, `import`, `matrix`, `frame`, `scalar`, `list`, `f64`, `f32`, `si64`, `si8`, `ui64`, `ui32`, `ui8`, `str`, `nan`, and `inf`.
 
 *Examples:*
 
@@ -69,6 +69,7 @@ Currently, DaphneDSL supports the following *abstract* **data types**:
 - `matrix`: homogeneous value type for all cells
 - `frame`: a table with columns of potentially different value types
 - `scalar`: a single value
+- `list`: an ordered sequence of elements of homogeneous data/value type; currently, only matrices can be elements of lists
 
 **Value types** specify the representation of individual values. We currently support:
 

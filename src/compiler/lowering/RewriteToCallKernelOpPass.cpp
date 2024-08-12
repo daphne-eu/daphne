@@ -60,7 +60,7 @@ namespace
                 return 3;
             if(llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
                 return 2;
-            if(llvm::isa<daphne::DistributedComputeOp>(op))
+            if(llvm::isa<daphne::DistributedComputeOp, daphne::CreateListOp>(op))
                 return 1;
 
             throw ErrorHandler::compilerError(
@@ -79,6 +79,15 @@ namespace
             if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
                 static bool isVariadic[] = {true, true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::CreateListOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {true};
                 return std::make_tuple(
                         idxAndLen.first,
                         idxAndLen.second,
@@ -148,12 +157,14 @@ namespace
 
         mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
             MLIRContext * mctx = t.getContext();
-            if(generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>())
+            if(generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>())
                 return mlir::daphne::StructureType::get(mctx);
             if(auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
                 return mt.withSameElementTypeAndRepr();
             if(t.isa<mlir::daphne::FrameType>())
                 return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
+            if(auto lt = t.dyn_cast<mlir::daphne::ListType>())
+                return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
             if(auto mrt = t.dyn_cast<mlir::MemRefType>())
                 // Remove any dimension information ({0, 0}), but retain the element type.
                 return mlir::MemRefType::get({0, 0}, mrt.getElementType());

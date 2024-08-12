@@ -68,7 +68,7 @@ ARG TZ=Etc/UTC
 #RUN ldconfig
 #WORKDIR /
 
-FROM ${BASE_IMAGE} as daphne-dev
+FROM ${BASE_IMAGE} AS daphne-dev
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG TZ
 RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recommends install  \
