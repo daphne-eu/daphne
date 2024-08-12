@@ -54,8 +54,8 @@ void InsertDaphneContextPass::runOnOperation()
             builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&user_config)),
             builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())),
             builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&Statistics::instance())),
-            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&StringRefCounter::instance())),
-            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&PropertyLogger::instance())));
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&PropertyLogger::instance())),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&StringRefCounter::instance())));
 
 
 #ifdef USE_CUDA

@@ -15,9 +15,9 @@
  */
 
 #include "CreateDaphneContext.h"
-#include "util/KernelDispatchMapping.h"
-#include "util/PropertyLogger.h"
-#include "util/StringRefCount.h"
+#include <util/KernelDispatchMapping.h>
+#include <util/PropertyLogger.h>
+#include <util/StringRefCount.h>
 
 void createDaphneContext(DaphneContext *&res, uint64_t configPtr, uint64_t dispatchMappingPtr, uint64_t statisticsPtr,
         uint64_t propertyLoggerPtr, uint64_t stringRefCountPtr) {
