@@ -28,7 +28,9 @@ class DaphneLibResult(ctypes.Structure):
         # For frames.
         ("vtcs", ctypes.POINTER(ctypes.c_int64)),
         ("labels", ctypes.POINTER(ctypes.c_char_p)),
-        ("columns", ctypes.POINTER(ctypes.c_void_p))
+        ("columns", ctypes.POINTER(ctypes.c_void_p)),
+        # To pass error message to Python code.
+        ("error_message", ctypes.c_char_p)
     ]
 
 DaphneLib = ctypes.CDLL(os.path.join(PROTOTYPE_PATH, DAPHNELIB_FILENAME))

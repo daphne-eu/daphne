@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cinttypes>
+#include <string>
+
 
 struct DaphneLibResult {
     // For matrices.
@@ -28,4 +30,6 @@ struct DaphneLibResult {
     int64_t* vtcs;
     char** labels;
     void** columns;
+    // To pass error message to Python code.
+    std::string error_message;
 };
