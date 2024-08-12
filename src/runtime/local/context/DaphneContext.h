@@ -81,7 +81,7 @@ struct DaphneContext {
                            Statistics &stats,
                            PropertyLogger &propertyLogger,
                            StringRefCounter &stringRefCount)
-        : config(config), dispatchMapping(dispatchMapping), stats(stats),  propertyLogger(propertyLogger), stringRefCount(stringRefCnt) {
+        : config(config), dispatchMapping(dispatchMapping), stats(stats),  propertyLogger(propertyLogger), stringRefCount(stringRefCount) {
         logger = spdlog::get("runtime");
     }
 
