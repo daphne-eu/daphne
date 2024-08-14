@@ -14,48 +14,22 @@
  * limitations under the License.
  */
 
-/*
 #include "compiler/utils/LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
-#include "mlir/Conversion/LLVMCommon/TypeConverter.h"
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Dialect/Utils/StructuredOpsUtils.h"
-#include "mlir/IR/AffineMap.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/IR/BuiltinAttributes.h"
-#include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/Location.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Support/LogicalResult.h"
-#include "mlir/Transforms/DialectConversion.h"
-*/
-
-#include "compiler/utils/LoweringUtils.h"
-#include "ir/daphneir/Daphne.h"
-#include "ir/daphneir/Passes.h"
+#include "llvm/ADT/ArrayRef.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
-// #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
-// #include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
-// #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
-// #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
-// #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-// #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-// #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinDialect.h"
@@ -72,18 +46,16 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/ADT/ArrayRef.h"
 
 using namespace mlir;
 
 class SumRowOpLowering : public OpConversionPattern<daphne::RowAggSumOp> {
 public:
     using OpConversionPattern::OpConversionPattern;
-    // using mlir::RewritePattern::rewrite;
 
     explicit SumRowOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
             : mlir::OpConversionPattern<daphne::RowAggSumOp>(typeConverter, ctx,
-                                                                PatternBenefit(1)) { // determine benfit
+                                                                PatternBenefit(1)) {
         this->setDebugName("SumRowOpLowering");
     }
 
@@ -121,7 +93,7 @@ public:
                     loopIvs.push_back(outerLoop.getInductionVar());
                     loopIvs.push_back(innerLoop.getInductionVar());
 
-                    Value currentElem = rewriter.createOrFold<memref::LoadOp>(loc, argMatrix, loopIvs);
+                    Value currentElem = rewriter.create<AffineLoadOp>(loc, argMatrix, loopIvs);
                     currentElem = this->typeConverter->materializeTargetConversion(rewriter, loc, signlessType, ValueRange{currentElem});
 
                     Value runningSum = rewriter.create<arith::AddIOp>(loc, innerLoop.getRegionIterArgs()[0], currentElem);
@@ -150,30 +122,22 @@ public:
                 Value rowSum = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(matrixElementType));
                 auto innerLoop = rewriter.create<AffineForOp>(loc, 0, numCols, 1, ValueRange{rowSum});
                 rewriter.setInsertionPointToStart(innerLoop.getBody());
-                { 
+                {
                     SmallVector<Value, 2> loopIvs;
                     loopIvs.push_back(outerLoop.getInductionVar());
                     loopIvs.push_back(innerLoop.getInductionVar());
 
-                    Value currentElem = rewriter.createOrFold<memref::LoadOp>(loc, argMatrix, loopIvs);
+                    Value currentElem = rewriter.create<AffineLoadOp>(loc, argMatrix, loopIvs);
 
-                    // rowSum = rewriter.create<arith::AddFOp>(loc, rowSum, currentElem);
                     Value runningSum = rewriter.create<arith::AddFOp>(loc, innerLoop.getRegionIterArgs()[0], currentElem);
                     rewriter.create<AffineYieldOp>(loc, runningSum);
                 }
                 rewriter.setInsertionPointAfter(innerLoop);
 
-                // i, j -> i, 0
-                // AffineMap outputMap = AffineMap::get(2, 0,
-                //                         {rewriter.getAffineDimExpr(0),
-                //                         rewriter.getAffineConstantExpr(0)},
-                //                         getContext());
-                // rewriter.create<AffineStoreOp>(loc, innerLoop->getResult(0), resMemref, outputMap, loopIvs);
                 rewriter.create<AffineStoreOp>(loc, innerLoop.getResult(0), resMemref, ValueRange{outerLoop.getInductionVar(), rewriter.create<arith::ConstantIndexOp>(loc, 0)});
-                // empty yield is generated by for loop
             }
             rewriter.setInsertionPointAfter(outerLoop);
-            
+
             auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
             rewriter.create<daphne::DecRefOp>(loc, adaptor.getArg());
             rewriter.replaceOp(op, resDenseMatrix);
@@ -211,7 +175,7 @@ struct AggRowLoweringPass : public mlir::PassWrapper<AggRowLoweringPass,
     }
     void runOnOperation() final;
     };
-} // end anonymous namespace
+}
 
 void AggRowLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
@@ -226,12 +190,12 @@ void AggRowLoweringPass::runOnOperation() {
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
-    target.addLegalDialect<mlir::memref::MemRefDialect>();
-    target.addLegalDialect<mlir::arith::ArithDialect>();
-    target.addLegalDialect<mlir::AffineDialect>();
-    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
-    target.addLegalDialect<daphne::DaphneDialect>();
     target.addLegalDialect<BuiltinDialect>();
+    target.addLegalDialect<daphne::DaphneDialect>();
+    target.addLegalDialect<mlir::AffineDialect>();
+    target.addLegalDialect<mlir::arith::ArithDialect>();
+    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
+    target.addLegalDialect<mlir::memref::MemRefDialect>();
 
     target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
     target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();

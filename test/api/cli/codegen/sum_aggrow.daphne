@@ -1,0 +1,19 @@
+// Compare precompiled kernel with codegen generated for the AggAllOp.
+
+X = reshape( seq(1.0, 12.0), 3, 4 );
+
+// Double
+// X = reshape(seq(), 3, 4);
+print(sum(X, 0));
+
+// Float
+X = reshape( seq(1.0f, 12.0f), 3, 4 );
+print(sum(X, 0));
+
+// Signed Integer
+X = reshape( seq(1, 12), 3, 4 );
+print(sum(X, 0));
+
+// Unsigned Integer
+// X = reshape( seq(1u, 12u), 3, 4 );
+// print(sum(X, 0));
