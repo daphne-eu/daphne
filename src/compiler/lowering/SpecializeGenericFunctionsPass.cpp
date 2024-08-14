@@ -287,9 +287,7 @@ namespace {
 
         /**
          * @brief Try to reuse an existing specialization for the given template function
-         * @param operandTypes Operand types of the call operation
-         * @param operands Operands of the call operation or an empty list if the operands are not available
-         * @param templateFunction The template function called by the call operation
+         * @param specializedName The specialized name following the convention
          * @return either an existing and matching `FuncOp`, `nullptr` otherwise
          */
         func::FuncOp tryReuseExistingSpecialization(std::string specializedName) {
