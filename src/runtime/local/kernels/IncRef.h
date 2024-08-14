@@ -14,18 +14,39 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_INCREF_H
-#define SRC_RUNTIME_LOCAL_KERNELS_INCREF_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Structure.h>
 
 // ****************************************************************************
-// Convenience function
+// Struct for partial template specialization
 // ****************************************************************************
 
-void incRef(const Structure * arg, DCTX(ctx)) {
-    arg->increaseRefCounter();
-}
+template<class DTArg>
+struct IncRef {
+    static void apply(const DTArg * arg, DCTX(ctx)) = delete;
+};
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_INCREF_H
+template<>
+struct IncRef<Structure> {
+    static void apply(const Structure* arg, DCTX(ctx)) {
+        arg->increaseRefCounter();
+    }
+};
+
+template<>
+struct IncRef<char> {
+    static void apply(const char* arg, DCTX(ctx)) {
+        // Increase the reference counter.
+        ctx->stringRefCount.inc(arg);
+    }
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+template<class DTArg>
+void incRef(const DTArg* arg, DCTX(ctx)) {
+    IncRef<DTArg>::apply(arg, ctx);
+}

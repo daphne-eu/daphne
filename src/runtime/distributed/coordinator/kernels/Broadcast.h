@@ -34,7 +34,6 @@
 #include <runtime/distributed/worker/MPIWorker.h>
 #endif
 
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************

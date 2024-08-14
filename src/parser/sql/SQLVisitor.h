@@ -142,6 +142,11 @@ class SQLVisitor : public SQLGrammarVisitor {
      */
     std::string fetchPrefix(const std::string& framename);
 
+    template<class Context>
+    mlir::Value valueOrErrorOnVisit(Context * ctx) {
+        return utils.valueOrError(utils.getLoc(ctx->start), visit(ctx));
+    }
+
     //TODO: Recognize Literals and somehow handle them for the group expr.
 //GROUP Information
     std::unordered_map <std::string, int8_t> grouped;

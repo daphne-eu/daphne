@@ -19,6 +19,7 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
+#include <util/ErrorHandler.h>
 
 #include "antlr4-runtime.h"
 
@@ -196,10 +197,42 @@ public:
     // Misc
     // ************************************************************************
 
-    mlir::Value valueOrError(antlrcpp::Any a) {
+    /**
+     * @brief Returns the given result of an ANTLR visitor function as an `mlir::Value` or
+     * throws an informative error if it is not a single value.
+     *
+     * @param loc The location in the input file (e.g., DaphneDSL script or SQL query).
+     * @param a The result returned by an ANTLR visitor function (e.g., by `visit()` or `visitXYZ()`).
+     */
+    mlir::Value valueOrError(mlir::Location loc, antlrcpp::Any a) {
         if(a.is<mlir::Value>())
             return a.as<mlir::Value>();
-        throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
+        if(a.isNull())
+            // Typically happens when a *user-defined* function with zero return values
+            // is used in a place where exactly one value is required (e.g., in an expression).
+            throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                "the expression was expected to return a single value, but it returns no value"
+            );
+        if(a.is<mlir::Operation*>())
+            // Typically happens when a *built-in* function with zero return values
+            // is used in a place where exactly one value is required (e.g., in an expression).
+            throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                "the expression was expected to return a single value, but it returns no value"
+            );
+        if(a.is<mlir::ResultRange>()) {
+            // Typically happens when a *built-in or user-defined* function with more than one return values
+            // is used in a place where exactly one value is required (e.g., in an expression).
+            auto rr = a.as<mlir::ResultRange>();
+            throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                "the expression was expected to return a single value, but it returns " +
+                std::to_string(rr.size()) + " values"
+            );
+        }
+        // This should never happen. If it happens, that indicates that this function is called on
+        // an invalid argument or that some visitor returns a wrong result type.
+        throw ErrorHandler::compilerError(loc, "DSLVisitor",
+            "the expression was expected to return a single value, but it is something unexpected"
+        );
     }
 
     mlir::Type typeOrError(antlrcpp::Any a) {

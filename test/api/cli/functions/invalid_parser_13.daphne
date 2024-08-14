@@ -1,0 +1,7 @@
+// invalid number of results (of user-defined function) when used in call expression (expecting 1, getting 0)
+
+def f(a:si64) {
+    return;
+}
+
+print(f(123));

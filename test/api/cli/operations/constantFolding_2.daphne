@@ -1,0 +1,21 @@
+// constant folding of casts between unsigned, signed, signless types
+
+x_ui8 = as.ui8(255);
+x_si8 = as.si8(100);
+x_bool = true;
+
+// signed/zero extend (set most significant bit)
+print(as.ui32(x_ui8));      // ui8 -> ui32
+print(as.ui32(x_si8));      // si8 -> ui32
+print(as.ui32(x_bool));     // bool -> ui32
+print(as.si32(x_ui8));      // ui8 -> si32
+print(as.si32(x_si8));      // si8 -> si32
+print(as.si32(x_bool));     // bool -> si32
+
+// truncate
+print(as.ui32(255u));       // ui64 -> ui32
+print(as.ui32(100));        // si64 -> ui32
+print(as.si32(255u));       // ui64 -> si32
+print(as.si32(100));        // si64 -> si32
+print(as.bool(1u));         // ui64 -> bool
+print(as.bool(1));          // si64 -> bool

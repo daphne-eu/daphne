@@ -22,7 +22,6 @@
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <parser/metadata/MetaDataParser.h>
-#include <cassert>
 #include <cstddef>
 
 

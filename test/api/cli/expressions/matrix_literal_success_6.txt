@@ -1,5 +1,6 @@
-DenseMatrix(4x1, double)
+DenseMatrix(5x1, double)
 10
 1.1
 1.73205
 4
+-5.5

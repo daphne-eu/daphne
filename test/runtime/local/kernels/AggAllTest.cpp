@@ -29,7 +29,7 @@
 
 #define TEST_NAME(opName) "AggAll (" opName ")"
 #define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
-#define VALUE_TYPES double, uint32_t
+#define VALUE_TYPES double, float, uint8_t, uint32_t, uint64_t, int8_t, int32_t, int64_t
 
 template<typename VTRes, class DTArg>
 void checkAggAll(AggOpCode opCode, const DTArg * arg, VTRes exp) {
@@ -60,7 +60,13 @@ void checkAggAll(AggOpCode opCode, const DTArg * arg, VTRes exp) {
     DataObjectFactory::destroy(m1); \
 }
 SUM_TEST_CASE(int64_t)
+SUM_TEST_CASE(int32_t)
+SUM_TEST_CASE(uint64_t)
+SUM_TEST_CASE(uint32_t)
+SUM_TEST_CASE(int8_t)
+SUM_TEST_CASE(uint8_t)
 SUM_TEST_CASE(double)
+SUM_TEST_CASE(float)
 
 // The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {

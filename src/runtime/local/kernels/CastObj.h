@@ -71,6 +71,7 @@ class CastObj<DenseMatrix<VTRes>, Frame> {
         const DenseMatrix<VTArg> * argCol = argFrm->getColumn<VTArg>(c);
         for(size_t r = 0; r < numRows; r++)
             res->set(r, c, static_cast<VTRes>(argCol->get(r, 0)));
+        DataObjectFactory::destroy(argCol);
     }
     
 public:

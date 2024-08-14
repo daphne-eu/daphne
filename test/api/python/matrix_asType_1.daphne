@@ -1,0 +1,23 @@
+# Create data.
+X = fill(123, 1, 1);     # matrix<1x1xsi64>
+
+# Cast.
+Y1 = as.scalar(X);       # si64
+Y2 = as.matrix(X);       # matrix<1x1xsi64>
+Y3 = as.ui32(X);         # matrix<1x1xui32>
+Y4 = as.scalar<ui32>(X); # ui32
+Y5 = as.matrix<ui32>(X); # matrix<1x1xui32>
+
+# Use the cast result (used to fail in the past).
+Y1 = Y1 + 1;
+Y2 = Y2 + 1;
+Y3 = Y3 + 1;
+Y4 = Y4 + 1;
+Y5 = Y5 + 1;
+
+# Print the results.
+print(Y1);
+print(Y2);
+print(Y3);
+print(Y4);
+print(Y5);

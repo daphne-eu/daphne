@@ -1,0 +1,50 @@
+2
+List(2, DenseMatrix, int64_t)
+DenseMatrix(1x1, int64_t)
+1
+DenseMatrix(2x1, int64_t)
+2
+22
+
+3
+List(3, DenseMatrix, int64_t)
+DenseMatrix(1x1, int64_t)
+1
+DenseMatrix(2x1, int64_t)
+2
+22
+DenseMatrix(3x1, int64_t)
+3
+33
+333
+
+4
+List(4, DenseMatrix, int64_t)
+DenseMatrix(1x1, int64_t)
+1
+DenseMatrix(2x1, int64_t)
+2
+22
+DenseMatrix(3x1, int64_t)
+3
+33
+333
+DenseMatrix(4x1, int64_t)
+4
+44
+444
+4444
+
+3
+List(3, DenseMatrix, int64_t)
+DenseMatrix(1x1, int64_t)
+1
+DenseMatrix(3x1, int64_t)
+3
+33
+333
+DenseMatrix(4x1, int64_t)
+4
+44
+444
+4444

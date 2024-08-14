@@ -35,6 +35,8 @@
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
 
+#include <stdexcept>
+
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
 WorkerImpl::WorkerImpl(DaphneUserConfig& _cfg) : cfg(_cfg), tmp_file_counter_(0), localData_() {}
@@ -169,7 +171,7 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
 //     }
 //     else {
 //         // TODO: further types data cases
-//         assert(false && "TODO");
+//         throw std::runtime_error("WorlerImpl: TODO: further types data cases");
 //     }
 //     return dataCase;
 // }
@@ -187,8 +189,8 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::Functi
                                                                     std::vector<void *> &outputs,
                                                                     std::vector<void *> &inputs)
 {
-    assert(static_cast<size_t>(functionType.getNumInputs()) == workInputs.size()
-        && "Number of inputs received have to match number of MLIR fragment inputs");
+    if (static_cast<size_t>(functionType.getNumInputs()) != workInputs.size())
+        throw std::runtime_error("WorkerImpl: Number of inputs received have to match number of MLIR fragment inputs");
     std::vector<void *> inputsAndOutputs;
 
     // No realloc is allowed to happen, otherwise the pointers are invalid
@@ -271,10 +273,11 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &identifier, size_t num
             }
             closeFile(file);
         }
-//        auto result = localData_.insert({identifier, m});
-//        assert(result.second && "Value should always be inserted");
-        assert(localData_.insert({identifier, m}).second && "Value should always be inserted");
-        return m;    
+
+        if (!localData_.insert({identifier, m}).second)
+            throw std::runtime_error("WorkerImpl: Value should always be inserted");
+
+        return m;
     }
 }
 

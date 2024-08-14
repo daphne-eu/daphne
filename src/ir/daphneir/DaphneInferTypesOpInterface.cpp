@@ -202,8 +202,10 @@ std::vector<Type> daphne::RandMatrixOp::inferTypes() {
         elTy = getMax().getType();
     }
     else {
-        assert((getMax().getType() == UnknownType::get(getContext()) || elTy == getMax().getType())
-            && "Min and max need to have the same type");
+        if (getMax().getType() != UnknownType::get(getContext()) && elTy != getMax().getType())
+            throw ErrorHandler::compilerError(
+                getLoc(), "InferTypesOpInterface (daphne::RandMatrixOp::inferTypes)",
+                "min and max need to have the same type");
     }
     return {daphne::MatrixType::get(getContext(), elTy)};
 }
@@ -600,6 +602,64 @@ std::vector<Type> daphne::MaxPoolForwardOp::inferTypes() {
 
     // output matrix of same type as input, height/width dimensions as size/index type
     return {restype2, builder.getIndexType(), builder.getIndexType()};
+}
+
+std::vector<Type> daphne::CreateListOp::inferTypes() {
+    ValueRange elems = getElems();
+    const size_t numElems = elems.size();
+
+    if(numElems == 0)
+        throw ErrorHandler::compilerError(
+            getLoc(),
+            "InferTypesOpInterface",
+            "type inference for CreateListOp requires at least one argument"
+        );
+
+    // All elements must be matrices of the same value type.
+    // If the type of some element is (still) unknown or if the data type
+    // of some element is matrix, but the value type is (still) unknown,
+    // then we ignore this element for now.
+    Type etRes = nullptr;
+    for(size_t i = 0; i < numElems; i++) {
+        Type etCur = elems[i].getType();
+        if(etCur.isa<daphne::UnknownType>())
+            continue;
+        if(auto mtCur = etCur.dyn_cast<daphne::MatrixType>()) {
+            Type vtCur = mtCur.getElementType();
+            if(vtCur.isa<daphne::UnknownType>())
+                continue;
+            else if(!etRes)
+                etRes = mtCur.withSameElementType();
+            else if(etRes != mtCur.withSameElementType())
+                throw ErrorHandler::compilerError(
+                    getLoc(),
+                    "InferTypesOpInterface",
+                    "all arguments to CreateListOp must be matrices of the same value type"
+                );
+        }
+        else
+            throw ErrorHandler::compilerError(
+                getLoc(),
+                "InferTypesOpInterface",
+                "the arguments of CreateListOp must be matrices"
+            );
+    }
+
+    return {daphne::ListType::get(getContext(), etRes)};
+}
+
+std::vector<Type> daphne::RemoveOp::inferTypes() {
+    // The type of the first result is the same as that of the argument list.
+    // The type of the second result is the element type of the argument list.
+    Type argListTy = getArgList().getType();
+    if(auto lt = argListTy.dyn_cast<daphne::ListType>())
+        return {lt, lt.getElementType()};
+    else
+        throw ErrorHandler::compilerError(
+            getLoc(),
+            "InferTypesOpInterface",
+            "RemoveOp expects a list as its first argument"
+        );
 }
 
 // ****************************************************************************

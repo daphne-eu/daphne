@@ -31,8 +31,8 @@
     #include <runtime/distributed/worker/MPIHelper.h>
 #endif
 
-#include <cassert>
 #include <cstddef>
+#include <stdexcept>
 
 
 // ****************************************************************************
@@ -70,7 +70,8 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
 {
     static void apply(DT *&mat, const VectorCombine& combine, DCTX(dctx)) 
     {
-        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
+        if (mat == nullptr)
+            throw std::runtime_error("DistributedCollect gRPC: result matrix must be already allocated by wrapper since information regarding size only exists there");        
         size_t worldSize = MPIHelper::getCommSize();
         for(size_t rank=0; rank<worldSize ; rank++) 
         {
@@ -138,7 +139,8 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
 {
     static void apply(DT *&mat, const VectorCombine& combine, DCTX(dctx)) 
     {
-        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
+        if (mat == nullptr)
+            throw std::runtime_error("DistributedCollect gRPC: result matrix must be already allocated by wrapper since information regarding size only exists there");        
 
         struct StoredInfo{
             size_t dp_id;
@@ -207,7 +209,8 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
 {
     static void apply(DT *&mat, const VectorCombine& combine, DCTX(dctx)) 
     {
-        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
+        if (mat == nullptr)
+            throw std::runtime_error("DistributedCollect gRPC: result matrix must be already allocated by wrapper since information regarding size only exists there");        
 
         auto ctx = DistributedContext::get(dctx);
         std::vector<std::thread> threads_vector;

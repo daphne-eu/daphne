@@ -24,7 +24,6 @@
 
 #include "AOCLUtils/aocl_utils.h"
 #include "CL/opencl.h"
-#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -249,7 +248,9 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     fseek(fp, 0, SEEK_END);
     binary_length = ftell(fp);
     binary = (unsigned char *)malloc(sizeof(unsigned char) * binary_length);
-    assert(binary && "Malloc failed");
+    if (!binary) {
+        perror("Failed malloc for binaries");
+    }
     rewind(fp);
 
     if (fread((void *)binary, binary_length, 1, fp) == 0) {

@@ -38,7 +38,9 @@ std::unique_ptr<DaphneContext> setupContextAndLogger() {
     createDaphneContext(
         dctx_, reinterpret_cast<uint64_t>(&user_config),
         reinterpret_cast<uint64_t>(&dispatchMapping),
-        reinterpret_cast<uint64_t>(&Statistics::instance()));
+        reinterpret_cast<uint64_t>(&Statistics::instance()),
+        reinterpret_cast<uint64_t>(&StringRefCounter::instance())
+    );
 
 #ifdef USE_CUDA
     CUDA::createCUDAContext(dctx_);

@@ -87,6 +87,7 @@ In the following, we describe only the latter.
 - **`sinh`**`()`
 - **`cosh`**`()`
 - **`tanh`**`()`
+- **`isNan`**`()`
 
 **Elementwise binary:**
 
@@ -149,6 +150,7 @@ In the following, we describe only the latter.
 - **`order`**`(colIdxs: List[int], ascs: List[bool], returnIndexes: bool)`
 
 **Data preprocessing:**
+
 - **`oneHot`**`(info:matrix)`
 - **`bin`**`(numBins:int, Min = None, Max = None)`
 
@@ -161,6 +163,14 @@ In the following, we describe only the latter.
 
 - **`print`**`()`
 - **`write`**`(file: str)`
+
+**Conversions and casts:**
+
+- **`asType`**`(dtype=None, vtype=None) -> Matrix`
+
+**Conditional:**
+
+- **`ifElse`**`(thenVal: Union['Matrix', 'Scalar'], elseVal: Union['Matrix', 'Scalar'])`
 
 ### `Frame` API Reference
 
@@ -217,6 +227,7 @@ In the following, we describe only the latter.
 - **`sinh`**`()`
 - **`cosh`**`()`
 - **`tanh`**`()`
+- **`isNan`**`()`
 
 **Elementwise binary:**
 

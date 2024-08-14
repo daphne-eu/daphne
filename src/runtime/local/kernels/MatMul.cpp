@@ -18,6 +18,8 @@
 
 #include <cblas.h>
 #include <Eigen/Dense>
+#include <Eigen/src/Core/util/Constants.h>
+#include <cstdint>
 #include <spdlog/spdlog.h>
 
 // ****************************************************************************
@@ -38,16 +40,22 @@ double launch_dot(const int32_t n, const double* x, const int32_t incx, const do
 
 template<>
 int32_t launch_dot(const int32_t n, const int32_t* x, const int32_t incx, const int32_t* y, const int32_t incy) {
-    Eigen::Map<const Eigen::Vector<int32_t, Eigen::Dynamic>, Eigen::Unaligned> eigenX(x, n);
-    Eigen::Map<const Eigen::Vector<int32_t, Eigen::Dynamic>, Eigen::Unaligned> eigenY(y, n);
-    return eigenX.dot(eigenY);
+    auto e_x = Eigen::Vector<int32_t, Eigen::Dynamic>::Map(x, n, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incx));
+
+    auto e_y = Eigen::Vector<int32_t, Eigen::Dynamic>::Map(y, n, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incy));
+    return e_x.dot(e_y);
 }
 
 template<>
 int64_t launch_dot(const int32_t n, const int64_t* x, const int32_t incx, const int64_t* y, const int32_t incy) {
-    Eigen::Map<const Eigen::Vector<int64_t, Eigen::Dynamic>, Eigen::Unaligned> eigenX(x, n);
-    Eigen::Map<const Eigen::Vector<int64_t, Eigen::Dynamic>, Eigen::Unaligned> eigenY(y, n);
-    return eigenX.dot(eigenY);
+    auto e_x = Eigen::Vector<int64_t, Eigen::Dynamic>::Map(x, n, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incx));
+
+    auto e_y = Eigen::Vector<int64_t, Eigen::Dynamic>::Map(y, n, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incy));
+    return e_x.dot(e_y);
 }
 
 
@@ -75,21 +83,27 @@ void launch_gemv(bool transa, bool transb, size_t m, size_t n, const int32_t alp
                  const int32_t* x, const int32_t incx, const int32_t beta, int32_t* y, const int32_t incy) {
     if(transa) {
         auto e_A = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, m, n,
-                Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, n)).transpose();
+                Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, lda)).transpose();
 
-        Eigen::Map<const Eigen::Vector<int32_t, Eigen::Dynamic>> e_x(x, m);
-        Eigen::Map<Eigen::Vector<int32_t, Eigen::Dynamic>> e_y(y, n);
+        auto e_x = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(x, m, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incx));
+
+        auto e_y = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(y, n, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incy));
         e_y.noalias() = e_A * e_x;
 
     }
     else {
         auto e_A = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, m, n,
-                Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, n));
+                Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, lda));
 
-        Eigen::Map<const Eigen::Vector<int32_t, Eigen::Dynamic>> e_x(x, n);
-        Eigen::Map<Eigen::Vector<int32_t, Eigen::Dynamic>> e_y(y, m);
+        auto e_x = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(x, n, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incx));
+
+        auto e_y = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(y, m, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incy));
+
         e_y.noalias() = e_A * e_x;
-
     }
 }
 
@@ -98,19 +112,26 @@ void launch_gemv(bool transa, bool transb, size_t m, size_t n, const int64_t alp
                  const int64_t* x, const int32_t incx, const int64_t beta, int64_t* y, const int32_t incy) {
     if(transa) {
         auto e_A = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, m, n,
-                Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, n)).transpose();
+                Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, lda)).transpose();
 
-        Eigen::Map<const Eigen::Vector<int64_t, Eigen::Dynamic>> e_x(x, m);
-        Eigen::Map<Eigen::Vector<int64_t, Eigen::Dynamic>> e_y(y, n);
+        auto e_x = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(x, m, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incx));
+
+        auto e_y = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(y, n, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incy));
         e_y.noalias() = e_A * e_x;
 
     }
     else {
         auto e_A = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, m, n,
-                Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, n));
+                Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, lda));
 
-        Eigen::Map<const Eigen::Vector<int64_t, Eigen::Dynamic>> e_x(x, n);
-        Eigen::Map<Eigen::Vector<int64_t, Eigen::Dynamic>> e_y(y, m);
+        auto e_x = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(x, n, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incx));
+
+        auto e_y = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(y, m, 1,
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, incy));
+
         e_y.noalias() = e_A * e_x;
 
     }
@@ -147,47 +168,47 @@ template<>
     if(transa && transb) {
         auto eigenA = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, k, m,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, m)).transpose();
+                                                                                          1, lda)).transpose();
         auto eigenB = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(B, n, k,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, k)).transpose();
+                                                                                          1, ldb)).transpose();
         auto eigenC = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(C, n, m,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, m));
+                                                                                          1, ldc));
         eigenC.noalias() = eigenA * eigenB;
 
     }
     else if (transa) {
         auto eigenA = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, k, m,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, m)).transpose();
+                                                                                          1, lda)).transpose();
         auto eigenB = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(B, n, k,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, k));
+                                                                                          1, ldb));
         auto eigenC = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(C, n, m,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, m));
+                                                                                          1, ldc));
         eigenC.noalias() = eigenA * eigenB;
     }
     else if (transb) {
         auto eigenA = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, m, k,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, k));
+                                                                                          1, lda));
         auto eigenB = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(B, n, k,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, k)).transpose();
+                                                                                          1, ldb)).transpose();
         auto eigenC = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(C, m, n,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, n));
+                                                                                          1, ldc));
         eigenC.noalias() = eigenA * eigenB;
     }
     else {
         auto eigenA = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, m, k,
-                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, k));
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, lda));
         auto eigenB = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(B, k, n,
-                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, n));
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, ldb));
         auto eigenC = Eigen::Matrix<int32_t, Eigen::Dynamic, Eigen::Dynamic>::Map(C, m, n,
-                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, n));
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, ldc));
         eigenC.noalias() = eigenA * eigenB;
 
     }
@@ -200,49 +221,48 @@ template<>
     if(transa && transb) {
         auto eigenA = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, k, m,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, m)).transpose();
+                                                                                          1, lda)).transpose();
         auto eigenB = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(B, n, k,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, k)).transpose();
+                                                                                          1, ldb)).transpose();
         auto eigenC = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(C, n, m,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, m));
+                                                                                          1, ldc));
         eigenC.noalias() = eigenA * eigenB;
 
     }
     else if (transa) {
         auto eigenA = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, k, m,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, m)).transpose();
+                                                                                          1, lda)).transpose();
         auto eigenB = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(B, n, k,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, k));
+                                                                                          1, ldb));
         auto eigenC = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(C, n, m,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, m));
+                                                                                          1, ldc));
         eigenC.noalias() = eigenA * eigenB;
     }
     else if (transb) {
         auto eigenA = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, m, k,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, k));
+                                                                                          1, lda));
         auto eigenB = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(B, n, k,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, k)).transpose();
+                                                                                          1, ldb)).transpose();
         auto eigenC = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(C, m, n,
                                                                                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
-                                                                                          1, n));
+                                                                                          1, ldc));
         eigenC.noalias() = eigenA * eigenB;
     }
     else {
         auto eigenA = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(A, m, k,
-                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, k));
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, lda));
         auto eigenB = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(B, k, n,
-                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, n));
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, ldb));
         auto eigenC = Eigen::Matrix<int64_t, Eigen::Dynamic, Eigen::Dynamic>::Map(C, m, n,
-                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, n));
+                                                                                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(1, ldc));
         eigenC.noalias() = eigenA * eigenB;
-
     }
 }
 
@@ -276,13 +296,14 @@ void MatMul<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>>::apply(DenseMatri
 
     if(nr1 == 1 && nc2 == 1) {// Vector-Vector
         dctx->logger->debug("launch_dot<{}>(a[{}x{}], b[{}x{}])", typeid(alpha).name(), m, k, k, n);
-        res->set(0, 0, launch_dot(nc1, A, 1, B, rhs->isView() ? (transb ? 1 : rhs->getRowSkip()) : 1));
+        res->set(0, 0, launch_dot(nc1, A, transa ?  lda : 1,
+                            B, transb ? 1 : ldb));
     }
     else if(nc2 == 1) {      // Matrix-Vector
         dctx->logger->debug("launch_gemv<{}>(A[{},{}], x[{}])", typeid(alpha).name(), m, k, k);
-        launch_gemv<VT>(transa, transb, lhs->getNumRows(), lhs->getNumCols(), alpha, A, lda, B, 1, beta, C, 1);
-    }
-    else { // Matrix-Matrix
+        launch_gemv<VT>(transa, transb, lhs->getNumRows(), lhs->getNumCols(), alpha, A, lda, B, transb ? 1 : ldb, beta, C, ldc);
+  }
+  else { // Matrix-Matrix
         dctx->logger->debug("launch_gemm<{}>(C[{}x{}], A[{},{}], B[{}x{}], transA:{}, transB:{})",
                 typeid(alpha).name(), m, n, m, k, k, n, transa, transb);
         launch_gemm<VT>(transa, transb, nr1, nc2, nc1, alpha, A, lda, B, ldb, beta, C, ldc);

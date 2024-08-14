@@ -19,8 +19,6 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-
-#include <cassert>
 #include <catch.hpp>
 #include <tags.h>
 

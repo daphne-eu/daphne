@@ -33,6 +33,7 @@ import numpy as np
 import json
 import os
 from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence, List
+import copy
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -44,7 +45,8 @@ class Matrix(OperationNode):
 
     def __init__(self, daphne_context: 'DaphneContext', operation:str, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
                 named_input_nodes:Dict[str, VALID_INPUT_TYPES]=None, 
-                local_data: np.array = None, brackets:bool = False, copy: bool = False)->'Matrix':
+                local_data: np.array = None, brackets:bool = False, left_brackets: bool = False, copy: bool = False,
+                consumer_list: List['OperationNode'] = None)->'Matrix':
         self.__copy = copy
         is_python_local_data = False
         if local_data is not None:
@@ -53,7 +55,7 @@ class Matrix(OperationNode):
             is_python_local_data = True
         else:
             self._np_array = None
-        super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets)
+        super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets, left_brackets, consumer_list)
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
@@ -160,10 +162,61 @@ class Matrix(OperationNode):
     def __matmul__(self, other: 'Matrix') -> 'Matrix':
         return Matrix(self.daphne_context, '@', [self, other])
 
-    def __getitem__(self,  pos):
-        if not isinstance(pos, int):
-            i, x = pos
-            return Matrix(self.daphne_context,'',[self, i, x], brackets=True)
+    def __getitem__(self,  key):
+        if not isinstance(key, tuple) or len(key) != 2:
+            raise TypeError("you must specify exactly two dimensions")
+        
+        if not(isinstance(key[0], slice) or isinstance(key[0], int), isinstance(key[0], Matrix)) or \
+            not(isinstance(key[1], slice) or isinstance(key[1], int), isinstance(key[1], Matrix)):
+            raise TypeError("keys must be an integer, slice or Matrix")
+        
+        if isinstance(key[0], slice):
+            # create a string for slicing based on slice´s start and stop for row index
+            row_index = (f'{key[0].start}' if key[0].start is not None else '') + ':' + (f'{key[0].stop}' if key[0].stop is not None else '') 
+        else:
+            row_index = key[0]
+        
+        if isinstance(key[1], slice):
+            # create a string for slicing based on slice´s start and stop for column index
+            column_index = (f'{key[1].start}' if key[1].start is not None else '') + ':' + (f'{key[1].stop}' if key[1].stop is not None else '')
+        else:
+            column_index = key[1]
+        
+        return Matrix(self.daphne_context, None, [self, row_index, column_index], brackets=True)
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, tuple) or len(key) != 2:
+            raise TypeError("you must specify exactly two dimensions")
+        
+        if not(isinstance(key[0], slice) or isinstance(key[0], int)) or \
+            not(isinstance(key[1], slice) or isinstance(key[1], int)):
+            raise TypeError("keys must be an integer or a slice")
+        
+        if isinstance(key[0], slice):
+            # create a string for slicing based on slice´s start and stop for row index
+            row_index = (f'{key[0].start}' if key[0].start is not None else '') + ':' + (f'{key[0].stop}' if key[0].stop is not None else '') 
+        else:
+            row_index = key[0]
+        
+        if isinstance(key[1], slice):
+            # create a string for slicing based on slice´s start and stop for column index
+            column_index = (f'{key[1].start}' if key[1].start is not None else '') + ':' + (f'{key[1].stop}' if key[1].stop is not None else '')
+        else:
+            column_index = key[1]
+        
+        # As __setitem__() cannot return anything, but we still want to add a DAPHNE operation to the DAG:
+        #   Firstly, create a new_node that is a copy of the current DAG node.
+        #   Secondly, update the input nodes of all consumers of the current node, to use the new node instead.
+        #   Finally, change the state of the current DAG node to an operation for left indexing.
+        # TODO Can it happen that deepcopy() copies numpy data backing this Matrix node?
+        #      If so, we should prevent that for performance reasons.
+        new_node = copy.deepcopy(self)
+        for consumer in self.consumer_list:
+            consumer.update_node_in_input_list(new_node, self)
+        self.__dict__ = Matrix(new_node.daphne_context, None, [new_node, value, row_index, column_index], left_brackets=True).__dict__
+
+    def __neg__(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'minus', [self])
 
     def sum(self, axis: int = None) -> 'OperationNode':
         """Calculate sum of matrix.
@@ -191,6 +244,12 @@ class Matrix(OperationNode):
         :return: `Matrix` representing operation
         """
         return Matrix(self.daphne_context,'sqrt', [self])
+    
+    def isNan(self) -> 'OperationNode':
+        """Elementwise check for NaN values in this matrix (resulting in 1 if the element is NaN, 0 otherwise).
+        :return: `Matrix` A node representing the isNan operation.
+        """
+        return Matrix(self.daphne_context, 'isNan', [self])
     
     def round(self) -> 'OperationNode':
         return Matrix(self.daphne_context, 'round', [self])
@@ -415,3 +474,36 @@ class Matrix(OperationNode):
     
     def print(self):
         return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)
+    
+    def asType(self, dtype=None, vtype=None):
+        # TODO We import Frame here (not at the top of the file) to avoid a circular import.
+        # Maybe we can find a better solution.
+        from daphne.operator.nodes.frame import Frame
+
+        if dtype is None and vtype is None:
+            raise RuntimeError("you must specify the target data type and/or value type")
+        elif dtype is not None and vtype is None:
+            params = [self.daphne_context, f"as.{dtype}", [self]]
+            if dtype == "matrix":
+                return Matrix(*params)
+            elif dtype == "frame":
+                return Frame(*params)
+            elif dtype == "scalar":
+                return Scalar(*params)
+            else:
+                raise RuntimeError(f"invalid data type: '{dtype}', use 'matrix', 'frame', or 'scalar'")
+        elif dtype is None and vtype is not None:
+            return Matrix(self.daphne_context, f"as.{vtype}", [self])
+        elif dtype is not None and vtype is not None:
+            params = [self.daphne_context, f"as.{dtype}<{vtype}>", [self]]
+            if dtype == "matrix":
+                return Matrix(*params)
+            elif dtype == "frame":
+                return Frame(*params)
+            elif dtype == "scalar":
+                return Scalar(*params)
+            else:
+                raise RuntimeError(f"invalid data type: '{dtype}', use 'matrix', 'frame', or 'scalar'")
+
+    def ifElse(self, thenVal: Union['Matrix', 'Scalar'], elseVal: Union['Matrix', 'Scalar']) -> 'Matrix':
+        return Matrix(self.daphne_context, 'ifElse', [self, thenVal, elseVal])

@@ -1,0 +1,12 @@
+// invalid number of results when used in return-statement (expecting 1, getting 2)
+
+def f(a:si64) -> si64, si64 {
+    return a + 1, a + 2;
+}
+
+def g() -> si64 {
+    return f(123);
+}
+
+x = g();
+print(x);

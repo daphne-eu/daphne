@@ -132,7 +132,6 @@ inline int mm_is_valid(MM_typecode matcode)
 #define MM_PATTERN_STR  "pattern"
 
 inline int mm_read_banner(File *f, MM_typecode *matcode){
-  char *line;
   char banner[MM_MAX_TOKEN_LENGTH];
   char mtx[MM_MAX_TOKEN_LENGTH]; 
   char crd[MM_MAX_TOKEN_LENGTH];
@@ -142,11 +141,13 @@ inline int mm_read_banner(File *f, MM_typecode *matcode){
 
 
   mm_clear_typecode(matcode);  
-  line = getLine(f);
+  ssize_t ret = getFileLine(f);
   if ((ssize_t)f->read == EOF) 
     return MM_PREMATURE_EOF;
+  if (ret == -1)
+    throw std::runtime_error("mm_read_banner: getFileLine failed");
 
-  if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, data_type, 
+  if (sscanf(f->line, "%s %s %s %s %s", banner, mtx, crd, data_type,
       storage_scheme) != 5)
       return MM_PREMATURE_EOF;
 
@@ -221,8 +222,13 @@ inline int mm_read_mtx_crd_size(File *f, size_t *M, size_t *N, size_t *nz )
   *M = *N = *nz = 0;
   do
   {
-    num_items_read = sscanf(getLine(f), "%lu %lu %lu", M, N, nz);
-    if ((ssize_t)f->read == EOF) return MM_PREMATURE_EOF;
+    ssize_t ret = getFileLine(f);
+    if ((ssize_t)f->read == EOF)
+      return MM_PREMATURE_EOF;
+    if (ret == -1)
+      throw std::runtime_error("mm_read_mtx_crd_size: getFileLine failed");
+
+    num_items_read = sscanf(f->line, "%lu %lu %lu", M, N, nz);
   } while (num_items_read != 3);
 
   return 0;
@@ -235,8 +241,12 @@ inline int mm_read_mtx_array_size(File *f, size_t *M, size_t *N)
     *M = *N = 0;
     do
     { 
-      num_items_read = sscanf(getLine(f), "%lu %lu", M, N);
-      if ((ssize_t)f->read == EOF) return MM_PREMATURE_EOF;
+      ssize_t ret = getFileLine(f);
+      if ((ssize_t)f->read == EOF) 
+        return MM_PREMATURE_EOF;
+      if (ret == -1)
+        throw std::runtime_error("mm_read_mtx_array_size: getFileLine failed");
+      num_items_read = sscanf(f->line, "%lu %lu", M, N);
     } while (num_items_read != 2);
 
     return 0;
@@ -305,29 +315,31 @@ public:
         pointer m_ptr = (pointer)malloc(sizeof(Entry)*2), next = m_ptr+1;
         bool do_next = false;
         MMFile<VT> &file;
-        char *line{};
         size_t r = 0, c = 0;
         std::function<void()> progress = [&]() mutable { r = 0; c++; };
         VT cur;
         MMIterator() = default;
         void readEntry(){
           //TODO: Handle arbitrary blank lines
-          line = getLine(file.f);
+          ssize_t ret = getFileLine(file.f);
           if((ssize_t)file.f->read == -1){
             terminate();
             return;
           }
+          if (ret == -1)
+            throw std::runtime_error("MMIterator::readEntry: getFileLine failed");
+
           size_t pos = 0;
           if(mm_is_coordinate(file.typecode)){
               //Assumes only single space between values
-              r = std::stoi(line) - 1;
-              while(line[pos++] != ' ');
-              c = std::stoi(line + pos) - 1;
-              while(line[pos] != ' ' && line[pos] != '\n') pos++;
+              r = std::stoi(file.f->line) - 1;
+              while(file.f->line[pos++] != ' ');
+              c = std::stoi(file.f->line + pos) - 1;
+              while(file.f->line[pos] != ' ' && file.f->line[pos] != '\n') pos++;
           }
 
           if(!mm_is_pattern(file.typecode))
-            convertCstr(line + pos, &cur);
+            convertCstr(file.f->line + pos, &cur);
 
           *m_ptr = {r, c, cur};
           if(mm_is_symmetric(file.typecode) && r != c){

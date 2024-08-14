@@ -23,7 +23,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include "runtime/local/kernels/CUDA/BatchNorm.h"
 
-#include <cassert>
 #include <catch.hpp>
 #include <tags.h>
 
