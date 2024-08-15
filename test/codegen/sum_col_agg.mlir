@@ -10,7 +10,7 @@ module {
     // CHECK-NOT: sumCol
     
     // COM: Checks conversions (and dimension) at beginning and end of loop and basic loop body
-    // CHECK: "daphne.convertDenseMatrixToMemRef"{{.*}} -> memref<10x10xf64>
+    // CHECK: "daphne.convertDenseMatrixToMemRef"{{\(.*\) : \(.*\)}} -> memref<10x10xf64>
 
     // CHECK: memref.alloc
     // CHECK-NEXT: affine.for
@@ -37,7 +37,7 @@ module {
     // CHECK-NOT: sumCol
     
     // COM: Checks conversions (and dimension) at beginning and end of loop and basic loop body
-    // CHECK: "daphne.convertDenseMatrixToMemRef"{{.*}} -> memref<10x10xf32>
+    // CHECK: "daphne.convertDenseMatrixToMemRef"{{\(.*\) : \(.*\)}} -> memref<10x10xf32>
 
     // CHECK: memref.alloc
     // CHECK-NEXT: affine.for
@@ -64,7 +64,7 @@ module {
     // CHECK-NOT: sumCol
     
     // COM: Checks conversions (and dimension) at beginning and end of loop and basic loop body
-    // CHECK: "daphne.convertDenseMatrixToMemRef"{{.*}} -> memref<10x10xsi64>
+    // CHECK: "daphne.convertDenseMatrixToMemRef"{{\(.*\) : \(.*\)}} -> memref<10x10xsi64>
 
     // CHECK: memref.alloc
     // CHECK-NEXT: affine.for
@@ -92,7 +92,7 @@ module {
     // CHECK-NOT: sumCol
     
     // COM: Checks conversions (and dimension) at beginning and end of loop and basic loop body
-    // CHECK: "daphne.convertDenseMatrixToMemRef"{{.*}} -> memref<10x10xui64>
+    // CHECK: "daphne.convertDenseMatrixToMemRef"{{\(.*\) : \(.*\)}} -> memref<10x10xui64>
 
     // CHECK: memref.alloc
     // CHECK-NEXT: affine.for
