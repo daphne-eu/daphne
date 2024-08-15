@@ -61,11 +61,12 @@ public:
 
     /**
      * @brief Replaces a sumCol operation if possible.
-     * An outer and an inner affine loop are build to iterate over the input that is converted to a MemRef.
-     * Values are loaded and stored using AffineLoad/AffineStore.
-     * 
-     * The result is then converted back into a DenseMatrix and the original matrix's
-     * reference counter is decreased.
+     * The arg Matrix is converted to a MemRef.
+     * Affine loops iterate over the Memref and load/store
+     * values using AffineLoad/AffineStore.
+     * The result is then converted into a DenseMatrix and returned.
+     *
+     * @return mlir::success if sumCol has been replaced, else mlir::failure.
      */
     LogicalResult matchAndRewrite(daphne::ColAggSumOp op, OpAdaptor adaptor,
                                     ConversionPatternRewriter &rewriter) const override {
@@ -77,14 +78,12 @@ public:
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
 
-        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
-            loc,
+        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc,
             mlir::MemRefType::get({numRows, numCols}, matrixElementType),
             adaptor.getArg()
         );
 
-        Value resMemref = rewriter.create<mlir::memref::AllocOp>(
-            loc,
+        Value resMemref = rewriter.create<mlir::memref::AllocOp>(loc,
             mlir::MemRefType::get({1, numCols}, matrixElementType)
         );
 
@@ -162,7 +161,6 @@ public:
         }
 
         auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
-        rewriter.create<daphne::DecRefOp>(loc, adaptor.getArg());
         rewriter.replaceOp(op, resDenseMatrix);
 
         return success();
@@ -191,7 +189,7 @@ struct AggColLoweringPass : public mlir::PassWrapper<AggColLoweringPass,
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
         registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                        mlir::memref::MemRefDialect>();
+                        mlir::arith::ArithDialect, mlir::memref::MemRefDialect>();
     }
     void runOnOperation() final;
     };
@@ -219,7 +217,6 @@ void AggColLoweringPass::runOnOperation() {
 
     target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
     target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
-    target.addLegalOp<mlir::daphne::DecRefOp>();
 
     target.addIllegalOp<mlir::daphne::ColAggSumOp>();
 

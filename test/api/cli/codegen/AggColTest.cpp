@@ -27,11 +27,13 @@ const std::string dirPath = "test/api/cli/codegen/";
 TEST_CASE("aggCol", TAG_CODEGEN) {
     std::string result = 
         "DenseMatrix(1x3, double)\n"
-            "22 26 30\n"
+            "-2 2 6\n"
         "DenseMatrix(1x3, float)\n"
-            "22 26 30\n"
+            "-2 2 6\n"
         "DenseMatrix(1x3, int64_t)\n"
-            "22 26 30\n";
+            "-2 2 6\n"
+        "DenseMatrix(1x3, uint64_t)\n"
+            "8 8 8\n";
 
     compareDaphneToStr(result, dirPath + "sum_aggcol.daphne");
     compareDaphneToStr(result, dirPath + "sum_aggcol.daphne", "--mlir-codegen");
