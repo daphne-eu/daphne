@@ -50,24 +50,24 @@
 
 using namespace mlir;
 
-class SumRowOpLowering : public OpConversionPattern<daphne::RowAggSumOp> {
+class SumColOpLowering : public OpConversionPattern<daphne::ColAggSumOp> {
 public:
     using OpConversionPattern::OpConversionPattern;
 
-    explicit SumRowOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
-            : mlir::OpConversionPattern<daphne::RowAggSumOp>(typeConverter, ctx, PatternBenefit(1)) {
-        this->setDebugName("SumRowOpLowering");
+    explicit SumColOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
+            : mlir::OpConversionPattern<daphne::ColAggSumOp>(typeConverter, ctx, PatternBenefit(1)) {
+        this->setDebugName("SumColOpLowering");
     }
 
     /**
-     * @brief Replaces a sumRow operation if possible.
+     * @brief Replaces a sumCol operation if possible.
      * An outer and an inner affine loop are build to iterate over the input that is converted to a MemRef.
      * Values are loaded and stored using AffineLoad/AffineStore.
      * 
      * The result is then converted back into a DenseMatrix and the original matrix's
      * reference counter is decreased.
      */
-    LogicalResult matchAndRewrite(daphne::RowAggSumOp op, OpAdaptor adaptor,
+    LogicalResult matchAndRewrite(daphne::ColAggSumOp op, OpAdaptor adaptor,
                                     ConversionPatternRewriter &rewriter) const override {
 
         mlir::Location loc = op->getLoc();
@@ -85,25 +85,25 @@ public:
 
         Value resMemref = rewriter.create<mlir::memref::AllocOp>(
             loc,
-            mlir::MemRefType::get({numRows, 1}, matrixElementType)
+            mlir::MemRefType::get({1, numCols}, matrixElementType)
         );
 
         // Depending on the value type, different Arith operations are needed.
         // Signed Integer values need to be converted to be unsigned before applying these ArithOps.
         if (matrixElementType.isIntOrIndex()) {
-            auto outerLoop = rewriter.create<AffineForOp>(loc, 0, numRows, 1);
+            auto outerLoop = rewriter.create<AffineForOp>(loc, 0, numCols, 1);
             rewriter.setInsertionPointToStart(outerLoop.getBody());
             {
                 IntegerType signlessType = rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth());
-                Value rowSum = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(signlessType));
+                Value colSum = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(signlessType));
 
-                auto innerLoop = rewriter.create<AffineForOp>(loc, 0, numCols, 1, ValueRange{rowSum});                
+                auto innerLoop = rewriter.create<AffineForOp>(loc, 0, numRows, 1, ValueRange{colSum});                
                 rewriter.setInsertionPointToStart(innerLoop.getBody());
                 {
-                    // Load the next value from argMemref[i, j] and convert it to signlessType
+                    // Load the next value from argMemref[j, i] and convert it to signlessType
                     Value currentElem = rewriter.create<AffineLoadOp>(loc,
                         argMemref,
-                        /*loopIvs*/ ValueRange{outerLoop.getInductionVar(), innerLoop.getInductionVar()}
+                        /*loopIvs*/ ValueRange{innerLoop.getInductionVar(), outerLoop.getInductionVar()}
                     );
                     currentElem = this->typeConverter->materializeTargetConversion(rewriter, loc,
                         signlessType,
@@ -115,7 +115,7 @@ public:
                 }
                 rewriter.setInsertionPointAfter(innerLoop);
 
-                // Store the result in resMemref[i, 0] after converting back to the original type
+                // Store the result in resMemref[0, i] after converting back to the original type
                 auto castedRes = this->typeConverter->materializeTargetConversion(rewriter, loc,
                     matrixElementType,
                     ValueRange{innerLoop.getResult(0)}
@@ -123,24 +123,24 @@ public:
                 rewriter.create<AffineStoreOp>(loc,
                     castedRes,
                     resMemref,
-                    /*loopIvs*/ ValueRange{outerLoop.getInductionVar(), rewriter.create<arith::ConstantIndexOp>(loc, 0)}
+                    /*loopIvs*/ ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0), outerLoop.getInductionVar()}
                 );
             }
             rewriter.setInsertionPointAfter(outerLoop);
 
         } else if (matrixElementType.isF64() || matrixElementType.isF32()) {
-            auto outerLoop = rewriter.create<AffineForOp>(loc, 0, numRows, 1);
+            auto outerLoop = rewriter.create<AffineForOp>(loc, 0, numCols, 1);
             rewriter.setInsertionPointToStart(outerLoop.getBody());
             {
-                Value rowSum = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(matrixElementType));
+                Value colSum = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(matrixElementType));
 
-                auto innerLoop = rewriter.create<AffineForOp>(loc, 0, numCols, 1, ValueRange{rowSum});
+                auto innerLoop = rewriter.create<AffineForOp>(loc, 0, numRows, 1, ValueRange{colSum});
                 rewriter.setInsertionPointToStart(innerLoop.getBody());
                 {
-                    // Load the next value from argMemref[i, j]
+                    // Load the next value from argMemref[j, i]
                     Value currentElem = rewriter.create<AffineLoadOp>(loc,
                         argMemref,
-                        /*loopIvs*/ ValueRange{outerLoop.getInductionVar(), innerLoop.getInductionVar()}
+                        /*loopIvs*/ ValueRange{innerLoop.getInductionVar(), outerLoop.getInductionVar()}
                     );
 
                     Value runningSum = rewriter.create<arith::AddFOp>(loc, innerLoop.getRegionIterArgs()[0], currentElem);
@@ -148,11 +148,11 @@ public:
                 }
                 rewriter.setInsertionPointAfter(innerLoop);
 
-                // Store the result in resMemref[i, 0]
+                // Store the result in resMemref[0, i]
                 rewriter.create<AffineStoreOp>(loc,
                     innerLoop.getResult(0),
                     resMemref,
-                    /*loopIvs*/ ValueRange{outerLoop.getInductionVar(), rewriter.create<arith::ConstantIndexOp>(loc, 0)}
+                    /*loopIvs*/ ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0), outerLoop.getInductionVar()}
                 );
             }
             rewriter.setInsertionPointAfter(outerLoop);
@@ -171,20 +171,20 @@ public:
 
 namespace {
 /**
- * @brief Lowers the daphne::AggRow operator to a set of affine loops and
+ * @brief Lowers the daphne::AggCol operator to a set of affine loops and
  * performs the aggregation using a MemRef which is created from the input
  * DenseMatrix.
  *
  * This rewrite may enable loop fusion of the produced affine loops by
  * running the loop fusion pass.
  */
-struct AggRowLoweringPass : public mlir::PassWrapper<AggRowLoweringPass,
+struct AggColLoweringPass : public mlir::PassWrapper<AggColLoweringPass,
                                                     mlir::OperationPass<mlir::ModuleOp>> {
-    explicit AggRowLoweringPass() {}
+    explicit AggColLoweringPass() {}
 
-    StringRef getArgument() const final { return "lower-agg-row"; }
+    StringRef getArgument() const final { return "lower-agg-col"; }
     StringRef getDescription() const final {
-        return "Lowers AggRow operators to a set of affine loops and performs "
+        return "Lowers AggCol operators to a set of affine loops and performs "
                "the aggregation on a MemRef which is created from the input "
                "DenseMatrix.";
     }
@@ -197,7 +197,7 @@ struct AggRowLoweringPass : public mlir::PassWrapper<AggRowLoweringPass,
     };
 }
 
-void AggRowLoweringPass::runOnOperation() {
+void AggColLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     LowerToLLVMOptions llvmOptions(&getContext());
@@ -221,15 +221,15 @@ void AggRowLoweringPass::runOnOperation() {
     target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
     target.addLegalOp<mlir::daphne::DecRefOp>();
 
-    target.addIllegalOp<mlir::daphne::RowAggSumOp>();
+    target.addIllegalOp<mlir::daphne::ColAggSumOp>();
 
-    patterns.insert<SumRowOpLowering>(typeConverter, &getContext());
+    patterns.insert<SumColOpLowering>(typeConverter, &getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createAggRowOpLoweringPass() {
-    return std::make_unique<AggRowLoweringPass>();
+std::unique_ptr<mlir::Pass> mlir::daphne::createAggColOpLoweringPass() {
+    return std::make_unique<AggColLoweringPass>();
 }

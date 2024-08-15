@@ -1,9 +1,7 @@
-// Compare precompiled kernel with codegen generated for the AggAllOp.
-
-X = reshape( seq(1.0, 12.0), 3, 4 );
+// Compare precompiled kernel with codegen generated for the AggRowOp.
 
 // Double
-// X = reshape(seq(), 3, 4);
+X = reshape( seq(1.0, 12.0), 3, 4 );
 print(sum(X, 0));
 
 // Float

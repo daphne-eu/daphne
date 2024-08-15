@@ -1,0 +1,17 @@
+// Compare precompiled kernel with codegen generated for the AggColOp.
+
+// Double
+X = reshape( seq(1.0, 12.0), 4, 3 );
+print(sum(X, 1));
+
+// Float
+X = reshape( seq(1.0f, 12.0f), 4, 3 );
+print(sum(X, 1));
+
+// Signed Integer
+X = reshape( seq(1, 12), 4, 3 );
+print(sum(X, 1));
+
+// Unsigned Integer
+// X = reshape( seq(1u, 12u), 4, 3 );
+// print(sum(X, 1));

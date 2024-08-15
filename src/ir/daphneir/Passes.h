@@ -45,6 +45,7 @@ namespace mlir::daphne {
     // alphabetically sorted list of passes
     std::unique_ptr<Pass> createAdaptTypesToKernelsPass();
     std::unique_ptr<Pass> createAggAllOpLoweringPass();
+    std::unique_ptr<Pass> createAggColOpLoweringPass();
     std::unique_ptr<Pass> createAggRowOpLoweringPass();
     std::unique_ptr<Pass> createDaphneOptPass();
     std::unique_ptr<Pass> createDistributeComputationsPass();

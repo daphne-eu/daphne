@@ -60,6 +60,7 @@ set(TEST_SOURCES
         api/cli/codegen/MatMulTest.cpp
         api/cli/codegen/EwOpLoopFusionTest.cpp
         api/cli/codegen/AggAllTest.cpp
+        api/cli/codegen/AggColTest.cpp
         api/cli/codegen/AggRowTest.cpp
         api/cli/codegen/MapOpTest.cpp
         codegen/CodegenTest.cpp
