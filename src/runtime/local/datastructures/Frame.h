@@ -30,7 +30,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <cassert>
 #include <cinttypes>
 #include <cstddef>
 #include <cstring>
@@ -186,10 +185,8 @@ class Frame : public Structure {
     template<typename VT>
     bool tryValueType(Structure * colMat, ValueTypeCode * schemaSlot, std::shared_ptr<ColByteType> * columnsSlot) {
         if(auto colMat2 = dynamic_cast<DenseMatrix<VT> *>(colMat)) {
-            assert(
-                    (colMat2->getRowSkip() == 1) &&
-                    "all given matrices must not be a view on a column of a larger matrix"
-            );
+            if (colMat2->getRowSkip() != 1)
+                throw std::runtime_error("Frame (tryValueType): all given matrices must not be a view of a column of a larger matrix");
             *schemaSlot = ValueTypeUtils::codeFor<VT>;
             std::shared_ptr<VT[]> orig = colMat2->getValuesSharedPtr();
             *columnsSlot = std::shared_ptr<ColByteType>(orig, reinterpret_cast<ColByteType *>(orig.get()));
@@ -217,20 +214,17 @@ class Frame : public Structure {
             Structure(colMats.empty() ? 0 : colMats[0]->getNumRows(), colMats.size())
     {
         const size_t numCols = colMats.size();
-        assert(numCols && "you must provide at least one column matrix");
+        if (numCols == 0)
+            throw std::runtime_error("Frame: at least one column matrix must be provided");
         schema = new ValueTypeCode[numCols];
         this->labels = new std::string[numCols];
         columns = new std::shared_ptr<ColByteType>[numCols];
         for(size_t c = 0; c < numCols; c++) {
             Structure * colMat = colMats[c];
-            assert(
-                    (colMat->getNumCols() == 1) &&
-                    "all given matrices must have a single column"
-            );
-            assert(
-                    (colMat->getNumRows() == numRows) &&
-                    "all given column matrices must have the same number of rows"
-            );
+            if (colMat->getNumCols() != 1)
+                throw std::runtime_error("Frame: all given matrices must be column matrices");
+            if (colMat->getNumRows() != numRows)
+                throw std::runtime_error("Frame: all given matrices must have the same number of rows");
             this->labels[c] = labels ? labels[c] : getDefaultLabel(c);
             // For all value types.
             bool found = tryValueType<int8_t>(colMat, schema + c, columns + c);
@@ -342,7 +336,8 @@ public:
     }
     
     ValueTypeCode getColumnType(size_t idx) const {
-        assert((idx < numCols) && "column index is out of bounds");
+        if (idx >= numCols)
+            throw std::runtime_error("Frame (getColumnType): column index is out of bounds");
         return schema[idx];
     }
     
@@ -352,7 +347,8 @@ public:
     
     template<typename ValueType>
     DenseMatrix<ValueType> * getColumn(size_t idx) {
-        assert((ValueTypeUtils::codeFor<ValueType> == schema[idx]) && "requested value type must match the type of the column");
+        if (ValueTypeUtils::codeFor<ValueType> != schema[idx])
+            throw std::runtime_error("Frame (getColumn): requested value type must match the type of the column");
         return DataObjectFactory::create<DenseMatrix<ValueType>>(
                 numRows, 1,
                 std::shared_ptr<ValueType[]>(
@@ -383,6 +379,14 @@ public:
     
     const void * getColumnRaw(size_t idx) const {
         return const_cast<Frame *>(this)->getColumnRaw(idx);
+    }
+
+    size_t getNumDims() const override {
+        return 2;
+    }
+
+    size_t getNumItems() const override {
+        return this->numRows * this->numCols;
     }
     
     void print(std::ostream & os) const override {
@@ -426,6 +430,77 @@ public:
         return res;
     }
     size_t serialize(std::vector<char> &buf) const override;
+
+    bool operator==(const Frame & rhs) const {
+        if(this == &rhs)
+            return true;
+
+        const size_t numRows = this->getNumRows();
+        const size_t numCols = this->getNumCols();
+
+        if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+            return false;
+
+        if(memcmp(this->getSchema(), rhs.getSchema(), numCols * sizeof(ValueTypeCode)))
+            return false;
+
+        const std::string * labelsLhs = this->getLabels();
+        const std::string * labelsRhs = rhs.getLabels();
+        for (size_t c = 0; c < numCols; c++) {
+            if(labelsLhs[c] != labelsRhs[c])
+                return false;
+        }
+        
+        for (size_t c = 0; c < numCols; c++)
+        {
+            switch(this->getColumnType(c)) {
+                // For all value types:
+                case ValueTypeCode::F64:
+                    if (!(*(this->getColumn<double>(c)) == *(rhs.getColumn<double>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::F32:
+                    if (!(*(this->getColumn<float>(c)) == *(rhs.getColumn<float>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::SI64:
+                    if (!(*(this->getColumn<int64_t>(c)) == *(rhs.getColumn<int64_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::SI32:
+                    if (!(*(this->getColumn<int32_t>(c)) == *(rhs.getColumn<int32_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::SI8 :
+                    if (!(*(this->getColumn<int8_t>(c)) == *(rhs.getColumn<int8_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::UI64:
+                    if (!(*(this->getColumn<uint64_t>(c)) == *(rhs.getColumn<uint64_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::UI32:
+                    if (!(*(this->getColumn<uint32_t>(c)) == *(rhs.getColumn<uint32_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                case ValueTypeCode::UI8 :
+                    if (!(*(this->getColumn<uint8_t>(c)) == *(rhs.getColumn<uint8_t>(c)))) {
+                        return false;
+                    }
+                    break;
+                default:
+                    throw std::runtime_error("CheckEq::apply: unknown value type code");
+            }
+        }   
+        return true;
+    }
 };
 
 std::ostream & operator<<(std::ostream & os, const Frame & obj);

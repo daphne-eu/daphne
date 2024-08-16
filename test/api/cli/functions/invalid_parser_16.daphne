@@ -1,0 +1,4 @@
+// invalid number of results (of built-in function) when used in call expression (expecting 1, getting 2)
+
+X = [1.0, 0.0, 0.0, 1.0](2, 2);
+print(eigen(X));

@@ -83,10 +83,11 @@ expr:
     | '$' arg=IDENTIFIER # argExpr
     | (( IDENTIFIER '.' )* IDENTIFIER) # identifierExpr
     | '(' expr ')' # paranthesesExpr
-    | (( IDENTIFIER '.' )* IDENTIFIER) '(' (expr (',' expr)*)? ')' # callExpr
+    | ( ns=IDENTIFIER '.' )* func=IDENTIFIER ('::' kernel=IDENTIFIER)? '(' (expr (',' expr)*)? ')' # callExpr
     | KW_AS (('.' DATA_TYPE) | ('.' VALUE_TYPE) | ('.' DATA_TYPE '<' VALUE_TYPE '>')) '(' expr ')' # castExpr
     | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
     | obj=expr idx=indexing # rightIdxExtractExpr
+    | op=('+'|'-') arg=expr # minusExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
     | lhs=expr op='^' rhs=expr # powExpr
     | lhs=expr op='%' rhs=expr # modExpr
@@ -96,8 +97,13 @@ expr:
     | lhs=expr op='&&' rhs=expr # conjExpr
     | lhs=expr op='||' rhs=expr # disjExpr
     | cond=expr '?' thenExpr=expr ':' elseExpr=expr # condExpr
-    | '[' (literal (',' literal)*)? ']' # matrixLiteralExpr
+    | '[' (expr (',' expr)*)? ']' ('(' rows=expr? ',' cols=expr? ')')? # matrixLiteralExpr
+    | '{' (labels+=expr ':' cols+=expr (',' labels+=expr ':' cols+=expr)*)? '}' # colMajorFrameLiteralExpr
+    | '{' labels=frameRow (',' rows+=frameRow)* '}' # rowMajorFrameLiteralExpr
     ;
+
+frameRow:
+    '[' (expr (',' expr)*)? ']' ;
 
 indexing:
     '[' (rows=range)? ',' (cols=range)? ']' ;
@@ -138,6 +144,9 @@ fragment DIGIT:
 fragment NON_ZERO_DIGIT:
     [1-9] ;
 
+fragment DIGIT_SEP:
+    [_'] ;
+
 fragment LETTER:
     [a-zA-Z] ;
 
@@ -153,10 +162,30 @@ VALUE_TYPE:
     ) ;
 
 INT_LITERAL:
-    ('0' | '-'? NON_ZERO_DIGIT DIGIT* ('l' | 'u' | 'ull' | 'z')?);
+    ('0' | NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)*) ('l' | 'u' | 'ull' | 'z')? ;
 
 FLOAT_LITERAL:
-    ('nan' | 'nanf' | '-'? ('inf' | 'inff') | '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ 'f'? );
+    (
+        // special values
+        'nan' | 'nanf' | 'inf' | 'inff'
+        |
+        // ordinary values
+        // part before the decimal point
+        ('0' | NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)*)
+        (
+            // decimal point and part after it
+            ('.' DIGIT+ (DIGIT_SEP? DIGIT)*)
+            |
+            // scientific notation, with optional decimal point
+            (
+                ('.' DIGIT+ (DIGIT_SEP? DIGIT)*)?
+                [eE]
+                ('-'|'+')? ('0' | NON_ZERO_DIGIT DIGIT*)
+            )
+        )
+        // optional suffix for single-precision
+        'f'?
+    );
 
 STRING_LITERAL:
     '"' (ESCAPE_SEQ | ~["\\])* '"';

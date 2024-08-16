@@ -21,6 +21,9 @@ ARCH=X86-64
 DOCKER_IMAGE=daphneeu/daphne-dev
 DOCKER_TAG=latest_${ARCH}_BASE
 #DOCKER_TAG=latest_${ARCH}_CUDA
+if [ $(arch) == 'armv64'  ] || [ $(arch) == 'aarch64' ]; then
+    DOCKER_TAG=v0.2_ARMV8_BASE_ubuntu20.04
+fi
 
 #on some installations docker can only be run with sudo
 USE_SUDO=

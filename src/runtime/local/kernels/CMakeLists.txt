@@ -22,9 +22,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_custom_command(
-            OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
+            OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json
             COMMAND python3 ARGS genKernelInst.py kernels.json
-                    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp CUDA
+                    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json CUDA
             MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
             DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
@@ -32,6 +32,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
+            ${PREFIX}/../../instrumentation/KernelInstrumentation.cpp
             ${PREFIX}/../../context/CUDAContext.cpp
             ${PREFIX}/CreateCUDAContext.cpp
             ${PREFIX}/AggAll.cu
@@ -74,8 +75,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 endif()
 
 add_custom_command(
-        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
-        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp CPP
+        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp ${PROJECT_SOURCE_DIR}/lib/catalog.json
+        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp ${PROJECT_SOURCE_DIR}/lib/catalog.json CPP
         MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
         DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
@@ -89,6 +90,7 @@ set(HEADERS_cpp_kernels
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/instrumentation/KernelInstrumentation.cpp
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CreateDaphneContext.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp
@@ -114,7 +116,10 @@ endif()
 list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared)
 
-find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+if(USE_PAPI)
+    find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+endif()
+
 find_library(HWLOC_LIB NAMES libhwloc.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 
 target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB})

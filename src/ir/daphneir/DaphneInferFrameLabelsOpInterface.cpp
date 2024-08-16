@@ -15,6 +15,7 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <util/ErrorHandler.h>
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/datastructures/LabelUtils.h>
 
@@ -71,15 +72,15 @@ void daphne::ColBindOp::inferFrameLabels() {
     auto ftRhs = getRhs().getType().dyn_cast<daphne::FrameType>();
 
     if(!ftLhs || !ftRhs)
-        throw std::runtime_error(
-                "currently ColBindOp can only infer its output labels if both "
-                "inputs are frames"
-        );
+        throw ErrorHandler::compilerError(
+            getLoc(), "daphne::ColBindOp::inferFrameLabels",
+            "currently ColBindOp can only infer its output labels if both "
+            "inputs are frames");
     if(!ftLhs.getLabels() || !ftRhs.getLabels())
-        throw std::runtime_error(
-                "currenly ColBindOp can only infer its output labels if the "
-                "labels of both input frames are known"
-        );
+        throw ErrorHandler::compilerError(
+            getLoc(), "daphne::ColBindOp::inferFrameLabels",
+            "currenly ColBindOp can only infer its output labels if the "
+            "labels of both input frames are known");
 
     auto labelsRes = new std::vector<std::string>();
     for(auto l : *(ftLhs.getLabels()))

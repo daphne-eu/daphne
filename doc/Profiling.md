@@ -18,6 +18,7 @@ limitations under the License.
 
 You can profile your DAPHNE script by using the ```--enable-profiling``` CLI
 switch.
+Note that profiling is only available if DAPHNE was built *without* the `--no-papi` flag.
 
 DAPHNE supports profiling via the [PAPI](https://github.com/icl-utk-edu/papi)
 profiling library, specifically the

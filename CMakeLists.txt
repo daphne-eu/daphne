@@ -32,7 +32,11 @@ set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -O0")
+
+set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g -O3")
+
 # silence a warning about DEPFILE path transformations (used in LLVM)
 cmake_policy(SET CMP0116 OLD)
 
@@ -100,6 +104,12 @@ if(USE_MPI)
     add_definitions(-DUSE_MPI)
     include_directories(${MPI_INCLUDE_PATH})
 endif()    
+##########
+
+###### PAPI
+if(USE_PAPI)
+    add_definitions(-DUSE_PAPI)
+endif()
 ##########
 
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
@@ -182,6 +192,7 @@ add_subdirectory(src/compiler/inference)
 add_subdirectory(src/compiler/lowering)
 add_subdirectory(src/compiler/utils)
 add_subdirectory(src/parser)
+add_subdirectory(src/parser/catalog)
 add_subdirectory(src/parser/config)
 add_subdirectory(src/parser/metadata)
 add_subdirectory(src/runtime/distributed/proto)

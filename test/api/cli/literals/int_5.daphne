@@ -1,2 +1,2 @@
-// min negative int64_t
+// min negative int64_t (-2^63)
 print(-9223372036854775808);

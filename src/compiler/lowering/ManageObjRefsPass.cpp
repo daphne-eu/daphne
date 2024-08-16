@@ -15,6 +15,7 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <util/ErrorHandler.h>
 #include <compiler/utils/LoweringUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
@@ -58,7 +59,7 @@ void processMemRefInterop(OpBuilder builder, Value v) {
     Operation* lastUseOp = findLastUseOfSSAValue(v);
 
     builder.setInsertionPointAfter(lastUseOp);
-    builder.create<daphne::DecRefOp>(builder.getUnknownLoc(),
+    builder.create<daphne::DecRefOp>(v.getLoc(),
                                      v.getDefiningOp()->getOperand(0));
 }
 
@@ -79,7 +80,37 @@ void processValue(OpBuilder builder, Value v) {
     if (defOp && llvm::isa<daphne::ConvertDenseMatrixToMemRef>(defOp))
         processMemRefInterop(builder, v);
 
-    if(!llvm::isa<daphne::MatrixType, daphne::FrameType>(v.getType()))
+    // Increase the reference counter of string literals, such that they don't
+    // get gargabe collected.
+    if(defOp && llvm::isa<daphne::ConstantOp>(defOp) && llvm::isa<daphne::StringType>(v.getType())) {
+        // The given value is a string literal. We want to increase its reference
+        // counter right after its definition, such that it is never removed.
+        // But if the defining op is the block of a FuncOp, make sure not to insert the
+        // IncRefOp before the CreateDaphneContextOp, otherwise we will run
+        // into problems during/after lowering to kernel calls.
+        Block * pb = v.getParentBlock();
+        if(auto fo = dyn_cast<func::FuncOp>(pb->getParentOp())) {
+            Value dctx = CompilerUtils::getDaphneContext(fo);
+            builder.setInsertionPointAfterValue(dctx);
+        }
+        else
+            builder.setInsertionPointAfter(defOp);
+        builder.create<daphne::IncRefOp>(v.getLoc(), v);
+    }
+
+    // Increase the reference counter of the result of the arith.select op, if it is
+    // a string scalar.
+    // This is necessary because for arith.select, we have no clue which of
+    // its two arguments (2nd or 3rd one) it will return. Unless we do something
+    // about it, the reference counter of the result will be too low by 1.
+    // Thus, we increase the result's reference counter here.
+    if(defOp && llvm::isa<arith::SelectOp>(defOp) && llvm::isa<daphne::StringType>(v.getType())) {
+        builder.setInsertionPointAfter(defOp);
+        builder.create<daphne::IncRefOp>(v.getLoc(), v);
+    }
+
+    if (!llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType,
+                   daphne::StringType>(v.getType()))
         return;
 
     Operation* decRefAfterOp = nullptr;
@@ -140,12 +171,12 @@ void processValue(OpBuilder builder, Value v) {
     }
 
     // Finally create the DecRefOp.
-    builder.create<daphne::DecRefOp>(builder.getUnknownLoc(), v);
+    builder.create<daphne::DecRefOp>(v.getLoc(), v);
 }
 
 /**
  * @brief Inserts an `IncRefOp` for the given value if its type is a DAPHNE
- * data type (matrix, frame).
+ * data type (matrix, frame, list, string).
  *
  * If the type is unknown, throw an exception.
  *
@@ -154,18 +185,19 @@ void processValue(OpBuilder builder, Value v) {
  */
 void incRefIfObj(Value v, OpBuilder & b) {
     Type t = v.getType();
-    if(llvm::isa<daphne::MatrixType, daphne::FrameType>(t))
-        b.create<daphne::IncRefOp>(b.getUnknownLoc(), v);
+    if(llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(t))
+        b.create<daphne::IncRefOp>(v.getLoc(), v);
     else if(llvm::isa<daphne::UnknownType>(t))
-        throw std::runtime_error(
-                "ManageObjRefsPass encountered a value of unknown type, so it "
-                "cannot know if it is a data object"
-        );
+        throw ErrorHandler::compilerError(
+            v.getDefiningOp(), "ManageObjRefsPass",
+            "ManageObjRefsPass encountered a value of unknown type, so it "
+            "cannot know if it is a data object.");
 }
 
 /**
  * @brief Inserts an `IncRefOp` for each operand of the given operation whose
- * type is a DAPHNE data type (matrix, frame), right before the operation.
+ * type is a DAPHNE data type (matrix, frame, list, string), right before the
+ * operation.
  *
  * @param op
  * @param b
@@ -188,7 +220,7 @@ void processBlock(OpBuilder builder, Block * b) {
     for(BlockArgument& arg : b->getArguments())
         processValue(builder, arg);
 
-    // Make sure the the reference counters of op results are decreased, and
+    // Make sure the reference counters of op results are decreased, and
     // Increase the reference counters of operands where necessary.
     for(Operation& op : b->getOperations()) {
         // 1) Increase the reference counters of operands, if necessary.
@@ -232,7 +264,7 @@ void processBlock(OpBuilder builder, Block * b) {
         //   views into its inputs. These are individual data objects.
 
 
-        // 2) Make sure the the reference counters of op results are decreased.
+        // 2) Make sure the reference counters of op results are decreased.
         for(Value v : op.getResults())
             processValue(builder, v);
 

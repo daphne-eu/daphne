@@ -45,6 +45,11 @@ def Unknown : Daphne_Type<"Unknown"> {
 // Data types
 // ****************************************************************************
 
+def Structure : Daphne_Type<"Structure"> {
+    // Don't use this in TableGen!
+    let summary = "structure";
+}
+
 // A matrix type.
 def Matrix : Daphne_Type<"Matrix"> {
     let summary = "matrix";
@@ -221,6 +226,16 @@ def MatrixOrFrame : AnyTypeOf<[Matrix, Frame, Unknown]>;
 def MatrixOrU : AnyTypeOf<[Matrix, Unknown]>;
 def FrameOrU : AnyTypeOf<[Frame, Unknown]>;
 
+def List : Daphne_Type<"List"> {
+    let summary = "list";
+
+    let parameters = (ins
+        "::mlir::Type":$elementType
+    );
+}
+
+def ListOrU : AnyTypeOf<[List, Unknown]>;
+
 // ****************************************************************************
 // Distributed types
 // ****************************************************************************
@@ -240,6 +255,7 @@ def Handle : Daphne_Type<"Handle"> {
 def StrScalar : Daphne_Type<"String"> {
     let summary = "string";
 }
+def MatrixOrFrameOrString : AnyTypeOf<[Matrix, Frame, StrScalar, Unknown]>;
 
 def SIntScalar : AnyTypeOf<[SI8, SI32, SI64, Unknown], "signed integer">;
 def UIntScalar : AnyTypeOf<[UI8, UI32, UI64, Unknown], "unsigned integer">;

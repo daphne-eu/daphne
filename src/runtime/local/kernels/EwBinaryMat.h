@@ -25,7 +25,6 @@
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************
@@ -103,7 +102,10 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         else {
             throw std::runtime_error("EwBinaryMat(Dense) - lhs and rhs must either "
                 "have the same dimensions, or one of them must be a row/column vector "
-                "with the width/height of the other");
+                "with the width/height of the other, but lhs has shape (" +
+                std::to_string(numRowsLhs) + " x " + std::to_string(numColsLhs) +
+                ") and rhs has shape (" + std::to_string(numRowsRhs) + " x " +
+                std::to_string(numColsRhs) + ")");
         }
     }
 };
@@ -546,19 +548,19 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
     static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-        if( numRows != rhs->getNumRows() || numCols != rhs->getNumCols() )
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             throw std::runtime_error("EwBinaryMat - lhs and rhs must have the same dimensions.");
         
         // TODO Choose matrix implementation depending on expected number of non-zeros.
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
         
         res->prepareAppend();
-        for(size_t r = 0; r < numRows; r++)
-            for(size_t c = 0; c < numCols; c++)
-                res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c), ctx);
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, func(lhs->get(r, c), rhs->get(r, c), ctx));
         res->finishAppend();
     }
 };

@@ -21,10 +21,10 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/COOMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/kernels/EwUnarySca.h>
 
-#include <cassert>
 #include <cstddef>
 
 // ****************************************************************************
@@ -114,6 +114,29 @@ struct EwUnaryMat<DenseMatrix<VT>, COOMatrix<VT>> {
             }
             valuesRes += res->getRowSkip();
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwUnaryMat<Matrix<VT>, Matrix<VT>> {
+    static void apply(UnaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->append(r, c, func(arg->get(r, c), ctx));
+        res->finishAppend();
     }
 };
 

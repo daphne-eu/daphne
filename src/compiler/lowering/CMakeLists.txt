@@ -41,6 +41,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     LINK_COMPONENTS
     Core
 )
+find_library(HWLOC_LIB NAMES libhwloc.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 
 target_link_libraries(MLIRDaphneTransforms PUBLIC
     CompilerUtils
@@ -53,6 +54,8 @@ target_link_libraries(MLIRDaphneTransforms PUBLIC
     MLIRFuncToLLVM
     MLIRFuncTransforms
     SQLParser
+    ${HWLOC_LIB}
+
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)

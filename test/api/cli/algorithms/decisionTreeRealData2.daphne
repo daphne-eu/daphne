@@ -66,7 +66,7 @@ if( $dt==1 ) {
   M = decisionTree_.decisionTree(
     /*X=*/X, /*y=*/Y, /*ctypes=*/R,
     /*max_depth=*/10, /*min_leaf=*/4, /*min_split=*/10,
-    /*max_features=*/1.0, /*max_values=*/$maxV,
+    /*max_features=*/1.0, /*max_values=*/$maxV, /*max_dataratio=*/0.25,
     /*impurity=*/"gini", /*seed=*/7, /*verbose=*/false
   );
   yhat = decisionTreePredict_.decisionTreePredict(

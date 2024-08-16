@@ -22,6 +22,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <cblas.h>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -117,6 +118,6 @@ struct Syrk<CSRMatrix<VT>, CSRMatrix<VT>> {
         
         if(res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numCols, numRows, arg->getNumNonZeros(), false);
-        assert(false && "TODO: Syrk for Sparse");
+        throw std::runtime_error("TODO: Syrk for Sparse");
     }
 };

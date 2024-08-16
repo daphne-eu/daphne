@@ -154,7 +154,18 @@ mlir::Type inferTypeByTraits(O * op) {
     // TODO What about the #cols, if the data type is a frame (see #421)?
     std::vector<Type> resVts = {u};
 
-    if(op->template hasTrait<TypeFromFirstArg>())
+    if(op->template hasTrait<ValueTypeCmp>()) {
+        // Initially take the most general value type of the arguments,
+        // resVts has one element for scalars and matrices, or one element
+        // per column for frames.
+        resVts = inferValueTypeFromArgs(argDtc, argVts);
+        // Replace string by si64. Otherwise, we would represent the result
+        // of the comparison of two strings as a string.
+        for(size_t i = 0; i < resVts.size(); i++)
+            if(llvm::isa<daphne::StringType>(resVts[i]))
+                resVts[i] = IntegerType::get(ctx, 64, IntegerType::SignednessSemantics::Signed);
+    }
+    else if(op->template hasTrait<TypeFromFirstArg>())
         resVts = argVts[0];
     else if(op->template hasTrait<ValueTypeFromFirstArg>()) {
         if(resDtc == DataTypeCode::FRAME && argDtc[0] == DataTypeCode::MATRIX) {

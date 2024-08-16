@@ -82,6 +82,22 @@ private:
         return false;
     }
     
+    /**
+     * @brief Determines whether some scope has the given SSA value.
+     * 
+     * @param val The SSA value to look for.
+     * @param parent `0` to start at the current scope, `1` to start at the
+     * direct parent, and so on.
+     * @return `true` if the SSA value is found, `false` otherwise.
+     */
+    bool has(mlir::Value val, int parent) const {
+        for(int i = scopes.size() - 1 - parent; i >= 0; i--)
+            for(auto it = scopes[i].begin(); it != scopes[i].end(); it++)
+                if(it->second.value == val)
+                    return true;
+        return false;
+    }
+    
 public:
     /**
      * @brief Creates a new `ScopedSymbolTable` initialized with a single empty
@@ -99,6 +115,16 @@ public:
      */
     bool has(const std::string & sym) const {
         return has(sym, 0);
+    }
+    
+    /**
+     * @brief Determines whether some scope has the given SSA value.
+     * 
+     * @param val The SSA value to look for.
+     * @return `true` if the SSA value is found, `false` otherwise.
+     */
+    bool has(mlir::Value val) const {
+        return has(val, 0);
     }
     
     /**
@@ -143,8 +169,6 @@ public:
      * Starting at the current scope, all hierarchy levels are searched until
      * the first occurrence of the SSA value is found.
      * 
-     * Note that an SSA value can be known by more than one variable name, even in a
-     * single scope. This method simply returns the first name it finds.
      * 
      * @param val The SSA value to look for.
      * @return The associated variable name.
@@ -161,8 +185,6 @@ public:
      * Like the other `getSymbol` method, but only tries to find the SSA value
      * in the given single-level symbol table.
      * 
-     * Note that an SSA value can be known by more than one variable name, even in a
-     * single scope. This method simply returns the first name it finds.
      * 
      * @param val The SSA value to look for.
      * @param tab A single-level symbol table from outside of this

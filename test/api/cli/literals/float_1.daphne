@@ -1,2 +1,10 @@
-// zero
-print(0.0);
+// special values
+// TODO: add type check to all float tests to verify that -f actually casts to float (see #357)
+
+print(nan);
+print(nanf);
+
+print(inf);
+print(inff);
+print(-inf);
+print(-inff);

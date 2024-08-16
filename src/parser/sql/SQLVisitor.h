@@ -35,10 +35,10 @@ class SQLVisitor : public SQLGrammarVisitor {
 
     ParserUtils utils;
     mlir::OpBuilder builder;
-    ScopedSymbolTable symbolTable;
 
 //special Variables
     mlir::Value currentFrame; //holds the complete Frame with all columns
+    mlir::Location queryLoc;
 
 
 //Helper Functions:
@@ -142,6 +142,11 @@ class SQLVisitor : public SQLGrammarVisitor {
      */
     std::string fetchPrefix(const std::string& framename);
 
+    template<class Context>
+    mlir::Value valueOrErrorOnVisit(Context * ctx) {
+        return utils.valueOrError(utils.getLoc(ctx->start), visit(ctx));
+    }
+
     //TODO: Recognize Literals and somehow handle them for the group expr.
 //GROUP Information
     std::unordered_map <std::string, int8_t> grouped;
@@ -161,15 +166,16 @@ class SQLVisitor : public SQLGrammarVisitor {
     int64_t groupCounterCodegen = 0;
 
 public:
-    [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder & builder) : utils(builder), builder(builder) {
-    };
+  [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder &builder,
+                                       mlir::daphne::SqlOp sqlOp)
+      : utils(builder), builder(builder), queryLoc(sqlOp.getLoc()){};
 
-    SQLVisitor(
-        mlir::OpBuilder & builder,
-        std::unordered_map <std::string, mlir::Value> view_arg
-    ) : utils(builder), builder(builder) {
-        view = std::move(view_arg);
-    };
+  SQLVisitor(mlir::OpBuilder &builder,
+             std::unordered_map<std::string, mlir::Value> view_arg,
+             mlir::daphne::SqlOp sqlOp)
+      : utils(builder), builder(builder), queryLoc(sqlOp.getLoc()) {
+      view = std::move(view_arg);
+  };
 
 //script
     antlrcpp::Any visitScript(SQLGrammarParser::ScriptContext * ctx) override;

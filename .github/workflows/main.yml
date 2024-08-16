@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Fix working dir permissions
       run: chown root:root .
@@ -45,9 +45,7 @@ jobs:
       shell: bash
 
     - name: Testing
-      run: |
-        mkdir --parents src/api/python/tmp
-        LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH PYTHONPATH="$PYTHONPATH:$PWD/src/:/usr/lib/llvm-10/build/utils/lit/" bin/run_tests
+      run: ./test.sh --no-build
 
     - name: "List generated files"
       run: |
@@ -58,7 +56,7 @@ jobs:
       run: bin/daphne scripts/examples/hello-world.daph
 
     - name: 'Upload Artifact'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: daphne
         path: |

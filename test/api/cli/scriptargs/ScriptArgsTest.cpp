@@ -31,6 +31,14 @@ TEST_CASE("Print single script argument", TAG_SCRIPTARGS) {
     compareDaphneToStr("-123.45\n"    , scriptPath.c_str(), "--args", "foo=-123.45");
     compareDaphneToStr("1\n"          , scriptPath.c_str(), "--args", "foo=true");
     compareDaphneToStr("hello world\n", scriptPath.c_str(), "--args", "foo=\"hello world\"");
+    compareDaphneToStr("nan\n", scriptPath.c_str(), "--args", "foo=nan");
+    compareDaphneToStr("inf\n", scriptPath.c_str(), "--args", "foo=inf");
+    compareDaphneToStr("-inf\n", scriptPath.c_str(), "--args", "foo=-inf");
+    compareDaphneToStr("12.34\n", scriptPath.c_str(), "--args", "foo=12.34f");
+    compareDaphneToStr("120000\n", scriptPath.c_str(), "--args", "foo=1.2e5f");
+    compareDaphneToStr("1e-14\n", scriptPath.c_str(), "--args", "foo=1E-14");
+    compareDaphneToStr("1\n", scriptPath.c_str(), "--args", "foo=true");
+    compareDaphneToStr("0\n", scriptPath.c_str(), "--args", "foo=false");
 }
 
 TEST_CASE("Missing script argument", TAG_SCRIPTARGS) {
@@ -87,4 +95,17 @@ TEST_CASE("Ways of specifying script arguments", TAG_SCRIPTARGS) {
     CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == "1\n2\n3\n4\n");
     CHECK(err.str() == "");
+}
+
+
+TEST_CASE("Don't support general expressions as script arguments", TAG_SCRIPTARGS) {
+    const std::string scriptPath = dirPath + "printSingleArg.daphne";
+    checkDaphneFails(scriptPath.c_str(), "--args", "foo=10+10");
+    checkDaphneFails(scriptPath.c_str(), "--args", "foo=sin(1.23)");
+}
+
+TEST_CASE("Don't support literal mixtures ", TAG_SCRIPTARGS) {
+    const std::string scriptPath = dirPath + "printSingleArg.daphne";
+    checkDaphneFails(scriptPath.c_str(), "--args", "foo=10xyz23");
+    checkDaphneFails(scriptPath.c_str(), "--args", "foo=-0.0mo");
 }

@@ -21,6 +21,7 @@
 
 enum class UnaryOpCode {
     // Arithmetic/general math.
+    MINUS,
     ABS,
     SIGN, // signum (-1, 0, +1)
     SQRT,
@@ -40,6 +41,8 @@ enum class UnaryOpCode {
     FLOOR,
     CEIL,
     ROUND,
+    // Comparison.
+    ISNAN
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H

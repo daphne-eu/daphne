@@ -14,3 +14,14 @@ checkMatBool = [true,true,false,true];
 print(checkMatBool);
 checkMatBool = reshape(checkMatBool, 2, 2);
 print(checkMatBool);
+print("");
+
+// Defining matrix dimensions at creation.
+InferShapeMat1 = [1,2,3,4](2,2);
+print(InferShapeMat1);
+InferShapeMat2 = [1,2,3,4](1,);
+print(InferShapeMat2);
+InferShapeMat3 = [1,2,3,4](,1);
+print(InferShapeMat3);
+InferShapeMat4 = [1,2,3,4](,);
+print(InferShapeMat4);

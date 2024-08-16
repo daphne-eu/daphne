@@ -23,6 +23,7 @@
 #include <llvm/Support/SourceMgr.h>
 
 #include <ir/daphneir/Daphne.h>
+#include <parser/catalog/KernelCatalogParser.h>
 
 #include "WorkerImpl.h"
 
@@ -33,6 +34,8 @@
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
+
+#include <stdexcept>
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
@@ -74,6 +77,12 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     // want to hardcode insertFreeOp to false anymore. But maybe we will insert
     // the FreeOps at the coordinator already.
     DaphneIrExecutor executor(false, cfg);
+
+    KernelCatalog & kc = executor.getUserConfig().kernelCatalog;
+    KernelCatalogParser kcp(executor.getContext());
+    kcp.parseKernelCatalog(cfg.libdir + "/catalog.json", kc);
+    if(executor.getUserConfig().use_cuda)
+        kcp.parseKernelCatalog(cfg.libdir + "/CUDAcatalog.json", kc);
 
     mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, executor.getContext()));
     if (!module) {
@@ -162,7 +171,7 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
 //     }
 //     else {
 //         // TODO: further types data cases
-//         assert(false && "TODO");
+//         throw std::runtime_error("WorlerImpl: TODO: further types data cases");
 //     }
 //     return dataCase;
 // }
@@ -180,8 +189,8 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::Functi
                                                                     std::vector<void *> &outputs,
                                                                     std::vector<void *> &inputs)
 {
-    assert(static_cast<size_t>(functionType.getNumInputs()) == workInputs.size()
-        && "Number of inputs received have to match number of MLIR fragment inputs");
+    if (static_cast<size_t>(functionType.getNumInputs()) != workInputs.size())
+        throw std::runtime_error("WorkerImpl: Number of inputs received have to match number of MLIR fragment inputs");
     std::vector<void *> inputsAndOutputs;
 
     // No realloc is allowed to happen, otherwise the pointers are invalid
@@ -264,10 +273,11 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &identifier, size_t num
             }
             closeFile(file);
         }
-//        auto result = localData_.insert({identifier, m});
-//        assert(result.second && "Value should always be inserted");
-        assert(localData_.insert({identifier, m}).second && "Value should always be inserted");
-        return m;    
+
+        if (!localData_.insert({identifier, m}).second)
+            throw std::runtime_error("WorkerImpl: Value should always be inserted");
+
+        return m;
     }
 }
 

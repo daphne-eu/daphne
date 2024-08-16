@@ -36,7 +36,7 @@ template<>
                              nc1, beta, d_res, nc2));
 }
 
-namespace CUDA::Affine {
+namespace CUDA::NN::Affine {
     template<typename DTRes, typename DTArg>
     void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx)) {
         const size_t deviceID = 0; //ToDo: multi device support
@@ -51,8 +51,13 @@ namespace CUDA::Affine {
         const VT* d_input = data->getValues(&alloc_desc);
         const VT* d_weights = weights->getValues(&alloc_desc);
 
-        assert((nc1 == weights->getNumRows()) && "#cols of lhs and #rows of rhs must be the same");
-        
+        if (nc1 != weights->getNumRows()) {
+            throw std::runtime_error(
+                fmt::format("CUDA::NN::Affine: #cols of lhs and #rows of rhs must be "
+                            "the same ({} != {})",
+                            nc1, weights->getNumRows()));
+        }
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false, &alloc_desc);
         VT* d_res = res->getValues(&alloc_desc);
@@ -61,7 +66,8 @@ namespace CUDA::Affine {
         launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_input, d_weights, d_res);
 
         if(bias) {
-            assert((bias->getNumRows() == 1) && "bias dimensions not matching up with weights matrix (W[MxN] -> b[1xN]");
+            if (bias->getNumRows() != 1)
+                throw std::runtime_error("Affine (CUDA): bias dimensions not matching up with weights matrix (W[MxN] -> b[1xN]");
             const VT* d_bias = bias->getValues(&alloc_desc);
             CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
                     1, bias->getNumCols(), 1, 1));

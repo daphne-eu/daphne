@@ -29,11 +29,9 @@
 
 #include <cstdint>
 
-
-
-#define VALUE_TYPES double, float, uint32_t, uint64_t, int32_t, int64_t 
-#define DATA_TYPES   CSRMatrix, DenseMatrix
-#define VALUE_TYPES_SPECIAL_CASE double 
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define VALUE_TYPES double, float, uint32_t, uint64_t, int32_t, int64_t
+#define VALUE_TYPES_SPECIAL_CASE double
 
 template<class DT>
 void checkReplace(DT*& outputMatrix,  const DT* inputMatrix,typename DT::VT pattern, typename DT::VT replacement,  DT* expected){
@@ -66,7 +64,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
         7, 7, 7, 7, 7, 3,
     });
 
-    checkReplace(initMatrix, initMatrix ,1, 7, testMatrix1);
+    checkReplace(initMatrix, initMatrix, 1, 7, testMatrix1);
     //should do nothing because there is no ones
     checkReplace(initMatrix, initMatrix, 1, 7, testMatrix1);
     //target=2;

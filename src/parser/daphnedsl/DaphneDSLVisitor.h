@@ -89,7 +89,18 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
                                          const mlir::FunctionType &funcType,
                                          const std::string &functionName);
     
-    void handleAssignmentPart(
+    /**
+     * @brief Wraps the given SSA value into a RenameOp, if the given SSA value is
+     * already known to the symbol table by some variable name.
+     *
+     * This is important for DaphneDSL statements like `B = A;`, where `B` and `A`
+     * should both represent the same SSA value. However, we need a way to distinguish
+     * `A` and `B` in the IR during parsing to ensure that SSA value replacements in
+     * DaphneDSL loops are correct.
+     */
+    mlir::Value renameIf(mlir::Value v);
+
+    void handleAssignmentPart(mlir::Location loc,
         const std::string & var,
         DaphneDSLGrammarParser::IndexingContext * idxCtx,
         ScopedSymbolTable & symbolTable,
@@ -118,6 +129,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
 
     /**
      * @brief Tries to find a unary (i.e. single param) UDF based on the argument type
+     * @param mlir::Location of UDF
      * @param functionName Name of the UDF
      * @param argType The type of the argument passed to the UDF
      * @return `FuncOp` of the matched UDF or `std::nullopt` if no UDF with the provided 
@@ -125,7 +137,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @throws `std::runtime_error` if a UDF with the name exists but no matching 
      *  version was found
      */
-    std::optional<mlir::func::FuncOp> findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const;
+    std::optional<mlir::func::FuncOp> findMatchingUnaryUDF(mlir::Location loc, const std::string &functionName, mlir::Type argType) const;
 
     /**
      * @brief Checks if the type of an agrument to a UDF is compatible with the 
@@ -142,6 +154,24 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @return the created `mapOp`
      */
     antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx);
+
+    /**
+     * @brief Creates a column matrix from a vector of MLIR values and
+     *  generates MLIR operations to fill in non-parse-time constants if present
+     * @tparam VT value type of the result (e.g. `int64_t`)
+     * @param loc Location of where the matrix is beeing constructed
+     * @param values Pointer to a vector of MLIR values
+     * @param valueTypes Pointer to matching vector with MLIR type of given values
+     * @return MLIR value containing the built matrix
+    */
+    template<typename VT>
+    mlir::Value buildColMatrixFromValues(mlir::Location loc, const std::vector<mlir::Value> & values,
+                                    const std::vector<mlir::Type> & valueTypes, mlir::Type matrixVt);
+
+    template<class Context>
+    mlir::Value valueOrErrorOnVisit(Context * ctx) {
+        return utils.valueOrError(utils.getLoc(ctx->start), visit(ctx));
+    }
 
     std::shared_ptr<spdlog::logger> logger;
 
@@ -203,6 +233,8 @@ public:
     antlrcpp::Any visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) override;
 
     antlrcpp::Any visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) override;
+
+    antlrcpp::Any visitMinusExpr(DaphneDSLGrammarParser::MinusExprContext *ctx) override;
     
     antlrcpp::Any visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) override;
     
@@ -223,6 +255,12 @@ public:
     antlrcpp::Any visitCondExpr(DaphneDSLGrammarParser::CondExprContext * ctx) override;
 
     antlrcpp::Any visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) override;
+
+    antlrcpp::Any visitColMajorFrameLiteralExpr(DaphneDSLGrammarParser::ColMajorFrameLiteralExprContext * ctx) override;
+
+    antlrcpp::Any visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext * ctx) override;
+
+    antlrcpp::Any visitFrameRow(DaphneDSLGrammarParser::FrameRowContext * ctx) override;
     
     antlrcpp::Any visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) override;
     

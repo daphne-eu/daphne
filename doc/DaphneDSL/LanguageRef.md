@@ -45,7 +45,7 @@ Variables are used to refer to values.
 
 **Valid identifiers** start with a letter (`a-z`, `A-Z`) or an underscore (`_`) that can be followed by any number of letters (`a-z`, `A-Z`), underscores (`_`), and decimal digits (`0-9`).
 
-The following reserved keywords must not be used as identifiers: `if`, `else`, `while`, `do`, `for`, `in`, `true`, `false`, `as`, `def`, `return`, `import`, `matrix`, `frame`, `scalar`, `f64`, `f32`, `si64`, `si8`, `ui64`, `ui32`, `ui8`, `str`, `nan`, and `inf`.
+The following reserved keywords must not be used as identifiers: `if`, `else`, `while`, `do`, `for`, `in`, `true`, `false`, `as`, `def`, `return`, `import`, `matrix`, `frame`, `scalar`, `list`, `f64`, `f32`, `si64`, `si8`, `ui64`, `ui32`, `ui8`, `str`, `nan`, and `inf`.
 
 *Examples:*
 
@@ -69,13 +69,14 @@ Currently, DaphneDSL supports the following *abstract* **data types**:
 - `matrix`: homogeneous value type for all cells
 - `frame`: a table with columns of potentially different value types
 - `scalar`: a single value
+- `list`: an ordered sequence of elements of homogeneous data/value type; currently, only matrices can be elements of lists
 
 **Value types** specify the representation of individual values. We currently support:
 
 - floating-point numbers of various widths: `f64`, `f32`
 - signed and unsigned integers of various widths: `si64`, `si32`, `si8`, `ui64`, `ui32`, `ui8`
 - strings `str` *(currently only for scalars, support for matrix elements is still experimental)*
-- booleans `bool` *(currently only for scalars)*
+- booleans `bool` *(currently only for scalars and dense matrices)*
 
 Data types and value types can be combined, e.g.:
 
@@ -107,14 +108,18 @@ Literals represent hard-coded values and can be of various data and value types:
 
 ##### Scalar literals
 
-**Integer literals** are specified in decimal notation and have the type `si64`.
+**Integer literals** are specified in decimal digits.
+By default, they have the type `si64`, but if the optional suffix `u` is appended, the type is `ui64`.
+They support the digit separators `'` and `_`.
 
-*Examples*: `0`, `123`, `-456`
+*Examples*: `0`, `123`, `-456`, `1_000`, `18446744073709551615u`
 
-**Floating-point literals** are specified in decimal notation and have the type `f64`.
-Furthermore, the following literals stand for special floating-point values: `nan`, `inf`, `-inf`.
+**Floating-point literals** are specified in decimal or scientific notation.
+The following literals stand for special floating-point values: `nan`, `inf`, `-inf`.
+By default, the type of a floating-point literal is `f64`, but if an `f` is appended to the literal, it is of type `f32` instead.
+Floating-point literals support the digit separators `'` and `_`.
 
-*Examples*: `0.0`, `123.0`, `-456.78`, `inf`, `nan`
+*Examples*: `0.0`, `123.0`, `-456.78f`, `inf`, `nan`, `1.2e5f`, `1E-14`
 
 **Boolean literals** can be `false` and `true`.
 
@@ -139,17 +144,50 @@ Special characters must be escaped using a backslash:
 
 ##### Matrix literals
 
-A matrix literal consists of a comma-separated list of scalar literals, enclosed in square braces.
-All scalars specified for the elements must be of the same type. <!--TODO relax this, infer the most general type-->
-Furthermore, all specified elements must be actual literals, i.e., expressions are not supported yet. <!--TODO support expressions for the elements (both compile-time constant and known-only-at-runtime-->
-The resulting matrix is always a column matrix, i.e., if *n* elements are specified, its shape is *(n x 1)*.
-Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can be used to modify the shape.
+A matrix literal consists of a comma-separated list of elements enclosed in square brackets,
+optionally followed by parentheses with a comma separated pair of dimensions (number of rows and/or columns).
+The elements and the dimensions can be complex expressions.
+The matrix's value type is the most general value type among its elements.
+Matrix literals are by default column matrices if no dimensions are specified.
+If only one dimension is given, the other one will be inferred automatically.
+Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can also be used to modify the shape of matrices.
 
 *Examples:*
 
 ```r
-[1.0, 0.0, -4.0]            # matrix<f64> with shape (3 x 1)
-reshape([1, 2, 3, 4], 1, 4) # matrix<si64> with shape (1 x 4)
+[1, 0, -4.0]                    # matrix<f64> with shape (3 x 1)
+[1, 2, sqrt(3), 4](1,)          # matrix<f64> with shape (1 x 4)
+[1, 2, 3, sum([4, 5])](2, 2)    # matrix<si64> with shape (2 x 2)
+```
+
+##### Frame literals
+
+Frame literals can be defined using either columns or rows and are enclosed in curly brackets.
+
+**Frame literals of columns** consist of comma-separated pairs of a `str`-typed label
+and a (n x 1) matrix, in the format `label: column`.
+Both labels and columns can be complex expressions.
+
+*Examples:*
+
+```r
+# frame with two columns: "col 1" of type f64 and "col 2" of type si64
+{"col 1": [1, 2, sqrt(3)], "col 2": seq(1, 3, 1)}
+# frame with two columns: "col 1" of type si64 and "col 2" of type f64
+{"col 1": [1, 2, 3], "col 2": [1.1, -2.2, 3.3]}
+```
+
+**Frame literals of rows** consist of comma-separated rows, whereby each row is enclosed in square brackets.
+The first row contains the `str`-typed column labels.
+All remaining rows represent the data of the frame.
+Both labels and elements of a row can be complex expressions.
+However, it is currently not possible to specify an entire row by an expression.
+
+*Examples:*
+
+```r
+# equivalent to the 2nd example above, specified by rows
+{["col 1", "col 2"], [1, 1.1], [2, -2.2], [3, 3.3]}
 ```
 
 #### Variable Expressions
@@ -188,6 +226,7 @@ DaphneDSL currently supports the following binary operators:
 
 | Operator | Meaning |
 | --- | --- |
+| `-`, `+` | additive inverse (unary operators) |
 | `@` | matrix multiplication (highest precedence) |
 | `^` | exponentiation |
 | `%` | modulo |
@@ -197,12 +236,12 @@ DaphneDSL currently supports the following binary operators:
 | `&&` | logical AND |
 | `\|\|` | logical OR (lowest precedence) |
 
-*We plan to add more operators, including unary operators.*
+*We plan to add more unary and binary operators in the future.*
 
 *Matrix multiplication (`@`):*
 The inputs must be matrices of compatible shapes, and the output is always a matrix.
 
-*All other operators:*
+*All other binary operators:*
 The following table shows which combinations of inputs are allowed and which result they yield:
 
 | Left input | Right input | Result | Details |
@@ -328,7 +367,7 @@ So far, this is only supported for addressing columns of frames.
 This is not supported for addressing columns of frames yet.
 
 For each row/column, a single zero/one entry ("bit") must be provided.
-More precisely, a (*r x 1*) matrix is required on data objects with *r* rows, and a (*c x 1*) matrix is required on data objects with *c* columns.
+More precisely, a (*n x 1*) matrix is required on data objects with *n* rows, and a (*m x 1*) matrix is required on data objects with *m* columns.
 Only the rows/columns with a corresponding 1-value in the bit vector are present in the result.
 
 Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.
@@ -510,6 +549,7 @@ A[..., ...] = ...; # copy-on-write: changes A, but no effect on B
 
 DaphneDSL supports block statements, conditional branching, and various kinds of loops.
 These control flow constructs can be nested arbitrarily.
+Besides that, the [`stop()` built-in function](/doc/DaphneDSL/Builtins.md) can be used to terminate the DaphneDSL script execution.
 
 #### Block statement
 
@@ -756,6 +796,27 @@ In contrast to that, the definition of an *untyped function* leaves the data and
 At call sites, a value of any type, or any value type, can be passed to an untyped parameter.
 As a consequence, an untyped function is compiled and specialized on demand according to the types at a call site.
 Consistently, the types of untyped return values are infered from the parameter types and operations.
+
+## Compiler Hints
+
+One of DAPHNE's strengths is its (WIP) ability to make various decisions on its own, e.g., regarding physical data representation (such as dense/sparse), physical operators (kernels), and data/operator placement (such as local/distributed, CPU/GPU/FPGA, computational storage).
+However, expert users may optionally provide hints to influence compiler decisions.
+This feature is useful for experimentation and in the context of DAPHNE's extensibility.
+For instance, a user could force the use of a certain custom kernel at a certain point in a larger DaphneDSL script to measure the impact of that custom kernel, even if the DAPHNE compiler would normally not choose that kernel in that situation.
+
+*The support for compiler hints is still experimental and it is currently not guaranteed that the DAPHNE compiler respects these hints.*
+
+### Kernel Hints
+
+Users can provide hints on the physical kernel that should be used for a specific occurrence of a DaphneDSL operation.
+So far, kernel hints are only supported for DaphneDSL built-in functions.
+Here, the name of the pre-compiled kernel function can optionally be attached to the name of the built-in function, separated by `::`.
+
+*Examples:*
+
+```r
+res = sum::my_custom_sum_kernel(X);
+```
 
 ## Example Scripts
 

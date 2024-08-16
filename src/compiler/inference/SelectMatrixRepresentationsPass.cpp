@@ -16,6 +16,7 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+#include <util/ErrorHandler.h>
 
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/Operation.h>
@@ -23,13 +24,13 @@
 
 #include <stdexcept>
 #include <memory>
-#include <vector>
-#include <utility>
 
 using namespace mlir;
 
 class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresentationsPass, OperationPass<func::FuncOp>> {
-    static WalkResult walkOp(Operation *op) {
+    const DaphneUserConfig& cfg;
+
+    std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         if(returnsKnownProperties(op)) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
             // ----------------------------------------------------------------
@@ -40,8 +41,7 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 for(auto res : op->getResults()) {
                     if(auto matTy = res.getType().dyn_cast<daphne::MatrixType>()) {
                         const double sparsity = matTy.getSparsity();
-                        // TODO: set threshold by user
-                        if(sparsity < 0.1) {
+                        if(sparsity < cfg.sparsity_threshold) {
                             res.setType(matTy.withRepresentation(daphne::MatrixRepresentation::Sparse));
                         }
                     }
@@ -64,11 +64,11 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                     whileOp.getResult(i).setType(t);
                 }
                 // Continue the walk on both blocks of the WhileOp. We trigger
-                // this explicitly, since we need to do something afterwards.
+                // this explicitly, since we need to do something afterward.
                 beforeBlock.walk<WalkOrder::PreOrder>(walkOp);
                 afterBlock.walk<WalkOrder::PreOrder>(walkOp);
 
-                // Check if the infered matrix representations match the required result representations.
+                // Check if the inferred matrix representations match the required result representations.
                 // This is not the case if, for instance, the representation of some
                 // variable written in the loop changes. The WhileOp would also
                 // check this later during verification, but here, we want to
@@ -77,11 +77,11 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 for(size_t i = 0 ; i < whileOp.getNumOperands() ; i++) {
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
-                    if(yieldedTy != resultTy)
-                        throw std::runtime_error(
+                    if (yieldedTy != resultTy)
+                        throw ErrorHandler::compilerError(
+                            whileOp, "SelectMatrixRepresentationsPass",
                             "the representation of a matrix must not be "
-                            "changed within the body of a while-loop"
-                        );
+                            "changed within the body of a while-loop.");
                 }
                 // Tell the walker to skip the descendants of the WhileOp, we
                 // have already triggered a walk on them explicitly.
@@ -109,11 +109,11 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 for(size_t i = 0 ; i < forOp.getNumIterOperands() ; i++) {
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
-                    if(yieldedTy != resultTy)
-                        throw std::runtime_error(
+                    if (yieldedTy != resultTy)
+                        throw ErrorHandler::compilerError(
+                            forOp, "SelectMatrixRepresentationsPass",
                             "the representation of a matrix must not be "
-                            "changed within the body of a for-loop"
-                        );
+                            "changed within the body of a for-loop");
                 }
                 // Tell the walker to skip the descendants of the ForOp, we
                 // have already triggered a walk on them explicitly.
@@ -134,11 +134,11 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 for(size_t i = 0 ; i < ifOp.getNumResults() ; i++) {
                     Type thenTy = thenYield->getOperand(i).getType();
                     Type elseTy = elseYield->getOperand(i).getType();
-                    if(thenTy != elseTy)
-                        throw std::runtime_error(
+                    if (thenTy != elseTy)
+                        throw ErrorHandler::compilerError(
+                            ifOp, "SelectMatrixRepresentationsPass",
                             "a matrix must not be assigned two values of "
-                            "different representations in then/else branches"
-                        );
+                            "different representations in then/else branches");
                     ifOp.getResult(i).setType(thenTy);
                 }
                 // Tell the walker to skip the descendants of the IfOp, we
@@ -151,6 +151,8 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
     };
 
 public:
+    explicit SelectMatrixRepresentationsPass(const DaphneUserConfig& cfg) : cfg(cfg) {}
+
     void runOnOperation() override {
         func::FuncOp f = getOperation();
         f.walk<WalkOrder::PreOrder>(walkOp);
@@ -173,6 +175,6 @@ public:
     }
 };
 
-std::unique_ptr<Pass> daphne::createSelectMatrixRepresentationsPass() {
-    return std::make_unique<SelectMatrixRepresentationsPass>();
+std::unique_ptr<Pass> daphne::createSelectMatrixRepresentationsPass(const DaphneUserConfig& cfg) {
+    return std::make_unique<SelectMatrixRepresentationsPass>(cfg);
 }

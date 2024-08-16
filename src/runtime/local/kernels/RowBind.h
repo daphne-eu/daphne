@@ -22,11 +22,11 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -61,7 +61,10 @@ struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * ups, const DenseMatrix<VT> * lows, DCTX(ctx)) {
         const size_t numCols = ups->getNumCols();
         if(numCols != lows->getNumCols())
-            throw std::runtime_error("ups and lows must have the same number of columns");
+            throw std::runtime_error(
+                "the two operands must have the same number of columns, but ups has " + std::to_string(numCols) +
+                " and lows has " + std::to_string(lows->getNumCols()) + " columns"
+            );
         
         const size_t numRowsUps = ups->getNumRows();
         const size_t numRowsLows = lows->getNumRows();
@@ -95,7 +98,10 @@ struct RowBind<Frame, Frame, Frame> {
         const ValueTypeCode* schema = ups->getSchema();
         
         if(numCols != lows->getNumCols())
-            throw std::runtime_error("ups and lows must have the same number of columns");
+            throw std::runtime_error(
+                "the two operands must have the same number of columns, but ups has " + std::to_string(numCols) +
+                " and lows has " + std::to_string(lows->getNumCols()) + " columns"
+            );
         for(size_t i = 0; i < numCols; i++) {
             if(schema[i] != lows->getSchema()[i])
                 throw std::runtime_error("ups and lows must have the same schema");
@@ -128,7 +134,10 @@ template<typename VT>
 struct RowBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * ups, const CSRMatrix<VT> * lows, DCTX(ctx)) {
         if(ups->getNumCols() != lows->getNumCols())
-            throw std::runtime_error("ups and lows must have the same number of columns");
+            throw std::runtime_error(
+                "the two operands must have the same number of columns, but ups has " + std::to_string(ups->getNumCols()) +
+                " and lows has " + std::to_string(lows->getNumCols()) + " columns"
+            );
 
         auto upsRowOffsets = ups->getRowOffsets();
         auto lowsRowOffsets = lows->getRowOffsets();
@@ -167,6 +176,39 @@ struct RowBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
         memcpy(&res->getColIdxs()[lowsTranslate], &lows->getColIdxs()[startOffset], offsetsSubsetLength * sizeof(size_t));
 
         res->getRowOffsets()[numRowsRes] = lowsTranslate + lowsNumNonZeros;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct RowBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * ups, const Matrix<VT> * lows, DCTX(ctx)) {
+        const size_t numRowsUps = ups->getNumRows();
+        const size_t numColsUps = ups->getNumCols();
+        const size_t numRowsLows = lows->getNumRows();
+        const size_t numColsLows = lows->getNumCols();
+
+        if (numColsUps != numColsLows)
+            throw std::runtime_error(
+                "the two operands must have the same number of columns, but ups has " + std::to_string(numColsUps) +
+                " and lows has " + std::to_string(numColsLows) + " columns"
+            );
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsUps + numRowsLows, numColsUps, false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRowsUps; ++r)
+            for (size_t c = 0; c < numColsUps; ++c)
+                res->append(r, c, ups->get(r, c));
+
+        for (size_t r = 0; r < numRowsLows; ++r)
+            for (size_t c = 0; c < numColsLows; ++c)
+                res->append(numRowsUps + r, c, lows->get(r, c));
+        res->finishAppend();
     }
 };
 

@@ -1,0 +1,4 @@
+// Read a matrix from the file $inPath and print it.
+
+X = readMatrix($inPath);
+print(X);

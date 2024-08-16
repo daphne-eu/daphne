@@ -15,6 +15,7 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <util/ErrorHandler.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -132,7 +133,7 @@ namespace {
                     // TODO The index seems to be off by 1 (too large)... (or not, simply 0-based counting).
                     stream << "call to function template `" << funcName << "` with invalid types for argument " << index
                            << ": expected `" << funcInTy << "`, got `" << specializedTy << "`";
-                    throw CompilerUtils::makeError(callLoc, stream.str());
+                    throw ErrorHandler::compilerError(callLoc, "SpecializeGenericFunctionsPass", stream.str());
                 }
             }
             // Note that specializedTy may explicitly contain property information (e.g., shape).
@@ -181,8 +182,10 @@ namespace {
         pm.addPass(daphne::createInferencePass({true, true, true, true, true}));
         pm.addPass(createCanonicalizerPass());
         if(failed(pm.run(function))) {
-            function.emitError() << "could not infer types for a call of function template: " << function.getName();
-            return nullptr;
+            throw ErrorHandler::compilerError(
+                function.getOperation(), "SpecializeGenericFunctionsPass",
+                "could not infer types for a call of function template: " +
+                    function.getName().str());
         }
         return function;
     }
@@ -357,15 +360,18 @@ namespace {
                     auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
                     func::FuncOp specializedFunc = createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction, mapOp.getLoc());
                     mapOp.setFuncAttr(specializedFunc.getSymNameAttr());
- 
+
                     // We only allow functions that return exactly one result for mapOp
-                    if(specializedFunc.getFunctionType().getNumResults() != 1) 
-                        throw std::runtime_error(
-                            "map expects a function with exactly one return value." 
-                            "The provided function returns" + 
-                            std::to_string(specializedFunc.getFunctionType().getNumResults()) +
-                            "values instead."
-                        );
+                    if (specializedFunc.getFunctionType().getNumResults() != 1) {
+                        throw ErrorHandler::compilerError(
+                            mapOp.getOperation(),
+                            "SpecializeGenericFunctionsPass",
+                            "map expects a function with exactly one return "
+                            "value. The provided function returns" +
+                                std::to_string(specializedFunc.getFunctionType()
+                                                   .getNumResults()) +
+                                "values instead.");
+                    }
 
                     // Get current mapOp result matrix type and fix it if needed.
                     // If we fixed something we rerun inference of the whole function
@@ -430,8 +436,10 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
     for(const auto &function : entryFunctions) {
         if(isFunctionTemplate(function) || visited.count(function) || templateFunctions.count(function))
             continue;
-        if(!inferTypesInFunction(function)) {
-            return signalPassFailure();
+        try {
+            inferTypesInFunction(function);
+        } catch (std::runtime_error& e) {
+            throw ErrorHandler::rethrowError("SpecializeGenericFunctionsPass", e.what());
         }
         specializeCallsInFunction(function);
     }

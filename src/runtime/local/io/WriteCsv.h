@@ -24,14 +24,15 @@
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
 
+#include <stdexcept>
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -62,17 +63,20 @@ void writeCsv(const DTArg *arg, File *file) {
 template <typename VT>
 struct WriteCsv<DenseMatrix<VT>> {
     static void apply(const DenseMatrix<VT> *arg, File* file) {
-        assert(file != nullptr && "File required");
+        if (file == nullptr)
+            throw std::runtime_error("WriteCsv: requires a file to be specified (must not be nullptr)");
         const VT * valuesArg = arg->getValues();
-        size_t cell = 0;
+        const size_t rowSkip = arg->getRowSkip();
+        const size_t argNumCols = arg->getNumCols();
+
         for (size_t i = 0; i < arg->getNumRows(); ++i)
         {
-            for(size_t j = 0; j < arg->getNumCols(); ++j)
+            for(size_t j = 0; j < argNumCols; ++j)
             {
                 fprintf(
                         file->identifier,
                         std::is_floating_point<VT>::value ? "%f" : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
-                        valuesArg[cell++]
+                        valuesArg[i*rowSkip + j]
                 );
                 if(j < (arg->getNumCols() - 1))
                     fprintf(file->identifier, ",");
@@ -90,7 +94,8 @@ struct WriteCsv<DenseMatrix<VT>> {
 template <> struct WriteCsv<Frame> {
     static void apply(const Frame * arg, File * file) {
 
-    assert(file != nullptr && "File required");
+    if (file == nullptr)
+        throw std::runtime_error("WriteCsv: requires a file to be specified (must not be nullptr)");
 
     for(size_t i = 0; i < arg->getNumRows(); ++i) {
         for(size_t j = 0; j < arg->getNumCols(); ++j) {
@@ -118,6 +123,35 @@ template <> struct WriteCsv<Frame> {
     }
 }
 
+};
+
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT>
+struct WriteCsv<Matrix<VT>> {
+    static void apply(const Matrix<VT> *arg, File* file) {
+        if (file == nullptr)
+            throw std::runtime_error("WriteCsv: File required");
+
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
+                fprintf(
+                        file->identifier,
+                        std::is_floating_point<VT>::value ? "%f" : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
+                        arg->get(r, c)
+                );
+                if (c < (numCols - 1))
+                    fprintf(file->identifier, ",");
+                else
+                    fprintf(file->identifier, "\n");
+            }
+        }
+   }
 };
   
 #endif // SRC_RUNTIME_LOCAL_IO_WRITECSV_H

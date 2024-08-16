@@ -58,8 +58,36 @@ std::pair<bool, int64_t> CompilerUtils::isConstant<int64_t>(mlir::Value v) {
 }
 
 template<>
+std::pair<bool, int32_t> CompilerUtils::isConstant<int32_t>(mlir::Value v) {
+    return isConstantHelper<int32_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
+    );
+}
+
+template<>
+std::pair<bool, int8_t> CompilerUtils::isConstant<int8_t>(mlir::Value v) {
+    return isConstantHelper<int8_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
+    );
+}
+
+template<>
 std::pair<bool, uint64_t> CompilerUtils::isConstant<uint64_t>(mlir::Value v) {
     return isConstantHelper<uint64_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
+    );
+}
+
+template<>
+std::pair<bool, uint32_t> CompilerUtils::isConstant<uint32_t>(mlir::Value v) {
+    return isConstantHelper<uint32_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
+    );
+}
+
+template<>
+std::pair<bool, uint8_t> CompilerUtils::isConstant<uint8_t>(mlir::Value v) {
+    return isConstantHelper<uint8_t, mlir::IntegerAttr>(
             v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
     );
 }
@@ -145,6 +173,13 @@ std::string CompilerUtils::constantOrDefault<std::string>(mlir::Value v, std::st
 template<>
 int64_t CompilerUtils::constantOrDefault<int64_t>(mlir::Value v, int64_t d) {
     return constantOrDefaultHelper<int64_t, mlir::IntegerAttr>(
+            v, d, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
+    );
+}
+
+template<>
+uint64_t CompilerUtils::constantOrDefault<uint64_t>(mlir::Value v, uint64_t d) {
+    return constantOrDefaultHelper<uint64_t, mlir::IntegerAttr>(
             v, d, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}
     );
 }

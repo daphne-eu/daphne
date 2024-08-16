@@ -29,7 +29,10 @@
 #include <cmath>
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix, COOMatrix), (double, float, uint32_t, uint8_t)) {
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix, Matrix
+#define VALUE_TYPES double, float, uint32_t, uint8_t
+
+TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     const size_t numRows = 100;

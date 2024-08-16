@@ -26,10 +26,11 @@
 
 #include <catch.hpp>
 
+#include <type_traits>
 #include <vector>
 
 #define TEST_NAME(opName) "AggRow (" opName ")"
-#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
 template<class DTRes, class DTArg>
@@ -43,7 +44,11 @@ void checkAggRow(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
 // test various combinations.
 #define SUM_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<VTRes>; \
+    using DTRes = typename std::conditional< \
+                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, \
+                        Matrix<VTRes>, \
+                        DenseMatrix<VTRes> \
+                    >::type; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -72,7 +77,12 @@ SUM_TEST_CASE(double)
 // The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
-    using DTRes = DenseMatrix<typename DTArg::VT>;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DTArg, Matrix<VT>>::value, 
+                        Matrix<VT>, 
+                        DenseMatrix<VT>
+                    >::type;
     
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
@@ -108,7 +118,12 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 // The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
-    using DTRes = DenseMatrix<typename DTArg::VT>;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DTArg, Matrix<VT>>::value, 
+                        Matrix<VT>, 
+                        DenseMatrix<VT>
+                    >::type;
     
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
@@ -144,7 +159,12 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 // The value type of the result can be assumed to be size_t.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DTArg = TestType;
-    using DTRes = DenseMatrix<size_t>;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DTArg, Matrix<VT>>::value, 
+                        Matrix<VT>, 
+                        DenseMatrix<VT>
+                    >::type;
     
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
@@ -175,7 +195,12 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VAL
 // The value type of the result can be assumed to be size_t.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DTArg = TestType;
-    using DTRes = DenseMatrix<size_t>;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                        std::is_same<DTArg, Matrix<VT>>::value, 
+                        Matrix<VT>, 
+                        DenseMatrix<VT>
+                    >::type;
     
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
@@ -207,7 +232,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VAL
 // test various combinations.
 #define MEAN_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<VTRes>; \
+    using DTRes = typename std::conditional< \
+                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, \
+                        Matrix<VTRes>, \
+                        DenseMatrix<VTRes> \
+                    >::type; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -247,7 +276,11 @@ MEAN_TEST_CASE(double);
 
 #define STDDEV_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<VTRes>; \
+    using DTRes = typename std::conditional< \
+                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, \
+                        Matrix<VTRes>, \
+                        DenseMatrix<VTRes> \
+                    >::type; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -281,7 +314,11 @@ STDDEV_TEST_CASE(double);
 
 #define VAR_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("var - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<VTRes>; \
+    using DTRes = typename std::conditional< \
+                        std::is_same<DTArg, Matrix<typename DTArg::VT>>::value, \
+                        Matrix<VTRes>, \
+                        DenseMatrix<VTRes> \
+                    >::type; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \

@@ -30,7 +30,7 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("RowBind", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("RowBind", TAG_KERNELS, (DenseMatrix, Matrix), (double, uint32_t)) {
     using DT = TestType;
     
     auto m0 = genGivenVals<DT>(4, {
@@ -61,9 +61,7 @@ TEMPLATE_PRODUCT_TEST_CASE("RowBind", TAG_KERNELS, (DenseMatrix), (double, uint3
         rowBind<DT, DT, DT>(res, m0, m1, nullptr);
         CHECK(*res == *exp);
 
-        DataObjectFactory::destroy(m1);
-        DataObjectFactory::destroy(exp);
-        DataObjectFactory::destroy(res);
+        DataObjectFactory::destroy(m1, exp, res);
     }
     SECTION("size mismatch") {
         auto m1 = genGivenVals<DT>(3, {

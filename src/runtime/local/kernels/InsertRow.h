@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <sstream>
 #include <stdexcept>
@@ -63,7 +64,7 @@ template<typename VTSel>
 void validateArgsInsertRow(size_t rowLowerIncl_Size, VTSel rowLowerIncl, size_t rowUpperExcl_Size, VTSel rowUpperExcl,
                     size_t numRowsArg, size_t numColsArg, size_t numRowsIns, size_t numColsIns) {
     
-    if (rowLowerIncl_Size < 0 || rowUpperExcl_Size < rowLowerIncl_Size || numRowsArg < rowUpperExcl_Size
+    if (rowUpperExcl_Size < rowLowerIncl_Size || numRowsArg < rowUpperExcl_Size
         || (rowLowerIncl_Size == numRowsArg && rowLowerIncl_Size != 0)) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl
@@ -142,6 +143,47 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             valuesRes += rowSkipRes;
             valuesArg += rowSkipArg;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT, typename VTSel>
+struct InsertRow<Matrix<VT>, Matrix<VT>, VTSel> {
+    static void apply(
+            Matrix<VT> *& res,
+            const Matrix<VT> * arg, const Matrix<VT> * ins,
+            VTSel rowLowerIncl, VTSel rowUpperExcl,
+            DCTX(ctx)
+    ) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+
+        const size_t rowLowerIncl_Size = static_cast<const size_t>(rowLowerIncl);
+        const size_t rowUpperExcl_Size = static_cast<const size_t>(rowUpperExcl);
+
+        validateArgsInsertRow(rowLowerIncl_Size, rowLowerIncl, rowUpperExcl_Size, rowUpperExcl,
+                    numRowsArg, numColsArg, ins->getNumRows(), ins->getNumCols());
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsArg, numColsArg, false);
+
+        // fill values above insertion, then between and lastly below
+        res->prepareAppend();
+        for (size_t r = 0; r < rowLowerIncl_Size; ++r)
+            for (size_t c = 0; c < numColsArg; ++c)
+                res->append(r, c, arg->get(r, c));
+
+        for (size_t r = rowLowerIncl_Size; r < rowUpperExcl_Size; ++r)
+            for (size_t c = 0; c < numColsArg; ++c)
+                res->append(r, c, ins->get(r - rowLowerIncl_Size, c));
+                
+        for (size_t r = rowUpperExcl_Size; r < numRowsArg; ++r)
+            for (size_t c = 0; c < numColsArg; ++c)
+                res->append(r, c, arg->get(r, c));
+        res->finishAppend();
     }
 };
 

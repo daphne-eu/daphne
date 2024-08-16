@@ -25,11 +25,10 @@
 #include <random>
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
-namespace Pooling {
+namespace NN::Pooling {
 
     template<typename VT>
     struct AVG {

@@ -23,8 +23,8 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -122,10 +122,14 @@ class CSRMatrix : public Matrix<ValueType> {
             isRowAllocatedBefore(rowLowerIncl > 0),
             lastAppendedRowIdx(0)
     {
-        assert(src && "src must not be null");
-        assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
-        assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
-        assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
+        if (!src)
+            throw std::runtime_error("CSRMatrix: src must not be null");
+        if (rowLowerIncl >= src->numRows)
+            throw std::runtime_error("CSRMatrix: rowLowerIncl is out of bounds");
+        if (rowUpperExcl > src->numRows)
+            throw std::runtime_error("CSRMatrix: rowUpperExcl is out of bounds");
+        if (rowLowerIncl >= rowUpperExcl)
+            throw std::runtime_error("CSRMatrix: rowLowerIncl must be lower than rowUpperExcl");
         
         maxNumNonZeros = src->maxNumNonZeros;
         values = src->values;
@@ -149,9 +153,14 @@ public:
 
     template<typename NewValueType>
     using WithValueType = CSRMatrix<NewValueType>;
+
+    static std::string getName() {
+        return "CSRMatrix";
+    }
     
     void shrinkNumRows(size_t numRows) {
-        assert((numRows <= this->numRows) && "numRows can only the shrinked");
+        if (numRows > this->numRows)
+            throw std::runtime_error("CSRMatrix (shrinkNumRows): numRows can only be shrunk");
         // TODO Here we could reduce the allocated size of the rowOffsets array.
         this->numRows = numRows;
     }
@@ -164,12 +173,14 @@ public:
     }
     
     size_t getNumNonZeros(size_t rowIdx) const {
-        assert((rowIdx < numRows) && "rowIdx is out of bounds");
+        if (rowIdx >= numRows)
+            throw std::runtime_error("CSRMatrix (getNumNonZeros): rowIdx is out of bounds");
         return rowOffsets.get()[rowIdx + 1] - rowOffsets.get()[rowIdx];
     }
     
     void shrinkNumNonZeros(size_t numNonZeros) {
-        assert((numNonZeros <= getNumNonZeros()) && "numNonZeros can only be shrinked");
+        if (numNonZeros > getNumNonZeros())
+            throw std::runtime_error("CSRMatrix (shrinkNumNonZeros): numNonZeros can only be shrunk");
         // TODO Here we could reduce the allocated size of the values and
         // colIdxs arrays.
     }
@@ -184,7 +195,8 @@ public:
     
     ValueType * getValues(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
-        assert((rowIdx <= numRows) && "rowIdx is out of bounds");
+        if (rowIdx > numRows)
+            throw std::runtime_error("CSRMatrix (getValues): rowIdx is out of bounds");
         return values.get() + rowOffsets.get()[rowIdx];
     }
     
@@ -202,7 +214,8 @@ public:
     
     size_t * getColIdxs(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
-        assert((rowIdx <= numRows) && "rowIdx is out of bounds");
+        if (rowIdx > numRows)
+            throw std::runtime_error("CSRMatrix (getColIdxs): rowIdx is out of bounds");
         return colIdxs.get() + rowOffsets.get()[rowIdx];
     }
 
@@ -219,8 +232,10 @@ public:
     }
 
     ValueType get(size_t rowIdx, size_t colIdx) const override {
-        assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        assert((colIdx < numCols) && "colIdx is out of bounds");
+        if (rowIdx >= numRows)
+            throw std::runtime_error("CSRMatrix (get): rowIdx is out of bounds");
+        if (colIdx >= numCols)
+            throw std::runtime_error("CSRMatrix (get): colIdx is out of bounds");
         
         const size_t * rowColIdxsBeg = getColIdxs(rowIdx);
         const size_t * rowColIdxsEnd = getColIdxs(rowIdx + 1);
@@ -235,8 +250,10 @@ public:
     }
     
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
-        assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        assert((colIdx < numCols) && "colIdx is out of bounds");
+        if (rowIdx >= numRows)
+            throw std::runtime_error("CSRMatrix (set): rowIdx is out of bounds");
+        if (colIdx >= numCols)
+            throw std::runtime_error("CSRMatrix (set): colIdx is out of bounds");
         
         size_t * rowColIdxsBeg = getColIdxs(rowIdx);
         size_t * rowColIdxsEnd = getColIdxs(rowIdx + 1);
@@ -300,8 +317,10 @@ public:
     // `prepareAppend`/`append`/`finishAppend` assume that the larger matrix
     // has been populated up to just before the row range of this view.
     void append(size_t rowIdx, size_t colIdx, ValueType value) override {
-        assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        assert((colIdx < numCols) && "colIdx is out of bounds");
+        if (rowIdx >= numRows)
+            throw std::runtime_error("CSRMatrix (append): rowIdx is out of bounds");
+        if (colIdx >= numCols)
+            throw std::runtime_error("CSRMatrix (append): colIdx is out of bounds");
         
         if(value == ValueType(0))
             return;
@@ -396,6 +415,45 @@ public:
 
     size_t bufferSize() {
         return this->getNumItems() * sizeof(ValueType);
+    }
+
+    bool operator==(const CSRMatrix<ValueType> & rhs) const {
+        // Note that we do not use the generic `get` interface to matrices here since
+        // this operator is meant to be used for writing tests for, besides others,
+        // those generic interfaces.
+
+        if(this == &rhs)
+            return true;
+        
+        const size_t numRows = this->getNumRows();
+        const size_t numCols = this->getNumCols();
+        
+        if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+            return false;
+        
+        const ValueType * valuesBegLhs = this->getValues(0);
+        const ValueType * valuesEndLhs = this->getValues(numRows);
+        const ValueType * valuesBegRhs = rhs.getValues(0);
+        const ValueType * valuesEndRhs = rhs.getValues(numRows);
+        
+        const size_t nnzLhs = valuesEndLhs - valuesBegLhs;
+        const size_t nnzRhs = valuesEndRhs - valuesBegRhs;
+        
+        if(nnzLhs != nnzRhs)
+            return false;
+        
+        if(valuesBegLhs != valuesBegRhs)
+            if(memcmp(valuesBegLhs, valuesBegRhs, nnzLhs * sizeof(ValueType)))
+                return false;
+        
+        const size_t * colIdxsBegLhs = this->getColIdxs(0);
+        const size_t * colIdxsBegRhs = rhs.getColIdxs(0);
+        
+        if(colIdxsBegLhs != colIdxsBegRhs)
+            if(memcmp(colIdxsBegLhs, colIdxsBegRhs, nnzLhs * sizeof(size_t)))
+                return false;
+        
+        return true;
     }
 
     size_t serialize(std::vector<char> &buf) const override ;

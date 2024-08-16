@@ -36,8 +36,7 @@
 
 void DaphneDSLBuiltins::checkNumArgsExact(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsExact) {
     if(numArgs != numArgsExact)
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                 "built-in function `" + func + "` expects exactly " +
                 std::to_string(numArgsExact) + " argument(s), but got " +
                 std::to_string(numArgs)
@@ -46,8 +45,7 @@ void DaphneDSLBuiltins::checkNumArgsExact(mlir::Location loc, const std::string 
 
 void DaphneDSLBuiltins::checkNumArgsBetween(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsMin, size_t numArgsMax) {
     if(numArgs < numArgsMin || numArgs > numArgsMax)
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                 "built-in function `" + func + "` expects between " +
                 std::to_string(numArgsMin) + " and " + std::to_string(numArgsMax) +
                 " argument(s), but got " + std::to_string(numArgs)
@@ -56,8 +54,7 @@ void DaphneDSLBuiltins::checkNumArgsBetween(mlir::Location loc, const std::strin
 
 void DaphneDSLBuiltins::checkNumArgsIn(mlir::Location loc, const std::string & func, size_t numArgs, std::vector<size_t> numArgsChoice) {
     if(numArgsChoice.empty())
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                 "error while parsing built-in function `" + func +
                 "`: expecting at least one option for the permitted number of arguments"
         );
@@ -67,8 +64,7 @@ void DaphneDSLBuiltins::checkNumArgsIn(mlir::Location loc, const std::string & f
         for(size_t i = 1; i < numArgsChoice.size(); i++)
             msg << " or " << numArgsChoice[i];
         msg << " argument(s), but got " << numArgs;
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                 msg.str()
         );
     }
@@ -76,8 +72,7 @@ void DaphneDSLBuiltins::checkNumArgsIn(mlir::Location loc, const std::string & f
 
 void DaphneDSLBuiltins::checkNumArgsMin(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsMin) {
     if(numArgs < numArgsMin)
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins", 
                 "built-in function `" + func + "` expects at least " +
                 std::to_string(numArgsMin) + " argument(s), but got " +
                 std::to_string(numArgs)
@@ -86,8 +81,7 @@ void DaphneDSLBuiltins::checkNumArgsMin(mlir::Location loc, const std::string & 
 
 void DaphneDSLBuiltins::checkNumArgsEven(mlir::Location loc, const std::string & func, size_t numArgs) {
     if(numArgs % 2)
-        throw CompilerUtils::makeError(
-                loc,
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins", 
                 "built-in function `" + func +
                 "` expects an even number of arguments, but got " +
                 std::to_string(numArgs)
@@ -141,7 +135,7 @@ mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std
                 )
         );
     else
-        throw std::runtime_error("invalid axis");
+        throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid axis for aggregation.");
 }
 
 template<class GrpAggOp>
@@ -373,8 +367,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 labels.push_back(arg);
             }
             else
-                throw std::runtime_error(
-                        "arguments to frame() built-in function must be one or "
+                throw ErrorHandler::compilerError(loc, "DSLBuiltins",
+                        "arguments to createFrame() built-in function must be one or "
                         "more matrices optionally followed by equally many "
                         "strings"
                 );
@@ -390,7 +384,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 ));
             }
         else if(numLabels != numCols)
-            throw std::runtime_error(
+            throw ErrorHandler::compilerError(loc, "DSLBuiltins",
                     "frame built-in function expects either no column labels "
                     "or as many labels as columns"
             );
@@ -431,10 +425,28 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         );
     }
     if(func == "seq") {
-        checkNumArgsExact(loc, func, numArgs, 3);
+        checkNumArgsMin(loc, func, numArgs, 2); // The first two arguments are mandatory.
         mlir::Value from = args[0];
         mlir::Value to = args[1];
-        mlir::Value inc= args[2];
+        mlir::Value inc;                        // The third argument is optional.
+        
+        switch (numArgs)
+        {
+        case 2:{ // inc is not given, so it defaults to 1
+            // We use the least general numeric type si8 for inc,
+            // such that it never dominates from/to in type promotion.
+            mlir::Type si8 = builder.getIntegerType(8, true);
+            inc = builder.create<ConstantOp>(loc, si8, builder.getIntegerAttr(si8, 1));
+            break;
+        }
+        case 3:{ // inc is given
+            inc = args[2];
+            break;
+        }
+        default:
+            throw ErrorHandler::compilerError(loc, "DSLBuiltins", "seq(): unexpected number of arguments");
+        }
+
         return utils.retValWithInferedType(
                 builder.create<SeqOp>(
                         loc, utils.unknownType, from, to, inc
@@ -452,6 +464,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createNumOp<NumColsOp>(loc, func, args);
     if(func == "ncell")
         return createNumOp<NumCellsOp>(loc, func, args);
+    if(func == "sparsity") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+        mlir::Value arg = args[0];
+        return static_cast<mlir::Value>(builder.create<SparsityOp>(loc, builder.getF64Type(), arg));
+    }
 
     // ********************************************************************
     // Elementwise unary
@@ -461,6 +478,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Arithmetic/general math
     // --------------------------------------------------------------------
 
+    if(func == "minus")
+        return createUnaryOp<EwMinusOp>(loc, func, args);
     if(func == "abs")
         return createUnaryOp<EwAbsOp>(loc, func, args);
     if(func == "sign")
@@ -507,6 +526,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createUnaryOp<EwAcosOp>(loc, func, args);
     if(func == "atan")
         return createUnaryOp<EwAtanOp>(loc, func, args);
+
+    // --------------------------------------------------------------------
+    // Comparison
+    // --------------------------------------------------------------------
+
+    if (func == "isNan")
+        return createUnaryOp<EwIsNanOp>(loc, func, args);
 
     // ********************************************************************
     // Elementwise binary
@@ -716,7 +742,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
     if( func == "eigen" ) {
         checkNumArgsExact(loc, func, numArgs, 1);
-        //TODO JIT-Engine invocation failed: Failed to materialize symbols
         return builder.create<EigenOp>(loc,
             args[0].getType(), args[0].getType(), args[0]).getResults();
     }
@@ -831,7 +856,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 break;
             }
             default:
-                throw std::runtime_error("ctable(): unexpected number of arguments");
+                throw ErrorHandler::compilerError(loc, "DSLBuiltins", "ctable(): unexpected number of arguments");
         }
         return static_cast<mlir::Value>(builder.create<CTableOp>(
                 loc, utils.unknownType, lhs, rhs, weight, resNumRows, resNumCols
@@ -888,7 +913,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc,
                 builder.getStringAttr(viewName),
                 view
-        );
+        ).getOperation();
     }
 
     // --------------------------------------------------------------------
@@ -996,12 +1021,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
 
     // ********************************************************************
-    // Conversions, casts, and copying
+    // Conversions and casts
     // ********************************************************************
 
-    if(func == "copy") {
-        return createSameTypeUnaryOp<CopyOp>(loc, func, args);
-    }
     if(func == "quantize") {
         checkNumArgsExact(loc, func, args.size(), 3);
         mlir::Value arg = args[0];
@@ -1033,7 +1055,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 : utils.castBoolIf(args[2]);
         return builder.create<PrintOp>(
                 loc, arg, newline, err
-        );
+        ).getOperation();
     }
 
     if (func == "readMatrix") {
@@ -1054,7 +1076,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value arg = args[0];
         mlir::Value filename = args[1];
-        return builder.create<WriteOp>(loc, arg, filename);
+        return builder.create<WriteOp>(loc, arg, filename).getOperation();
     }
     if(func == "receiveFromNumpy") {
         checkNumArgsExact(loc, func, numArgs, 5);
@@ -1088,7 +1110,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         else if(valueTypeCode == (int64_t)ValueTypeCode::UI64)
             vt = builder.getIntegerType(64, false);
         else
-            throw std::runtime_error("invalid value type code");
+            throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid value type code");
 
         return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(
                 loc, utils.matrixOf(vt), upper, lower, rows, cols
@@ -1097,8 +1119,18 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "saveDaphneLibResult") {
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value arg = args[0];
-        return builder.create<SaveDaphneLibResultOp>(loc, arg);
+        return builder.create<SaveDaphneLibResultOp>(loc, arg).getOperation();
     }
+    if(func == "stop") {
+        checkNumArgsBetween(loc, func, numArgs, 0, 1);
+        mlir::Value message;
+        if (numArgs == 0) {
+            message = builder.create<mlir::daphne::ConstantOp>(loc, builder.getType<mlir::daphne::StringType>(), builder.getStringAttr("unspecified reason"));
+        } else {
+            message = args[0];
+        }
+        return builder.create<StopOp>(loc, message).getOperation();
+    } 
 
     // --------------------------------------------------------------------
     // Low-level
@@ -1131,7 +1163,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value fileOrTarget = args[0];
         return builder.create<CloseOp>(
                 loc, fileOrTarget
-        );
+        ).getOperation();
     }
     if(func == "readCsv") {
         checkNumArgsExact(loc, func, numArgs, 4);
@@ -1217,11 +1249,48 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return static_cast<mlir::Value>(builder.create<MapOp>(
             loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>()
         ));
-
     }
 
+    // ****************************************************************************
+    // List operations
+    // ****************************************************************************
+
+    if(func == "createList") {
+        checkNumArgsMin(loc, func, numArgs, 1);
+
+        return static_cast<mlir::Value>(builder.create<CreateListOp>(
+            loc, utils.unknownType, args
+        ));
+    }
+    if(func == "length") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+
+        return static_cast<mlir::Value>(builder.create<LengthOp>(
+            loc, utils.sizeType, args[0]
+        ));
+    }
+    if(func == "append") {
+        checkNumArgsExact(loc, func, numArgs, 2);
+
+        mlir::Value list = args[0];
+        mlir::Value elem = args[1];
+
+        return static_cast<mlir::Value>(builder.create<AppendOp>(
+            loc, utils.unknownType, list, elem
+        ));
+    }
+    if(func == "remove") {
+        checkNumArgsExact(loc, func, numArgs, 2);
+
+        mlir::Value list = args[0];
+        mlir::Value idx = utils.castSizeIf(args[1]);
+
+        return builder.create<RemoveOp>(
+            loc, utils.unknownType, utils.unknownType, list, idx
+        ).getResults();
+    }
 
     // ********************************************************************
 
-    throw CompilerUtils::makeError(loc, "unknown built-in function: `" + func + "`");
+    throw ErrorHandler::compilerError(loc, "DSLBuiltins", "unknown built-in function: `" + func + "`");
 }

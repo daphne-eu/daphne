@@ -16,15 +16,14 @@
 
 #pragma once
 
-#include <runtime/local/datastructures/AllocationDescriptorHost.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -175,11 +174,16 @@ public:
 
     template<typename NewValueType>
     using WithValueType = DenseMatrix<NewValueType>;
+
+    static std::string getName() {
+        return "DenseMatrix";
+    }
     
     [[nodiscard]] bool isPartialBuffer() const { return bufferSize != this->getNumRows() * this->getRowSkip() * sizeof(ValueType); }
 
     void shrinkNumRows(size_t numRows) {
-        assert((numRows <= this->numRows) && "number of rows can only the shrunk");
+        if (numRows > this->numRows)
+            throw std::runtime_error("DenseMatrix (shrinkNumRows): number of rows can only be shrunk");
         // TODO Here we could reduce the allocated size of the values array.
         this->numRows = numRows;
     }
@@ -241,7 +245,9 @@ public:
     }
     
     void prepareAppend() override {
-        values.get()[0] = ValueType(0);
+        // The matrix might be empty.
+        if (numRows != 0 && numCols != 0)
+            values.get()[0] = ValueType(0);
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
     }
@@ -257,7 +263,14 @@ public:
     }
     
     void finishAppend() override {
-        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+        // The matrix might be empty.
+        if (
+            (numRows != 0 && numCols != 0) &&
+            (
+                (lastAppendedRowIdx + 1 < numRows) ||
+                (lastAppendedColIdx + 1 < numCols)
+            )
+        )
             append(numRows - 1, numCols - 1, ValueType(0));
     }
 
@@ -288,7 +301,43 @@ public:
     }
 
     [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
-    
+
+    bool operator==(const DenseMatrix<ValueType> & rhs) const {
+        // Note that we do not use the generic `get` interface to matrices here since
+        // this operator is meant to be used for writing tests for, besides others,
+        // those generic interfaces.
+        
+        if(this == &rhs)
+            return true;
+        
+        const size_t numRows = this->getNumRows();
+        const size_t numCols = this->getNumCols();
+        
+        if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
+            return false;
+        
+        const ValueType* valuesLhs = this->getValues();
+        const ValueType* valuesRhs = rhs.getValues();
+        
+        const size_t rowSkipLhs = this->getRowSkip();
+        const size_t rowSkipRhs = rhs.getRowSkip();
+        
+        if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
+            return true;
+        
+        if(rowSkipLhs == numCols && rowSkipRhs == numCols)
+            return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
+        else {
+            for(size_t r = 0; r < numRows; r++) {
+                if(memcmp(valuesLhs, valuesRhs, numCols * sizeof(ValueType)))
+                    return false;
+                valuesLhs += rowSkipLhs;
+                valuesRhs += rowSkipRhs;
+            }
+            return true;
+        }
+    }
+
     size_t serialize(std::vector<char> &buf) const override;
 };
 
@@ -440,7 +489,8 @@ class DenseMatrix<const char*> : public Matrix<const char*>
 public:
 
     void shrinkNumRows(size_t numRows) {
-        assert((numRows <= this->numRows) && "number of rows can only the shrunk");
+        if (numRows > this->numRows)
+            throw std::runtime_error("DenseMatrix (shrinkNumRows): number of rows can only be shrunk");
         // TODO Here we could reduce the allocated size of the values array.
         this->numRows = numRows;
     }
@@ -514,7 +564,9 @@ public:
     }
     
     void prepareAppend() override {
-        values.get()[0] = "\0";
+        // the matrix might be empty
+        if (numRows != 0 && numCols != 0)
+            values.get()[0] = "\0";
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
         strBuf->currentTop = strBuf.get()->strings;
@@ -541,7 +593,10 @@ public:
     }
     
     void finishAppend() override {
-        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+        // numRows/numCols are unsigned and can underflow
+        if (    (numRows != 0 && numCols != 0)
+            && ((lastAppendedRowIdx + 1 < numRows) || (lastAppendedColIdx + 1 < numCols))
+            )
             append(numRows - 1, numCols - 1, "\0");
     }
 
@@ -573,7 +628,8 @@ public:
     float printBufferSize() const { return static_cast<float>(numRows*numCols) / (1048576); }
 
     bool operator==(const DenseMatrix<const char*> &M) const {
-        assert(getNumRows() != 0 && getNumCols() != 0 && strBuf && values && "Invalid matrix");
+        if (getNumRows() == 0 || getNumCols() == 0 || !strBuf || !values)
+            throw std::runtime_error("DenseMatrix (operator==): invalid matrix. DenseMatrix must not be empty");
         for(size_t r = 0; r < getNumRows(); r++)
             for(size_t c = 0; c < getNumCols(); c++)
                 if(strcmp(M.getValues()[M.pos(r,c)], values.get()[pos(r,c)]))

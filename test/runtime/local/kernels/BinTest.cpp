@@ -25,9 +25,12 @@
 #include <catch.hpp>
 
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
+
+#define DATA_TYPES DenseMatrix, Matrix
 
 template<class DTRes, class DTArg>
 void checkBin(const DTArg * arg, size_t numBins, typename DTArg::VT min, typename DTArg::VT max, const DTRes * exp) {
@@ -45,10 +48,16 @@ void checkBinThrows(const DTArg * arg, size_t numBins, typename DTArg::VT min, t
         DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Bin", TAG_KERNELS, (DenseMatrix), (double, float, int64_t, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Bin", TAG_KERNELS, (DATA_TYPES), (double, float, int64_t, uint32_t)) {
     using DTArg = TestType;
     using VTArg = typename DTArg::VT;
     using DTRes = DTArg;
+    using DTEmpty = typename std::conditional<
+                        std::is_same<TestType, Matrix<VTArg>>::value,
+                        DenseMatrix<VTArg>,
+                        TestType
+                    >::type;
+    
     
     DTArg * arg = nullptr;
     DTRes * exp = nullptr;
@@ -56,18 +65,18 @@ TEMPLATE_PRODUCT_TEST_CASE("Bin", TAG_KERNELS, (DenseMatrix), (double, float, in
     // fp spec: nan among normal values
 
     SECTION("(0x0) arg") {
-        arg = DataObjectFactory::create<DTArg>(0, 0, false);
-        exp = DataObjectFactory::create<DTRes>(0, 0, false);
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
         checkBin(arg, 42, 100, 200, exp);
     }
     SECTION("(0xn) arg") {
-        arg = DataObjectFactory::create<DTArg>(0, 3, false);
-        exp = DataObjectFactory::create<DTRes>(0, 3, false);
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(0, 3, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(0, 3, false));
         checkBin(arg, 42, 100, 200, exp);
     }
     SECTION("(mx0) arg") {
-        arg = DataObjectFactory::create<DTArg>(3, 0, false);
-        exp = DataObjectFactory::create<DTRes>(3, 0, false);
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
+        exp = static_cast<DTRes *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
         checkBin(arg, 42, 100, 200, exp);
     }
     SECTION("numBins > 1, min < max, wo/ out-of-bins values, 1d") {

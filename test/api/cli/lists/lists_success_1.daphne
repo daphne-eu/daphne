@@ -1,0 +1,4 @@
+// Create a list from one element.
+
+l = createList([1]);
+print(l);

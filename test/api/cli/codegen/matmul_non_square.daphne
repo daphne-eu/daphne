@@ -1,0 +1,10 @@
+// Performs a MatMulOp. Used to compare precompiled kernel with codegen.
+
+N = 3;
+M = 4;
+A = as.matrix<f64>(fill(5.0, N, M));
+B = as.matrix<f64>(fill(3.0, M, N));
+
+C = A@B;
+
+print(C); // for small matrices

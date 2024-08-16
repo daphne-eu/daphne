@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <ir/daphneir/Daphne.h>
 

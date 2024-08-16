@@ -38,7 +38,7 @@ TEST_CASE("Distributed runtime tests using gRPC", TAG_DISTRIBUTED)
     int nullFd = open("/dev/null", O_WRONLY);
     auto pid1 = runProgramInBackground(nullFd, nullFd, "bin/DistributedWorker", "DistributedWorker", addr1);
     auto pid2 = runProgramInBackground(nullFd, nullFd, "bin/DistributedWorker", "DistributedWorker", addr2);
-    assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
+    CHECK(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
 
     SECTION("Execution of scripts using distributed runtime (gRPC)"){

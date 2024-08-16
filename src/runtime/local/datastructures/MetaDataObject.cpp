@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "DataPlacement.h"
 #include "MetaDataObject.h"
 
 DataPlacement* MetaDataObject::addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r) {

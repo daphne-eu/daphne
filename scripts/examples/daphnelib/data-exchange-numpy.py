@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.python.context.daphne_context import DaphneContext
+from daphne.context.daphne_context import DaphneContext
 import numpy as np
 
 dc = DaphneContext()

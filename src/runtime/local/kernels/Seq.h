@@ -23,7 +23,6 @@
 
 #include <stdlib.h>
 #include <cmath>
-#include <cassert>
 #include <iomanip>
 #include <stdexcept>
 
@@ -52,10 +51,15 @@ void seq(DT *& res, typename DT::VT start, typename DT::VT end, typename DT::VT 
 template<typename VT>
 struct Seq<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, VT start, VT end, VT inc, DCTX(ctx)) {
-        assert(inc == inc && "inc cannot be NaN");   
-        assert(start == start && "start cannot be NaN");
-        assert(end == end && "end cannot be NaN");
-        assert(inc != 0 && "inc should not be zero"); // setp 0 can not make any progress to any given boundary
+        if (std::isnan(inc))
+            throw std::runtime_error("inc cannot be NaN");
+        if (std::isnan(start))
+            throw std::runtime_error("start cannot be NaN");
+        if (std::isnan(end))
+            throw std::runtime_error("end cannot be NaN");
+        if (inc == 0)
+            throw std::runtime_error("inc should not be zero");
+
         if( (start<end && inc<0) || (start>end && inc>0)){
             // Return matrix with zero rows.
             res = DataObjectFactory::create<DenseMatrix<VT>>(0, 1, false);
@@ -66,10 +70,11 @@ struct Seq<DenseMatrix<VT>> {
         const size_t expectedNumRows= ceil((initialDistanceToEnd/abs(inc)))+1; // number of steps = expectedNumRows and numRows might = expectedNumRows -1 ot expectedNumRows
         const size_t numCols=1;
         // should the kernel do such a check or reallocate res matrix directly?
-        if(res == nullptr) 
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(expectedNumRows, numCols, false);
-        else
-            assert(res->getNumRows()==expectedNumRows  && "input matrix is not null and may not fit the sequence");
+        else if (res->getNumRows() != expectedNumRows)
+            throw std::runtime_error(
+                "input matrix is not null and may not fit the sequence");
 
         VT * allValues= res->getValues();
 

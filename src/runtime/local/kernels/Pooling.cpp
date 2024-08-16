@@ -16,7 +16,7 @@
 
 #include "Pooling.h"
 
-namespace Pooling {
+namespace NN::Pooling {
 
     uint32_t getPQ(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent) {
         uint32_t padded_image_extent = img_extent + 2 * pad_extent;

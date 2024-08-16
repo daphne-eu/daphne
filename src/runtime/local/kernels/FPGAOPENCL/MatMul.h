@@ -24,7 +24,6 @@
 #include <cblas.h>
 #include <math.h>
 
-#include <cassert>
 #include <cstddef>
 #include "gemm_interface.h"
 #include "sgemv_interface.h"
@@ -64,7 +63,8 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
         const size_t nc1 = lhs->getNumCols();
         const size_t nc2 = rhs->getNumCols();
         const size_t nr2 = rhs->getNumRows();
-        assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");        
+        if (nc1 != nr2)
+            perror("#cols of lhs and #rows of rhs must be the same");
 
 // Parameters of the systolic array in the bitstream. Do not change.
 
@@ -83,9 +83,12 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
 
 
 //#ifndef NDEBUG
-//	assert((nr1%(II*III)==0) && "lhs #rows number must be a multiple of 448");        
-//	assert((nc1%(JJ*JJJ)==0 && nc1>512 && nr2%(JJ*JJJ)==0 && nc1>512) && "#cols of lhs and #rows of rhs must be a multiple of 512 (and minimum 1024)");        
-//	assert((nc2%(KK*KKK)==0) && "#cols of rhs must be a multiple of 512");        
+    // if (nr1%(II*III) != 0)
+    //     perror("lhs #rows number must be a multiple of 448");
+    // if (nc1%(JJ*JJJ) != 0 || nc1 <= 512 || nr2%(JJ*JJJ) != 0 || nc1 <= 512)
+    //     perror("#cols of lhs and #rows of rhs must be a multiple of 512 (and minimum 1024)");
+	// if (nc2%(KK*KKK) != 0)
+    //     perror("#cols of rhs must be a multiple of 512");
 //#endif       
 
 //	printf("\ntest MatMul f32 \n");
@@ -209,7 +212,8 @@ struct MatMul<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
         const size_t nc2 = rhs->getNumCols();
 #ifndef NDEBUG
         const size_t nr2 = rhs->getNumRows();
-        assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
+        if (nc1 != nr2)
+            perror("#cols of lhs and #rows of rhs must be the same");
 #endif 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<double>>(nr1, nc2, false);

@@ -19,9 +19,11 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
+#include <stdexcept>
 
 #include <cstddef>
-#include <cassert>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -54,10 +56,17 @@ template<typename VT>
 struct DiagVector<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         //------handling corner cases -------
-        assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
+        if (!arg) {
+            throw std::runtime_error("arg must not be nullptr");
+        }
         const size_t numRows = arg->getNumRows(); // number of rows
-        assert(numRows==arg->getNumCols() && "arg matrix should be square matrix");
-        assert(numRows!=0 && "arg matrix cannot be empty");
+        if (numRows != arg->getNumCols()) {
+            throw std::runtime_error("arg matrix should be square matrix");
+        }
+        if (numRows == 0) {
+            throw std::runtime_error("arg matrix cannot be empty");
+        }
+
         if(res==nullptr){
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
         }
@@ -79,10 +88,16 @@ template<typename VT>
 struct DiagVector<DenseMatrix<VT>, CSRMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         //-------handling corner cases ---------
-        assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
+        if (arg == nullptr) {
+            throw std::runtime_error("arg must not be nullptr");
+        }
         const size_t numRows = arg->getNumRows(); // number of rows
-        assert(numRows==arg->getNumCols() && "arg matrix should be square matrix");
-        assert(numRows!=0 && "arg matrix cannot be empty");
+        if (numRows != arg->getNumCols()) {
+            throw std::runtime_error("arg matrix should be square matrix");
+        }
+        if (numRows == 0) {
+            throw std::runtime_error("arg matrix cannot be empty");
+        }
         if(res==nullptr){ 
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
         }
@@ -106,5 +121,32 @@ struct DiagVector<DenseMatrix<VT>, CSRMatrix<VT>> {
             }
             resValues[i]=targetValue;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct DiagVector<Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+
+        //------handling corner cases -------
+        if (arg == nullptr)
+            throw std::runtime_error("DiagVector: arg must not be nullptr");
+        if (numRows != arg->getNumCols())
+            throw std::runtime_error("DiagVector: arg matrix should be square");
+        if (numRows == 0)
+            throw std::runtime_error("DiagVector: arg matrix cannot be empty");
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r)
+            res->append(r, 0, arg->get(r, r));
+        res->finishAppend();
     }
 };
