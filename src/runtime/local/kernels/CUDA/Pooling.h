@@ -35,4 +35,16 @@ namespace CUDA::NN::Pooling {
                 size_t pool_h, size_t pool_w, size_t stride_h, size_t stride_w,
                 size_t pad_h, size_t pad_w, DCTX(dctx));
     };
+
+    template<template<typename> class OP, typename DTRes, typename DTArg>
+    struct Backward {
+        static void apply(DTRes *&res, 
+                        const DTArg *input, const DTArg *output,const DTArg *dOut,
+                        const size_t batch_size, const size_t num_channels, 
+                        const size_t img_h, const size_t img_w,       
+                        const size_t pool_h, const size_t pool_w,
+                        const size_t stride_h, const size_t stride_w,
+                        const size_t pad_h, const size_t pad_w,  
+                        DCTX(dctx));
+    };
 }
