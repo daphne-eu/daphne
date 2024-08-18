@@ -31,6 +31,8 @@
 #include <set>
 #include <unordered_map>
 
+#include <iostream>
+
 using namespace mlir;
 
 namespace {
@@ -82,14 +84,14 @@ namespace {
 
 
     std::string uniqueSpecializedFuncName(const std::string &functionName, TypeRange inputTypes, ValueRange inputValues) {
-        static unsigned functionUniqueId = 0;
+        //static unsigned functionUniqueId = 0;
         
         // Creating an empty string to store the new unique specialized function name
         std::string name = functionName;
 
         // Iterating over types and values to use them
         for (auto it : llvm::enumerate(llvm::zip(inputTypes, inputValues))) {
-            auto index = it.index();
+            //auto index = it.index();
             auto type = std::get<0>(it.value());
             auto value = std::get<1>(it.value());
 
@@ -224,6 +226,8 @@ namespace {
         std::set<func::FuncOp> called;
         std::set<func::FuncOp> templateFunctions;
 
+        std::map<std::string, std::set<std::string>> callGraph;
+
         const DaphneUserConfig& userConfig;
         std::shared_ptr<spdlog::logger> logger;
 
@@ -233,6 +237,68 @@ namespace {
         }
 
     private:
+        /**
+         * @brief Print the callgraph  -> Debugging Purposes!!     
+         */
+        void printCallGraph() {
+            for(const auto &entry : callGraph) {
+                std::string funcName = entry.first;
+                std::cout << funcName << " calls: ";
+                if(entry.second.empty()) {
+                    std::cout << "No functions";
+                } else {
+                    for (const std::string &calledFuncName : entry.second) {
+                        std::cout << calledFuncName << " ";
+                    }
+                }
+                std::cout << std::endl;
+            }
+            std::cout<<std::endl<<std::endl;
+        }
+
+        /**
+         * @brief Update the callGraph map
+         * @param func The specialized function
+         * @return Nothing (could return error code?) 
+         */
+        void updateCallGraph(func::FuncOp func) {
+            // Get the module containing this function
+            auto module = func->getParentOfType<ModuleOp>();
+
+            std::string funcName = func.getName().str();
+            //std::cout << "FUNCNAME DEBUG: " << funcName << std::endl;
+            // Initialize the entry for this function in the call graph if not already present
+            if (callGraph.find(funcName) == callGraph.end()) {
+                callGraph[funcName] = {};
+            } else {
+                // If it was initialized already, return immediately. Specialized functions always call the same!
+                std::cout << "RETURNING CAUSE " << funcName << " IS ALREADY INITIALIZED!" << std::endl;
+                return;
+            }
+            func.walk([&](Operation *op) {
+                // Check if the operation is a custom function call (e.g., "daphne.generic_call")
+                if (op->getName().getStringRef() == "daphne.generic_call") {
+                    if (auto calleeAttr = op->getAttrOfType<StringAttr>("callee")) {
+                        std::string calleeName = calleeAttr.getValue().str();
+                        
+                        // Extract the input types (operand types)
+                        TypeRange inputTypes = op->getOperandTypes();
+
+                        // Extract the input values (operands)
+                        ValueRange inputValues = op->getOperands();
+
+                        // Use the operation's name as the base function name
+
+                        // Generate the specialized function name
+                        std::string specializedName = uniqueSpecializedFuncName(calleeName , inputTypes, inputValues);
+
+                        // Print the specialized function name
+                        callGraph[funcName].insert(specializedName);
+                    }
+                }
+            });
+        }
+
         /**
          * @brief Create a specialized version of the template function.
          * @param templateFunction The template function.
@@ -281,7 +347,9 @@ namespace {
             // TODO We could reuse it for other calls with the same constant (it's just more book-keeping effort).
             if(!insertedConst)
                 specializedVersions.insert({templateFunction.getSymName().str(), specializedFunc});
-
+            
+            updateCallGraph(inferTypesInFunction(specializedFunc));
+            //printCallGraph();
             return inferTypesInFunction(specializedFunc);
         }
 
