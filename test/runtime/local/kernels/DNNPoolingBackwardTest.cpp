@@ -39,6 +39,8 @@
 
 #include <vector>
 
+#include <iostream>
+
 template<typename DT>
 DT* genInput() {
     return genGivenVals<DT>(2, {
@@ -63,7 +65,12 @@ DT* genDOut() {
 template<class DT>
 void check_max(const DT* in, const DT* dOut, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
+    DT* output = nullptr;
+    size_t res_h, res_w;
 #ifdef USE_CUDA
+    CUDA::NN::Pooling::Forward<::NN::Pooling::MAX, DT, DT>::apply(output, res_h, res_w, in, 2, 3, 3, 3, 2, 2, 2, 2, 1, 1, dctx);
+    CUDA::NN::Pooling::Backward<::NN::Pooling::MAX, DT, DT>::apply(res, in, output, dOut, 2, 3, 3, 3, 2, 2, 2, 2, 1, 1, dctx);
+
 #else
     MaxPoolBackward<DT, DT>::apply(res, in, dOut, 2, 3, 3, 3, 2, 2, 2, 2, 1, 1, dctx);
 #endif
@@ -73,7 +80,12 @@ void check_max(const DT* in, const DT* dOut, const DT* exp, DaphneContext* dctx)
 template<class DT>
 void check_avg(const DT* in, const DT* dOut, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
+    DT* output = nullptr;
+    size_t res_h, res_w;
 #ifdef USE_CUDA
+    CUDA::NN::Pooling::Forward<::NN::Pooling::AVG, DT, DT>::apply(output, res_h, res_w, in, 2, 3, 3, 3, 2, 2, 2, 2, 1, 1, dctx);
+    CUDA::NN::Pooling::Backward<::NN::Pooling::AVG, DT, DT>::apply(res, in, output, dOut, 2, 3, 3, 3, 2, 2, 2, 2, 1, 1, dctx);
+
 #else
     AvgPoolBackward<DT, DT>::apply(res, in, dOut, 2, 3, 3, 3, 2, 2, 2, 2, 1, 1, dctx);
 #endif
@@ -88,7 +100,7 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_bwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
     auto inputs = genInput<DT>();
     auto dOut = genDOut<DT>();
 
-    auto out = genGivenVals<DT>(2, {0.25, 0.50, 0.50, 0.75, 1.00, 1.00, 0.75, 1.00, 1.00, 
+    auto dX = genGivenVals<DT>(2, {0.25, 0.50, 0.50, 0.75, 1.00, 1.00, 0.75, 1.00, 1.00, 
                                     1.25, 1.50, 1.50, 1.75, 2.00, 2.00, 1.75, 2.00, 2.00,
                                     2.25, 2.50, 2.50, 2.75, 3.00, 3.00, 2.75, 3.00, 3.00,
 
@@ -97,11 +109,11 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_bwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
                                     2.25, 2.50, 2.50, 2.75, 3.00, 3.00, 2.75, 3.00, 3.00
     });
 
-    check_avg(inputs, dOut, out, dctx_avg.get());
+    check_avg(inputs, dOut, dX, dctx_avg.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(dOut);
-    DataObjectFactory::destroy(out);
+    DataObjectFactory::destroy(dX);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("pool_bwd_max", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
@@ -120,7 +132,7 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_bwd_max", TAG_DNN, (DenseMatrix), (float, doubl
     auto inputs = genInput<DT>();
     auto dOut = genDOut<DT>();
 
-    auto out = genGivenVals<DT>(2, {1, 0, 2, 0, 0, 0, 3, 0, 4,
+    auto dX = genGivenVals<DT>(2, {1, 0, 2, 0, 0, 0, 3, 0, 4,
                                     5, 0, 6, 0, 0, 0, 7, 0, 8,
                                     9, 0, 10, 0, 0, 0, 11, 0, 12,
                                     
@@ -129,9 +141,9 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_bwd_max", TAG_DNN, (DenseMatrix), (float, doubl
                                     9, 0, 10, 0, 0, 0, 11, 0, 12
     });
 
-    check_max(inputs, dOut, out, dctx_max.get());
+    check_max(inputs, dOut, dX, dctx_max.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(dOut);
-    DataObjectFactory::destroy(out);
+    DataObjectFactory::destroy(dX);
 }
