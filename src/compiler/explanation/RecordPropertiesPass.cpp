@@ -14,6 +14,12 @@ uint32_t generateUniqueID() {
 
 class RecordPropertiesPass : public PassWrapper<RecordPropertiesPass, OperationPass<func::FuncOp>> {
 public:
+    
+    RecordPropertiesPass() = default;
+    
+    StringRef getArgument() const final { return "record-properties"; }
+    StringRef getDescription() const final { return "Record properties of different operations"; }
+    
     void runOnOperation() override {
         func::FuncOp func = getOperation();
         OpBuilder builder(func.getContext());
