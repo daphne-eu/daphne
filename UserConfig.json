@@ -28,7 +28,9 @@
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
     "libdir": "{exedir}/../lib",
-    "daphnedsl_import_paths": {},
+    "daphnedsl_import_paths": {
+        "default_dirs": ["scripts/algorithms", "scripts"]
+    },
     "force_cuda": false,
     "logging": [
         { "log-level-limit": "ERROR" },

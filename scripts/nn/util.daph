@@ -1,0 +1,222 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications Copyright 2024 The DAPHNE Consortium
+#
+#-------------------------------------------------------------
+
+# This script has been manually translated from Apache SystemDS.
+
+#channel_sums = function(matrix[double] X, int C, int Hin, int Win)
+#    return (matrix[double] out) {
+def channel_sums(X:matrix, C, Hin, Win) -> matrix {
+  /*
+   * Computes a channel-wise summation over a 4D input.
+   *
+   * Inputs:
+   *  - X: Inputs, of shape (N, C*Hin*Win).
+   *  - C: Number of input channels (dimensionality of input depth).
+   *  - Hin: Input height.
+   *  - Win: Input width.
+   *
+   * Outputs:
+   *  - out: Outputs, of shape (C, 1).
+   */
+  # Here we sum each column, reshape to (C, Hin*Win), and sum each row to result in the summation
+  # for each channel.
+
+  tmp = sum(X, 1);
+  tmp1 = reshape(tmp, C, Hin*Win);
+  out = sum(tmp1,0);
+  return out;
+}
+
+
+#im2col = function(matrix[double] img, int Hin, int Win, int Hf, int Wf, int strideh, int stridew)
+#    return (matrix[double] img_cols) {
+def im2col(img:matrix, Hin, Win, Hf, Wf, strideh, stridew) -> matrix<f64> {
+  /*
+   * Rearrange local image regions (patches) into columns.
+   *
+   * Assumes image has already been padded as necessary.
+   *
+   * Inputs:
+   *  - img: Input image, of shape (C, Hin*Win), where C is the number
+   *      of input channels (depth).
+   *  - Hin: Input height, including padding.
+   *  - Win: Input width, including padding.
+   *  - Hf: Filter height.
+   *  - Wf: Filter width.
+   *  - strideh: Stride over height.
+   *  - stridew: Stride over width.
+   *
+   * Outputs:
+   *  - img_cols: Local spatial regions (patches) of the image stretched
+   *      out into columns, of shape (C*Hf*Wf, Hout*Wout).
+   */
+  C = nrow(img);
+  Hout = floor(Hin - Hf) / strideh + 1;
+  Wout = floor(Win - Wf) / stridew + 1;
+
+  # Note: We start with `img_cols` transposed to allow for row-major
+  # left-indexing inside the loop, which is more performant.
+  img_cols = fill(0.0, Hout * Wout, C * Hf * Wf);
+
+  for (hout in 0:(Hout - 1)) {  # all output rows
+    hin_ = hout * strideh;
+    for (wout in 0:(Wout - 1) ) {  # all output columns
+      win_ = wout * stridew;
+      # Extract a local patch of the input image corresponding spatially to the filter sizes.
+      img_patch = fill(0.0, C, Hf * Wf);
+      for (c in 0:C - 1) {  # all channels
+        img_slice = reshape(img[c,], Hin, Win);
+        #print(img_slice);
+        tmpimg = img_slice[hin_:(hin_ + Hf), win_:win_ + Wf];
+        #print(tmpimg);
+        img_patch[c,] = reshape(tmpimg, 1, Hf * Wf);
+      }
+      #img_cols[(hout - 1) * Wout + wout,] = t(reshape(img_patch, C * Hf * Wf, 1));  # reshape
+      img_cols[(hout) * Wout + wout,] = t(reshape(img_patch, C * Hf * Wf, 1));  # reshape
+    }
+  }
+  img_cols = t(img_cols);
+  return img_cols;
+}
+
+#col2im = function(matrix[double] img_cols, int C, int Hin, int Win, int Hf, int Wf,
+#                  int strideh, int stridew, string reduction)
+#    return (matrix[double] img) {
+def col2im(img_cols:matrix, C, Hin, Win, Hf, Wf, strideh, stridew, reduction) -> matrix<f64> {
+  /*
+   * Create an image from columns of local image regions (patches).
+   *
+   * The reduction strategy determines how to deal with overlapping
+   * patches.  If it is set to "add", any overlapping patches will be
+   * added together when creating the image.  This is useful when
+   * computing gradients on the original image given gradients on the
+   * patches.  Otherwise, if "none" is provided, any overlapping
+   * patches will just override previous ones when creating the image.
+   * This is useful when recreating an image from the output of
+   * `im2col`.
+   *
+   * Assumes original image was already padded as necessary.
+   *
+   * Inputs:
+   *  - img_cols: Local spatial regions (patches) of the image stretched
+   *      out into columns, of shape (C*Hf*Wf, Hout*Wout).
+   *  - C: Number of input channels (dimensionality of input depth).
+   *  - Hin: Input height, including padding.
+   *  - Win: Input width, including padding.
+   *  - Hf: Filter height.
+   *  - Wf: Filter width.
+   *  - strideh: Stride over height.
+   *  - stridew: Stride over width.
+   *  - reduction: The reduction strategy to use for overlapping
+   *      patches.  Valid options are "add" and "none".
+   *
+   * Outputs:
+   *  - img: Input image, of shape (C, Hin*Win).
+   */
+  Hout = floor((Hin - Hf) / strideh + 1);
+  Wout = floor((Win - Wf) / stridew + 1);
+
+  img = fill(0.0, C, Hin * Win);  # zeros
+
+  for (hout in 0:Hout - 1) {  # all output rows
+    hin_ = hout * strideh;
+    for (wout in 0:Wout - 1) {  # all output columns
+      win_ = wout * stridew;
+      # Extract a local patch of the input image corresponding spatially to the filter sizes.
+      img_patch = reshape(img_cols[,hout * Wout + wout], C, Hf * Wf);  # zeros
+      for (c in 0:C - 1) {  # all channels
+        img_patch_slice = reshape(img_patch[c,], Hf, Wf);  # reshape
+        if (reduction == 0 /*"add"*/) {
+          img_slice = fill(0.0, Hin, Win);
+          img_slice[hin_:(hin_ + Hf), win_:(win_ + Wf)] = img_patch_slice;
+          img[c,] = img[c,] + reshape(img_slice, 1, Hin * Win);
+        } else {
+          img_slice = reshape(img[c,], Hin, Win);
+          img_slice[hin_:(hin_ + Hf), win_:(win_ + Wf)] = img_patch_slice;
+          img[c,] = reshape(img_slice, 1, Hin * Win);
+        }
+      }
+    }
+  }
+  return img;
+}
+
+#pad_image = function(matrix[double] img, int Hin, int Win, int padh, int padw, double pad_value)
+#    return (matrix[double] img_padded) {
+def pad_image(img:matrix, Hin, Win, padh, padw, pad_value:f64) -> matrix {
+  /*
+   * Pads an image along the height and width dimensions with zeros.
+   *
+   * Inputs:
+   *  - img: Input image, of shape (C, Hin*Win), where C is the number
+   *      of input channels (depth).
+   *  - Hin: Input height.
+   *  - Win: Input width.
+   *  - padh: Padding for top and bottom sides.
+   *  - padw: Padding for left and right sides.
+   *  - pad_value: Value to use for the padding.
+   *      A typical value is 0.
+   *
+   * Outputs:
+   *  - img_padded: The input image padded along the height and width
+   *      dimensions, of shape (C, (Hin + 2 * padh) * (Win + 2 * padw)).
+   */
+  C = nrow(img);
+  img_padded = fill(0.0, C, (Hin + 2 * padh) * (Win + 2 * padw));  # zeros
+  for (c in 0:C - 1) {
+c1 = c - 1;
+    img_slice = reshape(img[c,], Hin, Win);  # depth slice C reshaped
+    img_padded_slice = fill(pad_value, Hin + 2 * padh, Win + 2 * padw);
+    img_padded_slice[padh + 0:(padh + Hin), padw + 0:(padw + Win)] = img_slice;
+    img_padded[c,] = reshape(img_padded_slice, 1, (Hin + 2 * padh) * (Win + 2 * padw));  # reshape
+  }
+  return img_padded;
+}
+
+#unpad_image = function(matrix[double] img_padded, int Hin, int Win, int padh, int padw)
+#    return (matrix[double] img) {
+def unpad_image(img_padded:matrix<f64>, Hin, Win, padh, padw) -> matrix {
+  /*
+   * Unpads an image along the height and width dimensions.
+   *
+   * Inputs:
+   *  - img_padded: The input image padded along the height and width
+   *      dimensions, of shape (C, (Hin+2*padh)*(Win+2*padw)).
+   *  - Hin: Input height of unpadded image.
+   *  - Win: Input width of unpadded image.
+   *  - padh: Padding for top and bottom sides.
+   *  - padw: Padding for left and right sides.
+   *
+   * Outputs:
+   *  - img: Input image, of shape (C, Hin*Win), where C is the number
+   *      of input channels (depth).
+   */
+  C = nrow(img_padded);
+  img = fill(0.0, C, Hin * Win);
+  for (c in 0:C - 1) {
+    img_padded_slice = reshape(img_padded[c,], (Hin + 2 * padh), (Win + 2 * padw));
+    img_slice = img_padded_slice[padh + 0:(padh + Hin), padw + 0:(padw + Win)];
+    img[c,] = reshape(img_slice, 1, Hin * Win);
+  }
+  return img;
+}
