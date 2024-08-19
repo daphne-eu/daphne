@@ -133,7 +133,7 @@ std::shared_ptr<std::byte> CUDAContext::malloc(size_t size, bool zero, size_t& i
     std::byte* dev_ptr;
     CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&dev_ptr), size));
     allocations.emplace(id, std::shared_ptr<std::byte>(dev_ptr, CudaDeleter<std::byte>()));
-
+//    allocations.emplace(id, std::shared_ptr<std::byte>(dev_ptr));
     if(zero)
         CHECK_CUDART(cudaMemset(dev_ptr, 0, size));
     return allocations.at(id);
@@ -141,8 +141,16 @@ std::shared_ptr<std::byte> CUDAContext::malloc(size_t size, bool zero, size_t& i
 
 void CUDAContext::free(size_t id) {
     // ToDo: handle reuse
-    CHECK_CUDART(cudaFree(allocations.at(id).get()));
-    allocations.erase(id);
+    auto to_be_freed = allocations.at(id).get();
+
+    if(to_be_freed) {
+        CHECK_CUDART(cudaDeviceSynchronize());
+
+        CHECK_CUDART(cudaFree(to_be_freed));
+        allocations.erase(id);
+    }
+    else
+        throw std::runtime_error("problem running cudaFree() on null");
 }
 
 int CUDAContext::getMaxNumThreads() const {
