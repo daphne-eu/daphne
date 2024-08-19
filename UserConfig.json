@@ -6,14 +6,14 @@
     "matmul_unroll_factor": 1,
     "matmul_unroll_jam_factor": 4,
     "matmul_num_vec_registers": 16,
-    "use_cuda": false,
+    "use_cuda": true,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
     "cuda_fuse_any": false,
     "use_mlir_codegen": false,
     "vectorized_single_queue": false,
     "debug_llvm": false,
-    "explain_kernels": false,
+    "explain_kernels": true,
     "explain_llvm": false,
     "explain_parsing": false,
     "explain_parsing_simplified": false,
@@ -31,22 +31,29 @@
     "daphnedsl_import_paths": {
         "default_dirs": ["scripts/algorithms", "scripts"]
     },
-    "force_cuda": false,
+    "force_cuda": true,
     "logging": [
-        { "log-level-limit": "ERROR" },
+        { "log-level-limit": "INFO" },
         {
             "comment": "This configuration controls logging in the GPU compiler pass only",
             "name": "compiler::cuda",
-            "level": "DEBUG",
+            "level": "INFO",
             "filename": "compiler-trace-cuda.txt",
             "format": "%^[%L %n]:%$ %v"
         },
         {
             "comment": "general runtime CUDA debug log",
             "name": "runtime::cuda",
-            "level": "INFO",
+            "level": "DEBUG",
             "filename": "compiler-debug-cuda.txt",
             "format": "%^[%L %n]:%$ %v"
+        },
+        {
+            "comment": "DAPHNE runtime logs",
+            "name": "runtime",
+            "level": "DEBUG",
+            "filename": "",
+            "format": "%^[%n %L]:%$ %v"
         },
         {
             "comment": "DAPHNE compiler logs",
@@ -58,14 +65,14 @@
         {
             "comment": "DAPHNE default",
             "name": "default",
-            "level": "INFO",
+            "level": "DEBUG",
             "filename": "",
             "format": "%^[%n %L]:%$ %v"
         },
         {
             "comment": "DAPHNE default",
             "name": "parser",
-            "level": "INFO",
+            "level": "DEBUG",
             "filename": "",
             "format": "%^[%n %L]:%$ %v"
         }
