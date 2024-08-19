@@ -1,0 +1,48 @@
+
+import "nn/layers/batch_norm2d_dsl.daph" as "bn2d";
+import "nn/layers/batch_norm2d_kernel.daph" as "bn2k";
+
+msec_factor = as.f32(0.000001);
+
+#input=\"/daphne/data/mnist20_features.csv\"
+#X = readMatrix($input);
+
+# num images
+N = 1;
+Himg = 8;
+Wimg = 8;
+#channels
+C = 1;
+# seed for random input generation
+seed = 42;
+mu = 0.1;
+#eps = 1e-5;
+eps = 0.00001;
+print("eps: ",0);print(eps);
+train = true;
+
+gamma, beta, ema_mean, ema_var = bn2d.init(C);
+print(gamma);
+print(beta);
+print(ema_mean);
+print(ema_var);
+
+X = rand(N, C * Himg * Wimg, 0.0, 256.0, 1.0, seed);
+batch_size = 1;
+X_batch = X[0:batch_size,];
+print("X:");
+print(X_batch);
+#img1 = reshape(X[0,], Himg, Wimg);
+#img = (img1 != 0);
+#print(img1);
+
+outBN, upd_ema_mean, upd_ema_var, cache_ema_mean, cache_ema_var =
+        bn2d.forward(X_batch, gamma, beta, C, Himg, Wimg, train, ema_mean, ema_var, mu, eps);
+
+print("outBNd: ",0);
+print(outBN);
+
+outBNk, upd_ema_meank, upd_ema_vark, cache_ema_meank, cache_ema_vark =
+        bn2k.forward(X_batch, gamma, beta, C, Himg, Wimg, train, ema_mean, ema_var, mu, eps);
+print("outBNk: ",0);
+print(outBNk);
