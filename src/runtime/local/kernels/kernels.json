@@ -3979,7 +3979,7 @@
     {
         "kernelTemplate": {
             "header": "BatchNorm.h",
-            "opName": "BatchNorm::Forward",
+            "opName": "NN::BatchNorm::Forward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -4010,15 +4010,35 @@
                     "name": "beta"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "const int64_t",
+                    "name": "num_channels"
+                },
+                {
+                    "type": "const int64_t",
+                    "name": "img_h"
+                },
+                {
+                    "type": "const int64_t",
+                    "name": "img_w"
+                },
+                {
+                    "type": "const bool",
+                    "name": "train"
+                },
+                {
+                    "type": "DTArg *",
                     "name": "ema_mean"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "DTArg *",
                     "name": "ema_var"
                 },
                 {
-                    "type": "typename DTArg::VT",
+                    "type": "double",
+                    "name": "mu"
+                },
+                {
+                    "type": "double",
                     "name": "eps"
                 }
             ]

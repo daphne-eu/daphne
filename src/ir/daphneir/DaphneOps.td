@@ -827,13 +827,14 @@ def Daphne_AffineForwardOp : Daphne_Op<"NN_Affine_Forward", [
 // Batch Normalization
 // ----------------------------------------------------------------------------
 
-def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"BatchNorm_Forward", [
+def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"NN_BatchNorm_Forward", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
     CUDASupport ]> {
     let arguments = (ins
             MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
-            MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps);
+            SI64:$inputNumChannels, SI64:$inputHeight, SI64:$inputWidth, BoolScalar:$train,
+            MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$mu, FloatScalar:$eps);
     let results = (outs MatrixOf<[FloatScalar]>:$output);
 }
 
