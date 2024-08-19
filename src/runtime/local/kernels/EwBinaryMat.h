@@ -131,12 +131,49 @@ struct EwBinaryMat<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         
         switch(opCode) {
             case BinaryOpCode::ADD: { // Add operation
-                std::cout << "DenseMatrix <- CSRMatrix, DenseMatrix Add Op Test" << std::endl;
                 for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
                     auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
                     for(size_t colIdx = 0; colIdx < numCols; colIdx++) {
                         auto lhsVal = lhs->get(rowIdx, colIdx);
                         auto rhsVal = rhs->get(rhsRow, colIdx);
+                        valuesRes[rowIdx * numCols + colIdx] = func(lhsVal, rhsVal, ctx);
+                    }
+                }
+                break;
+            }
+            default:
+                throw std::runtime_error("EwBinaryMat(Dense) - unsupported BinaryOpCode");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- DenseMatrix, CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+
+        if((numRows != rhs->getNumRows() && rhs->getNumRows() != 1) || (numCols != rhs->getNumCols() && rhs->getNumCols() != 1))
+            throw std::runtime_error("EwBinaryMat(Dense) - lhs and rhs must have the same dimensions (or broadcast)");
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+        VT * valuesRes = res->getValues();
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+        switch(opCode) {
+            case BinaryOpCode::ADD: { // Add operation
+                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                    auto lhsRow = (lhs->getNumRows() == 1 ? 0 : rowIdx);
+                    for(size_t colIdx = 0; colIdx < numCols; colIdx++) {
+                        auto lhsVal = lhs->get(lhsRow, colIdx);
+                        auto rhsVal = rhs->get(rowIdx, colIdx);
                         valuesRes[rowIdx * numCols + colIdx] = func(lhsVal, rhsVal, ctx);
                     }
                 }
