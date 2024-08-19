@@ -569,6 +569,8 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
 // For families of operations.
 
 // Adapted from "mlir/Dialect/CommonFolders.h"
+mlir::Attribute performCast(mlir::Attribute attr, mlir::Type targetType, mlir::Location loc);
+
 template<
     class ArgAttrElementT,
     class ResAttrElementT = ArgAttrElementT,
@@ -595,6 +597,21 @@ mlir::Attribute constFoldBinaryOp(mlir::Location loc, mlir::Type resultType, llv
             std::is_same<ResAttrElementT, mlir::IntegerAttr>::value ||
             std::is_same<ResAttrElementT, mlir::FloatAttr>::value
         ) {
+            mlir::Type l = lhs.getType();
+            mlir::Type r = rhs.getType();
+            if ((l.dyn_cast<mlir::IntegerType>() || l.dyn_cast<mlir::FloatType>()) &&
+            (r.dyn_cast<mlir::IntegerType>() || r.dyn_cast<mlir::FloatType>())) {
+                auto lhsBitWidth = lhs.getType().getIntOrFloatBitWidth();
+                auto rhsBitWidth = rhs.getType().getIntOrFloatBitWidth();
+
+                if (lhsBitWidth < rhsBitWidth) {
+                    mlir::Attribute promotedLhs = performCast(lhs, rhs.getType(), loc);
+                    lhs = promotedLhs.cast<ArgAttrElementT>();
+                } else if (rhsBitWidth < lhsBitWidth) {
+                    mlir::Attribute promotedRhs = performCast(rhs, lhs.getType(), loc);
+                    rhs = promotedRhs.cast<ArgAttrElementT>();
+                }
+        }
             return ResAttrElementT::get(resultType, calculate(lhs.getValue(), rhs.getValue()));
         }
         else if constexpr(std::is_same<ResAttrElementT, mlir::BoolAttr>::value) {
@@ -638,66 +655,83 @@ mlir::Attribute constFoldUnaryOp(mlir::Location loc, mlir::Type resultType, llvm
 // ****************************************************************************
 // Fold implementations
 // ****************************************************************************
+mlir::Attribute performCast(mlir::Attribute attr, mlir::Type targetType, mlir::Location loc) {
+    if (auto intAttr = attr.dyn_cast<mlir::IntegerAttr>()) {
+        auto apInt = intAttr.getValue();
+
+        if (auto outTy = targetType.dyn_cast<mlir::IntegerType>()) {
+            // Extend or truncate the integer value based on the target type
+            if (outTy.isUnsignedInteger()) {
+                apInt = apInt.zextOrTrunc(outTy.getWidth());
+            } else if (outTy.isSignedInteger()) {
+                apInt = (intAttr.getType().isSignedInteger())
+                        ? apInt.sextOrTrunc(outTy.getWidth())
+                        : apInt.zextOrTrunc(outTy.getWidth());
+            }
+            return mlir::IntegerAttr::getChecked(loc, outTy, apInt);
+        }
+
+        if (auto outTy = targetType.dyn_cast<mlir::IndexType>()) {
+            return mlir::IntegerAttr::getChecked(loc, outTy, apInt);
+        }
+
+        if (targetType.isF64()) {
+            if (intAttr.getType().isSignedInteger()) {
+                return mlir::FloatAttr::getChecked(loc, targetType,
+                    llvm::APIntOps::RoundSignedAPIntToDouble(apInt));
+            }
+            if (intAttr.getType().isUnsignedInteger() || intAttr.getType().isIndex()) {
+                return mlir::FloatAttr::getChecked(loc, targetType,
+                    llvm::APIntOps::RoundAPIntToDouble(apInt));
+            }
+        }
+
+        if (targetType.isF32()) {
+            if (intAttr.getType().isSignedInteger()) {
+                return mlir::FloatAttr::getChecked(loc, targetType,
+                    llvm::APIntOps::RoundSignedAPIntToFloat(apInt));
+            }
+            if (intAttr.getType().isUnsignedInteger()) {
+                return mlir::FloatAttr::get(targetType,
+                    llvm::APIntOps::RoundAPIntToFloat(apInt));
+            }
+        }
+    }
+    else if (auto floatAttr = attr.dyn_cast<mlir::FloatAttr>()) {
+        auto val = floatAttr.getValueAsDouble();
+
+        if (targetType.isF64()) {
+            return mlir::FloatAttr::getChecked(loc, targetType, val);
+        }
+        if (targetType.isF32()) {
+            return mlir::FloatAttr::getChecked(loc, targetType, static_cast<float>(val));
+        }
+        if (targetType.isIntOrIndex()) {
+            auto num = static_cast<int64_t>(val);
+            return mlir::IntegerAttr::getChecked(loc, targetType, num);
+        }
+    }
+
+    // If casting is not possible, return the original attribute
+    return {};
+}
 
 mlir::OpFoldResult mlir::daphne::CastOp::fold(FoldAdaptor adaptor) {
     ArrayRef<Attribute> operands = adaptor.getOperands();
+
     if (isTrivialCast()) {
         if (operands[0])
             return {operands[0]};
         else
             return {getArg()};
     }
-    if(auto in = operands[0].dyn_cast_or_null<IntegerAttr>()) {
-        auto apInt = in.getValue();
-        if(auto outTy = getType().dyn_cast<IntegerType>()) {
-            // TODO: throw exception if bits truncated?
-            if(outTy.isUnsignedInteger()) {
-                apInt = apInt.zextOrTrunc(outTy.getWidth());
-            }
-            else if(outTy.isSignedInteger()) {
-                apInt = (in.getType().isSignedInteger())
-                        ? apInt.sextOrTrunc(outTy.getWidth())
-                        : apInt.zextOrTrunc(outTy.getWidth());
-            }
-            return IntegerAttr::getChecked(getLoc(), outTy, apInt);
-        }
-        if(auto outTy = getType().dyn_cast<IndexType>()) {
-            return IntegerAttr::getChecked(getLoc(), outTy, apInt);
-        }
-        if(getType().isF64()) {
-            if(in.getType().isSignedInteger()) {
-                return FloatAttr::getChecked(getLoc(),
-                    getType(),
-                    llvm::APIntOps::RoundSignedAPIntToDouble(in.getValue()));
-            }
-            if(in.getType().isUnsignedInteger() || in.getType().isIndex()) {
-                return FloatAttr::getChecked(getLoc(), getType(), llvm::APIntOps::RoundAPIntToDouble(in.getValue()));
-            }
-        }
-        if(getType().isF32()) {
-            if(in.getType().isSignedInteger()) {
-                return FloatAttr::getChecked(getLoc(),
-                    getType(),
-                    llvm::APIntOps::RoundSignedAPIntToFloat(in.getValue()));
-            }
-            if(in.getType().isUnsignedInteger()) {
-                return FloatAttr::get(getType(), llvm::APIntOps::RoundAPIntToFloat(in.getValue()));
-            }
+
+    if (operands[0]) {
+        if (auto castedAttr = performCast(operands[0], getType(), getLoc())) {
+            return castedAttr;
         }
     }
-    if(auto in = operands[0].dyn_cast_or_null<FloatAttr>()) {
-        auto val = in.getValueAsDouble();
-        if(getType().isF64()) {
-            return FloatAttr::getChecked(getLoc(), getType(), val);
-        }
-        if(getType().isF32()) {
-            return FloatAttr::getChecked(getLoc(), getType(), static_cast<float>(val));
-        }
-        if(getType().isIntOrIndex()) {
-            auto num = static_cast<int64_t>(val);
-            return IntegerAttr::getChecked(getLoc(), getType(), num);
-        }
-    }
+
     return {};
 }
 

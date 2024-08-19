@@ -40,3 +40,7 @@ TEST_CASE("additive_inverse_canonicalization", TAG_CODEGEN TAG_OPERATIONS) {
     compareDaphneParsingSimplifiedToRef(dirPath + testName + ".txt", dirPath + testName + ".daphne");
 }
 
+TEST_CASE("binary_operator_casts_constant_folding", TAG_CODEGEN TAG_OPERATIONS) {
+    const std::string testName = "binary_op_casts_constant_folding";
+    compareDaphneParsingSimplifiedToRef(dirPath + testName + ".txt", dirPath + testName + ".daphne");
+}
