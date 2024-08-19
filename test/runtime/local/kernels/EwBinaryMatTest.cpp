@@ -24,8 +24,6 @@
 
 #include <catch.hpp>
 
-#include <vector>
-
 #include <cstdint>
 
 #define TEST_NAME(opName) "EwBinaryMat (" opName ")"
@@ -171,6 +169,52 @@ TEMPLATE_TEST_CASE(TEST_NAME("mul_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
     checkSparseDenseEwBinaryMat(BinaryOpCode::MUL, m0, m3, m0);
 
     DataObjectFactory::destroy(m0, m1, m2, m3, exp0, exp1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("add_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using SparseDT = CSRMatrix<VT>;
+    using DenseDT = DenseMatrix<VT>;
+
+    auto m0 = genGivenVals<SparseDT>(4, {
+        0, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto m1 = genGivenVals<DenseDT>(4, {
+        1, 2, 0, 0, 1, 3,
+        0, 1, 0, 2, 0, 3,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto m2 = genGivenVals<DenseDT>(4, {
+        3, 0, 3, 3, 3, 3,
+        1, 2, 3, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        1, 2, 3, 1, 3, 2,
+    });
+
+    auto expAdd0 = genGivenVals<SparseDT>(4, {
+        1, 3, 1, 0, 1, 3,
+        0, 1, 0, 2, 0, 3,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto expAdd1 = genGivenVals<SparseDT>(4, {
+        3, 1, 4, 3, 3, 3,
+        1, 2, 3, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        1, 2, 3, 1, 3, 2,
+    });
+
+    checkSparseDenseEwBinaryMat(BinaryOpCode::ADD, m0, m1, expAdd0);
+    checkSparseDenseEwBinaryMat(BinaryOpCode::ADD, m0, m2, expAdd1);
+
+    DataObjectFactory::destroy(m0, m1, m2, expAdd0, expAdd1);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {

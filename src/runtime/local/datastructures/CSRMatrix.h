@@ -185,6 +185,27 @@ public:
         // colIdxs arrays.
     }
 
+    void resize(size_t newMaxNumNonZeros) {
+        // Create a new matrix with the increased size
+        size_t numRows = this->getNumRows();
+        size_t numCols = this->getNumCols();
+        CSRMatrix<ValueType>* newRes = DataObjectFactory::create<CSRMatrix<ValueType>>(numRows, numCols, newMaxNumNonZeros, false);
+
+        // Copy the existing data to the new matrix
+        std::memcpy(newRes->getValues(), this->getValues(), this->getNumNonZeros() * sizeof(ValueType));
+        std::memcpy(newRes->getColIdxs(), this->getColIdxs(), this->getNumNonZeros() * sizeof(size_t));
+        std::memcpy(newRes->getRowOffsets(), this->getRowOffsets(), (numRows + 1) * sizeof(size_t));
+
+        // Update the internal pointers of the current object to the new buffers
+        std::swap(this->values, newRes->values);
+        std::swap(this->colIdxs, newRes->colIdxs);
+        std::swap(this->rowOffsets, newRes->rowOffsets);
+        this->maxNumNonZeros = newMaxNumNonZeros;
+
+        // Clean up the temporary newRes object
+        DataObjectFactory::destroy(newRes);
+    }
+
     ValueType * getValues() {
         return values.get();
     }

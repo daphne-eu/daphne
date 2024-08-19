@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <iostream>
-#include <ostream>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -133,8 +131,8 @@ struct EwBinaryMat<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         
         switch(opCode) {
             case BinaryOpCode::ADD: { // Add operation
+                std::cout << "DenseMatrix <- CSRMatrix, DenseMatrix Add Op Test" << std::endl;
                 for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-                    const size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
                     auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
                     for(size_t colIdx = 0; colIdx < numCols; colIdx++) {
                         auto lhsVal = lhs->get(rowIdx, colIdx);
@@ -310,6 +308,9 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         case BinaryOpCode::MUL: // intersect
             maxNnz = lhs->getNumNonZeros();
             break;
+        case BinaryOpCode::ADD: // handle addition
+            maxNnz = lhs->getNumNonZeros() + numRows * numCols;  // worst case: all dense matrix values could add new non-zero entries
+            break;
         default:
             throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
         }
@@ -318,10 +319,9 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNnz, false);
 
         size_t *rowOffsetsRes = res->getRowOffsets();
+        rowOffsetsRes[0] = 0;
 
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
-
-        rowOffsetsRes[0] = 0;
 
         switch(opCode) {
             case BinaryOpCode::MUL: { // intersect non-zero cells
@@ -354,25 +354,40 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
             }
             
             case BinaryOpCode::ADD: {
-                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                VT* valuesRes = res->getValues(0);  // Pointer to the result values array
+                size_t* colIdxsRes = res->getColIdxs(0);  // Pointer to the result column indices array
+                size_t posRes = 0;  // Track position in the result matrix's values and colIdxs arrays
+                for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
                     size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
-                    if(nnzRowLhs) {
-                        const VT * valuesRowLhs = lhs->getValues(rowIdx);
-                        VT * valuesRowRes = res->getValues(rowIdx);
-                        const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
-                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
-                        auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
-                        size_t posRes = 0;
-                        for(size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
-                            auto rhsCol = (rhs->getNumCols() == 1 ? 0 : colIdxsRowLhs[posLhs]);
-                            valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rhs->get(rhsRow, rhsCol), ctx);
-                            colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                    const VT* valuesRowLhs = lhs->getValues(rowIdx);
+                    const size_t* colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+
+                    auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
+                    size_t posLhs = 0;
+
+                    for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
+                        VT lhsVal = 0;
+                        if (posLhs < nnzRowLhs && colIdxsRowLhs[posLhs] == colIdx) {
+                            lhsVal = valuesRowLhs[posLhs];
+                            posLhs++;
+                        }
+
+                        VT rhsVal = rhs->get(rhsRow, (rhs->getNumCols() == 1 ? 0 : colIdx));
+                        VT resultVal = func(lhsVal, rhsVal, ctx);
+
+                        if (resultVal != 0) {
+                            if (posRes >= res->getMaxNumNonZeros()) {
+                                res->resize(posRes + numCols);  // Resize result matrix as needed
+                                valuesRes = res->getValues(0);  // Update pointers after resizing
+                                colIdxsRes = res->getColIdxs(0);
+                                rowOffsetsRes = res->getRowOffsets();
+                            }
+                            valuesRes[posRes] = resultVal;
+                            colIdxsRes[posRes] = colIdx;
                             posRes++;
                         }
-                        rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes;
-                    } else {
-                        rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx];
                     }
+                    rowOffsetsRes[rowIdx + 1] = posRes;
                 }
                 break;
             }
