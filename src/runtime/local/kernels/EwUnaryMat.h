@@ -111,7 +111,7 @@ struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
                 if (value != VT(0)) {
                     if (posRes >= res->getMaxNumNonZeros()) {
                         // Resize the result matrix to accommodate more non-zero values
-                        resizeResultMatrix(res, posRes + nnzRowArg);
+                        res->resize(posRes + nnzRowArg);
                     }
                     res->getValues()[posRes] = value;
                     res->getColIdxs()[posRes] = colIdxsRowArg[posArg];
@@ -127,7 +127,7 @@ struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
                     if (value != VT(0)) {
                         if (posRes >= res->getMaxNumNonZeros()) {
                             // Resize the result matrix to accommodate more non-zero values
-                            resizeResultMatrix(res, posRes + 1);
+                            res->resize(posRes + 1);
                         }
                         res->getValues()[posRes] = value;
                         res->getColIdxs()[posRes] = colIdx;
@@ -139,26 +139,7 @@ struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
             rowOffsetsRes[rowIdx + 1] = posRes;
         }
     }
-
-private:
-    static void resizeResultMatrix(CSRMatrix<VT>*& res, size_t newMaxNumNonZeros) {
-        // Create a new matrix with the increased size
-        size_t numRows = res->getNumRows();
-        size_t numCols = res->getNumCols();
-        CSRMatrix<VT>* newRes = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, newMaxNumNonZeros, false);
-
-        // Copy the existing data to the new matrix
-        std::memcpy(newRes->getValues(), res->getValues(), res->getNumNonZeros() * sizeof(VT));
-        std::memcpy(newRes->getColIdxs(), res->getColIdxs(), res->getNumNonZeros() * sizeof(size_t));
-        std::memcpy(newRes->getRowOffsets(), res->getRowOffsets(), (numRows + 1) * sizeof(size_t));
-
-        // Replace the old matrix with the new one
-        DataObjectFactory::destroy(res);
-        res = newRes;
-    }
 };
-
-
 
 // ----------------------------------------------------------------------------
 // Matrix <- Matrix
