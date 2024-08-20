@@ -81,10 +81,9 @@ struct RecordProperties<CSRMatrix<VT>> {
     static void apply(const CSRMatrix<VT>* arg, uint32_t value_id, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-
         const size_t nnz = arg->getNumNonZeros();
-        const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
 
+        const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
         ctx->propertyLogger.logProperty(value_id, std::make_unique<SparsityProperty>(sparsity));
     }
 };

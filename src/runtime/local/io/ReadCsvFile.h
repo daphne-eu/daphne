@@ -144,7 +144,8 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
 
         // TODO/FIXME: file format should be inferred from file extension or specified by user
         if(sorted) {
-            readCOOSorted(res, file, numRows, numCols, static_cast<size_t>(numNonZeros), delim);
+            readDenseAsCOO(res, file, numRows, numCols, numNonZeros, delim);
+            //readCOOSorted(res, file, numRows, numCols, static_cast<size_t>(numNonZeros), delim);
         }
         else {
             // this internally sorts, so it might be worth considering just directly sorting the dense matrix
@@ -157,6 +158,44 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
     }
 
 private:
+  static void readDenseAsCOO(CSRMatrix<VT> *&res, File *file, size_t numRows,
+                                size_t numCols, size_t numNonZeros, char delim) {
+          auto *rowOffsets = res->getRowOffsets();
+          std::memset(rowOffsets, 0, (numRows + 1) * sizeof(size_t));
+
+          auto *colIdxs = res->getColIdxs();
+          auto *values = res->getValues();
+
+          size_t nnz = 0;
+          for (size_t r = 0; r < numRows; r++) {
+              if (getFileLine(file) == -1)
+                  throw std::runtime_error("ReadCsvFile::readDenseAsCOO: getFileLine failed");
+
+              size_t pos = 0;
+              for (size_t c = 0; c < numCols; c++) {
+                  VT val;
+                  convertCstr(file->line + pos, &val);
+                  if (val != VT(0)) {
+                      if (nnz >= numNonZeros)
+                          throw std::runtime_error("ReadCsvFile::readDenseAsCOO: more non-zeros found than expected");
+                      values[nnz] = val;
+                      colIdxs[nnz] = c;
+                      nnz++;
+                      rowOffsets[r + 1]++;
+                  }
+                  if (c < numCols - 1) {
+                      while (file->line[pos] != delim) pos++;
+                      pos++; // skip delimiter
+                  }
+              }
+          }
+
+          // Convert the rowOffsets to cumulative sums
+          for (size_t r = 1; r <= numRows; ++r) {
+              rowOffsets[r] += rowOffsets[r - 1];
+          }
+      }
+
     static void readCOOSorted(CSRMatrix<VT> *&res,
                               File *file,
                               size_t numRows,
@@ -233,7 +272,6 @@ private:
         }
     }
 };
-
 
 // ----------------------------------------------------------------------------
 // Frame
