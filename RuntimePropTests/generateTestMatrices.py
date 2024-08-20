@@ -64,7 +64,7 @@ def save_meta_file(matrix, filename):
 
 def generate_and_save_matrices(case):
     num_rows, num_cols = 5000, 5000
-    sparsity = 0.2
+    sparsity = 0.4
 
     if case == 1:
         matrix1 = generate_sparsity_pattern_matrix(num_rows, num_cols, sparsity)

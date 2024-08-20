@@ -4,6 +4,7 @@ from matplotlib.ticker import FuncFormatter
 
 def execute_daphne_script(script_path, additional_args=None, iterations=10):
     command = ["bin/daphne"]
+    command.append("--select-matrix-repr")
     if additional_args:
         command.extend(additional_args)
         
@@ -52,6 +53,7 @@ def perform_property_recording(script_path, additional_args=None):
     if additional_args:
         command.extend(additional_args)
     command.append("--enable_property_recording")
+    #command.append("--select-matrix-repr")
     command.append(script_path)
     
     subprocess.run(command, capture_output=True, text=True)
