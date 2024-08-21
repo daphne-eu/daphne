@@ -243,7 +243,7 @@ namespace {
         void printCallGraph() {
             for(const auto &entry : callGraph) {
                 std::string funcName = entry.first;
-                std::cout << funcName << " calls: ";
+                std::cout << funcName << " #!#!#calls:#!#!# ";
                 if(entry.second.empty()) {
                     std::cout << "No functions";
                 } else {
@@ -349,7 +349,7 @@ namespace {
                 specializedVersions.insert({templateFunction.getSymName().str(), specializedFunc});
             
             updateCallGraph(inferTypesInFunction(specializedFunc));
-            //printCallGraph();
+            printCallGraph();
             return inferTypesInFunction(specializedFunc);
         }
 
