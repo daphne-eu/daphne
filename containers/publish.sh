@@ -25,7 +25,7 @@ TIMESTAMP_DATE=$(date -I)
 
 # swap comments to tag a specific version
 VERSION=$TIMESTAMP_DATE
-#VERSION=v0.2-rc1
+#VERSION=0.3
 
 # read needed software versions (e.g., CUDA version,...)
 source ../software-package-versions.txt

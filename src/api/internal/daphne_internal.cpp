@@ -75,7 +75,7 @@ void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<
 void printVersion(llvm::raw_ostream& os) {
     // TODO Include some of the important build flags into the version string.
     os
-      << "DAPHNE Version 0.2\n"
+      << "DAPHNE Version 0.3\n"
       << "An Open and Extensible System Infrastructure for Integrated Data Analysis Pipelines\n"
       << "https://github.com/daphne-eu/daphne\n";
 }
