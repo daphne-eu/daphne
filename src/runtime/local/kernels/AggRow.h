@@ -32,7 +32,6 @@
 #include <cstddef>
 #include <cstring>
 #include <cmath>
-#include <typeinfo>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -191,7 +190,7 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
             const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
         
             for(size_t r = 0; r < numRows; r++) {
-                *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(
+                *valuesRes = AggAllUtility::aggArray(
                         arg->getValues(r),
                         arg->getNumNonZeros(r),
                         numCols,
@@ -212,7 +211,7 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
             VTRes * valuesT = tmp->getValues();
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             for (size_t r = 0; r < numRows; r++){
-                *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(
+                *valuesRes = AggAllUtility::aggArray(
                     arg->getValues(r),
                     arg->getNumNonZeros(r),
                     numCols,
@@ -240,7 +239,6 @@ struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
                 }
                 valuesRes += res->getRowSkip();
             }
-            valuesRes = res->getValues();
             DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
 
         }
@@ -270,7 +268,7 @@ struct AggRow<DenseMatrix<VTRes>, COOMatrix<VTArg>> {
             const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
 
             for(size_t r = 0; r < numRows; r++) {
-                *valuesRes = AggAll<VTRes, COOMatrix<VTArg>>::aggArray(
+                *valuesRes = AggAllUtility::aggArray(
                         arg->getValues(r),
                         arg->getNumNonZerosRow(r),
                         numCols,
@@ -291,7 +289,7 @@ struct AggRow<DenseMatrix<VTRes>, COOMatrix<VTArg>> {
             VTRes * valuesT = tmp->getValues();
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             for (size_t r = 0; r < numRows; r++){
-                *valuesRes = AggAll<VTRes, COOMatrix<VTArg>>::aggArray(
+                *valuesRes = AggAllUtility::aggArray(
                         arg->getValues(r),
                         arg->getNumNonZerosRow(r),
                         numCols,

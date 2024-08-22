@@ -144,7 +144,6 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (DenseMatr
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (CSRMatrix, COOMatrix), (VALUE_TYPES)) {
-
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {

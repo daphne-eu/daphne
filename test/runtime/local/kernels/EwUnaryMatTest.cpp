@@ -28,6 +28,7 @@
 #include <catch.hpp>
 
 #include <limits>
+#include <type_traits>
 
 #include <cstdint>
 
@@ -52,7 +53,7 @@ void checkEwUnaryMatApprox(UnaryOpCode opCode, const DTArg * arg, const DTRes * 
 }
 
 template<typename DTRes, typename DTArg>
-void checkEwUnaryMatThrow(UnaryOpCode opCode, const DTArg * arg, [[maybe_unused]] const DTRes * exp) {
+void checkEwUnaryMatThrow(UnaryOpCode opCode, const DTArg * arg) {
     DTRes * res = nullptr;
     REQUIRE_THROWS_AS((ewUnaryMat<DTRes, DTArg>(opCode, res, arg, nullptr)), std::domain_error);
     DataObjectFactory::destroy(res);
@@ -63,15 +64,21 @@ void checkEwUnaryMatThrow(UnaryOpCode opCode, const DTArg * arg, [[maybe_unused]
 // ****************************************************************************
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         1,
         1,
@@ -83,15 +90,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(2, {
+    auto arg = genGivenVals<DTArg>(2, {
         0, 1, -1,
         10, -10, VT(1.4),
     });
 
-    auto exp = genGivenVals<DT>(2, {
+    auto exp = genGivenVals<DTRes>(2, {
         0, 1, -1,
         1, -1, 1,
     });
@@ -102,15 +114,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(2, {
+    auto arg = genGivenVals<DTArg>(2, {
         std::numeric_limits<VT>::infinity(),
         - std::numeric_limits<VT>::infinity(),
     });
 
-    auto exp = genGivenVals<DT>(2, {
+    auto exp = genGivenVals<DTRes>(2, {
         1,
         -1,
     });
@@ -121,15 +138,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNE
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         16,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         1,
         4,
@@ -143,6 +166,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DT, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DT
+                >::type;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -150,24 +178,27 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt, check domain_error"), TAG_KERNELS, (
         -1,
     });
 
-    DenseMatrix<VT> * dense = nullptr;
-
-    checkEwUnaryMatThrow(UnaryOpCode::SQRT, arg, dense);
+    checkEwUnaryMatThrow<DTRes, DT>(UnaryOpCode::SQRT, arg);
 
     DataObjectFactory::destroy(arg);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("exp"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         -1,
         3,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         1,
         VT(0.367),
         VT(20.085),
@@ -179,16 +210,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("exp"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         1,
         3,
         8,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         VT(1.098),
         VT(2.079),
@@ -202,6 +238,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln"), TAG_KERNELS, (DATA_TYPES), (VALUE_TY
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DT, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DT
+                >::type;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -209,9 +250,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln, check domain_error"), TAG_KERNELS, (DA
         -1,
     });
 
-    DenseMatrix<VT> * dense = nullptr;
-
-    checkEwUnaryMatThrow(UnaryOpCode::LN, arg, dense);
+    checkEwUnaryMatThrow<DTRes, DT>(UnaryOpCode::LN, arg);
 
     DataObjectFactory::destroy(arg);
 }
@@ -221,16 +260,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln, check domain_error"), TAG_KERNELS, (DA
 // ****************************************************************************
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sin"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         VT(0.841),
         VT(-0.841),
@@ -242,16 +286,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sin"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cos"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         1,
         VT(0.54),
         VT(0.54),
@@ -263,16 +312,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cos"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tan"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         VT(1.557),
         VT(-1.557),
@@ -284,16 +338,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tan"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         VT(1.57),
         VT(-1.57),
@@ -307,6 +366,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DT, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DT
+                >::type;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -314,24 +378,27 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin, check domain_error"), TAG_KERNELS, (
         -2,
     });
 
-    DenseMatrix<VT> * dense = nullptr;
-
-    checkEwUnaryMatThrow(UnaryOpCode::ASIN, arg, dense);
+    checkEwUnaryMatThrow<DTRes, DT>(UnaryOpCode::ASIN, arg);
 
     DataObjectFactory::destroy(arg);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         VT(1.57),
         0,
         VT(3.141),
@@ -345,6 +412,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos, check domain_error"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DT, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DT
+                >::type;
 
     auto arg = genGivenVals<DT>(3, {
         0,
@@ -352,24 +424,27 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos, check domain_error"), TAG_KERNELS, (
         -2,
     });
 
-    DenseMatrix<VT> * dense = nullptr;
-
-    checkEwUnaryMatThrow(UnaryOpCode::ACOS, arg, dense);
+    checkEwUnaryMatThrow<DTRes, DT>(UnaryOpCode::ACOS, arg);
 
     DataObjectFactory::destroy(arg);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("atan"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         VT(0.785),
         VT(-0.785),
@@ -381,16 +456,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("atan"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sinh"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         VT(1.175),
         VT(-1.175),
@@ -402,16 +482,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sinh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cosh"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         1,
         VT(1.543),
         VT(1.543),
@@ -423,16 +508,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cosh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tanh"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         VT(0.761),
         VT(-0.761),
@@ -448,15 +538,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tanh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 // ****************************************************************************
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         1,
         -1,
@@ -468,14 +564,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor"), TAG_KERNELS, (DATA_TYPES), (VALUE
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor, floating-point-specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(2, {
+    auto arg = genGivenVals<DTArg>(2, {
         0.3, -0.3,
         0.9, -0.9,
     });
 
-    auto exp = genGivenVals<DT>(2, {
+    auto exp = genGivenVals<DTRes>(2, {
         0, -1,
         0, -1,
     });
@@ -486,15 +588,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor, floating-point-specific"), TAG_KERN
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         1,
         -1,
@@ -506,14 +614,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil"), TAG_KERNELS, (DATA_TYPES), (VALUE_
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil, floating-point-specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(2, {
+    auto arg = genGivenVals<DTArg>(2, {
         0.3, -0.3,
         1.1, -1.9,
     });
 
-    auto exp = genGivenVals<DT>(2, {
+    auto exp = genGivenVals<DTRes>(2, {
         1, -0.0,
         2, -1,
     });
@@ -524,15 +638,21 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil, floating-point-specific"), TAG_KERNE
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(3, {
+    auto arg = genGivenVals<DTArg>(3, {
         0,
         1,
         -1,
     });
 
-    auto exp = genGivenVals<DT>(3, {
+    auto exp = genGivenVals<DTRes>(3, {
         0,
         1,
         -1,
@@ -544,14 +664,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round"), TAG_KERNELS, (DATA_TYPES), (VALUE
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(2, {
+    auto arg = genGivenVals<DTArg>(2, {
         0.3, -0.3,
         0.5, -0.5,
     });
 
-    auto exp = genGivenVals<DT>(2, {
+    auto exp = genGivenVals<DTRes>(2, {
         0, -0.0,
         1, -1,
     });
@@ -566,16 +692,22 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERN
 // ****************************************************************************
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (int32_t)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(4, {
+    auto arg = genGivenVals<DTArg>(4, {
         1,
         0,
         99,
         -99, 
     });
 
-    auto exp = genGivenVals<DT>(4, {
+    auto exp = genGivenVals<DTRes>(4, {
         0,
         0,
         0,
@@ -588,10 +720,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (int32
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan, floating-point specific"), TAG_KERNELS, (DATA_TYPES), (double)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
-    auto arg = genGivenVals<DT>(9, {
+    auto arg = genGivenVals<DTArg>(9, {
         1,
         std::numeric_limits<VT>::quiet_NaN(),
         0,
@@ -603,7 +740,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan, floating-point specific"), TAG_KERN
         std::numeric_limits<VT>::denorm_min()
     });
 
-    auto exp = genGivenVals<DT>(9, {
+    auto exp = genGivenVals<DTRes>(9, {
         0,
         1,
         0,
@@ -627,11 +764,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan, floating-point specific"), TAG_KERN
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using VT = typename DTArg::VT;
-    using DTRes = DenseMatrix<VT>;
+    using DTRes = typename std::conditional<
+                    std::is_same<DTArg, COOMatrix<VT>>::value,
+                    DenseMatrix<VT>,
+                    DTArg
+                >::type;
 
     auto arg = genGivenVals<DTArg>(1, {1});
     DTRes * exp = nullptr;
     CHECK_THROWS(ewUnaryMat<DTRes, DTArg>(static_cast<UnaryOpCode>(999), exp, arg, nullptr));
 
-    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(arg, exp);
 }

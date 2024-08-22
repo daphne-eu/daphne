@@ -277,18 +277,16 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
 template<typename VT>
 struct RandMatrix<COOMatrix<VT>, VT> {
     static void apply(COOMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed, DCTX(ctx)) {
-        assert(numRows > 0 && "numRows must be > 0");
-        assert(numCols > 0 && "numCols must be > 0");
-        assert(min <= max && "min must be <= max");
-        assert(sparsity >= 0.0 && sparsity <= 1.0 &&
-               "sparsity has to be in the interval [0.0, 1.0]");
+        validateArgsRandMatrix(numRows, numCols, min, max, sparsity);
 
         // The exact number of non-zeros to generate.
         // TODO Ideally, it should not be allowed that zero is included in [min, max].
-        const auto nnz = static_cast<size_t>(round(numRows * numCols * sparsity));
+        const size_t nnz = static_cast<size_t>(round(numRows * numCols * sparsity));
 
         if (res == nullptr)
             res = DataObjectFactory::create<COOMatrix<VT>>(numRows, numCols, nnz, false);
+        else if (res->getMaxNumNonZeros() < nnz)
+            throw std::runtime_error("RandMatrix - res does not have enough space to fit all values");
 
         // Initialize pseudo random number generators.
         if (seed == -1)
@@ -309,6 +307,8 @@ struct RandMatrix<COOMatrix<VT>, VT> {
         for (size_t i = 0; i < nnz; i++)
             valuesRes[i] = distrVal(gen);
 
+        // Generate and sort random row indices where each row indice can only occur
+        // `numCols` times at most.
         std::uniform_int_distribution<size_t> distrRow(0, numRows - 1);
         std::vector<size_t> rowSequence;
         std::vector<size_t> occurrences(numRows, 0);
@@ -324,23 +324,27 @@ struct RandMatrix<COOMatrix<VT>, VT> {
         }
         std::sort(rowSequence.begin(), rowSequence.end());
 
+        // Count the occurrence of each row index to determine the amount of
+        // column indices that need to be generated respectively.
+        std::vector<size_t> rowRanges{0};
+        for (size_t i = 1; i < nnz; ++i) {
+            if (rowSequence[i-1] != rowSequence[i])
+                rowRanges.push_back(i);
+        }
+        rowRanges.push_back(nnz);
+
+        // Generate and sort subsequences of column indices for each row
+        // such that duplicates are only allowed in separate rows.
+        std::uniform_int_distribution<size_t> distrCol(0, numCols - 1);
         std::vector<size_t> colSequence;
 
-        std::vector<size_t> startRow;
-        size_t lastRow = -1;
-        for (size_t i = 0; i < nnz; ++i) {
-            if (rowSequence[i] != lastRow) startRow.push_back(i);
-            lastRow = rowSequence[i];
-        }
-        startRow.push_back(nnz);
-
-        std::uniform_int_distribution<size_t> distrCol(0, numCols - 1);
-
-        for (size_t i = 0; i < startRow.size() - 1; i++) {
-            size_t start = startRow[i];
-            size_t end = startRow[i + 1];
-            std::vector<size_t> subSequence;
-            std::unordered_set<size_t> uniqueValues;
+        std::unordered_set<size_t> uniqueValues;
+        std::vector<size_t> subSequence;
+        for (size_t i = 0; i < rowRanges.size() - 1; i++) {
+            uniqueValues.clear();
+            subSequence.clear();
+            size_t start = rowRanges[i];
+            size_t end = rowRanges[i + 1];
             while (subSequence.size() < end - start) {
                 size_t randomValue = distrCol(gen);
                 if (uniqueValues.find(randomValue) == uniqueValues.end()) {

@@ -25,6 +25,7 @@
 
 #include <catch.hpp>
 
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
@@ -32,8 +33,8 @@
 #define TEST_NAME(opName) "EwBinaryMat (" opName ")"
 #define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
-// CSRMatrix, COOMatrix currently only supports ADD and MUL opCodes
-#define DATA_TYPES_NO_CSR DenseMatrix, Matrix
+// CSRMatrix, COOMatrix currently only support ADD and MUL opCodes
+#define DATA_TYPES_DENSE DenseMatrix, Matrix
 
 template<class DT>
 void checkEwBinaryMat(BinaryOpCode opCode, const DT * lhs, const DT * rhs, const DT * exp) {
@@ -55,7 +56,8 @@ void checkSparseDenseEwBinaryMat(BinaryOpCode opCode, const SparseDT * lhs, cons
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    
+    using VT = typename DT::VT;    
+
     auto m0 = genGivenVals<DT>(4, {
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
@@ -68,19 +70,37 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
     });
-    auto m2 = genGivenVals<DT>(4, {
+    DT * m2 = nullptr;
+    DT * m3 = nullptr;
+    if (std::is_unsigned_v<VT>) {
+        m2 = genGivenVals<DT>(4, {
             0, 0, 0, 0, 0, 0,
             1, 2, 3, 1, 0, 0,
             0, 0, 0, 0, 0, 0,
             0, 0, 3, 1, 0, 2,
-    });
-    auto m3 = genGivenVals<DT>(4, {
+        });
+        m3 = genGivenVals<DT>(4, {
             1, 2, 0, 0, 1, 3,
             1, 3, 3, 3, 0, 3,
             0, 0, 0, 0, 0, 0,
             0, 0, 3, 1, 0, 2,
-    });
-    
+        });
+    }
+    else {
+        m2 = genGivenVals<DT>(4, {
+            VT(-1), 0, 0, 0, 0, 0,
+            1,      2, 3, 1, 0, 0,
+            0,      0, 0, 0, 0, 0,
+            0,      0, 3, 1, 0, 2,
+        });
+        m3 = genGivenVals<DT>(4, {
+            0, 2, 0, 0, 1, 3,
+            1, 3, 3, 3, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 3, 1, 0, 2,
+        });
+    }
+
     checkEwBinaryMat(BinaryOpCode::ADD, m0, m0, m0);
     checkEwBinaryMat(BinaryOpCode::ADD, m1, m0, m1);
     checkEwBinaryMat(BinaryOpCode::ADD, m1, m2, m3);
@@ -174,7 +194,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul_sparse_dense"), TAG_KERNELS, (CSRMatri
     DataObjectFactory::destroy(m0, m1, m2, m3, exp0, exp1);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m0 = genGivenVals<DT>(2, {
@@ -204,7 +224,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (
 // Comparisons
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
@@ -216,7 +236,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (V
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
@@ -228,7 +248,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
@@ -240,7 +260,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (V
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
@@ -252,7 +272,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (V
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
@@ -264,7 +284,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (V
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
@@ -280,7 +300,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (V
 // Min/max
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
@@ -292,7 +312,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
@@ -308,7 +328,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (
 // Logical
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     
@@ -321,7 +341,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DATA_TYPES_DENSE), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     

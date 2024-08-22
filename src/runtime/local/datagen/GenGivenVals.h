@@ -23,6 +23,7 @@
 #include <runtime/local/datastructures/COOMatrix.h>
 
 #include <algorithm>
+#include <stdexcept>
 #include <vector>
 
 #include <cstddef>
@@ -168,7 +169,8 @@ template<typename VT>
 struct GenGivenVals<COOMatrix<VT>> {
     static COOMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
         const size_t numCells = elements.size();
-        assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
+        if (numCells % numRows != 0)
+            throw std::runtime_error("genGivenVals: number of given data elements must be divisible by given number of rows");
         const size_t numCols = numCells / numRows;
         size_t numNonZeros = 0;
         for(VT v : elements)

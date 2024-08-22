@@ -86,44 +86,7 @@ struct CheckEq<CSRMatrix<VT>> {
 template<typename VT>
 struct CheckEq<COOMatrix<VT>> {
     static bool apply(const COOMatrix<VT> * lhs, const COOMatrix<VT> * rhs, DCTX(ctx)) {
-        if(lhs == rhs)
-            return true;
-
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-
-        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
-            return false;
-
-        const VT * valuesLhs = lhs->getValues();
-        const size_t * rowsLhs = lhs->getRowIdxs();
-        const size_t * colsLhs = lhs->getColIdxs();
-
-        const VT * valuesRhs = rhs->getValues();
-        const size_t * rowsRhs = rhs->getRowIdxs();
-        const size_t * colsRhs = rhs->getColIdxs();
-
-        const size_t nnzLhs = lhs->getNumNonZeros();
-        const size_t nnzRhs = rhs->getNumNonZeros();
-
-        size_t lowerRowLhs = lhs->getLowerRow();
-        size_t lowerRowRhs = rhs->getLowerRow();
-
-        if(nnzLhs != nnzRhs)
-            return false;
-
-        for (size_t i = 0; i < nnzLhs; i++) {
-            const size_t rowLhs = rowsLhs[i] - lowerRowLhs;
-            const size_t rowRhs = rowsRhs[i] - lowerRowRhs;
-            if (rowLhs != rowRhs) return false;
-            const size_t colLhs = colsLhs[i];
-            const size_t colRhs = colsRhs[i];
-            if (colLhs != colRhs) return false;
-            const VT valLhs = valuesLhs[i];
-            const VT valRhs = valuesRhs[i];
-            if (valLhs != valRhs) return false;
-        }
-        return true;
+        return *lhs == *rhs;
     }
 };
 

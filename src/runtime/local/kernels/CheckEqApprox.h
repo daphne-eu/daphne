@@ -196,12 +196,10 @@ struct CheckEqApprox<COOMatrix<VT>> {
             return false;
 
         for (size_t i = 0; i < nnzLhs; i++) {
-            const size_t rowLhs = rowsLhs[i] - lowerRowLhs;
-            const size_t rowRhs = rowsRhs[i] - lowerRowRhs;
-            if (rowLhs != rowRhs) return false;
-            const size_t colLhs = colsLhs[i];
-            const size_t colRhs = colsRhs[i];
-            if (colLhs != colRhs) return false;
+            if (   rowsLhs[i] - lowerRowLhs != rowsRhs[i] - lowerRowRhs
+                || colsLhs[i] != colsRhs[i]
+                )
+                return false;
             const VT valLhs = valuesLhs[i];
             const VT valRhs = valuesRhs[i];
             VT diff = valLhs - valRhs;

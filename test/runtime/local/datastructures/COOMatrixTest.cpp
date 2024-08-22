@@ -22,7 +22,10 @@
 
 #include <catch.hpp>
 
+#include <array>
+
 #include <cstdint>
+#include <cstring>
 
 TEMPLATE_TEST_CASE("COOMatrix allocates enough space", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
     // No assertions in this test case. We just want to see if it runs without
@@ -57,28 +60,37 @@ TEST_CASE("COOMatrix methods work properly", TAG_DATASTRUCTURES) {
 
     const size_t numRows = 10;
     const size_t numCols = 10;
-    const size_t maxnumNonZeros = 6;
+    const size_t maxnumNonZeros = 7;
 
     COOMatrix<ValueType> * matrix = DataObjectFactory::create<COOMatrix<ValueType>>(numRows, numCols, maxnumNonZeros, true);
 
-    matrix->set(0, 0, 5);
-    matrix->set(2, 2, 3);
-    matrix->set(1, 1, 4);
+    matrix->set(0, 0, 6);
+    matrix->set(2, 2, 4);
+    matrix->set(1, 1, 5);
     matrix->set(3, 3, 2);
     matrix->set(4, 4, 1);
+    matrix->set(3, 2, 3);
 
-    CHECK(matrix->getMaxNumNonZeros() == 6);
-    CHECK(matrix->getNumNonZeros() == 5);
+    CHECK(matrix->getMaxNumNonZeros() == 7);
+    CHECK(matrix->getNumNonZeros() == 6);
     CHECK(matrix->getNumRows() == 10);
     CHECK(matrix->getNumCols() == 10);
     CHECK(matrix->getNumNonZerosRow(1) == 1);
     CHECK(matrix->getNumNonZerosCol(1) == 1);
-    CHECK(matrix->getValues()[0] == 5);
-    CHECK(matrix->getColIdxs()[3] == 3);
+    CHECK(matrix->getValues()[0] == 6);
+    CHECK(matrix->getColIdxs()[2] == 2);
     CHECK(matrix->getRowIdxs()[2] == 2);
-    CHECK(matrix->getValues(1)[0] == 4);
+    CHECK(matrix->getValues(1)[0] == 5);
     CHECK(matrix->getColIdxs(1)[0] == 1);
-    CHECK(matrix->get(1, 1) == 4);
+    CHECK(matrix->get(1, 1) == 5);
+
+    // Check whether coordinates are sorted properly.
+    std::array<ValueType, 6> expValues = {6, 5, 4, 3, 2, 1};
+    std::array<size_t, 6> expRowIdxs = {0, 1, 2, 3, 3, 4};
+    std::array<size_t, 6> expColIdxs = {0, 1, 2, 2, 3, 4};
+    CHECK(0 == std::memcmp(matrix->getValues(), &expValues, sizeof(ValueType) * 6));
+    CHECK(0 == std::memcmp(matrix->getRowIdxs(), &expRowIdxs, sizeof(size_t) * 6));
+    CHECK(0 == std::memcmp(matrix->getColIdxs(), &expColIdxs, sizeof(size_t) * 6));
 
     matrix->prepareAppend();
     matrix->append(0, 0, 5);
@@ -86,6 +98,7 @@ TEST_CASE("COOMatrix methods work properly", TAG_DATASTRUCTURES) {
     matrix->append(2, 2, 3);
     matrix->append(3, 3, 2);
     matrix->append(4, 4, 1);
+    matrix->finishAppend();
 
     CHECK(matrix->getNumNonZeros() == 5);
     CHECK(matrix->getNumNonZerosRow(1) == 1);
@@ -96,6 +109,16 @@ TEST_CASE("COOMatrix methods work properly", TAG_DATASTRUCTURES) {
     CHECK(matrix->getValues(1)[0] == 4);
     CHECK(matrix->getColIdxs(1)[0] == 1);
     CHECK(matrix->get(1, 1) == 4);
+
+    // Check whether coordinates are sorted properly.
+    expValues = {5, 4, 3, 2, 1};
+    expRowIdxs = {0, 1, 2, 3, 4};
+    expColIdxs = {0, 1, 2, 3, 4};
+    CHECK(0 == std::memcmp(matrix->getValues(), &expValues, sizeof(ValueType) * 5));
+    CHECK(0 == std::memcmp(matrix->getRowIdxs(), &expRowIdxs, sizeof(size_t) * 5));
+    CHECK(0 == std::memcmp(matrix->getColIdxs(), &expColIdxs, sizeof(size_t) * 5));
+
+    DataObjectFactory::destroy(matrix);
 }
 
 TEST_CASE("COOMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
@@ -139,11 +162,9 @@ TEST_CASE("COOMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
 
     // Freeing both matrices does not result in double-free errors.
     SECTION("Freeing the original matrix first is fine") {
-        DataObjectFactory::destroy(mOrig);
-        DataObjectFactory::destroy(mSub);
+        DataObjectFactory::destroy(mOrig, mSub);
     }
     SECTION("Freeing the sub-matrix first is fine") {
-        DataObjectFactory::destroy(mSub);
-        DataObjectFactory::destroy(mOrig);
+        DataObjectFactory::destroy(mSub, mOrig);
     }
 }
