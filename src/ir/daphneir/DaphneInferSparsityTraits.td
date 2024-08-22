@@ -24,6 +24,12 @@ include "mlir/IR/OpBase.td"
 // it won't for all the other cases estimating with 1.0 is fine
 def CompletelyDense : NativeOpTrait<"CompletelyDense">;
 
+// Passes the input sparsity to the output
+def SparsityRemains : NativeOpTrait<"SparsityRemains">;
+
+// Sets the sparsity to -1.0 if the sparsity will be unknown after an operation
+def SparsityUnknown : NativeOpTrait<"SparsityUnknown">; 
+
 class SparsityFromIthScalar<int i> : ParamNativeOpTrait<"SparsityFromIthScalar", !cast<string>(i)>;
 class SparsityFromIthArg<int i> : ParamNativeOpTrait<"SparsityFromIthArg", !cast<string>(i)>;
 def SparsityFromArg : SparsityFromIthArg<0>;
@@ -36,5 +42,11 @@ def SparsityFromArg : SparsityFromIthArg<0>;
 def EwSparseIfBoth : NativeOpTrait<"EwSparseIfBoth">;
 // if either element is zero, the result is zero
 def EwSparseIfEither : NativeOpTrait<"EwSparseIfEither">;
+// if all input elements are completely sparse, the resulting sparsity is 0.0 (works for 1 or 2 operands)
+def SparseIfAllInputSparse : NativeOpTrait<"SparseIfAllInputSparse">;
+// if all input elements are completely dense, the resulting sparsity is 1.0 (works for 1 or 2 operands)
+def DenseIfAllInputDense : NativeOpTrait<"DenseIfAllInputDense">;
+// if all input elements are either completely sparse or completely dense, the resulting sparsity is 0.0 or 1.0 respectively (works for 1 or 2 operands)
+def SparsityRemainsIfAllInputOneOrZero : NativeOpTrait<"SparsityRemainsIfAllInputOneOrZero">;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNEINFERSPARSITYTRAITS_TD

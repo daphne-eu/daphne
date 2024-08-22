@@ -97,6 +97,7 @@ def Daphne_ConvertDenseMatrixToMemRef : Daphne_Op<"convertDenseMatrixToMemRef", 
 
 def Daphne_FillOp : Daphne_Op<"fill", [
     DataTypeMat, ValueTypeFromFirstArg,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>,
     NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
@@ -141,7 +142,8 @@ def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
 
 def Daphne_SampleOp : Daphne_Op<"sample", [
     DataTypeMat, ValueTypeFromFirstArg,
-    NumRowsFromIthScalar<1>, OneCol
+    NumRowsFromIthScalar<1>, OneCol,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]> {
     let arguments = (ins AnyScalar:$range, Size:$size, BoolScalar:$withReplacement, Seed:$seed);
     let results = (outs MatrixOrU:$res);
@@ -150,7 +152,7 @@ def Daphne_SampleOp : Daphne_Op<"sample", [
 def Daphne_SeqOp : Daphne_Op<"seq", [
     DataTypeMat, ValueTypeFromArgs,
     OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>,
-    CompletelyDense,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>,
     CastArgsToResType
 ]> {
     let arguments = (ins NumScalar:$from, NumScalar:$to, NumScalar:$inc);
@@ -166,6 +168,13 @@ def Daphne_TypeOfOp : Daphne_Op<"typeOf"> {
     let results = (outs StrScalar:$res);
 }
 
+def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
+  let arguments = (ins MatrixOf<[AnyScalar]>:$arg);
+  let results = (outs FloatScalar:$res);
+
+  let hasCanonicalizeMethod = 1;
+}
+
 class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeSca, ValueTypeSize, Pure
 ])> {
@@ -178,13 +187,6 @@ class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !list
 def Daphne_NumRowsOp : Daphne_NumOp<"numRows">;
 def Daphne_NumColsOp : Daphne_NumOp<"numCols">;
 def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
-
-def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
-  let arguments = (ins MatrixOf<[AnyScalar]>:$arg);
-  let results = (outs FloatScalar:$res);
-
-  let hasCanonicalizeMethod = 1;
-}
 
 // ****************************************************************************
 // Matrix multiplication
@@ -225,11 +227,11 @@ def Daphne_EwMinusOp : Daphne_EwUnaryOp<"ewMinus", NumScalar, [ValueTypeFromFirs
    let hasFolder = 1;
    let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_EwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_EwExpOp : Daphne_EwUnaryOp<"ewExp", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwLnOp : Daphne_EwUnaryOp<"ewLn", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", NumScalar, [ValueTypeFromArgsFP, DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
+def Daphne_EwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar, [ValueTypeFromFirstArg, SparsityRemains]>;
+def Daphne_EwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar, [ValueTypeFromFirstArg, SparsityRemains]>;
+def Daphne_EwExpOp : Daphne_EwUnaryOp<"ewExp", NumScalar, [ValueTypeFromArgsFP, CompletelyDense]>;
+def Daphne_EwLnOp : Daphne_EwUnaryOp<"ewLn", NumScalar, [ValueTypeFromArgsFP, CompletelyDense]>;
+def Daphne_EwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", NumScalar, [ValueTypeFromArgsFP, DeclareOpInterfaceMethods<VectorizableOpInterface>, SparsityRemains]>;
 
 // ----------------------------------------------------------------------------
 // Logical
@@ -241,29 +243,29 @@ def Daphne_EwNegOp : Daphne_EwUnaryOp<"ewNeg", NumScalar, [ValueTypeFromFirstArg
 // Rounding
 // ----------------------------------------------------------------------------
 
-def Daphne_EwRoundOp : Daphne_EwUnaryOp<"ewRound", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_EwFloorOp : Daphne_EwUnaryOp<"ewFloor", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_EwCeilOp : Daphne_EwUnaryOp<"ewCeil", NumScalar, [ValueTypeFromFirstArg]>;
+def Daphne_EwRoundOp : Daphne_EwUnaryOp<"ewRound", NumScalar, [ValueTypeFromFirstArg, SparseIfAllInputSparse]>;
+def Daphne_EwFloorOp : Daphne_EwUnaryOp<"ewFloor", NumScalar, [ValueTypeFromFirstArg, SparseIfAllInputSparse]>;
+def Daphne_EwCeilOp : Daphne_EwUnaryOp<"ewCeil", NumScalar, [ValueTypeFromFirstArg, SparsityRemainsIfAllInputOneOrZero]>;
 
 // ----------------------------------------------------------------------------
 // Trigonometric
 // ----------------------------------------------------------------------------
 
-def Daphne_EwSinOp : Daphne_EwUnaryOp<"ewSin", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwCosOp : Daphne_EwUnaryOp<"ewCos", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwTanOp : Daphne_EwUnaryOp<"ewTan", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwSinhOp : Daphne_EwUnaryOp<"ewSinh", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwCoshOp : Daphne_EwUnaryOp<"ewCosh", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwTanhOp : Daphne_EwUnaryOp<"ewTanh", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwAsinOp : Daphne_EwUnaryOp<"ewAsin", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwAcosOp : Daphne_EwUnaryOp<"ewAcos", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", NumScalar, [ValueTypeFromArgsFP]>;
+def Daphne_EwSinOp : Daphne_EwUnaryOp<"ewSin", NumScalar, [ValueTypeFromArgsFP, SparsityUnknown]>;
+def Daphne_EwCosOp : Daphne_EwUnaryOp<"ewCos", NumScalar, [ValueTypeFromArgsFP, SparsityUnknown]>;
+def Daphne_EwTanOp : Daphne_EwUnaryOp<"ewTan", NumScalar, [ValueTypeFromArgsFP, SparsityUnknown]>;
+def Daphne_EwSinhOp : Daphne_EwUnaryOp<"ewSinh", NumScalar, [ValueTypeFromArgsFP, SparsityRemains]>;
+def Daphne_EwCoshOp : Daphne_EwUnaryOp<"ewCosh", NumScalar, [ValueTypeFromArgsFP, CompletelyDense]>;
+def Daphne_EwTanhOp : Daphne_EwUnaryOp<"ewTanh", NumScalar, [ValueTypeFromArgsFP, SparsityRemains]>;
+def Daphne_EwAsinOp : Daphne_EwUnaryOp<"ewAsin", NumScalar, [ValueTypeFromArgsFP, SparsityRemains]>;
+def Daphne_EwAcosOp : Daphne_EwUnaryOp<"ewAcos", NumScalar, [ValueTypeFromArgsFP, SparsityUnknown]>;
+def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", NumScalar, [ValueTypeFromArgsFP, SparsityRemains]>;
 
 // ----------------------------------------------------------------------------
 // Comparison
 // ----------------------------------------------------------------------------
 
-def Daphne_EwIsNanOp : Daphne_EwUnaryOp<"ewIsnan", NumScalar, [ValueTypeFromFirstArg]>;
+def Daphne_EwIsNanOp : Daphne_EwUnaryOp<"ewIsnan", NumScalar, [ValueTypeFromFirstArg, SparsityUnknown]>;
 
 // ****************************************************************************
 // Elementwise binary
@@ -295,42 +297,42 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
 // ----------------------------------------------------------------------------
 
 // TODO Make EwAddOp Commutative again (see #449).
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [ValueTypeFromArgs, CastArgsToResType/*, Commutative*/, EwSparseIfBoth, CUDASupport]> {
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [ValueTypeFromArgs, CastArgsToResType/*, Commutative*/, DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, CastArgsToResType, EwSparseIfBoth, CUDASupport]> {
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, CastArgsToResType, DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, EwSparseIfEither, CUDASupport]> {
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CastArgsToResType, CUDASupport]> {
+def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CastArgsToResType, DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [ValueTypeFromArgs, CastArgsToResType, CUDASupport]>;
-def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", NumScalar, [ValueTypeFromArgs, CastArgsToResType]>;
-def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", NumScalar, [ValueTypeFromArgsFP, CastArgsToResType]>;
+def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [ValueTypeFromArgs, CastArgsToResType, DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport]>;
+def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", NumScalar, [ValueTypeFromArgs, CastArgsToResType, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", NumScalar, [ValueTypeFromArgsFP, CastArgsToResType, SparsityUnknown]>;
 
 // ----------------------------------------------------------------------------
 // Min/max
 // ----------------------------------------------------------------------------
 
-def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative]>;
-def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, CUDASupport]>;
+def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, SparsityRemainsIfAllInputOneOrZero]>;
+def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, SparsityRemainsIfAllInputOneOrZero, CUDASupport]>;
 
 // ----------------------------------------------------------------------------
 // Logical
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", NumScalar, [Commutative, ValueTypeFromArgsInt, CastArgsToResType]>;
-def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , NumScalar, [Commutative, ValueTypeFromArgsInt, CastArgsToResType]>;
-def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", NumScalar, [Commutative, ValueTypeFromArgsInt, CastArgsToResType]>;
+def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", NumScalar, [Commutative, ValueTypeFromArgsInt, CastArgsToResType, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , NumScalar, [Commutative, ValueTypeFromArgsInt, CastArgsToResType, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", NumScalar, [Commutative, ValueTypeFromArgsInt, CastArgsToResType, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
 
 // ----------------------------------------------------------------------------
 // Bitwise
 // ----------------------------------------------------------------------------
 
-def Daphne_EwBitwiseAndOp    : Daphne_EwBinaryOp<"ewBitwiseAnd", NumScalar, [Commutative, ValueTypeFromArgsInt, CastArgsToResType]>;
+def Daphne_EwBitwiseAndOp    : Daphne_EwBinaryOp<"ewBitwiseAnd", NumScalar, [Commutative, ValueTypeFromArgsInt, CastArgsToResType, EwSparseIfBoth]>;
 
 // ----------------------------------------------------------------------------
 // Strings
@@ -349,12 +351,12 @@ class Daphne_EwCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar, Unknown]>:$res);
 }
 
-def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, [Commutative]>;
-def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar, [Commutative, CUDASupport]>;
-def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar>;
-def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;
-def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
-def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
+def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, [Commutative, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar, [Commutative, DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport]>;
+def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar, [SparseIfAllInputSparse]>;
+def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar, [DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar, [SparseIfAllInputSparse]>;
+def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar, [DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
 
 // ****************************************************************************
 // Outer binary (generalized outer product)
@@ -374,28 +376,28 @@ class Daphne_OuterBinaryOp<string name, Type scalarType, list<Trait> traits = []
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_OuterAddOp : Daphne_OuterBinaryOp<"outerAdd", NumScalar, [ValueTypeFromArgs]>;
-def Daphne_OuterSubOp : Daphne_OuterBinaryOp<"outerSub", NumScalar, [ValueTypeFromArgs]>;
-def Daphne_OuterMulOp : Daphne_OuterBinaryOp<"outerMul", NumScalar, [ValueTypeFromArgs]>;
-def Daphne_OuterDivOp : Daphne_OuterBinaryOp<"outerDiv", NumScalar, [ValueTypeFromArgs]>;
-def Daphne_OuterPowOp : Daphne_OuterBinaryOp<"outerPow", NumScalar, [ValueTypeFromArgs]>;
-def Daphne_OuterModOp : Daphne_OuterBinaryOp<"outerMod", NumScalar, [ValueTypeFromArgs]>;
-def Daphne_OuterLogOp : Daphne_OuterBinaryOp<"outerLog", NumScalar, [ValueTypeFromArgsFP]>;
+def Daphne_OuterAddOp : Daphne_OuterBinaryOp<"outerAdd", NumScalar, [ValueTypeFromArgs, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterSubOp : Daphne_OuterBinaryOp<"outerSub", NumScalar, [ValueTypeFromArgs, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterMulOp : Daphne_OuterBinaryOp<"outerMul", NumScalar, [ValueTypeFromArgs, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterDivOp : Daphne_OuterBinaryOp<"outerDiv", NumScalar, [ValueTypeFromArgs, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterPowOp : Daphne_OuterBinaryOp<"outerPow", NumScalar, [ValueTypeFromArgs, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterModOp : Daphne_OuterBinaryOp<"outerMod", NumScalar, [ValueTypeFromArgs, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterLogOp : Daphne_OuterBinaryOp<"outerLog", NumScalar, [ValueTypeFromArgsFP, SparsityUnknown]>;
 
 // ----------------------------------------------------------------------------
 // Min/max
 // ----------------------------------------------------------------------------
 
-def Daphne_OuterMinOp : Daphne_OuterBinaryOp<"outerMin", AnyScalar, [ValueTypeFromArgs]>;
-def Daphne_OuterMaxOp : Daphne_OuterBinaryOp<"outerMax", AnyScalar, [ValueTypeFromArgs]>;
+def Daphne_OuterMinOp : Daphne_OuterBinaryOp<"outerMin", AnyScalar, [ValueTypeFromArgs, SparsityRemainsIfAllInputOneOrZero]>;
+def Daphne_OuterMaxOp : Daphne_OuterBinaryOp<"outerMax", AnyScalar, [ValueTypeFromArgs, SparsityRemainsIfAllInputOneOrZero]>;
 
 // ----------------------------------------------------------------------------
 // Logical
 // ----------------------------------------------------------------------------
 
-def Daphne_OuterAndOp : Daphne_OuterBinaryOp<"outerAnd", NumScalar, [ValueTypeFromArgsInt]>;
-def Daphne_OuterOrOp  : Daphne_OuterBinaryOp<"outerOr" , NumScalar, [ValueTypeFromArgsInt]>;
-def Daphne_OuterXorOp : Daphne_OuterBinaryOp<"outerXor", NumScalar, [ValueTypeFromArgsInt]>;
+def Daphne_OuterAndOp : Daphne_OuterBinaryOp<"outerAnd", NumScalar, [ValueTypeFromArgsInt, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterOrOp  : Daphne_OuterBinaryOp<"outerOr" , NumScalar, [ValueTypeFromArgsInt, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterXorOp : Daphne_OuterBinaryOp<"outerXor", NumScalar, [ValueTypeFromArgsInt, DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
 
 // ----------------------------------------------------------------------------
 // Strings
@@ -414,12 +416,12 @@ class Daphne_OuterCmpOp<string name, Type inputScalarType, list<Trait> traits = 
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar, Unknown]>:$res);
 }
 
-def Daphne_OuterEqOp  : Daphne_OuterCmpOp<"outerEq" , AnyScalar>;
-def Daphne_OuterNeqOp : Daphne_OuterCmpOp<"outerNeq", AnyScalar>;
-def Daphne_OuterLtOp  : Daphne_OuterCmpOp<"outerLt" , AnyScalar>;
-def Daphne_OuterLeOp  : Daphne_OuterCmpOp<"outerLe" , AnyScalar>;
-def Daphne_OuterGtOp  : Daphne_OuterCmpOp<"outerGt" , AnyScalar>;
-def Daphne_OuterGeOp  : Daphne_OuterCmpOp<"outerGe" , AnyScalar>;
+def Daphne_OuterEqOp  : Daphne_OuterCmpOp<"outerEq" , AnyScalar, [DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterNeqOp : Daphne_OuterCmpOp<"outerNeq", AnyScalar, [DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterLtOp  : Daphne_OuterCmpOp<"outerLt" , AnyScalar, [SparseIfAllInputSparse]>;
+def Daphne_OuterLeOp  : Daphne_OuterCmpOp<"outerLe" , AnyScalar, [DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
+def Daphne_OuterGtOp  : Daphne_OuterCmpOp<"outerGt" , AnyScalar, [SparseIfAllInputSparse]>;
+def Daphne_OuterGeOp  : Daphne_OuterCmpOp<"outerGe" , AnyScalar, [DeclareOpInterfaceMethods<InferSparsityOpInterface>]>;
 
 // ****************************************************************************
 // Elementwise ternary
@@ -478,25 +480,25 @@ class Daphne_ColAggOp<string name, Type inScalarType, Type outScalarType = inSca
 ])>;
 
 def Daphne_RowAggSumOp    : Daphne_RowAggOp<"sumRow"   , NumScalar, NumScalar, [ValueTypeFromFirstArg, CastArgsToResType,
-        CUDASupport, DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
-def Daphne_RowAggMinOp    : Daphne_RowAggOp<"minRow"   , AnyScalar, AnyScalar, [ValueTypeFromFirstArg, CastArgsToResType, DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
+        CUDASupport, DeclareOpInterfaceMethods<VectorizableOpInterface>, SparseIfAllInputSparse]>;
+def Daphne_RowAggMinOp    : Daphne_RowAggOp<"minRow"   , AnyScalar, AnyScalar, [ValueTypeFromFirstArg, CastArgsToResType, DeclareOpInterfaceMethods<VectorizableOpInterface>, SparsityRemainsIfAllInputOneOrZero]>;
 def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"maxRow"   , AnyScalar, AnyScalar, [ValueTypeFromFirstArg, CastArgsToResType,
-        CUDASupport, DeclareOpInterfaceMethods<VectorizableOpInterface>, DeclareOpInterfaceMethods<DistributableOpInterface>]>;
-def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"idxminRow", NumScalar, Size, [ValueTypeSize]>;
-def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"idxmaxRow", NumScalar, Size, [ValueTypeSize]>;
-def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType]>;
-def Daphne_RowAggVarOp    : Daphne_RowAggOp<"varRow"   , NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType]>;
-def Daphne_RowAggStddevOp : Daphne_RowAggOp<"stddevRow", NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType]>;
+        CUDASupport, DeclareOpInterfaceMethods<VectorizableOpInterface>, DeclareOpInterfaceMethods<DistributableOpInterface>, SparsityRemainsIfAllInputOneOrZero]>;
+def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"idxminRow", NumScalar, Size, [ValueTypeSize, SparseIfAllInputSparse]>;
+def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"idxmaxRow", NumScalar, Size, [ValueTypeSize, SparseIfAllInputSparse]>;
+def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType, SparseIfAllInputSparse]>;
+def Daphne_RowAggVarOp    : Daphne_RowAggOp<"varRow"   , NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType, SparseIfAllInputSparse]>;
+def Daphne_RowAggStddevOp : Daphne_RowAggOp<"stddevRow", NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType, SparseIfAllInputSparse]>;
 
 def Daphne_ColAggSumOp    : Daphne_ColAggOp<"sumCol"   , NumScalar, NumScalar, [ValueTypeFromFirstArg, CastArgsToResType,
-        CUDASupport, DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
-def Daphne_ColAggMinOp    : Daphne_ColAggOp<"minCol"   , AnyScalar, AnyScalar, [ValueTypeFromFirstArg, CastArgsToResType]>;
-def Daphne_ColAggMaxOp    : Daphne_ColAggOp<"maxCol"   , AnyScalar, AnyScalar, [ValueTypeFromFirstArg, CastArgsToResType]>;
-def Daphne_ColAggIdxMinOp : Daphne_ColAggOp<"idxminCol", NumScalar, Size, [ValueTypeSize]>;
-def Daphne_ColAggIdxMaxOp : Daphne_ColAggOp<"idxmaxCol", NumScalar, Size, [ValueTypeSize]>;
-def Daphne_ColAggMeanOp   : Daphne_ColAggOp<"meanCol"  , NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType]>;
-def Daphne_ColAggVarOp    : Daphne_ColAggOp<"varCol"   , NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType]>;
-def Daphne_ColAggStddevOp : Daphne_ColAggOp<"stddevCol", NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType]>;
+        CUDASupport, DeclareOpInterfaceMethods<VectorizableOpInterface>, SparseIfAllInputSparse]>;
+def Daphne_ColAggMinOp    : Daphne_ColAggOp<"minCol"   , AnyScalar, AnyScalar, [ValueTypeFromFirstArg, CastArgsToResType, SparsityRemainsIfAllInputOneOrZero]>;
+def Daphne_ColAggMaxOp    : Daphne_ColAggOp<"maxCol"   , AnyScalar, AnyScalar, [ValueTypeFromFirstArg, CastArgsToResType, SparsityRemainsIfAllInputOneOrZero]>;
+def Daphne_ColAggIdxMinOp : Daphne_ColAggOp<"idxminCol", NumScalar, Size, [ValueTypeSize, SparseIfAllInputSparse]>;
+def Daphne_ColAggIdxMaxOp : Daphne_ColAggOp<"idxmaxCol", NumScalar, Size, [ValueTypeSize, SparseIfAllInputSparse]>;
+def Daphne_ColAggMeanOp   : Daphne_ColAggOp<"meanCol"  , NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType, SparseIfAllInputSparse]>;
+def Daphne_ColAggVarOp    : Daphne_ColAggOp<"varCol"   , NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType, SparseIfAllInputSparse]>;
+def Daphne_ColAggStddevOp : Daphne_ColAggOp<"stddevCol", NumScalar, NumScalar, [ValueTypeFromArgsFP, CastArgsToResType, SparseIfAllInputSparse]>;
 
 // ----------------------------------------------------------------------------
 // Cumulative aggregation
@@ -509,10 +511,10 @@ class Daphne_CumAggOp<string name, Type scalarType, list<Trait> traits = []>
     let results = (outs MatrixOf<[scalarType]>);
 }
 
-def Daphne_CumAggSumOp  : Daphne_CumAggOp<"sumCum" , NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_CumAggProdOp : Daphne_CumAggOp<"prodCum", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_CumAggMinOp  : Daphne_CumAggOp<"minCum" , AnyScalar, [ValueTypeFromFirstArg]>;
-def Daphne_CumAggMaxOp  : Daphne_CumAggOp<"maxCum" , AnyScalar, [ValueTypeFromFirstArg]>;
+def Daphne_CumAggSumOp  : Daphne_CumAggOp<"sumCum" , NumScalar, [ValueTypeFromFirstArg, SparseIfAllInputSparse]>;
+def Daphne_CumAggProdOp : Daphne_CumAggOp<"prodCum", NumScalar, [ValueTypeFromFirstArg, SparsityUnknown]>;
+def Daphne_CumAggMinOp  : Daphne_CumAggOp<"minCum" , AnyScalar, [ValueTypeFromFirstArg, SparsityRemainsIfAllInputOneOrZero]>;
+def Daphne_CumAggMaxOp  : Daphne_CumAggOp<"maxCum" , AnyScalar, [ValueTypeFromFirstArg, SparsityRemainsIfAllInputOneOrZero]>;
 
 // ----------------------------------------------------------------------------
 // Grouped aggregation
@@ -603,7 +605,8 @@ def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
 
 def Daphne_SliceRowOp : Daphne_Op<"sliceRow", [
     TypeFromFirstArg,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    SparsityFromArg
 ]> {
     let summary = "Copies the specified rows from the argument to the result.";
 
@@ -645,7 +648,8 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
 
 def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    SparsityFromArg
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -715,6 +719,7 @@ class Daphne_BindOp<string name, list<Trait> traits = []> : Daphne_Op<name, !lis
 
 def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
     ValueTypesConcat,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport
@@ -722,11 +727,12 @@ def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
 
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind", [
     ValueTypeFromArgs,
-    NumRowsFromSumOfAllArgs, NumColsFromAllArgs
+    NumRowsFromSumOfAllArgs, NumColsFromAllArgs,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]>;
 
 def Daphne_ReverseOp : Daphne_Op<"reverse", [
-    TypeFromFirstArg, ShapeFromArg
+    TypeFromFirstArg, ShapeFromArg, SparsityFromArg
 ]> {
     let arguments = (ins MatrixOrU:$arg);
     let results = (outs MatrixOrU:$res);
@@ -736,7 +742,8 @@ def Daphne_OrderOp : Daphne_Op<"order", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>, // due to possibility of returning indexes
     SameVariadicOperandSize,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    SparsityFromArg
 ]> {
     // TODO Maybe colIdxs and ascs should be attributes.
     let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolScalar:$returnIdxs);
@@ -748,7 +755,7 @@ def Daphne_OrderOp : Daphne_Op<"order", [
 // ****************************************************************************
 
 def Daphne_EigenOp : Daphne_Op<"eigenCal", [TypeFromFirstArg, DeclareOpInterfaceMethods<InferTypesOpInterface>,
-        DeclareOpInterfaceMethods<InferShapeOpInterface>]> {
+        DeclareOpInterfaceMethods<InferShapeOpInterface>, SparsityUnknown]> {
     let arguments = (ins MatrixOf<[FloatScalar]>:$arg);
     let results = (outs MatrixOf<[FloatScalar]>:$eigenValues, MatrixOf<[FloatScalar]>:$eigenVectors);
 }
@@ -940,7 +947,7 @@ def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward", [ CUDASupport ]> {
 // ****************************************************************************
 
 def Daphne_DiagVectorOp : Daphne_Op<"diagVector", [
-    TypeFromFirstArg, NumRowsFromArg, OneCol
+    TypeFromFirstArg, NumRowsFromArg, OneCol, SparsityFromArg
 ]> {
     let arguments = (ins MatrixOrU:$arg);
     let results = (outs MatrixOrU:$res);
@@ -954,14 +961,14 @@ def Daphne_TriOp : Daphne_Op<"tri", [
 }
 
 def Daphne_SolveOp : Daphne_Op<"solve", [
-    DataTypeMat, ValueTypeFromArgs, NumRowsFromArg, OneCol, CUDASupport, CastArgsToResType
+    DataTypeMat, ValueTypeFromArgs, NumRowsFromArg, OneCol, CUDASupport, CastArgsToResType, SparsityUnknown
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$a, MatrixOf<[NumScalar]>:$b);
     let results = (outs MatrixOf<[NumScalar]>:$x);
 }
 
 def Daphne_ReplaceOp : Daphne_Op<"replace", [
-    DataTypeFromFirstArg, ValueTypeFromArgs, ShapeFromArg, CastArgsToResType
+    DataTypeFromFirstArg, ValueTypeFromArgs, ShapeFromArg, CastArgsToResType, DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]> {
     let arguments = (ins MatrixOrU:$arg, AnyScalar:$pattern, AnyScalar:$replacement);
     let results = (outs MatrixOrU:$res);
@@ -969,7 +976,8 @@ def Daphne_ReplaceOp : Daphne_Op<"replace", [
 
 def Daphne_CTableOp : Daphne_Op<"ctable", [
     DataTypeMat, ValueTypeFromThirdArg,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    SparsityUnknown
 ]> {
     let arguments = (ins MatrixOrU:$lhs, MatrixOrU:$rhs, NumScalar:$weight, SI64:$resNumRows, SI64:$resNumCols);
     let results = (outs MatrixOrU:$res);
@@ -979,7 +987,7 @@ def Daphne_SyrkOp : Daphne_Op<"syrk", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromArgNumCols, NumColsFromArg, CUDASupport,FPGAOPENCLSupport, 
-    CastArgsToResType
+    CastArgsToResType, SparsityUnknown
 ]> {
     // TODO: support `A @ t(A)` operation
     let summary = [{Performs the operation `t(A) @ A`}];
@@ -991,7 +999,7 @@ def Daphne_GemvOp : Daphne_Op<"gemv", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     DataTypeMat, ValueTypeFromArgs,
     NumRowsFromArgNumCols, OneCol, CUDASupport,
-    CastArgsToResType
+    CastArgsToResType, SparsityUnknown
 ]> {
     // TODO: support `A @ x` operation
     let summary = [{Performs the operation `t(A) @ x`}];
