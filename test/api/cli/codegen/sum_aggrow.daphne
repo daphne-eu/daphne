@@ -1,0 +1,18 @@
+// Compare precompiled kernel with codegen generated for the AggRowOp.
+
+X = reshape( seq(-5.0, 6.0), 3, 4 );
+
+// Double
+print(sum(X, 0));
+
+// Float
+X = as.matrix<f32>(X);
+print(sum(X, 0));
+
+// Signed Integer
+X = as.matrix<si64>(X);
+print(sum(X, 0));
+
+// Unsigned Integer
+X = fill(2u, 3, 4);
+print(sum(X, 0));
