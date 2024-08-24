@@ -1,7 +1,15 @@
-def foo(n: si64) -> si64 {
+
+def foo(n: si64, m: si64) -> si64 {
   if(n <= 0)
-      return 0;
-  return foo(n - 1)+foo(n-2)+foo(0);
+      return m;
+  return foo(n - 1,m);
 }
 
-print(foo($n));
+def bar(n: si64) -> si64 {
+  if(n>5) {
+    return foo(n-1,n);
+  }
+  return n;
+}
+
+print(bar(10));
