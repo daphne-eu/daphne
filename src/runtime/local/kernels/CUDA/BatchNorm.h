@@ -23,18 +23,9 @@
 #include "HostUtils.h"
 
 namespace CUDA::BatchNorm {
-    
     template<typename DTRes, typename DTArg>
     struct Forward {
         static void apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta, const DTArg *ema_mean,
                 const DTArg *ema_var, typename DTArg::VT eps, DCTX(dctx));
     };
-
-    template<typename DTRes, typename DTArg>
-    struct Backward {
-        static void apply(DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta,
-                          const DTArg *mean, const DTArg *invVar, 
-                          const DTArg *in, const DTArg *dout, 
-                          const DTArg *gamma, const typename DTArg::VT eps, DCTX(dctx));
-    };    
 }

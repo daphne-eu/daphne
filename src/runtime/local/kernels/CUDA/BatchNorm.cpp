@@ -16,7 +16,6 @@
 
 #include "BatchNorm.h"
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
-#include <iostream>
 
 namespace CUDA::BatchNorm {
     template<typename DTRes, typename DTArg>
@@ -53,66 +52,7 @@ namespace CUDA::BatchNorm {
                 d_gamma, d_beta, d_ema_mean, d_ema_var, eps));
     }
 
-    template<typename DTRes, typename DTArg>
-    void Backward<DTRes, DTArg>::apply(DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta,
-                                       const DTArg *mean, const DTArg *invVar, 
-                                       const DTArg *in, const DTArg *dout, 
-                                       const DTArg *gamma, const typename DTArg::VT eps, DCTX(dctx))
-    {
-        const size_t deviceID = 0; //ToDo: multi device support
-        auto ctx = CUDAContext::get(dctx, deviceID);
-        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
-        using VT = typename DTRes::VT;
-        const size_t N = data->getNumRows();
-        const size_t CHW = data->getNumCols();
-        const size_t C = gamma->getNumRows();
-        const size_t HW = CHW / C;
-        auto H = static_cast<size_t>(std::sqrt(HW));
-
-        VT alphaDataDiff = 1.0;
-        VT betaDataDiff = 0.0;
-        VT alphaParamDiff = 1.0;
-        VT betaParamDiff = 0.0;
-
-        const VT* d_mean = mean->getValues(&alloc_desc);
-        const VT* d_invVar = invVar->getValues(&alloc_desc);
-        const VT* d_in = in->getValues(&alloc_desc);
-        const VT* d_gamma = gamma->getValues(&alloc_desc);
-        const VT* d_dout = dout->getValues(&alloc_desc);
-
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), N, C, H, H));    
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dy_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), N, C, H, H));
-        
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), N, C, H, H));
-        CHECK_CUDNN(cudnnDeriveBNTensorDescriptor(ctx->bn_scale_bias_tensor_desc, ctx->src_tensor_desc, ctx->bn_mode));
-
-        if (dX == nullptr)
-            dX = DataObjectFactory::create<DenseMatrix<VTArg>>(N, CHW, false, &alloc_desc);
-        if (dGamma == nullptr)
-            dGamma = DataObjectFactory::create<DenseMatrix<VTArg>>(C, 1, false, &alloc_desc);
-        if (dBeta == nullptr)
-            dBeta = DataObjectFactory::create<DenseMatrix<VTArg>>(C, 1, false, &alloc_desc);
-
-        VT* d_dX = dX->getValues(&alloc_desc);
-        VT* d_dGamma = dGamma->getValues(&alloc_desc);
-        VT* d_dBeta = dBeta->getValues(&alloc_desc);
-
-        CHECK_CUDNN(cudnnBatchNormalizationBackward(ctx->getCUDNNHandle(), 
-                                                    ctx->bn_mode,
-                                                    &alphaDataDiff, &betaDataDiff, &alphaParamDiff, &betaParamDiff,
-                                                    src_tensor_desc, d_in,
-                                                    dy_tensor_desc, d_dout,
-                                                    dst_tensor_desc, d_dX,
-                                                    bn_scale_bias_tensor_desc, d_gamma, d_dGamma, d_dBeta,
-                                                    eps,
-                                                    d_mean, d_invVar));
-        std::cout<<"cuda"<<std::endl;
-    }
-
     template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
     template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
-
-    template struct Backward<DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Backward<DenseMatrix<double>, DenseMatrix<double>>;
 }
 

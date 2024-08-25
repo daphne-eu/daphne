@@ -104,8 +104,6 @@ public:
     cudnnConvolutionDescriptor_t conv_desc{};
     cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
 
-    cudnnTensorDescriptor_t dy_tensor_desc{}, bn_scale_bias_tensor_desc{};
-
     // A block size of 256 works well in many cases.
     // Putting it here to avoid hard coding things elsewhere.
     const uint32_t default_block_size = 256;
