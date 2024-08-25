@@ -61,80 +61,10 @@ namespace CUDA::NN::Pooling {
                                         d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
     }
 
-    template<template<typename> class OP, typename DTRes, typename DTArg>
-    void Backward<OP, DTRes, DTArg>::apply(DTRes *&res, 
-                                           const DTArg *input, const DTArg *output,const DTArg *dOut,
-                                           const size_t batch_size, const size_t num_channels, 
-                                           const size_t img_h, const size_t img_w,       
-                                           const size_t pool_h, const size_t pool_w,
-                                           const size_t stride_h, const size_t stride_w,
-                                           const size_t pad_h, const size_t pad_w,  
-                                           DCTX(dctx))
-    {
-        const size_t deviceID = 0; //ToDo: multi device support
-        auto ctx = CUDAContext::get(dctx, deviceID);
-        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
-    
-        using VT = typename DTRes::VT;
-        const VT blend_alpha = 1;
-        const VT blend_beta = 0;
-        
-        CHECK_CUDNN(cudnnSetPooling2dDescriptor(ctx->pooling_desc, 
-                                                OP<VT>::isMAX() ? CUDNN_POOLING_MAX : CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, 
-                                                CUDNN_PROPAGATE_NAN, 
-                                                pool_h, pool_w, 
-                                                pad_h, pad_w, 
-                                                stride_h, stride_w));
-
-        const VT* d_input = input->getValues(&alloc_desc);
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, 
-                                               ctx->tensor_format, 
-                                               ctx->getCUDNNDataType<VT>(), 
-                                               batch_size, num_channels, img_h, img_w));
-
-        const int tensorDims = 4;
-        int tensorOuputDimA[tensorDims];
-        CHECK_CUDNN(cudnnGetPoolingNdForwardOutputDim(ctx->pooling_desc, ctx->src_tensor_desc, tensorDims,
-            tensorOuputDimA));
-
-        int n = tensorOuputDimA[0]; int c = tensorOuputDimA[1];
-        int h = tensorOuputDimA[2]; int w = tensorOuputDimA[3];
-
-        const VT* d_output = output->getValues(&alloc_desc);
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, 
-                                               ctx->tensor_format, 
-                                               ctx->getCUDNNDataType<VT>(), 
-                                               n, c, h, w));
-
-        const VT* d_dOut = dOut->getValues(&alloc_desc);
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dy_tensor_desc, 
-                                               ctx->tensor_format, 
-                                               ctx->getCUDNNDataType<VT>(), 
-                                               n, c, h, w));
-    
-        if (res == nullptr) {
-            res = DataObjectFactory::create<DTRes>(batch_size, num_channels * img_h * img_w, false, &alloc_desc);
-        }
-        VT* d_res = res->getValues(&alloc_desc);
-
-        CHECK_CUDNN(cudnnPoolingBackward(ctx->getCUDNNHandle(), 
-                                         ctx->pooling_desc, &blend_alpha,
-                                         ctx->dst_tensor_desc, d_output,
-                                         ctx->dy_tensor_desc, d_dOut,
-                                         ctx->src_tensor_desc, d_input,
-                                         &blend_beta, ctx->src_tensor_desc, d_res));
-    }
-
     template struct Forward<::NN::Pooling::AVG, DenseMatrix<float>, DenseMatrix<float>>;
     template struct Forward<::NN::Pooling::AVG, DenseMatrix<double>, DenseMatrix<double>>;
 
     template struct Forward<::NN::Pooling::MAX, DenseMatrix<float>, DenseMatrix<float>>;
     template struct Forward<::NN::Pooling::MAX, DenseMatrix<double>, DenseMatrix<double>>;
-
-    template struct Backward<::NN::Pooling::AVG, DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Backward<::NN::Pooling::AVG, DenseMatrix<double>, DenseMatrix<double>>;
-
-    template struct Backward<::NN::Pooling::MAX, DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Backward<::NN::Pooling::MAX, DenseMatrix<double>, DenseMatrix<double>>;
 }
 
