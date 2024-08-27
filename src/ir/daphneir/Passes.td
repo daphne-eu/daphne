@@ -248,6 +248,10 @@ def MatMulOpLoweringPass: Pass<"lower-mm", "::mlir::ModuleOp"> {
   ];
 }
 
+def TransposeOpLoweringPass: Pass<"lower-transpose", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createTransposeOpLoweringPass()";
+}
+
 def LowerEwOpPass: Pass<"lower-ew", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createEwOpLoweringPass()";
 }

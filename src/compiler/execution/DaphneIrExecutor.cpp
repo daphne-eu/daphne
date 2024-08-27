@@ -292,6 +292,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
+    pm.addPass(mlir::daphne::createTransposeOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
