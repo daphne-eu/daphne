@@ -1329,7 +1329,9 @@
                     [["DenseMatrix", "float"], ["CSRMatrix", "float"], ["DenseMatrix", "float"]],
                     [["DenseMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["CSRMatrix", "float"]],
-                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["CSRMatrix", "double"]]
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["CSRMatrix", "double"]],
+                    [["DenseMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["CSRMatrix", "float"], ["CSRMatrix", "float"]]
                 ],
                 "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
             }
