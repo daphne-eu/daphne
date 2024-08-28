@@ -52,7 +52,6 @@ void ewUnaryMat(UnaryOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) 
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
-
 template<typename VT>
 struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(UnaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
@@ -85,57 +84,62 @@ struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
     static void apply(UnaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        const size_t numNonZeros = arg->getNumNonZeros();
 
-        // Ensure res is initialized with enough space
+        size_t maxNnz;
+        bool operationCanConvertZeros = false;
+
+        switch (opCode) {
+            case UnaryOpCode::SQRT:
+            case UnaryOpCode::SIGN:
+            case UnaryOpCode::ABS:
+            case UnaryOpCode::ISNAN:
+                maxNnz = arg->getNumNonZeros();
+                break;
+            default:
+                maxNnz = numRows * numCols;
+                operationCanConvertZeros = true;
+                break;
+        }
+
         if (res == nullptr) {
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros * 1.5, false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNnz, false);
         }
 
         EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
-
+        
         size_t* rowOffsetsRes = res->getRowOffsets();
         rowOffsetsRes[0] = 0;
-
-        size_t posRes = 0;  // Track the position in the result matrix's values and colIdxs arrays
+        size_t posRes = 0;
 
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
             size_t nnzRowArg = arg->getNumNonZeros(rowIdx);
             const VT* valuesRowArg = arg->getValues(rowIdx);
             const size_t* colIdxsRowArg = arg->getColIdxs(rowIdx);
 
+            size_t colIdx = 0;  // Initialize colIdx for tracking within the row
+
+            // Process existing non-zero values
             for (size_t posArg = 0; posArg < nnzRowArg; ++posArg) {
                 VT value = func(valuesRowArg[posArg], ctx);
-
-                // Store non-zero values in result matrix
                 if (value != VT(0)) {
-                    if (posRes >= res->getMaxNumNonZeros()) {
-                        // Resize the result matrix to accommodate more non-zero values
-                        res->resize(posRes + nnzRowArg);
-                    }
                     res->getValues()[posRes] = value;
                     res->getColIdxs()[posRes] = colIdxsRowArg[posArg];
                     posRes++;
                 }
+                colIdx = colIdxsRowArg[posArg] + 1;  // Move colIdx forward
             }
 
-            // Handle zero values that become non-zero
-            for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
-                if (std::find(colIdxsRowArg, colIdxsRowArg + nnzRowArg, colIdx) == colIdxsRowArg + nnzRowArg) {
-                    // colIdx not found in the current non-zero column indices
-                    VT value = func(VT(0), ctx);  // Apply function to a zero value
+            if (operationCanConvertZeros) {
+                // Only check for missing columns that were not covered by non-zero elements
+                for (; colIdx < numCols; ++colIdx) {
+                    VT value = func(VT(0), ctx);
                     if (value != VT(0)) {
-                        if (posRes >= res->getMaxNumNonZeros()) {
-                            // Resize the result matrix to accommodate more non-zero values
-                            res->resize(posRes + 1);
-                        }
                         res->getValues()[posRes] = value;
                         res->getColIdxs()[posRes] = colIdx;
                         posRes++;
                     }
                 }
             }
-
             rowOffsetsRes[rowIdx + 1] = posRes;
         }
     }
@@ -144,7 +148,6 @@ struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
 // ----------------------------------------------------------------------------
 // Matrix <- Matrix
 // ----------------------------------------------------------------------------
-
 template<typename VT>
 struct EwUnaryMat<Matrix<VT>, Matrix<VT>> {
     static void apply(UnaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {

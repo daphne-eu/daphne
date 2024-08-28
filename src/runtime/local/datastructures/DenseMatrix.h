@@ -238,7 +238,19 @@ public:
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         return getValues()[pos(rowIdx, colIdx, isPartialBuffer())];
     }
-    
+
+    size_t getNumNonZeros() const {
+        size_t count = 0;
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++) {
+                if (get(r, c) != ValueType(0)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
         auto vals = getValues();
         vals[pos(rowIdx, colIdx)] = value;
