@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "DataPlacement.h"
+
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <ir/daphneir/Daphne.h>
@@ -23,7 +25,6 @@
 #include <runtime/local/datastructures/DistributedAllocationHelpers.h>
 
 class AllocationDescriptorGRPC : public IAllocationDescriptor {
-private:
     DaphneContext *ctx;
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_GRPC;
     const std::string workerAddress;
@@ -41,7 +42,10 @@ public:
     
     std::string getLocation() const override 
     {return workerAddress; };
-    void createAllocation(size_t size, bool zero) override {}
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor>  createAllocation(size_t size, bool zero) const override {
+        /* TODO */
+        throw std::runtime_error("AllocationDescriptorGRPC::createAllocation not implemented");
+    }
     // TODO: Implement transferTo and transferFrom functions
     std::shared_ptr<std::byte> getData() override { 
         throw std::runtime_error("TransferTo/From functions are not implemented yet.");

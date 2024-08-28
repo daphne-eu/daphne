@@ -1,0 +1,96 @@
+
+import "nn/layers/conv2d_kernel.daph" as "conv2d";
+import "nn/layers/conv2d.daph" as "conv2d_dsl"; #returns segFault (issue #77)
+
+msec_factor = as.f32(0.000001);
+
+X1 = readMatrix($input);
+
+# num images
+N = 1;
+#Himg = 28;
+#Wimg = 28;
+Himg = 8;
+Wimg = 8;
+#channels
+numC = 1;
+# seed for random input generation
+seed = 42;
+X = rand(N, numC * Himg * Wimg, 0.0, 256.0, 1.0, seed);
+batch_size = 1;
+X_batch = X[0:batch_size,];
+print("X:");
+print(X_batch);
+img1 = reshape(X[0,], Himg, Wimg);
+#img = (img1 != 0);
+print(img1);
+
+numF = 1;
+#Hf = 5;
+#Wf = 5;
+Hf = 3;
+Wf = 3;
+
+#W = fill(1.0, numF, numC * Hf * Wf);
+#b = fill(0.0, numF, 1);
+#print(sum(W));
+#print(sum(b));
+
+W, b = conv2d.init(numF, numC, Hf, Wf, seed);
+print("W:");
+imgW = reshape(W[0,], Hf, Wf);
+#imgW = (imgW1 != 0);
+print(imgW);
+
+stride = 1;
+pad = 2;
+#X_conv, Hout, Wout = conv2d(X_batch, W, batch_size, numC, Himg, Wimg, Hf, Wf, stride, stride, pad, pad, b);
+
+t_start_conv1 = now();
+X_conv1, Hout1, Wout1 = conv2d.forward(X_batch, W, b, numC, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+t_start_conv2 = now();
+X_conv2, Hout2, Wout2 = conv2d_dsl.forward(X_batch, W, b, numC, Himg, Wimg, Hf, Wf, stride, stride, pad, pad);
+t_end_conv = now();
+
+print("X dims: ",0) ;print(nrow(X),0);print("x",0);print(ncol(X));
+print("X_conv1 dims: ",0) ;print(nrow(X_conv1),0);print("x",0);print(ncol(X_conv1));
+print("X_conv2 dims: ",0) ;print(nrow(X_conv2),0);print("x",0);print(ncol(X_conv2));
+print("conv1 output dims: ",0);print(Hout1,0);print("x",0);print(Wout1);
+print("conv2 output dims: ",0);print(Hout2,0);print("x",0);print(Wout2);
+print("Time conv1:  ",0);print(as.f32((t_start_conv1 - t_start_conv1)) * msec_factor,0);print(" ms");
+print("Time conv2:  ",0);print(as.f32((t_end_conv - t_start_conv2)) * msec_factor,0);print(" ms");
+
+print(X_conv1);
+print(X_conv2);
+print(sum(X_conv1));
+print(sum(X_conv2));
+print(nrow(X_conv1));
+print(nrow(X_conv2));
+print(ncol(X_conv1));
+print(ncol(X_conv2));
+print(Hout1);
+print(Hout2);
+print(Wout1);
+print(Wout2);
+//print(X_conv[0:1,0:100]);
+#f1out = reshape(X_conv[0:1,0:784], 28, 28);
+#print(f1out[3:4,]);
+#print(sum(f1out));
+stop("stopping early");
+
+# seed for random input generation
+seed = 42;
+
+t_start = now();
+X_relu2 = rand(N, 97280, 0.0, 256.0, 1.0, seed);
+
+t_end_relu2 = now();
+X_pool,Hpool,Wpool=max_pool2d(X_relu2,N,32,4,760,2,2,2,2,0,0);
+t_end_pool = now();
+
+
+print("X_pool dims: ",0) ;print(nrow(X_pool),0);print("x",0);print(ncol(X_pool));
+print("Time maxpool2d:  ",0);print(as.f32((t_end_pool - t_end_relu2)) * msec_factor,0);print(" ms");
+t_end = now();
+print("Time total: ",0);print(as.f32((t_end - t_start)) * msec_factor,0);print(" ms");
+

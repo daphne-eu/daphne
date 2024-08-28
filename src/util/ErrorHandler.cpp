@@ -105,13 +105,16 @@ std::runtime_error ErrorHandler::compilerError(mlir::Location loc,
                                                const std::string &msg) {
 
     auto flcLoc = llvm::dyn_cast<mlir::FileLineColLoc>(loc);
+    if(!flcLoc)
+        return makeError("header", "msg", "fName", 0, 0);
     std::stringstream header;
-    auto fName = flcLoc.getFilename().str();
+    auto fName = flcLoc ? flcLoc.getFilename().str() : "unknown";
+    auto line = flcLoc ? flcLoc.getLine() : -1;
+    auto column = flcLoc ? flcLoc.getColumn() : -1;
     header << DAPHNE_BLUE << pass << RESET_COLOR
            << " failed with the following message [ " << DAPHNE_RED << msg
            << RESET_COLOR << " ]\n";
-    return makeError(header.str(), msg, fName, flcLoc.getLine(),
-                     flcLoc.getColumn());
+    return makeError(header.str(), msg, fName, line, column);
 }
 
 std::runtime_error ErrorHandler::rethrowError(const std::string &action,

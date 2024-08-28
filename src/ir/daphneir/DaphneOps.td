@@ -800,11 +800,23 @@ class Daphne_ActivationForwardOp<string name, list<Trait> traits = []> :
 
 def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"NN_Relu_Forward", [ ValueTypeFromFirstArg, DataTypeFromFirstArg, CUDASupport ]>;
 
+class Daphne_ActivationBackwardOp<string name, list<Trait> traits = []> :
+        Daphne_Op<name, traits> {
+    let arguments = (ins MatrixOf<[FloatScalar]>:$grad_in, MatrixOf<[FloatScalar]>:$input);
+
+    let results = (outs MatrixOf<[FloatScalar]>:$grad_out);
+}
+
+def Daphne_ReluBackwardOp : Daphne_ActivationBackwardOp<"NN_Relu_Backward", [ CUDASupport ]>;
+
 // ----------------------------------------------------------------------------
 // Affine
 // ----------------------------------------------------------------------------
 
-def Daphne_AffineForwardOp : Daphne_Op<"NN_Affine_Forward", [ CUDASupport ]> {
+def Daphne_AffineForwardOp : Daphne_Op<"NN_Affine_Forward", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$weights,
             MatrixOf<[FloatScalar]>:$bias);
 
@@ -815,10 +827,14 @@ def Daphne_AffineForwardOp : Daphne_Op<"NN_Affine_Forward", [ CUDASupport ]> {
 // Batch Normalization
 // ----------------------------------------------------------------------------
 
-def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"BatchNorm_Forward", [ CUDASupport ]> {
+def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"NN_BatchNorm_Forward", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    CUDASupport ]> {
     let arguments = (ins
             MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
-            MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps);
+            SI64:$inputNumChannels, SI64:$inputHeight, SI64:$inputWidth, BoolScalar:$train,
+            MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$mu, FloatScalar:$eps);
     let results = (outs MatrixOf<[FloatScalar]>:$output);
 }
 
@@ -901,7 +917,7 @@ def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"NN_Avg_Forward", [ DeclareOp
 // ----------------------------------------------------------------------------
 // Softmax
 // ----------------------------------------------------------------------------
-def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward", [ CUDASupport ]> {
+def Daphne_SoftmaxForwardOp : Daphne_Op<"NN_Softmax_Forward", [ TypeFromFirstArg, ShapeFromArg, CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
 
     let results = (outs MatrixOf<[FloatScalar]>:$data);

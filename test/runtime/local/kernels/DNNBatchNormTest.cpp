@@ -18,7 +18,6 @@
 
 #include "run_tests.h"
 
-#include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include "runtime/local/kernels/CUDA/BatchNorm.h"
@@ -27,12 +26,18 @@
 #include <tags.h>
 
 template<class DT>
-void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, const DT* ema_var, const DT* exp,
+void check(const DT* in, const DT* gamma, const DT* beta, DT* ema_mean, DT* ema_var, const DT* exp,
         DaphneContext* dctx)
 {
     DT* res = nullptr;
-    typename DT::VT epsilon = 1e-5;
-    CUDA::BatchNorm::Forward<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
+    const double epsilon = 1e-5;
+    const double mu = 0.1;
+    const size_t num_channels = 1;
+    const size_t img_h = 3;
+    const size_t img_w = 3;
+    const bool train = true;
+    CUDA::NN::BatchNorm::Forward<DT, DT>::apply(res, in, gamma, beta, num_channels, img_h, img_w, train, ema_mean,
+            ema_var, mu, epsilon, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 

@@ -1430,7 +1430,8 @@
             ["int64_t", "int64_t", "int64_t"],
             ["uint64_t", "uint64_t", "uint64_t"],
             ["uint32_t", "uint32_t", "uint32_t"],
-            ["size_t", "size_t", "size_t"]
+            ["size_t", "size_t", "size_t"],
+            ["bool", "bool", "bool"]
         ],
         "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "BITWISE_AND"]
     },
@@ -2560,6 +2561,7 @@
             [["DenseMatrix", "int64_t"], "int64_t"],
             [["DenseMatrix", "uint8_t"], "uint8_t"],
             [["CSRMatrix", "double"], "double"],
+            [["CSRMatrix", "float"], "float"],
             [["CSRMatrix", "int64_t"], "int64_t"]
         ]
     },
@@ -2667,6 +2669,7 @@
             [["DenseMatrix", "uint8_t"]],
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
             ["Frame"]
         ]
     },
@@ -3885,6 +3888,52 @@
     },
     {
         "kernelTemplate": {
+            "header": "Activation.h",
+            "opName": "NN::Activation::Backward",
+            "returnType": "void",
+            "opCodeAsTemplateParam": 1,
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "NN::ActivationOpCode",
+                    "name": "opcode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "grad_in"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data_in"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ],
+                "opCodes": ["ReLU"]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Affine.h",
             "opName": "NN::Affine::Forward",
             "returnType": "void",
@@ -3931,7 +3980,7 @@
     {
         "kernelTemplate": {
             "header": "BatchNorm.h",
-            "opName": "BatchNorm::Forward",
+            "opName": "NN::BatchNorm::Forward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -3962,15 +4011,35 @@
                     "name": "beta"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "const int64_t",
+                    "name": "num_channels"
+                },
+                {
+                    "type": "const int64_t",
+                    "name": "img_h"
+                },
+                {
+                    "type": "const int64_t",
+                    "name": "img_w"
+                },
+                {
+                    "type": "const bool",
+                    "name": "train"
+                },
+                {
+                    "type": "DTArg *",
                     "name": "ema_mean"
                 },
                 {
-                    "type": "const DTArg *",
+                    "type": "DTArg *",
                     "name": "ema_var"
                 },
                 {
-                    "type": "typename DTArg::VT",
+                    "type": "double",
+                    "name": "mu"
+                },
+                {
+                    "type": "double",
                     "name": "eps"
                 }
             ]
@@ -4081,7 +4150,7 @@
     {
         "kernelTemplate": {
             "header": "Softmax.h",
-            "opName": "Softmax::Forward",
+            "opName": "NN::Softmax::Forward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [

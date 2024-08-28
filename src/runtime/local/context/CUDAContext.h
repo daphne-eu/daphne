@@ -78,7 +78,9 @@ public:
     void* getCUDNNWorkspace(size_t size);
 
     [[nodiscard]] size_t getMemBudget() const { return mem_budget; }
-    int getMaxNumThreads();
+    [[nodiscard]] int getMaxNumThreads() const;
+    [[nodiscard]] int getMaxNumBlocks() const;
+
     static CUDAContext* get(DaphneContext* ctx, size_t id) { return dynamic_cast<CUDAContext*>(ctx->getCUDAContext(id)); }
 
     std::shared_ptr<std::byte> malloc(size_t size, bool zero, size_t& id);
@@ -91,13 +93,13 @@ public:
         CHECK_CUDART(cudaMemcpy(tmp.data(), data, num_items * sizeof(T), cudaMemcpyDeviceToHost));
         auto out = fmt::memory_buffer();
         fmt::format_to(std::back_inserter(out),"{} \n", title);
-        fmt::format_to(std::back_inserter(out), fmt::join(tmp, ", "));
-        ctx.logger->debug(out);
-    }
+        fmt::format_to(std::back_inserter(out),"{}", fmt::join(tmp, ", "));
+        ctx.logger->debug(fmt::to_string(out));    }
 
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
-    cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
+    // ToDo: move these to the allocation descriptor
+    cudnnTensorDescriptor_t src_tensor_desc{}, src2_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
     cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
     cudnnFilterDescriptor_t filter_desc{};
     cudnnActivationDescriptor_t  activation_desc{};

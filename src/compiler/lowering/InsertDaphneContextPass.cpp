@@ -36,7 +36,11 @@ using namespace mlir;
 struct InsertDaphneContextPass : public PassWrapper<InsertDaphneContextPass, OperationPass<func::FuncOp>>
 {
     const DaphneUserConfig& user_config;
-    explicit InsertDaphneContextPass(const DaphneUserConfig& cfg) : user_config(cfg) {}
+    std::shared_ptr<spdlog::logger> logger;
+
+    explicit InsertDaphneContextPass(const DaphneUserConfig& cfg) : user_config(cfg) {
+        logger = spdlog::get("compiler");
+    }
     void runOnOperation() final;
 };
 
@@ -49,18 +53,20 @@ void InsertDaphneContextPass::runOnOperation()
     Location loc = f.getLoc();
 
     // Insert a CreateDaphneContextOp as the first operation in the block.
-    builder.create<daphne::CreateDaphneContextOp>(loc, daphne::DaphneContextType::get(&getContext()),
+    builder.create<daphne::CreateDaphneContextOp>(
+            loc, daphne::DaphneContextType::get(&getContext()),
             builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&user_config)),
             builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())),
-            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&Statistics::instance())),
+        builder.create<daphne::ConstantOp>(
+            loc,
+            reinterpret_cast<uint64_t>(&Statistics::instance())),
             builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&StringRefCounter::instance())));
-
 #ifdef USE_CUDA
-    if(user_config.use_cuda) {
+    if (user_config.use_cuda) {
         builder.create<daphne::CreateCUDAContextOp>(loc);
     }
 #endif
-    if (user_config.use_distributed){
+    if (user_config.use_distributed) {
         builder.create<daphne::CreateDistributedContextOp>(loc);
     }
 #ifdef USE_FPGAOPENCL
@@ -68,12 +74,16 @@ void InsertDaphneContextPass::runOnOperation()
         builder.create<daphne::CreateFPGAContextOp>(loc);
     }
 #endif
- 
-    // Insert a DestroyDaphneContextOp as the last operation in the block, but
-    // before the block's terminator.
-    builder.setInsertionPoint(b.getTerminator());
-    builder.create<daphne::DestroyDaphneContextOp>(loc);
+
+    // only destroy the DAPHNE context at the end of the main function
+    if(f.getName().str() == "main") {
+        // Insert a DestroyDaphneContextOp as the last operation in the block, but
+        // before the block's terminator.
+        builder.setInsertionPoint(b.getTerminator());
+        builder.create<daphne::DestroyDaphneContextOp>(loc);
+    }
 }
+
 
 std::unique_ptr<Pass> daphne::createInsertDaphneContextPass(const DaphneUserConfig& cfg)
 {

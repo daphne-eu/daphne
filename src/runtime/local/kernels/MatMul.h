@@ -80,8 +80,8 @@ struct MatMul<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         memset(valuesRes, VT(0), sizeof(VT) * nr1 * nc2);
         for(size_t r = 0; r < nr1; r++) {
             const size_t rowNumNonZeros = lhs->getNumNonZeros(r);
-            const size_t * rowColIdxs = lhs->getColIdxs(r);
-            const VT * rowValues = lhs->getValues(r);
+            const size_t * rowColIdxs = lhs->getColIdxsOfRow(r);
+            const VT * rowValues = lhs->getRowValues(r);
 
             const size_t rowIdxRes = r * rowSkipRes;
             for(size_t i = 0; i < rowNumNonZeros; i++) {

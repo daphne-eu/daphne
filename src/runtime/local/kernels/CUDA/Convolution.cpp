@@ -34,6 +34,15 @@ namespace CUDA::Convolution {
         const VT* d_input = data->getValues(&alloc_desc);
         const VT* d_filter = filter->getValues(&alloc_desc);
 
+        auto chw_in = num_channels * img_h * img_w;
+        auto fhw_in = num_channels * filter_h * filter_w;
+
+        ctx->logger->debug("conv2d dims: X[N,C*Hin*Win]: X[{},{}],"
+                           "W[F,C*Hf*Wf]: W[{},{}]", data->getNumRows(), chw_in, filter->getNumRows(), fhw_in);
+        ctx->logger->debug("N:{} F:{}, Hin:{} Win:{} Hf:{} Wf:{} stride_h:{} stride_w:{} pad_h:{} pad_w:{}",
+                           data->getNumRows(), filter->getNumRows(), img_h,img_w, filter_h,filter_w, stride_h, stride_w, pad_h, pad_w);
+        ctx->logger->debug("batch_size:{} num_channels:{}", batch_size, num_channels);
+
         cudnnConvolutionFwdAlgo_t algo;
 
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->template getCUDNNDataType<VT>(), batch_size,
@@ -51,14 +60,12 @@ namespace CUDA::Convolution {
         int upscaleA[convDims] = {1,1};
         cudnnDataType_t convDataType = ctx->template getCUDNNDataType<VT>();
 
-        // ToDo: Math are done in FP32 when tensor are in FP16.
-//        if (ctx->data_type == CUDNN_DATA_HALF) {
-//            convDataType = CUDNN_DATA_FLOAT;
-//        }
 
+        CHECK_CUDNN(cudnnSetConvolutionMathType(ctx->conv_desc, CUDNN_TENSOR_OP_MATH));
         CHECK_CUDNN(cudnnSetConvolutionNdDescriptor(ctx->conv_desc, convDims, padA, filterStrideA, upscaleA,
                 CUDNN_CROSS_CORRELATION, convDataType));
-
+//        CHECK_CUDNN(cudnnSetConvolutionNdDescriptor(ctx->conv_desc, convDims, padA, filterStrideA, upscaleA,
+//                                                    CUDNN_CONVOLUTION, convDataType));
         CHECK_CUDNN(cudnnGetConvolutionNdForwardOutputDim(ctx->conv_desc, ctx->src_tensor_desc, ctx->filter_desc,
                 tensorDims, tensorOuputDimA));
 
@@ -75,12 +82,21 @@ namespace CUDA::Convolution {
         
         VT* d_res = res->getValues(&alloc_desc);
         if (ctx->conv_algorithm < 0) {
-            int requestedAlgoCount = CUDNN_CONVOLUTION_FWD_ALGO_COUNT;
+            int algo_count = 0;
+            CHECK_CUDNN(cudnnGetConvolutionForwardAlgorithmMaxCount(ctx->getCUDNNHandle(), &algo_count));
+//            int requestedAlgoCount = CUDNN_CONVOLUTION_FWD_ALGO_COUNT;
+            int requestedAlgoCount = algo_count;
             int returnedAlgoCount = -1;
             cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_FWD_ALGO_COUNT];
 
             CHECK_CUDNN(cudnnFindConvolutionForwardAlgorithm(ctx->getCUDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
-                                                             ctx->conv_desc, ctx->dst_tensor_desc, requestedAlgoCount, &returnedAlgoCount, results));
+                    ctx->conv_desc, ctx->dst_tensor_desc, requestedAlgoCount, &returnedAlgoCount, results));
+
+            ctx->logger->debug("cudnn convolution returned algo count: {}", returnedAlgoCount);
+            for(auto i = 0; i < returnedAlgoCount; i++) {
+                ctx->logger->debug("CUDNN algo [{}]: {}, time: {}, mem: {}, det: {}, mType: {}, status: {}\n", i, results[i].algo, results[i].time,
+                        results[i].memory, results[i].determinism, results[i].mathType, results[i].status);
+            }
             algo = results[0].algo;
             ctx->conv_algorithm = algo;
         }
@@ -92,15 +108,17 @@ namespace CUDA::Convolution {
         void* work_space=nullptr;
         CHECK_CUDNN(cudnnGetConvolutionForwardWorkspaceSize(ctx->getCUDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
                                                             ctx->conv_desc, ctx->dst_tensor_desc, algo, &workspace_sizeInBytes));
-
-        if (workspace_sizeInBytes!=0) {
+//        if (workspace_sizeInBytes!=0) {
             work_space = ctx->getCUDNNWorkspace(workspace_sizeInBytes);
-        }
+//        }
+        CHECK_CUDART(cudaDeviceSynchronize());
 
         CHECK_CUDNN(cudnnConvolutionForward(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_input,
                 ctx->filter_desc, d_filter, ctx->conv_desc, algo, work_space, workspace_sizeInBytes, &blend_beta,
                 ctx->dst_tensor_desc, d_res));
+        CHECK_CUDART(cudaDeviceSynchronize());
 
+#if 1
         if(bias) {
             if (bias != filter) {
                 const VT *d_bias = bias->getValues(&alloc_desc);
@@ -114,8 +132,12 @@ namespace CUDA::Convolution {
                 CHECK_CUDNN(
                         cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_bias, &blend_beta,
                                        ctx->dst_tensor_desc, d_res));
+                CHECK_CUDART(cudaDeviceSynchronize());
+
             }
         }
+#endif
+
     }
 
     template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;

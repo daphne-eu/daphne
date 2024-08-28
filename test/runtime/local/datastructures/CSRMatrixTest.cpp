@@ -34,7 +34,7 @@ TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES, ALL_V
     const size_t numCols = 2000;
     const size_t numNonZeros = 500;
     
-    CSRMatrix<ValueType> * m = DataObjectFactory::create<CSRMatrix<ValueType>>(numRows, numCols, numNonZeros, false);
+    auto m = DataObjectFactory::create<CSRMatrix<ValueType>>(numRows, numCols, numNonZeros, false);
     
     ValueType * values = m->getValues();
     size_t * colIdxs = m->getColIdxs();
@@ -60,8 +60,8 @@ TEST_CASE("CSRMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
     const size_t numColsOrig = 7;
     const size_t numNonZeros = 3;
     
-    CSRMatrix<ValueType> * mOrig = DataObjectFactory::create<CSRMatrix<ValueType>>(numRowsOrig, numColsOrig, numNonZeros, true);
-    CSRMatrix<ValueType> * mSub = DataObjectFactory::create<CSRMatrix<ValueType>>(mOrig, 3, 5);
+    auto mOrig = DataObjectFactory::create<CSRMatrix<ValueType>>(numRowsOrig, numColsOrig, numNonZeros, true);
+    auto mSub = DataObjectFactory::create<CSRMatrix<ValueType>>(mOrig, 3, 5);
     
     // Sub-matrix dimensions are as expected.
     CHECK(mSub->getNumRows() == 2);

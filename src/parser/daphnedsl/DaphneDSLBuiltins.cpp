@@ -244,18 +244,22 @@ mlir::Value DaphneDSLBuiltins::createAffineFwdOp(mlir::Location loc, const std::
 mlir::Value DaphneDSLBuiltins::createBatchNorm2dTestFwdOp(mlir::Location loc, const std::string &func,
         const std::vector<mlir::Value> &args) {
     const size_t numArgs = args.size();
-    checkNumArgsExact(loc, func, numArgs, 6);
+    checkNumArgsExact(loc, func, numArgs, 11);
 
     mlir::Value input_data = args[0];
     mlir::Value gamma = args[1];
     mlir::Value beta = args[2];
-
-    mlir::Value ema_mean = args[3];
-    mlir::Value ema_var = args[4];
-    mlir::Value eps = args[5];
+    mlir::Value num_chan = args[3];
+    mlir::Value img_h = args[4];
+    mlir::Value img_w = args[5];
+    mlir::Value train = args[6];
+    mlir::Value ema_mean = args[7];
+    mlir::Value ema_var = args[8];
+    mlir::Value mu = args[9];
+    mlir::Value eps = args[10];
 
     return  static_cast<mlir::Value>(builder.create<mlir::daphne::BatchNorm2DTestForwardOp>(loc, input_data.getType(),
-            input_data, gamma, beta, ema_mean, ema_var, eps));
+            input_data, gamma, beta, num_chan, img_h, img_w, train, ema_mean, ema_var, mu, eps));
 }
 
 mlir::ResultRange DaphneDSLBuiltins::createConv2dFwdOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value>&
@@ -752,6 +756,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Deep neural network
     // ********************************************************************
 
+    // Forward pass
     if (func == "affine") {
         return createAffineFwdOp(loc, func, args);
     }
@@ -790,6 +795,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value input_data = args[0];
         return static_cast<mlir::Value>(builder.create<mlir::daphne::SoftmaxForwardOp>(loc, input_data.getType(), input_data));
+    }
+
+    // Backward pass
+    if (func == "relu_back") {
+        checkNumArgsExact(loc, func, numArgs, 2);
+        mlir::Value grad_in = args[0];
+        mlir::Value data_in = args[1];
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ReluBackwardOp>(loc, data_in.getType(), grad_in, data_in));
     }
 
     // ********************************************************************

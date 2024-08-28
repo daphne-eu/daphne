@@ -195,8 +195,8 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
         //--------main logic --------------------------
         if(pattern!=pattern){ // pattern is NaN
             for(size_t r = 0; r < numRows; r++){
-                const VT * allValues = arg->getValues(r);
-                VT * allUpdatedValues = res->getValues(r);
+                const VT * allValues = arg->getRowValues(r);
+                VT * allUpdatedValues = res->getRowValues(r);
                 const size_t nnzElementsRes= arg->getNumNonZeros(r);
                 for(size_t c = 0; c < nnzElementsRes; c++){
                     if(allValues[c]!=allValues[c]){
@@ -207,8 +207,8 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
         }
         else{
             for(size_t r = 0; r < numRows; r++){
-                const VT * allValues = arg->getValues(r);
-                VT * allUpdatedValues = res->getValues(r);
+                const VT * allValues = arg->getRowValues(r);
+                VT * allUpdatedValues = res->getRowValues(r);
                 const size_t nnzElementsRes= arg->getNumNonZeros(r);
                 for(size_t c = 0; c < nnzElementsRes; c++){
                     if(allValues[c]==pattern){
