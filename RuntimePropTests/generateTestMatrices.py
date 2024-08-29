@@ -36,6 +36,13 @@ def generate_sparsity_pattern_matrix(num_rows, num_cols, sparsity):
 
     return matrix
 
+def generate_and_mirror_matrices(num_rows, num_cols, sparsity):
+    matrix1 = generate_sparsity_pattern_matrix(num_rows, num_cols, sparsity)
+    #matrix2_horizontal_flip = np.fliplr(matrix1)  # Horizontal flip
+    matrix2 = np.flipud(matrix1)   # Vertical flip
+
+    return matrix1, matrix2
+
 def flip_sparsity_and_nnz(matrix):
     flipped_matrix = np.zeros_like(matrix)
     non_zero_positions = matrix != 0
@@ -64,8 +71,7 @@ def save_meta_file(matrix, filename):
 
 def generate_and_save_matrices(case):
     num_rows, num_cols = 5000, 5000
-    sparsity = 0.4
-
+    sparsity = 1-0.29
     if case == 1:
         matrix1 = generate_sparsity_pattern_matrix(num_rows, num_cols, sparsity)
         matrix2 = generate_sparsity_pattern_matrix(num_rows, num_cols, sparsity)
@@ -75,10 +81,11 @@ def generate_and_save_matrices(case):
         save_meta_file(matrix2, 'case1_matrix2.csv.meta')
 
     elif case == 2:
-        matrix1 = generate_sparsity_pattern_matrix(num_rows, num_cols, sparsity)
-        matrix2 = np.zeros((num_rows, num_cols), dtype=np.int64)
-        mask_zeros = (matrix1 == 0)
-        matrix2[mask_zeros] = np.random.randint(1, 11, size=np.count_nonzero(mask_zeros))
+        matrix1, matrix2 = generate_and_mirror_matrices(num_rows, num_cols, sparsity)
+        #matrix1 = generate_sparsity_pattern_matrix(num_rows, num_cols, sparsity)
+        #matrix2 = np.zeros((num_rows, num_cols), dtype=np.int64)
+        #mask_zeros = (matrix1 == 0)
+        #matrix2[mask_zeros] = np.random.randint(1, 11, size=np.count_nonzero(mask_zeros))
 
         save_matrix_to_csv(matrix1, 'case2_matrix1.csv')
         save_matrix_to_csv(matrix2, 'case2_matrix2.csv')

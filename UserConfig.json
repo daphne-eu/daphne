@@ -70,5 +70,5 @@
             "format": "%^[%n %L]:%$ %v"
         }
     ],
-    "sparsity_threshold": 0.25
+    "sparsity_threshold": 0.49
 }
