@@ -68,8 +68,8 @@ def plot_results(results, save_path="stacked_performance_comparison_plot.png"):
     ax.set_xticks(indices)
     ax.set_xticklabels(operations)
     handles = [
-        plt.Line2D([0], [0], color='orange', lw=4, label='Sqrt'),
-        plt.Line2D([0], [0], color='blue', lw=4, label='Add')
+        plt.Line2D([0], [0], color='blue', lw=4, label='Add'),
+        plt.Line2D([0], [0], color='orange', lw=4, label='Sqrt')
     ]
     ax.legend(handles=handles, title="Operation Type", loc='lower left', bbox_to_anchor=(0, 0))
     
@@ -87,7 +87,7 @@ def perform_property_recording(script_path, additional_args=None):
 
 def save_results_to_json(results, filename="results.json"):
     data = {}
-    operations = ['Operation 1', 'Operation 2', 'Operation 3']
+    operations = ['Full Overlap', 'No Overlap', 'Random Overlap']
     for op, result in zip(operations, results):
         data[op] = {
             "No Args": {"Sqrt": result[0][0], "Add": result[0][1]},
