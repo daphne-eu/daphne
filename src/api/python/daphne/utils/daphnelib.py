@@ -29,7 +29,7 @@ class DaphneLibResult(ctypes.Structure):
         ("vtcs", ctypes.POINTER(ctypes.c_int64)),
         ("labels", ctypes.POINTER(ctypes.c_char_p)),
         ("columns", ctypes.POINTER(ctypes.c_void_p)),
-        # To pass error message to Python code.
+        # To pass error messages to Python code.
         ("error_message", ctypes.c_char_p)
     ]
 
