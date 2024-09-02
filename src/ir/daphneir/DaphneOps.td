@@ -158,8 +158,13 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
 }
 
 // ****************************************************************************
-// Matrix/frame dimensions
+// Matrix/frame meta data
 // ****************************************************************************
+
+def Daphne_TypeOfOp : Daphne_Op<"typeOf"> {
+    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame]>:$arg);
+    let results = (outs StrScalar:$res);
+}
 
 class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeSca, ValueTypeSize, Pure

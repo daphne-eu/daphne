@@ -42,6 +42,7 @@ set(TEST_SOURCES
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
+        api/cli/operations/TypeOfTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/parser/MetaDataParserTest.cpp
         api/cli/scoping/ScopingTest.cpp

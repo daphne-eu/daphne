@@ -455,9 +455,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
 
     // ********************************************************************
-    // Matrix/frame dimensions
+    // Matrix/frame meta data
     // ********************************************************************
 
+    if(func == "typeOf") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+        return static_cast<mlir::Value>(builder.create<TypeOfOp>(loc, StringType::get(builder.getContext()), args[0]));
+    }
     if(func == "nrow")
         return createNumOp<NumRowsOp>(loc, func, args);
     if(func == "ncol")
