@@ -455,9 +455,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
 
     // ********************************************************************
-    // Matrix/frame dimensions
+    // Matrix/frame meta data
     // ********************************************************************
 
+    if(func == "typeOf") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+        return static_cast<mlir::Value>(builder.create<TypeOfOp>(loc, StringType::get(builder.getContext()), args[0]));
+    }
     if(func == "nrow")
         return createNumOp<NumRowsOp>(loc, func, args);
     if(func == "ncol")
@@ -1077,10 +1081,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value arg = args[0];
         mlir::Value filename = args[1];
         return builder.create<WriteOp>(loc, arg, filename).getOperation();
-    }
-    if(func == "typeOf") {
-        checkNumArgsExact(loc, func, numArgs, 1);
-        return static_cast<mlir::Value>(builder.create<TypeOfOp>(loc, StringType::get(builder.getContext()), args[0]));
     }
     if(func == "receiveFromNumpy") {
         checkNumArgsExact(loc, func, numArgs, 5);

@@ -158,8 +158,13 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
 }
 
 // ****************************************************************************
-// Matrix/frame dimensions
+// Matrix/frame meta data
 // ****************************************************************************
+
+def Daphne_TypeOfOp : Daphne_Op<"typeOf"> {
+    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame]>:$arg);
+    let results = (outs StrScalar:$res);
+}
 
 class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeSca, ValueTypeSize, Pure
@@ -1354,11 +1359,6 @@ def Daphne_PrintOp : Daphne_Op<"print"> {
     // rest of the program.
     let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame, List, AnyMemRef, Unknown]>:$arg, BoolScalar:$newline, BoolScalar:$err);
     let results = (outs); // no results
-}
-
-def Daphne_TypeOfOp : Daphne_Op<"typeOf"> {
-    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame]>:$arg);
-    let results = (outs StrScalar:$res);
 }
 
 // TODO Take asynchronous read into account.

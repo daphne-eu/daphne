@@ -35,7 +35,7 @@ We use the following notation (deviating from the DaphneDSL function syntax):
 DaphneDSL's built-in functions can be categorized as follows:
 
 - Data generation
-- Matrix/frame dimensions
+- Matrix/frame meta data
 - Elementwise unary
 - Elementwise binary
 - Outer binary (generalized outer product)
@@ -46,7 +46,6 @@ DaphneDSL's built-in functions can be categorized as follows:
 - Other matrix operations
 - Extended relational algebra
 - Conversions and casts
-- Type information
 - Input/output
 - Data preprocessing
 - Measurements
@@ -86,9 +85,15 @@ DaphneDSL's built-in functions can be categorized as follows:
     Note that `from` may be greater than `to`, and `inc` may be negative.
     The scalar `inc` is an optional argument and defaults to `1`.
 
-## Matrix/frame dimensions
+## Matrix/frame meta data
 
-The following built-in functions allow to find out the shape/dimensions of matrices and frames.
+The following built-in functions allow to find out meta data of matrices and frames.
+
+- **`typeOf`**`(arg:scalar/matrix/frame)`
+
+    Returns a string with the data type of `arg`, which can be a scalar, matrix, or a frame containing mixed value types.
+    For matrices and frames, this includes their dimensions and value type or value type per column in the case of frames.
+    Value types are named after their C++ representation.
 
 - **`nrow`**`(arg:matrix/frame)`
 
@@ -521,14 +526,6 @@ See the [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md) for detail
 
     Performs a `min`/`max` quantization of the values in `arg`.
     The result matrix is of value type `ui8`.
-
-## Type information
-
-- **`typeOf`**`(arg:scalar/matrix/frame)`
-
-    Returns a string with the data type of `arg`, which can be a scalar, matrix, or a frame containing mixed value types.
-    For matrices and frames, this includes their dimensions and value type or value type per column in the case of frames.
-    Value types are named after their C++ representation.
 
 ## Input/output
 

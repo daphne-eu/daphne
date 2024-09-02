@@ -2752,6 +2752,7 @@
             ["uint32_t"],
             ["uint8_t"],
             ["bool"],
+            ["size_t"],
             ["const char *"]
         ]
     },
@@ -2791,7 +2792,13 @@
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "float"]],
             [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
             [["CSRMatrix", "uint8_t"]],
+            [["CSRMatrix", "bool"]],
+            [["CSRMatrix", "size_t"]],
             ["Frame"]
         ]
     },
