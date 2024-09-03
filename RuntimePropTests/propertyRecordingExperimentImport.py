@@ -8,6 +8,13 @@ def extract_matrix_type(operation):
     match = re.search(r"(DenseMatrix|CSRMatrix)_double", operation)
     return match.group(1) if match else "Unknown"
 
+def truncate_to_two_decimals(value):
+    value_str = str(value)
+    if '.' in value_str:
+        truncated_value = value_str[:value_str.index('.') + 3]  # Truncate after 2 decimal places
+        return float(truncated_value)
+    return value
+
 def execute_daphne_script(script_path, additional_args=None, iterations=10, estimate_res_sparsity=True):
     command = ["bin/daphne"]
     command.append("--select-matrix-repr")
@@ -47,12 +54,14 @@ def execute_daphne_script(script_path, additional_args=None, iterations=10, esti
         output = result.stdout
         pattern = re.compile(r"\[sparsity\]:\s*(\d+\.\d+)")
         match = pattern.search(output)
-        res_sparsity = f"{float(match.group(1)):.2f}"
+        res_sparsity = float(match.group(1))
+        res_sparsity = truncate_to_two_decimals(res_sparsity)
 
     if estimate_res_sparsity == False:
         with open('properties.json', 'r') as file:
             data = json.load(file)
         res_sparsity = data["4"]["sparsity"]
+        res_sparsity = truncate_to_two_decimals(res_sparsity)
    
     return avg_sqrt_time, avg_add_time, res_sparsity, sqrt_op,add_op
   
