@@ -8,4 +8,5 @@ res = sqrt(Z);
 //t3 = t2-t1;
 
 print(sum(res));
+print("[sparsity]: " + sparsity(Z));
 //print("timestamp: " + t3);

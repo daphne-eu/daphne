@@ -1,0 +1,31 @@
+# DenseMatrix and Frame typeOf test
+print(typeOf([0]));
+print(typeOf([as.si8(0)]));
+print(typeOf([as.si32(0)]));
+print(typeOf([as.si64(0)]));
+print(typeOf([as.ui8(0)]));
+print(typeOf([as.ui32(0)]));
+print(typeOf([as.ui64(0)]));
+print(typeOf([as.f32(0)]));
+print(typeOf([as.f64(0)]));
+print(typeOf([as.bool(0)]));
+
+print(typeOf({"col_1": [as.si8(0)]}));
+print(typeOf({"col_1": [as.si32(0)]}));
+print(typeOf({"col_1": [as.si64(0)]}));
+print(typeOf({"col_1": [as.ui8(0)]}));
+print(typeOf({"col_1": [as.ui32(0)]}));
+print(typeOf({"col_1": [as.ui64(0)]}));
+print(typeOf({"col_1": [as.f32(0)]}));
+print(typeOf({"col_1": [as.f64(0)]}));
+
+print(typeOf({
+    "col_si8": [as.si8(0)],
+    "col_si32": [as.si32(0)],
+    "col_si64": [as.si64(0)],
+    "col_ui8": [as.ui8(0)],
+    "col_ui32": [as.ui32(0)],
+    "col_ui64": [as.ui64(0)],
+    "col_f32": [as.f32(0)],
+    "col_f64": [as.f64(0)]
+}));

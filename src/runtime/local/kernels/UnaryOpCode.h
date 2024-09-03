@@ -19,6 +19,10 @@
 
 #pragma once
 
+// ****************************************************************************
+// Enum for unary op codes and their names
+// ****************************************************************************
+
 enum class UnaryOpCode {
     // Arithmetic/general math.
     MINUS,
@@ -27,7 +31,7 @@ enum class UnaryOpCode {
     SQRT,
     EXP,
     LN,
-    // Trigonometric/Hyperbolic functions
+    // Trigonometric/hyperbolic.
     SIN,
     COS,
     TAN,
@@ -44,5 +48,89 @@ enum class UnaryOpCode {
     // Comparison.
     ISNAN
 };
+
+/**
+ * @brief Array of the "names" of the `UnaryOpCode`s.
+ *
+ * Must contain the same elements as `UnaryOpCode` in the same order,
+ * such that we can obtain the name corresponding to a `UnaryOpCode` `opCode`
+ * by `unary_op_codes[static_cast<int>(opCode)]`.
+ */
+static std::string_view unary_op_codes[] = {
+    // Arithmetic/general math.
+    "MINUS", "ABS", "SIGN", "SQRT", "EXP", "LN",
+    // Trigonometric/hyperbolic.
+    "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "SINH", "COSH", "TANH",
+    // Rounding.
+    "FLOOR", "CEIL", "ROUND",
+    // Comparison.
+    "ISNAN"
+};
+
+// ****************************************************************************
+// Specification which unary ops should be supported on which value types
+// ****************************************************************************
+
+/**
+ * @brief Template constant specifying if the given unary operation
+ * should be supported on arguments of the given value type.
+ *
+ * @tparam op The unary operation.
+ * @tparam VTRes The result value type.
+ * @tparam VTArg The argument value type.
+ */
+template<UnaryOpCode op, typename VTRes, typename VTArg>
+static constexpr bool supportsUnaryOp = false;
+
+// Macros for concisely specifying which unary operations should be
+// supported on which value types.
+
+// Generates code specifying that the unary operation `Op` should be supported on
+// the value type `VT` (for both the result and the argument, for simplicity).
+#define SUPPORT(Op, VT) \
+    template<> constexpr bool supportsUnaryOp<UnaryOpCode::Op, VT, VT> = true;
+
+// Generates code specifying that all unary operations typically supported on
+// numeric value types should be supported on the given value type `VT`
+// (for both the result and the argument, for simplicity).
+#define SUPPORT_NUMERIC(VT) \
+    /* Arithmetic/general math. */ \
+    SUPPORT(MINUS, VT) \
+    SUPPORT(ABS  , VT) \
+    SUPPORT(SIGN , VT) \
+    SUPPORT(SQRT , VT) \
+    SUPPORT(EXP  , VT) \
+    SUPPORT(LN   , VT) \
+    /* Trigonometric/hyperbolic. */ \
+    SUPPORT(SIN , VT) \
+    SUPPORT(COS , VT) \
+    SUPPORT(TAN , VT) \
+    SUPPORT(ASIN, VT) \
+    SUPPORT(ACOS, VT) \
+    SUPPORT(ATAN, VT) \
+    SUPPORT(SINH, VT) \
+    SUPPORT(COSH, VT) \
+    SUPPORT(TANH, VT) \
+    /* Rounding. */ \
+    SUPPORT(FLOOR, VT) \
+    SUPPORT(CEIL , VT) \
+    SUPPORT(ROUND, VT) \
+    /* Comparison */ \
+    SUPPORT(ISNAN, VT)
+
+// Concise specification of which unary operations should be supported on
+// which value types.
+SUPPORT_NUMERIC(double)
+SUPPORT_NUMERIC(float)
+SUPPORT_NUMERIC(int64_t)
+SUPPORT_NUMERIC(int32_t)
+SUPPORT_NUMERIC(int8_t)
+SUPPORT_NUMERIC(uint64_t)
+SUPPORT_NUMERIC(uint32_t)
+SUPPORT_NUMERIC(uint8_t)
+
+// Undefine helper macros.
+#undef SUPPORT
+#undef SUPPORT_NUMERIC
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
