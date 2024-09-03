@@ -57,3 +57,19 @@ MAKE_TEST_CASE("while", 16)
 MAKE_TEST_CASE("nested", 26)
 
 MAKE_FAILURE_TEST_CASE("stop", 2)
+
+TEST_CASE("loop-with-many-iterations", TAG_CONTROLFLOW) {
+    std::stringstream exp;
+    for(size_t i = 1; i <= 500*1000; i++)
+        exp << i << std::endl;
+    compareDaphneToStr(exp.str(), dirPath + "for_manyiterations_1.daphne");
+    compareDaphneToStr(exp.str(), dirPath + "while_manyiterations_1.daphne");
+}
+
+TEST_CASE("loop-with-many-iterations_variadic-op", TAG_CONTROLFLOW) {
+    std::stringstream exp;
+    for(size_t i = 1; i <= 500*1000; i++)
+        exp << "Frame(1x1, [col_0:int64_t])" << std::endl << i << std::endl;
+    compareDaphneToStr(exp.str(), dirPath + "for_manyiterations_2.daphne");
+    compareDaphneToStr(exp.str(), dirPath + "while_manyiterations_2.daphne");
+}

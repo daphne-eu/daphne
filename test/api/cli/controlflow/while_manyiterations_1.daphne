@@ -1,0 +1,7 @@
+// A while-loop with many iterations.
+
+i = 1;
+while(i <= 500_000) {
+    print(i);
+    i = i + 1;
+}
