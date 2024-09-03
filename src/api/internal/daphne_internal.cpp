@@ -76,7 +76,7 @@ void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<
 void printVersion(llvm::raw_ostream& os) {
     // TODO Include some of the important build flags into the version string.
     os
-      << "DAPHNE Version 0.2\n"
+      << "DAPHNE Version 0.3\n"
       << "An Open and Extensible System Infrastructure for Integrated Data Analysis Pipelines\n"
       << "https://github.com/daphne-eu/daphne\n";
 }
@@ -94,6 +94,13 @@ void handleSignals(int signal) {
     backtrace_symbols_fd(callstack, callstacksReturned, STDOUT_FILENO);
     gSignalStatus = signal;
     longjmp(return_from_handler, gSignalStatus);
+}
+
+void logErrorDaphneLibAware(DaphneLibResult * daphneLibRes, std::string msg) {
+    if(daphneLibRes != nullptr) // For DaphneLib (Python API), error message is handled later in script.py.
+        daphneLibRes->error_message = msg;
+    else
+        spdlog::error(msg);
 }
 
 int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int *id, DaphneUserConfig& user_config){
@@ -432,7 +439,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         }
     }
     catch(std::exception & e) {
-        spdlog::error("Parser error while reading user config:\n{}", e.what());
+        logErrorDaphneLibAware(daphneLibRes, "Parser error while reading user config:\n" + std::string(e.what()));
         return StatusCode::PARSER_ERROR;
     }
 
@@ -585,7 +592,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         parseScriptArgs(scriptArgs1, scriptArgsFinal);
     }
     catch(exception& e) {
-        spdlog::error("Parser error: {}", e.what());
+        logErrorDaphneLibAware(daphneLibRes, "Parser error: " + std::string(e.what()));
         return StatusCode::PARSER_ERROR;
     }
 
@@ -633,7 +640,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         parser.parseFile(builder, inputFile);
     }
     catch(std::exception & e) {
-        spdlog::error("While parsing: {}", e.what());
+        logErrorDaphneLibAware(daphneLibRes, "While parsing: " + std::string(e.what()));
         return StatusCode::PARSER_ERROR;
     }
 
@@ -645,13 +652,14 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             return StatusCode::PASS_ERROR;
         }
     } catch (std::exception &e) {
-        spdlog::error(
+        logErrorDaphneLibAware(
+            daphneLibRes,
             "Lowering pipeline error.{}\nPassManager failed module lowering, "
-            "responsible IR written to module_fail.log.\n",
-            e.what());
+            "responsible IR written to module_fail.log.\n" + std::string(e.what())
+        );
         return StatusCode::PASS_ERROR;
     } catch (...) {
-        spdlog::error("Lowering pipeline error: Unknown exception");
+        logErrorDaphneLibAware(daphneLibRes, "Lowering pipeline error: Unknown exception");
         return StatusCode::PASS_ERROR;
     }
 
@@ -671,19 +679,21 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             }
         }
         else {
-            spdlog::error(
+            logErrorDaphneLibAware(
+                daphneLibRes,
                 "Got an abort signal from the execution engine. Most likely an "
-                "exception in a shared library. Check logs!");
-            spdlog::error("Execution error: Returning from signal {}", gSignalStatus);
+                "exception in a shared library. Check logs!\n"
+                "Execution error: Returning from signal " + std::to_string(gSignalStatus)
+            );
             return StatusCode::EXECUTION_ERROR;
         }
     }
     catch (std::runtime_error& re) {
-        spdlog::error("Execution error: {}", re.what());
+        logErrorDaphneLibAware(daphneLibRes, "Execution error: " + std::string(re.what()));
         return StatusCode::EXECUTION_ERROR;
     }
     catch(std::exception & e){
-        spdlog::error("Execution error: {}", e.what());
+        logErrorDaphneLibAware(daphneLibRes, "Execution error " + std::string(e.what()));
         return StatusCode::EXECUTION_ERROR;
     }
     clock::time_point tpEnd = clock::now();

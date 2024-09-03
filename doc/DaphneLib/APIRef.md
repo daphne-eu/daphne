@@ -62,7 +62,7 @@ In the following, we describe only the latter.
 
 ### `Matrix` API Reference
 
-**Matrix dimensions:**
+**Matrix meta data:**
 
 - **`ncol`**`()`
 - **`nrow`**`()`
@@ -174,7 +174,7 @@ In the following, we describe only the latter.
 
 ### `Frame` API Reference
 
-**Frame dimensions:**
+**Frame meta data:**
 
 - **`nrow`**`()`
 - **`ncol`**`()`

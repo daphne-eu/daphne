@@ -867,52 +867,6 @@
     },
     {
         "kernelTemplate": {
-            "header": "StringEq.h",
-            "opName": "stringEq",
-            "returnType": "bool",
-            "templateParams": [],
-            "runtimeParams": [
-                {
-                    "type": "const char *",
-                    "name": "lhs"
-                },
-                {
-                    "type": "const char *",
-                    "name": "rhs"
-                }
-            ]
-        },
-        "instantiations": [
-            []
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "Concat.h",
-            "opName": "concat",
-            "returnType": "void",
-            "templateParams": [],
-            "runtimeParams": [
-                {
-                    "type": "char *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const char *",
-                    "name": "lhs"
-                },
-                {
-                    "type": "const char *",
-                    "name": "rhs"
-                }
-            ]
-        },
-        "instantiations": [
-            []
-        ]
-    },
-    {
-        "kernelTemplate": {
             "header": "CreateDaphneContext.h",
             "opName": "createDaphneContext",
             "returnType": "void",
@@ -1439,9 +1393,11 @@
             ["int64_t", "int64_t", "int64_t"],
             ["uint64_t", "uint64_t", "uint64_t"],
             ["uint32_t", "uint32_t", "uint32_t"],
-            ["size_t", "size_t", "size_t"]
+            ["size_t", "size_t", "size_t"],
+            ["const char *", "const char *", "const char *"],
+            ["int64_t", "const char *", "const char *"]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "BITWISE_AND"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "BITWISE_AND", "CONCAT"]
     },
     {
         "kernelTemplate": {
@@ -2607,6 +2563,7 @@
             [["DenseMatrix", "int64_t"], "int64_t"],
             [["DenseMatrix", "uint8_t"], "uint8_t"],
             [["CSRMatrix", "double"], "double"],
+            [["CSRMatrix", "float"], "float"],
             [["CSRMatrix", "int64_t"], "int64_t"]
         ]
     },
@@ -2763,6 +2720,88 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
+            ["Frame"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "TypeOfSca.h",
+            "opName": "typeOfSca",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "char *&",
+                    "name": "res"
+                },
+                {
+                    "type": "VT",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            ["double"],
+            ["float"],
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["bool"],
+            ["size_t"],
+            ["const char *"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "TypeOfObj.h",
+            "opName": "typeOfObj",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "char *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "size_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]],
+            [["CSRMatrix", "bool"]],
+            [["CSRMatrix", "size_t"]],
             ["Frame"]
         ]
     },

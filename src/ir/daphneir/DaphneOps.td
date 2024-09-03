@@ -158,8 +158,13 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
 }
 
 // ****************************************************************************
-// Matrix/frame dimensions
+// Matrix/frame meta data
 // ****************************************************************************
+
+def Daphne_TypeOfOp : Daphne_Op<"typeOf"> {
+    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame]>:$arg);
+    let results = (outs StrScalar:$res);
+}
 
 class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeSca, ValueTypeSize, Pure
@@ -333,21 +338,6 @@ def Daphne_EwBitwiseAndOp    : Daphne_EwBinaryOp<"ewBitwiseAnd", NumScalar, [Com
 
 def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar, [CastArgsToResType]>;
 
-// TODO This is just a quick and dirty solution that should be properly
-// integrated with EwConcatOp above.
-def Daphne_ConcatOp : Daphne_Op<"concat", [DataTypeSca, ValueTypeStr]> {
-    let arguments = (ins StrScalar:$lhs, StrScalar:$rhs);
-    let results = (outs StrScalar:$res);
-
-    let hasFolder = 1;
-}
-
-def Daphne_StringEqOp : Daphne_Op<"stringEq", [ValueTypeStr]> {
-    let arguments = (ins StrScalar:$lhs, StrScalar:$rhs);
-    let results = (outs BoolScalar:$res);
-    let hasFolder = 1;
-}
-
 // ----------------------------------------------------------------------------
 // Comparisons
 // ----------------------------------------------------------------------------
@@ -359,9 +349,7 @@ class Daphne_EwCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar, Unknown]>:$res);
 }
 
-def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, [Commutative]> {
-    let hasCanonicalizeMethod = 1;
-}
+def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, [Commutative]>;
 def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar, [Commutative, CUDASupport]>;
 def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar>;
 def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;

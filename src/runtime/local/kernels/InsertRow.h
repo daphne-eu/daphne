@@ -78,14 +78,14 @@ void validateArgsInsertRow(size_t rowLowerIncl_Size, VTSel rowLowerIncl, size_t 
         errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl
                 << "' passed to InsertRow: the number of addressed rows in arg '" << rowUpperExcl_Size - rowLowerIncl_Size
                 << "' and the number of rows in ins '" << numRowsIns << "' must match";
-        throw std::runtime_error(errMsg.str());
+        throw std::out_of_range(errMsg.str());
     }
     
     if(numColsIns != numColsArg) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments passed to InsertRow: the number of columns in arg '" << numColsArg
                 << "' and ins '" << numColsIns << "' must match";
-        throw std::runtime_error(errMsg.str());
+        throw std::out_of_range(errMsg.str());
     }
 }
 

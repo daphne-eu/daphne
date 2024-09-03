@@ -17,9 +17,16 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
-#include <string_view>
+#include <string>
 
-inline bool stringEq(const char *lhs, const char *rhs, DCTX(ctx)) {
-    return std::string_view(lhs) == std::string_view(rhs);
+#include <cstring>
+
+template<typename VT>
+void typeOfSca(char *& res, const VT arg, DCTX(ctx)) {
+    const std::string typeName = ValueTypeUtils::cppNameFor<VT>;
+    if (res == nullptr)
+        res = new char[typeName.size() + 1];
+    std::memcpy(res, typeName.c_str(), typeName.size() + 1);
 }
