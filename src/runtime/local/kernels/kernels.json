@@ -1273,10 +1273,15 @@
                 "name":  ["CPP"],
                 "instantiations": [
                     [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
-                    [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]],
                     [["CSRMatrix", "float"], ["CSRMatrix", "float"], ["DenseMatrix", "float"]],
-                    [["CSRMatrix", "float"], ["CSRMatrix", "float"], ["CSRMatrix", "float"]]
-
+                    [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+                    [["CSRMatrix", "float"], ["CSRMatrix", "float"], ["CSRMatrix", "float"]],
+                    [["DenseMatrix", "float"], ["CSRMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["CSRMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["CSRMatrix", "double"]],
+                    [["DenseMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["CSRMatrix", "float"], ["CSRMatrix", "float"]]
                 ],
                 "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
             }
@@ -3110,8 +3115,11 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"],["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"],["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"],["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"],["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"],["CSRMatrix", "int64_t"]]
         ],
+
         "opCodes": ["MINUS", "SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND", "LN",
                     "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "SINH", "COSH", "TANH", "ISNAN"]
     },

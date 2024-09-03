@@ -24,8 +24,6 @@
 
 #include <catch.hpp>
 
-#include <vector>
-
 #include <cstdint>
 
 #define TEST_NAME(opName) "EwBinaryMat (" opName ")"
@@ -46,6 +44,30 @@ void checkSparseDenseEwBinaryMat(BinaryOpCode opCode, const SparseDT * lhs, cons
     SparseDT * res = nullptr;
     ewBinaryMat<SparseDT, SparseDT, DT>(opCode, res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
+}
+
+template<class DenseDT, class SparseDT>
+void checkDenseSparseEwBinaryMat(BinaryOpCode opCode, const DenseDT * lhs, const SparseDT * rhs, const DenseDT * exp) {
+    DenseDT * res = nullptr;
+    ewBinaryMat<DenseDT, DenseDT, SparseDT>(opCode, res, lhs, rhs, nullptr);
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
+}
+
+template<class SparseDT, class DenseDT>
+void checkSparseSparseEwBinaryMat(BinaryOpCode opCode, const SparseDT * lhs, const SparseDT * rhs, const DenseDT * exp) {
+    DenseDT * res = nullptr;
+    ewBinaryMat<DenseDT, SparseDT, SparseDT>(opCode, res, lhs, rhs, nullptr);
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
+}
+
+template<class DenseDT, class SparseDT>
+void checkDenseSparseDenseEwBinaryMat(BinaryOpCode opCode, const SparseDT * lhs, const DenseDT * rhs, const DenseDT * exp) {
+    DenseDT * res = nullptr;
+    ewBinaryMat<DenseDT, SparseDT, DenseDT>(opCode, res, lhs, rhs, nullptr);
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
 }
 
 // ****************************************************************************
@@ -171,6 +193,140 @@ TEMPLATE_TEST_CASE(TEST_NAME("mul_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
     checkSparseDenseEwBinaryMat(BinaryOpCode::MUL, m0, m3, m0);
 
     DataObjectFactory::destroy(m0, m1, m2, m3, exp0, exp1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("add_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using SparseDT = CSRMatrix<VT>;
+    using DenseDT = DenseMatrix<VT>;
+
+    auto sparseMatrix = genGivenVals<SparseDT>(4, {
+        0, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto denseMatrix1 = genGivenVals<DenseDT>(4, {
+        1, 2, 0, 0, 1, 3,
+        0, 1, 0, 2, 0, 3,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto denseMatrix2 = genGivenVals<DenseDT>(4, {
+        3, 0, 3, 3, 3, 3,
+        1, 2, 3, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        1, 2, 3, 1, 3, 2,
+    });
+
+    // Expected results for  CSR <- CSR, Dense
+    auto expectedSparseResult1 = genGivenVals<SparseDT>(4, {
+        1, 3, 1, 0, 1, 3,
+        0, 1, 0, 2, 0, 3,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto expectedSparseResult2 = genGivenVals<SparseDT>(4, {
+        3, 1, 4, 3, 3, 3,
+        1, 2, 3, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        1, 2, 3, 1, 3, 2,
+    });
+
+    // Expected results for Dense <- CSR, Dense
+    auto expectedDenseResultCSR1 = genGivenVals<DenseDT>(4, {
+        1, 3, 1, 0, 1, 3,
+        0, 1, 0, 2, 0, 3,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto expectedDenseResultCSR2 = genGivenVals<DenseDT>(4, {
+        3, 1, 4, 3, 3, 3,
+        1, 2, 3, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        1, 2, 3, 1, 3, 2,
+    });
+
+    // Expected results for Dense <- Dense, CSR
+    auto expectedDenseResultDense1 = genGivenVals<DenseDT>(4, {
+        1, 3, 1, 0, 1, 3,
+        0, 1, 0, 2, 0, 3,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto expectedDenseResultDense2 = genGivenVals<DenseDT>(4, {
+        3, 1, 4, 3, 3, 3,
+        1, 2, 3, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        1, 2, 3, 1, 3, 2,
+    });
+
+    // Test cases for CSR <- CSR, Dense
+    checkSparseDenseEwBinaryMat(BinaryOpCode::ADD, sparseMatrix, denseMatrix1, expectedSparseResult1);
+    checkSparseDenseEwBinaryMat(BinaryOpCode::ADD, sparseMatrix, denseMatrix2, expectedSparseResult2);
+
+    // Test cases for Dense <- CSR, Dense
+    checkDenseSparseDenseEwBinaryMat(BinaryOpCode::ADD, sparseMatrix, denseMatrix1, expectedDenseResultCSR1);
+    checkDenseSparseDenseEwBinaryMat(BinaryOpCode::ADD, sparseMatrix, denseMatrix2, expectedDenseResultCSR2);
+
+    // Test cases for Dense <- Dense, CSR
+    checkDenseSparseEwBinaryMat(BinaryOpCode::ADD, denseMatrix1, sparseMatrix, expectedDenseResultDense1);
+    checkDenseSparseEwBinaryMat(BinaryOpCode::ADD, denseMatrix2, sparseMatrix, expectedDenseResultDense2);
+
+    DataObjectFactory::destroy(sparseMatrix, denseMatrix1, denseMatrix2, expectedSparseResult1, expectedSparseResult2, expectedDenseResultCSR1, expectedDenseResultCSR2, expectedDenseResultDense1, expectedDenseResultDense2);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("add_sparse_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using SparseDT = CSRMatrix<VT>;
+    using DenseDT = DenseMatrix<VT>;
+
+    auto sparseMatrix1 = genGivenVals<SparseDT>(4, {
+        0, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto sparseMatrix2 = genGivenVals<SparseDT>(4, {
+        1, 0, 1, 0, 0, 1,
+        0, 1, 0, 2, 0, 0,
+        0, 0, 0, 0, 1, 0,
+        0, 0, 0, 0, 0, 1,
+    });
+
+    auto sparseMatrix3 = genGivenVals<SparseDT>(4, {
+        0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    // Expected results for Dense <- CSRMatrix, CSRMatrix
+    auto expectedDenseResult1 = genGivenVals<DenseDT>(4, {
+        1, 1, 2, 0, 0, 1,
+        0, 1, 0, 2, 0, 0,
+        0, 0, 0, 0, 1, 0,
+        0, 0, 0, 0, 0, 1,
+    });
+
+    auto expectedDenseResult2 = genGivenVals<DenseDT>(4, {
+        0, 1, 1, 0, 0, 1,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    // Test cases for Dense <- CSRMatrix, CSRMatrix
+    checkSparseSparseEwBinaryMat(BinaryOpCode::ADD, sparseMatrix1, sparseMatrix2, expectedDenseResult1);
+    checkSparseSparseEwBinaryMat(BinaryOpCode::ADD, sparseMatrix1, sparseMatrix3, expectedDenseResult2);
+
+    DataObjectFactory::destroy(sparseMatrix1, sparseMatrix2, sparseMatrix3, expectedDenseResult1, expectedDenseResult2);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {

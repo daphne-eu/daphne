@@ -31,7 +31,7 @@
 #include <cstdint>
 
 #define TEST_NAME(opName) "EwUnaryMat (" opName ")"
-#define DATA_TYPES DenseMatrix, Matrix
+#define DATA_TYPES DenseMatrix, Matrix, CSRMatrix
 #define VALUE_TYPES int32_t, double
 
 template<typename DTRes, typename DTArg>

@@ -184,7 +184,7 @@ public:
         // TODO Here we could reduce the allocated size of the values and
         // colIdxs arrays.
     }
-
+    
     ValueType * getValues() {
         return values.get();
     }
