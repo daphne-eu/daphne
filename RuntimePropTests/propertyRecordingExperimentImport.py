@@ -42,7 +42,7 @@ def plot_results(results, save_path="stacked_performance_comparison_plot.png"):
     
     indices = np.arange(num_operations)
     
-    inference_labels = ['Daphne Inference', 'Property Inference']
+    inference_labels = ['Estimated Props.', 'Measured Props.']
 
     # Plotting
     for i, ((sqrt_no_args, add_no_args), (sqrt_with_args, add_with_args)) in enumerate(results):
@@ -50,11 +50,11 @@ def plot_results(results, save_path="stacked_performance_comparison_plot.png"):
         bottom_no_args = [0, sqrt_no_args]  # Start at 0, stack add on top of sqrt
         bottom_with_args = [0, sqrt_with_args]
 
-        # Daphne Inference (No Args)
+        # Estimated Properties (No Args)
         ax.bar(indices[i] - bar_width/2, [sqrt_no_args, add_no_args], bar_width, label='Sqrt No Args' if i == 0 else None, color='orange', bottom=bottom_no_args)
         ax.bar(indices[i] - bar_width/2, [add_no_args], bar_width, label='Add No Args' if i == 0 else None, color='blue', bottom=[sqrt_no_args])
 
-        # Property Recording Inference (With Args)
+        # Measured Properties (With Args)
         ax.bar(indices[i] + bar_width/2, [sqrt_with_args, add_with_args], bar_width, label='Sqrt With Args' if i == 0 else None, color='orange', bottom=bottom_with_args)
         ax.bar(indices[i] + bar_width/2, [add_with_args], bar_width, label='Add With Args' if i == 0 else None, color='blue', bottom=[sqrt_with_args])
         
@@ -64,7 +64,7 @@ def plot_results(results, save_path="stacked_performance_comparison_plot.png"):
     # Labels and aesthetics
     ax.set_xlabel('Operations')
     ax.set_ylabel('Execution Time (s)')
-    ax.set_title('Execution Times for Sqrt and Add in Daphne Inference (left) and Propery Inference (right)')
+    ax.set_title('Execution Times for Sqrt and Add in Estimated Properties (left) and Propery Inference (right)')
     ax.set_xticks(indices)
     ax.set_xticklabels(operations)
     handles = [
@@ -143,56 +143,5 @@ def main():
     save_results_to_json(results)
     plot_results(results)
 
-'''Deprecated approach
-def plot_results(results, save_path="property_recording_plot.png"):
-    (op1_no_args, op2_no_args, op3_no_args), (op1_with_args, op2_with_args, op3_with_args) = results
-    
-    operations = ['Full Overlap', 'No Overlap', 'Random Overlap']
-    no_args = [op1_no_args, op2_no_args, op3_no_args]
-    with_args = [op1_with_args, op2_with_args, op3_with_args]
-
-    x = range(len(operations))
-    bar_width = 0.4
-
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.bar(x, no_args, width=bar_width, label='Daphne Inference', align='center')
-    ax.bar(x, with_args, width=bar_width, label='Property Recording Inference', align='edge')
-
-    ax.set_xlabel('Operations')
-    ax.set_ylabel('Time (s)')
-    ax.set_title('Execution Time of Daphne Script')
-    ax.set_xticks(x)
-    ax.set_xticklabels(operations)
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2)
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{x / 1e9:.3f}'))
-    plt.tight_layout()
-    plt.savefig(save_path, bbox_inches='tight')
-    plt.close()
-'''
-
-'''Deprecated main function
-def main():
-    script_case1_path = "RuntimePropTests/RuntimePropTest_case1.daphne"
-    script_case2_path = "RuntimePropTests/RuntimePropTest_case2.daphne"
-    script_case3_path = "RuntimePropTests/RuntimePropTest_case3.daphne"
-    iterations = 10
-    
-    perform_property_recording(script_case1_path)
-    op1_no_args = execute_daphne_script(script_case1_path, iterations=iterations)
-    op1_with_args = execute_daphne_script(script_case1_path, additional_args=["--enable_property_insert"], iterations=iterations)
-
-    perform_property_recording(script_case2_path)
-    op2_no_args = execute_daphne_script(script_case2_path, iterations=iterations)
-    op2_with_args = execute_daphne_script(script_case2_path, additional_args=["--enable_property_insert"], iterations=iterations)
-    
-    perform_property_recording(script_case3_path)
-    op3_no_args = execute_daphne_script(script_case3_path, iterations=iterations)
-    op3_with_args = execute_daphne_script(script_case3_path, additional_args=["--enable_property_insert"], iterations=iterations)
-
-    results = ((op1_no_args, op2_no_args, op3_no_args), (op1_with_args, op2_with_args, op3_with_args))
-
-    plot_results(results)
-'''
-    
 if __name__ == "__main__":
     main()

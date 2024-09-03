@@ -136,7 +136,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addPass(mlir::daphne::createRecordPropertiesPass());
 
     if(userConfig_.enable_property_insert)
+    {
         pm.addPass(mlir::daphne::createInsertPropertiesPass("properties.json"));
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
+    }
 
     if (selectMatrixRepresentations_) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
