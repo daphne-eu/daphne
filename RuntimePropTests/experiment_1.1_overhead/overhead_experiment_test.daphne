@@ -1,0 +1,7 @@
+X = readMatrix("overhead_measuring_matrix1.csv");
+Y = readMatrix("overhead_measuring_matrix2.csv");
+
+Z = X + Y;
+res = sqrt(Z);
+
+print(sum(res));
