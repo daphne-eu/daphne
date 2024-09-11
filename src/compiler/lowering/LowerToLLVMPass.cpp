@@ -46,6 +46,20 @@
 
 using namespace mlir;
 
+// Remark on the creation of mlir::LLVM::AllocaOp
+// ==============================================
+// This pass creates an mlir::LLVM::AllocaOp in several places and for various purposes,
+// e.g., to store the result pointer of a kernel call, for variadic operands/results, etc.
+// AllocaOp should not be inside a loop, as its repeated execution at run-time can lead
+// to a stack overflow (depending on the number of iterations, the number of AllocaOps
+// inside the loop, and the stack size). The reason is that the memory allocated by AllocaOp
+// is freed only at the end of the scope (i.e., function).
+// To avoid such problems, we don't create AllocaOps at the original insertion point of
+// the rewriter, but at the beginning of function surrounding the currently considered op.
+// To this end, we use the rewriter's ability to switch between different insertion points.
+// Note that the memory allocated by an AllocaOp can be reused by multiple repeated
+// kernel calls.
+
 // Optional attribute of CallKernelOp, which indicates that all results shall
 // be combined into a single variadic result.
 const std::string ATTR_HASVARIADICRESULTS = "hasVariadicResults";
@@ -102,12 +116,28 @@ public:
             const size_t numChars = sr.size() + 1; // +1 for trailing '\0'
             const std::string str = sr.str();
             const char * chars = str.c_str();
+
+            // We could assume that the daphne::ConstantOp `op` is *not* inside a loop,
+            // because constants are typically moved to the top of a function during
+            // canonicalization. Consequently, we would not need to change the insertion
+            // point. However, being defensive, we still do it.
+
+            // Set the insertion point to the beginning of the function surrounding this ConstantOp
+            // (see comment on AllocaOp above).
+            OpBuilder::InsertPoint ipHere = rewriter.saveInsertionPoint();
+            Block & fb = op.getOperation()->getParentOfType<LLVM::LLVMFuncOp>().getBody().front();
+            rewriter.setInsertionPointToStart(&fb);
+
             auto allocaOp = rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
                     op.getOperation(),
                     i8PtrType,
                     rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(numChars)),
                     1
             );
+
+            // Go back to the original insertion point.
+            rewriter.restoreInsertionPoint(ipHere);
+
             for(size_t i = 0; i < numChars; i++) {
                 std::vector<Value> indices = {
                     rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))
@@ -302,7 +332,7 @@ public:
 
         auto kernelOperands = allocOutputReferences(
             loc, rewriter, adaptor.getOperands(), inputOutputTypes,
-            op->getNumResults(), hasVarRes);
+            op->getNumResults(), hasVarRes, op);
 
         // call function
         // The kernel call has an empty list of return types, because our
@@ -359,22 +389,40 @@ private:
     std::vector<Value>
     allocOutputReferences(Location &loc, PatternRewriter &rewriter,
                           ValueRange operands,
-                          std::vector<Type> inputOutputTypes, size_t numRes, bool hasVarRes) const
+                          std::vector<Type> inputOutputTypes, size_t numRes, bool hasVarRes,
+                          daphne::CallKernelOp op) const
     {
 
         std::vector<Value> kernelOperands;
         
+        // Obtain an insertion point at the beginning of the function surrounding this CallKernelOp
+        // (see comment on AllocaOp above).
+        OpBuilder::InsertPoint ipHere = rewriter.saveInsertionPoint();
+        Block & fb = op.getOperation()->getParentOfType<LLVM::LLVMFuncOp>().getBody().front();
+        rewriter.setInsertionPointToStart(&fb);
+        OpBuilder::InsertPoint ipFuncStart = rewriter.saveInsertionPoint();
+        rewriter.restoreInsertionPoint(ipHere);
+
         // --------------------------------------------------------------------
         // Results
         // --------------------------------------------------------------------
         
         if(hasVarRes) { // combine all results into one variadic result
             // Allocate an array of numRes elements.
+
+            // Set the insertion point to the beginning of the function (see comment on AllocaOp above).
+            ipHere = rewriter.saveInsertionPoint();
+            rewriter.restoreInsertionPoint(ipFuncStart);
             auto allocaOp = rewriter.create<LLVM::AllocaOp>(
                     loc,
                     inputOutputTypes[0],
                     rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(numRes)).getResult()
             );
+            ipFuncStart = rewriter.saveInsertionPoint();
+
+            // Go back to the original insertion point.
+            rewriter.restoreInsertionPoint(ipHere);
+
             kernelOperands.push_back(allocaOp);
 
             // If the type of this result parameter is a pointer (i.e. when it
@@ -400,12 +448,26 @@ private:
         }
         else { // typical case
             // Constant of 1 for AllocaOp of output.
+            // Set the insertion point to the beginning of the function (see comment on AllocaOp above).
+            ipHere = rewriter.saveInsertionPoint();
+            rewriter.restoreInsertionPoint(ipFuncStart);
             Value cst1 = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(1));
+            ipFuncStart = rewriter.saveInsertionPoint();
+
+            // Go back to the original insertion point.
+            rewriter.restoreInsertionPoint(ipHere);
             
             for (size_t i = 0; i < numRes; i++) {
                 // Allocate space for a single element.
+                // Set the insertion point to the beginning of the function (see comment on AllocaOp above).
+                ipHere = rewriter.saveInsertionPoint();
+                rewriter.restoreInsertionPoint(ipFuncStart);
                 auto allocaOp = rewriter.create<LLVM::AllocaOp>(loc, inputOutputTypes[i], cst1);
+                ipFuncStart = rewriter.saveInsertionPoint();
                 kernelOperands.push_back(allocaOp);
+
+                // Go back to the original insertion point.
+                rewriter.restoreInsertionPoint(ipHere);
 
                 // If the type of this result parameter is a pointer (i.e. when it
                 // represents a matrix or frame), then initialize the allocated
@@ -451,6 +513,11 @@ public:
     matchAndRewrite(daphne::CreateVariadicPackOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
+        // Set the insertion point to the beginning of the function surrounding this CreateVariadicPackOp
+        // (see comment on AllocaOp above).
+        Block & fb = op.getOperation()->getParentOfType<LLVM::LLVMFuncOp>().getBody().front();
+        rewriter.setInsertionPointToStart(&fb);
+
         Type contType = op.getRes().getType().dyn_cast<daphne::VariadicPackType>().getContainedType();
         Type convType = typeConverter->convertType(contType);
         rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
@@ -822,15 +889,23 @@ public:
         newOperands.push_back(vpInputs);
         newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(numDataOperands)));
 
+        // Obtain an insertion point at the beginning of the function surrounding this VectorizedPipelineOp
+        // (see comment on AllocaOp above).
+        OpBuilder::InsertPoint ipHere = rewriter.saveInsertionPoint();
+        Block & fb = op.getOperation()->getParentOfType<LLVM::LLVMFuncOp>().getBody().front();
+        rewriter.setInsertionPointToStart(&fb);
+        OpBuilder::InsertPoint ipFuncStart = rewriter.saveInsertionPoint();
+        rewriter.restoreInsertionPoint(ipHere);
+
         auto numOutputs = op.getNumResults();
         // Variadic num rows operands.
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
         auto rowsOperands = adaptor.getOperands().drop_front(numDataOperands);
         newOperands
-            .push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), rowsOperands.take_front(numOutputs)));
+            .push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), rowsOperands.take_front(numOutputs), ipFuncStart));
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
         auto colsOperands = rowsOperands.drop_front(numOutputs);
-        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), colsOperands.take_front(numOutputs)));
+        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), colsOperands.take_front(numOutputs), ipFuncStart));
 
         // Add array of split enums
         callee << "__int64_t";
@@ -838,7 +913,7 @@ public:
         for(auto split : op.getSplits()) {
             splitConsts.push_back(rewriter.create<arith::ConstantOp>(loc, split));
         }
-        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), splitConsts));
+        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), splitConsts, ipFuncStart));
 
         // Add array of combine enums
         callee << "__int64_t";
@@ -846,14 +921,14 @@ public:
         for(auto combine : op.getCombines()) {
             combineConsts.push_back(rewriter.create<arith::ConstantOp>(loc, combine));
         }
-        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), combineConsts));
+        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), combineConsts, ipFuncStart));
 
         // TODO: pass function pointer with special placeholder instead of `void`
 
         callee << "__size_t";
         newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(func_ptrs.size())));
         callee << "__void_variadic";
-        newOperands.push_back(convertToArray(loc, rewriter, ptrPtrI1Ty, func_ptrs));
+        newOperands.push_back(convertToArray(loc, rewriter, ptrPtrI1Ty, func_ptrs, ipFuncStart));
 //        newOperands.push_back(fnPtr);
 
         // Add ctx
@@ -877,12 +952,22 @@ public:
         return success();
     }
 private:
-    static Value convertToArray(Location loc, ConversionPatternRewriter &rewriter, Type valueTy, ValueRange values)
+    static Value convertToArray(Location loc, ConversionPatternRewriter &rewriter, Type valueTy, ValueRange values, OpBuilder::InsertPoint & ipFuncStart)
     {
+        // Set the insertion point to the beginning of the function surrounding this VectorizedPipelineOp
+        // (see comment on AllocaOp above).
+        OpBuilder::InsertPoint ipHere = rewriter.saveInsertionPoint();
+        rewriter.restoreInsertionPoint(ipFuncStart);
+
         auto valuePtrTy = LLVM::LLVMPointerType::get(valueTy);
         auto array = rewriter.create<LLVM::AllocaOp>(loc,
             valuePtrTy,
             Value(rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(values.size()))));
+        ipFuncStart = rewriter.saveInsertionPoint();
+
+        // Go back to the original insertion point.
+        rewriter.restoreInsertionPoint(ipHere);
+
         for(auto i = 0u; i < values.size(); ++i) {
             Value cstI = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i));
             auto addr = rewriter.create<LLVM::GEPOp>(loc, valuePtrTy, array, ArrayRef<Value>({cstI}));
