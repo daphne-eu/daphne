@@ -146,6 +146,80 @@ struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
 };
 
 // ----------------------------------------------------------------------------
+// DenseMatrix <- CSRMatrix
+// ----------------------------------------------------------------------------
+template<typename VT>
+struct EwUnaryMat<DenseMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (res == nullptr) {
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+        }
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        const VT* valuesArg = arg->getValues();
+        VT* valuesRes = res->getValues();
+
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+            size_t nnzRowArg = arg->getNumNonZeros(rowIdx);
+            const size_t* colIdxsRowArg = arg->getColIdxs(rowIdx);
+
+            for (size_t posArg = 0; posArg < nnzRowArg; ++posArg) {
+                size_t colIdx = colIdxsRowArg[posArg];
+                valuesRes[rowIdx * numCols + colIdx] = func(valuesArg[posArg], ctx);
+            }
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- DenseMatrix
+// ----------------------------------------------------------------------------
+template<typename VT>
+struct EwUnaryMat<CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, CSRMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        size_t numNonZeros = 0;
+
+        // Calculate the number of non-zeros in the result matrix
+        for (size_t i = 0; i < numRows * numCols; i++) {
+            if (arg->getValues()[i] != 0) {
+                numNonZeros++;
+            }
+        }
+
+        if (res == nullptr) {
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
+        }
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        size_t* rowOffsetsRes = res->getRowOffsets();
+        VT* valuesRes = res->getValues();
+        size_t* colIdxsRes = res->getColIdxs();
+
+        rowOffsetsRes[0] = 0;
+        size_t posRes = 0;
+
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+            for (size_t colIdx = 0; colIdx < numCols; colIdx++) {
+                VT value = func(arg->get(rowIdx, colIdx), ctx);
+                if (value != 0) {
+                    valuesRes[posRes] = value;
+                    colIdxsRes[posRes] = colIdx;
+                    posRes++;
+                }
+            }
+            rowOffsetsRes[rowIdx + 1] = posRes;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Matrix <- Matrix
 // ----------------------------------------------------------------------------
 template<typename VT>
