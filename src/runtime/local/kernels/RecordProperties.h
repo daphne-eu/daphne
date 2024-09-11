@@ -23,8 +23,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
-#include <string>
-#include <typeinfo>
 
 // ****************************************************************************
 // Struct for partial template specialization
