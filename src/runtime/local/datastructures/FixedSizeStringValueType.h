@@ -40,7 +40,7 @@ struct FixedStr16 {
     FixedStr16(const char* str) {
         size_t len = std::strlen(str);
         if (len > N) {
-            throw std::length_error("String exceeds fixed buffer size");
+            throw std::length_error("string exceeds fixed buffer size");
         }
         std::transform(str, str + len, buffer, [](char c) { return c; });
         std::fill(buffer + len, buffer + N, '\0');
@@ -55,7 +55,7 @@ struct FixedStr16 {
     FixedStr16(const std::string& other) {
         size_t len = other.size();
         if (len > N) {
-            throw std::length_error("String exceeds fixed buffer size");
+            throw std::length_error("string exceeds fixed buffer size");
         }
         std::copy(other.begin(), other.end() + N, buffer);
     }
@@ -123,7 +123,7 @@ struct FixedStr16 {
     void set(const char* str) {
         size_t len = std::strlen(str);
         if (len > N) {
-            throw std::length_error("String exceeds fixed buffer size");
+            throw std::length_error("string exceeds fixed buffer size");
         }
         std::transform(str, str + len, buffer, [](char c) { return c; });
         std::fill(buffer + len, buffer + N, '\0');

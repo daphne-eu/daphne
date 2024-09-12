@@ -21,10 +21,10 @@
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 #include <sstream>
-#include <algorithm>
 
 #include <cmath>
 
@@ -95,7 +95,7 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
         MAKE_CASE(UnaryOpCode::ROUND)
         // Comparison.
         MAKE_CASE(UnaryOpCode::ISNAN)
-        // String
+        // String.
         MAKE_CASE(UnaryOpCode::LOWER)
         MAKE_CASE(UnaryOpCode::UPPER)
         #undef MAKE_CASE
@@ -134,17 +134,6 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
 // (Partial) template specializations for different op codes
 // ****************************************************************************
 
-#define MAKE_EW_UNARY_STRING(opCode, expr) \
-    template<> \
-    struct EwUnarySca<opCode, std::string, std::string> { \
-        inline static std::string apply(std::string arg, DCTX(ctx)) { \
-            std::string new_string = arg; \
-            std::transform(new_string.begin(), new_string.end(), new_string.begin(), \
-                           static_cast<int(*)(int)>(expr)); \
-            return new_string; \
-        } \
-    };
-
 #define MAKE_EW_UNARY_SCA(opCode, expr) \
     template<typename TRes, typename TArg> \
     struct EwUnarySca<opCode, TRes, TArg> { \
@@ -179,6 +168,17 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
         } \
     };
 
+#define MAKE_EW_UNARY_STRING_TRANSFORM(opCode, expr) \
+    template<> \
+    struct EwUnarySca<opCode, std::string, std::string> { \
+        inline static std::string apply(std::string arg, DCTX(ctx)) { \
+            std::string new_string = arg; \
+            std::transform(new_string.begin(), new_string.end(), new_string.begin(), \
+                           static_cast<int(*)(int)>(expr)); \
+            return new_string; \
+        } \
+    };
+
 // One such line for each unary function to support.
 // Arithmetic/general math.
 MAKE_EW_UNARY_SCA(UnaryOpCode::MINUS, -arg);
@@ -210,12 +210,12 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::ISNAN, std::isnan(arg));
 // String.
 MAKE_EW_UNARY_SCA(UnaryOpCode::LOWER, arg.lower())
 MAKE_EW_UNARY_SCA(UnaryOpCode::UPPER, arg.upper())
-MAKE_EW_UNARY_STRING(UnaryOpCode::LOWER, std::tolower)
-MAKE_EW_UNARY_STRING(UnaryOpCode::UPPER, std::toupper)
+MAKE_EW_UNARY_STRING_TRANSFORM(UnaryOpCode::LOWER, std::tolower)
+MAKE_EW_UNARY_STRING_TRANSFORM(UnaryOpCode::UPPER, std::toupper)
 
 #undef MAKE_EW_UNARY_SCA_CLOSED_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA
-#undef MAKE_EW_UNARY_STRING
+#undef MAKE_EW_UNARY_STRING_TRANSFORM
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H

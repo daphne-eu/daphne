@@ -201,8 +201,7 @@ TEST_CASE("DenseMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
     }
 }
 
-TEMPLATE_TEST_CASE("DenseMatrix_FixedStr", TAG_DATASTRUCTURES, ALL_STRING_VALUE_TYPES) {
-
+TEMPLATE_TEST_CASE("DenseMatrix with string value type", TAG_DATASTRUCTURES, ALL_STRING_VALUE_TYPES) {
     using ValueType = TestType;
 
     using expectedStrings = const std::vector<ValueType>;
@@ -217,7 +216,7 @@ TEMPLATE_TEST_CASE("DenseMatrix_FixedStr", TAG_DATASTRUCTURES, ALL_STRING_VALUE_
         return true;
     };
     
-    SECTION("creat"){
+    SECTION("Create"){
         const size_t numRows = 10000;
         const size_t numCols = 2000;
         
@@ -231,7 +230,7 @@ TEMPLATE_TEST_CASE("DenseMatrix_FixedStr", TAG_DATASTRUCTURES, ALL_STRING_VALUE_
         
         DataObjectFactory::destroy(m);
     }
-    
+
     SECTION("Append"){
         const size_t numRows = 3;
         const size_t numCols = 4;
@@ -273,8 +272,8 @@ TEMPLATE_TEST_CASE("DenseMatrix_FixedStr", TAG_DATASTRUCTURES, ALL_STRING_VALUE_
                     m->set(r, c, ValueType(std::to_string(num).c_str()));
                 }
             }
-        
         CHECK(compareMatToArr(m, exp1));
+
         for(size_t r = 0; r < numRows; r++)
             for(size_t c = 0; c < numCols; c++){
                 size_t num = r*10+c;
@@ -282,12 +281,11 @@ TEMPLATE_TEST_CASE("DenseMatrix_FixedStr", TAG_DATASTRUCTURES, ALL_STRING_VALUE_
                     m->set(r, c, ValueType(std::to_string(num).c_str()));
                 }
             }
-        
         CHECK(compareMatToArr(m, exp2));
 
         DataObjectFactory::destroy(m);
     }
-
+    
     SECTION("View") {
         const size_t numRows = 3;
         const size_t numCols = 4;

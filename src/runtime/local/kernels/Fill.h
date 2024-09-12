@@ -53,9 +53,9 @@ struct Fill<DenseMatrix<VT>, VT> {
     static void apply(DenseMatrix<VT> *& res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
 
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == ValueTypeUtils::default_value<VT>);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == ValueTypeUtils::defaultValue<VT>);
 
-        if(arg != ValueTypeUtils::default_value<VT>) {
+        if(arg != ValueTypeUtils::defaultValue<VT>) {
             VT *valuesRes = res->getValues();
             for(auto i = 0ul; i < res->getNumItems(); ++i)
                 valuesRes[i] = arg;

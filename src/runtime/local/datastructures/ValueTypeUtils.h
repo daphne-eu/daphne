@@ -33,7 +33,7 @@
     uint8_t, uint32_t, uint64_t, \
     float, double
 
-#define ALL_STRING_VALUE_TYPES\
+#define ALL_STRING_VALUE_TYPES \
         std::string, FixedStr16
 
 struct ValueTypeUtils {
@@ -46,7 +46,7 @@ struct ValueTypeUtils {
     static const ValueTypeCode codeFor;
 
     template<typename ValueType>
-    static const ValueType default_value;
+    static const ValueType defaultValue;
 
     template<typename ValueType>
     static const std::string cppNameFor;
@@ -90,13 +90,14 @@ template<> const std::string ValueTypeUtils::irNameFor<uint64_t>;
 template<> const std::string ValueTypeUtils::irNameFor<float>;
 template<> const std::string ValueTypeUtils::irNameFor<double>;
 
-template<> const int8_t ValueTypeUtils::default_value<int8_t>;
-template<> const int32_t ValueTypeUtils::default_value<int32_t>;
-template<> const int64_t ValueTypeUtils::default_value<int64_t>;
-template<> const uint8_t ValueTypeUtils::default_value<uint8_t>;
-template<> const uint32_t ValueTypeUtils::default_value<uint32_t>;
-template<> const uint64_t ValueTypeUtils::default_value<uint64_t>;
-template<> const float ValueTypeUtils::default_value<float>;
-template<> const double ValueTypeUtils::default_value<double>;
-template<> const std::string ValueTypeUtils::default_value<std::string>;
-template<> const FixedStr16 ValueTypeUtils::default_value<FixedStr16>;
+template<> const int8_t ValueTypeUtils::defaultValue<int8_t>;
+template<> const int32_t ValueTypeUtils::defaultValue<int32_t>;
+template<> const int64_t ValueTypeUtils::defaultValue<int64_t>;
+template<> const uint8_t ValueTypeUtils::defaultValue<uint8_t>;
+template<> const uint32_t ValueTypeUtils::defaultValue<uint32_t>;
+template<> const uint64_t ValueTypeUtils::defaultValue<uint64_t>;
+template<> const float ValueTypeUtils::defaultValue<float>;
+template<> const double ValueTypeUtils::defaultValue<double>;
+template<> const std::string ValueTypeUtils::defaultValue<std::string>;
+template<> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16>;
+template<> const char * ValueTypeUtils::defaultValue<const char *>;

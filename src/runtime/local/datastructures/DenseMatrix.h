@@ -119,23 +119,23 @@ class DenseMatrix : public Matrix<ValueType>
             const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
             const size_t endPosExcl = pos(rowIdx, colIdx);
             if(startPosIncl < endPosExcl)
-                std::fill(values.get()+ startPosIncl, values.get() + endPosExcl,
-                          ValueType(ValueTypeUtils::default_value<ValueType>));
+                std::fill(values.get() + startPosIncl, values.get() + endPosExcl,
+                          ValueTypeUtils::defaultValue<ValueType>);
         }
         else {
             auto v = values.get() + lastAppendedRowIdx * rowSkip;
             std::fill(v + lastAppendedColIdx + 1, v + numCols,
-                      ValueType(ValueTypeUtils::default_value<ValueType>));
+                      ValueTypeUtils::defaultValue<ValueType>);
             
             v += rowSkip;
             for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
-                std::fill(v, v + (numCols),
-                          ValueType(ValueTypeUtils::default_value<ValueType>));
+                std::fill(v, v + numCols,
+                          ValueTypeUtils::defaultValue<ValueType>);
                 v += rowSkip;
             }
             if(colIdx)
-                std::fill(v, v + (colIdx - 1),
-                          ValueType(ValueTypeUtils::default_value<ValueType>));
+                std::fill(v, v + colIdx - 1,
+                          ValueTypeUtils::defaultValue<ValueType>);
         }
     }
 
@@ -252,7 +252,7 @@ public:
     void prepareAppend() override {
         // The matrix might be empty.
         if (numRows != 0 && numCols != 0)
-            values.get()[0] =  ValueType(ValueTypeUtils::default_value<ValueType>);
+            values.get()[0] = ValueType(ValueTypeUtils::defaultValue<ValueType>);
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
     }
@@ -276,7 +276,7 @@ public:
                 (lastAppendedColIdx + 1 < numCols)
             )
         )
-            append(numRows - 1, numCols - 1, ValueType(ValueTypeUtils::default_value<ValueType>));
+            append(numRows - 1, numCols - 1, ValueType(ValueTypeUtils::defaultValue<ValueType>));
     }
 
     void print(std::ostream & os) const override {
@@ -332,7 +332,8 @@ public:
         
         for (size_t r = 0; r < numRows; ++r) {
             for (size_t c = 0; c < numCols; ++c) {
-                if (*(valuesLhs + c) != *(valuesRhs + c)) return false;
+                if (*(valuesLhs + c) != *(valuesRhs + c))
+                    return false;
             }
             valuesLhs += rowSkipLhs;
             valuesRhs += rowSkipRhs;

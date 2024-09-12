@@ -178,7 +178,7 @@ public:
             // a single dense array of values, we can simply 
             // perform cast in one loop over that array.
             for(size_t idx = 0; idx < numCols*numRows; idx++)
-               resVals[idx] = castSca<VTRes, VTArg>(argVals[idx], nullptr);
+                resVals[idx] = castSca<VTRes, VTArg>(argVals[idx], nullptr);
         else
             // res and arg might be views into a larger DenseMatrix.
             for(size_t r = 0; r < numRows; r++) {

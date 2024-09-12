@@ -275,7 +275,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
   size_t numRows = 4;
   size_t numCols = 3;
 
-  char filename[] = "./test/runtime/local/io/ReadCsvSTR.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsvStr.csv";
   char delim = ',';
 
   readCsv(m, filename, numRows, numCols, delim);

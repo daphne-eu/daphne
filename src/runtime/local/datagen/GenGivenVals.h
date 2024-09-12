@@ -99,7 +99,7 @@ struct GenGivenVals<DenseMatrix<VT>> {
             );
         const size_t numCols = numCells / numRows;
         auto res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        copy(elements.begin(), elements.end(), res->getValues());
+        std::copy(elements.begin(), elements.end(), res->getValues());
         return res;
     }
 };

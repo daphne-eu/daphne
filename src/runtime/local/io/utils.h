@@ -73,10 +73,11 @@ inline void convertCstr(const char * x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char * x, uint64_t *v) { *v = atoi(x); }
 
 
-inline size_t setCString(const char * str, std::string *res,const char delim){
+inline size_t setCString(const char * str, std::string *res, const char delim){
     size_t pos = 0;
-    bool is_multiLine = (str[0] == '"') ? true : false;
-    if(is_multiLine) pos++;
+    bool is_multiLine = (str[0] == '"');
+    if(is_multiLine)
+      pos++;
 
     int is_not_end = 1;
     while (is_not_end && *(str + pos + 1))
@@ -85,7 +86,7 @@ inline size_t setCString(const char * str, std::string *res,const char delim){
       /* 
       ** if str contains line breaks or a field separator, then
       ** it must be enclosed in double quotes. So we skip all
-      ** characters till we get another double quotes.  
+      ** characters till we get another double quote.  
       ** If a double quote is inside the str, must be escaped 
       ** using another double quote.
       */
@@ -102,7 +103,8 @@ inline size_t setCString(const char * str, std::string *res,const char delim){
     else
       res->append(str, pos);
     
-    if(is_multiLine) pos++;
+    if(is_multiLine)
+      pos++;
 
     return pos;
 }

@@ -72,14 +72,16 @@ struct CastSca<const char *, VTArg> {
 };
 
 // ----------------------------------------------------------------------------
-// scalar <- string
+// any type <- string
 // ----------------------------------------------------------------------------
+
 template<typename VTRes>
 struct CastSca<VTRes, std::string> {
     static VTRes apply(std::string arg, DCTX(ctx)) {
         return static_cast<VTRes>(std::stold(arg));
     }
 };
+
 template<typename VTRes>
 struct CastSca<VTRes, FixedStr16> {
     static VTRes apply(FixedStr16 arg, DCTX(ctx)) {

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include <runtime/local/datastructures/FixedSizeStringValueType.h>
-
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
 #define SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
 
 #pragma once
+
+#include <runtime/local/datastructures/FixedSizeStringValueType.h>
 
 // ****************************************************************************
 // Enum for unary op codes and their names
@@ -49,7 +49,7 @@ enum class UnaryOpCode {
     ROUND,
     // Comparison.
     ISNAN,
-    // String
+    // String.
     UPPER,
     LOWER
 };
@@ -70,7 +70,7 @@ static std::string_view unary_op_codes[] = {
     "FLOOR", "CEIL", "ROUND",
     // Comparison.
     "ISNAN",
-    // String
+    // String.
     "UPPER", "LOWER"
 };
 
@@ -126,7 +126,7 @@ static constexpr bool supportsUnaryOp = false;
     SUPPORT(ISNAN, VT)
 
 #define SUPPORT_STRING(VT) \
-    /* String upper and lower */ \
+    /* String */ \
     SUPPORT(UPPER, VT) \
     SUPPORT(LOWER, VT)
 // Concise specification of which unary operations should be supported on

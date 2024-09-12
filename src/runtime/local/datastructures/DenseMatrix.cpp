@@ -73,7 +73,7 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
         AllocationDescriptorHost myHostAllocInfo;
         alloc_shared_values();
         if(zero)
-            std::fill(values.get(), values.get() + maxNumRows * numCols, ValueType(ValueTypeUtils::default_value<ValueType>));
+            std::fill(values.get(), values.get() + maxNumRows * numCols, ValueTypeUtils::defaultValue<ValueType>);
         new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
     }
     this->mdo->addLatest(new_data_placement->dp_id);

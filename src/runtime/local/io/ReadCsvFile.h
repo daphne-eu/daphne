@@ -154,6 +154,7 @@ struct ReadCsvFile<DenseMatrix<std::string>> {
       for(size_t c = 0; c < numCols; c++) {
         std::string val;
         int next_column_pos = setCString(file->line + pos, &val, delim);
+        // TODO This assumes that rowSkip == numCols.
         valuesRes[cell++] = val;
         pos += next_column_pos + 1;
       }
@@ -188,6 +189,7 @@ struct ReadCsvFile<DenseMatrix<FixedStr16>> {
       for(size_t c = 0; c < numCols; c++) {
         std::string val;
         int next_column_pos = setCString(file->line + pos, &val, delim);
+        // TODO This assumes that rowSkip == numCols.
         valuesRes[cell++].set(val.c_str());
         pos += next_column_pos + 1;
       }

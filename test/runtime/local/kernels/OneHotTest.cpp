@@ -102,7 +102,7 @@ TEMPLATE_PRODUCT_TEST_CASE("OneHot", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VAL
     using VT = typename DTArg::VT;
     using DTRes = DenseMatrix<int64_t>;
 
-    auto * arg= genGivenVals<DenseMatrix<VT>>(4, {
+    auto * arg = genGivenVals<DenseMatrix<VT>>(4, {
         VT("a"), VT("blue"),  VT("Female"), VT("5"),
         VT("b"), VT("green"), VT("Male"),   VT("20"),
         VT("c"), VT("red"),   VT("Male"),   VT("10"),
