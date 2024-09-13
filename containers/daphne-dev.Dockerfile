@@ -29,7 +29,7 @@ ARG DEBIAN_FRONTEND="noninteractive"
 ARG TZ
 RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recommends install  \
     ca-certificates file git openssh-client unzip wget tar \
-    libomp-dev  libpfm4-dev libssl-dev libxml2-dev uuid-dev zlib1g-dev \
+    libomp-dev  libpfm4-dev libssl-dev libxml2-dev uuid-dev zlib1g-dev libgsasl-dev libkrb5-dev \
     build-essential clang gfortran lld llvm llvm-18-tools ninja-build openjdk-11-jdk-headless pkg-config python3-numpy python3-pandas \
     vim nano rsync sudo iputils-ping virtualenv openssh-server iproute2 git htop gdb lldb lld gpg-agent net-tools \
     software-properties-common ca-certificates file unzip wget tar zstd \
