@@ -39,6 +39,14 @@ private:
 public:
     explicit WorkerImplGRPCSync(const std::string& addr, DaphneUserConfig& _cfg);
     void Wait() override;
+#if USE_HDFS
+    grpc::Status WriteHDFS(::grpc::ServerContext *context,
+                         const ::distributed::HDFSWriteInfo *request,
+                         ::distributed::Empty *response) override;
+    grpc::Status ReadHDFS(::grpc::ServerContext *context,
+                         const ::distributed::HDFSFile *request,
+                         ::distributed::StoredData *response) override;
+#endif
     grpc::Status Store(::grpc::ServerContext *context,
                          ::grpc::ServerReader<::distributed::Data>* reader,
                          ::distributed::StoredData *response) override;

@@ -26,7 +26,9 @@
 #include <runtime/local/io/WriteCsv.h>
 #include <runtime/local/io/WriteDaphne.h>
 #include <parser/metadata/MetaDataParser.h>
-
+#if USE_HDFS
+    #include <runtime/local/io/HDFS/WriteHDFS.h>
+#endif
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -70,8 +72,19 @@ struct Write<DenseMatrix<VT>> {
         FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
         MetaDataParser::writeMetaData(filename, metaData);
 		writeDaphne(arg, filename);
-    } else {
-      throw std::runtime_error( "[Write.h] - unsupported file extension in write kernel.");
+#if USE_HDFS
+	} else if (ext == "hdfs"){
+        HDFSMetaData hdfs = {true, filename};
+        FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>, -1, hdfs);        
+        // Get file extension before .hdfs (e.g. file.csv.hdfs)
+        auto posHdfs = pos;
+        auto posExt = fn.find_last_of('.', pos-1);
+	    std::string nestedExt(fn.substr(posExt + 1, posHdfs - posExt - 1));
+        MetaDataParser::writeMetaData(filename, metaData);
+
+        // call WriteHDFS
+        writeHDFS(arg, filename, ctx);
+#endif        
     }
     }
 };
@@ -104,18 +117,18 @@ struct Write<Frame> {
 template<typename VT>
 struct Write<Matrix<VT>> {
     static void apply(const Matrix<VT> * arg, const char * filename, DCTX(ctx)) {
-    std::string fn(filename);
-    auto pos = fn.find_last_of('.');
-    std::string ext(fn.substr(pos+1));
-    if (ext == "csv") {
-        File * file = openFileForWrite(filename);
-        FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
-        MetaDataParser::writeMetaData(filename, metaData);
-        writeCsv(arg, file);
-        closeFile(file);
-    } else {
-        throw std::runtime_error( "[Write.h] - generic Matrix type currently only supports csv file extension.");
-    }
+        std::string fn(filename);
+        auto pos = fn.find_last_of('.');
+        std::string ext(fn.substr(pos+1));
+        if (ext == "csv") {
+            File * file = openFileForWrite(filename);
+            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
+            MetaDataParser::writeMetaData(filename, metaData);
+            writeCsv(arg, file);
+            closeFile(file);
+        } else {
+            throw std::runtime_error( "[Write.h] - generic Matrix type currently only supports csv file extension.");
+        }
     }
 };
 

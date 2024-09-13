@@ -57,6 +57,9 @@ struct DaphneConfigJsonParams {
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
+    inline static const std::string USE_HDFS_ = "useHdfs";
+    inline static const std::string HDFS_ADDRESS = "hdfsAddress";
+    inline static const std::string HDFS_USERNAME = "hdfsUsername";
     inline static const std::string CUDA_DEVICES = "cuda_devices";
     inline static const std::string LIB_DIR = "libdir";
     inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
@@ -97,6 +100,9 @@ struct DaphneConfigJsonParams {
             TASK_PARTITIONING_SCHEME,
             NUMBER_OF_THREADS,
             MINIMUM_TASK_SIZE,
+            USE_HDFS_,
+            HDFS_ADDRESS,
+            HDFS_USERNAME,
             CUDA_DEVICES,
             LIB_DIR,
             DAPHNEDSL_IMPORT_PATHS,

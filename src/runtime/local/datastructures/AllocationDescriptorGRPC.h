@@ -16,11 +16,13 @@
 
 #pragma once
 
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/Structure.h>
+#include "DataPlacement.h"
+
 #include <ir/daphneir/Daphne.h>
 
+#include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DistributedAllocationHelpers.h>
+#include <runtime/local/datastructures/Structure.h>
 
 class AllocationDescriptorGRPC : public IAllocationDescriptor {
 private:

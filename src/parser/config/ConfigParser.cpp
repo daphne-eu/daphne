@@ -111,6 +111,12 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.numberOfThreads = jf.at(DaphneConfigJsonParams::NUMBER_OF_THREADS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MINIMUM_TASK_SIZE))
         config.minimumTaskSize = jf.at(DaphneConfigJsonParams::MINIMUM_TASK_SIZE).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_HDFS_))
+        config.use_hdfs = jf.at(DaphneConfigJsonParams::USE_HDFS_).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::HDFS_ADDRESS))
+        config.hdfs_Address = jf.at(DaphneConfigJsonParams::HDFS_ADDRESS).get<std::string>();
+    if (keyExists(jf, DaphneConfigJsonParams::HDFS_USERNAME))
+        config.hdfs_username = jf.at(DaphneConfigJsonParams::HDFS_USERNAME).get<std::string>();
 #ifdef USE_CUDA
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_DEVICES))
         config.cuda_devices = jf.at(DaphneConfigJsonParams::CUDA_DEVICES).get<std::vector<int>>();

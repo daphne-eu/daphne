@@ -63,6 +63,11 @@ void InsertDaphneContextPass::runOnOperation()
     if (user_config.use_distributed){
         builder.create<daphne::CreateDistributedContextOp>(loc);
     }
+#ifdef USE_HDFS
+    if(user_config.use_hdfs) {
+        builder.create<daphne::CreateHDFSContextOp>(loc);
+    }
+#endif
 #ifdef USE_FPGAOPENCL
     if(user_config.use_fpgaopencl) {
         builder.create<daphne::CreateFPGAContextOp>(loc);

@@ -86,7 +86,12 @@ struct DaphneUserConfig {
     size_t max_distributed_serialization_chunk_size = std::numeric_limits<int>::max() - 1024; // 2GB (-1KB to make up for gRPC headers etc.) - which is the maximum size allowed by gRPC / MPI. TODO: Investigate what might be the optimal.
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
-    
+
+    // hdfs
+    bool use_hdfs = false;
+    std::string hdfs_Address = "";
+    std::string hdfs_username = "";
+
     // minimum considered log level (e.g., no logging below ERROR (essentially suppressing WARN, INFO, DEBUG and TRACE)
     spdlog::level::level_enum log_level_limit = spdlog::level::err;
     std::vector<LogConfig> loggers;

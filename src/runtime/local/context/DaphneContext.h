@@ -60,6 +60,7 @@ struct DaphneContext {
     std::vector<std::unique_ptr<IContext>> fpga_contexts;
 
     std::unique_ptr<IContext> distributed_context;
+    std::unique_ptr<IContext> hdfs_context;
 
     /**
      * @brief The user configuration (including information passed via CLI
@@ -122,6 +123,11 @@ struct DaphneContext {
     [[nodiscard]] IContext *getDistributedContext() const {
         return distributed_context.get();
     }
+#ifdef USE_HDFS
+    [[nodiscard]] IContext* getHDFSContext() const {
+        return hdfs_context.get();
+    }
+#endif
 
     [[nodiscard]] DaphneUserConfig &getUserConfig() const { return config; }
 

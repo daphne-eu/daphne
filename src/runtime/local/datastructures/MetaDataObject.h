@@ -16,7 +16,8 @@
 
 #pragma once
 
-class DataPlacement;
+struct DataPlacement;
+
 #include "IAllocationDescriptor.h"
 #include "Range.h"
 

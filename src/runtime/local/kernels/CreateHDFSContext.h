@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+#pragma once
 
-package distributed;
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/context/HDFSContext.h"
 
-option optimize_for = SPEED;
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
 
-message StoredData {
-  string identifier = 1;
-  uint64 num_rows = 2;
-  uint64 num_cols = 3;
-}
-
-message HDFSFile {
-  string filename = 1;
-  uint64 start_row = 2;  
-  uint64 num_rows = 3;
-  uint64 num_cols = 4;
-}
-message HDFSWriteInfo {
-  string dirName = 1;
-  string segment = 2;
-  StoredData matrix = 3;
+static void createHDFSContext(DCTX(ctx)) {
+    ctx->hdfs_context = HDFSContext::createHDFSContext(ctx->config);
 }
