@@ -14,40 +14,31 @@
  * limitations under the License.
  */
 
+
 #include "run_tests.h"
 
-#ifdef USE_CUDA
-
-#include "runtime/local/kernels/CUDA/Affine.h"
-#include <runtime/local/datagen/GenGivenVals.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
-
-#include <catch.hpp>
-#include <tags.h>
+#include "runtime/local/datagen/GenGivenVals.h"
+#include "runtime/local/kernels/CUDA/Softmax.h"
 
 template<class DT>
-        void check(const DT* in, const DT* W, const DT* b, const DT* exp, DaphneContext* dctx) {
+void check(const DT* in, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
-    CUDA::NN::Affine::Forward<DT, DT>::apply(res, in, W, b, dctx);
-    CHECK(*res == *exp);
+    CUDA::Softmax::Forward<DT, DT>::apply(res, in, dctx);
+    CHECK(Approx(*(res->getValues())).epsilon(1e-6) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("affine_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Softmax::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
     auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
-    auto weights = genGivenVals<DT>(9, { 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9});
-    auto bias = genGivenVals<DT>(1, { 0 });
 
     // expected output when used with settings filter 2x2, stride 1x1, padding 0x0
-    auto result = genGivenVals<DT>(1, { 105, 105});
+    auto result = genGivenVals<DT>(1, { 0.000212079, 0.00057649, 0.00156706, 0.00425972, 0.0115791, 0.0314753, 0.0855588,
+            0.232573, 0.632199});
 
-    check(input, weights, bias, result, dctx.get());
+    check(input, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
 }
-
-#endif

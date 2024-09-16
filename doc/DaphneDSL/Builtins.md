@@ -69,7 +69,8 @@ DaphneDSL's built-in functions can be categorized as follows:
 - **`rand`**`(numRows:size, numCols:size, min:scalar, max:scalar, sparsity:double, seed:si64)`
 
     Generates a *(`numRows` x `numCols`)* matrix of random values.
-    The values are drawn uniformly from the range *[`min`, `max`]* (both inclusive).
+    The values are drawn uniformly from the range *[`min`, `max`]* (both inclusive). A value of zero in the `min` parameter
+    will be ignored, as the insertion of zeros in the output is controlled by the `sparsity` parameter.
     The `sparsity` can be chosen between `0.0` (all zeros) and `1.0` (all non-zeros).
     The `seed` can be set to `-1` (randomly chooses a seed), or be provided explicitly to enable reproducible random values.
   

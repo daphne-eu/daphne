@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-#ifdef USE_CUDA
 
 #include "run_tests.h"
 
-#include <api/cli/DaphneUserConfig.h>
-#include <runtime/local/datagen/GenGivenVals.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
+#include "runtime/local/datagen/GenGivenVals.h"
 #include "runtime/local/kernels/CUDA/BatchNorm.h"
-
-#include <catch.hpp>
-#include <tags.h>
 
 template<class DT>
 void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, const DT* ema_var, const DT* exp,
@@ -36,7 +30,7 @@ void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, co
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::BatchNorm::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::BatchNorm::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
@@ -53,5 +47,3 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::BatchNorm::Forward", TAG_DNN, (DenseMatrix), (
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
 }
-
-#endif // USE_CUDA

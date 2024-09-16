@@ -17,21 +17,7 @@
 #include "run_tests.h"
 
 #include <runtime/local/datagen/GenGivenVals.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
-
-#ifdef USE_CUDA
-    #include <runtime/local/kernels/CUDA/Pooling.h>
-    #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
-#else
-    #include <runtime/local/kernels/Pooling.h>
-#endif
-
-#include <tags.h>
-
-#include <catch.hpp>
-
-#include <vector>
+#include <runtime/local/kernels/Pooling.h>
 
 template<typename DT>
 DT* genInput() {
@@ -47,19 +33,15 @@ DT* genInput() {
 }
 
 template<template<typename> class OP, class DT>
-void check(const DT* in, const DT* exp, DaphneContext* dctx) {
+void checkPoolingForward(const DT* in, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
     size_t out_h;
     size_t out_w;
-#ifdef USE_CUDA
-    CUDA::NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
-#else
-    NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
-#endif
+    NN::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 2, 2, 1, 1, dctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("NN::Pooling::AVG::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
     auto dctx = setupContextAndLogger();
@@ -76,20 +58,22 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
                     145, 146, 147
     });
 
-    check<NN::Pooling::AVG>(inputs, out_f2x2_s1x1_p0x0, dctx.get());
+    auto out_f2x2_s2x2_p1x1 = genGivenVals<DT>(2, {0.25, 1.25, 2.25, 4.25, 10.00, 12.00, 9.25, 20.00, 22.00, 6.50, 13.75, 14.75,
+          16.7500,  35.0000,  37.0000, 21.7500,  45.0000,  47.0000, 12.7500,  26.2500,  27.2500, 29.2500,  60.0000,  62.0000,
+          34.2500,  70.0000,  72.0000, 19.0000,  38.7500,  39.7500, 41.7500,  85.0000,  87.0000,
+          46.7500,  95.0000,  97.0000, 25.2500,  51.2500,  52.2500, 54.2500, 110.0000, 112.0000,
+          59.2500, 120.0000, 122.0000, 31.5000,  63.7500,  64.7500, 66.7500, 135.0000, 137.0000, 71.7500, 145.0000, 147.0000});
+    checkPoolingForward<NN::Pooling::AVG>(inputs, out_f2x2_s2x2_p1x1, dctx.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(out_f2x2_s1x1_p0x0);
+    DataObjectFactory::destroy(out_f2x2_s2x2_p1x1);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("NN::Pooling::MAX::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
     auto dctx = setupContextAndLogger();
-
-#ifdef USE_CUDA
-    CUDA::createCUDAContext(dctx.get());
-#endif
 
     // two rgb "images" of 5x5 pixels
     auto inputs = genInput<DT>();
@@ -103,8 +87,55 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, doubl
                     148, 149, 150
     });
 
-    check<NN::Pooling::MAX>(inputs, out_f2x2_s1x1_p0x0, dctx.get());
+    auto inputs_p1x1 = genGivenVals<DT>(2, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54
+        
+    });
+    auto out_f2x2_s1x1_p1x1 = genGivenVals<DT>(2, {
+            1, 2, 3, 3,
+            4, 5, 6, 6,
+            7, 8, 9, 9,
+            7, 8, 9, 9,
+
+            10, 11, 12, 12,
+            13, 14, 15, 15,
+            16, 17, 18, 18,
+            16, 17, 18, 18,
+
+            19, 20, 21, 21,
+            22, 23, 24, 24,
+            25, 26, 27, 27,
+            25, 26, 27, 27,
+            
+            28, 29, 30, 30,           
+            31, 32, 33, 33,
+            34, 35, 36, 36,
+            34, 35, 36, 36, 
+            
+            37, 38, 39, 39,   
+            40, 41, 42, 42,
+            43, 44, 45, 45,
+            43, 44, 45, 45,
+            
+            46, 47, 48, 48,            
+            49, 50, 51, 51,
+            52, 53, 54, 54,
+            52, 53, 54, 54
+    });
+
+    auto out_f2x2_s2x2_p1x1 = genGivenVals<DT>(2, {1., 3., 5., 11.,  13.,  15.,
+          21.,  23.,  25., 26.,  28.,  30., 36.,  38.,  40., 46.,  48.,  50.,
+            51.,  53.,  55., 61.,  63.,  65., 71.,  73.,  75.,
+         76.,  78.,  80., 86.,  88.,  90.,96.,  98., 100., 101., 103., 105., 111., 113., 115.,
+        121., 123., 125., 126., 128., 130., 136., 138., 140., 146., 148., 150.
+    });
+
+    checkPoolingForward<NN::Pooling::MAX>(inputs, out_f2x2_s2x2_p1x1, dctx.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(out_f2x2_s1x1_p0x0);
+    
+    DataObjectFactory::destroy(inputs_p1x1);
+    DataObjectFactory::destroy(out_f2x2_s1x1_p1x1);
+    DataObjectFactory::destroy(out_f2x2_s2x2_p1x1);
 }

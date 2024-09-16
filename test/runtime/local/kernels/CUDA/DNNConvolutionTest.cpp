@@ -14,39 +14,35 @@
  * limitations under the License.
  */
 
-#ifdef USE_CUDA
-
-#include <runtime/local/datagen/GenGivenVals.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
-#include "runtime/local/kernels/CUDA/Activation.h"
-
-#include <catch.hpp>
-#include <tags.h>
 
 #include "run_tests.h"
 
-template<class OP, class DT>
-void check(const DT* in, const DT* exp, DaphneContext* dctx) {
+#include "runtime/local/datagen/GenGivenVals.h"
+#include "runtime/local/kernels/CUDA/Convolution.h"
+
+template<class DT>
+void check(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
-    CUDA::NN::Activation::Forward<OP, DT, DT>::apply(res, in, dctx);
+    size_t out_h;
+    size_t out_w;
+    CUDA::Convolution::Forward<DT, DT>::apply(res, out_h, out_w, in, filter, nullptr, in->getNumRows(), 1, 3, 3, 2, 2,
+            1, 1, 0, 0, dctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::Activation::ReLU::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Convolution::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+    auto dctx = setupContextAndLogger();
     using DT = TestType;
 
-    auto dctx = setupContextAndLogger();
-
-    auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
+    auto input = genGivenVals<DT>(1, { 1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto filter = genGivenVals<DT>(1, { 1, 0, 0, 1});
 
     // expected output when used with settings filter 2x2, stride 1x1, padding 0x0
-    auto result = genGivenVals<DT>(1, { 0, 0, 0, 0, 1, 2, 3, 4, 5 });
+    auto result = genGivenVals<DT>(1, { 6, 8, 12, 14 });
 
-    check<CUDA::NN::Activation::ReLU>(input, result, dctx.get());
+    check(input, filter, result, dctx.get());
 
+    DataObjectFactory::destroy(filter);
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
 }
-
-#endif

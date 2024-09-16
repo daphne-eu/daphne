@@ -115,7 +115,7 @@ TEST_CASE("randomForestWineReg_MaxV1", TAG_ALGORITHMS) {
 // Added in DAPHNE (wasn't present in SystemDS).
 TEST_CASE("randomForestWineReg_MaxV05", TAG_ALGORITHMS) {
     //for regression we compare R2 and use rss to optimize
-    runDecisionTree(3, WINE_DATA, 0.291, 2, 0.5);
+    runDecisionTree(3, WINE_DATA, 0.284, 2, 0.5);
 }
 
 // TEST_CASE("decisionTreeEEG_MaxV1", TAG_ALGORITHMS) {

@@ -1,0 +1,16 @@
+print(1 + as.si8(1));
+print(2 + as.si32(1));
+print(3 + as.si64(1));
+print(4 + as.ui8(1));
+print(5 + as.ui32(1));
+print(6 + as.ui64(1));
+
+print(10.0 + as.f32(1));
+print(11.0 + as.f64(1));
+
+print(as.si32(7) + as.si8(1));
+print(as.si64(8) + as.si32(1));
+print(as.si8(9) + as.si64(1));
+
+print(as.f64(12.0) + as.f32(1));
+print(as.f32(13.0) + as.f64(1));
