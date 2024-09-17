@@ -147,31 +147,6 @@ struct EwBinarySca<BinaryOpCode::MUL, bool, TLhs, TRhs> {
             return expr; \
         } \
     };
-// In strings Comparisons, both side should first transform to lower case,
-// otherwise, the result would be wrong in some cases.
-#define MAKE_EW_BINARY_STRING(opCode, expr) \
-    template<typename TRes> \
-    struct EwBinarySca<opCode, TRes, std::string, std::string> { \
-        inline static TRes apply(std::string lhs, std::string rhs, DCTX(ctx)) { \
-            std::string lhs_lower = lhs; \
-            std::string rhs_lower = rhs; \
-            std::transform(lhs_lower.begin(), lhs_lower.end(), lhs_lower.begin(), ::tolower); \
-            std::transform(rhs_lower.begin(), rhs_lower.end(), rhs_lower.begin(), ::tolower); \
-            TRes res = lhs_lower.compare(rhs_lower); \
-            return expr; \
-        } \
-    };
-
-#define MAKE_EW_BINARY_FixedStr16(opCode, expr) \
-    template<typename TRes> \
-    struct EwBinarySca<opCode, TRes, FixedStr16, FixedStr16> { \
-        inline static TRes apply(FixedStr16 lhs, FixedStr16 rhs, DCTX(ctx)) { \
-            FixedStr16 lhs_lower = lhs.lower(); \
-            FixedStr16 rhs_lower = rhs.lower(); \
-            TRes res = lhs_lower.compare(rhs_lower); \
-            return expr; \
-        } \
-    };
 
 // One such line for each binary function to support.
 // Arithmetic.
@@ -195,14 +170,6 @@ struct EwBinarySca<BinaryOpCode::EQ, TRes, const char *, const char *> {
         return std::string_view(lhs) == std::string_view(rhs);
     }
 };
-MAKE_EW_BINARY_STRING(BinaryOpCode::GT, res > 0)
-MAKE_EW_BINARY_STRING(BinaryOpCode::LT, res < 0)
-MAKE_EW_BINARY_STRING(BinaryOpCode::EQ, res == 0)
-MAKE_EW_BINARY_STRING(BinaryOpCode::NEQ, res != 0)
-MAKE_EW_BINARY_FixedStr16(BinaryOpCode::GT, res > 0)
-MAKE_EW_BINARY_FixedStr16(BinaryOpCode::LT, res < 0)
-MAKE_EW_BINARY_FixedStr16(BinaryOpCode::EQ, res == 0)
-MAKE_EW_BINARY_FixedStr16(BinaryOpCode::NEQ, res != 0)
 // Min/max.
 MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs))
 MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs))

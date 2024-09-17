@@ -216,7 +216,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DenseMatrix), (ALL_STR
     
     auto m1 = genGivenVals<DT>(2, {VT("1"), VT("2"), VT("abc"),  VT("abcd"), VT("ABCD"), VT("34ab")});
     auto m2 = genGivenVals<DT>(2, {VT("1"), VT("0"), VT("3"),  VT("abcd"), VT("abcd"), VT("34ab")});
-    auto m3 = genGivenVals<DenseMatrix<int>>(2, { 1, 0, 0, 1, 1, 1});
+    auto m3 = genGivenVals<DenseMatrix<int64_t>>(2, { 1, 0, 0, 1, 0, 1});
     
     SECTION("matrix") {
         checkEwBinaryMat(BinaryOpCode::EQ, m1, m2, m3);
@@ -233,7 +233,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DenseMatrix), (ALL_ST
     
     auto m1 = genGivenVals<DT>(2, {VT("1"), VT("2"), VT("abc"),  VT("abcd"), VT("ABCD"), VT("34ab")});
     auto m2 = genGivenVals<DT>(2, {VT("1"), VT("0"), VT("3"),  VT("abcd"), VT("abcd"), VT("34ab")});
-    auto m3 = genGivenVals<DenseMatrix<int>>(2, { 0, 1, 1, 0, 0, 0});
+    auto m3 = genGivenVals<DenseMatrix<int64_t>>(2, { 0, 1, 1, 0, 1, 0});
     
     SECTION("matrix") {
         checkEwBinaryMat(BinaryOpCode::NEQ, m1, m2, m3);
@@ -286,7 +286,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DenseMatrix), (ALL_STR
     
     auto m1 = genGivenVals<DT>(3, {VT("1"), VT("2"), VT("1"),  VT("abc"), VT("abcd"), VT("abcd"), VT("abcd"), VT("ABC"), VT("35abcd")});
     auto m2 = genGivenVals<DT>(3, {VT("1"), VT("0"), VT("3"),  VT("abcd"), VT("abce"), VT("abcd"), VT("abc"), VT("abc"), VT("30abcd")});
-    auto m3 = genGivenVals<DenseMatrix<int>>(3, { 0, 0, 1, 1, 1, 0, 0, 0, 0});
+    auto m3 = genGivenVals<DenseMatrix<int64_t>>(3, { 0, 0, 1, 1, 1, 0, 0, 1, 0});
     
     SECTION("matrix") {
         checkEwBinaryMat(BinaryOpCode::LT, m1, m2, m3);
@@ -327,7 +327,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DenseMatrix), (ALL_STR
     
     auto m1 = genGivenVals<DT>(3, {VT("1"), VT("2"), VT("1"),  VT("abc"), VT("abcd"), VT("abcd"), VT("abcd"), VT("ABC"), VT("35abcd")});
     auto m2 = genGivenVals<DT>(3, {VT("1"), VT("0"), VT("3"),  VT("abcd"), VT("abce"), VT("abcd"), VT("abc"), VT("abc"), VT("30abcd")});
-    auto m3 = genGivenVals<DenseMatrix<int>>(3, {0, 1, 0, 0, 0, 0, 1, 0, 1});
+    auto m3 = genGivenVals<DenseMatrix<int64_t>>(3, {0, 1, 0, 0, 0, 0, 1, 0, 1});
     
     SECTION("matrix") {
         checkEwBinaryMat(BinaryOpCode::GT, m1, m2, m3);

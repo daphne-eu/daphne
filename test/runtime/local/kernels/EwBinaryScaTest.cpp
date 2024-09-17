@@ -33,14 +33,14 @@ void checkEwBinarySca(VT lhs, VT rhs, VT exp) {
 
 template<BinaryOpCode opCode>
 void checkEwBinarySca(std::string lhs, std::string rhs, int exp) {
-    CHECK(EwBinarySca<opCode, int, std::string, std::string>::apply(lhs, rhs, nullptr) == exp);
-    CHECK(ewBinarySca<int, std::string, std::string>(opCode, lhs, rhs, nullptr) == exp);
+    CHECK(EwBinarySca<opCode, int64_t, std::string, std::string>::apply(lhs, rhs, nullptr) == exp);
+    CHECK(ewBinarySca<int64_t, std::string, std::string>(opCode, lhs, rhs, nullptr) == exp);
 }
 
 template<BinaryOpCode opCode>
 void checkEwBinarySca(FixedStr16 lhs, FixedStr16 rhs, int exp) {
-    CHECK(EwBinarySca<opCode, int, FixedStr16, FixedStr16>::apply(lhs, rhs, nullptr) == exp);
-    CHECK(ewBinarySca<int, FixedStr16, FixedStr16>(opCode, lhs, rhs, nullptr) == exp);
+    CHECK(EwBinarySca<opCode, int64_t, FixedStr16, FixedStr16>::apply(lhs, rhs, nullptr) == exp);
+    CHECK(ewBinarySca<int64_t, FixedStr16, FixedStr16>(opCode, lhs, rhs, nullptr) == exp);
 }
 
 template<typename VT>
@@ -90,7 +90,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, ALL_STRING_VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::EQ>(VT("abce"), VT("abcd"), 0);
     checkEwBinarySca<BinaryOpCode::EQ>(VT("abcda"), VT("abcd"), 0);
     checkEwBinarySca<BinaryOpCode::EQ>(VT("abc"), VT("abcd"), 0);
-    checkEwBinarySca<BinaryOpCode::EQ>(VT("ABCD"), VT("abcd"), 1);
+    checkEwBinarySca<BinaryOpCode::EQ>(VT("ABCD"), VT("abcd"), 0);
     checkEwBinarySca<BinaryOpCode::EQ>(VT("36abcd"), VT("30abcd"), 0);
     checkEwBinarySca<BinaryOpCode::EQ>(VT("3"), VT("4"), 0);
     checkEwBinarySca<BinaryOpCode::EQ>(VT(""), VT("abc"), 0);
@@ -110,7 +110,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, ALL_STRING_VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::NEQ>(VT("abce"), VT("abcd"), 1);
     checkEwBinarySca<BinaryOpCode::NEQ>(VT("abcda"), VT("abcd"), 1);
     checkEwBinarySca<BinaryOpCode::NEQ>(VT("abc"), VT("abcd"), 1);
-    checkEwBinarySca<BinaryOpCode::NEQ>(VT("ABCD"), VT("abcd"), 0);
+    checkEwBinarySca<BinaryOpCode::NEQ>(VT("ABCD"), VT("abcd"), 1);
     checkEwBinarySca<BinaryOpCode::NEQ>(VT("36abcd"), VT("30abcd"), 1);
     checkEwBinarySca<BinaryOpCode::NEQ>(VT("3"), VT("4"), 1);
     checkEwBinarySca<BinaryOpCode::NEQ>(VT(""), VT("abc"), 1);
@@ -131,8 +131,8 @@ TEMPLATE_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, ALL_STRING_VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::LT>(VT("abcb"), VT("abcd"), 1);
     checkEwBinarySca<BinaryOpCode::LT>(VT("abcda"), VT("abcd"), 0);
     checkEwBinarySca<BinaryOpCode::LT>(VT("abc"), VT("abcd"), 1);
-    checkEwBinarySca<BinaryOpCode::LT>(VT("ABCD"), VT("abcd"), 0);
-    checkEwBinarySca<BinaryOpCode::LT>(VT("abcD"), VT("abcd"), 0);
+    checkEwBinarySca<BinaryOpCode::LT>(VT("ABCD"), VT("abcd"), 1);
+    checkEwBinarySca<BinaryOpCode::LT>(VT("abcD"), VT("abcd"), 1);
     checkEwBinarySca<BinaryOpCode::LT>(VT("36abcd"), VT("30abcd"), 0);
     checkEwBinarySca<BinaryOpCode::LT>(VT("3"), VT("4"), 1);
     checkEwBinarySca<BinaryOpCode::LT>(VT(""), VT("abc"), 1);
