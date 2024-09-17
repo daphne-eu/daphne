@@ -39,10 +39,10 @@ struct FixedStr16 {
     // Constructor from a C-style string
     FixedStr16(const char* str) {
         size_t len = std::strlen(str);
-        if (len > N) {
+        if (len >= N) {
             throw std::length_error("string exceeds fixed buffer size");
         }
-        std::transform(str, str + len, buffer, [](char c) { return c; });
+        std::copy(str, str + len, buffer);
         std::fill(buffer + len, buffer + N, '\0');
     }
 
@@ -54,10 +54,11 @@ struct FixedStr16 {
     // Constructor from a std::string
     FixedStr16(const std::string& other) {
         size_t len = other.size();
-        if (len > N) {
+        if (len >= N) {
             throw std::length_error("string exceeds fixed buffer size");
         }
         std::copy(other.begin(), other.end() + N, buffer);
+        std::fill(buffer + len, buffer + N, '\0');
     }
 
     // Assignment operator
