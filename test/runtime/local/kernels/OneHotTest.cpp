@@ -103,10 +103,10 @@ TEMPLATE_PRODUCT_TEST_CASE("OneHot", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VAL
     using DTRes = DenseMatrix<int64_t>;
 
     auto * arg = genGivenVals<DenseMatrix<VT>>(4, {
-        VT("a"), VT("blue"),  VT("Female"), VT("5"),
-        VT("b"), VT("green"), VT("Male"),   VT("20"),
-        VT("c"), VT("red"),   VT("Male"),   VT("10"),
-        VT("d"), VT("blue"),  VT("Female"), VT("20")
+        VT("a"), VT("blue"),  VT("a"), VT("5"),
+        VT("b"), VT("green"), VT("a"), VT("20"),
+        VT("c"), VT("red"),   VT("b"), VT("10"),
+        VT("d"), VT("blue"),  VT("b"), VT("20")
     });
 
     DTRes * res = nullptr;
@@ -115,18 +115,18 @@ TEMPLATE_PRODUCT_TEST_CASE("OneHot", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VAL
     /*
     recoded_matrix = {
         0, 0, 0, 0,
-        1, 1, 1, 1,
+        1, 1, 0, 1,
         2, 2, 1, 2,
-        3, 0, 0, 1
+        3, 0, 1, 1
     }
     */
     SECTION("normal encoding") {
         info = genGivenVals<DenseMatrix<int64_t>>(1, {-1, -1, 2, 3});
         auto * exp = genGivenVals<DTRes>(4, {
             0, 0, 1, 0, 1, 0, 0,
-            1, 1, 0, 1, 0, 1, 0,
+            1, 1, 1, 0, 0, 1, 0,
             2, 2, 0, 1, 0, 0, 1,
-            3, 0, 1, 0, 0, 1, 0,
+            3, 0, 0, 1, 0, 1, 0,
         });
 
         oneHot(res, arg, info, nullptr);

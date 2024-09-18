@@ -145,7 +145,7 @@ void oneHotString(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, con
         for(size_t r = 0; r < numRows; r++){
             size_t value_index = (rowSkipArg * r) + cArg;
             if (firstIndexMap.find(valuesArg[value_index]) == firstIndexMap.end()){
-                firstIndexMap[valuesArg[value_index]] = r;
+                firstIndexMap[valuesArg[value_index]] = firstIndexMap.size();
             }
             valuesRes[value_index] = VTRes(firstIndexMap[valuesArg[value_index]]);
         }
