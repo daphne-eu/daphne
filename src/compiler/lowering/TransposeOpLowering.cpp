@@ -19,6 +19,7 @@
 #include "ir/daphneir/Passes.h"
 
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/StringRef.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
@@ -31,6 +32,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/Utils/StructuredOpsUtils.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/AffineExpr.h"
 #include "mlir/IR/AffineMap.h"
@@ -43,6 +45,7 @@
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeRange.h"
 #include "mlir/IR/UseDefLists.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
@@ -81,7 +84,7 @@ public:
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
 
-        [[maybe_unused]] mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc,
+        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc,
             mlir::MemRefType::get({numRows, numCols}, matrixElementType),
             adaptor.getArg()
         );
@@ -90,34 +93,9 @@ public:
             mlir::MemRefType::get({numCols, numRows}, matrixElementType)
         );
 
-        // Affine Transpose
-        auto outerLoop = rewriter.create<AffineForOp>(loc, 0, numRows, 1);
-        rewriter.setInsertionPointToStart(outerLoop.getBody());
-        {
-            auto innerLoop = rewriter.create<AffineForOp>(loc, 0, numCols, 1);
-            rewriter.setInsertionPointToStart(innerLoop.getBody());
-            {
-                Value argVal = rewriter.create<AffineLoadOp>(loc,
-                    argMemref,
-                    /*loopIvs*/ ValueRange{outerLoop.getInductionVar(), innerLoop.getInductionVar()}
-                );
-
-                rewriter.create<AffineStoreOp>(loc,
-                    argVal,
-                    resMemref,
-                    ValueRange{innerLoop.getInductionVar(), outerLoop.getInductionVar()}
-                );
-            }
-        }
-        rewriter.setInsertionPointAfter(outerLoop);
+        auto permutation = rewriter.getDenseI64ArrayAttr({1, 0});
+        rewriter.create<linalg::TransposeOp>(loc, argMemref, resMemref, permutation);
         auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
-
-
-        // Linalg Transpose
-        // auto permutation = rewriter.getDenseI64ArrayAttr({1, 0});
-        // [[maybe_unused]] ArrayRef<NamedAttribute> attributes = {};
-        // auto resTranspMemref = rewriter.create<linalg::TransposeOp>(loc, argMemref, resMemref, permutation, attributes)->getResult(0);
-        // auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resTranspMemref, op.getType());
         
         rewriter.replaceOp(op, resDenseMatrix);
 

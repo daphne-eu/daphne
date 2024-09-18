@@ -236,9 +236,15 @@ def Daphne_EwNegOp : Daphne_EwUnaryOp<"ewNeg", NumScalar, [ValueTypeFromFirstArg
 // Rounding
 // ----------------------------------------------------------------------------
 
-def Daphne_EwRoundOp : Daphne_EwUnaryOp<"ewRound", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_EwFloorOp : Daphne_EwUnaryOp<"ewFloor", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_EwCeilOp : Daphne_EwUnaryOp<"ewCeil", NumScalar, [ValueTypeFromFirstArg]>;
+def Daphne_EwRoundOp : Daphne_EwUnaryOp<"ewRound", NumScalar, [ValueTypeFromFirstArg]> {
+    let hasCanonicalizeMethod = 1;
+}
+def Daphne_EwFloorOp : Daphne_EwUnaryOp<"ewFloor", NumScalar, [ValueTypeFromFirstArg]> {
+    let hasCanonicalizeMethod = 1;
+}
+def Daphne_EwCeilOp : Daphne_EwUnaryOp<"ewCeil", NumScalar, [ValueTypeFromFirstArg]> {
+    let hasCanonicalizeMethod = 1;
+}
 
 // ----------------------------------------------------------------------------
 // Trigonometric
