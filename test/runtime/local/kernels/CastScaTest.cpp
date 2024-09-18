@@ -47,7 +47,7 @@ TEST_CASE("castSca, actual casts", TAG_KERNELS) {
     CHECK(castSca<bool, double>(-123.4, nullptr) == true);
     CHECK(castSca<bool, double>(0.0, nullptr) == false);
 }
-TEST_CASE("castSca, actual casts std::string to numbers", TAG_KERNELS) {
+TEST_CASE("castSca, actual casts strings to numbers", TAG_KERNELS) {
 
     CHECK(castSca<int64_t, std::string>("123", nullptr) == 123);
     CHECK(castSca<int64_t, std::string>("-123", nullptr) == -123);

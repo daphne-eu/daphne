@@ -78,14 +78,28 @@ struct CastSca<const char *, VTArg> {
 template<typename VTRes>
 struct CastSca<VTRes, std::string> {
     static VTRes apply(std::string arg, DCTX(ctx)) {
-        return static_cast<VTRes>(std::stold(arg));
+        if constexpr(std::is_integral<VTRes>::value)
+            return static_cast<VTRes>(std::stoll(arg));
+        
+        else if constexpr(std::is_same<VTRes, double>::value)
+            return static_cast<VTRes>(std::stold(arg));
+        
+        else if constexpr(std::is_same<VTRes, float>::value)
+            return static_cast<VTRes>(std::stof(arg));
     }
 };
 
 template<typename VTRes>
 struct CastSca<VTRes, FixedStr16> {
     static VTRes apply(FixedStr16 arg, DCTX(ctx)) {
-        return static_cast<VTRes>(std::stold(arg.buffer));
+        if constexpr(std::is_integral<VTRes>::value)
+            return static_cast<VTRes>(std::stoll(arg.buffer));
+        
+        else if constexpr(std::is_same<VTRes, double>::value)
+            return static_cast<VTRes>(std::stold(arg.buffer));
+        
+        else if constexpr(std::is_same<VTRes, float>::value)
+            return static_cast<VTRes>(std::stof(arg.buffer));
     }
 };
 
