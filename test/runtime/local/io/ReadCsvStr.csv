@@ -1,4 +1,8 @@
-"John, Doe",28,Software Dev
-"Jane, Smith",34,Graphic Design
-"Alice, John",29,Data Science
-"Bob, Brown",45,Managing
+"apple, orange",35,Fruit Basket
+"dog, cat",30,Pets
+table,27,Furniture Set
+"""",22,Unknown Item
+"abc""def",33,"No Category\""
+"red, blue\n",50,
+"\n\"abc""def\"",28,"Mixed string"
+"\"red, \"\"",41,""

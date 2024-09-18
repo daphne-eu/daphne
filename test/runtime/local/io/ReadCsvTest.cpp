@@ -272,7 +272,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
   using DT = TestType;
   DT *m = nullptr;
 
-  size_t numRows = 4;
+  size_t numRows = 8;
   size_t numCols = 3;
 
   char filename[] = "./test/runtime/local/io/ReadCsvStr.csv";
@@ -283,20 +283,32 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->get(0, 0) == "John, Doe");
-  CHECK(m->get(1, 0) == "Jane, Smith");
-  CHECK(m->get(2, 0) == "Alice, John");
-  CHECK(m->get(3, 0) == "Bob, Brown");
+  CHECK(m->get(0, 0) == "apple, orange");
+  CHECK(m->get(1, 0) == "dog, cat");
+  CHECK(m->get(2, 0) == "table");
+  CHECK(m->get(3, 0) == "\"\"");
+  CHECK(m->get(4, 0) == "abc\"\"def");
+  CHECK(m->get(5, 0) == "red, blue\\n");
+  CHECK(m->get(6, 0) == "\\n\\\"abc\"\"def\\\"");
+  CHECK(m->get(7, 0) == "\\\"red, \\\"\\\"");
 
-  CHECK(m->get(0, 1) == "28");
-  CHECK(m->get(1, 1) == "34");
-  CHECK(m->get(2, 1) == "29");
-  CHECK(m->get(3, 1) == "45");
+  CHECK(m->get(0, 1) == "35");
+  CHECK(m->get(1, 1) == "30");
+  CHECK(m->get(2, 1) == "27");
+  CHECK(m->get(3, 1) == "22");
+  CHECK(m->get(4, 1) == "33");
+  CHECK(m->get(5, 1) == "50");
+  CHECK(m->get(6, 1) == "28");
+  CHECK(m->get(7, 1) == "41");
 
-  CHECK(m->get(0, 2) == "Software Dev");
-  CHECK(m->get(1, 2) == "Graphic Design");
-  CHECK(m->get(2, 2) == "Data Science");
-  CHECK(m->get(3, 2) == "Managing");
+  CHECK(m->get(0, 2) == "Fruit Basket");
+  CHECK(m->get(1, 2) == "Pets");
+  CHECK(m->get(2, 2) == "Furniture Set");
+  CHECK(m->get(3, 2) == "Unknown Item");
+  CHECK(m->get(4, 2) == "No Category\\\"");
+  CHECK(m->get(5, 2) == "");
+  CHECK(m->get(6, 2) == "Mixed string");
+  CHECK(m->get(7, 2) == "");
 
   DataObjectFactory::destroy(m);
 }
