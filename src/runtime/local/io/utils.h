@@ -80,22 +80,27 @@ inline size_t setCString(const char * str, std::string *res, const char delim){
       pos++;
 
     int is_not_end = 1;
-    while (is_not_end && *(str + pos + 1))
+    while (is_not_end)
     {
-      pos++;
-      /* 
-      ** if str contains line breaks or a field separator, then
-      ** it must be enclosed in double quotes. So we skip all
-      ** characters till we get another double quote.  
-      ** If a double quote is inside the str, must be escaped 
-      ** using another double quote.
+      // The string does not contain line breaks or a field separator, so
+      // the end of the string is either a delimiter or the next character is the end of the line.
+      is_not_end -= (!is_multiLine && str[pos] == delim);
+      is_not_end -= (!is_multiLine && str[pos + 1] == '\n');
+
+      /*
+      ** If the string contains line breaks or field separators, 
+      ** it must be enclosed in double quotes. We then skip all
+      ** characters until we find the closing double quote.
+      ** If a double quote appears inside the string, it must be escaped 
+      ** by doubling the double quote (""), or by preceding it with a backslash (\).
       */
-      is_not_end -= (is_multiLine && *(str + pos) == '"' && *(str + pos + 1) != '"');
-      pos += (is_multiLine && *(str + pos) == '"' && *(str + pos + 1) == '"');
-      
-      // str do not contain line breaks or a field separator so,
-      // the end of the str is a delim.
-      is_not_end -= (!is_multiLine && *(str + pos) == delim);
+      is_not_end -= (is_multiLine && str[pos] == '"' && str[pos + 1] != '"');
+      if (!is_not_end)
+        break;
+      pos += (is_multiLine && str[pos] == '"' && str[pos + 1] == '"');
+      pos += (is_multiLine && str[pos] == '\\' && str[pos + 1] == '"');
+
+      pos++;
     }
 
     if(is_multiLine)
@@ -106,5 +111,6 @@ inline size_t setCString(const char * str, std::string *res, const char delim){
     if(is_multiLine)
       pos++;
 
+    // The result `pos` should point to the character just before the next column.
     return pos;
 }
