@@ -31,3 +31,4 @@ papiVersion=7.0.1
 spdlogVersion=1.11.0
 ubuntuVersion=24.04
 hawqVersion=3.0.0.0
+liburingVersion=2.7

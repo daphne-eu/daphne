@@ -1022,7 +1022,36 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build MLIR/LLVM again."
     fi
-
+    #------------------------------------------------------------------------------
+    # 8.14 Liburing
+    #------------------------------------------------------------------------------
+    liburingDirName="liburing-$liburingVersion"
+    liburingTarName="${liburingDirName}.tar.gz"
+    liburingInstDirName=$installPrefix
+    liburing_cc=$([ "$CC" = "" ] && echo "gcc" || echo "$CC")
+    liburing_cxx=$([ "$CXX" = "" ] && echo "g++" || echo "$CXX")
+    if ! is_dependency_downloaded "liburing_v${liburingVersion}"; then
+        daphne_msg "Get liburing version ${liburingVersion}"
+        wget "https://github.com/axboe/liburing/archive/refs/tags/${liburingTarName}" \
+            -qO "${cacheDir}/${liburingTarName}"
+        mkdir "$sourcePrefix/$liburingDirName"
+        tar -xf "$cacheDir/$liburingTarName" -C "$sourcePrefix/$liburingDirName" --strip-components=1
+        dependency_download_success "liburing_v${liburingVersion}"
+    fi
+    if ! is_dependency_installed "liburing_v${liburingVersion}"; then
+        cd "$sourcePrefix/$liburingDirName"
+        ./configure --cc="$liburing_cc" --cxx="$liburing_cxx" --prefix="$liburingInstDirName"
+        make -j"$(nproc)"
+        cp ./src/liburing.a "$installPrefix/lib/"
+        cp -r ./src/include/* "$installPrefix/include"
+        cd - > /dev/null
+        dependency_install_success "liburing_v${liburingVersion}"
+    else
+        daphne_msg "No need to build liburing again."
+    fi
+    #------------------------------------------------------------------------------
+    # 8.14 Fetch bitstreams
+    #------------------------------------------------------------------------------
     if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
         FPGAOPENCL_BISTREAM_DIR="$projectRoot/src/runtime/local/kernels/FPGAOPENCL/bitstreams"
         FPGAOPENCL_BISTREAM_URL="https://github.com/daphne-eu/supplemental-binaries/raw/main/fpga_bitstreams/"
