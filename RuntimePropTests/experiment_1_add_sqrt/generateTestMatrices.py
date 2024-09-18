@@ -70,7 +70,7 @@ def save_meta_file(matrix, filename):
         json.dump(meta_data, meta_file, indent=4)
 
 def generate_and_save_matrices(case):
-    num_rows, num_cols = 10000, 10000
+    num_rows, num_cols = 5000, 5000
     sparsity = 1-0.29
     if case == 1:
         matrix1 = generate_sparsity_pattern_matrix(num_rows, num_cols, sparsity)

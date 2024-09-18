@@ -15,7 +15,7 @@ def run_daphne_command(command):
     
     raise ValueError("No JSON found in the command output")
 
-def plot_timing_comparison(without_property_data, with_property_data, save_path="measured_overhead_plot.png"):
+def plot_timing_comparison(without_property_data, with_property_data, save_path="overhead_measurement_experiment_bar_plot.png"):
     labels = ['Startup', 'Parsing', 'Compilation', 'Execution']
 
     without_property_times = [
@@ -37,8 +37,8 @@ def plot_timing_comparison(without_property_data, with_property_data, save_path=
     bar_width = 0.35
     index = np.arange(len(labels))
 
-    p1 = ax.bar(index, without_property_times, bar_width, label='Without Property Recording')
-    p2 = ax.bar(index + bar_width, with_property_times, bar_width, label='With Property Recording')
+    p1 = ax.bar(index, without_property_times, bar_width, label='Estimated Props.')
+    p2 = ax.bar(index + bar_width, with_property_times, bar_width, label='Measured Props.')
 
     for i, rect in enumerate(p1):
         height = rect.get_height()
@@ -52,7 +52,7 @@ def plot_timing_comparison(without_property_data, with_property_data, save_path=
 
     ax.set_xlabel('Operations')
     ax.set_ylabel('Time (seconds)')
-    ax.set_title('Daphne Execution Timing: With and Without Property Recording')
+    ax.set_title('Daphne Execution Timing Phases')
     ax.set_xticks(index + bar_width / 2)
     ax.set_xticklabels(labels)
     ax.legend()
@@ -61,8 +61,8 @@ def plot_timing_comparison(without_property_data, with_property_data, save_path=
     plt.savefig(save_path)
     plt.show()
 
-def plot_stacked_timing_comparison(without_property_data, with_property_data, save_path="measured_overhead_stacked_plot.png"):
-    labels = ['Without Property Recording', 'With Property Recording']
+def plot_stacked_timing_comparison(without_property_data, with_property_data, save_path="overhead_measurement_experiment_stacked_plot.png"):
+    labels = ['Estimated Props.', 'Measured Props.']
     phases = ['startup_seconds', 'parsing_seconds', 'compilation_seconds', 'execution_seconds']
     phase_colors = ['skyblue', 'lightgreen', 'orange', 'lightcoral']
 
@@ -97,7 +97,7 @@ def plot_stacked_timing_comparison(without_property_data, with_property_data, sa
 
     ax.set_xlabel('Execution Mode')
     ax.set_ylabel('Time (seconds)')
-    ax.set_title('Daphne Execution Timing Phases: Stacked Bar Plot')
+    ax.set_title('Daphne Execution Timing Phases')
     ax.set_xticks(index)
     ax.set_xticklabels(labels)
     
@@ -111,8 +111,8 @@ def plot_stacked_timing_comparison(without_property_data, with_property_data, sa
 
 
 def main():
-    without_property_cmd= ["bin/daphne","--timing", "RuntimePropTests/experiment_1.1_overhead/overhead_experiment_test.daphne"]
-    with_property_cmd= ["bin/daphne","--timing", "--enable_property_recording", "RuntimePropTests/experiment_1.1_overhead/overhead_experiment_test.daphne"]
+    without_property_cmd= ["bin/daphne","--timing", "RuntimePropTests/experiment_1.1_overhead_measurement/overhead_measurement_experiment.daphne"]
+    with_property_cmd= ["bin/daphne","--timing", "--enable_property_recording", "RuntimePropTests/experiment_1.1_overhead_measurement/overhead_measurement_experiment.daphne"]
 
     print("Running without property recording...")
     without_property_data = run_daphne_command(without_property_cmd)

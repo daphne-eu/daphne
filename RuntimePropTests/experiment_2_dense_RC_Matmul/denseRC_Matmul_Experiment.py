@@ -112,7 +112,7 @@ def execute_daphne_script(script_path, additional_args=None, iterations=1, estim
     }
     return result
 
-def plot_results(results, save_path="mnc_combined_performance_plot.png"):
+def plot_results(results, save_path="denseRC_Matmul_experiment.png"):
     color_no_args = 'orange'
     color_with_args = 'blue'
     bar_width = 0.35
@@ -161,8 +161,8 @@ def plot_results(results, save_path="mnc_combined_performance_plot.png"):
     indices_cr = np.array([0])  # Single bar group for CR
 
     # Plot CR data
-    ax_cr.bar(indices_cr - bar_width/2, avg_time_no_args_cr, bar_width, label='No Args', color=color_no_args)
-    ax_cr.bar(indices_cr + bar_width/2, avg_time_with_args_cr, bar_width, label='With Args', color=color_with_args)
+    ax_cr.bar(indices_cr - bar_width/2, avg_time_no_args_cr, bar_width, label='Estimated Props.', color=color_no_args)
+    ax_cr.bar(indices_cr + bar_width/2, avg_time_with_args_cr, bar_width, label='Measured Props.', color=color_with_args)
 
     # Add text for CR
     ax_cr.text(indices_cr[0] - bar_width/2, avg_time_no_args_cr + 0.10, 
@@ -224,7 +224,7 @@ def plot_results(results, save_path="mnc_combined_performance_plot.png"):
 
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
-
+    plt.title("Sparsity-Driven Matrix Multiplication: Row-Dense and Column-Dense Patterns")
     plt.savefig(save_path)
 
     plt.show()
@@ -239,8 +239,8 @@ def perform_property_recording(script_path, additional_args=None):
     subprocess.run(command, capture_output=True, text=True)
 
 def main():
-    script_case1_path = "RuntimePropTests/experiment_2_mnc_row_col_nnz/row_col_experiment.daphne"
-    iterations = 1
+    script_case1_path = "RuntimePropTests/experiment_2_denseRC_Matmul/denseRC_Matmul_experiment.daphne"
+    iterations = 10
 
     print("Executing Operation")
     perform_property_recording(script_case1_path)

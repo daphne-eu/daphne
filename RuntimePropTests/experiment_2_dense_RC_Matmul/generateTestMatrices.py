@@ -12,33 +12,16 @@ def generateRMatrix(N):
     Rmatrix[0, :] = np.random.randint(1,11,N) 
     return Rmatrix
 
-def generate_random_matrix_with_dense_column(num_rows, num_cols, sparsity, dense_column_index=0):
+def generate_random_matrix(num_rows, num_cols, sparsity):
     size = num_rows * num_cols
     num_zeros = int(size * sparsity)
     num_non_zeros = size - num_zeros
-    
     matrix_flat = np.zeros(size, dtype=np.int64)
     matrix_flat[:num_non_zeros] = np.random.randint(1, 11, size=num_non_zeros)
     np.random.shuffle(matrix_flat)
     matrix = matrix_flat.reshape((num_rows, num_cols))
-    
-    matrix[:, dense_column_index] = np.random.randint(1, 11, size=num_rows)
-    
     return matrix
 
-def generate_random_matrix_with_dense_row(num_rows, num_cols, sparsity, dense_row_index=0):
-    size = num_rows * num_cols
-    num_zeros = int(size * sparsity)
-    num_non_zeros = size - num_zeros
-    
-    matrix_flat = np.zeros(size, dtype=np.int64)
-    matrix_flat[:num_non_zeros] = np.random.randint(1, 11, size=num_non_zeros)
-    np.random.shuffle(matrix_flat)
-    matrix = matrix_flat.reshape((num_rows, num_cols))
-    
-    matrix[dense_row_index, :] = np.random.randint(1, 11, size=num_cols)
-    
-    return matrix
 
 def save_meta_file(matrix, filename):
     num_rows, num_cols = matrix.shape
@@ -68,11 +51,13 @@ def generate_and_save_matrices():
     save_meta_file(R, 'Rmatrix.csv.meta')
     save_matrix_to_csv(R, 'Rmatrix.csv')
     
-    A_R = generate_random_matrix_with_dense_row(N,N,0.49)
+    sparsity = 1 -0.29
+    
+    A_R = generate_random_matrix(N,N,sparsity)
     save_meta_file(A_R, 'A_Rmatrix.csv.meta')
     save_matrix_to_csv(A_R, 'A_Rmatrix.csv')
     
-    A_C = generate_random_matrix_with_dense_column(N,N,0.49)
+    A_C = generate_random_matrix(N,N,sparsity)
     save_meta_file(A_C, 'A_Cmatrix.csv.meta')
     save_matrix_to_csv(A_C, 'A_Cmatrix.csv')
 

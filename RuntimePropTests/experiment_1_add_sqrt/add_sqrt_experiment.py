@@ -109,7 +109,7 @@ def plot_results(results, save_path="stacked_performance_comparison_plot.png"):
     # Labels and aesthetics
     ax.set_xlabel('Operations')
     ax.set_ylabel('Execution Time (s)')
-    ax.set_title('Execution Times for Sqrt and Add in Estimated Properties (left) and Measured Properties (right)')
+    ax.set_title('Execution Times for Matrix Addition and Square Root: Estimated vs. Measured Properties')
     ax.set_xticks(indices)
     ax.set_xticklabels(operations)
     handles = [
@@ -156,9 +156,9 @@ def load_results_from_json(filepath="results.json"):
     return results
 
 def main():
-    script_case1_path = "RuntimePropTests/experiment_1_add_sqrt/RuntimePropTest_case1.daphne"
-    script_case2_path = "RuntimePropTests/experiment_1_add_sqrt/RuntimePropTest_case2.daphne"
-    script_case3_path = "RuntimePropTests/experiment_1_add_sqrt/RuntimePropTest_case3.daphne"
+    script_case1_path = "RuntimePropTests/experiment_1_add_sqrt/add_sqrt_experiment_case1.daphne"
+    script_case2_path = "RuntimePropTests/experiment_1_add_sqrt/add_sqrt_experiment_case2.daphne"
+    script_case3_path = "RuntimePropTests/experiment_1_add_sqrt/add_sqrt_experiment_case3.daphne"
     iterations = 10
 
     print("Executing Operation 1")
