@@ -24,6 +24,7 @@
 
 #include <catch.hpp>
 
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
@@ -54,6 +55,7 @@ void checkSparseDenseEwBinaryMat(BinaryOpCode opCode, const SparseDT * lhs, cons
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
+    using VT = typename DT::VT;
     
     auto m0 = genGivenVals<DT>(4, {
             0, 0, 0, 0, 0, 0,
@@ -67,19 +69,37 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
     });
-    auto m2 = genGivenVals<DT>(4, {
+    DT * m2 = nullptr;
+    DT * m3 = nullptr;
+    if (std::is_unsigned_v<VT>) {
+        m2 = genGivenVals<DT>(4, {
             0, 0, 0, 0, 0, 0,
             1, 2, 3, 1, 0, 0,
             0, 0, 0, 0, 0, 0,
             0, 0, 3, 1, 0, 2,
-    });
-    auto m3 = genGivenVals<DT>(4, {
+        });
+        m3 = genGivenVals<DT>(4, {
             1, 2, 0, 0, 1, 3,
             1, 3, 3, 3, 0, 3,
             0, 0, 0, 0, 0, 0,
             0, 0, 3, 1, 0, 2,
-    });
-    
+        });
+    }
+    else {
+        m2 = genGivenVals<DT>(4, {
+            VT(-1), 0, 0, 0, 0, 0,
+            1,      2, 3, 1, 0, 0,
+            0,      0, 0, 0, 0, 0,
+            0,      0, 3, 1, 0, 2,
+        });
+        m3 = genGivenVals<DT>(4, {
+            0, 2, 0, 0, 1, 3,
+            1, 3, 3, 3, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 3, 1, 0, 2,
+        });
+    }
+
     checkEwBinaryMat(BinaryOpCode::ADD, m0, m0, m0);
     checkEwBinaryMat(BinaryOpCode::ADD, m1, m0, m1);
     checkEwBinaryMat(BinaryOpCode::ADD, m1, m2, m3);

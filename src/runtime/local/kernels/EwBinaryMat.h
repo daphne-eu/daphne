@@ -160,8 +160,12 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                         size_t posRes = 0;
                         while(posLhs < nnzRowLhs && posRhs < nnzRowRhs) {
                             if(colIdxsRowLhs[posLhs] == colIdxsRowRhs[posRhs]) {
-                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
-                                colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                VT funcRes = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
+                                if (funcRes != VT(0)) {
+                                    valuesRowRes[posRes] = funcRes;
+                                    colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                    posRes++;
+                                }
                                 posLhs++;
                                 posRhs++;
                             }
@@ -169,13 +173,14 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                                 valuesRowRes[posRes] = valuesRowLhs[posLhs];
                                 colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                                 posLhs++;
+                                posRes++;
                             }
                             else {
                                 valuesRowRes[posRes] = valuesRowRhs[posRhs];
                                 colIdxsRowRes[posRes] = colIdxsRowRhs[posRhs];
                                 posRhs++;
+                                posRes++;
                             }
-                            posRes++;
                         }
                         // copy from left
                         const size_t restRowLhs = nnzRowLhs - posLhs;
