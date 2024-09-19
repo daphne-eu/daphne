@@ -157,7 +157,7 @@ public:
     static std::string getName() {
         return "CSRMatrix";
     }
-    
+
     void shrinkNumRows(size_t numRows) {
         if (numRows > this->numRows)
             throw std::runtime_error("CSRMatrix (shrinkNumRows): numRows can only be shrunk");
@@ -424,35 +424,35 @@ public:
 
         if(this == &rhs)
             return true;
-        
+
         const size_t numRows = this->getNumRows();
         const size_t numCols = this->getNumCols();
-        
+
         if(numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
             return false;
-        
+
         const ValueType * valuesBegLhs = this->getValues(0);
         const ValueType * valuesEndLhs = this->getValues(numRows);
         const ValueType * valuesBegRhs = rhs.getValues(0);
         const ValueType * valuesEndRhs = rhs.getValues(numRows);
-        
+
         const size_t nnzLhs = valuesEndLhs - valuesBegLhs;
         const size_t nnzRhs = valuesEndRhs - valuesBegRhs;
-        
+
         if(nnzLhs != nnzRhs)
             return false;
-        
+
         if(valuesBegLhs != valuesBegRhs)
             if(memcmp(valuesBegLhs, valuesBegRhs, nnzLhs * sizeof(ValueType)))
                 return false;
-        
+
         const size_t * colIdxsBegLhs = this->getColIdxs(0);
         const size_t * colIdxsBegRhs = rhs.getColIdxs(0);
-        
+
         if(colIdxsBegLhs != colIdxsBegRhs)
             if(memcmp(colIdxsBegLhs, colIdxsBegRhs, nnzLhs * sizeof(size_t)))
                 return false;
-        
+
         return true;
     }
 
