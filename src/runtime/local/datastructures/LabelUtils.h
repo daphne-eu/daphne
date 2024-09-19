@@ -23,13 +23,12 @@
 
 struct LabelUtils {
 
-    static std::string setPrefix(const std::string & prefix, const std::string & label) {
+    static std::string setPrefix(const std::string &prefix,
+                                 const std::string &label) {
         const size_t pos = label.find('.');
-        return (pos == std::string::npos)
-            ? (prefix + "." + label)
-            : (prefix + label.substr(pos));
+        return (pos == std::string::npos) ? (prefix + "." + label)
+                                          : (prefix + label.substr(pos));
     }
-    
 };
 
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_LABELUTILS_H
+#endif // SRC_RUNTIME_LOCAL_DATASTRUCTURES_LABELUTILS_H

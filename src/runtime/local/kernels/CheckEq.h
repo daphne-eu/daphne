@@ -18,19 +18,18 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/ChunkedTensor.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
-#include <runtime/local/datastructures/ContiguousTensor.h>
-#include <runtime/local/datastructures/ChunkedTensor.h>
 #include <runtime/local/datastructures/Matrix.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
-struct CheckEq {
-    static bool apply(const DT * lhs, const DT * rhs, DCTX(ctx)) = delete;
+template <class DT> struct CheckEq {
+    static bool apply(const DT *lhs, const DT *rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,16 +38,15 @@ struct CheckEq {
 
 /**
  * @brief Checks if the two given matrices are logically equal.
- * 
+ *
  * More precisely, this requires that they have the same dimensions and are
  * elementwise equal.
- * 
+ *
  * @param lhs The first matrix.
  * @param rhs The second matrix.
  * @return `true` if they are equal, `false` otherwise.
  */
-template<class DT>
-bool checkEq(const DT * lhs, const DT * rhs, DCTX(ctx)) {
+template <class DT> bool checkEq(const DT *lhs, const DT *rhs, DCTX(ctx)) {
     return CheckEq<DT>::apply(lhs, rhs, ctx);
 };
 
@@ -60,9 +58,9 @@ bool checkEq(const DT * lhs, const DT * rhs, DCTX(ctx)) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEq<DenseMatrix<VT>> {
-    static bool apply(const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
+template <typename VT> struct CheckEq<DenseMatrix<VT>> {
+    static bool apply(const DenseMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
+                      DCTX(ctx)) {
         return *lhs == *rhs;
     }
 };
@@ -71,9 +69,9 @@ struct CheckEq<DenseMatrix<VT>> {
 // CSRMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEq<CSRMatrix<VT>> {
-    static bool apply(const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
+template <typename VT> struct CheckEq<CSRMatrix<VT>> {
+    static bool apply(const CSRMatrix<VT> *lhs, const CSRMatrix<VT> *rhs,
+                      DCTX(ctx)) {
         return *lhs == *rhs;
     }
 };
@@ -83,7 +81,7 @@ struct CheckEq<CSRMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <> struct CheckEq<Frame> {
-    static bool apply(const Frame * lhs, const Frame * rhs, DCTX(ctx)) {
+    static bool apply(const Frame *lhs, const Frame *rhs, DCTX(ctx)) {
         return *lhs == *rhs;
     }
 };
@@ -92,9 +90,9 @@ template <> struct CheckEq<Frame> {
 // Contiguous Tensor
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEq<ContiguousTensor<VT>> {
-    static bool apply(const ContiguousTensor<VT> * lhs, const ContiguousTensor<VT> * rhs, DCTX(ctx)) {
+template <typename VT> struct CheckEq<ContiguousTensor<VT>> {
+    static bool apply(const ContiguousTensor<VT> *lhs,
+                      const ContiguousTensor<VT> *rhs, DCTX(ctx)) {
         return *lhs == *rhs;
     }
 };
@@ -103,9 +101,9 @@ struct CheckEq<ContiguousTensor<VT>> {
 // Chunked Tensor
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEq<ChunkedTensor<VT>> {
-    static bool apply(const ChunkedTensor<VT> * lhs, const ChunkedTensor<VT> * rhs, DCTX(ctx)) {
+template <typename VT> struct CheckEq<ChunkedTensor<VT>> {
+    static bool apply(const ChunkedTensor<VT> *lhs,
+                      const ChunkedTensor<VT> *rhs, DCTX(ctx)) {
         return *lhs == *rhs;
     }
 };
@@ -114,9 +112,8 @@ struct CheckEq<ChunkedTensor<VT>> {
 // Matrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEq<Matrix<VT>> {
-    static bool apply(const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
+template <typename VT> struct CheckEq<Matrix<VT>> {
+    static bool apply(const Matrix<VT> *lhs, const Matrix<VT> *rhs, DCTX(ctx)) {
         return *lhs == *rhs;
     }
 };

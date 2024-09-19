@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include <runtime/local/datastructures/ValueTypeCode.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
-#include <runtime/local/io/utils.h>
 #include <runtime/local/io/DaphneFile.h>
 #include <runtime/local/io/DaphneSerializer.h>
+#include <runtime/local/io/utils.h>
 
 #include <type_traits>
 
@@ -40,8 +40,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTArg>
-struct WriteDaphne {
+template <class DTArg> struct WriteDaphne {
     static void apply(const DTArg *arg, const char *filename) = delete;
 };
 
@@ -62,14 +61,15 @@ void writeDaphne(const DTArg *arg, const char *filename) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT>
-struct WriteDaphne<DenseMatrix<VT>> {
+template <typename VT> struct WriteDaphne<DenseMatrix<VT>> {
     static void apply(const DenseMatrix<VT> *arg, const char *filename) {
         std::ofstream f;
         f.open(filename, std::ios::out | std::ios::binary);
         // TODO: check f.good()
 
-        auto ser = DaphneSerializerChunks<const DenseMatrix<VT>>(arg, DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
+        auto ser = DaphneSerializerChunks<const DenseMatrix<VT>>(
+            arg, DaphneSerializer<
+                     DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = ser.begin(); it != ser.end(); ++it) {
             f.write(it->second->data(), it->first);
         }
@@ -83,14 +83,15 @@ struct WriteDaphne<DenseMatrix<VT>> {
 // CSRMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT>
-struct WriteDaphne<CSRMatrix<VT>> {
+template <typename VT> struct WriteDaphne<CSRMatrix<VT>> {
     static void apply(const CSRMatrix<VT> *arg, const char *filename) {
         std::ofstream f;
         f.open(filename, std::ios::out | std::ios::binary);
         // TODO: check f.good()
 
-        auto ser = DaphneSerializerChunks<const CSRMatrix<VT>>(arg, DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
+        auto ser = DaphneSerializerChunks<const CSRMatrix<VT>>(
+            arg,
+            DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = ser.begin(); it != ser.end(); ++it) {
             f.write(it->second->data(), it->first);
         }
@@ -104,8 +105,7 @@ struct WriteDaphne<CSRMatrix<VT>> {
 // Frame
 // ----------------------------------------------------------------------------
 
-template <>
-struct WriteDaphne<Frame> {
+template <> struct WriteDaphne<Frame> {
     static void apply(const Frame *arg, const char *filename) {
 
         std::ofstream f;
@@ -149,32 +149,41 @@ struct WriteDaphne<Frame> {
         for (size_t r = 0; r < h.nbrows; r++) {
             for (size_t c = 0; c < h.nbcols; c++) {
                 switch (schema[c]) {
-                    case ValueTypeCode::SI8:
-                        f.write((char *)&(reinterpret_cast<int8_t *>(vals[c])[r]), sizeof(int8_t));
-                        break;
-                    case ValueTypeCode::SI32:
-                        f.write((char *)&(reinterpret_cast<int32_t *>(vals[c])[r]), sizeof(int32_t));
-                        break;
-                    case ValueTypeCode::SI64:
-                        f.write((char *)&(reinterpret_cast<int64_t *>(vals[c])[r]), sizeof(int64_t));
-                        break;
-                    case ValueTypeCode::UI8:
-                        f.write((char *)&(reinterpret_cast<uint8_t *>(vals[c])[r]), sizeof(uint8_t));
-                        break;
-                    case ValueTypeCode::UI32:
-                        f.write((char *)&(reinterpret_cast<uint32_t *>(vals[c])[r]), sizeof(uint32_t));
-                        break;
-                    case ValueTypeCode::UI64:
-                        f.write((char *)&(reinterpret_cast<uint64_t *>(vals[c])[r]), sizeof(uint64_t));
-                        break;
-                    case ValueTypeCode::F32:
-                        f.write((char *)&(reinterpret_cast<float *>(vals[c])[r]), sizeof(float));
-                        break;
-                    case ValueTypeCode::F64:
-                        f.write((char *)&(reinterpret_cast<double *>(vals[c])[r]), sizeof(double));
-                        break;
-                    default:
-                        throw std::runtime_error("WriteDaphne::apply: unknown value type code");
+                case ValueTypeCode::SI8:
+                    f.write((char *)&(reinterpret_cast<int8_t *>(vals[c])[r]),
+                            sizeof(int8_t));
+                    break;
+                case ValueTypeCode::SI32:
+                    f.write((char *)&(reinterpret_cast<int32_t *>(vals[c])[r]),
+                            sizeof(int32_t));
+                    break;
+                case ValueTypeCode::SI64:
+                    f.write((char *)&(reinterpret_cast<int64_t *>(vals[c])[r]),
+                            sizeof(int64_t));
+                    break;
+                case ValueTypeCode::UI8:
+                    f.write((char *)&(reinterpret_cast<uint8_t *>(vals[c])[r]),
+                            sizeof(uint8_t));
+                    break;
+                case ValueTypeCode::UI32:
+                    f.write((char *)&(reinterpret_cast<uint32_t *>(vals[c])[r]),
+                            sizeof(uint32_t));
+                    break;
+                case ValueTypeCode::UI64:
+                    f.write((char *)&(reinterpret_cast<uint64_t *>(vals[c])[r]),
+                            sizeof(uint64_t));
+                    break;
+                case ValueTypeCode::F32:
+                    f.write((char *)&(reinterpret_cast<float *>(vals[c])[r]),
+                            sizeof(float));
+                    break;
+                case ValueTypeCode::F64:
+                    f.write((char *)&(reinterpret_cast<double *>(vals[c])[r]),
+                            sizeof(double));
+                    break;
+                default:
+                    throw std::runtime_error(
+                        "WriteDaphne::apply: unknown value type code");
                 }
             }
         }

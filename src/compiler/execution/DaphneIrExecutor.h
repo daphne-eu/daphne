@@ -16,33 +16,28 @@
 
 #pragma once
 
-#include "mlir/IR/BuiltinOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include <api/cli/DaphneUserConfig.h>
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
+#include <api/cli/DaphneUserConfig.h>
 
 #include <unordered_map>
 
-class DaphneIrExecutor
-{
-public:
+class DaphneIrExecutor {
+  public:
     DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserConfig cfg);
 
     bool runPasses(mlir::ModuleOp module);
-    std::unique_ptr<mlir::ExecutionEngine> createExecutionEngine(mlir::ModuleOp module);
+    std::unique_ptr<mlir::ExecutionEngine>
+    createExecutionEngine(mlir::ModuleOp module);
 
-    mlir::MLIRContext *getContext()
-    { return &context_; }
+    mlir::MLIRContext *getContext() { return &context_; }
 
-    DaphneUserConfig & getUserConfig() {
-        return userConfig_;
-    }
+    DaphneUserConfig &getUserConfig() { return userConfig_; }
 
-    const DaphneUserConfig & getUserConfig() const {
-        return userConfig_;
-    }
+    const DaphneUserConfig &getUserConfig() const { return userConfig_; }
 
-private:
+  private:
     mlir::MLIRContext context_;
     DaphneUserConfig userConfig_;
     bool selectMatrixRepresentations_;
@@ -50,17 +45,16 @@ private:
     std::vector<std::string> sharedLibRefPaths;
 
     /**
-     * @brief A map indicating which of the distinct kernels libraries known to the
-     * kernel catalog are actually used in the MLIR module.
+     * @brief A map indicating which of the distinct kernels libraries known to
+     * the kernel catalog are actually used in the MLIR module.
      *
-     * This map gets pre-populated with `false` for each distinct library. The values
-     * are set to `true` when a call to a pre-compiled kernel from that library is
-     * created by this pass. This approach is thread-safe, since the structure of the
-     * map does not change anymore. Thus, it can be used by multiple concurrent
-     * instances of this pass.
+     * This map gets pre-populated with `false` for each distinct library. The
+     * values are set to `true` when a call to a pre-compiled kernel from that
+     * library is created by this pass. This approach is thread-safe, since the
+     * structure of the map does not change anymore. Thus, it can be used by
+     * multiple concurrent instances of this pass.
      */
     std::unordered_map<std::string, bool> usedLibPaths;
 
     void buildCodegenPipeline(mlir::PassManager &);
 };
-

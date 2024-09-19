@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #include <iostream>
 
 #include "WorkerImpl.h"
@@ -22,9 +21,7 @@
 #include "WorkerImplGRPCSync.h"
 #include <parser/config/ConfigParser.h>
 
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     DaphneUserConfig user_config{};
     std::string configFile = "WorkerConfig.json";
 
@@ -36,24 +33,26 @@ int main(int argc, char *argv[])
         if (ConfigParser::fileExists(configFile)) {
             ConfigParser::readUserConfig(configFile, user_config);
         }
-    }
-    catch(std::exception & e) {
-        spdlog::error("Parser error while reading worker config:\n{}", e.what());
-        spdlog::error("You can create a WorkerConfig.json to configure the worker.\n");
+    } catch (std::exception &e) {
+        spdlog::error("Parser error while reading worker config:\n{}",
+                      e.what());
+        spdlog::error(
+            "You can create a WorkerConfig.json to configure the worker.\n");
     }
 
     user_config.resolveLibDir();
     auto logger = std::make_unique<DaphneLogger>(user_config);
 
     if (argc < 2 || argc > 3) {
-        std::cout << "Usage: " << argv[0] << " <Address:Port> [ConfigFile]" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <Address:Port> [ConfigFile]"
+                  << std::endl;
         exit(1);
     }
     auto addr = argv[1];
 
     // TODO choose specific implementation based on arguments or config file
     WorkerImpl *service = new WorkerImplGRPCSync(addr, user_config);
-    
+
     std::cout << "Started Distributed Worker on `" << addr << "`\n";
     service->Wait();
 

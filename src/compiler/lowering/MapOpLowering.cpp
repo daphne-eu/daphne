@@ -34,19 +34,20 @@ using namespace mlir;
 
 class InlineMapOpLowering
     : public mlir::OpConversionPattern<mlir::daphne::MapOp> {
-   public:
+  public:
     using OpConversionPattern::OpConversionPattern;
 
-    mlir::LogicalResult matchAndRewrite(
-        mlir::daphne::MapOp op, OpAdaptor adaptor,
-        mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult
+    matchAndRewrite(mlir::daphne::MapOp op, OpAdaptor adaptor,
+                    mlir::ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
 
         mlir::daphne::MatrixType lhsMatrixType =
             op->getOperandTypes().front().dyn_cast<mlir::daphne::MatrixType>();
         auto matrixElementType = lhsMatrixType.getElementType();
         auto lhsMemRefType = mlir::MemRefType::get(
-            {lhsMatrixType.getNumRows(), lhsMatrixType.getNumCols()}, matrixElementType);
+            {lhsMatrixType.getNumRows(), lhsMatrixType.getNumCols()},
+            matrixElementType);
 
         mlir::Value lhs =
             rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
@@ -120,7 +121,7 @@ struct MapOpLoweringPass
                "UDF.";
     }
 };
-}  // end anonymous namespace
+} // end anonymous namespace
 
 void MapOpLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());

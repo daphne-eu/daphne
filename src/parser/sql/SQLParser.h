@@ -28,13 +28,14 @@
 
 struct SQLParser : public Parser {
 
-    std::unordered_map <std::string, mlir::Value> view;
+    std::unordered_map<std::string, mlir::Value> view;
     mlir::daphne::SqlOp sqlOp;
 
-    void setView(std::unordered_map <std::string, mlir::Value> view);
+    void setView(std::unordered_map<std::string, mlir::Value> view);
     void setSqlOp(mlir::daphne::SqlOp);
 
-    void parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) override;
+    void parseStream(mlir::OpBuilder &builder, std::istream &stream,
+                     const std::string &sourceName) override;
 
     mlir::Value parseStreamFrame(mlir::OpBuilder &builder, std::istream &stream,
                                  const std::string &sourceName);

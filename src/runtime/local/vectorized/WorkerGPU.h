@@ -20,14 +20,17 @@
 #include <runtime/local/vectorized/TaskQueues.h>
 
 class WorkerGPU : public Worker {
-    TaskQueue* _q;
+    TaskQueue *_q;
     bool _verbose;
     uint32_t _fid;
     uint32_t _batchSize;
-public:
+
+  public:
     // ToDo: remove compile-time verbose parameter and use logger
-    WorkerGPU(TaskQueue* tq, DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100) : Worker(dctx), _q(tq),
-            _verbose(verbose), _fid(fid), _batchSize(batchSize) {
+    WorkerGPU(TaskQueue *tq, DCTX(dctx), bool verbose, uint32_t fid = 0,
+              uint32_t batchSize = 100)
+        : Worker(dctx), _q(tq), _verbose(verbose), _fid(fid),
+          _batchSize(batchSize) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerGPU::run, this);
     }
@@ -35,18 +38,18 @@ public:
     ~WorkerGPU() override = default;
 
     void run() override {
-        Task* t = _q->dequeueTask();
+        Task *t = _q->dequeueTask();
 
-        while( !isEOF(t) ) {
-            //execute self-contained task
-            if( _verbose )
+        while (!isEOF(t)) {
+            // execute self-contained task
+            if (_verbose)
                 ctx->logger->trace("WorkerGPU: executing task.");
             t->execute(_fid, _batchSize);
             delete t;
-            //get next tasks (blocking)
+            // get next tasks (blocking)
             t = _q->dequeueTask();
         }
-        if( _verbose )
+        if (_verbose)
             ctx->logger->trace("WorkerGPU: received EOF, finalized.");
     }
 };

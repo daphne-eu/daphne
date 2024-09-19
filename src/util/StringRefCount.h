@@ -25,20 +25,20 @@ class StringRefCounter {
 
     std::shared_ptr<spdlog::logger> logger;
 
-    // This map keeps track of string allocations to be able to remove them when they are not needed anymore
+    // This map keeps track of string allocations to be able to remove them when
+    // they are not needed anymore
     std::map<uintptr_t, size_t> stringRefCount;
     std::mutex mtxStrRefCnt;
 
-public:
-    StringRefCounter() {
-        logger = spdlog::get("runtime");
-    }
+  public:
+    StringRefCounter() { logger = spdlog::get("runtime"); }
 
     ~StringRefCounter() {
-        if(!stringRefCount.empty()) {
+        if (!stringRefCount.empty()) {
             // This should not happen.
-            logger->warn("{} string refs still present while destroying StringRefCounter - this should not happen.",
-                    stringRefCount.size());
+            logger->warn("{} string refs still present while destroying "
+                         "StringRefCounter - this should not happen.",
+                         stringRefCount.size());
         }
     }
 
@@ -52,22 +52,21 @@ public:
      * @param arg The string that is to be tracked.
      *
      */
-    void inc(const char* arg);
+    void inc(const char *arg);
 
     /**
      * @brief Decreases the reference counter of the given string.
      *
      * If no reference counter is stored for this string, a prior value of 1 is
-     * implicitly assumed, i.e., then no changes are made to the stored reference
-     * counters and `false` is returned.
+     * implicitly assumed, i.e., then no changes are made to the stored
+     * reference counters and `false` is returned.
      *
      * @param arg The string that is to be tracked.
      *
-     * @return `false` if the reference counter became zero through the decrement,
-     * `true` otherwise.
+     * @return `false` if the reference counter became zero through the
+     * decrement, `true` otherwise.
      */
-    bool dec(const char* arg);
+    bool dec(const char *arg);
 
-    static StringRefCounter& instance();
+    static StringRefCounter &instance();
 };
-

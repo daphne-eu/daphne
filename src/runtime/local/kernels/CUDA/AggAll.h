@@ -25,19 +25,18 @@ namespace CUDA {
 // Struct for partial template specialization
 // ****************************************************************************
 
-    template<typename VTRes, class DTArg>
-    struct AggAll {
-        static VTRes apply(AggOpCode opCode, const DTArg *arg, DCTX(dctx)) = delete;
-    };
+template <typename VTRes, class DTArg> struct AggAll {
+    static VTRes apply(AggOpCode opCode, const DTArg *arg, DCTX(dctx)) = delete;
+};
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-    template<typename VTRes, class DTArg>
-    VTRes aggAll(AggOpCode opCode, const DTArg *arg, DCTX(dctx)) {
-        return AggAll<VTRes, DTArg>::apply(opCode, arg, dctx);
-    }
+template <typename VTRes, class DTArg>
+VTRes aggAll(AggOpCode opCode, const DTArg *arg, DCTX(dctx)) {
+    return AggAll<VTRes, DTArg>::apply(opCode, arg, dctx);
+}
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -47,8 +46,9 @@ namespace CUDA {
 // scalar <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-    template<typename VTRes, typename VTArg>
-    struct AggAll<VTRes, DenseMatrix<VTArg>> {
-        static VTRes apply(AggOpCode opCode, const DenseMatrix<VTArg> *arg, DCTX(dctx));
-    };
-}
+template <typename VTRes, typename VTArg>
+struct AggAll<VTRes, DenseMatrix<VTArg>> {
+    static VTRes apply(AggOpCode opCode, const DenseMatrix<VTArg> *arg,
+                       DCTX(dctx));
+};
+} // namespace CUDA

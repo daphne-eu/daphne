@@ -16,23 +16,24 @@
 
 #pragma once
 
+#include "HostUtils.h"
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
-#include "HostUtils.h"
 #include "runtime/local/kernels/Pooling.h"
 
 namespace CUDA::NN::Pooling {
 
-    // introduce generic pooling ops in this namespace
-    using ::NN::Pooling::AVG;
-    using ::NN::Pooling::MAX;
-    
-    template<template<typename> class OP, typename DTRes, typename DTArg>
-    struct Forward {
-        static void apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data,
-                size_t batch_size, size_t num_channels, size_t img_h, size_t img_w,
-                size_t pool_h, size_t pool_w, size_t stride_h, size_t stride_w,
-                size_t pad_h, size_t pad_w, DCTX(dctx));
-    };
-}
+// introduce generic pooling ops in this namespace
+using ::NN::Pooling::AVG;
+using ::NN::Pooling::MAX;
+
+template <template <typename> class OP, typename DTRes, typename DTArg>
+struct Forward {
+    static void apply(DTRes *&res, size_t &res_h, size_t &res_w,
+                      const DTArg *data, size_t batch_size, size_t num_channels,
+                      size_t img_h, size_t img_w, size_t pool_h, size_t pool_w,
+                      size_t stride_h, size_t stride_w, size_t pad_h,
+                      size_t pad_w, DCTX(dctx));
+};
+} // namespace CUDA::NN::Pooling

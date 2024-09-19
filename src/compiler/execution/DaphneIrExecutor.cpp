@@ -18,14 +18,13 @@
 #include <util/ErrorHandler.h>
 
 #include <ir/daphneir/Daphne.h>
-#include <ir/daphneir/Passes.h>
 #include <ir/daphneir/Passes.h.inc>
+#include <ir/daphneir/Passes.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 
 #include <filesystem>
 
-#include "llvm/Support/TargetSelect.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
@@ -47,13 +46,15 @@
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Transforms/Passes.h"
+#include "llvm/Support/TargetSelect.h"
 
 DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations,
                                    DaphneUserConfig cfg)
     : userConfig_(std::move(cfg)),
       selectMatrixRepresentations_(selectMatrixRepresentations) {
     // register loggers
-    if (userConfig_.log_ptr != nullptr) userConfig_.log_ptr->registerLoggers();
+    if (userConfig_.log_ptr != nullptr)
+        userConfig_.log_ptr->registerLoggers();
 
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::arith::ArithDialect>();
@@ -78,7 +79,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     // return false;
     //}
 
-    if (!module) return false;
+    if (!module)
+        return false;
 
     // This flag is really useful to figure out why the lowering failed
     llvm::DebugFlag = userConfig_.debug_llvm;
@@ -98,7 +100,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
             pm.addPass(mlir::daphne::createPrintIRPass(
                 "IR after parsing and some simplifications:"));
 
-        pm.addPass(mlir::daphne::createRewriteSqlOpPass());  // calls SQL Parser
+        pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         if (userConfig_.explain_sql)
             pm.addPass(
                 mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
@@ -114,7 +116,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
                 module->emitError("module pass error");
                 return false;
             }
-        } catch(...) {
+        } catch (...) {
             ErrorHandler::dumpModuleToDisk(module);
             throw;
         }
@@ -132,7 +134,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addPass(mlir::createCanonicalizerPass());
 
     if (selectMatrixRepresentations_) {
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
+        pm.addNestedPass<mlir::func::FuncOp>(
+            mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
         pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
     }
 
@@ -170,7 +173,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.use_distributed)
         pm.addPass(mlir::daphne::createDistributePipelinesPass());
 
-    if (userConfig_.use_mlir_codegen || userConfig_.use_mlir_hybrid_codegen) buildCodegenPipeline(pm);
+    if (userConfig_.use_mlir_codegen || userConfig_.use_mlir_hybrid_codegen)
+        buildCodegenPipeline(pm);
 
     if (userConfig_.enable_profiling)
         pm.addNestedPass<mlir::func::FuncOp>(
@@ -207,7 +211,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
             "IR after managing object references:"));
 
     pm.addNestedPass<mlir::func::FuncOp>(
-        mlir::daphne::createRewriteToCallKernelOpPass(userConfig_, usedLibPaths));
+        mlir::daphne::createRewriteToCallKernelOpPass(userConfig_,
+                                                      usedLibPaths));
     if (userConfig_.explain_kernels)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
@@ -222,7 +227,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     // Initialize the use of each distinct kernels library to false.
     usedLibPaths = userConfig_.kernelCatalog.getLibPaths();
-    
+
     try {
         if (failed(pm.run(module))) {
             module->dump();
@@ -237,30 +242,31 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     return true;
 }
 
-std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(
-    mlir::ModuleOp module) {
-    if (!module) return nullptr;
+std::unique_ptr<mlir::ExecutionEngine>
+DaphneIrExecutor::createExecutionEngine(mlir::ModuleOp module) {
+    if (!module)
+        return nullptr;
     // An optimization pipeline to use within the execution engine.
     unsigned optLevel = 0;
     unsigned sizeLevel = 0;
     llvm::TargetMachine *targetMachine = nullptr;
-    auto optPipeline = mlir::makeOptimizingTransformer(optLevel, sizeLevel, targetMachine);
+    auto optPipeline =
+        mlir::makeOptimizingTransformer(optLevel, sizeLevel, targetMachine);
 
     // Determine the actually used kernels libraries.
     std::vector<llvm::StringRef> sharedLibRefs;
-    for(auto it = usedLibPaths.begin(); it != usedLibPaths.end(); it++)
-        if(it->second) {
+    for (auto it = usedLibPaths.begin(); it != usedLibPaths.end(); it++)
+        if (it->second) {
             std::string usedLibPath = it->first;
             sharedLibRefPaths.push_back(usedLibPath);
             sharedLibRefs.emplace_back(sharedLibRefPaths.back());
 
-            // Check if the used kernels library really exists at the expected path
-            // and throw an understandable error, otherwise.
-            if(!std::filesystem::exists(usedLibPath))
+            // Check if the used kernels library really exists at the expected
+            // path and throw an understandable error, otherwise.
+            if (!std::filesystem::exists(usedLibPath))
                 throw std::runtime_error(
                     "the shared library `" + usedLibPath +
-                    "` is needed for some kernel, but the file does not exist"
-                );
+                    "` is needed for some kernel, but the file does not exist");
         }
 
     registerLLVMDialectTranslation(context_);
@@ -298,15 +304,16 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
 
     if (!userConfig_.use_mlir_hybrid_codegen) {
         pm.addPass(mlir::daphne::createMatMulOpLoweringPass(
-        userConfig_.matmul_tile, userConfig_.matmul_vec_size_bits,
-        userConfig_.matmul_fixed_tile_sizes,
-        userConfig_.matmul_use_fixed_tile_sizes,
-        userConfig_.matmul_unroll_factor, userConfig_.matmul_unroll_jam_factor,
-        userConfig_.matmul_num_vec_registers,
-        userConfig_.matmul_invert_loops));
+            userConfig_.matmul_tile, userConfig_.matmul_vec_size_bits,
+            userConfig_.matmul_fixed_tile_sizes,
+            userConfig_.matmul_use_fixed_tile_sizes,
+            userConfig_.matmul_unroll_factor,
+            userConfig_.matmul_unroll_jam_factor,
+            userConfig_.matmul_num_vec_registers,
+            userConfig_.matmul_invert_loops));
         if (userConfig_.explain_mlir_codegen)
-        pm.addPass(
-            mlir::daphne::createPrintIRPass("IR directly after lowering MatMulOp."));
+            pm.addPass(mlir::daphne::createPrintIRPass(
+                "IR directly after lowering MatMulOp."));
     }
 
     pm.addPass(mlir::createConvertMathToLLVMPass());
@@ -318,7 +325,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::createLowerAffinePass());
     mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;
     pm.addPass(mlir::createConvertVectorToLLVMPass(lowerVectorToLLVMOptions));
-    
+
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(
             mlir::daphne::createPrintIRPass("IR after codegen pipeline"));

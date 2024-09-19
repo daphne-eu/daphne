@@ -16,14 +16,14 @@
 
 #pragma once
 
+#include "HostUtils.h"
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
-#include "HostUtils.h"
 
 namespace CUDA::BiasAdd {
-    template<typename DTRes, typename DTArg>
-    struct Forward {
-        static void apply(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dctx));
-    };
-}
+template <typename DTRes, typename DTArg> struct Forward {
+    static void apply(DTRes *&res, const DTArg *input, const DTArg *bias,
+                      DCTX(dctx));
+};
+} // namespace CUDA::BiasAdd

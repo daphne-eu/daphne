@@ -60,15 +60,12 @@ struct KernelInfo {
      */
     const std::string libPath;
 
-    KernelInfo(
-        const std::string kernelFuncName,
-        const std::vector<mlir::Type> resTypes,
-        const std::vector<mlir::Type> argTypes,
-        const std::string backend,
-        const std::string libPath
-    ) :
-        kernelFuncName(kernelFuncName), resTypes(resTypes), argTypes(argTypes), backend(backend), libPath(libPath)
-    {
+    KernelInfo(const std::string kernelFuncName,
+               const std::vector<mlir::Type> resTypes,
+               const std::vector<mlir::Type> argTypes,
+               const std::string backend, const std::string libPath)
+        : kernelFuncName(kernelFuncName), resTypes(resTypes),
+          argTypes(argTypes), backend(backend), libPath(libPath) {
         //
     }
 };
@@ -78,44 +75,49 @@ struct KernelInfo {
  */
 class KernelCatalog {
     /**
-     * @brief The central data structure mapping DaphneIR operations to registered kernels.
-     * 
-     * The DaphneIR operation is represented by its mnemonic. The kernels are represented
-     * by their kernel information.
+     * @brief The central data structure mapping DaphneIR operations to
+     * registered kernels.
+     *
+     * The DaphneIR operation is represented by its mnemonic. The kernels are
+     * represented by their kernel information.
      */
     std::unordered_map<std::string, std::vector<KernelInfo>> kernelInfosByOp;
 
     /**
      * @brief Prints the given kernel information.
-     * 
+     *
      * @param opMnemonic The mnemonic of the corresponding DaphneIR operation.
      * @param kernelInfos The kernel information to print.
      * @param os The stream to print to. Defaults to `std::cerr`.
      */
-    void dumpKernelInfos(const std::string & opMnemonic, const std::vector<KernelInfo> & kernelInfos, std::ostream & os = std::cerr) const {
-        os << "- operation `" << opMnemonic << "` (" << kernelInfos.size() << " kernels)" << std::endl;
-        for(KernelInfo ki : kernelInfos) {
+    void dumpKernelInfos(const std::string &opMnemonic,
+                         const std::vector<KernelInfo> &kernelInfos,
+                         std::ostream &os = std::cerr) const {
+        os << "- operation `" << opMnemonic << "` (" << kernelInfos.size()
+           << " kernels)" << std::endl;
+        for (KernelInfo ki : kernelInfos) {
             os << "  - kernel `" << ki.kernelFuncName << "`: (";
-            for(size_t i = 0; i < ki.argTypes.size(); i++) {
+            for (size_t i = 0; i < ki.argTypes.size(); i++) {
                 os << ki.argTypes[i];
-                if(i < ki.argTypes.size() - 1)
+                if (i < ki.argTypes.size() - 1)
                     os << ", ";
             }
             os << ") -> (";
-            for(size_t i = 0; i < ki.resTypes.size(); i++) {
+            for (size_t i = 0; i < ki.resTypes.size(); i++) {
                 os << ki.resTypes[i];
-                if(i < ki.resTypes.size() - 1)
+                if (i < ki.resTypes.size() - 1)
                     os << ", ";
             }
-            os << ") for backend `" << ki.backend  << "` (in `" << ki.libPath << "`)" << std::endl;
+            os << ") for backend `" << ki.backend << "` (in `" << ki.libPath
+               << "`)" << std::endl;
         }
     }
 
-public:
+  public:
     /**
-     * @brief Registers the given kernel information as a kernel for the DaphneIR
-     * operation with the given mnemonic.
-     * 
+     * @brief Registers the given kernel information as a kernel for the
+     * DaphneIR operation with the given mnemonic.
+     *
      * @param opMnemonic The DaphneIR operation's mnemonic.
      * @param kernelInfo The information on the kernel.
      */
@@ -124,15 +126,17 @@ public:
     }
 
     /**
-     * @brief Retrieves information on all kernels registered for the given DaphneIR operation.
-     * 
+     * @brief Retrieves information on all kernels registered for the given
+     * DaphneIR operation.
+     *
      * @param opMnemonic The mnemonic of the DaphneIR operation.
-     * @return A vector of kernel information, or an empty vector if no kernels are registered
-     * for the given operation.
+     * @return A vector of kernel information, or an empty vector if no kernels
+     * are registered for the given operation.
      */
-    const std::vector<KernelInfo> getKernelInfos(const std::string & opMnemonic) const {
+    const std::vector<KernelInfo>
+    getKernelInfos(const std::string &opMnemonic) const {
         auto it = kernelInfosByOp.find(opMnemonic);
-        if(it != kernelInfosByOp.end())
+        if (it != kernelInfosByOp.end())
             return it->second;
         else
             return {};
@@ -145,44 +149,47 @@ public:
      * @param kernelFuncName The name of the kernel function to look for.
      * @return The mnemonic of the operation.
      */
-    std::string getOpMnemonic(const std::string & kernelFuncName) {
-        for(auto it : kernelInfosByOp) {
+    std::string getOpMnemonic(const std::string &kernelFuncName) {
+        for (auto it : kernelInfosByOp) {
             std::string opMnemonic = it.first;
-            const std::vector<KernelInfo> & kis = it.second;
-            for(auto it2 : kis)
-                if(it2.kernelFuncName == kernelFuncName)
+            const std::vector<KernelInfo> &kis = it.second;
+            for (auto it2 : kis)
+                if (it2.kernelFuncName == kernelFuncName)
                     return opMnemonic;
         }
-        throw std::runtime_error(
-            "no kernel with name `" + kernelFuncName + "` registered in the kernel catalog"
-        );
+        throw std::runtime_error("no kernel with name `" + kernelFuncName +
+                                 "` registered in the kernel catalog");
     }
 
     /**
      * @brief Prints high-level statistics on the kernel catalog.
-     * 
+     *
      * @param os The stream to print to. Defaults to `std::cerr`.
      */
-    void stats(std::ostream & os = std::cerr) const {
+    void stats(std::ostream &os = std::cerr) const {
         const size_t numOps = kernelInfosByOp.size();
         size_t numKernels = 0;
-        for(auto it = kernelInfosByOp.begin(); it != kernelInfosByOp.end(); it++)
+        for (auto it = kernelInfosByOp.begin(); it != kernelInfosByOp.end();
+             it++)
             numKernels += it->second.size();
-        os << "KernelCatalog (" << numOps << " ops, " << numKernels << " kernels)" << std::endl;
+        os << "KernelCatalog (" << numOps << " ops, " << numKernels
+           << " kernels)" << std::endl;
     }
 
     /**
      * @brief Prints this kernel catalog.
-     * 
-     * @param opMnemonic If an empty string, print registered kernels for all DaphneIR
-     * operations; otherwise, consider only the specified DaphneIR operation.
+     *
+     * @param opMnemonic If an empty string, print registered kernels for all
+     * DaphneIR operations; otherwise, consider only the specified DaphneIR
+     * operation.
      * @param os The stream to print to. Defaults to `std::cerr`.
      */
-    void dump(std::string opMnemonic = "", std::ostream & os = std::cerr) const {
+    void dump(std::string opMnemonic = "", std::ostream &os = std::cerr) const {
         stats(os);
-        if(opMnemonic.empty())
+        if (opMnemonic.empty())
             // Print info on all ops.
-            for(auto it = kernelInfosByOp.begin(); it != kernelInfosByOp.end(); it++)
+            for (auto it = kernelInfosByOp.begin(); it != kernelInfosByOp.end();
+                 it++)
                 dumpKernelInfos(it->first, it->second, os);
         else
             // Print info on specified op only.
@@ -190,17 +197,18 @@ public:
     }
 
     /**
-     * @brief Returns all distinct kernel libraries in the form of a mapping from
-     * the library path to the constant `false`.
+     * @brief Returns all distinct kernel libraries in the form of a mapping
+     * from the library path to the constant `false`.
      *
-     * @return A mapping from each distict kernel library path to the constant `false`.
+     * @return A mapping from each distict kernel library path to the constant
+     * `false`.
      */
     std::unordered_map<std::string, bool> getLibPaths() const {
         std::unordered_map<std::string, bool> res;
 
-        for(auto it : kernelInfosByOp) {
-            const std::vector<KernelInfo> & kis = it.second;
-            for(auto it2 : kis)
+        for (auto it : kernelInfosByOp) {
+            const std::vector<KernelInfo> &kis = it.second;
+            for (auto it2 : kis)
                 res[it2.libPath] = false;
         }
 

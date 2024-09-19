@@ -35,9 +35,9 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
-struct CheckEqApprox{
-    static bool apply(const DT * lhs, const DT * rhs, double eps, DCTX(ctx)) = delete;
+template <class DT> struct CheckEqApprox {
+    static bool apply(const DT *lhs, const DT *rhs, double eps,
+                      DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -46,18 +46,18 @@ struct CheckEqApprox{
 
 /**
  * @brief Checks if the two given matrices are approximately equal.
- * 
- * More precisely, this requires that they have the same dimensions and are approximately
- * elementwise equal, i.e., if the difference between two elements is not greater than the threshold `eps`,
- * they are considered as equal. 
+ *
+ * More precisely, this requires that they have the same dimensions and are
+ * approximately elementwise equal, i.e., if the difference between two elements
+ * is not greater than the threshold `eps`, they are considered as equal.
  *
  * @param lhs The first matrix.
  * @param rhs The second matrix.
  * @param eps The similarity threshold.
  * @return `true` if they are equal, `false` otherwise.
  */
-template<class DT>
-bool checkEqApprox(const DT * lhs, const DT * rhs, double eps, DCTX(ctx)) {
+template <class DT>
+bool checkEqApprox(const DT *lhs, const DT *rhs, double eps, DCTX(ctx)) {
     return CheckEqApprox<DT>::apply(lhs, rhs, eps, ctx);
 }
 
@@ -86,40 +86,40 @@ bool operator==(const DT & lhs, const DT & rhs) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEqApprox<DenseMatrix<VT>> {
-    static bool apply(const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, double eps, DCTX(ctx)) {
-        if(lhs == rhs)
+template <typename VT> struct CheckEqApprox<DenseMatrix<VT>> {
+    static bool apply(const DenseMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
+                      double eps, DCTX(ctx)) {
+        if (lhs == rhs)
             return true;
-        
+
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-        
-        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
-        
-        const VT * valuesLhs = lhs->getValues();
-        const VT * valuesRhs = rhs->getValues();
-        
+
+        const VT *valuesLhs = lhs->getValues();
+        const VT *valuesRhs = rhs->getValues();
+
         const size_t rowSkipLhs = lhs->getRowSkip();
         const size_t rowSkipRhs = rhs->getRowSkip();
-        
-        if(valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs) // same pointer
+
+        if (valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs) // same pointer
             return true;
-        
-        for(size_t r = 0; r < numRows; r++){
-            for(size_t c = 0; c < numCols; c++){
+
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++) {
                 VT diff = valuesLhs[c] - valuesRhs[c];
-                if (diff==0)
+                if (diff == 0)
                     continue;
-                diff = diff>0? diff : -diff;
-                if (diff> eps)
+                diff = diff > 0 ? diff : -diff;
+                if (diff > eps)
                     return false;
-            }   
+            }
             valuesLhs += lhs->getRowSkip();
             valuesRhs += rhs->getRowSkip();
-        }        
-         
+        }
+
         return true;
     }
 };
@@ -128,36 +128,35 @@ struct CheckEqApprox<DenseMatrix<VT>> {
 // CSRMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEqApprox<CSRMatrix<VT>> {
-    static bool apply(const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, double eps, DCTX(ctx)) {
-        if(lhs == rhs)
+template <typename VT> struct CheckEqApprox<CSRMatrix<VT>> {
+    static bool apply(const CSRMatrix<VT> *lhs, const CSRMatrix<VT> *rhs,
+                      double eps, DCTX(ctx)) {
+        if (lhs == rhs)
             return true;
-        
+
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-        
-        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
-       
-        for(size_t r = 0; r < numRows; r++){
-            const VT * valuesLhs = lhs->getValues(r);
-            const VT * valuesRhs = rhs->getValues(r);
-            const size_t nnzElementsLhs= lhs->getNumNonZeros(r);
-            const size_t nnzElementsRhs= rhs->getNumNonZeros(r);
-            if (nnzElementsLhs!=nnzElementsRhs)
+
+        for (size_t r = 0; r < numRows; r++) {
+            const VT *valuesLhs = lhs->getValues(r);
+            const VT *valuesRhs = rhs->getValues(r);
+            const size_t nnzElementsLhs = lhs->getNumNonZeros(r);
+            const size_t nnzElementsRhs = rhs->getNumNonZeros(r);
+            if (nnzElementsLhs != nnzElementsRhs)
                 return false;
-            for(size_t c = 0; c < nnzElementsLhs; c++){
+            for (size_t c = 0; c < nnzElementsLhs; c++) {
                 VT diff = valuesLhs[c] - valuesRhs[c];
-                if (diff==0)
-                     continue;
-                diff = diff>0? diff : -diff;
-                if (diff> eps)
+                if (diff == 0)
+                    continue;
+                diff = diff > 0 ? diff : -diff;
+                if (diff > eps)
                     return false;
-            }   
+            }
         }
         return true;
-
     }
 };
 
@@ -166,58 +165,76 @@ struct CheckEqApprox<CSRMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <> struct CheckEqApprox<Frame> {
-    static bool apply(const Frame * lhs, const Frame * rhs, double eps, DCTX(ctx)) {
-        if(lhs == rhs)
+    static bool apply(const Frame *lhs, const Frame *rhs, double eps,
+                      DCTX(ctx)) {
+        if (lhs == rhs)
             return true;
-        
+
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-        
-        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
-            return false;
-        
-        if(memcmp(lhs->getSchema(), rhs->getSchema(), numCols * sizeof(ValueTypeCode)) != 0)
+
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
 
-        const std::string * labelsLhs = lhs->getLabels();
-        const std::string * labelsRhs = rhs->getLabels();
+        if (memcmp(lhs->getSchema(), rhs->getSchema(),
+                   numCols * sizeof(ValueTypeCode)) != 0)
+            return false;
+
+        const std::string *labelsLhs = lhs->getLabels();
+        const std::string *labelsRhs = rhs->getLabels();
         for (size_t c = 0; c < numCols; c++) {
-            if(labelsLhs[c] != labelsRhs[c])
+            if (labelsLhs[c] != labelsRhs[c])
                 return false;
         }
-        
-        for (size_t c = 0; c < numCols; c++)
-        {
-            switch(lhs->getColumnType(c)) {
-                // For all value types:
-                case ValueTypeCode::F64: if(!checkEqApprox(lhs->getColumn<double>(c),
-                    rhs->getColumn<double>(c), eps, ctx)) return false;
-                    break;
-                case ValueTypeCode::F32: if (!checkEqApprox(lhs->getColumn<float>(c),
-                    rhs->getColumn<float>(c), eps, ctx)) return false;
-                    break;
-                case ValueTypeCode::SI64: if (!checkEqApprox(lhs->getColumn<int64_t>(c),
-                    rhs->getColumn<int64_t>(c), eps, ctx)) return false;
-                    break;
-                case ValueTypeCode::SI32: if (!checkEqApprox(lhs->getColumn<int32_t>(c),
-                    rhs->getColumn<int32_t>(c), eps, ctx)) return false;
-                    break;
-                case ValueTypeCode::SI8 : if (!checkEqApprox(lhs->getColumn<int8_t>(c),
-                    rhs->getColumn<int8_t>(c), eps, ctx)) return false;
-                    break;
-                case ValueTypeCode::UI64: if (!checkEqApprox(lhs->getColumn<uint64_t>(c),
-                    rhs->getColumn<uint64_t>(c), eps, ctx)) return false;
-                    break;
-                case ValueTypeCode::UI32: if (!checkEqApprox(lhs->getColumn<uint32_t>(c), 
-                    rhs->getColumn<uint32_t>(c), eps, ctx)) return false;
-                    break;
-                case ValueTypeCode::UI8 : if (!checkEqApprox(lhs->getColumn<uint8_t>(c),
-                    rhs->getColumn<uint8_t>(c), eps, ctx)) return false;
-                    break;
-                default:
-                    throw std::runtime_error("CheckEqApprox::apply: unknown value type code");
+
+        for (size_t c = 0; c < numCols; c++) {
+            switch (lhs->getColumnType(c)) {
+            // For all value types:
+            case ValueTypeCode::F64:
+                if (!checkEqApprox(lhs->getColumn<double>(c),
+                                   rhs->getColumn<double>(c), eps, ctx))
+                    return false;
+                break;
+            case ValueTypeCode::F32:
+                if (!checkEqApprox(lhs->getColumn<float>(c),
+                                   rhs->getColumn<float>(c), eps, ctx))
+                    return false;
+                break;
+            case ValueTypeCode::SI64:
+                if (!checkEqApprox(lhs->getColumn<int64_t>(c),
+                                   rhs->getColumn<int64_t>(c), eps, ctx))
+                    return false;
+                break;
+            case ValueTypeCode::SI32:
+                if (!checkEqApprox(lhs->getColumn<int32_t>(c),
+                                   rhs->getColumn<int32_t>(c), eps, ctx))
+                    return false;
+                break;
+            case ValueTypeCode::SI8:
+                if (!checkEqApprox(lhs->getColumn<int8_t>(c),
+                                   rhs->getColumn<int8_t>(c), eps, ctx))
+                    return false;
+                break;
+            case ValueTypeCode::UI64:
+                if (!checkEqApprox(lhs->getColumn<uint64_t>(c),
+                                   rhs->getColumn<uint64_t>(c), eps, ctx))
+                    return false;
+                break;
+            case ValueTypeCode::UI32:
+                if (!checkEqApprox(lhs->getColumn<uint32_t>(c),
+                                   rhs->getColumn<uint32_t>(c), eps, ctx))
+                    return false;
+                break;
+            case ValueTypeCode::UI8:
+                if (!checkEqApprox(lhs->getColumn<uint8_t>(c),
+                                   rhs->getColumn<uint8_t>(c), eps, ctx))
+                    return false;
+                break;
+            default:
+                throw std::runtime_error(
+                    "CheckEqApprox::apply: unknown value type code");
             }
-        }   
+        }
         return true;
     }
 };
@@ -226,26 +243,26 @@ template <> struct CheckEqApprox<Frame> {
 // Matrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEqApprox<Matrix<VT>> {
-    static bool apply(const Matrix<VT> * lhs, const Matrix<VT> * rhs, double eps, DCTX(ctx)) {
+template <typename VT> struct CheckEqApprox<Matrix<VT>> {
+    static bool apply(const Matrix<VT> *lhs, const Matrix<VT> *rhs, double eps,
+                      DCTX(ctx)) {
         if (lhs == rhs)
             return true;
-        
+
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-        
+
         if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
 
-        for (size_t r=0; r < numRows; ++r) {
-            for (size_t c=0; c < numCols; ++c) {
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
                 double diff = lhs->get(r, c) - rhs->get(r, c);
                 if (std::abs(diff) > eps)
                     return false;
             }
-        }        
-         
+        }
+
         return true;
     }
 };

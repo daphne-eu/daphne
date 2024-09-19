@@ -27,17 +27,16 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, typename VTArg>
-struct CastScaObj {
-    static void apply(DTRes *& res, const VTArg arg, DCTX(ctx)) = delete;
+template <class DTRes, typename VTArg> struct CastScaObj {
+    static void apply(DTRes *&res, const VTArg arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, typename VTArg>
-void castScaObj(DTRes *& res, const VTArg arg, DCTX(ctx)) {
+template <class DTRes, typename VTArg>
+void castScaObj(DTRes *&res, const VTArg arg, DCTX(ctx)) {
     CastScaObj<DTRes, VTArg>::apply(res, arg, ctx);
 }
 
@@ -49,10 +48,10 @@ void castScaObj(DTRes *& res, const VTArg arg, DCTX(ctx)) {
 // DenseMatrix <- Scalar
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTArg>
+template <typename VTRes, typename VTArg>
 struct CastScaObj<DenseMatrix<VTRes>, VTArg> {
-    static void apply(DenseMatrix<VTRes> *& res, const VTArg arg, DCTX(ctx)) {
-        if(res == nullptr)
+    static void apply(DenseMatrix<VTRes> *&res, const VTArg arg, DCTX(ctx)) {
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, 1, false);
         *res->getValues() = static_cast<VTRes>(arg);
     }
@@ -62,15 +61,13 @@ struct CastScaObj<DenseMatrix<VTRes>, VTArg> {
 // Frame <- Scalar
 // ----------------------------------------------------------------------------
 
-template<typename VTArg>
-struct CastScaObj<Frame, VTArg> {
-    static void apply(Frame *& res, const VTArg arg, DCTX(ctx)) {
+template <typename VTArg> struct CastScaObj<Frame, VTArg> {
+    static void apply(Frame *&res, const VTArg arg, DCTX(ctx)) {
         auto col = DataObjectFactory::create<DenseMatrix<VTArg>>(1, 1, false);
         *col->getValues() = arg;
         std::vector<Structure *> cols = {col};
         res = DataObjectFactory::create<Frame>(cols, nullptr);
-        
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CASTSCAOBJ_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_CASTSCAOBJ_H

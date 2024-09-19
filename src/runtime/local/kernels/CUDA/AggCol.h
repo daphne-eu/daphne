@@ -27,19 +27,19 @@ namespace CUDA {
 // Struct for partial template specialization
 // ****************************************************************************
 
-    template<class DTRes, class DTArg>
-    struct AggCol {
-        static void apply(AggOpCode opCode, DenseMatrix<DTRes> *&res, const DenseMatrix<DTArg> *arg, DCTX(ctx));
-    };
+template <class DTRes, class DTArg> struct AggCol {
+    static void apply(AggOpCode opCode, DenseMatrix<DTRes> *&res,
+                      const DenseMatrix<DTArg> *arg, DCTX(ctx));
+};
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-    template<class DTRes, class DTArg>
-    void aggCol(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
-        AggCol<DTRes, DTArg>::apply(opCode, res, arg, ctx);
-    }
+template <class DTRes, class DTArg>
+void aggCol(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+    AggCol<DTRes, DTArg>::apply(opCode, res, arg, ctx);
+}
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -49,8 +49,8 @@ namespace CUDA {
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-    template<typename VT>
-    struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
-        static void apply(AggOpCode opCode, DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx));
-    };
-}
+template <typename VT> struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VT> *&res,
+                      const DenseMatrix<VT> *arg, DCTX(ctx));
+};
+} // namespace CUDA

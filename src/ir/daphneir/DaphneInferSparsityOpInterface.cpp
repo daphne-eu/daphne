@@ -21,9 +21,9 @@
 
 #include <parser/metadata/MetaDataParser.h>
 
-#include <vector>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace mlir::daphne {
 #include <ir/daphneir/DaphneInferSparsityOpInterface.cpp.inc>
@@ -38,7 +38,7 @@ using namespace mlir::OpTrait;
 
 double getSparsityOrUnknownFromType(Value v) {
     Type t = v.getType();
-    if(auto mt = t.dyn_cast<daphne::MatrixType>())
+    if (auto mt = t.dyn_cast<daphne::MatrixType>())
         return mt.getSparsity();
     else // scalar or frame
         // TODO: read scalar value (if 0 -> sparsity 0.0)
@@ -54,7 +54,7 @@ std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
     auto k = argTy.getNumRows();
     auto sparsity = argTy.getSparsity();
 
-    if(argTy.getSparsity() == -1.0) {
+    if (argTy.getSparsity() == -1.0) {
         sparsity = 1;
     }
 
@@ -64,23 +64,24 @@ std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
 std::vector<double> daphne::MatMulOp::inferSparsity() {
     auto lhsTy = getLhs().getType().dyn_cast<daphne::MatrixType>();
     auto rhsTy = getRhs().getType().dyn_cast<daphne::MatrixType>();
-    if(lhsTy.getSparsity() == -1.0 || rhsTy.getSparsity() == -1.0) {
+    if (lhsTy.getSparsity() == -1.0 || rhsTy.getSparsity() == -1.0) {
         return {-1.0};
     }
     auto k = lhsTy.getNumCols();
-    if(k == -1) {
+    if (k == -1) {
         k = rhsTy.getNumRows();
     }
-    if(k == -1)
+    if (k == -1)
         return {-1.0};
     else
         // unbiased estimate
-        return {1.0 - std::pow(1.0 - lhsTy.getSparsity() * rhsTy.getSparsity(), k)};
+        return {1.0 -
+                std::pow(1.0 - lhsTy.getSparsity() * rhsTy.getSparsity(), k)};
 }
 
 std::vector<double> daphne::TriOp::inferSparsity() {
     auto argTy = getArg().getType().dyn_cast<daphne::MatrixType>();
-    if(argTy.getSparsity() == -1.0) {
+    if (argTy.getSparsity() == -1.0) {
         return {-1.0};
     }
     // TODO: remove diagonal
@@ -88,15 +89,17 @@ std::vector<double> daphne::TriOp::inferSparsity() {
 }
 
 std::vector<double> daphne::ReadOp::inferSparsity() {
-    std::pair<bool, std::string> p = CompilerUtils::isConstant<std::string>(getFileName());
-    if(p.first) {
+    std::pair<bool, std::string> p =
+        CompilerUtils::isConstant<std::string>(getFileName());
+    if (p.first) {
         FileMetaData fmd = MetaDataParser::readMetaData(p.second);
         if (fmd.numNonZeros == -1)
             return {-1.0};
-        // TODO: maybe use type shape info instead of file? (would require correct order of optimization passes)
-        return {(static_cast<double>(fmd.numNonZeros) / fmd.numRows) / fmd.numCols};
-    }
-    else
+        // TODO: maybe use type shape info instead of file? (would require
+        // correct order of optimization passes)
+        return {(static_cast<double>(fmd.numNonZeros) / fmd.numRows) /
+                fmd.numCols};
+    } else
         return {-1.0};
 }
 
@@ -110,32 +113,31 @@ std::vector<double> daphne::ReadOp::inferSparsity() {
  * @brief Utility for trying a parametric trait for all values of the parameter
  * from 0 to some upper bound.
  */
-template<size_t upper, template<size_t> class tryParametricTrait>
+template <size_t upper, template <size_t> class tryParametricTrait>
 struct tryParamTraitUntil {
     static void apply(double &sparsity, Operation *op) {
         tryParametricTrait<upper>::apply(sparsity, op);
         tryParamTraitUntil<upper - 1, tryParametricTrait>::apply(sparsity, op);
     }
 };
-template<template<size_t> class tryParametricTrait>
+template <template <size_t> class tryParametricTrait>
 struct tryParamTraitUntil<0, tryParametricTrait> {
     static void apply(double &sparsity, Operation *op) {
         tryParametricTrait<0>::apply(sparsity, op);
     }
 };
 
-template<size_t i>
-struct trySparsityFromIthScalar {
+template <size_t i> struct trySparsityFromIthScalar {
     static void apply(double &sparsity, Operation *op) {
-        if(op->hasTrait<SparsityFromIthScalar<i>::template Impl>())
-            sparsity = CompilerUtils::constantOrDefault<double>(op->getOperand(i), -1);
+        if (op->hasTrait<SparsityFromIthScalar<i>::template Impl>())
+            sparsity =
+                CompilerUtils::constantOrDefault<double>(op->getOperand(i), -1);
     }
 };
 
-template<size_t i>
-struct trySparsityFromIthArg {
+template <size_t i> struct trySparsityFromIthArg {
     static void apply(double &sparsity, Operation *op) {
-        if(op->hasTrait<SparsityFromIthArg<i>::template Impl>())
+        if (op->hasTrait<SparsityFromIthArg<i>::template Impl>())
             sparsity = getSparsityOrUnknownFromType(op->getOperand(i));
     }
 };
@@ -145,31 +147,31 @@ struct trySparsityFromIthArg {
 // ****************************************************************************
 
 std::vector<double> daphne::tryInferSparsity(Operation *op) {
-    if(auto inferSparsityOp = llvm::dyn_cast<daphne::InferSparsity>(op))
+    if (auto inferSparsityOp = llvm::dyn_cast<daphne::InferSparsity>(op))
         // If the operation implements the sparsity inference interface,
         // we apply that.
         return inferSparsityOp.inferSparsity();
-    else if(op->getNumResults() == 1) {
+    else if (op->getNumResults() == 1) {
         // If the operation does not implement the sparsity inference interface
         // and has exactly one result, we utilize its sparsity inference traits.
         double sparsity = -1.0;
 
-        if(op->hasTrait<CompletelyDense>()) {
+        if (op->hasTrait<CompletelyDense>()) {
             sparsity = 1.0;
         }
 
-        if(op->hasTrait<EwSparseIfBoth>()) {
+        if (op->hasTrait<EwSparseIfBoth>()) {
             auto spLhs = getSparsityOrUnknownFromType(op->getOperand(0));
             auto spRhs = getSparsityOrUnknownFromType(op->getOperand(1));
-            if(spLhs != -1.0 && spRhs != -1.0)
+            if (spLhs != -1.0 && spRhs != -1.0)
                 // unbiased estimate
                 sparsity = spLhs + spRhs - spLhs * spRhs;
         }
 
-        if(op->hasTrait<EwSparseIfEither>()) {
+        if (op->hasTrait<EwSparseIfEither>()) {
             auto spLhs = getSparsityOrUnknownFromType(op->getOperand(0));
             auto spRhs = getSparsityOrUnknownFromType(op->getOperand(1));
-            if(spLhs != -1.0 && spRhs != -1.0)
+            if (spLhs != -1.0 && spRhs != -1.0)
                 // unbiased estimate
                 sparsity = spLhs * spRhs;
             else if (spLhs != -1.0)
@@ -187,12 +189,11 @@ std::vector<double> daphne::tryInferSparsity(Operation *op) {
         tryParamTraitUntil<u, trySparsityFromIthArg>::apply(sparsity, op);
 
         return {sparsity};
-    }
-    else {
+    } else {
         // If the operation does not implement the sparsity inference interface
         // and has zero or more than one results, we return unknown.
         std::vector<double> sparsities;
-        for(size_t i = 0; i < op->getNumResults(); i++)
+        for (size_t i = 0; i < op->getNumResults(); i++)
             sparsities.push_back(-1);
         return sparsities;
     }

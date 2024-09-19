@@ -15,10 +15,10 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
-#include <util/ErrorHandler.h>
 #include <compiler/utils/LoweringUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+#include <util/ErrorHandler.h>
 
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Pass/Pass.h>
@@ -46,8 +46,8 @@ using namespace mlir;
  *   object that is still needed in a surrounding scope, i.e., to prevent
  *   double frees.
  */
-struct ManageObjRefsPass : public PassWrapper<ManageObjRefsPass, OperationPass<func::FuncOp>>
-{
+struct ManageObjRefsPass
+    : public PassWrapper<ManageObjRefsPass, OperationPass<func::FuncOp>> {
     explicit ManageObjRefsPass() {}
     void runOnOperation() final;
 
@@ -56,7 +56,7 @@ struct ManageObjRefsPass : public PassWrapper<ManageObjRefsPass, OperationPass<f
 };
 
 void processMemRefInterop(OpBuilder builder, Value v) {
-    Operation* lastUseOp = findLastUseOfSSAValue(v);
+    Operation *lastUseOp = findLastUseOfSSAValue(v);
 
     builder.setInsertionPointAfter(lastUseOp);
     builder.create<daphne::DecRefOp>(v.getLoc(),
@@ -76,35 +76,36 @@ void processValue(OpBuilder builder, Value v) {
     // We only need to manage the reference counters of DAPHNE data objects
     // like matrices and frames (not of scalars).
 
-    Operation* defOp = v.getDefiningOp();
+    Operation *defOp = v.getDefiningOp();
     if (defOp && llvm::isa<daphne::ConvertDenseMatrixToMemRef>(defOp))
         processMemRefInterop(builder, v);
 
     // Increase the reference counter of string literals, such that they don't
     // get gargabe collected.
-    if(defOp && llvm::isa<daphne::ConstantOp>(defOp) && llvm::isa<daphne::StringType>(v.getType())) {
-        // The given value is a string literal. We want to increase its reference
-        // counter right after its definition, such that it is never removed.
-        // But if the defining op is the block of a FuncOp, make sure not to insert the
-        // IncRefOp before the CreateDaphneContextOp, otherwise we will run
-        // into problems during/after lowering to kernel calls.
-        Block * pb = v.getParentBlock();
-        if(auto fo = dyn_cast<func::FuncOp>(pb->getParentOp())) {
+    if (defOp && llvm::isa<daphne::ConstantOp>(defOp) &&
+        llvm::isa<daphne::StringType>(v.getType())) {
+        // The given value is a string literal. We want to increase its
+        // reference counter right after its definition, such that it is never
+        // removed. But if the defining op is the block of a FuncOp, make sure
+        // not to insert the IncRefOp before the CreateDaphneContextOp,
+        // otherwise we will run into problems during/after lowering to kernel
+        // calls.
+        Block *pb = v.getParentBlock();
+        if (auto fo = dyn_cast<func::FuncOp>(pb->getParentOp())) {
             Value dctx = CompilerUtils::getDaphneContext(fo);
             builder.setInsertionPointAfterValue(dctx);
-        }
-        else
+        } else
             builder.setInsertionPointAfter(defOp);
         builder.create<daphne::IncRefOp>(v.getLoc(), v);
     }
 
-    // Increase the reference counter of the result of the arith.select op, if it is
-    // a string scalar.
-    // This is necessary because for arith.select, we have no clue which of
-    // its two arguments (2nd or 3rd one) it will return. Unless we do something
-    // about it, the reference counter of the result will be too low by 1.
-    // Thus, we increase the result's reference counter here.
-    if(defOp && llvm::isa<arith::SelectOp>(defOp) && llvm::isa<daphne::StringType>(v.getType())) {
+    // Increase the reference counter of the result of the arith.select op, if
+    // it is a string scalar. This is necessary because for arith.select, we
+    // have no clue which of its two arguments (2nd or 3rd one) it will return.
+    // Unless we do something about it, the reference counter of the result will
+    // be too low by 1. Thus, we increase the result's reference counter here.
+    if (defOp && llvm::isa<arith::SelectOp>(defOp) &&
+        llvm::isa<daphne::StringType>(v.getType())) {
         builder.setInsertionPointAfter(defOp);
         builder.create<daphne::IncRefOp>(v.getLoc(), v);
     }
@@ -113,12 +114,13 @@ void processValue(OpBuilder builder, Value v) {
                    daphne::StringType>(v.getType()))
         return;
 
-    Operation* decRefAfterOp = nullptr;
+    Operation *decRefAfterOp = nullptr;
     if (v.use_empty()) {
         // If the given SSA value has no uses, we want to decrease its
         // reference counter directly after its definition (nullptr for block
         // args). Note that ideally, there should be no unused SSA values.
-        if (defOp) decRefAfterOp = defOp;
+        if (defOp)
+            decRefAfterOp = defOp;
         // else: decRefAfterOp stays nullptr
     } else {
         // If the given SSA value has uses, we need to find the last of them.
@@ -135,11 +137,11 @@ void processValue(OpBuilder builder, Value v) {
     // At this point, decRefAfterOp is nullptr, or the last user of v, or the
     // defining op of v.
 
-    if(decRefAfterOp) {
+    if (decRefAfterOp) {
         // The given value is used and/or an OpResult.
 
         // Don't insert a DecRefOp if the last user is a terminator.
-        if(decRefAfterOp->hasTrait<OpTrait::IsTerminator>())
+        if (decRefAfterOp->hasTrait<OpTrait::IsTerminator>())
             // The value is handed out of its block (e.g., return, yield, ...).
             // So a new reference to it is created. Thus, the reference counter
             // must remain unchanged. Moreover, it is impossible to insert any
@@ -150,23 +152,21 @@ void processValue(OpBuilder builder, Value v) {
         // Don't insert a DecRefOp if there is already one. Currently, this can
         // happen only on the distributed worker, since the IR it gets already
         // contains
-        if(llvm::isa<daphne::DecRefOp>(decRefAfterOp))
+        if (llvm::isa<daphne::DecRefOp>(decRefAfterOp))
             return;
 
         builder.setInsertionPointAfter(decRefAfterOp);
-    }
-    else {
+    } else {
         // The given value is an unused block arg. Decrease its reference
         // counter at the beginning of the block.
         // But if this is the block of a FuncOp, make sure not to insert the
         // DecRefOp before the CreateDaphneContextOp, otherwise we will run
         // into problems during/after lowering to kernel calls.
-        Block * pb = v.getParentBlock();
-        if(auto fo = dyn_cast<func::FuncOp>(pb->getParentOp())) {
+        Block *pb = v.getParentBlock();
+        if (auto fo = dyn_cast<func::FuncOp>(pb->getParentOp())) {
             Value dctx = CompilerUtils::getDaphneContext(fo);
             builder.setInsertionPointAfterValue(dctx);
-        }
-        else
+        } else
             builder.setInsertionPointToStart(pb);
     }
 
@@ -183,11 +183,12 @@ void processValue(OpBuilder builder, Value v) {
  * @param v
  * @param b
  */
-void incRefIfObj(Value v, OpBuilder & b) {
+void incRefIfObj(Value v, OpBuilder &b) {
     Type t = v.getType();
-    if(llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(t))
+    if (llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType,
+                  daphne::StringType>(t))
         b.create<daphne::IncRefOp>(v.getLoc(), v);
-    else if(llvm::isa<daphne::UnknownType>(t))
+    else if (llvm::isa<daphne::UnknownType>(t))
         throw ErrorHandler::compilerError(
             v.getDefiningOp(), "ManageObjRefsPass",
             "ManageObjRefsPass encountered a value of unknown type, so it "
@@ -202,9 +203,9 @@ void incRefIfObj(Value v, OpBuilder & b) {
  * @param op
  * @param b
  */
-void incRefArgs(Operation& op, OpBuilder & b) {
+void incRefArgs(Operation &op, OpBuilder &b) {
     b.setInsertionPoint(&op);
-    for(Value arg : op.getOperands())
+    for (Value arg : op.getOperands())
         incRefIfObj(arg, b);
 }
 
@@ -215,46 +216,48 @@ void incRefArgs(Operation& op, OpBuilder & b) {
  * @param builder
  * @param b
  */
-void processBlock(OpBuilder builder, Block * b) {
+void processBlock(OpBuilder builder, Block *b) {
     // Make sure that the reference counters of block arguments are decreased.
-    for(BlockArgument& arg : b->getArguments())
+    for (BlockArgument &arg : b->getArguments())
         processValue(builder, arg);
 
     // Make sure the reference counters of op results are decreased, and
     // Increase the reference counters of operands where necessary.
-    for(Operation& op : b->getOperations()) {
+    for (Operation &op : b->getOperations()) {
         // 1) Increase the reference counters of operands, if necessary.
 
         // TODO We could use traits to identify those cases.
 
         // Casts that will not call a kernel.
-        if(auto co = dyn_cast<daphne::CastOp>(op)) {
-            if(co.isTrivialCast() || co.isRemovePropertyCast())
+        if (auto co = dyn_cast<daphne::CastOp>(op)) {
+            if (co.isTrivialCast() || co.isRemovePropertyCast())
                 incRefArgs(op, builder);
         }
         // Loops and function calls.
-        else if(llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp>(op))
+        else if (llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp,
+                           daphne::GenericCallOp>(op))
             incRefArgs(op, builder);
         // YieldOp of IfOp.
-        else if(llvm::isa<scf::YieldOp>(op) && llvm::isa<scf::IfOp>(op.getParentOp())) {
+        else if (llvm::isa<scf::YieldOp>(op) &&
+                 llvm::isa<scf::IfOp>(op.getParentOp())) {
             // Increase the reference counters of data objects that already
             // existed before the IfOp, because yielding them creates a new
             // SSA value referring to them.
             builder.setInsertionPoint(&op);
-            for(Value arg : op.getOperands())
-                if(arg.getParentBlock() != op.getBlock())
+            for (Value arg : op.getOperands())
+                if (arg.getParentBlock() != op.getBlock())
                     incRefIfObj(arg, builder);
         }
         // Terminators.
-        else if(op.hasTrait<OpTrait::IsTerminator>()) {
+        else if (op.hasTrait<OpTrait::IsTerminator>()) {
             // By default, we do not decrease the reference counter of a
             // terminator's argument. If the same value is used multiple times
             // as an argument, we need to increase its reference counter.
             builder.setInsertionPoint(&op);
-            for(size_t i = 1; i < op.getNumOperands(); i++) {
+            for (size_t i = 1; i < op.getNumOperands(); i++) {
                 Value arg = op.getOperand(i);
-                for(size_t k = 0; k < i; k++)
-                    if(arg == op.getOperand(k))
+                for (size_t k = 0; k < i; k++)
+                    if (arg == op.getOperand(k))
                         incRefIfObj(arg, builder);
             }
         }
@@ -263,27 +266,23 @@ void processBlock(OpBuilder builder, Block * b) {
         //   of vectorized pipelines, because internally, a pipeline processes
         //   views into its inputs. These are individual data objects.
 
-
         // 2) Make sure the reference counters of op results are decreased.
-        for(Value v : op.getResults())
+        for (Value v : op.getResults())
             processValue(builder, v);
 
-
         // 3) Recurse into the op, if it has regions.
-        for(Region& r : op.getRegions())
-            for(Block& b2 : r.getBlocks())
+        for (Region &r : op.getRegions())
+            for (Block &b2 : r.getBlocks())
                 processBlock(builder, &b2);
     }
 }
 
-void ManageObjRefsPass::runOnOperation()
-{
+void ManageObjRefsPass::runOnOperation() {
     func::FuncOp f = getOperation();
     OpBuilder builder(f.getContext());
     processBlock(builder, &(f.getBody().front()));
 }
 
-std::unique_ptr<Pass> daphne::createManageObjRefsPass()
-{
+std::unique_ptr<Pass> daphne::createManageObjRefsPass() {
     return std::make_unique<ManageObjRefsPass>();
 }

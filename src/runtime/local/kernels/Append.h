@@ -24,8 +24,9 @@
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-void append(List<DT> *& resList, const List<DT> * argList, const DT * elem, DCTX(ctx)) {
+template <class DT>
+void append(List<DT> *&resList, const List<DT> *argList, const DT *elem,
+            DCTX(ctx)) {
     resList = DataObjectFactory::create<List<DT>>(argList);
     resList->append(elem);
 }

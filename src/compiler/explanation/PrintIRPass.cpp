@@ -31,7 +31,7 @@ using namespace mlir;
 class PrintIRPass : public PassWrapper<PrintIRPass, OperationPass<ModuleOp>> {
     std::string message;
 
-   public:
+  public:
     PrintIRPass(const std::string message) : message(message) {}
 
     void runOnOperation() final;

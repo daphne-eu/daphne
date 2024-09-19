@@ -38,10 +38,9 @@ class ParserUtils {
     /**
      * The OpBuilder used to generate DaphneIR operations.
      */
-    mlir::OpBuilder & builder;
+    mlir::OpBuilder &builder;
 
-public:
-
+  public:
     // ************************************************************************
     // `mlir::Type`s corresponsing to the types in `DaphneTypes.td`
     // ************************************************************************
@@ -99,16 +98,14 @@ public:
     // Constructor
     // ************************************************************************
 
-    ParserUtils(mlir::OpBuilder & builder)
-    :
-            builder(builder),
-            sizeType(builder.getIndexType()),
-            boolType(builder.getI1Type()),
-            seedType(builder.getIntegerType(64, true)),
-            strType(mlir::daphne::StringType::get(builder.getContext())),
-            matrixOfSizeType(static_cast<mlir::Type>(mlir::daphne::MatrixType::get(builder.getContext(), sizeType))),
-            unknownType(mlir::daphne::UnknownType::get(builder.getContext()))
-    {
+    ParserUtils(mlir::OpBuilder &builder)
+        : builder(builder), sizeType(builder.getIndexType()),
+          boolType(builder.getI1Type()),
+          seedType(builder.getIntegerType(64, true)),
+          strType(mlir::daphne::StringType::get(builder.getContext())),
+          matrixOfSizeType(static_cast<mlir::Type>(
+              mlir::daphne::MatrixType::get(builder.getContext(), sizeType))),
+          unknownType(mlir::daphne::UnknownType::get(builder.getContext())) {
         // nothing to do
     }
 
@@ -126,26 +123,18 @@ public:
      * @return `v` if it has type `t`, otherwise a `CastOp` of `v` to `t`.
      */
     mlir::Value castIf(mlir::Type t, mlir::Value v) {
-        if(v.getType() == t)
+        if (v.getType() == t)
             return v;
         return builder.create<mlir::daphne::CastOp>(v.getLoc(), t, v);
     }
 
-    mlir::Value castSizeIf(mlir::Value v) {
-        return castIf(sizeType, v);
-    }
+    mlir::Value castSizeIf(mlir::Value v) { return castIf(sizeType, v); }
 
-    mlir::Value castBoolIf(mlir::Value v) {
-        return castIf(boolType, v);
-    }
+    mlir::Value castBoolIf(mlir::Value v) { return castIf(boolType, v); }
 
-    mlir::Value castSeedIf(mlir::Value v) {
-        return castIf(seedType, v);
-    }
+    mlir::Value castSeedIf(mlir::Value v) { return castIf(seedType, v); }
 
-    mlir::Value castStrIf(mlir::Value v) {
-        return castIf(strType, v);
-    }
+    mlir::Value castStrIf(mlir::Value v) { return castIf(strType, v); }
 
     mlir::Value castUI8If(mlir::Value v) {
         return castIf(builder.getIntegerType(8, false), v);
@@ -179,17 +168,27 @@ public:
     // Type parsing
     // ************************************************************************
 
-    mlir::Type getValueTypeByName(const std::string & name) {
-        if(name == "f64") return builder.getF64Type();
-        if(name == "f32") return builder.getF32Type();
-        if(name == "si64") return builder.getIntegerType(64, true);
-        if(name == "si32") return builder.getIntegerType(32, true);
-        if(name == "si8") return builder.getIntegerType(8, true);
-        if(name == "ui64") return builder.getIntegerType(64, false);
-        if(name == "ui32") return builder.getIntegerType(32, false);
-        if(name == "ui8") return builder.getIntegerType(8, false);
-        if(name == "str") return strType;
-        if(name == "bool") return boolType;
+    mlir::Type getValueTypeByName(const std::string &name) {
+        if (name == "f64")
+            return builder.getF64Type();
+        if (name == "f32")
+            return builder.getF32Type();
+        if (name == "si64")
+            return builder.getIntegerType(64, true);
+        if (name == "si32")
+            return builder.getIntegerType(32, true);
+        if (name == "si8")
+            return builder.getIntegerType(8, true);
+        if (name == "ui64")
+            return builder.getIntegerType(64, false);
+        if (name == "ui32")
+            return builder.getIntegerType(32, false);
+        if (name == "ui8")
+            return builder.getIntegerType(8, false);
+        if (name == "str")
+            return strType;
+        if (name == "bool")
+            return boolType;
         throw std::runtime_error("unsupported value type: " + name);
     }
 
@@ -198,62 +197,75 @@ public:
     // ************************************************************************
 
     /**
-     * @brief Returns the given result of an ANTLR visitor function as an `mlir::Value` or
-     * throws an informative error if it is not a single value.
+     * @brief Returns the given result of an ANTLR visitor function as an
+     * `mlir::Value` or throws an informative error if it is not a single value.
      *
-     * @param loc The location in the input file (e.g., DaphneDSL script or SQL query).
-     * @param a The result returned by an ANTLR visitor function (e.g., by `visit()` or `visitXYZ()`).
+     * @param loc The location in the input file (e.g., DaphneDSL script or SQL
+     * query).
+     * @param a The result returned by an ANTLR visitor function (e.g., by
+     * `visit()` or `visitXYZ()`).
      */
     mlir::Value valueOrError(mlir::Location loc, antlrcpp::Any a) {
-        if(a.is<mlir::Value>())
+        if (a.is<mlir::Value>())
             return a.as<mlir::Value>();
-        if(a.isNull())
-            // Typically happens when a *user-defined* function with zero return values
-            // is used in a place where exactly one value is required (e.g., in an expression).
-            throw ErrorHandler::compilerError(loc, "DSLVisitor",
-                "the expression was expected to return a single value, but it returns no value"
-            );
-        if(a.is<mlir::Operation*>())
-            // Typically happens when a *built-in* function with zero return values
-            // is used in a place where exactly one value is required (e.g., in an expression).
-            throw ErrorHandler::compilerError(loc, "DSLVisitor",
-                "the expression was expected to return a single value, but it returns no value"
-            );
-        if(a.is<mlir::ResultRange>()) {
-            // Typically happens when a *built-in or user-defined* function with more than one return values
-            // is used in a place where exactly one value is required (e.g., in an expression).
+        if (a.isNull())
+            // Typically happens when a *user-defined* function with zero return
+            // values is used in a place where exactly one value is required
+            // (e.g., in an expression).
+            throw ErrorHandler::compilerError(
+                loc, "DSLVisitor",
+                "the expression was expected to return a single value, but it "
+                "returns no value");
+        if (a.is<mlir::Operation *>())
+            // Typically happens when a *built-in* function with zero return
+            // values is used in a place where exactly one value is required
+            // (e.g., in an expression).
+            throw ErrorHandler::compilerError(
+                loc, "DSLVisitor",
+                "the expression was expected to return a single value, but it "
+                "returns no value");
+        if (a.is<mlir::ResultRange>()) {
+            // Typically happens when a *built-in or user-defined* function with
+            // more than one return values is used in a place where exactly one
+            // value is required (e.g., in an expression).
             auto rr = a.as<mlir::ResultRange>();
-            throw ErrorHandler::compilerError(loc, "DSLVisitor",
-                "the expression was expected to return a single value, but it returns " +
-                std::to_string(rr.size()) + " values"
-            );
+            throw ErrorHandler::compilerError(
+                loc, "DSLVisitor",
+                "the expression was expected to return a single value, but it "
+                "returns " +
+                    std::to_string(rr.size()) + " values");
         }
-        // This should never happen. If it happens, that indicates that this function is called on
-        // an invalid argument or that some visitor returns a wrong result type.
-        throw ErrorHandler::compilerError(loc, "DSLVisitor",
-            "the expression was expected to return a single value, but it is something unexpected"
-        );
+        // This should never happen. If it happens, that indicates that this
+        // function is called on an invalid argument or that some visitor
+        // returns a wrong result type.
+        throw ErrorHandler::compilerError(
+            loc, "DSLVisitor",
+            "the expression was expected to return a single value, but it is "
+            "something unexpected");
     }
 
     mlir::Type typeOrError(antlrcpp::Any a) {
-        if(a.is<mlir::Type>())
+        if (a.is<mlir::Type>())
             return a.as<mlir::Type>();
-        throw std::runtime_error("something was expected to be an mlir::Type, but it was none");
+        throw std::runtime_error(
+            "something was expected to be an mlir::Type, but it was none");
     }
 
     /**
      * @brief Utility function for getting the file location of the token
-     * @param start Start token of this rule (usually you want to use `ctx->start`)
+     * @param start Start token of this rule (usually you want to use
+     * `ctx->start`)
      * @return mlir location representing the position of the token in the file
      */
     mlir::Location getLoc(antlr4::Token *start) {
-        return mlir::FileLineColLoc::get(builder.getStringAttr(start->getTokenSource()->getSourceName()),
-            start->getLine(),
-            start->getCharPositionInLine());
+        return mlir::FileLineColLoc::get(
+            builder.getStringAttr(start->getTokenSource()->getSourceName()),
+            start->getLine(), start->getCharPositionInLine());
     }
 
     /**
-     * @brief Creates an unique symbol for function symbol names by appending an unique id.
+     * @brief Creates an unique symbol for function symbol names by appending an
+     * unique id.
      * @param functionName the function name
      * @return the unique function name, due to an unique id
      */
@@ -263,28 +275,30 @@ public:
     }
 
     /**
-     * @brief Infers and sets the result type of the given operation and returns the result as an `mlir::Value`.
-     * 
+     * @brief Infers and sets the result type of the given operation and returns
+     * the result as an `mlir::Value`.
+     *
      * Works only for operations with exactly one result.
-     * For operations with more than one result, use `retValsWithInferedTypes()`.
+     * For operations with more than one result, use
+     * `retValsWithInferedTypes()`.
      */
-    template<class Op>
-    mlir::Value retValWithInferedType(Op op) {
+    template <class Op> mlir::Value retValWithInferedType(Op op) {
         mlir::daphne::setInferedTypes(op.getOperation());
         return static_cast<mlir::Value>(op);
     }
 
     /**
-     * @brief Infers and sets the result types of the given operation and returns the results as an `mlir::ResultRange`.
-     * 
+     * @brief Infers and sets the result types of the given operation and
+     * returns the results as an `mlir::ResultRange`.
+     *
      * Works for operations with any number of results.
-     * For operations with exactly one result, using `retValWithInferedType()` can be more convenient.
+     * For operations with exactly one result, using `retValWithInferedType()`
+     * can be more convenient.
      */
-    template<class Op>
-    mlir::ResultRange retValsWithInferedTypes(Op op) {
+    template <class Op> mlir::ResultRange retValsWithInferedTypes(Op op) {
         mlir::daphne::setInferedTypes(op.getOperation());
         return op.getResults();
     }
 };
 
-#endif //SRC_PARSER_PARSERUTILS_H
+#endif // SRC_PARSER_PARSERUTILS_H

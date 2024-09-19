@@ -23,9 +23,8 @@
 // Convenience function
 // ****************************************************************************
 
-template<class DTArg>
-double sparsity(const DTArg * arg, DCTX(ctx)) {
+template <class DTArg> double sparsity(const DTArg *arg, DCTX(ctx)) {
     return -1.0;
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SPARSITY_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_SPARSITY_H

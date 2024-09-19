@@ -48,15 +48,15 @@ template <class UnaryOp, class IOp, class FOp>
 struct UnaryOpLowering : public mlir::OpConversionPattern<UnaryOp> {
     using OpAdaptor = typename mlir::OpConversionPattern<UnaryOp>::OpAdaptor;
 
-   public:
+  public:
     UnaryOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
         : mlir::OpConversionPattern<UnaryOp>(typeConverter, ctx) {
         this->setDebugName("EwDaphneOpsLowering");
     }
 
-    mlir::LogicalResult matchAndRewrite(
-        UnaryOp op, OpAdaptor adaptor,
-        mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult
+    matchAndRewrite(UnaryOp op, OpAdaptor adaptor,
+                    mlir::ConversionPatternRewriter &rewriter) const override {
         mlir::Type type = op.getType();
 
         if (llvm::isa<mlir::IntegerType>(type)) {
@@ -76,15 +76,15 @@ template <class BinaryOp, class IOp, class FOp>
 class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
     using OpAdaptor = typename mlir::OpConversionPattern<BinaryOp>::OpAdaptor;
 
-   public:
+  public:
     BinaryOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
         : mlir::OpConversionPattern<BinaryOp>(typeConverter, ctx) {
         this->setDebugName("EwDaphneOpLowering");
     }
 
-    mlir::LogicalResult convertEwScalar(
-        BinaryOp op, OpAdaptor adaptor,
-        mlir::ConversionPatternRewriter &rewriter) const {
+    mlir::LogicalResult
+    convertEwScalar(BinaryOp op, OpAdaptor adaptor,
+                    mlir::ConversionPatternRewriter &rewriter) const {
         auto lhs = adaptor.getLhs();
         auto rhs = adaptor.getRhs();
         auto loc = op.getLoc();
@@ -117,9 +117,9 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         return mlir::success();
     }
 
-    mlir::LogicalResult matchAndRewrite(
-        BinaryOp op, OpAdaptor adaptor,
-        mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult
+    matchAndRewrite(BinaryOp op, OpAdaptor adaptor,
+                    mlir::ConversionPatternRewriter &rewriter) const override {
         auto lhs = adaptor.getLhs();
         auto rhs = adaptor.getRhs();
 
@@ -265,7 +265,7 @@ struct EwOpLoweringPass
                "structures and arithmetic operations.";
     }
 };
-}  // end anonymous namespace
+} // end anonymous namespace
 
 void populateLowerEwOpConversionPatterns(mlir::LLVMTypeConverter &typeConverter,
                                          mlir::RewritePatternSet &patterns) {
@@ -301,7 +301,8 @@ void EwOpLoweringPass::runOnOperation() {
 
     target.addDynamicallyLegalOp<mlir::daphne::EwSqrtOp, mlir::daphne::EwAbsOp>(
         [](Operation *op) {
-            return llvm::isa<mlir::daphne::MatrixType>(op->getOperandTypes()[0]);
+            return llvm::isa<mlir::daphne::MatrixType>(
+                op->getOperandTypes()[0]);
         });
 
     target.addDynamicallyLegalOp<mlir::daphne::EwAddOp, mlir::daphne::EwSubOp,
@@ -326,7 +327,8 @@ void EwOpLoweringPass::runOnOperation() {
         if (llvm::isa<mlir::daphne::MatrixType>(op->getOperandTypes()[0])) {
             mlir::daphne::MatrixType lhsMatrixType =
                 op->getOperandTypes()[0].dyn_cast<mlir::daphne::MatrixType>();
-            return lhsMatrixType.getNumRows() == -1 || lhsMatrixType.getNumCols() == -1;
+            return lhsMatrixType.getNumRows() == -1 ||
+                   lhsMatrixType.getNumCols() == -1;
         }
 
         return false;

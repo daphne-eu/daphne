@@ -48,7 +48,8 @@ template <class DTArg, typename TestType> struct HasSpecialValue {
  * @param testVal The value to test for in the matrix.
  * @return Returns true when finding a matchin element.
  */
-template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg, TestType testVal, DCTX(ctx)) { 
+template <class DTArg, typename TestType>
+bool hasSpecialValue(const DTArg *arg, TestType testVal, DCTX(ctx)) {
     return HasSpecialValue<DTArg, TestType>::apply(arg, testVal, ctx);
 }
 
@@ -60,14 +61,15 @@ template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg,
 // Bool <- DenseMatrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>, TestType> {
+template <typename VT, typename TestType>
+struct HasSpecialValue<DenseMatrix<VT>, TestType> {
     static bool apply(const DenseMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
         auto numCols = arg->getNumCols();
 
-        if(std::isnan(testVal)) {
-            for(auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
-                for(auto colIdx = 0ul; colIdx < numCols; colIdx++) {
+        if (std::isnan(testVal)) {
+            for (auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
+                for (auto colIdx = 0ul; colIdx < numCols; colIdx++) {
                     auto val = arg->get(rowIdx, colIdx);
                     if (std::isnan(val)) {
                         return true;
@@ -75,8 +77,8 @@ template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>
                 }
             }
         } else {
-            for(auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
-                for(auto colIdx = 0ul; colIdx < numCols; colIdx++) {
+            for (auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
+                for (auto colIdx = 0ul; colIdx < numCols; colIdx++) {
                     auto val = arg->get(rowIdx, colIdx);
                     if (val == testVal) {
                         return true;
@@ -93,19 +95,20 @@ template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>
 // Bool <- CSRMatrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, TestType> {
+template <typename VT, typename TestType>
+struct HasSpecialValue<CSRMatrix<VT>, TestType> {
     static bool apply(const CSRMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
         auto numCols = arg->getNumCols();
         auto numNonZeros = arg->getNumNonZeros();
-        auto numElements = numRows*numCols;
+        auto numElements = numRows * numCols;
         auto vBegin = arg->getValues(0);
         auto vEnd = arg->getValues(numRows);
         auto hasZeroes = numNonZeros < numElements;
         auto zero = VT(0);
 
-        if(std::isnan(testVal)) {
-            for(auto it = vBegin; it != vEnd; it++) {
+        if (std::isnan(testVal)) {
+            for (auto it = vBegin; it != vEnd; it++) {
                 if (std::isnan(*it)) {
                     return true;
                 }
@@ -116,7 +119,7 @@ template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, 
                     return true;
                 }
             }
-            for(auto it = vBegin; it != vEnd; it++) {
+            for (auto it = vBegin; it != vEnd; it++) {
                 if ((*it) == testVal) {
                     return true;
                 }
@@ -130,7 +133,8 @@ template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, 
 // Bool <- Matrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType> struct HasSpecialValue<Matrix<VT>, TestType> {
+template <typename VT, typename TestType>
+struct HasSpecialValue<Matrix<VT>, TestType> {
     static bool apply(const Matrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();

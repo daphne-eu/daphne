@@ -20,4 +20,4 @@
 
 #include <ostream>
 
-std::ostream & operator<<(std::ostream & os, mlir::Type t);
+std::ostream &operator<<(std::ostream &os, mlir::Type t);

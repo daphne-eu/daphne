@@ -79,7 +79,8 @@ void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
 }
 
 // Specify the fill Value directly
-void affineFillMemRefInt(mlir::Value value, mlir::ConversionPatternRewriter &rewriter,
+void affineFillMemRefInt(mlir::Value value,
+                         mlir::ConversionPatternRewriter &rewriter,
                          mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                          mlir::MLIRContext *ctx, mlir::Value memRef) {
     constexpr int ROW = 0;
@@ -139,9 +140,10 @@ void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
     rewriter.setInsertionPointAfter(outerLoop);
 }
 
-mlir::Value convertMemRefToDenseMatrix(
-    mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
-    mlir::Value memRef, mlir::Type type) {
+mlir::Value
+convertMemRefToDenseMatrix(mlir::Location loc,
+                           mlir::ConversionPatternRewriter &rewriter,
+                           mlir::Value memRef, mlir::Type type) {
     auto extractStridedMetadataOp =
         rewriter.create<mlir::memref::ExtractStridedMetadataOp>(loc, memRef);
     // aligned ptr (memref.data)

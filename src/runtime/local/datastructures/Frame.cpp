@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#include <runtime/local/io/DaphneSerializer.h>
-#include <runtime/local/datastructures/Frame.h>
 #include <ostream>
+#include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/io/DaphneSerializer.h>
 
-std::ostream & operator<<(std::ostream & os, const Frame & obj)
-{
+std::ostream &operator<<(std::ostream &os, const Frame &obj) {
     obj.print(os);
     return os;
 }

@@ -23,21 +23,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTArg>
-struct IncRef {
-    static void apply(const DTArg * arg, DCTX(ctx)) = delete;
+template <class DTArg> struct IncRef {
+    static void apply(const DTArg *arg, DCTX(ctx)) = delete;
 };
 
-template<>
-struct IncRef<Structure> {
-    static void apply(const Structure* arg, DCTX(ctx)) {
+template <> struct IncRef<Structure> {
+    static void apply(const Structure *arg, DCTX(ctx)) {
         arg->increaseRefCounter();
     }
 };
 
-template<>
-struct IncRef<char> {
-    static void apply(const char* arg, DCTX(ctx)) {
+template <> struct IncRef<char> {
+    static void apply(const char *arg, DCTX(ctx)) {
         // Increase the reference counter.
         ctx->stringRefCount.inc(arg);
     }
@@ -46,7 +43,6 @@ struct IncRef<char> {
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-template<class DTArg>
-void incRef(const DTArg* arg, DCTX(ctx)) {
+template <class DTArg> void incRef(const DTArg *arg, DCTX(ctx)) {
     IncRef<DTArg>::apply(arg, ctx);
 }

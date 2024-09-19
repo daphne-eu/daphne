@@ -24,5 +24,6 @@
 // ****************************************************************************
 
 static void createDistributedContext(DCTX(ctx)) {
-    ctx->distributed_context = DistributedContext::createDistributedContext(ctx->config);
+    ctx->distributed_context =
+        DistributedContext::createDistributedContext(ctx->config);
 }
