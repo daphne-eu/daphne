@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 
 #include <tags.h>
@@ -29,7 +30,7 @@
 
 #include <cstdint>
 
-#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
 TEMPLATE_PRODUCT_TEST_CASE("CheckEq, original matrices", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -142,7 +143,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (DenseMatr
     DataObjectFactory::destroy(orig1);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEq, views on matrices", TAG_KERNELS, (CSRMatrix, COOMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -239,7 +240,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (DenseMatrix,
     DataObjectFactory::destroy(orig1);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (CSRMatrix, COOMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {

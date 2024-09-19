@@ -18,9 +18,13 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
+
+#include <algorithm>
+#include <numeric>
 
 #include <cstddef>
 
@@ -133,6 +137,52 @@ struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
         rowOffsetsRes[col] = last;
         last = tmp;
       }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// COOMatrix <- COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct Transpose<COOMatrix<VT>, COOMatrix<VT>> {
+    static void apply(COOMatrix<VT> *& res, const COOMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<COOMatrix<VT>>(numCols, numRows, arg->getMaxNumNonZeros(), false);
+
+        VT * valuesRes = res->getValues();
+        size_t * colIdxsRes = res->getColIdxs();
+        size_t * rowIdxsRes = res->getRowIdxs();
+
+        const VT * valuesArg = arg->getValues();
+        const size_t * colIdxsArg = arg->getColIdxs();
+        const size_t * rowIdxsArg = arg->getRowIdxs();
+
+        // The transpose switches the column and row indices.
+        // To guarantee that res is in a valid state (proper ordering
+        // of row and column indices), the arrays are sorted using the indices
+        // from a stable argsort of arg's columns.
+        const size_t nnz = arg->getNumNonZeros();
+        std::vector<size_t> colIdxArgsort(nnz);
+        std::iota(colIdxArgsort.begin(), colIdxArgsort.end(), 0);
+        std::stable_sort(colIdxArgsort.begin(), colIdxArgsort.end(),
+            [&colIdxsArg](const size_t &i, const size_t &j) {
+                return colIdxsArg[i] < colIdxsArg[j];
+            }
+        );
+
+        for (size_t i = 0; i < nnz; ++i) {
+            valuesRes[i] = valuesArg[colIdxArgsort[i]];
+            colIdxsRes[i] = rowIdxsArg[colIdxArgsort[i]];
+            rowIdxsRes[i] = colIdxsArg[colIdxArgsort[i]];
+        }
+
+        valuesRes[nnz] = VT(0);
+        colIdxsRes[nnz] = size_t(-1);
+        rowIdxsRes[nnz] = size_t(-1);
     }
 };
 

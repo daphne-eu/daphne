@@ -16,6 +16,7 @@
 
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/AggAll.h>
@@ -28,7 +29,7 @@
 #include <vector>
 
 #define TEST_NAME(opName) "AggAll (" opName ")"
-#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix, Matrix
 #define VALUE_TYPES double, float, uint8_t, uint32_t, uint64_t, int8_t, int32_t, int64_t
 
 template<typename VTRes, class DTArg>

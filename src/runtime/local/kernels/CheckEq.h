@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ContiguousTensor.h>
@@ -74,6 +75,17 @@ struct CheckEq<DenseMatrix<VT>> {
 template<typename VT>
 struct CheckEq<CSRMatrix<VT>> {
     static bool apply(const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
+        return *lhs == *rhs;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CheckEq<COOMatrix<VT>> {
+    static bool apply(const COOMatrix<VT> * lhs, const COOMatrix<VT> * rhs, DCTX(ctx)) {
         return *lhs == *rhs;
     }
 };

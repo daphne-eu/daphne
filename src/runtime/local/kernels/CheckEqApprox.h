@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Matrix.h>
@@ -158,6 +159,55 @@ struct CheckEqApprox<CSRMatrix<VT>> {
         }
         return true;
 
+    }
+};
+
+// ----------------------------------------------------------------------------
+// COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct CheckEqApprox<COOMatrix<VT>> {
+    static bool apply(const COOMatrix<VT> * lhs, const COOMatrix<VT> * rhs, double eps, DCTX(ctx)) {
+        if(lhs == rhs)
+            return true;
+
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+
+        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+            return false;
+
+        const VT * valuesLhs = lhs->getValues();
+        const size_t * rowsLhs = lhs->getRowIdxs();
+        const size_t * colsLhs = lhs->getColIdxs();
+
+        const VT * valuesRhs = rhs->getValues();
+        const size_t * rowsRhs = rhs->getRowIdxs();
+        const size_t * colsRhs = rhs->getColIdxs();
+
+        const size_t nnzLhs = lhs->getNumNonZeros();
+        const size_t nnzRhs = rhs->getNumNonZeros();
+
+        size_t lowerRowLhs = lhs->getLowerRow();
+        size_t lowerRowRhs = rhs->getLowerRow();
+
+        if(nnzLhs != nnzRhs)
+            return false;
+
+        for (size_t i = 0; i < nnzLhs; i++) {
+            if (   rowsLhs[i] - lowerRowLhs != rowsRhs[i] - lowerRowRhs
+                || colsLhs[i] != colsRhs[i]
+                )
+                return false;
+            const VT valLhs = valuesLhs[i];
+            const VT valRhs = valuesRhs[i];
+            VT diff = valLhs - valRhs;
+            diff = diff > 0 ? diff : -diff;
+            if (diff > eps)
+                return false;
+        }
+        return true;
     }
 };
 

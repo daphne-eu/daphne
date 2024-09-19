@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -26,7 +27,7 @@
 
 #include <cstdint>
 
-#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
 template<class DT>

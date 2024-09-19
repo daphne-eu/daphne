@@ -19,6 +19,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
@@ -43,6 +44,81 @@ struct AggAll {
 template<typename VTRes, class DTArg>
 VTRes aggAll(AggOpCode opCode, const DTArg * arg, DCTX(ctx)) {
     return AggAll<VTRes, DTArg>::apply(opCode, arg, ctx);
+}
+
+// ****************************************************************************
+// Functions called by multiple template specializations
+// ****************************************************************************
+
+namespace AggAllUtility {
+    template<typename VTRes, typename VTArg>
+    VTRes aggArray(const VTArg * values, size_t numNonZeros, size_t numCells, EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func, bool isSparseSafe, VTRes neutral, DCTX(ctx)) {
+        if(numNonZeros) {
+            VTRes agg = static_cast<VTRes>(values[0]);
+            for(size_t i = 1; i < numNonZeros; i++)
+                agg = func(agg, static_cast<VTRes>(values[i]), ctx);
+
+            if(!isSparseSafe && numNonZeros < numCells)
+                agg = func(agg, 0, ctx);
+
+            return agg;
+        }
+        else
+            return func(neutral, 0, ctx);
+    };
+
+    template<typename VTRes, typename DTArg, typename VTArg>
+    VTRes aggAllApplySparse(AggOpCode opCode, const DTArg * arg, DCTX(ctx)) {
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
+
+            return aggArray(
+                    arg->getValues(0),
+                    arg->getNumNonZeros(),
+                    arg->getNumRows() * arg->getNumCols(),
+                    func,
+                    AggOpCodeUtils::isSparseSafe(opCode),
+                    AggOpCodeUtils::template getNeutral<VTRes>(opCode),
+                    ctx
+            );
+        }
+        else { // The op-code is either MEAN or STDDEV or VAR.
+            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            auto agg = aggArray(
+                    arg->getValues(0),
+                    arg->getNumNonZeros(),
+                    arg->getNumRows() * arg->getNumCols(),
+                    func,
+                    true,
+                    VTRes(0),
+                    ctx
+            );
+            agg = agg / (arg->getNumRows() * arg->getNumCols());
+            if (opCode == AggOpCode::MEAN)
+                return agg;
+            else {
+                // STDDEV-VAR
+                VTRes stddev=0;
+
+                const VTArg * valuesArg = arg->getValues(0);
+                for (size_t i = 0; i < arg->getNumNonZeros(); i++) {
+                    VTRes val = static_cast<VTRes>((valuesArg[i])) - agg;
+                    stddev = stddev + val * val;
+                }
+                stddev += ((arg->getNumRows() * arg->getNumCols()) - arg->getNumNonZeros())*agg*agg;
+                stddev /= (arg->getNumRows() * arg->getNumCols());
+
+                // Variance --> stddev before sqrt() is variance
+                if (opCode == AggOpCode::VAR){
+                    VTRes var = stddev;
+                    return var;
+                }
+
+                stddev = sqrt(stddev);
+                return stddev;
+            }
+        }
+    };
 }
 
 // ****************************************************************************
@@ -119,74 +195,20 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
 // ----------------------------------------------------------------------------
 
 template<typename VTRes, typename VTArg>
-struct AggAll<VTRes, CSRMatrix<VTArg>> {
-    static VTRes aggArray(const VTArg * values, size_t numNonZeros, size_t numCells, EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func, bool isSparseSafe, VTRes neutral, DCTX(ctx)) {
-        if(numNonZeros) {
-            VTRes agg = static_cast<VTRes>(values[0]);
-            for(size_t i = 1; i < numNonZeros; i++)
-                agg = func(agg, static_cast<VTRes>(values[i]), ctx);
-
-            if(!isSparseSafe && numNonZeros < numCells)
-                agg = func(agg, 0, ctx);
-
-            return agg;
-        }
-        else
-            return func(neutral, 0, ctx);
-    }
-    
+struct AggAll<VTRes, CSRMatrix<VTArg>> {    
     static VTRes apply(AggOpCode opCode, const CSRMatrix<VTArg> * arg, DCTX(ctx)) {
-        if(AggOpCodeUtils::isPureBinaryReduction(opCode)) {
+        return AggAllUtility::aggAllApplySparse<VTRes, CSRMatrix<VTArg>, VTArg>(opCode, arg, ctx);
+    }
+};
 
-            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
-            
-            return aggArray(
-                    arg->getValues(0),
-                    arg->getNumNonZeros(),
-                    arg->getNumRows() * arg->getNumCols(),
-                    func,
-                    AggOpCodeUtils::isSparseSafe(opCode),
-                    AggOpCodeUtils::template getNeutral<VTRes>(opCode),
-                    ctx
-            );
-        }
-        else { // The op-code is either MEAN or STDDEV or VAR.
-            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));            
-            auto agg = aggArray(
-                arg->getValues(0),
-                arg->getNumNonZeros(),
-                arg->getNumRows() * arg->getNumCols(),
-                func,
-                true,
-                VTRes(0),
-                ctx
-            );
-            agg = agg / (arg->getNumRows() * arg->getNumCols());
-            if (opCode == AggOpCode::MEAN)
-                return agg;
-            else{
-                //STDDEV-VAR
-                VTRes stddev=0;
+// ----------------------------------------------------------------------------
+// scalar <- COOMatrix
+// ----------------------------------------------------------------------------
 
-                const VTArg * valuesArg = arg->getValues(0);
-                for(size_t i = 0; i < arg->getNumNonZeros(); i++) {
-                    VTRes val = static_cast<VTRes>((valuesArg[i])) - agg;
-                    stddev = stddev + val * val;
-                }
-                stddev += ((arg->getNumRows() * arg->getNumCols()) - arg->getNumNonZeros())*agg*agg;
-                stddev /= (arg->getNumRows() * arg->getNumCols());
-                 
-                //Variance --> stddev before sqrt() is variance
-                if (opCode == AggOpCode::VAR){
-                    VTRes var = stddev;
-                    return var;
-                }
-
-                stddev = sqrt(stddev);
-                return stddev;
-
-            }
-        }
+template<typename VTRes, typename VTArg>
+struct AggAll<VTRes, COOMatrix<VTArg>> {
+    static VTRes apply(AggOpCode opCode, const COOMatrix<VTArg> * arg, DCTX(ctx)) {
+        return AggAllUtility::aggAllApplySparse<VTRes, COOMatrix<VTArg>, VTArg>(opCode, arg, ctx);
     }
 };
 

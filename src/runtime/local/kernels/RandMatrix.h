@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
@@ -27,6 +28,8 @@
 #include <set>
 #include <stdexcept>
 #include <type_traits>
+#include <vector>
+#include <unordered_set>
 
 #include <cmath>
 #include <cstddef>
@@ -264,6 +267,108 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
         rowOffsetsRes[0] = 0;
         for(size_t i = 1; i <= numRows; i++)
             rowOffsetsRes[i] += rowOffsetsRes[i - 1];
+    }
+};
+
+// ----------------------------------------------------------------------------
+// COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct RandMatrix<COOMatrix<VT>, VT> {
+    static void apply(COOMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed, DCTX(ctx)) {
+        validateArgsRandMatrix(numRows, numCols, min, max, sparsity);
+
+        // The exact number of non-zeros to generate.
+        // TODO Ideally, it should not be allowed that zero is included in [min, max].
+        const size_t nnz = static_cast<size_t>(round(numRows * numCols * sparsity));
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<COOMatrix<VT>>(numRows, numCols, nnz, false);
+        else if (res->getMaxNumNonZeros() < nnz)
+            throw std::runtime_error("RandMatrix - res does not have enough space to fit all values");
+
+        // Initialize pseudo random number generators.
+        if (seed == -1)
+            seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        std::default_random_engine gen(seed);
+
+        static_assert(
+                std::is_floating_point<VT>::value || std::is_integral<VT>::value,
+                "the value type must be either floating point or integral"
+        );
+        typename std::conditional<
+                std::is_floating_point<VT>::value,
+                std::uniform_real_distribution<VT>,
+                std::uniform_int_distribution<VT>
+        >::type distrVal(min, max);
+
+        VT *valuesRes = res->getValues();
+        for (size_t i = 0; i < nnz; i++)
+            valuesRes[i] = distrVal(gen);
+
+        // Generate and sort random row indices where each row indice can only occur
+        // `numCols` times at most.
+        std::uniform_int_distribution<size_t> distrRow(0, numRows - 1);
+        std::vector<size_t> rowSequence;
+        std::vector<size_t> occurrences(numRows, 0);
+        for (size_t i = 0; i < nnz; ++i) {
+            size_t randomValue = distrRow(gen);
+
+            while (occurrences[randomValue] >= numCols) {
+                randomValue = distrRow(gen);
+            }
+
+            occurrences[randomValue]++;
+            rowSequence.push_back(randomValue);
+        }
+        std::sort(rowSequence.begin(), rowSequence.end());
+
+        // Count the occurrence of each row index to determine the amount of
+        // column indices that need to be generated respectively.
+        std::vector<size_t> rowRanges{0};
+        for (size_t i = 1; i < nnz; ++i) {
+            if (rowSequence[i-1] != rowSequence[i])
+                rowRanges.push_back(i);
+        }
+        rowRanges.push_back(nnz);
+
+        // Generate and sort subsequences of column indices for each row
+        // such that duplicates are only allowed in separate rows.
+        std::uniform_int_distribution<size_t> distrCol(0, numCols - 1);
+        std::vector<size_t> colSequence;
+
+        std::unordered_set<size_t> uniqueValues;
+        std::vector<size_t> subSequence;
+        for (size_t i = 0; i < rowRanges.size() - 1; i++) {
+            uniqueValues.clear();
+            subSequence.clear();
+            size_t start = rowRanges[i];
+            size_t end = rowRanges[i + 1];
+            while (subSequence.size() < end - start) {
+                size_t randomValue = distrCol(gen);
+                if (uniqueValues.find(randomValue) == uniqueValues.end()) {
+                    subSequence.push_back(randomValue);
+                    uniqueValues.insert(randomValue);
+                }
+            }
+
+            std::sort(subSequence.begin(), subSequence.end());
+            for (size_t value : subSequence) {
+                colSequence.push_back(value);
+            }
+        }
+
+        size_t * rowIdxs = res->getRowIdxs();
+        size_t * colIdxs = res->getColIdxs();
+        for (size_t i = 0; i < nnz; i++) {
+            rowIdxs[i] = rowSequence[i];
+            colIdxs[i] = colSequence[i];
+        }
+
+        valuesRes[nnz] = VT(0);
+        rowIdxs[nnz] = size_t(-1);
+        colIdxs[nnz] = size_t(-1);
     }
 };
 

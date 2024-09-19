@@ -73,6 +73,7 @@ set(TEST_SOURCES
         runtime/distributed/worker/WorkerTest.cpp
 
         runtime/local/datastructures/CSRMatrixTest.cpp
+        runtime/local/datastructures/COOMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp

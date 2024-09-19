@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 
 #include <tags.h>
@@ -32,7 +33,7 @@
 // TODO Extend tests to integral value types, they should be handled
 // gracefully, too.
 
-#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix, Matrix
 #define VALUE_TYPES float, double
 
 TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {

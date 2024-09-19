@@ -18,11 +18,14 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
+
+#include <algorithm>
 
 #include <cstddef>
 
@@ -160,8 +163,12 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                         size_t posRes = 0;
                         while(posLhs < nnzRowLhs && posRhs < nnzRowRhs) {
                             if(colIdxsRowLhs[posLhs] == colIdxsRowRhs[posRhs]) {
-                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
-                                colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                VT funcRes = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
+                                if (funcRes != VT(0)) {
+                                    valuesRowRes[posRes] = funcRes;
+                                    colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                    posRes++;
+                                }
                                 posLhs++;
                                 posRhs++;
                             }
@@ -169,13 +176,14 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                                 valuesRowRes[posRes] = valuesRowLhs[posLhs];
                                 colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                                 posLhs++;
+                                posRes++;
                             }
                             else {
                                 valuesRowRes[posRes] = valuesRowRhs[posRhs];
                                 colIdxsRowRes[posRes] = colIdxsRowRhs[posRhs];
                                 posRhs++;
+                                posRes++;
                             }
-                            posRes++;
                         }
                         // copy from left
                         const size_t restRowLhs = nnzRowLhs - posLhs;
@@ -251,6 +259,168 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
 };
 
 // ----------------------------------------------------------------------------
+// COOMatrix <- COOMatrix, COOMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryMat<COOMatrix<VT>, COOMatrix<VT>, COOMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, COOMatrix<VT> *& res, const COOMatrix<VT> * lhs, const COOMatrix<VT> * rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        if( numRows != rhs->getNumRows() || numCols != rhs->getNumCols() )
+            throw std::runtime_error("EwBinaryMat(COO) - lhs and rhs must have the same dimensions.");
+
+        size_t maxNnz;
+        switch(opCode) {
+            case BinaryOpCode::ADD: // merge
+                maxNnz = lhs->getNumNonZeros() + rhs->getNumNonZeros();
+                break;
+            case BinaryOpCode::MUL: // intersect
+                maxNnz = std::min(lhs->getNumNonZeros(), rhs->getNumNonZeros());
+                break;
+            default:
+                throw std::runtime_error("EwBinaryMat(COO) - unknown BinaryOpCode");
+        }
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<COOMatrix<VT>>(numRows, numCols, maxNnz, false);
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+        switch(opCode) {
+            case BinaryOpCode::ADD: { // merge non-zero cells
+                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                    size_t nnzRowLhs = lhs->getNumNonZerosRow(rowIdx);
+                    size_t nnzRowRhs = rhs->getNumNonZerosRow(rowIdx);
+                    // If only one row has non-zero entries, the values and coordinates
+                    // can simply be copied to res. Otherwise, they are merged until
+                    // only one of them has non-zero entries remaining which can then
+                    // be copied again.
+                    if(nnzRowLhs && nnzRowRhs) {
+                        // merge within row
+                        const VT * valuesRowLhs = lhs->getValues(rowIdx);
+                        const VT * valuesRowRhs = rhs->getValues(rowIdx);
+                        VT * valuesRowRes = res->getValues(rowIdx);
+                        const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+                        const size_t * colIdxsRowRhs = rhs->getColIdxs(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        size_t * rowIdxsRowRes = res->getRowIdxs(rowIdx);
+                        size_t posLhs = 0;
+                        size_t posRhs = 0;
+                        size_t posRes = 0;
+                        while(posLhs < nnzRowLhs && posRhs < nnzRowRhs) {
+                            if(colIdxsRowLhs[posLhs] == colIdxsRowRhs[posRhs]) {
+                                VT funcRes = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
+                                if (funcRes != VT(0)) {
+                                    valuesRowRes[posRes] = funcRes;
+                                    colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                    rowIdxsRowRes[posRes] = rowIdx;
+                                    posRes++;
+                                }
+                                posLhs++;
+                                posRhs++;
+                            }
+                            else if(colIdxsRowLhs[posLhs] < colIdxsRowRhs[posRhs]) {
+                                valuesRowRes[posRes] = valuesRowLhs[posLhs];
+                                colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                rowIdxsRowRes[posRes] = rowIdx;
+                                posLhs++;
+                                posRes++;
+                            }
+                            else {
+                                valuesRowRes[posRes] = valuesRowRhs[posRhs];
+                                colIdxsRowRes[posRes] = colIdxsRowRhs[posRhs];
+                                rowIdxsRowRes[posRes] = rowIdx;
+                                posRhs++;
+                                posRes++;
+                            }
+                        }
+                        // copy from left
+                        const size_t restRowLhs = nnzRowLhs - posLhs;
+                        memcpy(valuesRowRes + posRes, valuesRowLhs + posLhs, restRowLhs * sizeof(VT));
+                        memcpy(colIdxsRowRes + posRes, colIdxsRowLhs + posLhs, restRowLhs * sizeof(size_t));
+                        std::fill_n(rowIdxsRowRes + posRes, restRowLhs, rowIdx);
+                        // copy from right
+                        const size_t restRowRhs = nnzRowRhs - posRhs;
+                        memcpy(valuesRowRes + posRes, valuesRowRhs + posRhs, restRowRhs * sizeof(VT));
+                        memcpy(colIdxsRowRes + posRes, colIdxsRowRhs + posRhs, restRowRhs * sizeof(size_t));
+                        std::fill_n(rowIdxsRowRes + posRes, restRowRhs, rowIdx);
+
+                        valuesRowRes[posRes + restRowLhs + restRowRhs] = VT(0);
+                        colIdxsRowRes[posRes + restRowLhs + restRowRhs] = size_t(-1);
+                        rowIdxsRowRes[posRes + restRowLhs + restRowRhs] = size_t(-1);
+                    }
+                    else if(nnzRowLhs) {
+                        // copy from left
+                        VT * valuesRowRes = res->getValues(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        size_t * rowIdxsRowRes = res->getRowIdxs(rowIdx);
+                        memcpy(valuesRowRes, lhs->getValues(rowIdx), nnzRowLhs * sizeof(VT));
+                        memcpy(colIdxsRowRes, lhs->getColIdxs(rowIdx), nnzRowLhs * sizeof(size_t));
+                        std::fill_n(rowIdxsRowRes, nnzRowLhs, rowIdx);
+                        valuesRowRes[nnzRowLhs] = VT(0);
+                        colIdxsRowRes[nnzRowLhs] = size_t(-1);
+                        rowIdxsRowRes[nnzRowLhs] = size_t(-1);
+                    }
+                    else if(nnzRowRhs) {
+                        // copy from right
+                        VT * valuesRowRes = res->getValues(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        size_t * rowIdxsRowRes = res->getRowIdxs(rowIdx);
+                        memcpy(valuesRowRes, rhs->getValues(rowIdx), nnzRowRhs * sizeof(VT));
+                        memcpy(colIdxsRowRes, rhs->getColIdxs(rowIdx), nnzRowRhs * sizeof(size_t));
+                        std::fill_n(rowIdxsRowRes, nnzRowRhs, rowIdx);
+                        valuesRowRes[nnzRowRhs] = VT(0);
+                        colIdxsRowRes[nnzRowRhs] = size_t(-1);
+                        rowIdxsRowRes[nnzRowRhs] = size_t(-1);
+                    }
+                }
+                break;
+            }
+            case BinaryOpCode::MUL: { // intersect non-zero cells
+                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                    size_t nnzRowLhs = lhs->getNumNonZerosRow(rowIdx);
+                    size_t nnzRowRhs = rhs->getNumNonZerosRow(rowIdx);
+                    if(nnzRowLhs && nnzRowRhs) {
+                        // intersect within row
+                        const VT * valuesRowLhs = lhs->getValues(rowIdx);
+                        const VT * valuesRowRhs = rhs->getValues(rowIdx);
+                        VT * valuesRowRes = res->getValues(rowIdx);
+                        const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+                        const size_t * colIdxsRowRhs = rhs->getColIdxs(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        size_t * rowIdxsRowRes = res->getRowIdxs(rowIdx);
+                        size_t posLhs = 0;
+                        size_t posRhs = 0;
+                        size_t posRes = 0;
+                        while(posLhs < nnzRowLhs && posRhs < nnzRowRhs) {
+                            if(colIdxsRowLhs[posLhs] == colIdxsRowRhs[posRhs]) {
+                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
+                                colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                rowIdxsRowRes[posRes] = rowIdx;
+                                posLhs++;
+                                posRhs++;
+                                posRes++;
+                            }
+                            else if(colIdxsRowLhs[posLhs] < colIdxsRowRhs[posRhs])
+                                posLhs++;
+                            else
+                                posRhs++;
+                        }
+                        valuesRowRes[posRes] = VT(0);
+                        colIdxsRowRes[posRes] = size_t(-1);
+                        rowIdxsRowRes[posRes] = size_t(-1);
+                    }
+                }
+                break;
+            }
+            default:
+                throw std::runtime_error("EwBinaryMat(COO) - unknown BinaryOpCode");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
 // CSRMatrix <- CSRMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
@@ -316,6 +486,73 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         }
 
         // TODO Update number of non-zeros in result in the end.
+    }
+};
+
+// ----------------------------------------------------------------------------
+// COOMatrix <- COOMatrix, DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryMat<COOMatrix<VT>, COOMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, COOMatrix<VT> *& res, const COOMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        if( (numRows != rhs->getNumRows() &&  rhs->getNumRows() != 1)
+            || (numCols != rhs->getNumCols() && rhs->getNumCols() != 1 ) )
+            throw std::runtime_error("EwBinaryMat(COO) - lhs and rhs must have the same dimensions (or broadcast)");
+
+        size_t maxNnz;
+        switch(opCode) {
+            case BinaryOpCode::MUL: // intersect
+                maxNnz = lhs->getNumNonZeros();
+                break;
+            default:
+                throw std::runtime_error("EwBinaryMat(COO) - unknown BinaryOpCode");
+        }
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<COOMatrix<VT>>(numRows, numCols, maxNnz, false);
+
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+
+        switch(opCode) {
+            case BinaryOpCode::MUL: { // intersect non-zero cells
+                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                    size_t nnzRowLhs = lhs->getNumNonZerosRow(rowIdx);
+                    if(nnzRowLhs) {
+                        // intersect within row
+                        const VT * valuesRowLhs = lhs->getValues(rowIdx);
+                        VT * valuesRowRes = res->getValues(rowIdx);
+                        const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+                        size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                        const size_t * rowIdxsRowLhs = lhs->getRowIdxs(rowIdx);
+                        size_t * rowIdxsRowRes = res->getRowIdxs(rowIdx);
+                        // Fix row index for rhs to first row if it is being broadcast.
+                        const size_t rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
+                        size_t posRes = 0;
+                        for (size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
+                            auto rhsCol = (rhs->getNumCols() == 1 ? 0 : colIdxsRowLhs[posLhs]);
+                            auto rVal = rhs->get(rhsRow, rhsCol);
+                            if(rVal != 0) {
+                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rVal, ctx);
+                                colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                                rowIdxsRowRes[posRes] = rowIdxsRowLhs[posLhs];
+                                posRes++;
+                            }
+                        }
+                        valuesRowRes[posRes] = VT(0);
+                        colIdxsRowRes[posRes] = size_t(-1);
+                        rowIdxsRowRes[posRes] = size_t(-1);
+                    }
+                }
+                break;
+            }
+            default:
+                throw std::runtime_error("EwBinaryMat(COO) - unknown BinaryOpCode");
+        }
     }
 };
 

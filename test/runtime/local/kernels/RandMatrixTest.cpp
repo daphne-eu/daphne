@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/COOMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/RandMatrix.h>
@@ -28,7 +29,7 @@
 #include <cmath>
 #include <cstdint>
 
-#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, COOMatrix, Matrix
 #define VALUE_TYPES double, float, uint32_t, uint8_t
 
 TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
