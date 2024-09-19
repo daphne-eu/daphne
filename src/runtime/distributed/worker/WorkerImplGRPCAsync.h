@@ -19,16 +19,15 @@
 
 #include "WorkerImpl.h"
 
+#include "runtime/distributed/proto/worker.grpc.pb.h"
+#include "runtime/distributed/proto/worker.pb.h"
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server_builder.h>
-#include "runtime/distributed/proto/worker.pb.h"
-#include "runtime/distributed/proto/worker.grpc.pb.h"
 
 #include <runtime/local/io/DaphneSerializer.h>
 
-class WorkerImplGRPCAsync : public WorkerImpl 
-{
-private:
+class WorkerImplGRPCAsync : public WorkerImpl {
+  private:
     grpc::ServerContext ctx_;
     std::unique_ptr<grpc::ServerCompletionQueue> cq_;
     std::unique_ptr<grpc::ServerCompletionQueue> scq_;
@@ -36,29 +35,32 @@ private:
     std::unique_ptr<grpc::Server> server;
     grpc::ServerAsyncReader<distributed::StoredData, distributed::Data> stream_;
     grpc::ServerAsyncResponseWriter<distributed::StoredData> responder_;
-    
+
     // Store in chunks
     std::unique_ptr<DaphneDeserializerChunks<Structure>> deserializer;
-    std::unique_ptr<DaphneDeserializerChunks<Structure>::Iterator> deserializerIter;
+    std::unique_ptr<DaphneDeserializerChunks<Structure>::Iterator>
+        deserializerIter;
     Structure *mat;
     bool isFirstChunk = false;
-public:
-    explicit WorkerImplGRPCAsync(const std::string& addr, DaphneUserConfig& _cfg);
+
+  public:
+    explicit WorkerImplGRPCAsync(const std::string &addr,
+                                 DaphneUserConfig &_cfg);
     void Wait() override;
 
     grpc::Status StoreGRPC(::grpc::ServerContext *context,
-                         const ::distributed::Data *request,
-                         ::distributed::StoredData *response) ;
+                           const ::distributed::Data *request,
+                           ::distributed::StoredData *response);
     grpc::Status ComputeGRPC(::grpc::ServerContext *context,
-                         const ::distributed::Task *request,
-                         ::distributed::ComputeResult *response);
+                             const ::distributed::Task *request,
+                             ::distributed::ComputeResult *response);
     grpc::Status TransferGRPC(::grpc::ServerContext *context,
-                          const ::distributed::StoredData *request,
-                         ::distributed::Data *response) ;
+                              const ::distributed::StoredData *request,
+                              ::distributed::Data *response);
 
     distributed::Worker::AsyncService service_;
 
     void PrepareStoreGRPC();
 };
 
-#endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPCASYNC_H
+#endif // SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPCASYNC_H

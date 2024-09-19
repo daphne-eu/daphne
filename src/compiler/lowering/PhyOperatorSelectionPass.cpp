@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <compiler/utils/CompilerUtils.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
+#include <compiler/utils/CompilerUtils.h>
 
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
@@ -25,10 +25,10 @@
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include <memory>
@@ -38,7 +38,7 @@
 using namespace mlir;
 
 class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
-public:
+  public:
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
@@ -46,19 +46,22 @@ public:
                     ConversionPatternRewriter &rewriter) const override {
         Value lhs = op.getLhs();
         Value rhs = op.getRhs();
-        if(auto to = lhs.getDefiningOp<daphne::TransposeOp>()) {
+        if (auto to = lhs.getDefiningOp<daphne::TransposeOp>()) {
             bool rhsTransposed = CompilerUtils::constantOrThrow<bool>(
-                    op.getTransb(), "MatMulOp.getTransb() is expected to be a constant"
-            );
-            if(to.getArg() == rhs && !rhsTransposed) {
+                op.getTransb(),
+                "MatMulOp.getTransb() is expected to be a constant");
+            if (to.getArg() == rhs && !rhsTransposed) {
                 // `t(M) @ M` -> `syrk(M)`
-                rewriter.replaceOpWithNewOp<daphne::SyrkOp>(op, op.getResult().getType(), rhs);
+                rewriter.replaceOpWithNewOp<daphne::SyrkOp>(
+                    op, op.getResult().getType(), rhs);
                 return success();
             }
             auto rhsMatTy = rhs.getType().dyn_cast<daphne::MatrixType>();
-            if((!rhsTransposed && rhsMatTy.getNumCols() == 1) || (rhsTransposed && rhsMatTy.getNumRows() == 1)) {
+            if ((!rhsTransposed && rhsMatTy.getNumCols() == 1) ||
+                (rhsTransposed && rhsMatTy.getNumRows() == 1)) {
                 // `t(M) @ v` -> `gemv(M, v)`
-                rewriter.replaceOpWithNewOp<daphne::GemvOp>(op, op.getResult().getType(), to.getArg(), rhs);
+                rewriter.replaceOpWithNewOp<daphne::GemvOp>(
+                    op, op.getResult().getType(), to.getArg(), rhs);
                 return success();
             }
         }
@@ -67,11 +70,11 @@ public:
 };
 
 namespace {
-    struct PhyOperatorSelectionPass
+struct PhyOperatorSelectionPass
     : public PassWrapper<PhyOperatorSelectionPass, OperationPass<ModuleOp>> {
-		explicit PhyOperatorSelectionPass() { }
-        void runOnOperation() final;
-    };
+    explicit PhyOperatorSelectionPass() {}
+    void runOnOperation() final;
+};
 } // end anonymous namespace
 
 void PhyOperatorSelectionPass::runOnOperation() {
@@ -94,22 +97,21 @@ void PhyOperatorSelectionPass::runOnOperation() {
         // to account for it here (and above in MatMulOpLowering).
         auto to = op.getLhs().getDefiningOp<daphne::TransposeOp>();
         bool rhsTransposed = CompilerUtils::constantOrThrow<bool>(
-                op.getTransb(), "MatMulOp.getTransb() is expected to be a constant"
-        );
+            op.getTransb(),
+            "MatMulOp.getTransb() is expected to be a constant");
         auto rhsMatTy = op.getRhs().getType().dyn_cast<daphne::MatrixType>();
         return !(to && (
-            // `t(M) @ M` -> `syrk(M)`
-            (to.getArg() == op.getRhs() && !rhsTransposed) ||
-            // `t(M) @ v` -> `gemv(M, v)`
-            (!rhsTransposed && rhsMatTy.getNumCols() == 1) ||
-            (rhsTransposed && rhsMatTy.getNumRows() == 1)
-        ));
+                           // `t(M) @ M` -> `syrk(M)`
+                           (to.getArg() == op.getRhs() && !rhsTransposed) ||
+                           // `t(M) @ v` -> `gemv(M, v)`
+                           (!rhsTransposed && rhsMatTy.getNumCols() == 1) ||
+                           (rhsTransposed && rhsMatTy.getNumRows() == 1)));
     });
 
     RewritePatternSet patterns(&getContext());
     patterns.insert<MatMulOpLowering>(&getContext());
 
-    if(failed(applyPartialConversion(module, target, std::move(patterns))))
+    if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();
 }
 

@@ -35,10 +35,10 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-struct BatchNorm2DTestForward {
-    static void apply(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta,
-                      const DTArg *emaMean, const DTArg *emaVar, const typename DTArg::VT eps,
+template <class DTRes, class DTArg> struct BatchNorm2DTestForward {
+    static void apply(DTRes *&res, const DTArg *in, const DTArg *gamma,
+                      const DTArg *beta, const DTArg *emaMean,
+                      const DTArg *emaVar, const typename DTArg::VT eps,
                       DCTX(dctx)) = delete;
 };
 
@@ -46,10 +46,13 @@ struct BatchNorm2DTestForward {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void batchNorm2DTestForward(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta,
-                    const DTArg *emaMean, const DTArg *emaVar, const typename DTArg::VT eps, DCTX(dctx)) {
-    BatchNorm2DTestForward<DTRes, DTArg>::apply(res, in, gamma, beta, emaMean, emaVar, eps, dctx);
+template <class DTRes, class DTArg>
+void batchNorm2DTestForward(DTRes *&res, const DTArg *in, const DTArg *gamma,
+                            const DTArg *beta, const DTArg *emaMean,
+                            const DTArg *emaVar, const typename DTArg::VT eps,
+                            DCTX(dctx)) {
+    BatchNorm2DTestForward<DTRes, DTArg>::apply(res, in, gamma, beta, emaMean,
+                                                emaVar, eps, dctx);
 }
 
 // ****************************************************************************
@@ -61,8 +64,8 @@ void batchNorm2DTestForward(DTRes *&res, const DTArg *in, const DTArg *gamma, co
 // ----------------------------------------------------------------------------
 
 template <typename VT>
-static inline VT getMean(const VT *in, uint32_t start, uint32_t length, VT plen) 
-{
+static inline VT getMean(const VT *in, uint32_t start, uint32_t length,
+                         VT plen) {
     VT ret = 0;
     auto end = start + length;
     for (auto i = start; i < end; ++i)
@@ -71,8 +74,8 @@ static inline VT getMean(const VT *in, uint32_t start, uint32_t length, VT plen)
 }
 
 template <typename VT>
-static inline VT getVar(const VT *in, uint32_t start, uint32_t length, VT plen, VT mean) 
-{
+static inline VT getVar(const VT *in, uint32_t start, uint32_t length, VT plen,
+                        VT mean) {
     VT ret = 0;
     auto end = start + length;
     for (auto i = start; i < end; ++i)
@@ -80,20 +83,15 @@ static inline VT getVar(const VT *in, uint32_t start, uint32_t length, VT plen, 
     return ret * plen;
 }
 
-
 template <typename VTRes, typename VTArg>
-struct BatchNorm2DTestForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
-{
-    static void 
-    apply(DenseMatrix<VTRes> *&res, 
-          const DenseMatrix<VTArg> *in,
-          const DenseMatrix<VTArg> *gamma, 
-          const DenseMatrix<VTArg> *beta,
-          const DenseMatrix<VTArg> *emaMean,
-          const DenseMatrix<VTArg> *emaVar,
-          const VTArg eps, DCTX(dctx))
-    {
-        
+struct BatchNorm2DTestForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *in,
+                      const DenseMatrix<VTArg> *gamma,
+                      const DenseMatrix<VTArg> *beta,
+                      const DenseMatrix<VTArg> *emaMean,
+                      const DenseMatrix<VTArg> *emaVar, const VTArg eps,
+                      DCTX(dctx)) {
+
         auto start = 0;
         auto stop = in->getNumRows();
         auto size = in->getNumCols();
@@ -101,18 +99,18 @@ struct BatchNorm2DTestForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
         VTArg x_hat = 0;
         auto off = 0;
 
-        if (res == nullptr)
-        {
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(stop, size, true);
+        if (res == nullptr) {
+            res =
+                DataObjectFactory::create<DenseMatrix<VTArg>>(stop, size, true);
         }
-        
-        for(uint32_t i = start; i < stop; i++)
-        {
-            for(uint32_t j = 0; j < size; j++)
-            {    
+
+        for (uint32_t i = start; i < stop; i++) {
+            for (uint32_t j = 0; j < size; j++) {
                 off = i * size + j;
-                x_hat = (in->getValues()[off] - emaMean->getValues()[i]) / std::sqrt(emaVar->getValues()[i] + eps);
-                res->getValues()[off] = gamma->getValues()[i] * x_hat + beta->getValues()[i];
+                x_hat = (in->getValues()[off] - emaMean->getValues()[i]) /
+                        std::sqrt(emaVar->getValues()[i] + eps);
+                res->getValues()[off] =
+                    gamma->getValues()[i] * x_hat + beta->getValues()[i];
             }
         }
     }

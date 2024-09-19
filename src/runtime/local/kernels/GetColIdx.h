@@ -29,19 +29,17 @@
 #include <cstddef>
 #include <cstdint>
 
-
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
 size_t getColIdx(
     // input frame
-    const Frame * arg,
+    const Frame *arg,
     // column name
-    const char * colName,
+    const char *colName,
     // context
-    DCTX(ctx)
-) {
+    DCTX(ctx)) {
     return arg->getColumnIdx(colName);
 }
-#endif //SRC_RUNTIME_LOCAL_KERNELS_INNERJOIN_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_INNERJOIN_H

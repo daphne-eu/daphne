@@ -23,68 +23,54 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Types.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 
-template<typename T>
-struct Builtin
-{
+template <typename T> struct Builtin {
     std::vector<unsigned int> expectedNumOfParams;
 
     Builtin(std::vector<unsigned int> expectedNumOfParams);
     virtual ~Builtin();
 
-    mlir::LogicalResult checkNumParams(mlir::Location &loc, llvm::StringRef name, size_t size);
-    virtual T create(mlir::OpBuilder builder,
-                     mlir::Location &loc,
+    mlir::LogicalResult checkNumParams(mlir::Location &loc,
+                                       llvm::StringRef name, size_t size);
+    virtual T create(mlir::OpBuilder builder, mlir::Location &loc,
                      mlir::ValueRange values) = 0;
 };
 
-struct PrintBuiltin : public Builtin<mlir::daphne::PrintOp>
-{
+struct PrintBuiltin : public Builtin<mlir::daphne::PrintOp> {
     using Builtin<mlir::daphne::PrintOp>::Builtin;
     static const llvm::StringRef name;
 
-    PrintBuiltin() : Builtin({1})
-    {
-    };
-    mlir::daphne::PrintOp create(mlir::OpBuilder builder,
-                                 mlir::Location &loc,
+    PrintBuiltin() : Builtin({1}) {};
+    mlir::daphne::PrintOp create(mlir::OpBuilder builder, mlir::Location &loc,
                                  mlir::ValueRange values) override;
 };
 
-struct RandBuiltin : public Builtin<mlir::daphne::RandMatrixOp>
-{
+struct RandBuiltin : public Builtin<mlir::daphne::RandMatrixOp> {
     using Builtin<mlir::daphne::RandMatrixOp>::Builtin;
     static const llvm::StringRef name;
 
-    RandBuiltin() : Builtin({2, 4})
-    {
-    };
+    RandBuiltin() : Builtin({2, 4}) {};
     mlir::daphne::RandMatrixOp create(mlir::OpBuilder builder,
-                                mlir::Location &loc,
-                                mlir::ValueRange values) override;
+                                      mlir::Location &loc,
+                                      mlir::ValueRange values) override;
 };
 
-struct TransposeBuiltin : public Builtin<mlir::daphne::TransposeOp>
-{
+struct TransposeBuiltin : public Builtin<mlir::daphne::TransposeOp> {
     using Builtin<mlir::daphne::TransposeOp>::Builtin;
     static const llvm::StringRef name;
 
-    TransposeBuiltin() : Builtin({1})
-    {
-    };
+    TransposeBuiltin() : Builtin({1}) {};
     mlir::daphne::TransposeOp create(mlir::OpBuilder builder,
                                      mlir::Location &loc,
                                      mlir::ValueRange values) override;
 };
 
-struct Builtins
-{
-    static antlrcpp::Any build(mlir::OpBuilder &builder,
-                               mlir::Location &loc,
+struct Builtins {
+    static antlrcpp::Any build(mlir::OpBuilder &builder, mlir::Location &loc,
                                mlir::ValueRange values,
                                const std::string &name);
 };
 
-#endif //SRC_PARSER_DAPHNEDSL_BUILTINS_H
+#endif // SRC_PARSER_DAPHNEDSL_BUILTINS_H

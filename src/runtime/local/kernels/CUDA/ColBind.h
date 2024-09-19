@@ -24,22 +24,22 @@
 #include <string>
 
 namespace CUDA {
-    template<class DTRes, class DTLhs, class DTRhs>
-    struct ColBind {
-        static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx));
-    };
+template <class DTRes, class DTLhs, class DTRhs> struct ColBind {
+    static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs,
+                      DCTX(ctx));
+};
 
-    template<typename VTres, typename VTlhs, typename VTrhs>
-    struct ColBind<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
-        static void apply(DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs,
-                          const DenseMatrix<VTrhs> *rhs, DCTX(ctx));
-    };
+template <typename VTres, typename VTlhs, typename VTrhs>
+struct ColBind<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
+    static void apply(DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs,
+                      const DenseMatrix<VTrhs> *rhs, DCTX(ctx));
+};
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-    template<class DTRes, class DTLhs, class DTRhs>
-    void colBind(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
-        ColBind<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
-    }
+template <class DTRes, class DTLhs, class DTRhs>
+void colBind(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
+    ColBind<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
 }
+} // namespace CUDA

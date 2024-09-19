@@ -20,13 +20,12 @@
 #include "runtime/local/datastructures/DenseMatrix.h"
 
 template <typename T>
-inline void convertMemRefToDenseMatrix(DenseMatrix<T>*& result, size_t basePtr,
+inline void convertMemRefToDenseMatrix(DenseMatrix<T> *&result, size_t basePtr,
                                        size_t offset, size_t size0,
                                        size_t size1, size_t stride0,
                                        size_t stride1, DCTX(ctx)) {
-    auto no_op_deleter = [](T*) {};
-    T* valuePtr = reinterpret_cast<T*>(basePtr);
+    auto no_op_deleter = [](T *) {};
+    T *valuePtr = reinterpret_cast<T *>(basePtr);
     std::shared_ptr<T[]> ptr(valuePtr, no_op_deleter);
     result = DataObjectFactory::create<DenseMatrix<T>>(size0, size1, ptr);
 }
-

@@ -2,7 +2,6 @@
 #include "compiler/utils/LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
-#include "llvm/Support/Debug.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
@@ -14,27 +13,31 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "dm-opt"
 
 using namespace mlir;
 
 class IntegerModOpt : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
-   public:
+  public:
     using OpConversionPattern::OpConversionPattern;
 
     [[nodiscard]] static bool optimization_viable(mlir::daphne::EwModOp op) {
-        if (!op.getRhs().getType().isUnsignedInteger()) return false;
+        if (!op.getRhs().getType().isUnsignedInteger())
+            return false;
 
         std::pair<bool, uint64_t> isConstant =
             CompilerUtils::isConstant<uint64_t>(op.getRhs());
-        // Apply (lhs % rhs) to (lhs & (rhs - 1)) optimization when rhs is a power of two
-        return isConstant.first && (isConstant.second & (isConstant.second - 1)) == 0;
+        // Apply (lhs % rhs) to (lhs & (rhs - 1)) optimization when rhs is a
+        // power of two
+        return isConstant.first &&
+               (isConstant.second & (isConstant.second - 1)) == 0;
     }
 
-    mlir::LogicalResult matchAndRewrite(
-        mlir::daphne::EwModOp op, OpAdaptor adaptor,
-        mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult
+    matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
+                    mlir::ConversionPatternRewriter &rewriter) const override {
         mlir::Value cst_one = rewriter.create<mlir::daphne::ConstantOp>(
             op.getLoc(), static_cast<uint64_t>(1));
         mlir::Value sub = rewriter.create<mlir::daphne::EwSubOp>(
@@ -70,7 +73,7 @@ struct DenseMatrixOptPass
                "also from the DaphneDialect.";
     }
 };
-}  // end anonymous namespace
+} // end anonymous namespace
 
 void DenseMatrixOptPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());

@@ -22,36 +22,38 @@
 
 using namespace mlir;
 
-struct MarkFPGAOPENCLOpsPass : public PassWrapper<MarkFPGAOPENCLOpsPass, OperationPass<func::FuncOp>> {
+struct MarkFPGAOPENCLOpsPass
+    : public PassWrapper<MarkFPGAOPENCLOpsPass, OperationPass<func::FuncOp>> {
 
     /**
      * @brief User configuration influencing the rewrite pass
      */
-    const DaphneUserConfig& cfg;
+    const DaphneUserConfig &cfg;
 
-    explicit MarkFPGAOPENCLOpsPass(const DaphneUserConfig& cfg) : cfg(cfg) {
-    }
+    explicit MarkFPGAOPENCLOpsPass(const DaphneUserConfig &cfg) : cfg(cfg) {}
 
     void runOnOperation() final;
 
-    bool checkUseFPGAOPENCL(Operation* op) const {
-//        std::cout << "checkUseFPGAOPENCL: " << op->getName().getStringRef().str() << std::endl;
+    bool checkUseFPGAOPENCL(Operation *op) const {
+        //        std::cout << "checkUseFPGAOPENCL: " <<
+        //        op->getName().getStringRef().str() << std::endl;
         return op->hasTrait<mlir::OpTrait::FPGAOPENCLSupport>();
     }
 };
 
 void MarkFPGAOPENCLOpsPass::runOnOperation() {
     func::FuncOp f = getOperation();
-    f->walk([&](Operation* op) {
+    f->walk([&](Operation *op) {
         OpBuilder builder(op);
-        if(checkUseFPGAOPENCL(op)) {
+        if (checkUseFPGAOPENCL(op)) {
             op->setAttr("fpgaopencl_device", builder.getI32IntegerAttr(0));
         }
         WalkResult::advance();
     });
 }
 
-std::unique_ptr<Pass> daphne::createMarkFPGAOPENCLOpsPass(const DaphneUserConfig& cfg) {
+std::unique_ptr<Pass>
+daphne::createMarkFPGAOPENCLOpsPass(const DaphneUserConfig &cfg) {
     return std::make_unique<MarkFPGAOPENCLOpsPass>(cfg);
 }
-#endif 
+#endif

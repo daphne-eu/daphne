@@ -16,21 +16,21 @@
 
 #pragma once
 
+#include <parser/metadata/MetaDataParser.h>
 #include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/io/ReadCsv.h>
-#include <runtime/local/io/File.h>
-#include <parser/metadata/MetaDataParser.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/io/File.h>
+#include <runtime/local/io/ReadCsv.h>
 
 #include <runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h>
-#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 
 #ifdef USE_MPI
-    #include <runtime/distributed/worker/MPIHelper.h>
-#endif 
+#include <runtime/distributed/worker/MPIHelper.h>
+#endif
 
 #include <cstddef>
 
@@ -38,8 +38,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<ALLOCATION_TYPE AT, class DTRes>
-struct DistributedRead {
+template <ALLOCATION_TYPE AT, class DTRes> struct DistributedRead {
     static void apply(DTRes *&res, const char *filename, DCTX(dctx)) = delete;
 };
 
@@ -47,26 +46,22 @@ struct DistributedRead {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes>
-void distributedRead(DTRes *&res, const char *filename, DCTX(dctx))
-{
+template <class DTRes>
+void distributedRead(DTRes *&res, const char *filename, DCTX(dctx)) {
     const auto allocation_type = dctx->getUserConfig().distributedBackEndSetup;
-    if (allocation_type == ALLOCATION_TYPE::DIST_MPI)
-    {
+    if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
 #ifdef USE_MPI
-        DistributedRead<ALLOCATION_TYPE::DIST_MPI, DTRes>::apply(res, filename, dctx);
+        DistributedRead<ALLOCATION_TYPE::DIST_MPI, DTRes>::apply(res, filename,
+                                                                 dctx);
 #endif
-    }
-    else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC)
-    {
-        DistributedRead<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DTRes>::apply(res, filename, dctx);
-    }
-    else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC)
-    {
-        DistributedRead<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes>::apply(res, filename, dctx);
+    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+        DistributedRead<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DTRes>::apply(
+            res, filename, dctx);
+    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+        DistributedRead<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes>::apply(
+            res, filename, dctx);
     }
 }
-
 
 // ****************************************************************************
 // (Partial) template specializations for different distributed backends
@@ -76,9 +71,8 @@ void distributedRead(DTRes *&res, const char *filename, DCTX(dctx))
 // ----------------------------------------------------------------------------
 // MPI
 // ----------------------------------------------------------------------------
-template<class DTRes>
-struct DistributedRead<ALLOCATION_TYPE::DIST_MPI, DTRes>
-{
+template <class DTRes>
+struct DistributedRead<ALLOCATION_TYPE::DIST_MPI, DTRes> {
     static void apply(DTRes *&res, const char *filename, DCTX(dctx)) {
         throw std::runtime_error("not implemented");
     }
@@ -89,11 +83,10 @@ struct DistributedRead<ALLOCATION_TYPE::DIST_MPI, DTRes>
 // Asynchronous GRPC
 // ----------------------------------------------------------------------------
 
-template<class DTRes>
-struct DistributedRead<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DTRes>
-{
+template <class DTRes>
+struct DistributedRead<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DTRes> {
     static void apply(DTRes *&res, const char *filename, DCTX(dctx)) {
-       throw std::runtime_error("not implemented");
+        throw std::runtime_error("not implemented");
     }
 };
 
@@ -101,37 +94,38 @@ struct DistributedRead<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DTRes>
 // Synchronous GRPC
 // ----------------------------------------------------------------------------
 
-template<class DTRes>
-struct DistributedRead<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes>
-{
+template <class DTRes>
+struct DistributedRead<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes> {
     static void apply(DTRes *&res, const char *filename, DCTX(dctx)) {
 #if USE_HDFS
         auto ctx = DistributedContext::get(dctx);
-        auto workers = ctx->getWorkers();        
-        
-        // Generate metadata for the object based on MetaDataFile and 
+        auto workers = ctx->getWorkers();
+
+        // Generate metadata for the object based on MetaDataFile and
         // when the worker needs the data it will read it automatically
-        
-        std::vector<std::thread> threads_vector;        
-        LoadPartitioningDistributed<DTRes, AllocationDescriptorGRPC> partioner(DistributionSchema::DISTRIBUTE, res, dctx);
-        while (partioner.HasNextChunk()){             
+
+        std::vector<std::thread> threads_vector;
+        LoadPartitioningDistributed<DTRes, AllocationDescriptorGRPC> partioner(
+            DistributionSchema::DISTRIBUTE, res, dctx);
+        while (partioner.HasNextChunk()) {
             auto hdfsFn = std::string(filename);
             auto dp = partioner.GetNextChunk();
-            
-            auto workerAddr = dynamic_cast<AllocationDescriptorGRPC*>(dp->allocation.get())->getLocation();
-            std::thread t([=, &res]()
-            {
+
+            auto workerAddr =
+                dynamic_cast<AllocationDescriptorGRPC *>(dp->allocation.get())
+                    ->getLocation();
+            std::thread t([=, &res]() {
                 auto stub = ctx->stubs[workerAddr].get();
 
                 distributed::HDFSFile fileData;
                 fileData.set_filename(hdfsFn);
                 fileData.set_start_row(dp->range->r_start);
                 fileData.set_num_rows(dp->range->r_len);
-                fileData.set_num_cols(dp->range->c_len);       
+                fileData.set_num_cols(dp->range->c_len);
 
                 grpc::ClientContext grpc_ctx;
                 distributed::StoredData response;
-                
+
                 auto status = stub->ReadHDFS(&grpc_ctx, fileData, &response);
                 if (!status.ok())
                     throw std::runtime_error(status.error_message());
@@ -141,11 +135,12 @@ struct DistributedRead<ALLOCATION_TYPE::DIST_GRPC_SYNC, DTRes>
                 newData.numRows = response.num_rows();
                 newData.numCols = response.num_cols();
                 newData.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(newData);
+                dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation))
+                    .updateDistributedData(newData);
             });
-            threads_vector.push_back(move(t));            
+            threads_vector.push_back(move(t));
         }
-        
+
         for (auto &thread : threads_vector)
             thread.join();
 #endif

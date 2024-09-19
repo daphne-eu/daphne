@@ -115,8 +115,8 @@ struct ErrorHandler {
      *       |
      */
     static std::runtime_error makeError(std::string header, std::string msg,
-                                 std::string file, unsigned int line,
-                                 unsigned int col);
+                                        std::string file, unsigned int line,
+                                        unsigned int col);
 
     /*
      * Writes the current module IR to the file "module_fail.log" on disk.

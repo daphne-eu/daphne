@@ -36,21 +36,15 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-struct Conv2DBackwardData
-{
-    static void apply(const DTArg *filter,
-                      const DTArg *output,
+template <class DTRes, class DTArg> struct Conv2DBackwardData {
+    static void apply(const DTArg *filter, const DTArg *output,
                       const size_t stride_h, const size_t stride_w,
                       const size_t pad_h, const size_t pad_w,
                       const size_t input_batch_size,
-                      const size_t input_num_channels,
-                      const size_t input_h, const size_t input_w,
-                      const size_t filter_num_filters,
-                      const size_t filter_num_channels,
-                      const size_t filter_h, const size_t filter_w,
-                      DTRes *&data,
-                      DCTX(dctx)) = delete;
+                      const size_t input_num_channels, const size_t input_h,
+                      const size_t input_w, const size_t filter_num_filters,
+                      const size_t filter_num_channels, const size_t filter_h,
+                      const size_t filter_w, DTRes *&data, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -58,24 +52,18 @@ struct Conv2DBackwardData
 // ****************************************************************************
 
 template <class DTRes, class DTArg>
-void conv2DBackwardData(const DTArg *filter,
-                        const DTArg *output,
+void conv2DBackwardData(const DTArg *filter, const DTArg *output,
                         const size_t stride_h, const size_t stride_w,
                         const size_t pad_h, const size_t pad_w,
                         const size_t input_batch_size,
-                        const size_t input_num_channels,
-                        const size_t input_h, const size_t input_w,
-                        const size_t filter_num_filters,
-                        const size_t filter_num_channels,
-                        const size_t filter_h, const size_t filter_w,
-                        DTRes *&data,
-                        DCTX(dctx))
-{
+                        const size_t input_num_channels, const size_t input_h,
+                        const size_t input_w, const size_t filter_num_filters,
+                        const size_t filter_num_channels, const size_t filter_h,
+                        const size_t filter_w, DTRes *&data, DCTX(dctx)) {
     Conv2DBackwardData<DTRes, DTArg>::apply(
-        filter, output, stride_h, stride_w, pad_h, pad_w,
-        input_batch_size, input_num_channels, input_h, input_w,
-        filter_num_filters, filter_num_channels, filter_h, filter_w,
-        data, dctx);
+        filter, output, stride_h, stride_w, pad_h, pad_w, input_batch_size,
+        input_num_channels, input_h, input_w, filter_num_filters,
+        filter_num_channels, filter_h, filter_w, data, dctx);
 }
 
 // ****************************************************************************
@@ -89,45 +77,38 @@ void conv2DBackwardData(const DTArg *filter,
 template <typename VT>
 static inline void
 GetLossGradientMatrix(const VT *output, VT *loss_gradient_matrix,
-                      size_t output_h, size_t output_w, size_t filter_h, size_t filter_w,
-                      size_t matrix_h, size_t matrix_w, size_t stride_h, size_t stride_w, uint32_t off)
-{
+                      size_t output_h, size_t output_w, size_t filter_h,
+                      size_t filter_w, size_t matrix_h, size_t matrix_w,
+                      size_t stride_h, size_t stride_w, uint32_t off) {
     for (uint32_t i = 0; i < matrix_h * matrix_w; i++)
         loss_gradient_matrix[i] = 0;
     uint32_t init = (filter_h - 1) * matrix_w + filter_w - 1;
     uint32_t io = 0;
     for (uint32_t h = 0; h < filter_h; h++)
         for (uint32_t w = 0; w < filter_w; w++, io++)
-            loss_gradient_matrix[init + h * stride_h * matrix_w + w * stride_w] = output[off + io];
+            loss_gradient_matrix[init + h * stride_h * matrix_w +
+                                 w * stride_w] = output[off + io];
 }
 
 template <typename VT>
-static void
-GetRotatedFilter(const VT *filter, VT *rotated_filter,
-                 size_t filter_h, size_t filter_w, uint32_t off)
-{
+static void GetRotatedFilter(const VT *filter, VT *rotated_filter,
+                             size_t filter_h, size_t filter_w, uint32_t off) {
     for (uint32_t i = 0; i < filter_h * filter_w; i++)
         rotated_filter[i] = filter[off + filter_h * filter_w - i - 1];
 }
 
 template <typename VTRes, typename VTArg>
-struct Conv2DBackwardData<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
-{
+struct Conv2DBackwardData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
-    static void
-    apply(const DenseMatrix<VTArg> *filter,
-          const DenseMatrix<VTArg> *output,
-          const size_t stride_h, const size_t stride_w,
-          const size_t pad_h, const size_t pad_w,
-          const size_t input_batch_size,
-          const size_t input_num_channels,
-          const size_t input_h, const size_t input_w,
-          const size_t filter_num_filters,
-          const size_t filter_num_channels,
-          const size_t filter_h, const size_t filter_w,
-          DenseMatrix<VTRes> *&data,
-          DCTX(dctx))
-    {
+    static void apply(const DenseMatrix<VTArg> *filter,
+                      const DenseMatrix<VTArg> *output, const size_t stride_h,
+                      const size_t stride_w, const size_t pad_h,
+                      const size_t pad_w, const size_t input_batch_size,
+                      const size_t input_num_channels, const size_t input_h,
+                      const size_t input_w, const size_t filter_num_filters,
+                      const size_t filter_num_channels, const size_t filter_h,
+                      const size_t filter_w, DenseMatrix<VTRes> *&data,
+                      DCTX(dctx)) {
         auto HW = input_h * input_w;
         auto C = input_num_channels;
         auto CHW = C * HW;
@@ -157,33 +138,52 @@ struct Conv2DBackwardData<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
         auto matrix_h = filter_h + padded_img_h - 1;
         auto matrix_w = filter_w + padded_img_w - 1;
 
-        DenseMatrix<VTArg> *rotated_filter = DataObjectFactory::create<DenseMatrix<VTArg>>(1, filter_h * filter_w, true);
-        DenseMatrix<VTArg> *loss_gradient_matrix = DataObjectFactory::create<DenseMatrix<VTArg>>(1, matrix_h * matrix_w, true);
-        
-        if (data == nullptr)
-        {
-            data = DataObjectFactory::create<DenseMatrix<VTArg>>(input_batch_size, input_num_channels * input_h * input_w, true);
+        DenseMatrix<VTArg> *rotated_filter =
+            DataObjectFactory::create<DenseMatrix<VTArg>>(
+                1, filter_h * filter_w, true);
+        DenseMatrix<VTArg> *loss_gradient_matrix =
+            DataObjectFactory::create<DenseMatrix<VTArg>>(
+                1, matrix_h * matrix_w, true);
+
+        if (data == nullptr) {
+            data = DataObjectFactory::create<DenseMatrix<VTArg>>(
+                input_batch_size, input_num_channels * input_h * input_w, true);
         }
 
         uint32_t off_o, off_i, off_m = 0;
         for (uint32_t i = start; i < stop; i++)
-            for (uint32_t c_input = 0; c_input < input_num_channels; c_input++)
-            {
-                for (uint32_t c_output = 0; c_output < filter_num_filters; c_output++)
-                {
+            for (uint32_t c_input = 0; c_input < input_num_channels;
+                 c_input++) {
+                for (uint32_t c_output = 0; c_output < filter_num_filters;
+                     c_output++) {
                     off_f = c_output * f_CHW + c_input * filter_h * filter_w;
-                    GetRotatedFilter(filter->getValues(), rotated_filter->getValues(), filter_h, filter_w, off_f);
+                    GetRotatedFilter(filter->getValues(),
+                                     rotated_filter->getValues(), filter_h,
+                                     filter_w, off_f);
                     off_o = oi + (i - start) * o_CHW + c_output * o_HW;
-                    GetLossGradientMatrix(output->getValues(), loss_gradient_matrix->getValues(), output_h, output_w,
-                                          filter_h, filter_w, matrix_h, matrix_w, stride_h, stride_w, off_o);
+                    GetLossGradientMatrix(
+                        output->getValues(), loss_gradient_matrix->getValues(),
+                        output_h, output_w, filter_h, filter_w, matrix_h,
+                        matrix_w, stride_h, stride_w, off_o);
                     off_i = ii + (i - start) * CHW + c_input * HW;
                     for (u_int32_t i_h = pad_h; i_h < pad_h + input_h; i_h++)
                         for (u_int32_t f_h = 0; f_h < filter_h; f_h++)
-                            for (u_int32_t i_w = pad_w; i_w < pad_h + input_w; i_w++)
-                                for (u_int32_t f_w = 0; f_w < filter_w; f_w++)
-                                {
+                            for (u_int32_t i_w = pad_w; i_w < pad_h + input_w;
+                                 i_w++)
+                                for (u_int32_t f_w = 0; f_w < filter_w; f_w++) {
                                     off_m = (i_h + f_h) * matrix_w + i_w + f_w;
-                                    data->getValues()[off_i + (i_h - pad_h) * input_w + i_w - pad_w] = data->getValues()[off_i + (i_h - pad_h) * input_w + i_w - pad_w] + loss_gradient_matrix->getValues()[off_m] * rotated_filter->getValues()[f_h * filter_w + f_w];
+                                    data->getValues()[off_i +
+                                                      (i_h - pad_h) * input_w +
+                                                      i_w - pad_w] =
+                                        data->getValues()[off_i +
+                                                          (i_h - pad_h) *
+                                                              input_w +
+                                                          i_w - pad_w] +
+                                        loss_gradient_matrix
+                                                ->getValues()[off_m] *
+                                            rotated_filter
+                                                ->getValues()[f_h * filter_w +
+                                                              f_w];
                                 }
                 }
             }

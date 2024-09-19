@@ -27,27 +27,28 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <chrono>
 #include <unordered_set>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, typename VTArg>
-struct Sample {
-    static void apply(DTRes *& res, VTArg range, size_t size, bool withReplacement, int64_t seed, DCTX(ctx)) = delete;
+template <class DTRes, typename VTArg> struct Sample {
+    static void apply(DTRes *&res, VTArg range, size_t size,
+                      bool withReplacement, int64_t seed, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, typename VTArg>
-void sample(DTRes *& res, VTArg range, size_t size, bool withReplacement, int64_t seed, DCTX(ctx)) {
+template <class DTRes, typename VTArg>
+void sample(DTRes *&res, VTArg range, size_t size, bool withReplacement,
+            int64_t seed, DCTX(ctx)) {
     Sample<DTRes, VTArg>::apply(res, range, size, withReplacement, seed, ctx);
 }
 
@@ -59,9 +60,9 @@ void sample(DTRes *& res, VTArg range, size_t size, bool withReplacement, int64_
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct Sample<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *& res, VT range, int64_t size, bool withReplacement, int64_t seed, DCTX(ctx)) {
+template <typename VT> struct Sample<DenseMatrix<VT>, VT> {
+    static void apply(DenseMatrix<VT> *&res, VT range, int64_t size,
+                      bool withReplacement, int64_t seed, DCTX(ctx)) {
         if (size <= 0)
             throw std::runtime_error("size (rows) must be > 0");
         if (range <= 0)
@@ -72,7 +73,7 @@ struct Sample<DenseMatrix<VT>, VT> {
                                      "then must be range >= size");
         }
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(size, 1, false);
 
         if (seed == -1) {
@@ -91,41 +92,39 @@ struct Sample<DenseMatrix<VT>, VT> {
         // included in the interval of possible values, so when VT is a
         // floating-point type, std::nextafter() is not required. However, we
         // don't lose much by that, so it is fine for now.
-        typename std::conditional<
-                    std::is_floating_point<VT>::value,
-                    std::uniform_real_distribution<VT>,
-                    std::uniform_int_distribution<VT>>::type distrVal(0, std::nextafter(range, 0));
-        if (withReplacement) {            
+        typename std::conditional<std::is_floating_point<VT>::value,
+                                  std::uniform_real_distribution<VT>,
+                                  std::uniform_int_distribution<VT>>::type
+            distrVal(0, std::nextafter(range, 0));
+        if (withReplacement) {
 
             VT *valuesRes = res->getValues();
-            for (int64_t c = 0; c < size; c++)
-            {
+            for (int64_t c = 0; c < size; c++) {
                 valuesRes[c] = distrVal(genVal);
             }
-        }
-        else {
-            // If range is `double` we can simply store each number we 
+        } else {
+            // If range is `double` we can simply store each number we
             // generate and check if it already exists each time (doubles
             // are rarely duplicate).
-            if (std::is_floating_point<VT>::value){
-                
+            if (std::is_floating_point<VT>::value) {
+
                 std::unordered_set<VT> contained;
                 VT *valuesRes = res->getValues();
-                for (int64_t c = 0; c < size; c++)
-                {
+                for (int64_t c = 0; c < size; c++) {
                     VT generatedValue = distrVal(genVal);
-                    while (contained.find(generatedValue) != contained.end()){
-                        generatedValue = distrVal(genVal);                        
-                    }                    
+                    while (contained.find(generatedValue) != contained.end()) {
+                        generatedValue = distrVal(genVal);
+                    }
                     valuesRes[c] = generatedValue;
                     contained.insert(generatedValue);
-                }   
+                }
             }
-            // Else if range is `int` the above method does not work efficiently.
-            // Ex. size = range, finding the correct number is increasingly
-            // harder as we fill the array. We must implement an efficient algorithm
-            // to create non-duplicate numbers (see Knuth's algorithm).
-            else {                
+            // Else if range is `int` the above method does not work
+            // efficiently. Ex. size = range, finding the correct number is
+            // increasingly harder as we fill the array. We must implement an
+            // efficient algorithm to create non-duplicate numbers (see Knuth's
+            // algorithm).
+            else {
                 VT *valuesRes = res->getValues();
                 VT iRange;
                 int64_t iSize;
@@ -142,4 +141,4 @@ struct Sample<DenseMatrix<VT>, VT> {
         }
     }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SAMPLEOP_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_SAMPLEOP_H

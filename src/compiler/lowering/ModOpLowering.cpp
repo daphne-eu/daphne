@@ -34,13 +34,14 @@ using namespace mlir;
 
 class EwModOpLowering
     : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
-   public:
+  public:
     using OpConversionPattern::OpConversionPattern;
 
     [[nodiscard]] bool optimization_viable(mlir::Value divisor) const {
         std::pair<bool, int64_t> isConstant =
             CompilerUtils::isConstant<int64_t>(divisor);
-        return isConstant.first && (isConstant.second & (isConstant.second - 1)) == 0;
+        return isConstant.first &&
+               (isConstant.second & (isConstant.second - 1)) == 0;
     }
 
     void optimizeEwModOp(mlir::Value memRef, mlir::Value divisor,
@@ -129,9 +130,9 @@ class EwModOpLowering
             });
     }
 
-    mlir::LogicalResult matchAndRewrite(
-        mlir::daphne::EwModOp op, OpAdaptor adaptor,
-        mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult
+    matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
+                    mlir::ConversionPatternRewriter &rewriter) const override {
         mlir::daphne::MatrixType lhsTensor =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
         auto lhsRows = lhsTensor.getNumRows();
@@ -190,7 +191,7 @@ struct ModOpLoweringPass
                "and performing the mod op on values loaded from a MemRef.";
     }
 };
-}  // end anonymous namespace
+} // end anonymous namespace
 
 void ModOpLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());

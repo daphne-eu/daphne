@@ -24,8 +24,6 @@
 // Convenience function
 // ****************************************************************************
 
-size_t numCols(const Structure * arg, DCTX(ctx)) {
-    return arg->getNumCols();
-}
+size_t numCols(const Structure *arg, DCTX(ctx)) { return arg->getNumCols(); }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_NUMCOLS_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_NUMCOLS_H

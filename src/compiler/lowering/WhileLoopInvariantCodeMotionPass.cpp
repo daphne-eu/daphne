@@ -26,24 +26,27 @@ using namespace mlir;
 /**
  * @brief This is a very limited variant of loop invariant code motion (LICM),
  * tailored just to WhileOp.
- * 
+ *
  * We need this because MLIR does not seem to support LICM for while loops.
  * Nevertheless, we should clarify this (see #175).
- * 
+ *
  * This pass is strongly inspired by MLIR's LoopInvariantCodeMotion.cpp, but
  * significantly simplified.
  */
 struct WhileLoopInvariantCodeMotionPass
-: public PassWrapper <WhileLoopInvariantCodeMotionPass, OperationPass<func::FuncOp>> {
+    : public PassWrapper<WhileLoopInvariantCodeMotionPass,
+                         OperationPass<func::FuncOp>> {
     void runOnOperation() final;
 
-    StringRef getArgument() const final { return "while-loop-invariant-code-motion"; }
+    StringRef getArgument() const final {
+        return "while-loop-invariant-code-motion";
+    }
     StringRef getDescription() const final { return "TODO"; }
 };
 
 void WhileLoopInvariantCodeMotionPass::runOnOperation() {
     getOperation()->walk([&](scf::WhileOp whileOp) {
-        Region & loopBody = whileOp.getAfter();
+        Region &loopBody = whileOp.getAfter();
 
         SmallPtrSet<Operation *, 8> willBeMovedSet;
         SmallVector<Operation *, 8> opsToMove;
@@ -51,23 +54,22 @@ void WhileLoopInvariantCodeMotionPass::runOnOperation() {
         auto isDefinedOutsideOfBody = [&](Value value) {
             auto definingOp = value.getDefiningOp();
             return (definingOp && !!willBeMovedSet.count(definingOp)) ||
-                    !loopBody.isAncestor(value.getParentRegion());
+                   !loopBody.isAncestor(value.getParentRegion());
         };
 
-        for(auto & block : loopBody)
-            for(auto & op : block.without_terminator()) {
+        for (auto &block : loopBody)
+            for (auto &op : block.without_terminator()) {
                 auto memInterface = dyn_cast<MemoryEffectOpInterface>(op);
-                if(
-                    llvm::all_of(op.getOperands(), isDefinedOutsideOfBody) &&
-                    op.hasTrait<OpTrait::ZeroRegions>() && // such that we don't need to recurse
-                    memInterface && memInterface.hasNoEffect()
-                ) {
+                if (llvm::all_of(op.getOperands(), isDefinedOutsideOfBody) &&
+                    op.hasTrait<OpTrait::ZeroRegions>() && // such that we don't
+                                                           // need to recurse
+                    memInterface && memInterface.hasNoEffect()) {
                     opsToMove.push_back(&op);
                     willBeMovedSet.insert(&op);
                 }
             }
 
-        for(auto op : opsToMove)
+        for (auto op : opsToMove)
             op->moveBefore(whileOp);
     });
 }

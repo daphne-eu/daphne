@@ -15,15 +15,15 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
-#include <util/ErrorHandler.h>
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/datastructures/LabelUtils.h>
+#include <util/ErrorHandler.h>
 
 #include <mlir/IR/Value.h>
 
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
 
 namespace mlir::daphne {
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.cpp.inc>
@@ -36,12 +36,13 @@ using namespace mlir;
 // ****************************************************************************
 // For families of operations.
 
-template<class ExtractOrFilterRowOp>
-void inferFrameLabels_ExtractOrFilterRowOp(ExtractOrFilterRowOp * op) {
+template <class ExtractOrFilterRowOp>
+void inferFrameLabels_ExtractOrFilterRowOp(ExtractOrFilterRowOp *op) {
     Type t = op->getSource().getType();
-    if(auto ft = t.dyn_cast<daphne::FrameType>()) {
+    if (auto ft = t.dyn_cast<daphne::FrameType>()) {
         Value res = op->getResult();
-        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(ft.getLabels()));
+        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(
+            ft.getLabels()));
     }
 }
 
@@ -53,7 +54,7 @@ void daphne::ReadOp::inferFrameLabels() {
     auto p = CompilerUtils::isConstant<std::string>(getFileName());
     if (auto resType = getRes().getType().dyn_cast<daphne::FrameType>()) {
         if (p.first) {
-            std::vector<std::string> * labels;
+            std::vector<std::string> *labels;
             FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
             if (fmd.labels.empty()) {
                 labels = nullptr;
@@ -62,7 +63,8 @@ void daphne::ReadOp::inferFrameLabels() {
             }
 
             Value res = getResult();
-            res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(labels));
+            res.setType(
+                res.getType().dyn_cast<daphne::FrameType>().withLabels(labels));
         }
     }
 }
@@ -71,64 +73,72 @@ void daphne::ColBindOp::inferFrameLabels() {
     auto ftLhs = getLhs().getType().dyn_cast<daphne::FrameType>();
     auto ftRhs = getRhs().getType().dyn_cast<daphne::FrameType>();
 
-    if(!ftLhs || !ftRhs)
+    if (!ftLhs || !ftRhs)
         throw ErrorHandler::compilerError(
             getLoc(), "daphne::ColBindOp::inferFrameLabels",
             "currently ColBindOp can only infer its output labels if both "
             "inputs are frames");
-    if(!ftLhs.getLabels() || !ftRhs.getLabels())
+    if (!ftLhs.getLabels() || !ftRhs.getLabels())
         throw ErrorHandler::compilerError(
             getLoc(), "daphne::ColBindOp::inferFrameLabels",
             "currenly ColBindOp can only infer its output labels if the "
             "labels of both input frames are known");
 
     auto labelsRes = new std::vector<std::string>();
-    for(auto l : *(ftLhs.getLabels()))
+    for (auto l : *(ftLhs.getLabels()))
         labelsRes->push_back(l);
-    for(auto l : *(ftRhs.getLabels()))
+    for (auto l : *(ftRhs.getLabels()))
         labelsRes->push_back(l);
 
     Value res = getResult();
-    res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(labelsRes));
+    res.setType(
+        res.getType().dyn_cast<daphne::FrameType>().withLabels(labelsRes));
 }
 
 void daphne::CreateFrameOp::inferFrameLabels() {
     auto resLabels = new std::vector<std::string>();
-    for(Value label : getLabels())
-        resLabels->push_back(CompilerUtils::constantOrThrow<std::string>(label));
+    for (Value label : getLabels())
+        resLabels->push_back(
+            CompilerUtils::constantOrThrow<std::string>(label));
     Value res = getResult();
-    res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
+    res.setType(
+        res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
 }
 
 void daphne::ExtractColOp::inferFrameLabels() {
     auto ft = getSource().getType().dyn_cast<daphne::FrameType>();
     auto st = getSelectedCols().getType().dyn_cast<daphne::StringType>();
-    
-    if(ft && st) {
-        std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
+
+    if (ft && st) {
+        std::string label =
+            CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
         std::string delimiter = ".";
         const std::string frameName = label.substr(0, label.find(delimiter));
-        const std::string colLabel = label.substr(label.find(delimiter) + delimiter.length(), label.length());
+        const std::string colLabel = label.substr(
+            label.find(delimiter) + delimiter.length(), label.length());
         if (colLabel.compare("*") == 0) {
             std::vector<std::string> labels = *ft.getLabels();
-            std::vector<std::string> *resultLabels = new std::vector<std::string>();
+            std::vector<std::string> *resultLabels =
+                new std::vector<std::string>();
             for (std::string label : labels) {
-                std::string labelFrameName = label.substr(0, label.find(delimiter));
+                std::string labelFrameName =
+                    label.substr(0, label.find(delimiter));
                 if (labelFrameName.compare(frameName) == 0) {
                     resultLabels->push_back(label);
-                } 
+                }
             }
             Value res = getResult();
-            res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resultLabels));
+            res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(
+                resultLabels));
         } else {
             auto resLabels = new std::vector<std::string>();
-            resLabels->push_back(CompilerUtils::constantOrThrow<std::string>(getSelectedCols()));
+            resLabels->push_back(
+                CompilerUtils::constantOrThrow<std::string>(getSelectedCols()));
             Value res = getResult();
-            res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
+            res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(
+                resLabels));
         }
-        
     }
-
 }
 
 void daphne::ExtractRowOp::inferFrameLabels() {
@@ -141,41 +151,50 @@ void daphne::FilterRowOp::inferFrameLabels() {
 
 void daphne::GroupJoinOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
-    newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(getLhsOn()));
-    newLabels->push_back(std::string("SUM(") + CompilerUtils::constantOrThrow<std::string>(getRhsAgg()) + std::string(")"));
+    newLabels->push_back(
+        CompilerUtils::constantOrThrow<std::string>(getLhsOn()));
+    newLabels->push_back(
+        std::string("SUM(") +
+        CompilerUtils::constantOrThrow<std::string>(getRhsAgg()) +
+        std::string(")"));
     Value res = getResult(0);
-    res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+    res.setType(
+        res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::SemiJoinOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
-    newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(getLhsOn()));
+    newLabels->push_back(
+        CompilerUtils::constantOrThrow<std::string>(getLhsOn()));
     Value res = getResult(0);
-    res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+    res.setType(
+        res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::CartesianOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
     auto ft1 = getLhs().getType().dyn_cast<daphne::FrameType>();
     auto ft2 = getRhs().getType().dyn_cast<daphne::FrameType>();
-    std::vector<std::string> * labelsStr1 = ft1.getLabels();
-    std::vector<std::string> * labelsStr2 = ft2.getLabels();
+    std::vector<std::string> *labelsStr1 = ft1.getLabels();
+    std::vector<std::string> *labelsStr2 = ft2.getLabels();
 
-    if(labelsStr1)
-        for(auto labelStr : *labelsStr1)
+    if (labelsStr1)
+        for (auto labelStr : *labelsStr1)
             newLabels->push_back(labelStr);
-    if(labelsStr2)
-        for(auto labelStr : *labelsStr2)
+    if (labelsStr2)
+        for (auto labelStr : *labelsStr2)
             newLabels->push_back(labelStr);
 
-    getResult().setType(getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+    getResult().setType(
+        getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::OrderOp::inferFrameLabels() {
     Type t = getArg().getType();
-    if(auto ft = t.dyn_cast<daphne::FrameType>()) {
+    if (auto ft = t.dyn_cast<daphne::FrameType>()) {
         Value res = getResult();
-        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(ft.getLabels()));
+        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(
+            ft.getLabels()));
     }
 }
 
@@ -183,36 +202,38 @@ void daphne::InnerJoinOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
     auto ft1 = getLhs().getType().dyn_cast<daphne::FrameType>();
     auto ft2 = getRhs().getType().dyn_cast<daphne::FrameType>();
-    std::vector<std::string> * labelsStr1 = ft1.getLabels();
-    std::vector<std::string> * labelsStr2 = ft2.getLabels();
+    std::vector<std::string> *labelsStr1 = ft1.getLabels();
+    std::vector<std::string> *labelsStr2 = ft2.getLabels();
 
-    if(labelsStr1)
-        for(auto labelStr : *labelsStr1)
+    if (labelsStr1)
+        for (auto labelStr : *labelsStr1)
             newLabels->push_back(labelStr);
-    if(labelsStr2)
-        for(auto labelStr : *labelsStr2)
+    if (labelsStr2)
+        for (auto labelStr : *labelsStr2)
             newLabels->push_back(labelStr);
 
-    getResult().setType(getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+    getResult().setType(
+        getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::ThetaJoinOp::inferFrameLabels() {
-    std::vector<std::string> * newLabels = nullptr;
-    
+    std::vector<std::string> *newLabels = nullptr;
+
     auto ft1 = getLhs().getType().dyn_cast<daphne::FrameType>();
     auto ft2 = getRhs().getType().dyn_cast<daphne::FrameType>();
-    std::vector<std::string> * labelsStr1 = ft1.getLabels();
-    std::vector<std::string> * labelsStr2 = ft2.getLabels();
+    std::vector<std::string> *labelsStr1 = ft1.getLabels();
+    std::vector<std::string> *labelsStr2 = ft2.getLabels();
 
-    if(labelsStr1 && labelsStr2) {
+    if (labelsStr1 && labelsStr2) {
         newLabels = new std::vector<std::string>();
-        for(auto labelStr : *labelsStr1)
+        for (auto labelStr : *labelsStr1)
             newLabels->push_back(labelStr);
-        for(auto labelStr : *labelsStr2)
+        for (auto labelStr : *labelsStr2)
             newLabels->push_back(labelStr);
     }
 
-    getResult().setType(getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+    getResult().setType(
+        getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::GroupOp::inferFrameLabels() {
@@ -220,22 +241,27 @@ void daphne::GroupOp::inferFrameLabels() {
     std::vector<std::string> aggColLabels;
     std::vector<std::string> aggFuncNames;
 
-    for(Value t: getKeyCol()){ //Adopting keyCol Labels
+    for (Value t : getKeyCol()) { // Adopting keyCol Labels
         std::string keyLabel = CompilerUtils::constantOrThrow<std::string>(t);
         std::string delimiter = ".";
-        const std::string frameName = keyLabel.substr(0, keyLabel.find(delimiter));
-        const std::string colLabel = keyLabel.substr(keyLabel.find(delimiter) + delimiter.length(), keyLabel.length());
-        
-        if(keyLabel == "*") {
-            daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+        const std::string frameName =
+            keyLabel.substr(0, keyLabel.find(delimiter));
+        const std::string colLabel = keyLabel.substr(
+            keyLabel.find(delimiter) + delimiter.length(), keyLabel.length());
+
+        if (keyLabel == "*") {
+            daphne::FrameType arg =
+                getFrame().getType().dyn_cast<daphne::FrameType>();
             for (std::string frameLabel : *arg.getLabels()) {
                 newLabels->push_back(frameLabel);
             }
-        } else if(colLabel.compare("*") == 0) {
-            daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+        } else if (colLabel.compare("*") == 0) {
+            daphne::FrameType arg =
+                getFrame().getType().dyn_cast<daphne::FrameType>();
             std::vector<std::string> labels = *arg.getLabels();
             for (std::string label : labels) {
-                std::string labelFrameName = label.substr(0, label.find(delimiter));
+                std::string labelFrameName =
+                    label.substr(0, label.find(delimiter));
                 if (labelFrameName.compare(frameName) == 0) {
                     newLabels->push_back(label);
                 }
@@ -245,27 +271,30 @@ void daphne::GroupOp::inferFrameLabels() {
         }
     }
 
-    for(Value t: getAggCol()){
+    for (Value t : getAggCol()) {
         aggColLabels.push_back(CompilerUtils::constantOrThrow<std::string>(t));
     }
-    for(Attribute t: getAggFuncs()){
+    for (Attribute t : getAggFuncs()) {
         GroupEnum aggFuncValue = t.dyn_cast<GroupEnumAttr>().getValue();
         aggFuncNames.push_back(stringifyGroupEnum(aggFuncValue).str());
     }
-    for(size_t i = 0; i < aggFuncNames.size() && i < aggColLabels.size(); i++){
-        newLabels->push_back(aggFuncNames.at(i) + "(" + aggColLabels.at(i) + ")");
+    for (size_t i = 0; i < aggFuncNames.size() && i < aggColLabels.size();
+         i++) {
+        newLabels->push_back(aggFuncNames.at(i) + "(" + aggColLabels.at(i) +
+                             ")");
     }
 
-    getResult().setType(getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+    getResult().setType(
+        getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::SetColLabelsOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
-    for(Value label : getLabels()) {
+    for (Value label : getLabels()) {
         try {
-            newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(label));
-        }
-        catch(std::runtime_error&) {
+            newLabels->push_back(
+                CompilerUtils::constantOrThrow<std::string>(label));
+        } catch (std::runtime_error &) {
             // TODO This could be improved by supporting knowledge on only some
             // of the labels.
             // If we do not know the values of all label operands at
@@ -274,20 +303,23 @@ void daphne::SetColLabelsOp::inferFrameLabels() {
             newLabels = nullptr;
         }
     }
-    getResult().setType(getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+    getResult().setType(
+        getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::SetColLabelsPrefixOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
-    std::string prefixStr = CompilerUtils::constantOrThrow<std::string>(getPrefix());
+    std::string prefixStr =
+        CompilerUtils::constantOrThrow<std::string>(getPrefix());
     auto ft = getArg().getType().dyn_cast<daphne::FrameType>();
-    std::vector<std::string> * labelsStr = ft.getLabels();
-    if(labelsStr)
-        for(auto labelStr : *labelsStr)
+    std::vector<std::string> *labelsStr = ft.getLabels();
+    if (labelsStr)
+        for (auto labelStr : *labelsStr)
             newLabels->push_back(LabelUtils::setPrefix(prefixStr, labelStr));
     else {
         delete newLabels;
         newLabels = nullptr;
     }
-    getResult().setType(getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+    getResult().setType(
+        getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }

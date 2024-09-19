@@ -34,4 +34,3 @@ PRAGMA_CLION_IGNORED("UnusedImportStatement")
 #else
 #define PRAGMA_CLION_IGNORED
 #endif
-

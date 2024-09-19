@@ -26,17 +26,16 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<typename VTRes, class DTArg>
-struct CastObjSca {
-    static VTRes apply(const DTArg * arg, DCTX(ctx)) = delete;
+template <typename VTRes, class DTArg> struct CastObjSca {
+    static VTRes apply(const DTArg *arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<typename VTRes, class DTArg>
-VTRes castObjSca(const DTArg * arg, DCTX(ctx)) {
+template <typename VTRes, class DTArg>
+VTRes castObjSca(const DTArg *arg, DCTX(ctx)) {
     return CastObjSca<VTRes, DTArg>::apply(arg, ctx);
 }
 
@@ -48,13 +47,14 @@ VTRes castObjSca(const DTArg * arg, DCTX(ctx)) {
 // Scalar <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTArg>
+template <typename VTRes, typename VTArg>
 struct CastObjSca<VTRes, DenseMatrix<VTArg>> {
-    static VTRes apply(const DenseMatrix<VTArg> * arg, DCTX(ctx)) {
+    static VTRes apply(const DenseMatrix<VTArg> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        if(numCols != 1 || numRows != 1)
-            throw std::runtime_error("Cast matrix to scalar: matrix shape should be 1x1");
+        if (numCols != 1 || numRows != 1)
+            throw std::runtime_error(
+                "Cast matrix to scalar: matrix shape should be 1x1");
         return static_cast<VTRes>(*arg->getValues());
     }
 };
@@ -63,27 +63,30 @@ struct CastObjSca<VTRes, DenseMatrix<VTArg>> {
 //  Scalar <- Frame
 // ----------------------------------------------------------------------------
 
-template<typename VTRes>
-struct CastObjSca<VTRes, Frame> {
-    static VTRes apply(const Frame * arg, DCTX(ctx)) {
+template <typename VTRes> struct CastObjSca<VTRes, Frame> {
+    static VTRes apply(const Frame *arg, DCTX(ctx)) {
         const size_t numCols = arg->getNumCols();
         const size_t numRows = arg->getNumRows();
-        if(numCols != 1 || numRows != 1)
-            throw std::runtime_error("Cast frame to scalar: frame shape should be 1x1");
-        
+        if (numCols != 1 || numRows != 1)
+            throw std::runtime_error(
+                "Cast frame to scalar: frame shape should be 1x1");
+
         VTRes res = VTRes(0);
         auto colType = static_cast<unsigned int>(arg->getColumnType(0));
-        const void * resVal = arg->getColumnRaw(0);
-        // Cast void* to the largest column type width (split integer and floating point interpretations) 
-        // and then final cast to VTRes. This way we avoid DenseMatrix creation in Frame::getColumn().
+        const void *resVal = arg->getColumnRaw(0);
+        // Cast void* to the largest column type width (split integer and
+        // floating point interpretations) and then final cast to VTRes. This
+        // way we avoid DenseMatrix creation in Frame::getColumn().
         // TODO It is dangerous to treat the value type code as an integer here,
         // since this can easily break if we change the value type codes.
-        if(colType <= 5U)
-            res = static_cast<VTRes>(*reinterpret_cast<const int64_t*>(resVal));
-        else if(colType <= 7U)
-            res = static_cast<VTRes>(*reinterpret_cast<const double*>(resVal));
+        if (colType <= 5U)
+            res =
+                static_cast<VTRes>(*reinterpret_cast<const int64_t *>(resVal));
+        else if (colType <= 7U)
+            res = static_cast<VTRes>(*reinterpret_cast<const double *>(resVal));
         else
-            throw std::runtime_error("CastObjSca::apply: unknown value type code");
+            throw std::runtime_error(
+                "CastObjSca::apply: unknown value type code");
 
         return res;
     }

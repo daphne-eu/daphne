@@ -22,21 +22,21 @@
 #include <queue>
 
 template <typename QT>
-class UniqueBoundedPriorityQueue: public std::priority_queue<QT> {
-    public:
-        UniqueBoundedPriorityQueue(size_t K): K(K){};
-        void push(const QT& val) {
+class UniqueBoundedPriorityQueue : public std::priority_queue<QT> {
+  public:
+    UniqueBoundedPriorityQueue(size_t K) : K(K) {};
+    void push(const QT &val) {
 
-            if (std::priority_queue<QT>::size() < K) {
-                std::priority_queue<QT>::push(val);
-            } else if (std::priority_queue<QT>::top() > val) {
-                std::priority_queue<QT>::pop();
-                std::priority_queue<QT>::push(val);
-            }
+        if (std::priority_queue<QT>::size() < K) {
+            std::priority_queue<QT>::push(val);
+        } else if (std::priority_queue<QT>::top() > val) {
+            std::priority_queue<QT>::pop();
+            std::priority_queue<QT>::push(val);
         }
-    private:
-        size_t K;
-};
+    }
 
+  private:
+    size_t K;
+};
 
 #endif

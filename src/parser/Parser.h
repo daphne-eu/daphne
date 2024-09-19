@@ -25,40 +25,41 @@
 #include <stdexcept>
 #include <string>
 
-
 /**
  * @brief The super-class of all parsers producing DaphneIR.
- * 
+ *
  * All parsers generating a DaphneIR representation from a program or query
  * given in a particular domain-specific language (DSL) should inherit from
  * this class and implement `parseStream`.
  */
 struct Parser {
-    
+
     /**
      * @brief Generates a DaphneIR representation for the contents of the given
      * stream.
-     * 
+     *
      * @param builder The builder to use for generating DaphneIR operations.
      * @param stream The stream to read from.
      * @param sourceName A name used for source location information.
      */
-    virtual void parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) = 0;
-    
+    virtual void parseStream(mlir::OpBuilder &builder, std::istream &stream,
+                             const std::string &sourceName) = 0;
+
     /**
      * @brief Generates a DaphneIR representation for the given DSL file.
-     * 
+     *
      * @param builder The builder to use for generating DaphneIR operations.
      * @param filename The path to the file to read from.
      */
-    void parseFile(mlir::OpBuilder & builder, const std::string & filename) {
+    void parseFile(mlir::OpBuilder &builder, const std::string &filename) {
         // Open the given DSL file.
         std::ifstream ifs(filename, std::ios::in);
         if (!ifs.good())
-            // It's important to say "DaphneDSL" here, because the error message could be confused
-            // with some data file to read, especially when the path to a data file was passed
-            // by accident.
-            throw std::runtime_error("could not open DaphneDSL file '" + filename + "' for parsing");
+            // It's important to say "DaphneDSL" here, because the error message
+            // could be confused with some data file to read, especially when
+            // the path to a data file was passed by accident.
+            throw std::runtime_error("could not open DaphneDSL file '" +
+                                     filename + "' for parsing");
 
         // Parse the file contents.
         parseStream(builder, ifs, filename);
@@ -66,18 +67,20 @@ struct Parser {
 
     /**
      * @brief Generates a DaphneIR representation for the given DSL string.
-     * 
+     *
      * @param builder The builder to use for generating DaphneIR operations.
      * @param str The string to read from.
-     * @param sourceName Optional name for the source used in MLIR Locations (defaults to "DSL String")
+     * @param sourceName Optional name for the source used in MLIR Locations
+     * (defaults to "DSL String")
      */
-    void parseStr(mlir::OpBuilder & builder, const std::string & str, const std::string & sourceName = "DSL String") {
+    void parseStr(mlir::OpBuilder &builder, const std::string &str,
+                  const std::string &sourceName = "DSL String") {
         // Parse the file contents.
         std::istringstream s(str);
-        
+
         // Parse the string contents.
         parseStream(builder, s, sourceName);
     }
 };
 
-#endif //SRC_PARSER_PARSER_H
+#endif // SRC_PARSER_PARSER_H

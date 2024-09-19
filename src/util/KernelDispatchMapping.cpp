@@ -16,8 +16,8 @@
 
 #include "KernelDispatchMapping.h"
 
-#include <mlir/IR/Location.h>
 #include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/Location.h>
 
 KernelDispatchMapping &KernelDispatchMapping::instance() {
     static KernelDispatchMapping INSTANCE;
@@ -31,11 +31,11 @@ int KernelDispatchMapping::registerKernel(std::string name,
     if (auto flcLoc = llvm::dyn_cast<mlir::FileLineColLoc>(op->getLoc())) {
         auto fName = flcLoc.getFilename().str();
         dispatchMapping[kId] = {name, fName, flcLoc.getLine(),
-                                  flcLoc.getColumn()};
+                                flcLoc.getColumn()};
         currentLoc = flcLoc;
     } else {
         dispatchMapping[kId] = {name, currentLoc.getFilename().str(),
-                                  currentLoc.getLine(), currentLoc.getColumn()};
+                                currentLoc.getLine(), currentLoc.getColumn()};
     }
     return kId;
 }

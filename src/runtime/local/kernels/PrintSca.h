@@ -27,31 +27,29 @@
 
 /**
  * @brief Prints a scalar value to standard output.
- * 
+ *
  * @param arg The value to print.
  */
-template<typename VT>
+template <typename VT>
 void printSca(VT arg, bool newline, bool err, DCTX(ctx)) {
-    std::ostream & os = err ? std::cerr : std::cout;
+    std::ostream &os = err ? std::cerr : std::cout;
     os << arg;
-    if(newline)
+    if (newline)
         os << std::endl;
 }
 
-//For printing int8_t/uint8_t as numbers as opposed to characters
-template<>
-void printSca(int8_t arg, bool newline, bool err, DCTX(ctx)) {
-    std::ostream & os = err ? std::cerr : std::cout;
+// For printing int8_t/uint8_t as numbers as opposed to characters
+template <> void printSca(int8_t arg, bool newline, bool err, DCTX(ctx)) {
+    std::ostream &os = err ? std::cerr : std::cout;
     os << static_cast<int32_t>(arg);
-    if(newline)
+    if (newline)
         os << std::endl;
 }
-template<>
-void printSca(uint8_t arg, bool newline, bool err, DCTX(ctx)) {
-    std::ostream & os = err ? std::cerr : std::cout;
+template <> void printSca(uint8_t arg, bool newline, bool err, DCTX(ctx)) {
+    std::ostream &os = err ? std::cerr : std::cout;
     os << static_cast<uint32_t>(arg);
-    if(newline)
+    if (newline)
         os << std::endl;
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTSCA_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_PRINTSCA_H

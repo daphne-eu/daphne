@@ -28,19 +28,20 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-struct Map {
-    // We could have a more specialized function pointer here i.e. (DTRes::VT)(*func)(DTArg::VT).
-    // The problem is that this is currently not supported by kernels.json.
-    static void apply(DTRes *& res, const DTArg * arg , void* func, DCTX(ctx)) = delete;
+template <class DTRes, class DTArg> struct Map {
+    // We could have a more specialized function pointer here i.e.
+    // (DTRes::VT)(*func)(DTArg::VT). The problem is that this is currently not
+    // supported by kernels.json.
+    static void apply(DTRes *&res, const DTArg *arg, void *func,
+                      DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void map(DTRes *& res, const DTArg * arg, void* func, DCTX(ctx)) {
+template <class DTRes, class DTArg>
+void map(DTRes *&res, const DTArg *arg, void *func, DCTX(ctx)) {
     Map<DTRes, DTArg>::apply(res, arg, func, ctx);
 }
 
@@ -52,22 +53,24 @@ void map(DTRes *& res, const DTArg * arg, void* func, DCTX(ctx)) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTArg>
+template <typename VTRes, typename VTArg>
 struct Map<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, void* func, DCTX(ctx)) {
+    static void apply(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *arg,
+                      void *func, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        
+
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
-        
-        auto udf = reinterpret_cast<VTRes(*)(VTArg)>(func);
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows,
+                                                                numCols, false);
 
-        const VTArg * valuesArg = arg->getValues();
-        VTRes * valuesRes = res->getValues();
+        auto udf = reinterpret_cast<VTRes (*)(VTArg)>(func);
 
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++)
+        const VTArg *valuesArg = arg->getValues();
+        VTRes *valuesRes = res->getValues();
+
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++)
                 valuesRes[c] = udf(valuesArg[c]);
             valuesArg += arg->getRowSkip();
             valuesRes += res->getRowSkip();
@@ -79,16 +82,18 @@ struct Map<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 // Matrix
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTArg>
+template <typename VTRes, typename VTArg>
 struct Map<Matrix<VTRes>, Matrix<VTArg>> {
-    static void apply(Matrix<VTRes> *& res, const Matrix<VTArg> * arg, void* func, DCTX(ctx)) {
+    static void apply(Matrix<VTRes> *&res, const Matrix<VTArg> *arg, void *func,
+                      DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        
+
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
-        
-        auto udf = reinterpret_cast<VTRes(*)(VTArg)>(func);
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows,
+                                                                numCols, false);
+
+        auto udf = reinterpret_cast<VTRes (*)(VTArg)>(func);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r)
@@ -98,4 +103,4 @@ struct Map<Matrix<VTRes>, Matrix<VTArg>> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_MAP_H

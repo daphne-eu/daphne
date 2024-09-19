@@ -16,13 +16,15 @@
 
 #pragma once
 
-#include <spdlog/async.h>
 #include <spdlog/common.h>
-#include <spdlog/spdlog.h>
+
 #include <api/cli/DaphneUserConfig.h>
+#include <spdlog/async.h>
+#include <spdlog/spdlog.h>
 #include <vector>
 
 struct DaphneUserConfig;
+struct LogConfig;
 
 class DaphneLogger {
     const static std::vector<LogConfig> fallback_loggers;
@@ -32,25 +34,27 @@ class DaphneLogger {
     int n_threads;
     int queue_size;
 
-    void createLoggers(const LogConfig& config);
+    void createLoggers(const LogConfig &config);
 
-public:
-    explicit DaphneLogger(DaphneUserConfig& config);
+  public:
+    explicit DaphneLogger(DaphneUserConfig &config);
 
-    [[maybe_unused]] std::vector<std::shared_ptr<spdlog::logger>>* getLoggers() {
+    [[maybe_unused]] std::vector<std::shared_ptr<spdlog::logger>> *
+    getLoggers() {
         return &loggers;
     }
 
-    [[maybe_unused]] std::shared_ptr<spdlog::logger> getDefaultLogger() { return default_logger; }
+    [[maybe_unused]] std::shared_ptr<spdlog::logger> getDefaultLogger() {
+        return default_logger;
+    }
 
     // register loggers in shared libraries
     void registerLoggers() {
-        for (const auto& logger : loggers) {
-            if(not spdlog::get(logger->name())) {
+        for (const auto &logger : loggers) {
+            if (not spdlog::get(logger->name())) {
                 spdlog::register_logger(logger);
             }
         }
         spdlog::set_default_logger(default_logger);
     }
 };
-

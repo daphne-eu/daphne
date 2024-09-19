@@ -55,8 +55,8 @@ static constexpr auto RESET_COLOR = "\x1b[0m";
  *       |
  */
 std::runtime_error ErrorHandler::makeError(std::string header, std::string msg,
-                             std::string file, unsigned int line,
-                             unsigned int col) {
+                                           std::string file, unsigned int line,
+                                           unsigned int col) {
     std::stringstream s;
     s << header;
     std::filesystem::path p = file;

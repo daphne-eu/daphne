@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <runtime/local/datastructures/ValueTypeCode.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/ValueTypeCode.h>
 
 #include <runtime/local/io/DaphneFile.h>
 #include <runtime/local/io/DaphneSerializer.h>
@@ -28,21 +28,20 @@
 
 #include <util/preprocessor_defs.h>
 
-#include <type_traits>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <vector>
 #include <stdlib.h>
+#include <type_traits>
+#include <vector>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes>
-struct ReadDaphne {
+template <class DTRes> struct ReadDaphne {
     static void apply(DTRes *&res, const char *filename) = delete;
 };
 
@@ -50,8 +49,7 @@ struct ReadDaphne {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes>
-void readDaphne(DTRes *&res, const char *filename) {
+template <class DTRes> void readDaphne(DTRes *&res, const char *filename) {
     ReadDaphne<DTRes>::apply(res, filename);
 }
 
@@ -59,16 +57,18 @@ void readDaphne(DTRes *&res, const char *filename) {
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template <typename VT>
-struct ReadDaphne<DenseMatrix<VT>> {
+template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename) {
         std::ifstream f;
         f.open(filename, std::ios::in | std::ios::binary);
         // TODO: check f.good()
 
-        auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(&res, DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
+        auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(
+            &res, DaphneSerializer<
+                      DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = deser.begin(); it != deser.end(); ++it) {
-            it->first = DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
+            it->first = DaphneSerializer<
+                DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
             f.read(it->second->data(), it->first);
             // in case we read less than that
             it->first = f.gcount();
@@ -79,16 +79,18 @@ struct ReadDaphne<DenseMatrix<VT>> {
     }
 };
 
-template <typename VT>
-struct ReadDaphne<CSRMatrix<VT>> {
+template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename) {
         std::ifstream f;
         f.open(filename, std::ios::in | std::ios::binary);
         // TODO: check f.good()
 
-        auto deser = DaphneDeserializerChunks<CSRMatrix<VT>>(&res, DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
+        auto deser = DaphneDeserializerChunks<CSRMatrix<VT>>(
+            &res,
+            DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = deser.begin(); it != deser.end(); ++it) {
-            it->first = DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
+            it->first = DaphneSerializer<
+                CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
             f.read(it->second->data(), it->first);
             // in case we read less than that
             it->first = f.gcount();
@@ -99,8 +101,7 @@ struct ReadDaphne<CSRMatrix<VT>> {
     }
 };
 
-template <>
-struct ReadDaphne<Frame> {
+template <> struct ReadDaphne<Frame> {
     static void apply(Frame *&res, const char *filename) {
         std::ifstream f;
         f.open(filename, std::ios::in | std::ios::binary);
@@ -132,7 +133,8 @@ struct ReadDaphne<Frame> {
             // TODO: Consider alternative representations for frames
 
             if (res == nullptr) {
-                res = DataObjectFactory::create<Frame>(h.nbrows, h.nbcols, schema, nullptr, false);
+                res = DataObjectFactory::create<Frame>(h.nbrows, h.nbcols,
+                                                       schema, nullptr, false);
             }
 
             uint8_t **rawCols = new uint8_t *[h.nbcols];
@@ -143,48 +145,49 @@ struct ReadDaphne<Frame> {
             for (size_t r = 0; r < h.nbrows; r++) {
                 for (size_t c = 0; c < h.nbcols; c++) {
                     switch (schema[c]) {
-                        case ValueTypeCode::SI8:
-                            int8_t val_si8;
-                            f.read((char *)&val_si8, sizeof(val_si8));
-                            reinterpret_cast<int8_t *>(rawCols[c])[r] = val_si8;
-                            break;
-                        case ValueTypeCode::SI32:
-                            int32_t val_si32;
-                            f.read((char *)&val_si32, sizeof(val_si32));
-                            reinterpret_cast<int32_t *>(rawCols[c])[r] = val_si32;
-                            break;
-                        case ValueTypeCode::SI64:
-                            int64_t val_si64;
-                            f.read((char *)&val_si64, sizeof(val_si64));
-                            reinterpret_cast<int64_t *>(rawCols[c])[r] = val_si64;
-                            break;
-                        case ValueTypeCode::UI8:
-                            uint8_t val_ui8;
-                            f.read((char *)&val_ui8, sizeof(val_ui8));
-                            reinterpret_cast<uint8_t *>(rawCols[c])[r] = val_ui8;
-                            break;
-                        case ValueTypeCode::UI32:
-                            uint32_t val_ui32;
-                            f.read((char *)&val_ui32, sizeof(val_ui32));
-                            reinterpret_cast<uint32_t *>(rawCols[c])[r] = val_ui32;
-                            break;
-                        case ValueTypeCode::UI64:
-                            uint64_t val_ui64;
-                            f.read((char *)&val_ui64, sizeof(val_ui64));
-                            reinterpret_cast<uint64_t *>(rawCols[c])[r] = val_ui64;
-                            break;
-                        case ValueTypeCode::F32:
-                            float val_f32;
-                            f.read((char *)&val_f32, sizeof(val_f32));
-                            reinterpret_cast<float *>(rawCols[c])[r] = val_f32;
-                            break;
-                        case ValueTypeCode::F64:
-                            double val_f64;
-                            f.read((char *)&val_f64, sizeof(val_f64));
-                            reinterpret_cast<double *>(rawCols[c])[r] = val_f64;
-                            break;
-                        default:
-                            throw std::runtime_error("ReadDaphne::apply: unknown value type code");
+                    case ValueTypeCode::SI8:
+                        int8_t val_si8;
+                        f.read((char *)&val_si8, sizeof(val_si8));
+                        reinterpret_cast<int8_t *>(rawCols[c])[r] = val_si8;
+                        break;
+                    case ValueTypeCode::SI32:
+                        int32_t val_si32;
+                        f.read((char *)&val_si32, sizeof(val_si32));
+                        reinterpret_cast<int32_t *>(rawCols[c])[r] = val_si32;
+                        break;
+                    case ValueTypeCode::SI64:
+                        int64_t val_si64;
+                        f.read((char *)&val_si64, sizeof(val_si64));
+                        reinterpret_cast<int64_t *>(rawCols[c])[r] = val_si64;
+                        break;
+                    case ValueTypeCode::UI8:
+                        uint8_t val_ui8;
+                        f.read((char *)&val_ui8, sizeof(val_ui8));
+                        reinterpret_cast<uint8_t *>(rawCols[c])[r] = val_ui8;
+                        break;
+                    case ValueTypeCode::UI32:
+                        uint32_t val_ui32;
+                        f.read((char *)&val_ui32, sizeof(val_ui32));
+                        reinterpret_cast<uint32_t *>(rawCols[c])[r] = val_ui32;
+                        break;
+                    case ValueTypeCode::UI64:
+                        uint64_t val_ui64;
+                        f.read((char *)&val_ui64, sizeof(val_ui64));
+                        reinterpret_cast<uint64_t *>(rawCols[c])[r] = val_ui64;
+                        break;
+                    case ValueTypeCode::F32:
+                        float val_f32;
+                        f.read((char *)&val_f32, sizeof(val_f32));
+                        reinterpret_cast<float *>(rawCols[c])[r] = val_f32;
+                        break;
+                    case ValueTypeCode::F64:
+                        double val_f64;
+                        f.read((char *)&val_f64, sizeof(val_f64));
+                        reinterpret_cast<double *>(rawCols[c])[r] = val_f64;
+                        break;
+                    default:
+                        throw std::runtime_error(
+                            "ReadDaphne::apply: unknown value type code");
                     }
                 }
             }
