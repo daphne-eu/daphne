@@ -80,12 +80,12 @@ inline size_t setCString(const char * str, std::string *res, const char delim){
       pos++;
 
     int is_not_end = 1;
-    while (is_not_end)
+    while (is_not_end && str[pos])
     {
       // The string does not contain line breaks or a field separator, so
       // the end of the string is either a delimiter or the next character is the end of the line.
       is_not_end -= (!is_multiLine && str[pos] == delim);
-      is_not_end -= (!is_multiLine && str[pos + 1] == '\n');
+      is_not_end -= (!is_multiLine && str[pos] == '\n');
 
       /*
       ** If the string contains line breaks or field separators, 
