@@ -104,14 +104,14 @@ set(SOURCES_cpp_kernels
 add_library(AllKernels SHARED ${SOURCES_cpp_kernels} ${HEADERS_cpp_kernels})
 set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
+set(ALLKERNELS_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/thirdparty/installed/include" /usr/local/include)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+    list(APPEND ALLKERNELS_INCLUDE_DIRS ${CUDAToolkit_INCLUDE_DIRS})
     list(APPEND LIBS CUDAKernels)
 else()
     # This can only appear once, so it's either included in CUDAKernels or appended here to AllKernels directly
     list(APPEND LIBS LLVMSupport Util MLIRDaphneInference)
 endif()
-
 
 list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared)
@@ -123,8 +123,11 @@ endif()
 find_library(HWLOC_LIB NAMES libhwloc.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 
 if(USE_HDFS)
-        target_include_directories(AllKernels PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/hdfs)
         find_library(LIBHDFS3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 endif()
 
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
+find_library(URING NAMES uring HINTS /usr/local/lib "${CMAKE_SOURCE_DIR}/thirdparty/installed/lib")
+target_link_directories(AllKernels PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/installed/lib" /usr/local/lib)
+message(STATUS "ALLKERNELS_INCLUDE_DIRS: ${ALLKERNELS_INCLUDE_DIRS}")
+target_include_directories(AllKernels  PUBLIC ${ALLKERNELS_INCLUDE_DIRS})
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3} ${URING})
