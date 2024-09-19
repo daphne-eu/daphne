@@ -60,6 +60,7 @@ function printHelp {
     echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
     echo "  --mpi             Compile with support for MPI"
     echo "  --hdfs            Compile with support for HDFS"
+    echo "  --io_uring        Compile with support for io_uring"
     echo "  --no-papi         Compile without support for PAPI"
 }
 
@@ -451,6 +452,7 @@ BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 BUILD_MPI="-DUSE_MPI=OFF"
 BUILD_HDFS="-DUSE_HDFS=OFF"
+BUILD_IO_URING="-DUSE_IO_URING=OFF"
 BUILD_PAPI="-DUSE_PAPI=ON"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
@@ -503,6 +505,10 @@ while [[ $# -gt 0 ]]; do
     --hdfs)
         echo using HDFS
         export BUILD_HDFS="-DUSE_HDFS=ON"
+        ;;
+    --io-uring)
+        echo using io_uring
+        export BUILD_IO_URING="-DUSE_IO_URING=ON"
         ;;
     --no-papi)
         echo not using PAPI
@@ -1035,25 +1041,29 @@ if [ $WITH_DEPS -gt 0 ]; then
     liburingInstDirName=$installPrefix
     liburing_cc=$([ "$CC" = "" ] && echo "gcc" || echo "$CC")
     liburing_cxx=$([ "$CXX" = "" ] && echo "g++" || echo "$CXX")
-    if ! is_dependency_downloaded "liburing_v${liburingVersion}"; then
-        daphne_msg "Get liburing version ${liburingVersion}"
-        wget "https://github.com/axboe/liburing/archive/refs/tags/${liburingTarName}" \
-            -qO "${cacheDir}/${liburingTarName}"
-        mkdir "$sourcePrefix/$liburingDirName"
-        tar -xf "$cacheDir/$liburingTarName" -C "$sourcePrefix/$liburingDirName" --strip-components=1
-        dependency_download_success "liburing_v${liburingVersion}"
+
+    if [ $BUILD_IO_URING == "-DUSE_IO_URING=ON" ]; then
+        if ! is_dependency_downloaded "liburing_v${liburingVersion}"; then
+            daphne_msg "Get liburing version ${liburingVersion}"
+            wget "https://github.com/axboe/liburing/archive/refs/tags/${liburingTarName}" \
+                -qO "${cacheDir}/${liburingTarName}"
+            mkdir "$sourcePrefix/$liburingDirName"
+            tar -xf "$cacheDir/$liburingTarName" -C "$sourcePrefix/$liburingDirName" --strip-components=1
+            dependency_download_success "liburing_v${liburingVersion}"
+        fi
+        if ! is_dependency_installed "liburing_v${liburingVersion}"; then
+            cd "$sourcePrefix/$liburingDirName"
+            ./configure --cc="$liburing_cc" --cxx="$liburing_cxx" --prefix="$liburingInstDirName"
+            make -j"$(nproc)"
+            cp ./src/liburing.a "$installPrefix/lib/"
+            cp -r ./src/include/* "$installPrefix/include"
+            cd - > /dev/null
+            dependency_install_success "liburing_v${liburingVersion}"
+        else
+            daphne_msg "No need to build liburing again."
+        fi
     fi
-    if ! is_dependency_installed "liburing_v${liburingVersion}"; then
-        cd "$sourcePrefix/$liburingDirName"
-        ./configure --cc="$liburing_cc" --cxx="$liburing_cxx" --prefix="$liburingInstDirName"
-        make -j"$(nproc)"
-        cp ./src/liburing.a "$installPrefix/lib/"
-        cp -r ./src/include/* "$installPrefix/include"
-        cd - > /dev/null
-        dependency_install_success "liburing_v${liburingVersion}"
-    else
-        daphne_msg "No need to build liburing again."
-    fi
+
     #------------------------------------------------------------------------------
     # 8.14 Fetch bitstreams
     #------------------------------------------------------------------------------
