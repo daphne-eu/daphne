@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/ChunkedTensor.h>
+#include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -24,11 +24,12 @@
 #include <catch.hpp>
 
 #include <cstdint>
-#include <vector>
 #include <memory>
 #include <utility>
+#include <vector>
 
-TEMPLATE_TEST_CASE("Tensor Creation", TAG_DATASTRUCTURES, double, float, uint32_t, uint64_t, int32_t, int64_t) {
+TEMPLATE_TEST_CASE("Tensor Creation", TAG_DATASTRUCTURES, double, float,
+                   uint32_t, uint64_t, int32_t, int64_t) {
     std::vector<size_t> rank0_shape = {};
     std::vector<size_t> rank1_shape = {42};
     std::vector<size_t> rank2_shape = {42, 3};
@@ -42,36 +43,47 @@ TEMPLATE_TEST_CASE("Tensor Creation", TAG_DATASTRUCTURES, double, float, uint32_
     std::vector<size_t> rank4_chunk_shape = {5, 5, 10, 2};
 
     ContiguousTensor<TestType> *ct0 =
-      DataObjectFactory::create<ContiguousTensor<TestType>>(rank0_shape, InitCode::IOTA);
+        DataObjectFactory::create<ContiguousTensor<TestType>>(rank0_shape,
+                                                              InitCode::IOTA);
     ContiguousTensor<TestType> *ct1 =
-      DataObjectFactory::create<ContiguousTensor<TestType>>(rank1_shape, InitCode::IOTA);
+        DataObjectFactory::create<ContiguousTensor<TestType>>(rank1_shape,
+                                                              InitCode::IOTA);
     ContiguousTensor<TestType> *ct2 =
-      DataObjectFactory::create<ContiguousTensor<TestType>>(rank2_shape, InitCode::IOTA);
+        DataObjectFactory::create<ContiguousTensor<TestType>>(rank2_shape,
+                                                              InitCode::IOTA);
     ContiguousTensor<TestType> *ct3 =
-      DataObjectFactory::create<ContiguousTensor<TestType>>(rank3_shape, InitCode::IOTA);
+        DataObjectFactory::create<ContiguousTensor<TestType>>(rank3_shape,
+                                                              InitCode::IOTA);
     ContiguousTensor<TestType> *ct4 =
-      DataObjectFactory::create<ContiguousTensor<TestType>>(rank4_shape, InitCode::IOTA);
+        DataObjectFactory::create<ContiguousTensor<TestType>>(rank4_shape,
+                                                              InitCode::IOTA);
 
     ChunkedTensor<TestType> *cht0 =
-      DataObjectFactory::create<ChunkedTensor<TestType>>(rank0_shape, rank0_chunk_shape, InitCode::IOTA);
+        DataObjectFactory::create<ChunkedTensor<TestType>>(
+            rank0_shape, rank0_chunk_shape, InitCode::IOTA);
     ChunkedTensor<TestType> *cht1 =
-      DataObjectFactory::create<ChunkedTensor<TestType>>(rank1_shape, rank1_chunk_shape, InitCode::IOTA);
+        DataObjectFactory::create<ChunkedTensor<TestType>>(
+            rank1_shape, rank1_chunk_shape, InitCode::IOTA);
     ChunkedTensor<TestType> *cht2 =
-      DataObjectFactory::create<ChunkedTensor<TestType>>(rank2_shape, rank2_chunk_shape, InitCode::IOTA);
+        DataObjectFactory::create<ChunkedTensor<TestType>>(
+            rank2_shape, rank2_chunk_shape, InitCode::IOTA);
     ChunkedTensor<TestType> *cht3 =
-      DataObjectFactory::create<ChunkedTensor<TestType>>(rank3_shape, rank3_chunk_shape, InitCode::IOTA);
+        DataObjectFactory::create<ChunkedTensor<TestType>>(
+            rank3_shape, rank3_chunk_shape, InitCode::IOTA);
     ChunkedTensor<TestType> *cht4 =
-      DataObjectFactory::create<ChunkedTensor<TestType>>(rank4_shape, rank4_chunk_shape, InitCode::IOTA);
+        DataObjectFactory::create<ChunkedTensor<TestType>>(
+            rank4_shape, rank4_chunk_shape, InitCode::IOTA);
 
     DataObjectFactory::destroy(ct4, ct3, ct2, ct1, ct0);
     DataObjectFactory::destroy(cht4, cht3, cht2, cht1, cht0);
 }
 
-template<typename T>
-T getIOTAValue(const std::vector<size_t> &tensor_shape, const std::vector<size_t> &ids) {
+template <typename T>
+T getIOTAValue(const std::vector<size_t> &tensor_shape,
+               const std::vector<size_t> &ids) {
     std::vector<size_t> strides;
     strides.resize(tensor_shape.size());
-    strides[0]    = 1;
+    strides[0] = 1;
     size_t result = ids[0];
     for (size_t i = 1; i < tensor_shape.size(); i++) {
         strides[i] = strides[i - 1] * tensor_shape[i - 1];
@@ -80,14 +92,8 @@ T getIOTAValue(const std::vector<size_t> &tensor_shape, const std::vector<size_t
     return static_cast<T>(result);
 }
 
-TEMPLATE_TEST_CASE("Tensor layout and accessors",
-                   TAG_DATASTRUCTURES,
-                   double,
-                   float,
-                   uint32_t,
-                   uint64_t,
-                   int32_t,
-                   int64_t) {
+TEMPLATE_TEST_CASE("Tensor layout and accessors", TAG_DATASTRUCTURES, double,
+                   float, uint32_t, uint64_t, int32_t, int64_t) {
     std::vector<size_t> tensor_shape0 = {4, 4, 4};
     std::vector<size_t> tensor_shape1 = {3, 2, 7, 5};
 
@@ -95,20 +101,25 @@ TEMPLATE_TEST_CASE("Tensor layout and accessors",
     std::vector<size_t> chunk_shape1 = {2, 4, 2, 2};
 
     ContiguousTensor<TestType> *ct0 =
-      DataObjectFactory::create<ContiguousTensor<TestType>>(tensor_shape0, InitCode::IOTA);
+        DataObjectFactory::create<ContiguousTensor<TestType>>(tensor_shape0,
+                                                              InitCode::IOTA);
     ContiguousTensor<TestType> *ct1 =
-      DataObjectFactory::create<ContiguousTensor<TestType>>(tensor_shape1, InitCode::IOTA);
+        DataObjectFactory::create<ContiguousTensor<TestType>>(tensor_shape1,
+                                                              InitCode::IOTA);
 
     ChunkedTensor<TestType> *cht0 =
-      DataObjectFactory::create<ChunkedTensor<TestType>>(tensor_shape0, chunk_shape0, InitCode::IOTA);
+        DataObjectFactory::create<ChunkedTensor<TestType>>(
+            tensor_shape0, chunk_shape0, InitCode::IOTA);
     ChunkedTensor<TestType> *cht1 =
-      DataObjectFactory::create<ChunkedTensor<TestType>>(tensor_shape1, chunk_shape1, InitCode::IOTA);
+        DataObjectFactory::create<ChunkedTensor<TestType>>(
+            tensor_shape1, chunk_shape1, InitCode::IOTA);
 
     SECTION("Manual layout check") {
-        TestType expected_chunked[64] = {0,  1,  4,  5,  16, 17, 20, 21, 2,  3,  6,  7,  18, 19, 22, 23,
-                                         8,  9,  12, 13, 24, 25, 28, 29, 10, 11, 14, 15, 26, 27, 30, 31,
-                                         32, 33, 36, 37, 48, 49, 52, 53, 34, 35, 38, 39, 50, 51, 54, 55,
-                                         40, 41, 44, 45, 56, 57, 60, 61, 42, 43, 46, 47, 58, 59, 62, 63};
+        TestType expected_chunked[64] = {
+            0,  1,  4,  5,  16, 17, 20, 21, 2,  3,  6,  7,  18, 19, 22, 23,
+            8,  9,  12, 13, 24, 25, 28, 29, 10, 11, 14, 15, 26, 27, 30, 31,
+            32, 33, 36, 37, 48, 49, 52, 53, 34, 35, 38, 39, 50, 51, 54, 55,
+            40, 41, 44, 45, 56, 57, 60, 61, 42, 43, 46, 47, 58, 59, 62, 63};
 
         for (int i = 0; i < 64; i++) {
             REQUIRE(cht0->data[i] == expected_chunked[i]);
@@ -120,8 +131,10 @@ TEMPLATE_TEST_CASE("Tensor layout and accessors",
             for (size_t j = 0; j < 4; j++) {
                 for (size_t k = 0; k < 4; k++) {
                     std::vector<size_t> ids = {i, j, k};
-                    REQUIRE(ct0->get(ids) == getIOTAValue<TestType>(tensor_shape0, ids));
-                    REQUIRE(cht0->get(ids) == getIOTAValue<TestType>(tensor_shape0, ids));
+                    REQUIRE(ct0->get(ids) ==
+                            getIOTAValue<TestType>(tensor_shape0, ids));
+                    REQUIRE(cht0->get(ids) ==
+                            getIOTAValue<TestType>(tensor_shape0, ids));
                 }
             }
         }
@@ -131,8 +144,10 @@ TEMPLATE_TEST_CASE("Tensor layout and accessors",
                 for (size_t k = 0; k < 7; k++) {
                     for (size_t n = 0; n < 5; n++) {
                         std::vector<size_t> ids = {i, j, k, n};
-                        REQUIRE(ct1->get(ids) == getIOTAValue<TestType>(tensor_shape1, ids));
-                        REQUIRE(cht1->get(ids) == getIOTAValue<TestType>(tensor_shape1, ids));
+                        REQUIRE(ct1->get(ids) ==
+                                getIOTAValue<TestType>(tensor_shape1, ids));
+                        REQUIRE(cht1->get(ids) ==
+                                getIOTAValue<TestType>(tensor_shape1, ids));
                     }
                 }
             }
@@ -148,7 +163,8 @@ TEMPLATE_TEST_CASE("Tensor layout and accessors",
                     ct0->set(ids, test_value);
                     REQUIRE(ct0->get(ids) == static_cast<TestType>(test_value));
                     cht0->set(ids, test_value);
-                    REQUIRE(cht0->get(ids) == static_cast<TestType>(test_value));
+                    REQUIRE(cht0->get(ids) ==
+                            static_cast<TestType>(test_value));
 
                     test_value += 42;
                 }
@@ -161,9 +177,11 @@ TEMPLATE_TEST_CASE("Tensor layout and accessors",
                     for (size_t n = 0; n < 5; n++) {
                         std::vector<size_t> ids = {i, j, k, n};
                         ct1->set(ids, test_value);
-                        REQUIRE(ct1->get(ids) == static_cast<TestType>(test_value));
+                        REQUIRE(ct1->get(ids) ==
+                                static_cast<TestType>(test_value));
                         cht1->set(ids, test_value);
-                        REQUIRE(cht1->get(ids) == static_cast<TestType>(test_value));
+                        REQUIRE(cht1->get(ids) ==
+                                static_cast<TestType>(test_value));
 
                         test_value += 42;
                     }
@@ -177,24 +195,22 @@ TEMPLATE_TEST_CASE("Tensor layout and accessors",
 }
 
 TEMPLATE_TEST_CASE("Tensor dicing, rechunking and conversions",
-                   TAG_DATASTRUCTURES,
-                   double,
-                   float,
-                   uint32_t,
-                   uint64_t,
-                   int32_t,
-                   int64_t) {
+                   TAG_DATASTRUCTURES, double, float, uint32_t, uint64_t,
+                   int32_t, int64_t) {
     std::vector<size_t> tensor_shape = {3, 4, 2};
-    std::vector<size_t> chunk_shape  = {2, 2, 2};
+    std::vector<size_t> chunk_shape = {2, 2, 2};
 
     ContiguousTensor<TestType> *ct =
-      DataObjectFactory::create<ContiguousTensor<TestType>>(tensor_shape, InitCode::IOTA);
+        DataObjectFactory::create<ContiguousTensor<TestType>>(tensor_shape,
+                                                              InitCode::IOTA);
     ChunkedTensor<TestType> *cht =
-      DataObjectFactory::create<ChunkedTensor<TestType>>(tensor_shape, chunk_shape, InitCode::IOTA);
+        DataObjectFactory::create<ChunkedTensor<TestType>>(
+            tensor_shape, chunk_shape, InitCode::IOTA);
 
     SECTION(".dice() and variants") {
-        std::vector<std::pair<size_t, size_t>> dice_range = {{1, 3}, {3, 4}, {0, 2}};
-        ContiguousTensor<TestType> *dice0                 = ct->tryDice(dice_range);
+        std::vector<std::pair<size_t, size_t>> dice_range = {
+            {1, 3}, {3, 4}, {0, 2}};
+        ContiguousTensor<TestType> *dice0 = ct->tryDice(dice_range);
 
         REQUIRE(dice0 != nullptr);
         REQUIRE(dice0->get({0, 0, 0}) == 10);
@@ -210,7 +226,8 @@ TEMPLATE_TEST_CASE("Tensor dicing, rechunking and conversions",
         REQUIRE(dice1->get({0, 0, 1}) == 22);
         REQUIRE(dice1->get({1, 0, 1}) == 23);
 
-        ContiguousTensor<TestType> *dice3 = cht->tryDiceToContiguousTensor(dice_range);
+        ContiguousTensor<TestType> *dice3 =
+            cht->tryDiceToContiguousTensor(dice_range);
 
         REQUIRE(dice3 != nullptr);
         REQUIRE(dice3->data[0] == 10);
@@ -218,8 +235,10 @@ TEMPLATE_TEST_CASE("Tensor dicing, rechunking and conversions",
         REQUIRE(dice3->data[2] == 22);
         REQUIRE(dice3->data[3] == 23);
 
-        std::vector<std::pair<size_t, size_t>> dice_chunk_range = {{0, 1}, {1, 2}, {0, 1}};
-        ChunkedTensor<TestType> *dice4                          = cht->tryDiceAtChunkLvl(dice_chunk_range);
+        std::vector<std::pair<size_t, size_t>> dice_chunk_range = {
+            {0, 1}, {1, 2}, {0, 1}};
+        ChunkedTensor<TestType> *dice4 =
+            cht->tryDiceAtChunkLvl(dice_chunk_range);
 
         REQUIRE(dice4 != nullptr);
         REQUIRE(dice4->data[0] == 6);
@@ -237,7 +256,8 @@ TEMPLATE_TEST_CASE("Tensor dicing, rechunking and conversions",
 
     SECTION(".rechunk()") {
         ChunkedTensor<TestType> *cht1 =
-          DataObjectFactory::create<ChunkedTensor<TestType>>(tensor_shape, chunk_shape, InitCode::IOTA);
+            DataObjectFactory::create<ChunkedTensor<TestType>>(
+                tensor_shape, chunk_shape, InitCode::IOTA);
         REQUIRE(cht1->tryRechunk({2, 4, 2}));
 
         for (size_t i = 0; i < 3; i++) {
@@ -252,19 +272,23 @@ TEMPLATE_TEST_CASE("Tensor dicing, rechunking and conversions",
     }
 
     SECTION("Converion: contiguous -> chunked") {
-        ChunkedTensor<TestType> *cht1 = DataObjectFactory::create<ChunkedTensor<TestType>>(ct);
+        ChunkedTensor<TestType> *cht1 =
+            DataObjectFactory::create<ChunkedTensor<TestType>>(ct);
         REQUIRE(areLogicalElementsEqual(*ct, *cht1));
         DataObjectFactory::destroy(cht1);
     }
 
     SECTION("Converion: DenseMatrix -> rank 2 ContiguousTensor") {
-        std::shared_ptr<TestType[]> data(new TestType[12], std::default_delete<TestType[]>());
+        std::shared_ptr<TestType[]> data(new TestType[12],
+                                         std::default_delete<TestType[]>());
         for (size_t i = 0; i < 12; i++) {
             data[i] = i;
         }
 
-        DenseMatrix<TestType> *matrix   = DataObjectFactory::create<DenseMatrix<TestType>>(3, 4, data);
-        ContiguousTensor<TestType> *ct1 = DataObjectFactory::create<ContiguousTensor<TestType>>(matrix);
+        DenseMatrix<TestType> *matrix =
+            DataObjectFactory::create<DenseMatrix<TestType>>(3, 4, data);
+        ContiguousTensor<TestType> *ct1 =
+            DataObjectFactory::create<ContiguousTensor<TestType>>(matrix);
 
         for (size_t i = 0; i < 4; i++) {
             for (size_t j = 0; j < 3; j++) {
@@ -279,9 +303,11 @@ TEMPLATE_TEST_CASE("Tensor dicing, rechunking and conversions",
 
     SECTION("Converion: rank 2 ContiguousTensor -> DenseMatrix") {
         ContiguousTensor<TestType> *ct1 =
-          DataObjectFactory::create<ContiguousTensor<TestType>>(std::vector<size_t>({4, 3}), InitCode::IOTA);
+            DataObjectFactory::create<ContiguousTensor<TestType>>(
+                std::vector<size_t>({4, 3}), InitCode::IOTA);
         ContiguousTensor<TestType> *ct2 =
-          DataObjectFactory::create<ContiguousTensor<TestType>>(std::vector<size_t>({4, 3, 3}), InitCode::IOTA);
+            DataObjectFactory::create<ContiguousTensor<TestType>>(
+                std::vector<size_t>({4, 3, 3}), InitCode::IOTA);
 
         REQUIRE(!(ct2->tryToGetDenseMatrix()));
         DenseMatrix<TestType> *matrix = ct1->tryToGetDenseMatrix();

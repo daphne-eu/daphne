@@ -26,12 +26,11 @@
 const std::string dirPath = "test/api/cli/codegen/";
 
 TEST_CASE("mapOp", TAG_CODEGEN) {
-    std::string result =
-        "DenseMatrix(2x2, double)\n"
-        "2.1 1\n"
-        "6.5 -1.2\n";
+    std::string result = "DenseMatrix(2x2, double)\n"
+                         "2.1 1\n"
+                         "6.5 -1.2\n";
 
     compareDaphneToStr(result, dirPath + "map.daphne");
-    compareDaphneToStr(result, dirPath + "map.daphne", "--mlir-codegen", "--no-obj-ref-mgnt");
+    compareDaphneToStr(result, dirPath + "map.daphne", "--mlir-codegen",
+                       "--no-obj-ref-mgnt");
 }
-

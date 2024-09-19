@@ -14,28 +14,30 @@
  * limitations under the License.
  */
 
-
 #include "run_tests.h"
 
 #include "runtime/local/datagen/GenGivenVals.h"
 #include "runtime/local/kernels/CUDA/Activation.h"
 
-template<class OP, class DT>
-void check(const DT* in, const DT* exp, DaphneContext* dctx) {
-    DT* res = nullptr;
+template <class OP, class DT>
+void check(const DT *in, const DT *exp, DaphneContext *dctx) {
+    DT *res = nullptr;
     CUDA::NN::Activation::Forward<OP, DT, DT>::apply(res, in, dctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Activation::ReLU::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Activation::ReLU::Forward", TAG_DNN,
+                           (DenseMatrix),
+                           (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
     auto dctx = setupContextAndLogger();
 
-    auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
+    auto input = genGivenVals<DT>(1, {-3, -2, -1, 0, 1, 2, 3, 4, 5});
 
-    // expected output when used with settings filter 2x2, stride 1x1, padding 0x0
-    auto result = genGivenVals<DT>(1, { 0, 0, 0, 0, 1, 2, 3, 4, 5 });
+    // expected output when used with settings filter 2x2, stride 1x1, padding
+    // 0x0
+    auto result = genGivenVals<DT>(1, {0, 0, 0, 0, 1, 2, 3, 4, 5});
 
     check<CUDA::NN::Activation::ReLU>(input, result, dctx.get());
 

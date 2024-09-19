@@ -25,14 +25,14 @@
 
 const std::string dirPath = "test/api/cli/codegen/";
 
-void test_binary_lowering(const std::string op,
-                          const std::string kernel_call,
+void test_binary_lowering(const std::string op, const std::string kernel_call,
                           const std::string lowering,
                           const std::string result) {
     std::stringstream out;
     std::stringstream err;
 
-    int status = runDaphne(out, err, "--explain", "llvm", (dirPath + op + ".daphne").c_str());
+    int status = runDaphne(out, err, "--explain", "llvm",
+                           (dirPath + op + ".daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
 
     CHECK_THAT(err.str(), Catch::Contains(kernel_call));
@@ -42,7 +42,8 @@ void test_binary_lowering(const std::string op,
     out.str(std::string());
     err.str(std::string());
 
-    status = runDaphne(out, err, "--explain", "llvm", "--mlir-codegen", (dirPath + op + ".daphne").c_str());
+    status = runDaphne(out, err, "--explain", "llvm", "--mlir-codegen",
+                       (dirPath + op + ".daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
 
     CHECK_THAT(err.str(), !Catch::Contains(kernel_call));

@@ -16,19 +16,20 @@
 
 #include "run_tests.h"
 
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
 #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
-#include <runtime/local/kernels/Fill.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CUDA/Fill.h>
+#include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/Fill.h>
 
-#include <tags.h>
 #include <catch.hpp>
+#include <tags.h>
 
-template<class DTRes>
-void checkFill(const typename DTRes::VT val, const size_t rows, const size_t cols, DaphneContext* ctx) {
-    DTRes* res = nullptr;
-    DTRes* exp = nullptr;
+template <class DTRes>
+void checkFill(const typename DTRes::VT val, const size_t rows,
+               const size_t cols, DaphneContext *ctx) {
+    DTRes *res = nullptr;
+    DTRes *exp = nullptr;
     CUDA::Fill<DTRes, typename DTRes::VT>::apply(res, val, rows, cols, ctx);
     fill<DTRes, typename DTRes::VT>(exp, val, rows, cols, ctx);
 
@@ -38,14 +39,16 @@ void checkFill(const typename DTRes::VT val, const size_t rows, const size_t col
     DataObjectFactory::destroy(exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix),
+                           (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
 
     checkFill<TestType>(0, 123, 456, dctx.get());
     checkFill<TestType>(123.45, 123, 456, dctx.get());
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix), (int64_t, uint8_t)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix),
+                           (int64_t, uint8_t)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
 
     checkFill<TestType>(0, 123, 456, dctx.get());

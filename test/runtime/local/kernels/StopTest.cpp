@@ -16,9 +16,9 @@
 
 #include <runtime/local/kernels/Stop.h>
 
-#include <catch.hpp>
 #include "run_tests.h"
+#include <catch.hpp>
 
-TEST_CASE ("Stop - check throws") {
+TEST_CASE("Stop - check throws") {
     REQUIRE_THROWS_AS((stop("Custom Message", nullptr)), std::runtime_error);
 }
