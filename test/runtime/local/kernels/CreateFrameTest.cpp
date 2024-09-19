@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/CreateFrame.h>
 
@@ -30,30 +30,30 @@
 TEST_CASE("CreateFrame", TAG_KERNELS) {
     const size_t numRows = 4;
     const size_t numCols = 3;
-    
+
     using VT0 = int64_t;
     using VT1 = double;
     using VT2 = float;
-    
+
     auto c0 = genGivenVals<DenseMatrix<VT0>>(numRows, {1, 2, 3, 4});
     auto c1 = genGivenVals<DenseMatrix<VT1>>(numRows, {-1.2, 3.4, -5.6, 7.8});
     auto c2 = genGivenVals<DenseMatrix<VT2>>(numRows, {11.1, 22.2, 33.3, 44.4});
-    
-    Frame * f = nullptr;
-    Structure * colMats[] = {c0, c1, c2};
+
+    Frame *f = nullptr;
+    Structure *colMats[] = {c0, c1, c2};
     SECTION("without column labels") {
         createFrame(f, colMats, numCols, nullptr, 0, nullptr);
     }
     SECTION("with column labels") {
-        const char * labels[] = {"ab", "cde", "fghi"};
+        const char *labels[] = {"ab", "cde", "fghi"};
         createFrame(f, colMats, numCols, labels, numCols, nullptr);
-        
+
         // Check column data, access by label.
         CHECK(*(f->template getColumn<VT0>("ab")) == *c0);
         CHECK(*(f->template getColumn<VT1>("cde")) == *c1);
         CHECK(*(f->template getColumn<VT2>("fghi")) == *c2);
     }
-    
+
     // Check #rows and #cols.
     REQUIRE(f->getNumRows() == numRows);
     REQUIRE(f->getNumCols() == numCols);
@@ -66,7 +66,7 @@ TEST_CASE("CreateFrame", TAG_KERNELS) {
     CHECK(*(f->template getColumn<VT0>(0)) == *c0);
     CHECK(*(f->template getColumn<VT1>(1)) == *c1);
     CHECK(*(f->template getColumn<VT2>(2)) == *c2);
-    
+
     DataObjectFactory::destroy(c0);
     DataObjectFactory::destroy(c1);
     DataObjectFactory::destroy(c2);

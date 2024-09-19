@@ -34,12 +34,12 @@ TEST_CASE("castSca, actual casts", TAG_KERNELS) {
     CHECK(castSca<int64_t, double>(-123.4, nullptr) == -123);
     CHECK(castSca<double, int64_t>(123, nullptr) == 123.0);
     CHECK(castSca<double, int64_t>(-123, nullptr) == -123.0);
-    
+
     CHECK(castSca<int64_t, bool>(false, nullptr) == 0);
     CHECK(castSca<int64_t, bool>(true, nullptr) == 1);
     CHECK(castSca<double, bool>(false, nullptr) == 0.0);
     CHECK(castSca<double, bool>(true, nullptr) == 1.0);
-    
+
     CHECK(castSca<bool, int64_t>(123, nullptr) == true);
     CHECK(castSca<bool, int64_t>(-123, nullptr) == true);
     CHECK(castSca<bool, int64_t>(0, nullptr) == false);

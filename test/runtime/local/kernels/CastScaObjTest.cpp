@@ -20,22 +20,25 @@
 #include <runtime/local/kernels/CastScaObj.h>
 #include <runtime/local/kernels/CheckEq.h>
 
-#include <tags.h>
 #include <catch.hpp>
-#include <vector>
 #include <cstdint>
+#include <tags.h>
+#include <vector>
 
-TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to matrix", TAG_KERNELS, (DenseMatrix), (double, float, int64_t, uint64_t, int32_t, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to matrix", TAG_KERNELS,
+                           (DenseMatrix),
+                           (double, float, int64_t, uint64_t, int32_t,
+                            uint32_t)) {
     using DTRes = TestType;
     using VTRes = typename DTRes::VT;
-    DTRes* res = nullptr;
-    DTRes* exp = nullptr;
+    DTRes *res = nullptr;
+    DTRes *exp = nullptr;
 
     SECTION("int64_t to DenseMatrix<VTRes>") {
         int64_t val = 2;
         exp = genGivenVals<DTRes>(1, {VTRes(val)});
         castScaObj<DTRes, int64_t>(res, val, nullptr);
-        CHECK(*res == *exp); 
+        CHECK(*res == *exp);
     }
 
     SECTION("double to DenseMatrix<VTRes>") {
@@ -44,22 +47,24 @@ TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to matrix", TAG_KERNELS, (DenseMa
         castScaObj<DTRes, double>(res, val, nullptr);
         CHECK(*res == *exp);
     }
-    DataObjectFactory::destroy(exp); 
+    DataObjectFactory::destroy(exp);
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+TEMPLATE_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, double, float,
+                   int64_t, uint64_t, int32_t, uint32_t) {
     using VTRes = TestType;
-    Frame* exp = nullptr;
+    Frame *exp = nullptr;
     std::vector<Structure *> cols;
     SECTION("double to Frame[VTRes]") {
         double val = 2.2;
 
-        auto m0 = genGivenVals<DenseMatrix<VTRes>>(1, {static_cast<VTRes>(val)});
+        auto m0 =
+            genGivenVals<DenseMatrix<VTRes>>(1, {static_cast<VTRes>(val)});
         cols = {m0};
         exp = DataObjectFactory::create<Frame>(cols, nullptr);
 
-        Frame* res = nullptr;
+        Frame *res = nullptr;
         castScaObj<Frame, VTRes>(res, val, nullptr);
         CHECK(*res == *exp);
 
@@ -69,14 +74,15 @@ TEMPLATE_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, double, float, in
     SECTION("int64_t to Frame[VTRes]") {
         int64_t val = 2;
 
-        auto m0 = genGivenVals<DenseMatrix<VTRes>>(1, {static_cast<VTRes>(val)});
+        auto m0 =
+            genGivenVals<DenseMatrix<VTRes>>(1, {static_cast<VTRes>(val)});
         cols = {m0};
         exp = DataObjectFactory::create<Frame>(cols, nullptr);
 
-        Frame* res = nullptr;
+        Frame *res = nullptr;
         castScaObj<Frame, VTRes>(res, val, nullptr);
         CHECK(*res == *exp);
-        
+
         DataObjectFactory::destroy(m0, exp, res);
     }
 }

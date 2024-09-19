@@ -17,9 +17,9 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/EigenCal.h>
-#include <runtime/local/kernels/CheckEq.h>
 
 #include <tags.h>
 
@@ -29,40 +29,27 @@
 
 #include <cstdint>
 
-
-template<class DT>
-void checkEigenCal(const DT * inMat, const DT * exp1, const DT * exp2) {
-    DT * res1 = nullptr;
-    DT * res2 = nullptr;
-    eigenCal<DT,DT, DT>(res1, res2, inMat, nullptr);  
+template <class DT>
+void checkEigenCal(const DT *inMat, const DT *exp1, const DT *exp2) {
+    DT *res1 = nullptr;
+    DT *res2 = nullptr;
+    eigenCal<DT, DT, DT>(res1, res2, inMat, nullptr);
     CHECK(checkEqApprox(res1, exp1, 1e-2, nullptr));
     CHECK(checkEqApprox(res2, exp2, 1e-2, nullptr));
     DataObjectFactory::destroy(res1);
     DataObjectFactory::destroy(res2);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE("EigenCal", TAG_KERNELS, (DenseMatrix),
+                           (double, float)) {
+    using DT = TestType;
+    auto m0 = genGivenVals<DT>(3, {504, 360, 180, 360, 360, 0, 180, 0, 720});
 
-TEMPLATE_PRODUCT_TEST_CASE("EigenCal", TAG_KERNELS, (DenseMatrix), (double, float)) {
-    using DT=TestType;
-      auto m0 = genGivenVals<DT>(3, {
-        504, 360, 180,	
-        360, 360, 0,
-        180, 0,	720       
-    });
+    auto m1 = genGivenVals<DT>(3, {-0.648, 0.655, -0.385,
 
-        auto m1 = genGivenVals<DT>(3, {
-       -0.648, 0.655, -0.385,
+                                   0.741, 0.429, -0.516, 0.172, 0.621, 0.764});
+    auto v0 = genGivenVals<DT>(3, {44.819, 910.07, 629.11});
 
-        0.741, 0.429, -0.516,
-        0.172, 0.621, 0.764
-    });
-    auto v0 = genGivenVals<DT>(3, {
-        44.819,
-        910.07,
-        629.11       
-    });
-    
     checkEigenCal(m0, v0, m1);
-    DataObjectFactory::destroy(m0, m1,  v0);
+    DataObjectFactory::destroy(m0, m1, v0);
 }
-

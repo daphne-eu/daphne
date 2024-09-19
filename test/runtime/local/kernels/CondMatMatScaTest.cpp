@@ -29,37 +29,28 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int64_t, double
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES),
+                           (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
-    DT * argCond = nullptr;
-    DT * argThen = nullptr;
+    DT *argCond = nullptr;
+    DT *argThen = nullptr;
     VT argElse;
-    DT * exp = nullptr;
+    DT *exp = nullptr;
 
     SECTION("example 1") {
-        argCond = genGivenVals<DT>(3, {
-            true, false, false,
-            false, true, false,
-            false, false, true
-        });
-        argThen = genGivenVals<DT>(3, {
-            VT(1.5), 2, 3,
-            4,       5, 6,
-            7,       8, 9
-        });
+        argCond = genGivenVals<DT>(
+            3, {true, false, false, false, true, false, false, false, true});
+        argThen = genGivenVals<DT>(3, {VT(1.5), 2, 3, 4, 5, 6, 7, 8, 9});
 
         argElse = VT(-1.5);
 
-        exp = genGivenVals<DT>(3, {
-            VT(1.5), argElse, argElse,
-            argElse, 5,       argElse,
-            argElse, argElse, 9
-        });
+        exp = genGivenVals<DT>(3, {VT(1.5), argElse, argElse, argElse, 5,
+                                   argElse, argElse, argElse, 9});
     }
 
-    DT * res = nullptr;
+    DT *res = nullptr;
     condMatMatSca(res, argCond, argThen, argElse, nullptr);
 
     CHECK(*res == *exp);
@@ -67,31 +58,27 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALU
     DataObjectFactory::destroy(argCond, argThen, exp, res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("invalid shape"), TAG_KERNELS, (DATA_TYPES), (int64_t)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("invalid shape"), TAG_KERNELS,
+                           (DATA_TYPES), (int64_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
-    DT * argCond = genGivenVals<DT>(3, {
-        true, false, false,
-        false, true, false,
-        false, false, true
-    });
-    
-    DT * argThen = nullptr;
+    DT *argCond = genGivenVals<DT>(
+        3, {true, false, false, false, true, false, false, false, true});
+
+    DT *argThen = nullptr;
     VT argElse;
 
     SECTION("then matrix too small") {
-        argThen = genGivenVals<DT>(2, {
-            VT(1.5), 2, 3,
-            4,       5, 6
-        });
+        argThen = genGivenVals<DT>(2, {VT(1.5), 2, 3, 4, 5, 6});
 
         argElse = VT(-1.5);
     }
 
-    DT * res = nullptr;
+    DT *res = nullptr;
 
-    REQUIRE_THROWS_AS(condMatMatSca(res, argCond, argThen, argElse, nullptr), std::runtime_error);
+    REQUIRE_THROWS_AS(condMatMatSca(res, argCond, argThen, argElse, nullptr),
+                      std::runtime_error);
 
     DataObjectFactory::destroy(argCond, argThen);
     if (res != nullptr)

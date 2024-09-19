@@ -32,16 +32,17 @@
 
 TEST_CASE("SemiJoin", TAG_KERNELS) {
     // lhs
-    auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(4, { 1,  2,  3,  4});
-    auto lhsC1 = genGivenVals<DenseMatrix<double>>(4, {11.0, 22.0, 33.0, 44.00});
+    auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(4, {1, 2, 3, 4});
+    auto lhsC1 =
+        genGivenVals<DenseMatrix<double>>(4, {11.0, 22.0, 33.0, 44.00});
     std::vector<Structure *> lhsCols = {lhsC0, lhsC1};
     std::string lhsLabels[] = {"a", "b"};
     auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
 
     // rhs
-    auto rhsC0 = genGivenVals<DenseMatrix<int64_t>>(3, { 1, 4, 5});
-    auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(3, { -1, -4, -5});
-    auto rhsC2 = genGivenVals<DenseMatrix<double >>(3, {0.1, 0.2, 0.3});
+    auto rhsC0 = genGivenVals<DenseMatrix<int64_t>>(3, {1, 4, 5});
+    auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(3, {-1, -4, -5});
+    auto rhsC2 = genGivenVals<DenseMatrix<double>>(3, {0.1, 0.2, 0.3});
     std::vector<Structure *> rhsCols = {rhsC0, rhsC1, rhsC2};
     std::string rhsLabels[] = {"c", "d", "e"};
     auto rhs = DataObjectFactory::create<Frame>(rhsCols, rhsLabels);
@@ -56,13 +57,13 @@ TEST_CASE("SemiJoin", TAG_KERNELS) {
     auto expTid = genGivenVals<DenseMatrix<int64_t>>(2, {0, 3});
 
     // res
-    Frame * res = nullptr;
-    DenseMatrix<int64_t> * lhsTid = nullptr;
+    Frame *res = nullptr;
+    DenseMatrix<int64_t> *lhsTid = nullptr;
     semiJoin(res, lhsTid, lhs, rhs, "a", "c", nullptr);
 
     CHECK(*res == *expRes);
     CHECK(*lhsTid == *expTid);
 
-    DataObjectFactory::destroy(lhs, rhs, expRes, expTid, res, lhsTid,
-                            lhsC0, lhsC1, rhsC0, rhsC1, rhsC2, expResC0);
+    DataObjectFactory::destroy(lhs, rhs, expRes, expTid, res, lhsTid, lhsC0,
+                               lhsC1, rhsC0, rhsC1, rhsC2, expResC0);
 }

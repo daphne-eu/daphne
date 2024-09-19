@@ -24,22 +24,23 @@
 
 const std::string dirPath = "test/api/cli/operations/";
 
-#define MAKE_TEST_CASE(name, count) \
-    TEST_CASE(name, TAG_OPERATIONS) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                compareDaphneToRefSimple(dirPath, name, i); \
-            } \
-        } \
+#define MAKE_TEST_CASE(name, count)                                            \
+    TEST_CASE(name, TAG_OPERATIONS) {                                          \
+        for (unsigned i = 1; i <= count; i++) {                                \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") {                      \
+                compareDaphneToRefSimple(dirPath, name, i);                    \
+            }                                                                  \
+        }                                                                      \
     }
 
-#define MAKE_TEST_CASE_SPARSE(name, count) \
-    TEST_CASE(name, TAG_OPERATIONS) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                compareDaphneToRefSimple(dirPath, name, i, "--select-matrix-repr=1"); \
-            } \
-        } \
+#define MAKE_TEST_CASE_SPARSE(name, count)                                     \
+    TEST_CASE(name, TAG_OPERATIONS) {                                          \
+        for (unsigned i = 1; i <= count; i++) {                                \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") {                      \
+                compareDaphneToRefSimple(dirPath, name, i,                     \
+                                         "--select-matrix-repr=1");            \
+            }                                                                  \
+        }                                                                      \
     }
 
 MAKE_TEST_CASE("typeOf", 2)

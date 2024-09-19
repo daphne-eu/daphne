@@ -37,22 +37,25 @@
  */
 TEST_CASE("GroupJoin", TAG_KERNELS) {
     // lhs is a kind of dimension table.
-    auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(3, { 1,  2,  3});
+    auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(3, {1, 2, 3});
     auto lhsC1 = genGivenVals<DenseMatrix<int64_t>>(3, {11, 22, 33});
     std::vector<Structure *> lhsCols = {lhsC0, lhsC1};
     std::string lhsLabels[] = {"d.id", "d.foo"};
     auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
-    
+
     // rhs is a kind of fact table.
-    auto rhsC0 = genGivenVals<DenseMatrix<int64_t>>(10, { 1,  1,  1,  3,  1,  3,  3,  1,  3,  3});
-    auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(10, {42, 42, 42, 42, 42, 42, 42, 42, 42, 42});
-    auto rhsC2 = genGivenVals<DenseMatrix<double >>(10, {10, 20, 30, 10, 20, 30, 10, 20, 30, 10});
+    auto rhsC0 =
+        genGivenVals<DenseMatrix<int64_t>>(10, {1, 1, 1, 3, 1, 3, 3, 1, 3, 3});
+    auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(
+        10, {42, 42, 42, 42, 42, 42, 42, 42, 42, 42});
+    auto rhsC2 = genGivenVals<DenseMatrix<double>>(
+        10, {10, 20, 30, 10, 20, 30, 10, 20, 30, 10});
     std::vector<Structure *> rhsCols = {rhsC0, rhsC1, rhsC2};
     std::string rhsLabels[] = {"f.id", "f.bar", "f.agg"};
     auto rhs = DataObjectFactory::create<Frame>(rhsCols, rhsLabels);
-    
-    Frame * res = nullptr;
-    DenseMatrix<size_t> * lhsTid = nullptr;
+
+    Frame *res = nullptr;
+    DenseMatrix<size_t> *lhsTid = nullptr;
     groupJoin<size_t>(res, lhsTid, lhs, rhs, "d.id", "f.id", "f.agg", nullptr);
 
     // Check the meta data.
@@ -64,7 +67,7 @@ TEST_CASE("GroupJoin", TAG_KERNELS) {
     CHECK(res->getLabels()[1] == "SUM(f.agg)");
     CHECK(lhsTid->getNumRows() == 2);
     CHECK(lhsTid->getNumCols() == 1);
-    
+
     // Check the data.
 #if 0
     // TODO Since any order of rows would be correct, we should sort before the
@@ -78,17 +81,17 @@ TEST_CASE("GroupJoin", TAG_KERNELS) {
 #else
     auto resC0Fnd = res->getColumn<int64_t>(0);
     auto resC1Fnd = res->getColumn<double>(1);
-    const bool dataGood = (
-        // the one order
-        resC0Fnd->get(0, 0) ==   1 && resC0Fnd->get(1, 0) ==  3 &&
-        resC1Fnd->get(0, 0) == 100 && resC1Fnd->get(1, 0) == 90 &&
-        lhsTid  ->get(0, 0) ==   0 && lhsTid  ->get(1, 0) ==  2
-    ) || (
-        // the other order
-        resC0Fnd->get(1, 0) ==   1 && resC0Fnd->get(0, 0) ==  3 &&
-        resC1Fnd->get(1, 0) == 100 && resC1Fnd->get(0, 0) == 90 &&
-        lhsTid  ->get(1, 0) ==   0 && lhsTid  ->get(0, 0) ==  2
-    );
+    const bool dataGood =
+        (
+            // the one order
+            resC0Fnd->get(0, 0) == 1 && resC0Fnd->get(1, 0) == 3 &&
+            resC1Fnd->get(0, 0) == 100 && resC1Fnd->get(1, 0) == 90 &&
+            lhsTid->get(0, 0) == 0 && lhsTid->get(1, 0) == 2) ||
+        (
+            // the other order
+            resC0Fnd->get(1, 0) == 1 && resC0Fnd->get(0, 0) == 3 &&
+            resC1Fnd->get(1, 0) == 100 && resC1Fnd->get(0, 0) == 90 &&
+            lhsTid->get(1, 0) == 0 && lhsTid->get(0, 0) == 2);
     CHECK(dataGood);
 #endif
 }

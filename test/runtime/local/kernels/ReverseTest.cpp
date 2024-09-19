@@ -17,8 +17,8 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Structure.h>
-#include <runtime/local/kernels/Reverse.h>
 #include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/Reverse.h>
 
 #include <tags.h>
 
@@ -31,71 +31,106 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
-TEMPLATE_PRODUCT_TEST_CASE("Reverse", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Reverse", TAG_KERNELS, (DATA_TYPES),
+                           (VALUE_TYPES)) {
     using DT = TestType;
-    
-    DT * arg = nullptr;
-    DT * exp = nullptr;
+
+    DT *arg = nullptr;
+    DT *exp = nullptr;
     SECTION("general matrix 1") {
         arg = genGivenVals<DT>(3, {
-            1, 2,
-            3, 4,
-            5, 6,
-        });
+                                      1,
+                                      2,
+                                      3,
+                                      4,
+                                      5,
+                                      6,
+                                  });
         exp = genGivenVals<DT>(3, {
-            5, 6,
-            3, 4,
-            1, 2,
-        });
+                                      5,
+                                      6,
+                                      3,
+                                      4,
+                                      1,
+                                      2,
+                                  });
     }
     SECTION("general matrix 2") {
         arg = genGivenVals<DT>(3, {
-           1, 2, 3,
-           4, 5, 6,
-           7, 8, 9,
-        });
+                                      1,
+                                      2,
+                                      3,
+                                      4,
+                                      5,
+                                      6,
+                                      7,
+                                      8,
+                                      9,
+                                  });
         exp = genGivenVals<DT>(3, {
-           7, 8, 9,
-           4, 5, 6,
-           1, 2, 3,
-        });
+                                      7,
+                                      8,
+                                      9,
+                                      4,
+                                      5,
+                                      6,
+                                      1,
+                                      2,
+                                      3,
+                                  });
     }
     SECTION("column matrix") {
         arg = genGivenVals<DT>(9, {
-           1,
-           2,
-           3,
-           4,
-           5,
-           6,
-           7,
-           8,
-           9,
-        });
+                                      1,
+                                      2,
+                                      3,
+                                      4,
+                                      5,
+                                      6,
+                                      7,
+                                      8,
+                                      9,
+                                  });
         exp = genGivenVals<DT>(9, {
-           9,
-           8,
-           7,
-           6,
-           5,
-           4,
-           3,
-           2,
-           1,
-        });
+                                      9,
+                                      8,
+                                      7,
+                                      6,
+                                      5,
+                                      4,
+                                      3,
+                                      2,
+                                      1,
+                                  });
     }
     SECTION("row matrix") {
         arg = genGivenVals<DT>(1, {
-           1, 2, 3, 4, 5, 6, 7, 8, 9,
-        });
+                                      1,
+                                      2,
+                                      3,
+                                      4,
+                                      5,
+                                      6,
+                                      7,
+                                      8,
+                                      9,
+                                  });
         exp = genGivenVals<DT>(1, {
-           1, 2, 3, 4, 5, 6, 7, 8, 9,
-        });
+                                      1,
+                                      2,
+                                      3,
+                                      4,
+                                      5,
+                                      6,
+                                      7,
+                                      8,
+                                      9,
+                                  });
     }
 
     DT *res = nullptr;
     reverse<DT, DT>(res, arg, nullptr);
     CHECK(*res == *exp);
-    
+
     DataObjectFactory::destroy(arg, exp, res);
 }

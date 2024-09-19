@@ -16,13 +16,14 @@
 
 #pragma once
 
-#include <catch.hpp>
 #include "tags.h"
+#include <catch.hpp>
 
 #include <runtime/local/context/DaphneContext.h>
 
 static DaphneUserConfig user_config{};
-static KernelDispatchMapping &dispatchMapping = KernelDispatchMapping::instance();
+static KernelDispatchMapping &dispatchMapping =
+    KernelDispatchMapping::instance();
 
 static std::unique_ptr<DaphneLogger> logger;
 

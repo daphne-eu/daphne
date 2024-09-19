@@ -22,45 +22,46 @@
 
 #include <catch.hpp>
 
-TEMPLATE_PRODUCT_TEST_CASE("Sample", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Sample", TAG_KERNELS, (DenseMatrix),
+                           (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
-    DT * m = nullptr;    
+    DT *m = nullptr;
     const size_t size = 10000;
     const VT range = 10000;
-    bool withReplacement;    
-    
-    SECTION("with replacement"){
+    bool withReplacement;
+
+    SECTION("with replacement") {
         withReplacement = true;
-    
+
         sample<DT, VT>(m, range, size, withReplacement, -1, nullptr);
 
         REQUIRE(m->getNumRows() == size);
         REQUIRE(m->getNumCols() == 1);
 
-        VT *values = m->getValues();        
-        for (size_t i=0; i<size; i++){                
-            CHECK(values[i] >= 0);            
-            CHECK(values[i] < range);            
+        VT *values = m->getValues();
+        for (size_t i = 0; i < size; i++) {
+            CHECK(values[i] >= 0);
+            CHECK(values[i] < range);
         }
     }
-        
-    SECTION("without replacement"){
+
+    SECTION("without replacement") {
         withReplacement = false;
-    
+
         sample<DT, VT>(m, range, size, withReplacement, -1, nullptr);
-        
+
         REQUIRE(m->getNumRows() == size);
         REQUIRE(m->getNumCols() == 1);
-        
-        VT *values = m->getValues();        
-        
-        std::sort(values, values + size);   
-        CHECK(values[0] >= 0);                   
-        CHECK(values[size-1] < range);                   
-        for (size_t i=1; i<size; i++){                
-            CHECK(values[i-1] != values[i]);            
+
+        VT *values = m->getValues();
+
+        std::sort(values, values + size);
+        CHECK(values[0] >= 0);
+        CHECK(values[size - 1] < range);
+        for (size_t i = 1; i < size; i++) {
+            CHECK(values[i - 1] != values[i]);
         }
     }
 

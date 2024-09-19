@@ -28,13 +28,21 @@ const std::string dirPath = "test/api/cli/io/";
 TEST_CASE("writeMatrixCSV_Full", TAG_IO) {
     std::string csvPath = dirPath + "matrix_full.csv";
     std::filesystem::remove(csvPath); // remove old file if it still exists
-    checkDaphneStatusCode(StatusCode::SUCCESS, dirPath + "writeMatrix_full.daphne", "--args", std::string("outPath=\"" + csvPath + "\"").c_str());
-    compareDaphneToRef(dirPath + "matrix_full_ref.csv", dirPath + "readMatrix.daphne", "--args", std::string("inPath=\"" + csvPath + "\"").c_str());
+    checkDaphneStatusCode(StatusCode::SUCCESS,
+                          dirPath + "writeMatrix_full.daphne", "--args",
+                          std::string("outPath=\"" + csvPath + "\"").c_str());
+    compareDaphneToRef(dirPath + "matrix_full_ref.csv",
+                       dirPath + "readMatrix.daphne", "--args",
+                       std::string("inPath=\"" + csvPath + "\"").c_str());
 }
 
 TEST_CASE("writeMatrixCSV_View", TAG_IO) {
     std::string csvPath = dirPath + "matrix_view.csv";
     std::filesystem::remove(csvPath); // remove old file if it still exists
-    checkDaphneStatusCode(StatusCode::SUCCESS, dirPath + "writeMatrix_view.daphne", "--args", std::string("outPath=\"" + csvPath + "\"").c_str());
-    compareDaphneToRef(dirPath + "matrix_view_ref.csv", dirPath + "readMatrix.daphne", "--args", std::string("inPath=\"" + csvPath + "\"").c_str());
+    checkDaphneStatusCode(StatusCode::SUCCESS,
+                          dirPath + "writeMatrix_view.daphne", "--args",
+                          std::string("outPath=\"" + csvPath + "\"").c_str());
+    compareDaphneToRef(dirPath + "matrix_view_ref.csv",
+                       dirPath + "readMatrix.daphne", "--args",
+                       std::string("inPath=\"" + csvPath + "\"").c_str());
 }

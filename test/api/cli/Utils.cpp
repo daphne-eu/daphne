@@ -26,19 +26,18 @@
 #include <stdexcept>
 #include <string>
 
-std::string readTextFile(const std::string & filePath) {
+std::string readTextFile(const std::string &filePath) {
     std::ifstream ifs(filePath, std::ios::in);
     if (!ifs.good())
         throw std::runtime_error("could not open file '" + filePath + "'");
-    
+
     std::stringstream stream;
     stream << ifs.rdbuf();
-    
+
     return stream.str();
 }
 
-
-std::string generalizeDataTypes(const std::string& str) {
+std::string generalizeDataTypes(const std::string &str) {
     std::regex re("(DenseMatrix|CSRMatrix)");
     return std::regex_replace(str, re, "<SomeMatrix>");
 }

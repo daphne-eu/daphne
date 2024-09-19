@@ -28,7 +28,7 @@
 
 TEMPLATE_PRODUCT_TEST_CASE("Read CSV", TAG_KERNELS, (DenseMatrix), (double)) {
     using DT = TestType;
-  
+
     DT *m = nullptr;
 
     size_t numRows = 2;
@@ -36,63 +36,63 @@ TEMPLATE_PRODUCT_TEST_CASE("Read CSV", TAG_KERNELS, (DenseMatrix), (double)) {
 
     char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
 
-    read(m, filename,nullptr);
+    read(m, filename, nullptr);
 
-   REQUIRE(m->getNumRows() == numRows);
-   REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-   CHECK(m->get(0, 0) == -0.1);
-   CHECK(m->get(0, 1) == -0.2);
-   CHECK(m->get(0, 2) == 0.1);
-   CHECK(m->get(0, 3) == 0.2);
+    CHECK(m->get(0, 0) == -0.1);
+    CHECK(m->get(0, 1) == -0.2);
+    CHECK(m->get(0, 2) == 0.1);
+    CHECK(m->get(0, 3) == 0.2);
 
-   CHECK(m->get(1, 0) == 3.14);
-   CHECK(m->get(1, 1) == 5.41);
-   CHECK(m->get(1, 2) == 6.22216);
-   CHECK(m->get(1, 3) == 5);
+    CHECK(m->get(1, 0) == 3.14);
+    CHECK(m->get(1, 1) == 5.41);
+    CHECK(m->get(1, 2) == 6.22216);
+    CHECK(m->get(1, 3) == 5);
 
     DataObjectFactory::destroy(m);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Read MM", TAG_KERNELS, (DenseMatrix), (uint32_t)) {
-  using DT = TestType;
+    using DT = TestType;
 
-  DT * m= nullptr;
-  size_t numRows = 9;
-  size_t numCols = 9;
+    DT *m = nullptr;
+    size_t numRows = 9;
+    size_t numCols = 9;
 
-  char filename[] = "./test/runtime/local/io/cig.mtx";
-  read(m, filename,nullptr);
+    char filename[] = "./test/runtime/local/io/cig.mtx";
+    read(m, filename, nullptr);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->get(0, 0) == 1);
-  CHECK(m->get(2, 0) == 0);
-  CHECK(m->get(3, 4) == 9);
-  CHECK(m->get(7, 4) == 4);
+    CHECK(m->get(0, 0) == 1);
+    CHECK(m->get(2, 0) == 0);
+    CHECK(m->get(3, 4) == 9);
+    CHECK(m->get(7, 4) == 4);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
 TEST_CASE("Read - Frame", TAG_KERNELS) {
-    Frame * f = nullptr;
+    Frame *f = nullptr;
     read(f, "./test/runtime/local/io/ReadCsv4.csv", nullptr);
-    
+
     CHECK(f->getNumRows() == 2);
     CHECK(f->getNumCols() == 2);
     CHECK(f->getColumnType(0) == ValueTypeCode::SI64);
     CHECK(f->getColumnType(1) == ValueTypeCode::F64);
     CHECK(f->getLabels()[0] == "foo");
     CHECK(f->getLabels()[1] == "bar");
-    
+
     auto c0 = f->getColumn<int64_t>(0);
     CHECK(c0->get(0, 0) == 1);
     CHECK(c0->get(1, 0) == 2);
     auto c1 = f->getColumn<double>(1);
     CHECK(c1->get(0, 0) == 0.5);
     CHECK(c1->get(1, 0) == 1.0);
-    
+
     DataObjectFactory::destroy(f);
     DataObjectFactory::destroy(c0);
     DataObjectFactory::destroy(c1);

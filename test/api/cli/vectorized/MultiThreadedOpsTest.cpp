@@ -26,18 +26,20 @@ using namespace std::literals;
 
 auto dirPath = "test/api/cli/vectorized/"sv;
 
-// TODO: check if `vectorizedPipeline` is used and compare vectorization with no vectorization instead of file
-#define MAKE_TEST_CASE(name, suffix, param) \
-    TEST_CASE(std::string(name)+std::string(suffix), TAG_OPERATIONS) { \
-        std::string prefix(dirPath);\
-        prefix += (name);\
-        compareDaphneToRef(prefix + ".txt", prefix + ".daphne", (param)); \
+// TODO: check if `vectorizedPipeline` is used and compare vectorization with no
+// vectorization instead of file
+#define MAKE_TEST_CASE(name, suffix, param)                                    \
+    TEST_CASE(std::string(name) + std::string(suffix), TAG_OPERATIONS) {       \
+        std::string prefix(dirPath);                                           \
+        prefix += (name);                                                      \
+        compareDaphneToRef(prefix + ".txt", prefix + ".daphne", (param));      \
     }
-#define MAKE_TEST_CASE_SPARSE(name) \
-    TEST_CASE(name, TAG_OPERATIONS) { \
-        std::string prefix(dirPath);\
-        prefix += (name);\
-        compareDaphneToRef(prefix+".txt", prefix+".daphne", "--select-matrix-representations", "--vec"); \
+#define MAKE_TEST_CASE_SPARSE(name)                                            \
+    TEST_CASE(name, TAG_OPERATIONS) {                                          \
+        std::string prefix(dirPath);                                           \
+        prefix += (name);                                                      \
+        compareDaphneToRef(prefix + ".txt", prefix + ".daphne",                \
+                           "--select-matrix-representations", "--vec");        \
     }
 
 MAKE_TEST_CASE("runMatMult", "", "--vec")
@@ -51,11 +53,11 @@ MAKE_TEST_CASE("runIndexing", "", "--vec")
 MAKE_TEST_CASE("runReorganization", "", "--vec")
 MAKE_TEST_CASE("runOther", "", "--vec")
 
-//ToDo: make these tests work
-//#ifdef USE_CUDA
-//MAKE_TEST_CASE("runMatMult", "CUDA", "--vec --cuda")
-//MAKE_TEST_CASE("runEwBinary", "CUDA", "--vec --cuda")
-//MAKE_TEST_CASE("runRowAgg", "CUDA", "--vec --cuda")
-//MAKE_TEST_CASE("runColAgg", "CUDA", "--vec --cuda")
-//MAKE_TEST_CASE("runOther", "CUDA", "--vec --cuda")
-//#endif
+// ToDo: make these tests work
+// #ifdef USE_CUDA
+// MAKE_TEST_CASE("runMatMult", "CUDA", "--vec --cuda")
+// MAKE_TEST_CASE("runEwBinary", "CUDA", "--vec --cuda")
+// MAKE_TEST_CASE("runRowAgg", "CUDA", "--vec --cuda")
+// MAKE_TEST_CASE("runColAgg", "CUDA", "--vec --cuda")
+// MAKE_TEST_CASE("runOther", "CUDA", "--vec --cuda")
+// #endif

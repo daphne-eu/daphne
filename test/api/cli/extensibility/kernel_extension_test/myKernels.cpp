@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-// TODO Should be <daphne/runtime/local/datastructures/DenseMatrix.h> for more clarity.
+// TODO Should be <daphne/runtime/local/datastructures/DenseMatrix.h> for more
+// clarity.
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <iostream>
@@ -25,15 +26,14 @@ class DaphneContext;
 
 extern "C" {
 
-    void mySumAll(float* res, const DenseMatrix<float>* arg, DaphneContext* ctx) {
-        std::cout << "hello from mySumAll" << std::endl;
-        const float* valuesArg = arg->getValues();
-        *res = 0;
-        for(size_t r = 0; r < arg->getNumRows(); r++) {
-            for(size_t c = 0; c < arg->getNumCols(); c++)
-                *res += valuesArg[c];
-            valuesArg += arg->getRowSkip();
-        }
+void mySumAll(float *res, const DenseMatrix<float> *arg, DaphneContext *ctx) {
+    std::cout << "hello from mySumAll" << std::endl;
+    const float *valuesArg = arg->getValues();
+    *res = 0;
+    for (size_t r = 0; r < arg->getNumRows(); r++) {
+        for (size_t c = 0; c < arg->getNumCols(); c++)
+            *res += valuesArg[c];
+        valuesArg += arg->getRowSkip();
     }
-
+}
 }

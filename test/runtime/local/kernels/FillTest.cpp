@@ -29,35 +29,32 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int64_t, double
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES),
+                           (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
     VT arg;
     size_t numRows, numCols;
-    DT * exp = nullptr;
+    DT *exp = nullptr;
 
     SECTION("2x2 matrix") {
         arg = VT(1.5);
         numRows = 2;
         numCols = 2;
 
-        exp = genGivenVals<DT>(2, {
-            VT(1.5), VT(1.5),
-            VT(1.5), VT(1.5)
-        });
+        exp = genGivenVals<DT>(2, {VT(1.5), VT(1.5), VT(1.5), VT(1.5)});
     }
     SECTION("1x5 matrix") {
         arg = VT(2.5);
         numRows = 1;
         numCols = 5;
 
-        exp = genGivenVals<DT>(1, {
-            VT(2.5), VT(2.5), VT(2.5), VT(2.5), VT(2.5)
-        });
+        exp =
+            genGivenVals<DT>(1, {VT(2.5), VT(2.5), VT(2.5), VT(2.5), VT(2.5)});
     }
 
-    DT * res = nullptr;
+    DT *res = nullptr;
     fill(res, arg, numRows, numCols, nullptr);
 
     CHECK(*res == *exp);

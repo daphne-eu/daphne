@@ -14,33 +14,34 @@
  * limitations under the License.
  */
 
-
 #include "run_tests.h"
 
 #include "runtime/local/datagen/GenGivenVals.h"
 #include "runtime/local/kernels/CUDA/BatchNorm.h"
 
-template<class DT>
-void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, const DT* ema_var, const DT* exp,
-        DaphneContext* dctx)
-{
-    DT* res = nullptr;
+template <class DT>
+void check(const DT *in, const DT *gamma, const DT *beta, const DT *ema_mean,
+           const DT *ema_var, const DT *exp, DaphneContext *dctx) {
+    DT *res = nullptr;
     typename DT::VT epsilon = 1e-5;
-    CUDA::BatchNorm::Forward<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
+    CUDA::BatchNorm::Forward<DT, DT>::apply(res, in, gamma, beta, ema_mean,
+                                            ema_var, epsilon, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::BatchNorm::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::BatchNorm::Forward", TAG_DNN,
+                           (DenseMatrix),
+                           (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
-    auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
-    auto gamma = genGivenVals<DT>(1, { 1 });
-    auto beta = genGivenVals<DT>(1, { 0 });
-    auto ema_mean = genGivenVals<DT>(1, { 0 });
-    auto ema_var = genGivenVals<DT>(1, { 1 });
+    auto input = genGivenVals<DT>(1, {-3, -2, -1, 0, 1, 2, 3, 4, 5});
+    auto gamma = genGivenVals<DT>(1, {1});
+    auto beta = genGivenVals<DT>(1, {0});
+    auto ema_mean = genGivenVals<DT>(1, {0});
+    auto ema_var = genGivenVals<DT>(1, {1});
 
-    auto result = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
+    auto result = genGivenVals<DT>(1, {-3, -2, -1, 0, 1, 2, 3, 4, 5});
 
     check(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
 

@@ -25,13 +25,14 @@
 
 const std::string dirPath = "test/api/cli/syntax/";
 
-#define MAKE_FAILURE_TEST_CASE(name, count) \
-    TEST_CASE(name ", invalid syntax", TAG_SYNTAX) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { \
-                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, name "_failure", i); \
-            } \
-        } \
+#define MAKE_FAILURE_TEST_CASE(name, count)                                    \
+    TEST_CASE(name ", invalid syntax", TAG_SYNTAX) {                           \
+        for (unsigned i = 1; i <= count; i++) {                                \
+            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") {              \
+                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, \
+                                            name "_failure", i);               \
+            }                                                                  \
+        }                                                                      \
     }
 
 MAKE_FAILURE_TEST_CASE("general", 7)
