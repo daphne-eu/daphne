@@ -945,25 +945,30 @@ if [ $WITH_DEPS -gt 0 ]; then
     hawqDirName="hawq-rel-v$hawqVersion"
     hawqTarName="v${hawqVersion}.tar.gz"
     hawqInstDirName=$installPrefix
-    if ! is_dependency_downloaded "hawq_v${hawqVersion}"; then
-	      daphne_msg "Get HAWQ (libhdfs3) version ${hawqVersion}"
-        wget "https://github.com/apache/hawq/archive/refs/tags/rel/${hawqTarName}" \
-            -qO "${cacheDir}/${hawqTarName}"
-        tar -xf "$cacheDir/$hawqTarName" -C "$sourcePrefix"
-        daphne_msg "Applying 0005-libhdfs3-remove-gtest-dep.patch"
-        patch -Np1 -i "${patchDir}/0005-libhdfs3-remove-gtest-dep.patch" -d "$sourcePrefix/$hawqDirName"
-        daphne_msg "Applying 0006-libhdfs3-add-cstdint-include.patch"
-        patch -Np1 -i "${patchDir}/0006-libhdfs3-add-cstdint-include.patch" -d "$sourcePrefix/$hawqDirName"
-        dependency_download_success "hawq_v${hawqVersion}"
+
+    if [ $BUILD_HDFS == "-DUSE_HDFS=ON" ]; then
+        if ! is_dependency_downloaded "hawq_v${hawqVersion}"; then
+              daphne_msg "Get HAWQ (libhdfs3) version ${hawqVersion}"
+              exit -1
+            wget "https://github.com/apache/hawq/archive/refs/tags/rel/${hawqTarName}" \
+                -qO "${cacheDir}/${hawqTarName}"
+            tar -xf "$cacheDir/$hawqTarName" -C "$sourcePrefix"
+            daphne_msg "Applying 0005-libhdfs3-remove-gtest-dep.patch"
+            patch -Np1 -i "${patchDir}/0005-libhdfs3-remove-gtest-dep.patch" -d "$sourcePrefix/$hawqDirName"
+            daphne_msg "Applying 0006-libhdfs3-add-cstdint-include.patch"
+            patch -Np1 -i "${patchDir}/0006-libhdfs3-add-cstdint-include.patch" -d "$sourcePrefix/$hawqDirName"
+            dependency_download_success "hawq_v${hawqVersion}"
+        fi
+        if ! is_dependency_installed "hawq_v${hawqVersion}"; then
+            cmake -G Ninja -S "$sourcePrefix/$hawqDirName/depends/libhdfs3" -B "${buildPrefix}/${hawqDirName}" \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$installPrefix"
+            cmake --build "${buildPrefix}/${hawqDirName}" --target install/strip
+            dependency_install_success "hawq_v${hawqVersion}"
+        else
+              daphne_msg "No need to build HAWQ (libhdfs3) again."
+        fi
     fi
-    if ! is_dependency_installed "hawq_v${hawqVersion}"; then
-        cmake -G Ninja -S "$sourcePrefix/$hawqDirName/depends/libhdfs3" -B "${buildPrefix}/${hawqDirName}" \
-            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$installPrefix"
-        cmake --build "${buildPrefix}/${hawqDirName}" --target install/strip
-        dependency_install_success "hawq_v${hawqVersion}"
-    else
-	      daphne_msg "No need to build HAWQ (libhdfs3) again."
-    fi
+
     #------------------------------------------------------------------------------
     # #8.12 Build MLIR
     #------------------------------------------------------------------------------
