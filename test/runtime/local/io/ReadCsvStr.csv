@@ -5,4 +5,6 @@ table,27,Furniture Set
 "abc""def",33,"No Category\""
 "red, blue\n",50,
 "\n\"abc""def\"",28,"Mixed string"
+"line1
+line2",27,"with newline"
 "\"red, \"\"",41,""

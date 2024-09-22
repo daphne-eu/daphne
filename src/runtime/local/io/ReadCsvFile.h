@@ -21,7 +21,6 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
-#include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
 
 #include <util/preprocessor_defs.h>
@@ -152,8 +151,8 @@ struct ReadCsvFile<DenseMatrix<std::string>> {
   
       size_t pos = 0;
       for(size_t c = 0; c < numCols; c++) {
-        std::string val;
-        int next_column_pos = setCString(file->line + pos, &val, delim);
+        std::string val("");
+        int next_column_pos = setCString(file, pos, &val, delim);
         // TODO This assumes that rowSkip == numCols.
         valuesRes[cell++] = val;
         pos += next_column_pos + 1;
@@ -187,8 +186,8 @@ struct ReadCsvFile<DenseMatrix<FixedStr16>> {
   
       size_t pos = 0;
       for(size_t c = 0; c < numCols; c++) {
-        std::string val;
-        int next_column_pos = setCString(file->line + pos, &val, delim);
+        std::string val("");
+        int next_column_pos = setCString(file, pos, &val, delim);
         // TODO This assumes that rowSkip == numCols.
         valuesRes[cell++].set(val.c_str());
         pos += next_column_pos + 1;

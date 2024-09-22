@@ -272,7 +272,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
   using DT = TestType;
   DT *m = nullptr;
 
-  size_t numRows = 8;
+  size_t numRows = 9;
   size_t numCols = 3;
 
   char filename[] = "./test/runtime/local/io/ReadCsvStr.csv";
@@ -290,7 +290,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
   CHECK(m->get(4, 0) == "abc\"\"def");
   CHECK(m->get(5, 0) == "red, blue\\n");
   CHECK(m->get(6, 0) == "\\n\\\"abc\"\"def\\\"");
-  CHECK(m->get(7, 0) == "\\\"red, \\\"\\\"");
+  CHECK(m->get(7, 0) == "line1\nline2");
+  CHECK(m->get(8, 0) == "\\\"red, \\\"\\\"");
 
   CHECK(m->get(0, 1) == "35");
   CHECK(m->get(1, 1) == "30");
@@ -299,7 +300,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
   CHECK(m->get(4, 1) == "33");
   CHECK(m->get(5, 1) == "50");
   CHECK(m->get(6, 1) == "28");
-  CHECK(m->get(7, 1) == "41");
+  CHECK(m->get(7, 1) == "27");
+  CHECK(m->get(8, 1) == "41");
 
   CHECK(m->get(0, 2) == "Fruit Basket");
   CHECK(m->get(1, 2) == "Pets");
@@ -308,7 +310,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
   CHECK(m->get(4, 2) == "No Category\\\"");
   CHECK(m->get(5, 2) == "");
   CHECK(m->get(6, 2) == "Mixed string");
-  CHECK(m->get(7, 2) == "");
+  CHECK(m->get(7, 2) == "with newline");
+  CHECK(m->get(8, 2) == "");
 
   DataObjectFactory::destroy(m);
 }
