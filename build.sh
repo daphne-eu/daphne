@@ -745,7 +745,7 @@ if [ $WITH_DEPS -gt 0 ]; then
 
     if ! is_dependency_downloaded "${dep_openBlas[@]}"; then
         daphne_msg "Get OpenBlas version ${openBlasVersion}"
-        wget "https://github.com/xianyi/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}" \
+        wget "https://github.com/OpenMathLib/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}" \
             -qO "${cacheDir}/${openBlasZipName}"
         unzip -q "$cacheDir/$openBlasZipName" -d "$sourcePrefix"
         dependency_download_success "${dep_openBlas[@]}"
