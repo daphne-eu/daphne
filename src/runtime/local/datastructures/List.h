@@ -18,6 +18,7 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Structure.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <vector>
 

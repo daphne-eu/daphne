@@ -18,6 +18,8 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_SPARSITY_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 
 // ****************************************************************************
 // Convenience function

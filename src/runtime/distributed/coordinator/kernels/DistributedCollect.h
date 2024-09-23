@@ -20,6 +20,8 @@
 #include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/BinaryOpCode.h>
+#include <runtime/local/kernels/EwBinaryMat.h>
 
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>

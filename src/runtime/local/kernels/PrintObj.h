@@ -17,6 +17,9 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/List.h>
+#include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 
 #include <iostream>
 
