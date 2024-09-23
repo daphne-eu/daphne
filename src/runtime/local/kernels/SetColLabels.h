@@ -30,7 +30,7 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabels(Frame *&res, const Frame *arg, const char **labels, size_t numLabels, DCTX(ctx)) {
+inline void setColLabels(Frame *&res, const Frame *arg, const char **labels, size_t numLabels, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     if (numLabels != numCols)
         throw std::runtime_error("the number of given labels does not match "

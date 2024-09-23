@@ -30,7 +30,7 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabelsPrefix(Frame *&res, const Frame *arg, const char *prefix, DCTX(ctx)) {
+inline void setColLabelsPrefix(Frame *&res, const Frame *arg, const char *prefix, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     const std::string *oldLabels = arg->getLabels();
     std::string *newLabels = new std::string[numCols];

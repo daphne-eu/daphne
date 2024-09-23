@@ -365,8 +365,8 @@ template <> class ThetaJoin<Frame, Frame, Frame> {
     }
 };
 
-void thetaJoin(Frame *&res, const Frame *lhs, const Frame *rhs, const char **lhsOn, size_t numLhsOn, const char **rhsOn,
-               size_t numRhsOn, CompareOperation *cmp, size_t numCmp, DCTX(ctx)) {
+inline void thetaJoin(Frame *&res, const Frame *lhs, const Frame *rhs, const char **lhsOn, size_t numLhsOn,
+                      const char **rhsOn, size_t numRhsOn, CompareOperation *cmp, size_t numCmp, DCTX(ctx)) {
     ThetaJoin<Frame, Frame, Frame>::apply(res, lhs, rhs, lhsOn, numLhsOn, rhsOn, numRhsOn, cmp, numCmp);
 }
 #endif // SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H

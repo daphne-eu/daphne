@@ -42,7 +42,7 @@ template <class DTRes, class DTArg> void quantize(DTRes *&res, const DTArg *arg,
     Quantize<DTRes, DTArg>::apply(res, arg, min, max, ctx);
 }
 
-void calc_quantization_params(float min, float max, float &scale, uint8_t &quantized_zero) {
+inline void calc_quantization_params(float min, float max, float &scale, uint8_t &quantized_zero) {
     // Make sure that 0 is included
     min = (min > 0) ? 0 : min;
     max = (max < 0) ? 0 : max;
@@ -63,7 +63,7 @@ void calc_quantization_params(float min, float max, float &scale, uint8_t &quant
     }
 }
 
-uint8_t quantize_value(float a, float scale, uint8_t quantized_zero) {
+inline uint8_t quantize_value(float a, float scale, uint8_t quantized_zero) {
     // Map
     float value = static_cast<float>(quantized_zero) + a / scale;
 
