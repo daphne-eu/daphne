@@ -108,3 +108,15 @@ At the same time, this freedom comes with certain responsibilities, which are ro
    - actually merging a pull request in
    
    Balancing the handling of pull requests is important to *keep the development process scalable*.
+
+
+### Code Style
+
+Before contributing, please make sure to run `clang-format` on your C++ (.h and
+.cpp) files.
+We provide a `.clang-format` file at the root of the repository. Most text
+editors and IDEs will have some kind of integration for detecting that file
+and automatically applying `clang-format`. `git-clang-format` can be used to
+format staged files.
+For more information about `clang-format`, `git-clang-format` and text editor
+integration, please see [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html).
