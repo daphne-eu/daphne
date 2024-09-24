@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.25.2)
+cmake_minimum_required(VERSION 3.29)
 
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
@@ -153,9 +153,8 @@ endif()
 
 find_program(LLD_PROGRAM lld)
 if(LLD_PROGRAM)
-    message(STATUS "Using lld")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-ld=lld")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld")
+    set(CMAKE_LINKER_TYPE LLD)
+    message(STATUS "Using lld - LINKER_TYPE: ${CMAKE_LINKER_TYPE}")
 endif()
 
 find_package(Arrow REQUIRED)

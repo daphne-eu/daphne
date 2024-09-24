@@ -606,7 +606,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     }
 };
 
-namespace {
+namespace file_local {
 /**
  * @brief The MatMulLoweringPass rewrites the MatMulOp from the DaphneDialect
  * to a affine loop structure implementing a multi tiled loop structure.
@@ -663,9 +663,9 @@ struct MatMulLoweringPass : public impl::MatMulOpLoweringPassBase<MatMulLowering
         return sizes;
     }
 };
-} // end anonymous namespace
+} // namespace file_local
 
-void MatMulLoweringPass::runOnOperation() {
+void file_local::MatMulLoweringPass::runOnOperation() {
     auto module = getOperation();
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
@@ -725,7 +725,7 @@ std::unique_ptr<OperationPass<ModuleOp>> mlir::daphne::createMatMulOpLoweringPas
     bool matmul_tile, int matmul_vec_size_bits, std::vector<unsigned> matmul_fixed_tile_sizes,
     bool matmul_use_fixed_tile_sizes, int matmul_unroll_factor, int matmul_unroll_jam_factor,
     int matmul_num_vec_registers, bool matmul_invert_loops) {
-    return std::make_unique<MatMulLoweringPass>(
+    return std::make_unique<file_local::MatMulLoweringPass>(
         matmul_tile, matmul_vec_size_bits, matmul_fixed_tile_sizes, matmul_use_fixed_tile_sizes, matmul_unroll_factor,
         matmul_unroll_jam_factor, matmul_num_vec_registers, matmul_invert_loops);
 }
@@ -733,5 +733,5 @@ std::unique_ptr<OperationPass<ModuleOp>> mlir::daphne::createMatMulOpLoweringPas
 // This is used by daphne-opt and automatically inserts the options provided on
 // the command line into the pass.
 std::unique_ptr<OperationPass<ModuleOp>> mlir::daphne::createMatMulOpLoweringPass() {
-    return std::make_unique<MatMulLoweringPass>();
+    return std::make_unique<file_local::MatMulLoweringPass>();
 }

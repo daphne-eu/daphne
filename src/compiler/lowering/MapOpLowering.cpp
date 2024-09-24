@@ -81,7 +81,7 @@ class InlineMapOpLowering : public mlir::OpConversionPattern<mlir::daphne::MapOp
     }
 };
 
-namespace {
+namespace file_local {
 /**
  * @brief The MapOpLoweringPass rewrites the daphne::MapOp operator
  * to a set of perfectly nested affine loops and inserts for each element a call
@@ -107,9 +107,9 @@ struct MapOpLoweringPass : public mlir::PassWrapper<MapOpLoweringPass, mlir::Ope
                "UDF.";
     }
 };
-} // end anonymous namespace
+} // namespace file_local
 
-void MapOpLoweringPass::runOnOperation() {
+void file_local::MapOpLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
@@ -127,4 +127,6 @@ void MapOpLoweringPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createMapOpLoweringPass() { return std::make_unique<MapOpLoweringPass>(); }
+std::unique_ptr<mlir::Pass> mlir::daphne::createMapOpLoweringPass() {
+    return std::make_unique<file_local::MapOpLoweringPass>();
+}

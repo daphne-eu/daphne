@@ -128,7 +128,7 @@ class EwModOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwModOp> 
     }
 };
 
-namespace {
+namespace file_local {
 /**
  * @brief Performs an integer mod optimization on the EwModOp operator by
  * lowering to an affine loop structure and performing the mod op on values
@@ -153,9 +153,9 @@ struct ModOpLoweringPass : public mlir::PassWrapper<ModOpLoweringPass, mlir::Ope
                "and performing the mod op on values loaded from a MemRef.";
     }
 };
-} // end anonymous namespace
+} // namespace file_local
 
-void ModOpLoweringPass::runOnOperation() {
+void file_local::ModOpLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
@@ -184,4 +184,6 @@ void ModOpLoweringPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createModOpLoweringPass() { return std::make_unique<ModOpLoweringPass>(); }
+std::unique_ptr<mlir::Pass> mlir::daphne::createModOpLoweringPass() {
+    return std::make_unique<file_local::ModOpLoweringPass>();
+}

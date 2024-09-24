@@ -174,7 +174,7 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
     }
 };
 
-namespace {
+namespace file_local {
 /**
  * @brief Lowers the daphne::AggAll operator to a set of affine loops and
  * performs the aggregation on a MemRef which is created from the input
@@ -198,9 +198,9 @@ struct AggAllLoweringPass : public mlir::PassWrapper<AggAllLoweringPass, mlir::O
     }
     void runOnOperation() final;
 };
-} // end anonymous namespace
+} // namespace file_local
 
-void AggAllLoweringPass::runOnOperation() {
+void file_local::AggAllLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     LowerToLLVMOptions llvmOptions(&getContext());
@@ -236,5 +236,5 @@ void AggAllLoweringPass::runOnOperation() {
 }
 
 std::unique_ptr<mlir::Pass> mlir::daphne::createAggAllOpLoweringPass() {
-    return std::make_unique<AggAllLoweringPass>();
+    return std::make_unique<file_local::AggAllLoweringPass>();
 }

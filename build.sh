@@ -62,6 +62,7 @@ function printHelp {
     echo "  --hdfs            Compile with support for HDFS"
     echo "  --io_uring        Compile with support for io_uring"
     echo "  --no-papi         Compile without support for PAPI"
+    echo "  --clang           Compile using Clang (instead of GCC)"
 }
 
 #******************************************************************************
@@ -456,6 +457,7 @@ BUILD_IO_URING="-DUSE_IO_URING=OFF"
 BUILD_PAPI="-DUSE_PAPI=ON"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
+WITH_CLANG=""
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -527,6 +529,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     -ns | --no-submodule-update)
         WITH_SUBMODULE_UPDATE=0
+        ;;
+    --clang)
+        echo "Compiling with Clang"
+        WITH_CLANG="-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++"
         ;;
       *)
         unknown_options="${unknown_options} ${key}"
@@ -766,13 +772,14 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     nlohmannjsonDirName=nlohmannjson
     nlohmannjsonSingleHeaderName=json.hpp
-    dep_nlohmannjson=("nlohmannjson_v${nlohmannjsonVersion}" "v1")
+    dep_nlohmannjson=("nlohmannjson_v${nlohmannjsonVersion}" "v2")
 
     if ! is_dependency_installed "${dep_nlohmannjson[@]}"; then
         daphne_msg "Get nlohmannjson version ${nlohmannjsonVersion}"
         mkdir -p "${installPrefix}/include/${nlohmannjsonDirName}"
         wget "https://github.com/nlohmann/json/releases/download/v$nlohmannjsonVersion/$nlohmannjsonSingleHeaderName" \
             -qO "${installPrefix}/include/${nlohmannjsonDirName}/${nlohmannjsonSingleHeaderName}"
+        patch -Np0 -i "${patchDir}/0007-nlohmannjson-replace-EOF.patch" -d "${installPrefix}/include/${nlohmannjsonDirName}"
         dependency_install_success "${dep_nlohmannjson[@]}"
     else
         daphne_msg "No need to download nlohmannjson again."
@@ -1108,7 +1115,7 @@ fi
 daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
-    -DCMAKE_PREFIX_PATH="$installPrefix" \
+    -DCMAKE_PREFIX_PATH="$installPrefix" ${WITH_CLANG} \
     $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_HDFS $BUILD_PAPI
 
 cmake --build "$daphneBuildDir" --target "$target"

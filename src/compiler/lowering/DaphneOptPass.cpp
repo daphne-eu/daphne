@@ -43,7 +43,7 @@ class IntegerModOpt : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
     }
 };
 
-namespace {
+namespace file_local {
 /**
  * @brief This pass transforms operations (currently limited to the EwModOp) in
  * the DaphneDialect to a different set of operations also from the
@@ -64,9 +64,9 @@ struct DenseMatrixOptPass : public mlir::PassWrapper<DenseMatrixOptPass, mlir::O
                "also from the DaphneDialect.";
     }
 };
-} // end anonymous namespace
+} // namespace file_local
 
-void DenseMatrixOptPass::runOnOperation() {
+void file_local::DenseMatrixOptPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
@@ -89,4 +89,6 @@ void DenseMatrixOptPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createDaphneOptPass() { return std::make_unique<DenseMatrixOptPass>(); }
+std::unique_ptr<mlir::Pass> mlir::daphne::createDaphneOptPass() {
+    return std::make_unique<file_local::DenseMatrixOptPass>();
+}

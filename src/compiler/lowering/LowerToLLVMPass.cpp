@@ -879,7 +879,7 @@ class GenericCallOpLowering : public OpConversionPattern<daphne::GenericCallOp> 
     }
 };
 
-namespace {
+namespace file_local {
 struct DaphneLowerToLLVMPass : public PassWrapper<DaphneLowerToLLVMPass, OperationPass<ModuleOp>> {
     explicit DaphneLowerToLLVMPass(const DaphneUserConfig &cfg) : cfg(cfg) {}
     const DaphneUserConfig &cfg;
@@ -889,9 +889,9 @@ struct DaphneLowerToLLVMPass : public PassWrapper<DaphneLowerToLLVMPass, Operati
     }
     void runOnOperation() final;
 };
-} // end anonymous namespace
+} // namespace file_local
 
-void DaphneLowerToLLVMPass::runOnOperation() {
+void file_local::DaphneLowerToLLVMPass::runOnOperation() {
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -950,5 +950,5 @@ void DaphneLowerToLLVMPass::runOnOperation() {
 }
 
 std::unique_ptr<Pass> daphne::createLowerToLLVMPass(const DaphneUserConfig &cfg) {
-    return std::make_unique<DaphneLowerToLLVMPass>(cfg);
+    return std::make_unique<file_local::DaphneLowerToLLVMPass>(cfg);
 }

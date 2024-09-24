@@ -64,14 +64,14 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
     }
 };
 
-namespace {
+namespace file_local {
 struct PhyOperatorSelectionPass : public PassWrapper<PhyOperatorSelectionPass, OperationPass<ModuleOp>> {
     explicit PhyOperatorSelectionPass() {}
     void runOnOperation() final;
 };
-} // end anonymous namespace
+} // namespace file_local
 
-void PhyOperatorSelectionPass::runOnOperation() {
+void file_local::PhyOperatorSelectionPass::runOnOperation() {
     auto module = getOperation();
 
     ConversionTarget target(getContext());
@@ -108,4 +108,6 @@ void PhyOperatorSelectionPass::runOnOperation() {
         signalPassFailure();
 }
 
-std::unique_ptr<Pass> daphne::createPhyOperatorSelectionPass() { return std::make_unique<PhyOperatorSelectionPass>(); }
+std::unique_ptr<Pass> daphne::createPhyOperatorSelectionPass() {
+    return std::make_unique<file_local::PhyOperatorSelectionPass>();
+}

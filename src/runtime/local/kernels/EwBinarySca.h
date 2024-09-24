@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_EWBINARYSCA_H
-#define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYSCA_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
-#include <runtime/local/kernels/BinaryOpCode.h>
+#include <runtime/local/kernels/SupportedBinaryOpCodes.h>
 
 #include <algorithm>
 #include <stdexcept>
@@ -183,5 +182,3 @@ template <> struct EwBinarySca<BinaryOpCode::CONCAT, const char *, const char *,
 };
 
 #undef MAKE_EW_BINARY_SCA
-
-#endif // SRC_RUNTIME_LOCAL_KERNELS_EWBINARYSCA_H

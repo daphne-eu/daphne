@@ -1,0 +1,20 @@
+--- json.hpp.orig	2024-09-24 17:26:47.850173669 +0200
++++ json.hpp	2024-09-24 17:27:40.874776913 +0200
+@@ -3624,7 +3624,7 @@
+ 
+     static constexpr int_type eof() noexcept
+     {
+-        return static_cast<int_type>(EOF);
++        return static_cast<int_type>(std::char_traits<char>::eof());
+     }
+ };
+ 
+@@ -3648,7 +3648,7 @@
+ 
+     static constexpr int_type eof() noexcept
+     {
+-        return static_cast<int_type>(EOF);
++        return static_cast<int_type>(std::char_traits<char>::eof());
+     }
+ };
+ 
