@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25.2)
 
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
@@ -29,7 +29,7 @@ project(daphne-prototype LANGUAGES CXX C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -118,6 +118,8 @@ check_language(CUDA)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
     if(${CMAKE_COMPILER_IS_GNUCXX})
         set(GCC_EXPECTED_VERSION 11.3.0)
@@ -137,7 +139,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_definitions(-DUSE_CUDA)
     message(STATUS "Note: disabled CUSPARSE_DEPRECATED in main CMakeLists.txt")
     add_definitions(-DDISABLE_CUSPARSE_DEPRECATED)
-    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD 20)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     message(STATUS  "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
     if(DEFINED ENV{CUDAHOSTCXX})
