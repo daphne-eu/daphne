@@ -4638,6 +4638,11 @@
                         ["DenseMatrix", "double"],
                         ["CSRMatrix", "double"],
                         ["DenseMatrix", "double"]
+                    ],
+                    [
+                        ["DenseMatrix", "float"],
+                        ["CSRMatrix", "float"],
+                        ["DenseMatrix", "float"]
                     ]
                 ]
             }
