@@ -75,7 +75,6 @@ createSelectMatrixRepresentationsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass>
 createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createVectorizeComputationsPass();
-std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
 #ifdef USE_CUDA
 std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
 #endif
