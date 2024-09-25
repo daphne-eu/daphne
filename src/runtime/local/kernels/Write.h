@@ -26,6 +26,7 @@
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/WriteCsv.h>
 #include <runtime/local/io/WriteDaphne.h>
+#include <runtime/local/io/WriteMM.h>
 #if USE_HDFS
 #include <runtime/local/io/HDFS/WriteHDFS.h>
 #endif
@@ -82,10 +83,11 @@ template <typename VT> struct Write<DenseMatrix<VT>> {
             // call WriteHDFS
             writeHDFS(arg, filename, ctx);
 #endif
+        } else if (ext == "mtx") {
+            writeMM(arg, filename);
         }
     }
 };
-
 // ----------------------------------------------------------------------------
 // Frame
 // ----------------------------------------------------------------------------
@@ -121,6 +123,8 @@ template <typename VT> struct Write<Matrix<VT>> {
             MetaDataParser::writeMetaData(filename, metaData);
             writeCsv(arg, file);
             closeFile(file);
+        } else if (ext == "mtx") {
+            writeMM(arg, filename); // Write Matrix in MatrixMarket format
         } else {
             throw std::runtime_error("[Write.h] - generic Matrix type currently only supports csv "
                                      "file extension.");
