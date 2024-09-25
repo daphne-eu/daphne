@@ -27,7 +27,7 @@
 #include <parser/catalog/KernelCatalogParser.h>
 #include <parser/config/ConfigParser.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
-#include <runtime/local/vectorized/LoadPartitioning.h>
+#include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include <util/DaphneLogger.h>
 #include <util/KernelDispatchMapping.h>
 #include <util/Statistics.h>

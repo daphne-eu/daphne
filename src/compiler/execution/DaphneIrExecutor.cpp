@@ -84,45 +84,30 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     // This flag is really useful to figure out why the lowering failed
     llvm::DebugFlag = userConfig_.debug_llvm;
-    {
-        mlir::PassManager pm(&context_);
-        // TODO Enable the verifier for all passes where it is possible.
-        // Originally, it was only turned off for the
-        // SpecializeGenericFunctionsPass.
-        pm.enableVerifier(false);
-
-        if (userConfig_.explain_parsing)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
-
-        pm.addPass(mlir::createCanonicalizerPass());
-        pm.addPass(mlir::createCSEPass());
-        if (userConfig_.explain_parsing_simplified)
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after parsing and some simplifications:"));
-
-        pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
-        if (userConfig_.explain_sql)
-            pm.addPass(
-                mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
-
-        pm.addPass(
-            mlir::daphne::createSpecializeGenericFunctionsPass(userConfig_));
-        if (userConfig_.explain_property_inference)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
-
-        try {
-            if (failed(pm.run(module))) {
-                module->dump();
-                module->emitError("module pass error");
-                return false;
-            }
-        } catch (...) {
-            ErrorHandler::dumpModuleToDisk(module);
-            throw;
-        }
-    }
 
     mlir::PassManager pm(&context_);
+    // TODO Enable the verifier for all passes where it is possible.
+    // Originally, it was only turned off for the
+    // SpecializeGenericFunctionsPass.
+    pm.enableVerifier(false);
+
+    if (userConfig_.explain_parsing)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
+    if (userConfig_.explain_parsing_simplified)
+        pm.addPass(mlir::daphne::createPrintIRPass(
+            "IR after parsing and some simplifications:"));
+
+    pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
+    if (userConfig_.explain_sql)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
+
+    pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass(userConfig_));
+    if (userConfig_.explain_property_inference)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
+
     // Note that property inference and canonicalization have already been done
     // in the SpecializeGenericFunctionsPass, so actually, it's not necessary
     // here anymore.

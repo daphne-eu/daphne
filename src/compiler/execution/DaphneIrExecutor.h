@@ -50,9 +50,9 @@ class DaphneIrExecutor {
      *
      * This map gets pre-populated with `false` for each distinct library. The
      * values are set to `true` when a call to a pre-compiled kernel from that
-     * library is created by this pass. This approach is thread-safe, since the
-     * structure of the map does not change anymore. Thus, it can be used by
-     * multiple concurrent instances of this pass.
+     * library is created by the RewriteToCallKernelOpPass pass. This approach
+     * is thread-safe, since the structure of the map does not change anymore.
+     * Thus, it can be used by multiple concurrent instances of this pass.
      */
     std::unordered_map<std::string, bool> usedLibPaths;
 
