@@ -39,7 +39,7 @@ struct FixedStr16 {
     // Constructor from a C-style string
     FixedStr16(const char* str) {
         size_t len = std::strlen(str);
-        if (len >= N) {
+        if (len > N) {
             throw std::length_error("string exceeds fixed buffer size");
         }
         std::copy(str, str + len, buffer);
@@ -54,7 +54,7 @@ struct FixedStr16 {
     // Constructor from a std::string
     FixedStr16(const std::string& other) {
         size_t len = other.size();
-        if (len >= N) {
+        if (len > N) {
             throw std::length_error("string exceeds fixed buffer size");
         }
         std::copy(other.begin(), other.end() + N, buffer);

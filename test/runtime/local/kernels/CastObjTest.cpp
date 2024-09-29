@@ -263,11 +263,11 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<long>, l
         }
 
         SECTION("FixedStr16"){
-                auto arg_FixedStr16 = genGivenVals<DenseMatrix<FixedStr16>>(numRows, {FixedStr16("922337203685471"), FixedStr16("922337203685472"), FixedStr16("922337203685473"), 
-                                                                                      FixedStr16("922337203685474"), FixedStr16("922337203685475"), FixedStr16("922337203685476")});
+                auto arg_FixedStr16 = genGivenVals<DenseMatrix<FixedStr16>>(numRows, {FixedStr16("9223372036854774"), FixedStr16("9223372036854773"), FixedStr16("9223372036854772"), 
+                                                                                      FixedStr16("9223372036854771"), FixedStr16("9223372036854776"), FixedStr16("9223372036854775")});
                 DTRes* res_FixedStr16 = nullptr;
-                auto check_FixedStr16  = genGivenVals<DenseMatrix<VTRes>>(numRows, {922337203685471, 922337203685472, 922337203685473, 
-                                                                                    922337203685474, 922337203685475, 922337203685476});
+                auto check_FixedStr16  = genGivenVals<DenseMatrix<VTRes>>(numRows, {9223372036854774, 9223372036854773, 9223372036854772, 
+                                                                                    9223372036854771, 9223372036854776, 9223372036854775});
                 
                 castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr16>>(res_FixedStr16, arg_FixedStr16, nullptr);
 
