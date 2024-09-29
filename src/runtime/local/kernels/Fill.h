@@ -46,13 +46,13 @@ template <class DTRes, typename VTArg> void fill(DTRes *&res, VTArg arg, size_t 
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT> struct Fill<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct Fill<DenseMatrix<VTRes>, VTArg> {
+    static void apply(DenseMatrix<VTRes> *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == ValueTypeUtils::defaultValue<VT>);
-
-        if (arg != ValueTypeUtils::defaultValue<VT>) {
-            VT *valuesRes = res->getValues();
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols,
+                                                                arg == ValueTypeUtils::defaultValue<VTRes>);
+        if (arg != ValueTypeUtils::defaultValue<VTArg>) {
+            VTRes *valuesRes = res->getValues();
             for (auto i = 0ul; i < res->getNumItems(); ++i)
                 valuesRes[i] = arg;
         }
