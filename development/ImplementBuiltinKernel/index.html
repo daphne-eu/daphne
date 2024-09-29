@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/logo_small.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.37">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.39">
     
     
       
@@ -1235,6 +1235,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#experimental-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Experimental Kernels
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1395,6 +1404,15 @@
   <a href="#error-handling" class="md-nav__link">
     <span class="md-ellipsis">
       Error Handling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experimental-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Experimental Kernels
     </span>
   </a>
   
@@ -1573,6 +1591,24 @@ Please have a look at test cases for existing kernel implementations in <a href=
 in case the code runs into an unresolvable issue. We catch these exceptions in
 our surrounding code to the kernel and provide, whenever possible, additional
 information about the source of the error in the DaphneDSL script.</p>
+<h3 id="experimental-kernels">Experimental Kernels</h3>
+<p>As an alternative to implementing a new kernel that is directly integrated into
+DAPHNE, one can also work on kernel implementations using the <a href="doc/Extensions.md">kernel catalog</a>.
+These should reside in <a href="src/runtime/local/kernels/experimental/op/">experimental/op/</a> where <code>op</code> is
+the mnemonic of the DaphneIR operation that the kernel is implementing.</p>
+<p>Experimental kernels are not directly integrated into DAPHNE and are neither
+compiled nor executed by default. They can be used to test new ideas and
+provide an easier way of prototyping kernel implementations. One can easily
+test multiple different implementations of the same DAPHNE kernel using a
+single DaphneDSL script which calls all the kernel implementations.</p>
+<p>There are less restrictions put on experimental kernels than on built-in
+kernels, e.g., they are not tested as part of the CI pipeline. You are also
+free to introduce new dependencies that are handled by the accompanying
+<code>Makefile</code> or build script. Testing and dependency management will have to be
+resolved before the experimental kernel is integrated into DAPHNE as a built-in
+kernel.</p>
+<p>Check out <a href="doc/Extensions.md">Extensions.md</a> for more information on how to
+implement experimental kernels.</p>
 
 
 
@@ -1622,7 +1658,7 @@ information about the source of the error in the DaphneDSL script.</p>
     <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d6f25eb3.min.js"></script>
+      <script src="../../assets/javascripts/bundle.525ec568.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       
