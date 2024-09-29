@@ -1,0 +1,4 @@
+// check the fill function for matrix of strings
+
+c1 = fill("a", 5, 1);
+print(c1);
