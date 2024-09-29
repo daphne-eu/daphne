@@ -1,0 +1,10 @@
+# These commits are ignore by `git blame`.
+# https://git-scm.com/docs/git-blame
+# Run this command to configure git to use this file.
+# `$ git config blame.ignoreRevsFile .git-blame-ignore-revs`
+
+# clang-format src/
+cb999f20b6f2934ad7c94b10d2b02f6acf74aab4
+
+# clang-format test/
+9a1b93e4fea27e91d14c18821be2c940adf63bf4
