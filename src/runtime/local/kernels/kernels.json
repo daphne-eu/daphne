@@ -2642,7 +2642,8 @@
             [["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint32_t"]],
             [["DenseMatrix", "uint8_t"]],
-            [["DenseMatrix", "bool"]]
+            [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "std::string"]]
         ]
     },
     {
@@ -4089,6 +4090,10 @@
             [
                 ["DenseMatrix", "bool"],
                 ["DenseMatrix", "bool"]
+            ],
+            [
+                ["DenseMatrix", "std::string"],
+                ["DenseMatrix", "std::string"]
             ]
         ]
     },
