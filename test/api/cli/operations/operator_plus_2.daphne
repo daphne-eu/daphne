@@ -5,3 +5,10 @@ print(1 + "a");
 print("1" + "2");
 print("a" + (1 + 2));
 print((1 + 2) + "a");
+
+// 'concat' and '+' for matrices of strings
+a = fill("abcd", 4, 1);
+b = fill("e", 4, 1);
+print(concat(a, b));
+print(a + b);
+print(a + "end");
