@@ -1,0 +1,7 @@
+def a(n: si64) -> si64 {
+	return 100;
+}
+
+
+print(a(5));
+print(a(10));
