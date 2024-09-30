@@ -1,0 +1,9 @@
+//Check element-wise binary operations on matrices of strings
+a = ["a", "c", "e", "abc"];
+b = ["A", "c", "abcd", ""];
+
+print(a == b);
+print(a > b);
+print(a < b);
+print(a + b);
+print(concat(b, a));

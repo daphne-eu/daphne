@@ -4,3 +4,18 @@ a1
 12
 a3
 3a
+DenseMatrix(4x1, std::string)
+abcde
+abcde
+abcde
+abcde
+DenseMatrix(4x1, std::string)
+abcde
+abcde
+abcde
+abcde
+DenseMatrix(4x1, std::string)
+abcdend
+abcdend
+abcdend
+abcdend

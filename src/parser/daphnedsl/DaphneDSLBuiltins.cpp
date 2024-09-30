@@ -530,11 +530,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     // Strings
     // --------------------------------------------------------------------
 
-    if (func == "concat") {
-        checkNumArgsExact(loc, func, numArgs, 2);
-        return static_cast<mlir::Value>(
-            builder.create<EwConcatOp>(loc, StringType::get(builder.getContext()), args[0], args[1]));
-    }
+    if (func == "concat")
+        return createBinaryOp<EwConcatOp>(loc, func, args);
 
     // ********************************************************************
     // Outer binary (generalized outer product)

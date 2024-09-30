@@ -238,8 +238,18 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
     const bool rhsIsStr = llvm::isa<mlir::daphne::StringType>(rhs.getType());
     if (lhsIsStr || rhsIsStr) {
         mlir::Type strTy = mlir::daphne::StringType::get(rewriter.getContext());
-        if (!lhsIsStr)
-            lhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, lhs);
+        if (!lhsIsStr) {
+            const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
+            if (!lhsIsSca) {
+                const bool lhsIsMatStr =
+                    llvm::isa<mlir::daphne::StringType>(lhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+                if (lhsIsMatStr) {
+                    rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, lhs.getType(), lhs, rhs);
+                    return mlir::success();
+                }
+            } else
+                lhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, lhs);
+        }
         if (!rhsIsStr)
             rhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, rhs);
         rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, strTy, lhs, rhs);
@@ -250,6 +260,15 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
         if (lhsIsSca && !rhsIsSca) {
             rewriter.replaceOpWithNewOp<mlir::daphne::EwAddOp>(op, op.getResult().getType(), rhs, lhs);
             return mlir::success();
+        } else if (!lhsIsSca && !rhsIsSca) {
+            const bool lhsIsMatStr =
+                llvm::isa<mlir::daphne::StringType>(lhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+            const bool rhsIsMatStr =
+                llvm::isa<mlir::daphne::StringType>(rhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+            if (lhsIsMatStr && rhsIsMatStr) {
+                rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, op.getResult().getType(), lhs, rhs);
+                return mlir::success();
+            }
         }
         return mlir::failure();
     }
