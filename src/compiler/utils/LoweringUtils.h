@@ -39,20 +39,10 @@ mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc,
 void insertMemRefDealloc(mlir::Value memref, mlir::Location loc,
                          mlir::PatternRewriter &rewriter);
 
-void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
-                         mlir::Location loc, mlir::ArrayRef<int64_t> shape,
-                         mlir::MLIRContext *ctx, mlir::Value memRef,
-                         mlir::Type elemType);
-
-void affineFillMemRefInt(mlir::Value value,
+void affineFillMemRef(mlir::Value value,
                          mlir::ConversionPatternRewriter &rewriter,
                          mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                          mlir::MLIRContext *ctx, mlir::Value memRef);
-
-void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
-                      mlir::Location loc, mlir::ArrayRef<int64_t> shape,
-                      mlir::MLIRContext *ctx, mlir::Value memRef,
-                      mlir::Type elemType);
 
 mlir::Value convertMemRefToDenseMatrix(mlir::Location,
                                        mlir::ConversionPatternRewriter &,

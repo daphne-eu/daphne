@@ -378,12 +378,16 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
                 this->typeConverter->materializeTargetConversion(
                     rewriter, loc, matrixElementType,
                     mlir::ValueRange{fillValue});
-            affineFillMemRefInt(castedFillValue, rewriter, loc,
-                                outputMemRefType.getShape(), op->getContext(),
-                                outputMemRef);
+            affineFillMemRef(castedFillValue, rewriter, loc,
+                             outputMemRefType.getShape(), op->getContext(),
+                             outputMemRef);
         } else {
-            affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
-                             op->getContext(), outputMemRef, matrixElementType);
+            mlir::Value fillValue = rewriter.create<mlir::arith::ConstantOp>(
+                loc, matrixElementType,
+                rewriter.getFloatAttr(matrixElementType, 0.0));
+            affineFillMemRef(fillValue, rewriter, loc,
+                             outputMemRefType.getShape(), op->getContext(),
+                             outputMemRef);
         }
         // Do the actual MatMul with hand built codegen
         SmallVector<AffineForOp, 3> loops;
