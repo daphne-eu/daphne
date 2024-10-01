@@ -83,7 +83,7 @@ public:
                             auto mt = res.getType().dyn_cast<daphne::MatrixType>();
                             if (mt)
                             {
-                                if (llvm::isa<scf::ForOp>(op) || llvm::isa<scf::WhileOp>(op)) 
+                                if (llvm::isa<scf::ForOp>(op) || llvm::isa<scf::WhileOp>(op) || llvm::isa<scf::IfOp>(op)) 
                                 {
                                     // Create the CastOp for the current loop result
                                     builder.setInsertionPointAfter(op);
@@ -117,18 +117,19 @@ public:
             // Skip specific ops that should not be processed
             else if (isa<daphne::RecordPropertiesOp>(op) || op->hasAttr("daphne.value_ids"))
                 return WalkResult::advance();
+
+            if (auto castOp = dyn_cast<daphne::CastOp>(op)) {
+                if (castOp.isRemovePropertyCast()) {
+                    return WalkResult::advance();
+                }
+            }
             
-            // Handle loops (scf.for and scf.while) as black boxes
-            else if (auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
-                insertRecordedProperties(forOp);
+            // Handle loops (scf.for and scf.while) and If blocks as black boxes
+            if (isa<scf::ForOp>(op) || isa<scf::WhileOp>(op) || isa<scf::IfOp>(op)) {
+                insertRecordedProperties(op);
                 return WalkResult::skip();
             }
 
-            else if (auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
-                insertRecordedProperties(whileOp);
-                return WalkResult::skip();
-            }
-            
             else if (auto funcOp = llvm::dyn_cast<func::FuncOp>(op)) {
             // Check if this is the @main function or a UDF
                 if (funcOp.getName() == "main") {
@@ -138,6 +139,7 @@ public:
                 }
             }
 
+            /** 
             // Handle (consecutive) CastOp(s) followed by a loop
             else if (auto castOp = llvm::dyn_cast<daphne::CastOp>(op)) {
                 Operation *currentOp = op;
@@ -146,7 +148,7 @@ public:
                     // Continue to next CastOp
                 }
                 // Now check if the final operation is a loop
-                if (currentOp && (llvm::isa<scf::ForOp>(currentOp) || llvm::isa<scf::WhileOp>(currentOp))) {
+                if (currentOp && (llvm::isa<scf::ForOp>(currentOp) || llvm::isa<scf::WhileOp>(currentOp) || llvm::isa<scf::IfOp>(currentOp)) ) {
                     // CastOps followed by a loop
                     propertyIndex++;
                     return WalkResult::advance();  // Skip for now, keeping dense
@@ -157,6 +159,7 @@ public:
                     return WalkResult::advance();
                 }
             }
+            */
 
             // Process all other operations that output matrix types
             else {

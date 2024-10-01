@@ -57,15 +57,18 @@ public:
             if (isa<daphne::RecordPropertiesOp>(op) || op->hasAttr("daphne.value_ids"))
                 return WalkResult::advance();
             
-            // Handle loops (scf.for and scf.while) as black boxes
-            else if (auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
-                recordResults(forOp);
+            if (auto castOp = dyn_cast<daphne::CastOp>(op)) {
+                if (castOp.isRemovePropertyCast()) {
+                    return WalkResult::advance();
+                }
+            }
+
+            // Handle loops (scf.for and scf.while) and If blocks as black boxes
+            if (isa<scf::ForOp>(op) || isa<scf::WhileOp>(op) || isa<scf::IfOp>(op)) {
+                recordResults(op);
                 return WalkResult::skip();
             }
-            else if (auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
-                recordResults(whileOp);
-                return WalkResult::skip();
-            }
+
             else if (auto funcOp = llvm::dyn_cast<func::FuncOp>(op)) {
             // Check if this is the @main function or a UDF
                 if (funcOp.getName() == "main") {
