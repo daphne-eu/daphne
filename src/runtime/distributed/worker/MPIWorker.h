@@ -39,8 +39,7 @@ class MPIWorker : WorkerImpl {
         int inCommingMessage = 0;
         MPI_Status status;
         while (myState != TERMINATED) { //
-            MPI_Iprobe(COORDINATOR, MPI_ANY_TAG, MPI_COMM_WORLD,
-                       &inCommingMessage, &status);
+            MPI_Iprobe(COORDINATOR, MPI_ANY_TAG, MPI_COMM_WORLD, &inCommingMessage, &status);
             if (inCommingMessage && myState != DETACHED) {
                 handleInCommingMessages(status);
             } else
@@ -55,15 +54,12 @@ class MPIWorker : WorkerImpl {
     int temp = 0;
     // Store in chunks
     std::unique_ptr<DaphneDeserializerChunks<Structure>> deserializer;
-    std::unique_ptr<DaphneDeserializerChunks<Structure>::Iterator>
-        deserializerIter;
+    std::unique_ptr<DaphneDeserializerChunks<Structure>::Iterator> deserializerIter;
     Structure *deserializedMatrix;
 
-    std::tuple<bool, StoredInfo> storeInputs(const std::vector<char> &buffer,
-                                             size_t messageLength) {
+    std::tuple<bool, StoredInfo> storeInputs(const std::vector<char> &buffer, size_t messageLength) {
         StoredInfo info;
-        if (*deserializerIter == deserializer->begin() &&
-            DF_Dtype(buffer.data()) == DF_data_t::Value_t) {
+        if (*deserializerIter == deserializer->begin() && DF_Dtype(buffer.data()) == DF_data_t::Value_t) {
             double val = DaphneSerializer<double>::deserialize(buffer.data());
             info = this->Store(&val);
             return std::make_tuple(true, info);
@@ -74,8 +70,7 @@ class MPIWorker : WorkerImpl {
                 (*deserializerIter)->second->resize(messageLength);
             (*deserializerIter)
                 ->second->assign(static_cast<const char *>(buffer.data()),
-                                 static_cast<const char *>(buffer.data()) +
-                                     messageLength);
+                                 static_cast<const char *>(buffer.data()) + messageLength);
 
             // advance iterator, this also partially deserializes
             ++(*deserializerIter);
@@ -96,25 +91,21 @@ class MPIWorker : WorkerImpl {
             StoredInfo tempInfo = outputs.at(i);
             computeResult += ":" + tempInfo.toString();
         }
-        MPI_Send(computeResult.c_str(), computeResult.size(), MPI_CHAR,
-                 COORDINATOR, COMPUTERESULT, MPI_COMM_WORLD);
+        MPI_Send(computeResult.c_str(), computeResult.size(), MPI_CHAR, COORDINATOR, COMPUTERESULT, MPI_COMM_WORLD);
     }
     void sendMatrix(StoredInfo info) {
         auto mat = this->Transfer(info);
         std::vector<char> dataToSend;
-        size_t messageLength =
-            DaphneSerializer<Structure>::serialize(mat, dataToSend);
+        size_t messageLength = DaphneSerializer<Structure>::serialize(mat, dataToSend);
 
         int len = messageLength;
-        MPI_Send(dataToSend.data(), len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT,
-                 MPI_COMM_WORLD);
+        MPI_Send(dataToSend.data(), len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT, MPI_COMM_WORLD);
     }
 
-    void prepareBufferForMessage(std::vector<char> &buffer, int *messageLength,
-                                 MPI_Datatype type, int source, int tag) {
+    void prepareBufferForMessage(std::vector<char> &buffer, int *messageLength, MPI_Datatype type, int source,
+                                 int tag) {
         MPI_Status messageStatus;
-        MPI_Recv(messageLength, 1, type, source, tag, MPI_COMM_WORLD,
-                 &messageStatus);
+        MPI_Recv(messageLength, 1, type, source, tag, MPI_COMM_WORLD, &messageStatus);
         // std::cout<< id<<" in distribute size " <<*messageLength << " tag " <<
         // tag <<std::endl;
         if (buffer.size() < size_t(*messageLength))
@@ -126,8 +117,7 @@ class MPIWorker : WorkerImpl {
         // " , " << std::to_string(info.numRows) << " , "
         // <<std::to_string(info.numCols)<<std::endl;
         std::string toSend = info.toString();
-        MPI_Send(toSend.c_str(), sizeof(toSend), MPI_CHAR, COORDINATOR, DATAACK,
-                 MPI_COMM_WORLD);
+        MPI_Send(toSend.c_str(), sizeof(toSend), MPI_CHAR, COORDINATOR, DATAACK, MPI_COMM_WORLD);
         // std::cout<<"rank " << id <<" acknowledging" <<std::endl;
     }
 
@@ -161,60 +151,47 @@ class MPIWorker : WorkerImpl {
         switch (tag) {
         case STREAM_INIT:
             int chunkSize;
-            MPI_Recv(&chunkSize, 1, MPI_INT, COORDINATOR, STREAM_INIT,
-                     MPI_COMM_WORLD, &messageStatus);
-            deserializer.reset(new DaphneDeserializerChunks<Structure>(
-                &deserializedMatrix, chunkSize));
-            deserializerIter.reset(
-                new DaphneDeserializerChunks<Structure>::Iterator(
-                    deserializer->begin()));
+            MPI_Recv(&chunkSize, 1, MPI_INT, COORDINATOR, STREAM_INIT, MPI_COMM_WORLD, &messageStatus);
+            deserializer.reset(new DaphneDeserializerChunks<Structure>(&deserializedMatrix, chunkSize));
+            deserializerIter.reset(new DaphneDeserializerChunks<Structure>::Iterator(deserializer->begin()));
             (*deserializerIter)->second->resize(chunkSize);
             break;
         case DATASIZE: {
-            prepareBufferForMessage(buffer, &messageLength, MPI_INT, source,
-                                    DATASIZE);
-            MPI_Recv(buffer.data(), messageLength, MPI_UNSIGNED_CHAR,
-                     COORDINATOR, DATA, MPI_COMM_WORLD, &messageStatus);
+            prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, DATASIZE);
+            MPI_Recv(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DATA, MPI_COMM_WORLD,
+                     &messageStatus);
             auto ret = storeInputs(buffer, (size_t)messageLength);
             if (std::get<0>(ret))
                 sendDataACK(std::get<1>(ret));
         } break;
         case BROADCAST: {
-            prepareBufferForMessage(buffer, &messageLength, MPI_INT, source,
-                                    BROADCAST);
-            MPI_Bcast(buffer.data(), messageLength, MPI_UNSIGNED_CHAR,
-                      COORDINATOR, MPI_COMM_WORLD);
+            prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, BROADCAST);
+            MPI_Bcast(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
             auto ret = storeInputs(buffer, (size_t)messageLength);
             if (std::get<0>(ret))
                 sendDataACK(std::get<1>(ret));
         } break;
 
         case MLIRSIZE:
-            prepareBufferForMessage(buffer, &messageLength, MPI_INT, source,
-                                    MLIRSIZE);
-            MPI_Recv(buffer.data(), messageLength, MPI_UNSIGNED_CHAR,
-                     COORDINATOR, MLIR, MPI_COMM_WORLD, &messageStatus);
+            prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, MLIRSIZE);
+            MPI_Recv(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MLIR, MPI_COMM_WORLD,
+                     &messageStatus);
             MsgTask.deserialize(buffer);
 
-            exStatus =
-                this->Compute(&outputs, MsgTask.inputs, MsgTask.mlir_code);
+            exStatus = this->Compute(&outputs, MsgTask.inputs, MsgTask.mlir_code);
             sendComputeResult(outputs);
             break;
 
         case TRANSFERSIZE: {
-            prepareBufferForMessage(buffer, &messageLength, MPI_INT, source,
-                                    TRANSFERSIZE);
-            MPI_Recv(buffer.data(), messageLength, MPI_CHAR, COORDINATOR,
-                     TRANSFER, MPI_COMM_WORLD, &messageStatus);
-            auto info =
-                MPIHelper::constructStoredInfo(std::string(buffer.data()));
+            prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, TRANSFERSIZE);
+            MPI_Recv(buffer.data(), messageLength, MPI_CHAR, COORDINATOR, TRANSFER, MPI_COMM_WORLD, &messageStatus);
+            auto info = MPIHelper::constructStoredInfo(std::string(buffer.data()));
             sendMatrix(info);
         } break;
 
         case DETACH:
             unsigned char terminateMessage;
-            MPI_Recv(&terminateMessage, 1, MPI_UNSIGNED_CHAR, source, DETACH,
-                     MPI_COMM_WORLD, &messageStatus);
+            MPI_Recv(&terminateMessage, 1, MPI_UNSIGNED_CHAR, source, DETACH, MPI_COMM_WORLD, &messageStatus);
             detachFromComputingTeam();
             break;
 

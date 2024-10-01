@@ -30,8 +30,7 @@
 // ****************************************************************************
 
 template <class DTRes, class DTLhs, class DTRhs> struct OuterBinary {
-    static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs,
-                      const DTRhs *rhs, DCTX(ctx)) = delete;
+    static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,8 +38,7 @@ template <class DTRes, class DTLhs, class DTRhs> struct OuterBinary {
 // ****************************************************************************
 
 template <class DTRes, class DTLhs, class DTRhs>
-void outerBinary(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs,
-                 const DTRhs *rhs, DCTX(ctx)) {
+void outerBinary(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
     OuterBinary<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
@@ -54,29 +52,24 @@ void outerBinary(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs,
 
 template <typename VTRes, typename VTLhs, typename VTRhs>
 struct OuterBinary<DenseMatrix<VTRes>, DenseMatrix<VTLhs>, DenseMatrix<VTRhs>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VTRes> *&res,
-                      const DenseMatrix<VTLhs> *lhs,
+    static void apply(BinaryOpCode opCode, DenseMatrix<VTRes> *&res, const DenseMatrix<VTLhs> *lhs,
                       const DenseMatrix<VTRhs> *rhs, DCTX(ctx)) {
         if (lhs->getNumCols() != 1)
-            throw std::runtime_error(
-                "outerBinary: lhs must be a column (mx1) matrix");
+            throw std::runtime_error("outerBinary: lhs must be a column (mx1) matrix");
         if (rhs->getNumRows() != 1)
-            throw std::runtime_error(
-                "outerBinary: rhs must be a row (1xn) matrix");
+            throw std::runtime_error("outerBinary: rhs must be a row (1xn) matrix");
 
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsRhs = rhs->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTRes>>(
-                numRowsLhs, numColsRhs, false);
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRowsLhs, numColsRhs, false);
 
         const VTLhs *valuesLhs = lhs->getValues();
         const VTRhs *valuesRhs = rhs->getValues();
         VTRes *valuesRes = res->getValues();
 
-        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func =
-            getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
+        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
 
         for (size_t r = 0; r < numRowsLhs; r++) {
             for (size_t c = 0; c < numColsRhs; c++)
@@ -93,25 +86,20 @@ struct OuterBinary<DenseMatrix<VTRes>, DenseMatrix<VTLhs>, DenseMatrix<VTRhs>> {
 
 template <typename VTRes, typename VTLhs, typename VTRhs>
 struct OuterBinary<Matrix<VTRes>, Matrix<VTLhs>, Matrix<VTRhs>> {
-    static void apply(BinaryOpCode opCode, Matrix<VTRes> *&res,
-                      const Matrix<VTLhs> *lhs, const Matrix<VTRhs> *rhs,
+    static void apply(BinaryOpCode opCode, Matrix<VTRes> *&res, const Matrix<VTLhs> *lhs, const Matrix<VTRhs> *rhs,
                       DCTX(ctx)) {
         if (lhs->getNumCols() != 1)
-            throw std::runtime_error(
-                "outerBinary: lhs must be a column (mx1) matrix");
+            throw std::runtime_error("outerBinary: lhs must be a column (mx1) matrix");
         if (rhs->getNumRows() != 1)
-            throw std::runtime_error(
-                "outerBinary: rhs must be a row (1xn) matrix");
+            throw std::runtime_error("outerBinary: rhs must be a row (1xn) matrix");
 
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsRhs = rhs->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTRes>>(
-                numRowsLhs, numColsRhs, false);
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRowsLhs, numColsRhs, false);
 
-        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func =
-            getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
+        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRowsLhs; ++r) {

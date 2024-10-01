@@ -43,18 +43,15 @@ template <class DTRes> struct ReadMM {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes> void readMM(DTRes *&res, const char *filename) {
-    ReadMM<DTRes>::apply(res, filename);
-}
+template <class DTRes> void readMM(DTRes *&res, const char *filename) { ReadMM<DTRes>::apply(res, filename); }
 
 template <typename VT> struct ReadMM<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename) {
         MMFile<VT> mmfile(filename);
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(
-                mmfile.numberRows(), mmfile.numberCols(),
-                mmfile.entryCount() !=
-                    mmfile.numberCols() * mmfile.numberRows());
+            res = DataObjectFactory::create<DenseMatrix<VT>>(mmfile.numberRows(), mmfile.numberCols(),
+                                                             mmfile.entryCount() !=
+                                                                 mmfile.numberCols() * mmfile.numberRows());
         VT *valuesRes = res->getValues();
         for (auto &entry : mmfile)
             valuesRes[entry.row * mmfile.numberCols() + entry.col] = entry.val;
@@ -66,16 +63,14 @@ template <typename VT> struct ReadMM<CSRMatrix<VT>> {
         MMFile<VT> mmfile(filename);
 
         using entry_t = typename MMFile<VT>::Entry;
-        std::priority_queue<entry_t, std::vector<entry_t>, std::greater<>>
-            entry_queue;
+        std::priority_queue<entry_t, std::vector<entry_t>, std::greater<>> entry_queue;
 
         for (auto &entry : mmfile)
             entry_queue.emplace(entry);
 
         if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(
-                mmfile.numberRows(), mmfile.numberCols(), entry_queue.size(),
-                false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(mmfile.numberRows(), mmfile.numberCols(), entry_queue.size(),
+                                                           false);
 
         auto *rowOffsets = res->getRowOffsets();
         rowOffsets[0] = 0;
@@ -110,21 +105,17 @@ template <> struct ReadMM<Frame> {
             for (size_t i = 0; i < mmfile.numberCols(); i++)
                 types[i] = mmfile.elementType();
 
-            res = DataObjectFactory::create<Frame>(
-                mmfile.numberRows(), mmfile.numberCols(), types, nullptr,
-                mmfile.entryCount() !=
-                    mmfile.numberCols() * mmfile.numberRows());
+            res = DataObjectFactory::create<Frame>(mmfile.numberRows(), mmfile.numberCols(), types, nullptr,
+                                                   mmfile.entryCount() != mmfile.numberCols() * mmfile.numberRows());
         }
         uint8_t **rawFrame = new uint8_t *[mmfile.numberCols()];
         for (size_t i = 0; i < mmfile.numberCols(); i++)
             rawFrame[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
         for (auto &entry : mmfile)
             if (mmfile.elementType() == ValueTypeCode::SI64)
-                reinterpret_cast<int64_t *>(rawFrame[entry.col])[entry.row] =
-                    (int64_t)entry.val;
+                reinterpret_cast<int64_t *>(rawFrame[entry.col])[entry.row] = (int64_t)entry.val;
             else
-                reinterpret_cast<double *>(rawFrame[entry.col])[entry.row] =
-                    entry.val;
+                reinterpret_cast<double *>(rawFrame[entry.col])[entry.row] = entry.val;
     }
 };
 

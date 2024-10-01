@@ -49,9 +49,7 @@ template <class DTRes> struct ReadDaphne {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes> void readDaphne(DTRes *&res, const char *filename) {
-    ReadDaphne<DTRes>::apply(res, filename);
-}
+template <class DTRes> void readDaphne(DTRes *&res, const char *filename) { ReadDaphne<DTRes>::apply(res, filename); }
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -64,11 +62,9 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
         // TODO: check f.good()
 
         auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(
-            &res, DaphneSerializer<
-                      DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
+            &res, DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = deser.begin(); it != deser.end(); ++it) {
-            it->first = DaphneSerializer<
-                DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
+            it->first = DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
             f.read(it->second->data(), it->first);
             // in case we read less than that
             it->first = f.gcount();
@@ -86,11 +82,9 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
         // TODO: check f.good()
 
         auto deser = DaphneDeserializerChunks<CSRMatrix<VT>>(
-            &res,
-            DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
+            &res, DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = deser.begin(); it != deser.end(); ++it) {
-            it->first = DaphneSerializer<
-                CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
+            it->first = DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
             f.read(it->second->data(), it->first);
             // in case we read less than that
             it->first = f.gcount();
@@ -133,8 +127,7 @@ template <> struct ReadDaphne<Frame> {
             // TODO: Consider alternative representations for frames
 
             if (res == nullptr) {
-                res = DataObjectFactory::create<Frame>(h.nbrows, h.nbcols,
-                                                       schema, nullptr, false);
+                res = DataObjectFactory::create<Frame>(h.nbrows, h.nbcols, schema, nullptr, false);
             }
 
             uint8_t **rawCols = new uint8_t *[h.nbcols];
@@ -186,8 +179,7 @@ template <> struct ReadDaphne<Frame> {
                         reinterpret_cast<double *>(rawCols[c])[r] = val_f64;
                         break;
                     default:
-                        throw std::runtime_error(
-                            "ReadDaphne::apply: unknown value type code");
+                        throw std::runtime_error("ReadDaphne::apply: unknown value type code");
                     }
                 }
             }

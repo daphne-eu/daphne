@@ -33,9 +33,8 @@
 // ****************************************************************************
 
 template <class DTArg, class DTIns, typename VTSel> struct InsertCol {
-    static void apply(DTArg *&res, const DTArg *arg, const DTIns *ins,
-                      const VTSel colLowerIncl, const VTSel colUpperExcl,
-                      DCTX(ctx)) = delete;
+    static void apply(DTArg *&res, const DTArg *arg, const DTIns *ins, const VTSel colLowerIncl,
+                      const VTSel colUpperExcl, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -43,10 +42,9 @@ template <class DTArg, class DTIns, typename VTSel> struct InsertCol {
 // ****************************************************************************
 
 template <class DTArg, class DTIns, typename VTSel>
-void insertCol(DTArg *&res, const DTArg *arg, const DTIns *ins,
-               const VTSel colLowerIncl, const VTSel colUpperExcl, DCTX(ctx)) {
-    InsertCol<DTArg, DTIns, VTSel>::apply(res, arg, ins, colLowerIncl,
-                                          colUpperExcl, ctx);
+void insertCol(DTArg *&res, const DTArg *arg, const DTIns *ins, const VTSel colLowerIncl, const VTSel colUpperExcl,
+               DCTX(ctx)) {
+    InsertCol<DTArg, DTIns, VTSel>::apply(res, arg, ins, colLowerIncl, colUpperExcl, ctx);
 }
 
 // ****************************************************************************
@@ -54,13 +52,10 @@ void insertCol(DTArg *&res, const DTArg *arg, const DTIns *ins,
 // ****************************************************************************
 
 template <typename VTSel>
-void validateArgsInsertCol(size_t colLowerIncl_Size, VTSel colLowerIncl,
-                           size_t colUpperExcl_Size, VTSel colUpperExcl,
-                           size_t numRowsArg, size_t numColsArg,
-                           size_t numRowsIns, size_t numColsIns) {
+void validateArgsInsertCol(size_t colLowerIncl_Size, VTSel colLowerIncl, size_t colUpperExcl_Size, VTSel colUpperExcl,
+                           size_t numRowsArg, size_t numColsArg, size_t numRowsIns, size_t numColsIns) {
 
-    if (colUpperExcl_Size < colLowerIncl_Size ||
-        numColsArg < colUpperExcl_Size ||
+    if (colUpperExcl_Size < colLowerIncl_Size || numColsArg < colUpperExcl_Size ||
         (colLowerIncl_Size == numColsArg && colLowerIncl_Size != 0)) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
@@ -74,12 +69,10 @@ void validateArgsInsertCol(size_t colLowerIncl_Size, VTSel colLowerIncl,
 
     if (numColsIns != colUpperExcl_Size - colLowerIncl_Size) {
         std::ostringstream errMsg;
-        errMsg
-            << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
-            << "' passed to InsertCol: the number of addressed columns in arg '"
-            << colUpperExcl_Size - colLowerIncl_Size
-            << "' and the number of columns in ins '" << numColsIns
-            << "' must match";
+        errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
+               << "' passed to InsertCol: the number of addressed columns in arg '"
+               << colUpperExcl_Size - colLowerIncl_Size << "' and the number of columns in ins '" << numColsIns
+               << "' must match";
         throw std::out_of_range(errMsg.str());
     }
 
@@ -100,28 +93,22 @@ void validateArgsInsertCol(size_t colLowerIncl_Size, VTSel colLowerIncl,
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTArg, typename VTSel>
-struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
-    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg,
-                      const DenseMatrix<VTArg> *ins, VTSel colLowerIncl,
-                      VTSel colUpperExcl, DCTX(ctx)) {
+template <typename VTArg, typename VTSel> struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
+    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg, const DenseMatrix<VTArg> *ins,
+                      VTSel colLowerIncl, VTSel colUpperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
 
-        const size_t colLowerIncl_Size =
-            static_cast<const size_t>(colLowerIncl);
-        const size_t colUpperExcl_Size =
-            static_cast<const size_t>(colUpperExcl);
+        const size_t colLowerIncl_Size = static_cast<const size_t>(colLowerIncl);
+        const size_t colUpperExcl_Size = static_cast<const size_t>(colUpperExcl);
 
-        validateArgsInsertCol(colLowerIncl_Size, colLowerIncl,
-                              colUpperExcl_Size, colUpperExcl, numRowsArg,
-                              numColsArg, numRowsIns, numColsIns);
+        validateArgsInsertCol(colLowerIncl_Size, colLowerIncl, colUpperExcl_Size, colUpperExcl, numRowsArg, numColsArg,
+                              numRowsIns, numColsIns);
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(
-                numRowsArg, numColsArg, false);
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsArg, false);
 
         VTArg *valuesRes = res->getValues();
         const VTArg *valuesArg = arg->getValues();
@@ -133,8 +120,7 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
         // TODO Can be simplified/more efficient in certain cases.
         for (size_t r = 0; r < numRowsArg; r++) {
             memcpy(valuesRes, valuesArg, colLowerIncl_Size * sizeof(VTArg));
-            memcpy(valuesRes + colLowerIncl_Size, valuesIns,
-                   numColsIns * sizeof(VTArg));
+            memcpy(valuesRes + colLowerIncl_Size, valuesIns, numColsIns * sizeof(VTArg));
             memcpy(valuesRes + colUpperExcl_Size, valuesArg + colUpperExcl_Size,
                    (numColsArg - colUpperExcl_Size) * sizeof(VTArg));
             valuesRes += rowSkipRes;
@@ -148,26 +134,20 @@ struct InsertCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
 // Matrix <- Matrix
 // ----------------------------------------------------------------------------
 
-template <typename VTArg, typename VTSel>
-struct InsertCol<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
-    static void apply(Matrix<VTArg> *&res, const Matrix<VTArg> *arg,
-                      const Matrix<VTArg> *ins, VTSel colLowerIncl,
+template <typename VTArg, typename VTSel> struct InsertCol<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
+    static void apply(Matrix<VTArg> *&res, const Matrix<VTArg> *arg, const Matrix<VTArg> *ins, VTSel colLowerIncl,
                       VTSel colUpperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
-        const size_t colLowerIncl_Size =
-            static_cast<const size_t>(colLowerIncl);
-        const size_t colUpperExcl_Size =
-            static_cast<const size_t>(colUpperExcl);
+        const size_t colLowerIncl_Size = static_cast<const size_t>(colLowerIncl);
+        const size_t colUpperExcl_Size = static_cast<const size_t>(colUpperExcl);
 
-        validateArgsInsertCol(colLowerIncl_Size, colLowerIncl,
-                              colUpperExcl_Size, colUpperExcl, numRowsArg,
-                              numColsArg, ins->getNumRows(), ins->getNumCols());
+        validateArgsInsertCol(colLowerIncl_Size, colLowerIncl, colUpperExcl_Size, colUpperExcl, numRowsArg, numColsArg,
+                              ins->getNumRows(), ins->getNumCols());
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(
-                numRowsArg, numColsArg, false);
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsArg, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRowsArg; ++r) {

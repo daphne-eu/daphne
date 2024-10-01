@@ -32,44 +32,36 @@ template <typename T> struct Builtin {
     Builtin(std::vector<unsigned int> expectedNumOfParams);
     virtual ~Builtin();
 
-    mlir::LogicalResult checkNumParams(mlir::Location &loc,
-                                       llvm::StringRef name, size_t size);
-    virtual T create(mlir::OpBuilder builder, mlir::Location &loc,
-                     mlir::ValueRange values) = 0;
+    mlir::LogicalResult checkNumParams(mlir::Location &loc, llvm::StringRef name, size_t size);
+    virtual T create(mlir::OpBuilder builder, mlir::Location &loc, mlir::ValueRange values) = 0;
 };
 
 struct PrintBuiltin : public Builtin<mlir::daphne::PrintOp> {
     using Builtin<mlir::daphne::PrintOp>::Builtin;
     static const llvm::StringRef name;
 
-    PrintBuiltin() : Builtin({1}) {};
-    mlir::daphne::PrintOp create(mlir::OpBuilder builder, mlir::Location &loc,
-                                 mlir::ValueRange values) override;
+    PrintBuiltin() : Builtin({1}){};
+    mlir::daphne::PrintOp create(mlir::OpBuilder builder, mlir::Location &loc, mlir::ValueRange values) override;
 };
 
 struct RandBuiltin : public Builtin<mlir::daphne::RandMatrixOp> {
     using Builtin<mlir::daphne::RandMatrixOp>::Builtin;
     static const llvm::StringRef name;
 
-    RandBuiltin() : Builtin({2, 4}) {};
-    mlir::daphne::RandMatrixOp create(mlir::OpBuilder builder,
-                                      mlir::Location &loc,
-                                      mlir::ValueRange values) override;
+    RandBuiltin() : Builtin({2, 4}){};
+    mlir::daphne::RandMatrixOp create(mlir::OpBuilder builder, mlir::Location &loc, mlir::ValueRange values) override;
 };
 
 struct TransposeBuiltin : public Builtin<mlir::daphne::TransposeOp> {
     using Builtin<mlir::daphne::TransposeOp>::Builtin;
     static const llvm::StringRef name;
 
-    TransposeBuiltin() : Builtin({1}) {};
-    mlir::daphne::TransposeOp create(mlir::OpBuilder builder,
-                                     mlir::Location &loc,
-                                     mlir::ValueRange values) override;
+    TransposeBuiltin() : Builtin({1}){};
+    mlir::daphne::TransposeOp create(mlir::OpBuilder builder, mlir::Location &loc, mlir::ValueRange values) override;
 };
 
 struct Builtins {
-    static antlrcpp::Any build(mlir::OpBuilder &builder, mlir::Location &loc,
-                               mlir::ValueRange values,
+    static antlrcpp::Any build(mlir::OpBuilder &builder, mlir::Location &loc, mlir::ValueRange values,
                                const std::string &name);
 };
 

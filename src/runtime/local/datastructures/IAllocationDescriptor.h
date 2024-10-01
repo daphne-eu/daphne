@@ -58,9 +58,6 @@ class IAllocationDescriptor {
     virtual std::shared_ptr<std::byte> getData() = 0;
     virtual void transferTo(std::byte *src, size_t size) = 0;
     virtual void transferFrom(std::byte *dst, size_t size) = 0;
-    [[nodiscard]] virtual std::unique_ptr<IAllocationDescriptor>
-    clone() const = 0;
-    virtual bool operator==(const IAllocationDescriptor *other) const {
-        return (getType() == other->getType());
-    }
+    [[nodiscard]] virtual std::unique_ptr<IAllocationDescriptor> clone() const = 0;
+    virtual bool operator==(const IAllocationDescriptor *other) const { return (getType() == other->getType()); }
 };

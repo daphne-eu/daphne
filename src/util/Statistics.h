@@ -30,24 +30,16 @@ struct OperatorStatistics {
         return *this;
     }
 
-    OperatorStatistics operator+(OperatorStatistics &rhs) noexcept {
-        return *this += rhs;
-    }
+    OperatorStatistics operator+(OperatorStatistics &rhs) noexcept { return *this += rhs; }
 
-    constexpr bool operator<(const OperatorStatistics &os) noexcept {
-        return std::tie(total) < std::tie(os.total);
-    }
+    constexpr bool operator<(const OperatorStatistics &os) noexcept { return std::tie(total) < std::tie(os.total); }
 
-    constexpr bool operator<=(const OperatorStatistics &os) noexcept {
-        return std::tie(total) <= std::tie(os.total);
-    }
+    constexpr bool operator<=(const OperatorStatistics &os) noexcept { return std::tie(total) <= std::tie(os.total); }
 
-    friend std::ostream &operator<<(std::ostream &os,
-                                    const OperatorStatistics &opStats);
+    friend std::ostream &operator<<(std::ostream &os, const OperatorStatistics &opStats);
 };
 
-inline std::ostream &operator<<(std::ostream &os,
-                                const OperatorStatistics &opStats) {
+inline std::ostream &operator<<(std::ostream &os, const OperatorStatistics &opStats) {
     return os << "Name: " << opStats.kdmInfo.kernelName << "\n"
               << "Total: " << opStats.total << "\n"
               << "Count: " << opStats.count << "\n";
@@ -73,16 +65,14 @@ inline std::ostream &operator<<(std::ostream &os,
 class Statistics {
   private:
     using Time = std::chrono::time_point<std::chrono::high_resolution_clock>;
-    using KernelStats =
-        std::vector<std::tuple<int, std::chrono::duration<double>>>;
+    using KernelStats = std::vector<std::tuple<int, std::chrono::duration<double>>>;
 
     static constexpr int MAX_STATS_COUNT = 10;
     std::mutex m_times;
     KernelStats kernelExecutionTimes;
     std::unordered_map<int, Time> startTimes;
 
-    std::vector<OperatorStatistics>
-    processStatisticsPerOperator(KernelDispatchMapping &kdm);
+    std::vector<OperatorStatistics> processStatisticsPerOperator(KernelDispatchMapping &kdm);
 
   public:
     static Statistics &instance();

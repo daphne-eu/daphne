@@ -28,8 +28,7 @@ class DaphneIrExecutor {
     DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserConfig cfg);
 
     bool runPasses(mlir::ModuleOp module);
-    std::unique_ptr<mlir::ExecutionEngine>
-    createExecutionEngine(mlir::ModuleOp module);
+    std::unique_ptr<mlir::ExecutionEngine> createExecutionEngine(mlir::ModuleOp module);
 
     mlir::MLIRContext *getContext() { return &context_; }
 

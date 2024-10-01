@@ -18,10 +18,10 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_DIAGMATRIX_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
 
 #include <stdexcept>
 
@@ -40,8 +40,7 @@ template <class DTRes, class DTArg> struct DiagMatrix {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void diagMatrix(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void diagMatrix(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     DiagMatrix<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
@@ -54,18 +53,15 @@ void diagMatrix(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct DiagMatrix<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
         if (arg->getNumCols() != 1) {
-            throw std::runtime_error(
-                "DiagMatrix.h - parameter arg must be a column-matrix");
+            throw std::runtime_error("DiagMatrix.h - parameter arg must be a column-matrix");
         }
 
         const size_t numRowsCols = arg->getNumRows();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsCols,
-                                                             numRowsCols, true);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsCols, numRowsCols, true);
 
         const VT *valuesArg = arg->getValues();
         VT *valuesRes = res->getValues();
@@ -86,15 +82,13 @@ template <typename VT> struct DiagMatrix<DenseMatrix<VT>, DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct DiagMatrix<CSRMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(CSRMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
         if (arg->getNumCols() != 1)
             throw std::runtime_error("parameter arg must be a column-matrix");
 
         const size_t numRowsCols = arg->getNumRows();
         if (res == nullptr) {
-            res = DataObjectFactory::create<CSRMatrix<VT>>(
-                numRowsCols, numRowsCols, numRowsCols, false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRowsCols, numRowsCols, numRowsCols, false);
         }
 
         const VT *valuesArg = arg->getValues();
@@ -122,15 +116,13 @@ template <typename VT> struct DiagMatrix<CSRMatrix<VT>, DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct DiagMatrix<CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, DCTX(ctx)) {
         if (arg->getNumCols() != 1)
             throw std::runtime_error("parameter arg must be a column-matrix");
 
         const size_t numRowsCols = arg->getNumRows();
         if (res == nullptr) {
-            res = DataObjectFactory::create<CSRMatrix<VT>>(
-                numRowsCols, numRowsCols, numRowsCols, false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRowsCols, numRowsCols, numRowsCols, false);
         }
 
         VT *valuesRes = res->getValues();
@@ -157,14 +149,12 @@ template <typename VT> struct DiagMatrix<Matrix<VT>, Matrix<VT>> {
     static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, DCTX(ctx)) {
         // TODO: this could be relaxed to allow row-matrices
         if (arg->getNumCols() != 1)
-            throw std::runtime_error(
-                "DiagMatrix: parameter arg must be a column-matrix");
+            throw std::runtime_error("DiagMatrix: parameter arg must be a column-matrix");
 
         const size_t numRowsCols = arg->getNumRows();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(
-                numRowsCols, numRowsCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsCols, numRowsCols, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRowsCols; ++r) {

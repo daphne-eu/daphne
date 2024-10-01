@@ -49,11 +49,8 @@ class KernelCatalogParser {
      * @param backend The backend for which this method is called (for error
      * message).
      */
-    void mapTypes(const std::vector<std::string> &in,
-                  std::vector<mlir::Type> &out, const std::string &word,
-                  const std::string &kernelFuncName,
-                  const std::string &opMnemonic,
-                  const std::string &backend) const;
+    void mapTypes(const std::vector<std::string> &in, std::vector<mlir::Type> &out, const std::string &word,
+                  const std::string &kernelFuncName, const std::string &opMnemonic, const std::string &backend) const;
 
   public:
     /**
@@ -68,6 +65,5 @@ class KernelCatalogParser {
      * @param filePath The path to the file to extract kernel information from.
      * @param kc The kernel catalog to register the kernels with.
      */
-    void parseKernelCatalog(const std::string &filePath,
-                            KernelCatalog &kc) const;
+    void parseKernelCatalog(const std::string &filePath, KernelCatalog &kc) const;
 };

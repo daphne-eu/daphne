@@ -39,14 +39,9 @@ class DaphneLogger {
   public:
     explicit DaphneLogger(DaphneUserConfig &config);
 
-    [[maybe_unused]] std::vector<std::shared_ptr<spdlog::logger>> *
-    getLoggers() {
-        return &loggers;
-    }
+    [[maybe_unused]] std::vector<std::shared_ptr<spdlog::logger>> *getLoggers() { return &loggers; }
 
-    [[maybe_unused]] std::shared_ptr<spdlog::logger> getDefaultLogger() {
-        return default_logger;
-    }
+    [[maybe_unused]] std::shared_ptr<spdlog::logger> getDefaultLogger() { return default_logger; }
 
     // register loggers in shared libraries
     void registerLoggers() {

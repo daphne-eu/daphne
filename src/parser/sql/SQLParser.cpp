@@ -32,15 +32,11 @@
 #include <istream>
 #include <parser/CancelingErrorListener.h>
 
-void SQLParser::setView(std::unordered_map<std::string, mlir::Value> arg) {
-    view = arg;
-}
+void SQLParser::setView(std::unordered_map<std::string, mlir::Value> arg) { view = arg; }
 
 void SQLParser::setSqlOp(mlir::daphne::SqlOp sqlOp) { this->sqlOp = sqlOp; }
 
-mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder &builder,
-                                        std::istream &stream,
-                                        const std::string &sourceName) {
+mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) {
     CancelingErrorListener errorListener;
     auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
     {
@@ -69,7 +65,6 @@ mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder &builder,
     }
 }
 
-void SQLParser::parseStream(mlir::OpBuilder &builder, std::istream &stream,
-                            const std::string &sourceName) {
+void SQLParser::parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) {
     parseStreamFrame(builder, stream, sourceName);
 }

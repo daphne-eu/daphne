@@ -55,11 +55,9 @@ template <typename VT> struct SaveDaphneLibResult<DenseMatrix<VT>> {
         DaphneLibResult *daphneLibRes = ctx->getUserConfig().result_struct;
 
         if (!daphneLibRes)
-            throw std::runtime_error(
-                "saveDaphneLibRes(): daphneLibRes is nullptr");
+            throw std::runtime_error("saveDaphneLibRes(): daphneLibRes is nullptr");
 
-        daphneLibRes->address = const_cast<void *>(
-            reinterpret_cast<const void *>(arg->getValues()));
+        daphneLibRes->address = const_cast<void *>(reinterpret_cast<const void *>(arg->getValues()));
         daphneLibRes->cols = arg->getNumCols();
         daphneLibRes->rows = arg->getNumRows();
         daphneLibRes->vtc = (int64_t)ValueTypeUtils::codeFor<VT>;
@@ -80,8 +78,7 @@ template <> struct SaveDaphneLibResult<Frame> {
         DaphneLibResult *daphneLibRes = ctx->getUserConfig().result_struct;
 
         if (!daphneLibRes)
-            throw std::runtime_error(
-                "saveDaphneLibRes(): daphneLibRes is nullptr");
+            throw std::runtime_error("saveDaphneLibRes(): daphneLibRes is nullptr");
 
         const size_t numCols = arg->getNumCols();
 
@@ -92,8 +89,7 @@ template <> struct SaveDaphneLibResult<Frame> {
         for (size_t i = 0; i < numCols; i++) {
             vtcs[i] = static_cast<int64_t>(arg->getSchema()[i]);
             labels[i] = const_cast<char *>(arg->getLabels()[i].c_str());
-            columns[i] = const_cast<void *>(
-                reinterpret_cast<const void *>(arg->getColumnRaw(i)));
+            columns[i] = const_cast<void *>(reinterpret_cast<const void *>(arg->getColumnRaw(i)));
         }
 
         daphneLibRes->cols = numCols;

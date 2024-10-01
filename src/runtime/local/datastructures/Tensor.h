@@ -31,8 +31,7 @@ template <typename ValueType> class Tensor : public Structure {
 
   protected:
     Tensor(const std::vector<size_t> &tensor_shape)
-        : Structure(tensor_shape.size() >= 1 ? tensor_shape[0] : 0,
-                    tensor_shape.size() >= 2 ? tensor_shape[1] : 0),
+        : Structure(tensor_shape.size() >= 1 ? tensor_shape[0] : 0, tensor_shape.size() >= 2 ? tensor_shape[1] : 0),
           rank(tensor_shape.size()), tensor_shape(tensor_shape) {
         if (rank > 0) {
             total_element_count = tensor_shape[0];
@@ -44,14 +43,13 @@ template <typename ValueType> class Tensor : public Structure {
         }
     };
 
-    Tensor(size_t numRows, size_t numCols)
-        : Structure(numRows, numCols), rank(2) {
+    Tensor(size_t numRows, size_t numCols) : Structure(numRows, numCols), rank(2) {
         tensor_shape.push_back(numCols);
         tensor_shape.push_back(numRows);
         total_element_count = numRows * numCols;
     };
 
-    virtual ~Tensor() {};
+    virtual ~Tensor(){};
 
   public:
     virtual size_t getNumDims() const override { return rank; }
@@ -67,8 +65,7 @@ template <typename ValueType> class Tensor : public Structure {
         throw std::runtime_error("Tensor::sliceCol() is not supported (yet)");
     }
 
-    virtual Tensor *slice(size_t rl, size_t ru, size_t cl,
-                          size_t cu) const override {
+    virtual Tensor *slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
         throw std::runtime_error("Tensor::slice() is not supported (yet)");
     }
 };

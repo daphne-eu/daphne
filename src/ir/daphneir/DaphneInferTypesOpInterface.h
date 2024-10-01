@@ -45,9 +45,7 @@ namespace mlir::OpTrait {
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class DataTypeFromFirstArg
-    : public TraitBase<ConcreteOp, DataTypeFromFirstArg> {};
+template <class ConcreteOp> class DataTypeFromFirstArg : public TraitBase<ConcreteOp, DataTypeFromFirstArg> {};
 
 /**
  * @brief The data type (of the single result) is the most general of the data
@@ -64,32 +62,28 @@ class DataTypeFromFirstArg
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class DataTypeFromArgs : public TraitBase<ConcreteOp, DataTypeFromArgs> {};
+template <class ConcreteOp> class DataTypeFromArgs : public TraitBase<ConcreteOp, DataTypeFromArgs> {};
 
 /**
  * @brief The data type (of the single result) is always scalar.
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class DataTypeSca : public TraitBase<ConcreteOp, DataTypeSca> {};
+template <class ConcreteOp> class DataTypeSca : public TraitBase<ConcreteOp, DataTypeSca> {};
 
 /**
  * @brief The data type (of the single result) is always `Matrix`.
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class DataTypeMat : public TraitBase<ConcreteOp, DataTypeMat> {};
+template <class ConcreteOp> class DataTypeMat : public TraitBase<ConcreteOp, DataTypeMat> {};
 
 /**
  * @brief The data type (of the single result) is always `Frame`.
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class DataTypeFrm : public TraitBase<ConcreteOp, DataTypeFrm> {};
+template <class ConcreteOp> class DataTypeFrm : public TraitBase<ConcreteOp, DataTypeFrm> {};
 
 // ----------------------------------------------------------------------------
 // Value type
@@ -104,8 +98,7 @@ class DataTypeFrm : public TraitBase<ConcreteOp, DataTypeFrm> {};
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class ValueTypeCmp : public TraitBase<ConcreteOp, ValueTypeCmp> {};
+template <class ConcreteOp> class ValueTypeCmp : public TraitBase<ConcreteOp, ValueTypeCmp> {};
 
 /**
  * @brief The value type (of the single result) is always the same as the value
@@ -113,9 +106,7 @@ class ValueTypeCmp : public TraitBase<ConcreteOp, ValueTypeCmp> {};
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class ValueTypeFromFirstArg
-    : public TraitBase<ConcreteOp, ValueTypeFromFirstArg> {};
+template <class ConcreteOp> class ValueTypeFromFirstArg : public TraitBase<ConcreteOp, ValueTypeFromFirstArg> {};
 
 // TODO Merge this trait with ValueTypeFromFirstArg into a parametric trait
 // ValueTypeFromArg<N>, see #487.
@@ -125,9 +116,7 @@ class ValueTypeFromFirstArg
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class ValueTypeFromThirdArg
-    : public TraitBase<ConcreteOp, ValueTypeFromThirdArg> {};
+template <class ConcreteOp> class ValueTypeFromThirdArg : public TraitBase<ConcreteOp, ValueTypeFromThirdArg> {};
 
 /**
  * @brief The value type (of the single result) is the most general of the
@@ -155,8 +144,7 @@ class ValueTypeFromThirdArg
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class ValueTypeFromArgs : public TraitBase<ConcreteOp, ValueTypeFromArgs> {};
+template <class ConcreteOp> class ValueTypeFromArgs : public TraitBase<ConcreteOp, ValueTypeFromArgs> {};
 
 /**
  * @brief Like `ValueTypeFromArgs`, but if the outcome is not a floating-point
@@ -167,9 +155,7 @@ class ValueTypeFromArgs : public TraitBase<ConcreteOp, ValueTypeFromArgs> {};
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class ValueTypeFromArgsFP : public TraitBase<ConcreteOp, ValueTypeFromArgsFP> {
-};
+template <class ConcreteOp> class ValueTypeFromArgsFP : public TraitBase<ConcreteOp, ValueTypeFromArgsFP> {};
 
 /**
  * @brief Like `ValueTypeFromArgs`, but if the outcome is not an integer
@@ -180,9 +166,7 @@ class ValueTypeFromArgsFP : public TraitBase<ConcreteOp, ValueTypeFromArgsFP> {
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class ValueTypeFromArgsInt
-    : public TraitBase<ConcreteOp, ValueTypeFromArgsInt> {};
+template <class ConcreteOp> class ValueTypeFromArgsInt : public TraitBase<ConcreteOp, ValueTypeFromArgsInt> {};
 
 /**
  * @brief The value type (of the single result) reflects a horizontal
@@ -202,26 +186,22 @@ class ValueTypeFromArgsInt
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class ValueTypesConcat : public TraitBase<ConcreteOp, ValueTypesConcat> {};
+template <class ConcreteOp> class ValueTypesConcat : public TraitBase<ConcreteOp, ValueTypesConcat> {};
 
 /**
  * @brief The value type (of the single result) is `SI64`.
  */
-template <class ConcreteOp>
-class ValueTypeSI64 : public TraitBase<ConcreteOp, ValueTypeSI64> {};
+template <class ConcreteOp> class ValueTypeSI64 : public TraitBase<ConcreteOp, ValueTypeSI64> {};
 
 /**
  * @brief The value type (of the single result) is `Size`.
  */
-template <class ConcreteOp>
-class ValueTypeSize : public TraitBase<ConcreteOp, ValueTypeSize> {};
+template <class ConcreteOp> class ValueTypeSize : public TraitBase<ConcreteOp, ValueTypeSize> {};
 
 /**
  * @brief The value type (of the single result) is `String`.
  */
-template <class ConcreteOp>
-class ValueTypeStr : public TraitBase<ConcreteOp, ValueTypeStr> {};
+template <class ConcreteOp> class ValueTypeStr : public TraitBase<ConcreteOp, ValueTypeStr> {};
 
 // ============================================================================
 // Traits determining data type and value type together
@@ -233,8 +213,7 @@ class ValueTypeStr : public TraitBase<ConcreteOp, ValueTypeStr> {};
  *
  * Assumes that the operation has always exactly one result.
  */
-template <class ConcreteOp>
-class TypeFromFirstArg : public TraitBase<ConcreteOp, TypeFromFirstArg> {};
+template <class ConcreteOp> class TypeFromFirstArg : public TraitBase<ConcreteOp, TypeFromFirstArg> {};
 
 } // namespace mlir::OpTrait
 

@@ -28,8 +28,7 @@
 #include "mlir/Transforms/Passes.h"
 
 /// Insert an allocation for the given MemRefType.
-mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc,
-                              mlir::PatternRewriter &rewriter) {
+mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc, mlir::PatternRewriter &rewriter) {
     auto alloc = rewriter.create<mlir::memref::AllocOp>(loc, type);
 
     // Make sure to allocate at the beginning of the block.
@@ -39,16 +38,13 @@ mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc,
     return alloc;
 }
 
-void insertMemRefDealloc(mlir::Value memref, mlir::Location loc,
-                         mlir::PatternRewriter &rewriter) {
+void insertMemRefDealloc(mlir::Value memref, mlir::Location loc, mlir::PatternRewriter &rewriter) {
     auto dealloc = rewriter.create<mlir::memref::DeallocOp>(loc, memref);
     dealloc->moveBefore(&memref.getParentBlock()->back());
 }
 
-void affineFillMemRef(mlir::Value value,
-                         mlir::ConversionPatternRewriter &rewriter,
-                         mlir::Location loc, mlir::ArrayRef<int64_t> shape,
-                         mlir::MLIRContext *ctx, mlir::Value memRef) {
+void affineFillMemRef(mlir::Value value, mlir::ConversionPatternRewriter &rewriter, mlir::Location loc,
+                      mlir::ArrayRef<int64_t> shape, mlir::MLIRContext *ctx, mlir::Value memRef) {
     constexpr int ROW = 0;
     constexpr int COL = 1;
     llvm::SmallVector<mlir::Value, 4> loopIvs;
@@ -74,16 +70,11 @@ void affineFillMemRef(mlir::Value value,
     rewriter.setInsertionPointAfter(outerLoop);
 }
 
-mlir::Value
-convertMemRefToDenseMatrix(mlir::Location loc,
-                           mlir::ConversionPatternRewriter &rewriter,
-                           mlir::Value memRef, mlir::Type type) {
-    auto extractStridedMetadataOp =
-        rewriter.create<mlir::memref::ExtractStridedMetadataOp>(loc, memRef);
+mlir::Value convertMemRefToDenseMatrix(mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
+                                       mlir::Value memRef, mlir::Type type) {
+    auto extractStridedMetadataOp = rewriter.create<mlir::memref::ExtractStridedMetadataOp>(loc, memRef);
     // aligned ptr (memref.data)
-    mlir::Value alignedPtr =
-        rewriter.create<mlir::memref::ExtractAlignedPointerAsIndexOp>(loc,
-                                                                      memRef);
+    mlir::Value alignedPtr = rewriter.create<mlir::memref::ExtractAlignedPointerAsIndexOp>(loc, memRef);
     // offset
     mlir::Value offset = extractStridedMetadataOp.getOffset();
     // strides
@@ -91,51 +82,38 @@ convertMemRefToDenseMatrix(mlir::Location loc,
     // sizes
     mlir::ResultRange sizes = extractStridedMetadataOp.getSizes();
 
-    return rewriter.create<mlir::daphne::ConvertMemRefToDenseMatrix>(
-        loc, type, alignedPtr, offset, sizes[0], sizes[1], strides[0],
-        strides[1]);
+    return rewriter.create<mlir::daphne::ConvertMemRefToDenseMatrix>(loc, type, alignedPtr, offset, sizes[0], sizes[1],
+                                                                     strides[0], strides[1]);
 }
 
 mlir::Type convertFloat(mlir::FloatType floatType) {
-    return mlir::IntegerType::get(floatType.getContext(),
-                                  floatType.getIntOrFloatBitWidth());
+    return mlir::IntegerType::get(floatType.getContext(), floatType.getIntOrFloatBitWidth());
 }
 
 mlir::Type convertInteger(mlir::IntegerType intType) {
-    return mlir::IntegerType::get(intType.getContext(),
-                                  intType.getIntOrFloatBitWidth());
+    return mlir::IntegerType::get(intType.getContext(), intType.getIntOrFloatBitWidth());
 }
 
-llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder,
-                                                       mlir::Type type,
-                                                       mlir::ValueRange inputs,
-                                                       mlir::Location loc) {
+llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
+                                                       mlir::ValueRange inputs, mlir::Location loc) {
     mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
     mlir::Type toType = getElementTypeOrSelf(type);
 
-    if ((!fromType.isSignedInteger() && !fromType.isUnsignedInteger()) ||
-        !toType.isSignlessInteger())
+    if ((!fromType.isSignedInteger() && !fromType.isUnsignedInteger()) || !toType.isSignlessInteger())
         return std::nullopt;
     // Use unrealized conversion casts to do signful->signless conversions.
-    return builder
-        .create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])
-        ->getResult(0);
+    return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])->getResult(0);
 }
 
-llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder,
-                                                     mlir::Type type,
-                                                     mlir::ValueRange inputs,
+llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
                                                      mlir::Location loc) {
     mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
     mlir::Type toType = getElementTypeOrSelf(type);
 
-    if (!fromType.isSignlessInteger() ||
-        (!toType.isSignedInteger() && !toType.isUnsignedInteger()))
+    if (!fromType.isSignlessInteger() || (!toType.isSignedInteger() && !toType.isUnsignedInteger()))
         return std::nullopt;
     // Use unrealized conversion casts to do signless->signful conversions.
-    return builder
-        .create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])
-        ->getResult(0);
+    return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])->getResult(0);
 }
 
 mlir::Operation *findLastUseOfSSAValue(mlir::Value &v) {

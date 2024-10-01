@@ -27,10 +27,8 @@ class WorkerGPU : public Worker {
 
   public:
     // ToDo: remove compile-time verbose parameter and use logger
-    WorkerGPU(TaskQueue *tq, DCTX(dctx), bool verbose, uint32_t fid = 0,
-              uint32_t batchSize = 100)
-        : Worker(dctx), _q(tq), _verbose(verbose), _fid(fid),
-          _batchSize(batchSize) {
+    WorkerGPU(TaskQueue *tq, DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100)
+        : Worker(dctx), _q(tq), _verbose(verbose), _fid(fid), _batchSize(batchSize) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerGPU::run, this);
     }

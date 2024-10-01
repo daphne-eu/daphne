@@ -17,8 +17,8 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/List.h>
 #include <runtime/local/datastructures/Structure.h>
 
@@ -26,8 +26,7 @@
 // Convenience function
 // ****************************************************************************
 
-template <class DT>
-void createList(List<DT> *&res, const DT **elems, size_t numElems, DCTX(ctx)) {
+template <class DT> void createList(List<DT> *&res, const DT **elems, size_t numElems, DCTX(ctx)) {
     res = DataObjectFactory::create<List<DT>>();
     for (size_t i = 0; i < numElems; i++)
         res->append(elems[i]);

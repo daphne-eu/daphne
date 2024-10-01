@@ -44,10 +44,8 @@ class Frame : public Structure {
 
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
-    template <class DataType, typename... ArgTypes>
-    friend DataType *DataObjectFactory::create(ArgTypes...);
-    template <class DataType>
-    friend void DataObjectFactory::destroy(const DataType *obj);
+    template <class DataType, typename... ArgTypes> friend DataType *DataObjectFactory::create(ArgTypes...);
+    template <class DataType> friend void DataObjectFactory::destroy(const DataType *obj);
 
     /**
      * @brief An array of length `numCols` of the value types of the columns of
@@ -99,9 +97,8 @@ class Frame : public Structure {
         labels2idxs.clear();
         for (size_t i = 0; i < numCols; i++) {
             if (labels2idxs.count(labels[i]))
-                throw std::runtime_error(
-                    "a frame's column labels must be unique, but '" +
-                    labels[i] + "' occurs more than once");
+                throw std::runtime_error("a frame's column labels must be unique, but '" + labels[i] +
+                                         "' occurs more than once");
             labels2idxs[labels[i]] = i;
         }
     }
@@ -136,30 +133,24 @@ class Frame : public Structure {
      * shall be initialized to zeros (`true`), or be left uninitialized
      * (`false`).
      */
-    Frame(size_t maxNumRows, size_t numCols, const ValueTypeCode *schema,
-          const std::string *labels, bool zero)
-        : Structure(maxNumRows, numCols), schema(new ValueTypeCode[numCols]),
-          labels(new std::string[numCols]),
+    Frame(size_t maxNumRows, size_t numCols, const ValueTypeCode *schema, const std::string *labels, bool zero)
+        : Structure(maxNumRows, numCols), schema(new ValueTypeCode[numCols]), labels(new std::string[numCols]),
           columns(new std::shared_ptr<ColByteType>[numCols]) {
         for (size_t i = 0; i < numCols; i++) {
             this->schema[i] = schema[i];
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
-            const size_t sizeAlloc =
-                maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            this->columns[i] = std::shared_ptr<ColByteType>(
-                new ColByteType[sizeAlloc],
-                std::default_delete<ColByteType[]>());
+            const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
+            this->columns[i] =
+                std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc], std::default_delete<ColByteType[]>());
             if (zero)
                 memset(this->columns[i].get(), 0, sizeAlloc);
         }
         initLabels2Idxs();
     }
 
-    Frame(const Frame *lhs, const Frame *rhs)
-        : Structure(lhs->getNumRows(), lhs->getNumCols() + rhs->getNumCols()) {
+    Frame(const Frame *lhs, const Frame *rhs) : Structure(lhs->getNumRows(), lhs->getNumCols() + rhs->getNumCols()) {
         if (lhs->getNumRows() != rhs->getNumRows())
-            throw std::runtime_error(
-                "both input frames must have the same number of rows");
+            throw std::runtime_error("both input frames must have the same number of rows");
 
         schema = new ValueTypeCode[numCols];
         labels = new std::string[numCols];
@@ -176,24 +167,20 @@ class Frame : public Structure {
         for (size_t i = 0; i < numColsRhs; i++) {
             schema[numColsLhs + i] = rhs->schema[i];
             labels[numColsLhs + i] = rhs->labels[i];
-            columns[numColsLhs + i] =
-                std::shared_ptr<ColByteType>(rhs->columns[i]);
+            columns[numColsLhs + i] = std::shared_ptr<ColByteType>(rhs->columns[i]);
         }
         initLabels2Idxs();
     }
 
     template <typename VT>
-    bool tryValueType(Structure *colMat, ValueTypeCode *schemaSlot,
-                      std::shared_ptr<ColByteType> *columnsSlot) {
+    bool tryValueType(Structure *colMat, ValueTypeCode *schemaSlot, std::shared_ptr<ColByteType> *columnsSlot) {
         if (auto colMat2 = dynamic_cast<DenseMatrix<VT> *>(colMat)) {
             if (colMat2->getRowSkip() != 1)
-                throw std::runtime_error(
-                    "Frame (tryValueType): all given matrices must not be a "
-                    "view of a column of a larger matrix");
+                throw std::runtime_error("Frame (tryValueType): all given matrices must not be a "
+                                         "view of a column of a larger matrix");
             *schemaSlot = ValueTypeUtils::codeFor<VT>;
             std::shared_ptr<VT[]> orig = colMat2->getValuesSharedPtr();
-            *columnsSlot = std::shared_ptr<ColByteType>(
-                orig, reinterpret_cast<ColByteType *>(orig.get()));
+            *columnsSlot = std::shared_ptr<ColByteType>(orig, reinterpret_cast<ColByteType *>(orig.get()));
             return true;
         }
         return false;
@@ -215,40 +202,30 @@ class Frame : public Structure {
      * these matrices must not be views on a single column of a larger matrix.
      */
     Frame(const std::vector<Structure *> &colMats, const std::string *labels)
-        : Structure(colMats.empty() ? 0 : colMats[0]->getNumRows(),
-                    colMats.size()) {
+        : Structure(colMats.empty() ? 0 : colMats[0]->getNumRows(), colMats.size()) {
         const size_t numCols = colMats.size();
         if (numCols == 0)
-            throw std::runtime_error(
-                "Frame: at least one column matrix must be provided");
+            throw std::runtime_error("Frame: at least one column matrix must be provided");
         schema = new ValueTypeCode[numCols];
         this->labels = new std::string[numCols];
         columns = new std::shared_ptr<ColByteType>[numCols];
         for (size_t c = 0; c < numCols; c++) {
             Structure *colMat = colMats[c];
             if (colMat->getNumCols() != 1)
-                throw std::runtime_error(
-                    "Frame: all given matrices must be column matrices");
+                throw std::runtime_error("Frame: all given matrices must be column matrices");
             if (colMat->getNumRows() != numRows)
                 throw std::runtime_error("Frame: all given matrices must have "
                                          "the same number of rows");
             this->labels[c] = labels ? labels[c] : getDefaultLabel(c);
             // For all value types.
             bool found = tryValueType<int8_t>(colMat, schema + c, columns + c);
-            found =
-                found || tryValueType<int32_t>(colMat, schema + c, columns + c);
-            found =
-                found || tryValueType<int64_t>(colMat, schema + c, columns + c);
-            found =
-                found || tryValueType<uint8_t>(colMat, schema + c, columns + c);
-            found = found ||
-                    tryValueType<uint32_t>(colMat, schema + c, columns + c);
-            found = found ||
-                    tryValueType<uint64_t>(colMat, schema + c, columns + c);
-            found =
-                found || tryValueType<float>(colMat, schema + c, columns + c);
-            found =
-                found || tryValueType<double>(colMat, schema + c, columns + c);
+            found = found || tryValueType<int32_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<int64_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<uint8_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<uint32_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<uint64_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<float>(colMat, schema + c, columns + c);
+            found = found || tryValueType<double>(colMat, schema + c, columns + c);
             if (!found)
                 throw std::runtime_error("unsupported value type");
         }
@@ -268,20 +245,16 @@ class Frame : public Structure {
      * @param colIdxs An array of length `numCols` of the indexes of the
      * columns to extract from `src`.
      */
-    Frame(const Frame *src, int64_t rowLowerIncl, int64_t rowUpperExcl,
-          size_t numCols, const size_t *colIdxs)
+    Frame(const Frame *src, int64_t rowLowerIncl, int64_t rowUpperExcl, size_t numCols, const size_t *colIdxs)
         : Structure(rowUpperExcl - rowLowerIncl, numCols) {
         if (src == nullptr)
             throw std::runtime_error("invalid argument passed to frame "
                                      "constructor: src must not be null");
 
-        if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl ||
-            static_cast<ssize_t>(src->numRows) < rowUpperExcl ||
-            (rowLowerIncl == static_cast<ssize_t>(src->numRows) &&
-             rowLowerIncl != 0)) {
+        if (rowLowerIncl < 0 || rowUpperExcl < rowLowerIncl || static_cast<ssize_t>(src->numRows) < rowUpperExcl ||
+            (rowLowerIncl == static_cast<ssize_t>(src->numRows) && rowLowerIncl != 0)) {
             std::ostringstream errMsg;
-            errMsg << "invalid arguments '" << rowLowerIncl << ", "
-                   << rowUpperExcl
+            errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl
                    << "' passed to frame constructor: it must hold 0 <= "
                       "rowLowerIncl <= rowUpperExcl <= #rows "
                    << "and rowLowerIncl < #rows (unless both are zero) where "
@@ -309,10 +282,9 @@ class Frame : public Structure {
         for (size_t i = 0; i < numCols; i++) {
             this->schema[i] = src->schema[colIdxs[i]];
             this->labels[i] = src->labels[colIdxs[i]];
-            this->columns[i] = std::shared_ptr<ColByteType>(
-                src->columns[colIdxs[i]],
-                src->columns[colIdxs[i]].get() +
-                    rowLowerIncl * ValueTypeUtils::sizeOf(schema[i]));
+            this->columns[i] = std::shared_ptr<ColByteType>(src->columns[colIdxs[i]],
+                                                            src->columns[colIdxs[i]].get() +
+                                                                rowLowerIncl * ValueTypeUtils::sizeOf(schema[i]));
         }
         initDeduplicatedLabels2Idxs();
     }
@@ -330,9 +302,7 @@ class Frame : public Structure {
      * @param pos The position of the column in the frame (starting at zero).
      * @return The default label for the pos-th column.
      */
-    static std::string getDefaultLabel(size_t pos) {
-        return "col_" + std::to_string(pos);
-    }
+    static std::string getDefaultLabel(size_t pos) { return "col_" + std::to_string(pos); }
 
     void shrinkNumRows(size_t numRows) {
         // TODO Here we could reduce the allocated size of the column arrays.
@@ -358,53 +328,39 @@ class Frame : public Structure {
 
     ValueTypeCode getColumnType(size_t idx) const {
         if (idx >= numCols)
-            throw std::runtime_error(
-                "Frame (getColumnType): column index is out of bounds");
+            throw std::runtime_error("Frame (getColumnType): column index is out of bounds");
         return schema[idx];
     }
 
-    ValueTypeCode getColumnType(const std::string &label) const {
-        return getColumnType(getColumnIdx(label));
-    }
+    ValueTypeCode getColumnType(const std::string &label) const { return getColumnType(getColumnIdx(label)); }
 
-    template <typename ValueType>
-    DenseMatrix<ValueType> *getColumn(size_t idx) {
+    template <typename ValueType> DenseMatrix<ValueType> *getColumn(size_t idx) {
         if (ValueTypeUtils::codeFor<ValueType> != schema[idx])
             throw std::runtime_error("Frame (getColumn): requested value type "
                                      "must match the type of the column");
         return DataObjectFactory::create<DenseMatrix<ValueType>>(
-            numRows, 1,
-            std::shared_ptr<ValueType[]>(
-                columns[idx],
-                reinterpret_cast<ValueType *>(columns[idx].get())));
+            numRows, 1, std::shared_ptr<ValueType[]>(columns[idx], reinterpret_cast<ValueType *>(columns[idx].get())));
     }
 
-    template <typename ValueType>
-    const DenseMatrix<ValueType> *getColumn(size_t idx) const {
+    template <typename ValueType> const DenseMatrix<ValueType> *getColumn(size_t idx) const {
         return const_cast<Frame *>(this)->getColumn<ValueType>(idx);
     }
 
-    template <typename ValueType>
-    DenseMatrix<ValueType> *getColumn(const std::string &label) {
+    template <typename ValueType> DenseMatrix<ValueType> *getColumn(const std::string &label) {
         return getColumn<ValueType>(getColumnIdx(label));
     }
 
-    template <typename ValueType>
-    const DenseMatrix<ValueType> *getColumn(const std::string &label) const {
+    template <typename ValueType> const DenseMatrix<ValueType> *getColumn(const std::string &label) const {
         return const_cast<Frame *>(this)->getColumn<ValueType>(label);
     }
 
     void *getColumnRaw(size_t idx) { return columns[idx].get(); }
 
-    const void *getColumnRaw(size_t idx) const {
-        return const_cast<Frame *>(this)->getColumnRaw(idx);
-    }
+    const void *getColumnRaw(size_t idx) const { return const_cast<Frame *>(this)->getColumnRaw(idx); }
 
     size_t getNumDims() const override { return 2; }
 
-    size_t getNumItems() const override {
-        return this->numRows * this->numCols;
-    }
+    size_t getNumItems() const override { return this->numRows * this->numCols; }
 
     void print(std::ostream &os) const override {
         os << "Frame(" << numRows << 'x' << numCols << ", [";
@@ -427,24 +383,18 @@ class Frame : public Structure {
         }
     }
 
-    Frame *sliceRow(size_t rl, size_t ru) const override {
-        return slice(rl, ru, 0, numCols);
-    }
+    Frame *sliceRow(size_t rl, size_t ru) const override { return slice(rl, ru, 0, numCols); }
 
-    Frame *sliceCol(size_t cl, size_t cu) const override {
-        return slice(0, numRows, cl, cu);
-    }
+    Frame *sliceCol(size_t cl, size_t cu) const override { return slice(0, numRows, cl, cu); }
 
     Frame *slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
         if (cl > cu)
-            throw std::runtime_error(
-                "Frame::slice(): cl must not be greater than cu");
+            throw std::runtime_error("Frame::slice(): cl must not be greater than cu");
         size_t *colIdxs = new size_t[cu - cl];
         size_t i = 0;
         for (size_t c = cl; c < cu; c++, i++)
             colIdxs[i] = c;
-        auto res =
-            DataObjectFactory::create<Frame>(this, rl, ru, cu - cl, colIdxs);
+        auto res = DataObjectFactory::create<Frame>(this, rl, ru, cu - cl, colIdxs);
         delete[] colIdxs;
         return res;
     }
@@ -460,8 +410,7 @@ class Frame : public Structure {
         if (numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
             return false;
 
-        if (memcmp(this->getSchema(), rhs.getSchema(),
-                   numCols * sizeof(ValueTypeCode)))
+        if (memcmp(this->getSchema(), rhs.getSchema(), numCols * sizeof(ValueTypeCode)))
             return false;
 
         const std::string *labelsLhs = this->getLabels();
@@ -475,56 +424,47 @@ class Frame : public Structure {
             switch (this->getColumnType(c)) {
             // For all value types:
             case ValueTypeCode::F64:
-                if (!(*(this->getColumn<double>(c)) ==
-                      *(rhs.getColumn<double>(c)))) {
+                if (!(*(this->getColumn<double>(c)) == *(rhs.getColumn<double>(c)))) {
                     return false;
                 }
                 break;
             case ValueTypeCode::F32:
-                if (!(*(this->getColumn<float>(c)) ==
-                      *(rhs.getColumn<float>(c)))) {
+                if (!(*(this->getColumn<float>(c)) == *(rhs.getColumn<float>(c)))) {
                     return false;
                 }
                 break;
             case ValueTypeCode::SI64:
-                if (!(*(this->getColumn<int64_t>(c)) ==
-                      *(rhs.getColumn<int64_t>(c)))) {
+                if (!(*(this->getColumn<int64_t>(c)) == *(rhs.getColumn<int64_t>(c)))) {
                     return false;
                 }
                 break;
             case ValueTypeCode::SI32:
-                if (!(*(this->getColumn<int32_t>(c)) ==
-                      *(rhs.getColumn<int32_t>(c)))) {
+                if (!(*(this->getColumn<int32_t>(c)) == *(rhs.getColumn<int32_t>(c)))) {
                     return false;
                 }
                 break;
             case ValueTypeCode::SI8:
-                if (!(*(this->getColumn<int8_t>(c)) ==
-                      *(rhs.getColumn<int8_t>(c)))) {
+                if (!(*(this->getColumn<int8_t>(c)) == *(rhs.getColumn<int8_t>(c)))) {
                     return false;
                 }
                 break;
             case ValueTypeCode::UI64:
-                if (!(*(this->getColumn<uint64_t>(c)) ==
-                      *(rhs.getColumn<uint64_t>(c)))) {
+                if (!(*(this->getColumn<uint64_t>(c)) == *(rhs.getColumn<uint64_t>(c)))) {
                     return false;
                 }
                 break;
             case ValueTypeCode::UI32:
-                if (!(*(this->getColumn<uint32_t>(c)) ==
-                      *(rhs.getColumn<uint32_t>(c)))) {
+                if (!(*(this->getColumn<uint32_t>(c)) == *(rhs.getColumn<uint32_t>(c)))) {
                     return false;
                 }
                 break;
             case ValueTypeCode::UI8:
-                if (!(*(this->getColumn<uint8_t>(c)) ==
-                      *(rhs.getColumn<uint8_t>(c)))) {
+                if (!(*(this->getColumn<uint8_t>(c)) == *(rhs.getColumn<uint8_t>(c)))) {
                     return false;
                 }
                 break;
             default:
-                throw std::runtime_error(
-                    "CheckEq::apply: unknown value type code");
+                throw std::runtime_error("CheckEq::apply: unknown value type code");
             }
         }
         return true;

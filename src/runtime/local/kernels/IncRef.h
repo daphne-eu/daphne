@@ -28,9 +28,7 @@ template <class DTArg> struct IncRef {
 };
 
 template <> struct IncRef<Structure> {
-    static void apply(const Structure *arg, DCTX(ctx)) {
-        arg->increaseRefCounter();
-    }
+    static void apply(const Structure *arg, DCTX(ctx)) { arg->increaseRefCounter(); }
 };
 
 template <> struct IncRef<char> {
@@ -43,6 +41,4 @@ template <> struct IncRef<char> {
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-template <class DTArg> void incRef(const DTArg *arg, DCTX(ctx)) {
-    IncRef<DTArg>::apply(arg, ctx);
-}
+template <class DTArg> void incRef(const DTArg *arg, DCTX(ctx)) { IncRef<DTArg>::apply(arg, ctx); }

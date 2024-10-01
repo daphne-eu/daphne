@@ -38,16 +38,14 @@ template <typename DataType> class List : public Structure {
 
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
-    template <class DataType_, typename... ArgTypes>
-    friend DataType_ *DataObjectFactory::create(ArgTypes...);
-    template <class DataType_>
-    friend void DataObjectFactory::destroy(const DataType_ *obj);
+    template <class DataType_, typename... ArgTypes> friend DataType_ *DataObjectFactory::create(ArgTypes...);
+    template <class DataType_> friend void DataObjectFactory::destroy(const DataType_ *obj);
 
     /**
      * @brief Creates a new empty list.
      */
     List()
-        : Structure(0, 1) {
+        : Structure(0, 1){
               // nothing to do
           };
 
@@ -85,8 +83,7 @@ template <typename DataType> class List : public Structure {
 
     void print(std::ostream &os) const override {
         os << "List(" << elements.size() << ", " << DataType::getName() << ", "
-           << ValueTypeUtils::cppNameFor<typename DataType::VT> << ')'
-           << std::endl;
+           << ValueTypeUtils::cppNameFor<typename DataType::VT> << ')' << std::endl;
         for (size_t i = 0; i < elements.size(); i++)
             elements[i]->print(os);
     }
@@ -99,8 +96,7 @@ template <typename DataType> class List : public Structure {
         throw std::runtime_error("sliceCol is not supported for List yet");
     }
 
-    Structure *slice(size_t rl, size_t ru, size_t cl,
-                     size_t cu) const override {
+    Structure *slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
         throw std::runtime_error("slice is not supported for List yet");
     }
 
@@ -136,10 +132,8 @@ template <typename DataType> class List : public Structure {
      */
     const DataType *remove(size_t idx) {
         if (idx >= elements.size())
-            throw std::runtime_error(
-                "trying to remove element at position " + std::to_string(idx) +
-                " from a list with " + std::to_string(elements.size()) +
-                " elements");
+            throw std::runtime_error("trying to remove element at position " + std::to_string(idx) +
+                                     " from a list with " + std::to_string(elements.size()) + " elements");
         const DataType *element = elements[idx];
         elements.erase(elements.begin() + idx);
         // Note that we do not decrease the reference counter of the element. It
@@ -148,8 +142,7 @@ template <typename DataType> class List : public Structure {
     }
 };
 
-template <typename DataType>
-std::ostream &operator<<(std::ostream &os, const List<DataType> &obj) {
+template <typename DataType> std::ostream &operator<<(std::ostream &os, const List<DataType> &obj) {
     obj.print(os);
     return os;
 }

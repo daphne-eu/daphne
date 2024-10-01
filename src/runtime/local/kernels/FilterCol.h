@@ -32,8 +32,7 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg, typename VTSel> struct FilterCol {
-    static void apply(DTRes *&res, const DTArg *arg,
-                      const DenseMatrix<VTSel> *sel, DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,8 +40,7 @@ template <class DTRes, class DTArg, typename VTSel> struct FilterCol {
 // ****************************************************************************
 
 template <class DTRes, class DTArg, typename VTSel>
-void filterCol(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel,
-               DCTX(ctx)) {
+void filterCol(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
     FilterCol<DTRes, DTArg, VTSel>::apply(res, arg, sel, ctx);
 }
 
@@ -54,16 +52,13 @@ void filterCol(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel,
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename VTSel>
-struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
+template <typename VT, typename VTSel> struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
         if (sel->getNumRows() != numColsArg)
-            throw std::runtime_error(
-                "sel must have exactly one entry (row) for each column in arg");
+            throw std::runtime_error("sel must have exactly one entry (row) for each column in arg");
         if (sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
@@ -72,8 +67,7 @@ struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             numColsRes += sel->get(c, 0);
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows,
-                                                             numColsRes, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
 
         const VT *valuesArg = arg->getValues();
         VT *valuesRes = res->getValues();
@@ -93,16 +87,13 @@ struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
 // Matrix <- Matrix
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename VTSel>
-struct FilterCol<Matrix<VT>, Matrix<VT>, VTSel> {
-    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg,
-                      const Matrix<VTSel> *sel, DCTX(ctx)) {
+template <typename VT, typename VTSel> struct FilterCol<Matrix<VT>, Matrix<VT>, VTSel> {
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, const Matrix<VTSel> *sel, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
         if (sel->getNumRows() != numColsArg)
-            throw std::runtime_error(
-                "sel must have exactly one entry (row) for each column in arg");
+            throw std::runtime_error("sel must have exactly one entry (row) for each column in arg");
         if (sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
@@ -111,8 +102,7 @@ struct FilterCol<Matrix<VT>, Matrix<VT>, VTSel> {
             numColsRes += sel->get(c, 0);
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows,
-                                                             numColsRes, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r) {

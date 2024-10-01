@@ -22,16 +22,12 @@ void StringRefCounter::inc(const char *arg) {
     if (auto found = stringRefCount.find(ptr); found != stringRefCount.end()) {
         // If the string was found, increase its reference counter.
         found->second++;
-        logger->debug(
-            "StringRefCounter::inc: ptr={}; arg={}; found and incremented", ptr,
-            arg);
+        logger->debug("StringRefCounter::inc: ptr={}; arg={}; found and incremented", ptr, arg);
     } else {
         // If the string was not found, implicitly assume a prior counter of 1,
         // and increase the counter to 2.
         stringRefCount.insert({ptr, 2});
-        logger->debug(
-            "StringRefCounter::inc: ptr={}; arg={}; not found and set to 2",
-            ptr, arg);
+        logger->debug("StringRefCounter::inc: ptr={}; arg={}; not found and set to 2", ptr, arg);
     }
 }
 
@@ -41,14 +37,10 @@ bool StringRefCounter::dec(const char *arg) {
     if (auto found = stringRefCount.find(ptr); found != stringRefCount.end()) {
         // If the string was found, decrease its reference counter.
         found->second--;
-        logger->debug(
-            "StringRefCounter::dec: ptr={}; arg={}; found and decremented", ptr,
-            arg);
+        logger->debug("StringRefCounter::dec: ptr={}; arg={}; found and decremented", ptr, arg);
         if (found->second == 0) {
             // If the reference counter became zero, erase it and return false.
-            logger->debug(
-                "StringRefCounter::dec: ptr={}; arg={}; became zero and erased",
-                ptr, arg);
+            logger->debug("StringRefCounter::dec: ptr={}; arg={}; became zero and erased", ptr, arg);
             stringRefCount.erase(found);
             return false;
         }
@@ -58,8 +50,7 @@ bool StringRefCounter::dec(const char *arg) {
     } else {
         // If the string was not found, implicitly assume a prior counter of 1,
         // don't change the stored counters, just return false.
-        logger->debug("StringRefCounter::dec: ptr={}; arg={}; not found", ptr,
-                      arg);
+        logger->debug("StringRefCounter::dec: ptr={}; arg={}; not found", ptr, arg);
         return false;
     }
 }

@@ -31,8 +31,7 @@ struct DataObjectFactory {
      * @param args
      * @return
      */
-    template <class DataType, typename... ArgTypes>
-    static DataType *create(ArgTypes... args) {
+    template <class DataType, typename... ArgTypes> static DataType *create(ArgTypes... args) {
         // TODO Employ placement-new.
         return new DataType(args...);
     }
@@ -51,8 +50,7 @@ struct DataObjectFactory {
      */
     template <class DataType> static void destroy(const DataType *obj) {
         if (!obj)
-            throw std::runtime_error(
-                "DataObjectFactory::destroy() must not be called with nullptr");
+            throw std::runtime_error("DataObjectFactory::destroy() must not be called with nullptr");
 
         obj->refCounterMutex.lock();
         obj->refCounter--;
@@ -65,8 +63,7 @@ struct DataObjectFactory {
 
     // TODO Simplify many places in the code (especially test cases) by using
     // the new feature of destroying multiple data objects by one call.
-    template <typename DataType, typename... Rest>
-    static void destroy(const DataType *obj, const Rest *...rest) {
+    template <typename DataType, typename... Rest> static void destroy(const DataType *obj, const Rest *...rest) {
         destroy(obj);
         destroy(rest...);
     }

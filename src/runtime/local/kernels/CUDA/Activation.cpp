@@ -19,8 +19,7 @@
 
 namespace CUDA::NN::Activation {
 template <typename OP, typename DTRes, typename DTArg>
-void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, const DTArg *data,
-                                      DCTX(dctx)) {
+void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
     const size_t deviceID = 0; // ToDo: multi device support
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
@@ -36,21 +35,15 @@ void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, const DTArg *data,
     }
     VT *d_res = res->getValues(&alloc_desc);
 
-    CHECK_CUDNN(cudnnSetTensor4dDescriptor(
-        ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
-        1, 1, nr1, nc1));
-    CHECK_CUDNN(cudnnSetTensor4dDescriptor(
-        ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
-        1, 1, nr1, nc1));
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1, 1,
+                                           nr1, nc1));
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1, 1,
+                                           nr1, nc1));
 
-    CHECK_CUDNN(cudnnSetActivationDescriptor(ctx->activation_desc,
-                                             OP::getActivationType(),
-                                             CUDNN_PROPAGATE_NAN, 0.0));
+    CHECK_CUDNN(cudnnSetActivationDescriptor(ctx->activation_desc, OP::getActivationType(), CUDNN_PROPAGATE_NAN, 0.0));
 
-    CHECK_CUDNN(
-        cudnnActivationForward(ctx->getCUDNNHandle(), ctx->activation_desc,
-                               &blend_alpha, ctx->src_tensor_desc, d_input,
-                               &blend_beta, ctx->dst_tensor_desc, d_res));
+    CHECK_CUDNN(cudnnActivationForward(ctx->getCUDNNHandle(), ctx->activation_desc, &blend_alpha, ctx->src_tensor_desc,
+                                       d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
 }
 
 template struct Forward<ReLU, DenseMatrix<float>, DenseMatrix<float>>;

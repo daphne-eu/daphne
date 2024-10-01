@@ -41,8 +41,7 @@ struct SqlReplacement : public RewritePattern {
     SqlReplacement(MLIRContext *context, PatternBenefit benefit = 1)
         : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context) {}
 
-    LogicalResult matchAndRewrite(Operation *op,
-                                  PatternRewriter &rewriter) const override {
+    LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
         if (auto rOp = llvm::dyn_cast<mlir::daphne::RegisterViewOp>(op)) {
             std::stringstream view_stream;
             view_stream << rOp.getView().str();
@@ -63,8 +62,7 @@ struct SqlReplacement : public RewritePattern {
             ss << sqlop->getLoc();
             mlir::Value result_op;
             try {
-                result_op =
-                    parser.parseStreamFrame(rewriter, sql_query, sourceName);
+                result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
             } catch (std::runtime_error &re) {
                 throw ErrorHandler::rethrowError("RewriteSqlOpPass", re.what());
             }
@@ -77,8 +75,7 @@ struct SqlReplacement : public RewritePattern {
     }
 };
 
-struct RewriteSqlOpPass
-    : public PassWrapper<RewriteSqlOpPass, OperationPass<ModuleOp>> {
+struct RewriteSqlOpPass : public PassWrapper<RewriteSqlOpPass, OperationPass<ModuleOp>> {
     void runOnOperation() final;
 
     StringRef getArgument() const final { return "rewrite-sqlop"; }
@@ -91,8 +88,7 @@ void RewriteSqlOpPass::runOnOperation() {
 
     RewritePatternSet patterns(&getContext());
     ConversionTarget target(getContext());
-    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect,
-                           scf::SCFDialect, daphne::DaphneDialect>();
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addIllegalOp<mlir::daphne::SqlOp, mlir::daphne::RegisterViewOp>();
 
@@ -102,6 +98,4 @@ void RewriteSqlOpPass::runOnOperation() {
         signalPassFailure();
 }
 
-std::unique_ptr<Pass> daphne::createRewriteSqlOpPass() {
-    return std::make_unique<RewriteSqlOpPass>();
-}
+std::unique_ptr<Pass> daphne::createRewriteSqlOpPass() { return std::make_unique<RewriteSqlOpPass>(); }

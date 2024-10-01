@@ -46,8 +46,7 @@ using namespace mlir;
  *   object that is still needed in a surrounding scope, i.e., to prevent
  *   double frees.
  */
-struct ManageObjRefsPass
-    : public PassWrapper<ManageObjRefsPass, OperationPass<func::FuncOp>> {
+struct ManageObjRefsPass : public PassWrapper<ManageObjRefsPass, OperationPass<func::FuncOp>> {
     explicit ManageObjRefsPass() {}
     void runOnOperation() final;
 
@@ -59,8 +58,7 @@ void processMemRefInterop(OpBuilder builder, Value v) {
     Operation *lastUseOp = findLastUseOfSSAValue(v);
 
     builder.setInsertionPointAfter(lastUseOp);
-    builder.create<daphne::DecRefOp>(v.getLoc(),
-                                     v.getDefiningOp()->getOperand(0));
+    builder.create<daphne::DecRefOp>(v.getLoc(), v.getDefiningOp()->getOperand(0));
 }
 
 /**
@@ -82,8 +80,7 @@ void processValue(OpBuilder builder, Value v) {
 
     // Increase the reference counter of string literals, such that they don't
     // get gargabe collected.
-    if (defOp && llvm::isa<daphne::ConstantOp>(defOp) &&
-        llvm::isa<daphne::StringType>(v.getType())) {
+    if (defOp && llvm::isa<daphne::ConstantOp>(defOp) && llvm::isa<daphne::StringType>(v.getType())) {
         // The given value is a string literal. We want to increase its
         // reference counter right after its definition, such that it is never
         // removed. But if the defining op is the block of a FuncOp, make sure
@@ -104,14 +101,12 @@ void processValue(OpBuilder builder, Value v) {
     // have no clue which of its two arguments (2nd or 3rd one) it will return.
     // Unless we do something about it, the reference counter of the result will
     // be too low by 1. Thus, we increase the result's reference counter here.
-    if (defOp && llvm::isa<arith::SelectOp>(defOp) &&
-        llvm::isa<daphne::StringType>(v.getType())) {
+    if (defOp && llvm::isa<arith::SelectOp>(defOp) && llvm::isa<daphne::StringType>(v.getType())) {
         builder.setInsertionPointAfter(defOp);
         builder.create<daphne::IncRefOp>(v.getLoc(), v);
     }
 
-    if (!llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType,
-                   daphne::StringType>(v.getType()))
+    if (!llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(v.getType()))
         return;
 
     Operation *decRefAfterOp = nullptr;
@@ -185,14 +180,12 @@ void processValue(OpBuilder builder, Value v) {
  */
 void incRefIfObj(Value v, OpBuilder &b) {
     Type t = v.getType();
-    if (llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType,
-                  daphne::StringType>(t))
+    if (llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(t))
         b.create<daphne::IncRefOp>(v.getLoc(), v);
     else if (llvm::isa<daphne::UnknownType>(t))
-        throw ErrorHandler::compilerError(
-            v.getDefiningOp(), "ManageObjRefsPass",
-            "ManageObjRefsPass encountered a value of unknown type, so it "
-            "cannot know if it is a data object.");
+        throw ErrorHandler::compilerError(v.getDefiningOp(), "ManageObjRefsPass",
+                                          "ManageObjRefsPass encountered a value of unknown type, so it "
+                                          "cannot know if it is a data object.");
 }
 
 /**
@@ -234,12 +227,10 @@ void processBlock(OpBuilder builder, Block *b) {
                 incRefArgs(op, builder);
         }
         // Loops and function calls.
-        else if (llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp,
-                           daphne::GenericCallOp>(op))
+        else if (llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp>(op))
             incRefArgs(op, builder);
         // YieldOp of IfOp.
-        else if (llvm::isa<scf::YieldOp>(op) &&
-                 llvm::isa<scf::IfOp>(op.getParentOp())) {
+        else if (llvm::isa<scf::YieldOp>(op) && llvm::isa<scf::IfOp>(op.getParentOp())) {
             // Increase the reference counters of data objects that already
             // existed before the IfOp, because yielding them creates a new
             // SSA value referring to them.
@@ -283,6 +274,4 @@ void ManageObjRefsPass::runOnOperation() {
     processBlock(builder, &(f.getBody().front()));
 }
 
-std::unique_ptr<Pass> daphne::createManageObjRefsPass() {
-    return std::make_unique<ManageObjRefsPass>();
-}
+std::unique_ptr<Pass> daphne::createManageObjRefsPass() { return std::make_unique<ManageObjRefsPass>(); }

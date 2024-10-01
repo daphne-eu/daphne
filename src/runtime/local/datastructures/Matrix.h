@@ -31,12 +31,12 @@ template <typename ValueType> class Matrix : public Structure {
 
   protected:
     Matrix(size_t numRows, size_t numCols)
-        : Structure(numRows, numCols) {
+        : Structure(numRows, numCols){
               // nothing to do
           };
 
   public:
-    virtual ~Matrix() {
+    virtual ~Matrix(){
         // nothing to do
     };
 
@@ -160,13 +160,10 @@ template <typename ValueType> class Matrix : public Structure {
 
     size_t getNumDims() const override { return 2; }
 
-    size_t getNumItems() const override {
-        return this->numCols * this->numRows;
-    }
+    size_t getNumItems() const override { return this->numCols * this->numRows; }
 };
 
-template <typename ValueType>
-std::ostream &operator<<(std::ostream &os, const Matrix<ValueType> &obj) {
+template <typename ValueType> std::ostream &operator<<(std::ostream &os, const Matrix<ValueType> &obj) {
     obj.print(os);
     return os;
 }

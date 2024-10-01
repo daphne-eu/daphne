@@ -39,8 +39,7 @@ template <typename VTRes, class DTArg> struct AggAll {
 // Convenience function
 // ****************************************************************************
 
-template <typename VTRes, class DTArg>
-VTRes aggAll(AggOpCode opCode, const DTArg *arg, DCTX(ctx)) {
+template <typename VTRes, class DTArg> VTRes aggAll(AggOpCode opCode, const DTArg *arg, DCTX(ctx)) {
     return AggAll<VTRes, DTArg>::apply(opCode, arg, ctx);
 }
 
@@ -52,10 +51,8 @@ VTRes aggAll(AggOpCode opCode, const DTArg *arg, DCTX(ctx)) {
 // scalar <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg>
-struct AggAll<VTRes, DenseMatrix<VTArg>> {
-    static VTRes apply(AggOpCode opCode, const DenseMatrix<VTArg> *arg,
-                       DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct AggAll<VTRes, DenseMatrix<VTArg>> {
+    static VTRes apply(AggOpCode opCode, const DenseMatrix<VTArg> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
@@ -64,16 +61,14 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
         EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
         VTRes agg, stddev;
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
-            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(
-                AggOpCodeUtils::getBinaryOpCode(opCode));
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
             agg = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
         } else {
             // TODO Setting the function pointer yields the correct result.
             // However, since MEAN, VAR, and STDDEV are not sparse-safe, the
             // program does not take the same path for doing the summation, and
             // is less efficient. for MEAN, VAR, and STDDEV, we need to sum
-            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(
-                AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             agg = VTRes(0);
         }
 
@@ -118,12 +113,9 @@ struct AggAll<VTRes, DenseMatrix<VTArg>> {
 // scalar <- CSRMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg>
-struct AggAll<VTRes, CSRMatrix<VTArg>> {
-    static VTRes aggArray(const VTArg *values, size_t numNonZeros,
-                          size_t numCells,
-                          EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func,
-                          bool isSparseSafe, VTRes neutral, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct AggAll<VTRes, CSRMatrix<VTArg>> {
+    static VTRes aggArray(const VTArg *values, size_t numNonZeros, size_t numCells,
+                          EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func, bool isSparseSafe, VTRes neutral, DCTX(ctx)) {
         if (numNonZeros) {
             VTRes agg = static_cast<VTRes>(values[0]);
             for (size_t i = 1; i < numNonZeros; i++)
@@ -137,25 +129,19 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
             return func(neutral, 0, ctx);
     }
 
-    static VTRes apply(AggOpCode opCode, const CSRMatrix<VTArg> *arg,
-                       DCTX(ctx)) {
+    static VTRes apply(AggOpCode opCode, const CSRMatrix<VTArg> *arg, DCTX(ctx)) {
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
 
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func =
-                getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(
-                    AggOpCodeUtils::getBinaryOpCode(opCode));
+                getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
-            return aggArray(arg->getValues(0), arg->getNumNonZeros(),
-                            arg->getNumRows() * arg->getNumCols(), func,
-                            AggOpCodeUtils::isSparseSafe(opCode),
-                            AggOpCodeUtils::template getNeutral<VTRes>(opCode),
+            return aggArray(arg->getValues(0), arg->getNumNonZeros(), arg->getNumRows() * arg->getNumCols(), func,
+                            AggOpCodeUtils::isSparseSafe(opCode), AggOpCodeUtils::template getNeutral<VTRes>(opCode),
                             ctx);
         } else { // The op-code is either MEAN or STDDEV or VAR.
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func =
-                getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(
-                    AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
-            auto agg = aggArray(arg->getValues(0), arg->getNumNonZeros(),
-                                arg->getNumRows() * arg->getNumCols(), func,
+                getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            auto agg = aggArray(arg->getValues(0), arg->getNumNonZeros(), arg->getNumRows() * arg->getNumCols(), func,
                                 true, VTRes(0), ctx);
             agg = agg / (arg->getNumRows() * arg->getNumCols());
             if (opCode == AggOpCode::MEAN)
@@ -169,9 +155,7 @@ struct AggAll<VTRes, CSRMatrix<VTArg>> {
                     VTRes val = static_cast<VTRes>((valuesArg[i])) - agg;
                     stddev = stddev + val * val;
                 }
-                stddev += ((arg->getNumRows() * arg->getNumCols()) -
-                           arg->getNumNonZeros()) *
-                          agg * agg;
+                stddev += ((arg->getNumRows() * arg->getNumCols()) - arg->getNumNonZeros()) * agg * agg;
                 stddev /= (arg->getNumRows() * arg->getNumCols());
 
                 // Variance --> stddev before sqrt() is variance
@@ -199,16 +183,14 @@ template <typename VTRes, typename VTArg> struct AggAll<VTRes, Matrix<VTArg>> {
         EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
         VTRes agg, stddev;
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
-            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(
-                AggOpCodeUtils::getBinaryOpCode(opCode));
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
             agg = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
         } else {
             // TODO Setting the function pointer yields the correct result.
             // However, since MEAN, VAR, and STDDEV are not sparse-safe, the
             // program does not take the same path for doing the summation, and
             // is less efficient. for MEAN, VAR, and STDDEV, we need to sum
-            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(
-                AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             agg = VTRes(0);
         }
 

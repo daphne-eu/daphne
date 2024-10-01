@@ -29,9 +29,7 @@
 
 #include <istream>
 
-void DaphneDSLParser::parseStream(mlir::OpBuilder &builder,
-                                  std::istream &stream,
-                                  const std::string &sourceName) {
+void DaphneDSLParser::parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) {
     CancelingErrorListener errorListener;
     // TODO: we could remove `sourceName` arg and instead use location from
     // module for filename
@@ -60,18 +58,15 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder &builder,
         DaphneDSLVisitor visitor(module, builder, args, sourceName, userConf);
         visitor.visitScript(ctx);
 
-        mlir::Location loc =
-            mlir::FileLineColLoc::get(builder.getStringAttr(sourceName), 0, 0);
+        mlir::Location loc = mlir::FileLineColLoc::get(builder.getStringAttr(sourceName), 0, 0);
         if (!builder.getBlock()->empty()) {
             loc = builder.getBlock()->back().getLoc();
         }
         builder.create<mlir::daphne::ReturnOp>(loc);
     }
     auto *terminator = funcBlock->getTerminator();
-    auto funcType = builder.getFunctionType(funcBlock->getArgumentTypes(),
-                                            terminator->getOperandTypes());
-    auto loc =
-        mlir::FileLineColLoc::get(builder.getStringAttr(sourceName), 0, 0);
+    auto funcType = builder.getFunctionType(funcBlock->getArgumentTypes(), terminator->getOperandTypes());
+    auto loc = mlir::FileLineColLoc::get(builder.getStringAttr(sourceName), 0, 0);
     auto func = builder.create<mlir::func::FuncOp>(loc, "main", funcType);
     func.push_back(funcBlock);
 }

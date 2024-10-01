@@ -52,18 +52,10 @@ struct KernelDispatchMapping {
     mlir::FileLineColLoc currentLoc{};
 
   public:
-    std::unordered_map<int, KDMInfo>::iterator begin() {
-        return dispatchMapping.begin();
-    }
-    std::unordered_map<int, KDMInfo>::iterator end() {
-        return dispatchMapping.end();
-    }
-    std::unordered_map<int, KDMInfo>::const_iterator begin() const {
-        return dispatchMapping.begin();
-    }
-    std::unordered_map<int, KDMInfo>::const_iterator end() const {
-        return dispatchMapping.end();
-    }
+    std::unordered_map<int, KDMInfo>::iterator begin() { return dispatchMapping.begin(); }
+    std::unordered_map<int, KDMInfo>::iterator end() { return dispatchMapping.end(); }
+    std::unordered_map<int, KDMInfo>::const_iterator begin() const { return dispatchMapping.begin(); }
+    std::unordered_map<int, KDMInfo>::const_iterator end() const { return dispatchMapping.end(); }
 
     static KernelDispatchMapping &instance();
 

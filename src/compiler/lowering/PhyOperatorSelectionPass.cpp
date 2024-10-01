@@ -41,27 +41,22 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
   public:
     using OpConversionPattern::OpConversionPattern;
 
-    LogicalResult
-    matchAndRewrite(daphne::MatMulOp op, OpAdaptor adaptor,
-                    ConversionPatternRewriter &rewriter) const override {
+    LogicalResult matchAndRewrite(daphne::MatMulOp op, OpAdaptor adaptor,
+                                  ConversionPatternRewriter &rewriter) const override {
         Value lhs = op.getLhs();
         Value rhs = op.getRhs();
         if (auto to = lhs.getDefiningOp<daphne::TransposeOp>()) {
             bool rhsTransposed = CompilerUtils::constantOrThrow<bool>(
-                op.getTransb(),
-                "MatMulOp.getTransb() is expected to be a constant");
+                op.getTransb(), "MatMulOp.getTransb() is expected to be a constant");
             if (to.getArg() == rhs && !rhsTransposed) {
                 // `t(M) @ M` -> `syrk(M)`
-                rewriter.replaceOpWithNewOp<daphne::SyrkOp>(
-                    op, op.getResult().getType(), rhs);
+                rewriter.replaceOpWithNewOp<daphne::SyrkOp>(op, op.getResult().getType(), rhs);
                 return success();
             }
             auto rhsMatTy = rhs.getType().dyn_cast<daphne::MatrixType>();
-            if ((!rhsTransposed && rhsMatTy.getNumCols() == 1) ||
-                (rhsTransposed && rhsMatTy.getNumRows() == 1)) {
+            if ((!rhsTransposed && rhsMatTy.getNumCols() == 1) || (rhsTransposed && rhsMatTy.getNumRows() == 1)) {
                 // `t(M) @ v` -> `gemv(M, v)`
-                rewriter.replaceOpWithNewOp<daphne::GemvOp>(
-                    op, op.getResult().getType(), to.getArg(), rhs);
+                rewriter.replaceOpWithNewOp<daphne::GemvOp>(op, op.getResult().getType(), to.getArg(), rhs);
                 return success();
             }
         }
@@ -70,8 +65,7 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
 };
 
 namespace {
-struct PhyOperatorSelectionPass
-    : public PassWrapper<PhyOperatorSelectionPass, OperationPass<ModuleOp>> {
+struct PhyOperatorSelectionPass : public PassWrapper<PhyOperatorSelectionPass, OperationPass<ModuleOp>> {
     explicit PhyOperatorSelectionPass() {}
     void runOnOperation() final;
 };
@@ -96,16 +90,15 @@ void PhyOperatorSelectionPass::runOnOperation() {
         // (see MatMulOp::canonicalize()), once we do it there again, we need
         // to account for it here (and above in MatMulOpLowering).
         auto to = op.getLhs().getDefiningOp<daphne::TransposeOp>();
-        bool rhsTransposed = CompilerUtils::constantOrThrow<bool>(
-            op.getTransb(),
-            "MatMulOp.getTransb() is expected to be a constant");
+        bool rhsTransposed =
+            CompilerUtils::constantOrThrow<bool>(op.getTransb(), "MatMulOp.getTransb() is expected to be a constant");
         auto rhsMatTy = op.getRhs().getType().dyn_cast<daphne::MatrixType>();
-        return !(to && (
-                           // `t(M) @ M` -> `syrk(M)`
-                           (to.getArg() == op.getRhs() && !rhsTransposed) ||
-                           // `t(M) @ v` -> `gemv(M, v)`
-                           (!rhsTransposed && rhsMatTy.getNumCols() == 1) ||
-                           (rhsTransposed && rhsMatTy.getNumRows() == 1)));
+        return !(to &&
+                 (
+                     // `t(M) @ M` -> `syrk(M)`
+                     (to.getArg() == op.getRhs() && !rhsTransposed) ||
+                     // `t(M) @ v` -> `gemv(M, v)`
+                     (!rhsTransposed && rhsMatTy.getNumCols() == 1) || (rhsTransposed && rhsMatTy.getNumRows() == 1)));
     });
 
     RewritePatternSet patterns(&getContext());
@@ -115,6 +108,4 @@ void PhyOperatorSelectionPass::runOnOperation() {
         signalPassFailure();
 }
 
-std::unique_ptr<Pass> daphne::createPhyOperatorSelectionPass() {
-    return std::make_unique<PhyOperatorSelectionPass>();
-}
+std::unique_ptr<Pass> daphne::createPhyOperatorSelectionPass() { return std::make_unique<PhyOperatorSelectionPass>(); }

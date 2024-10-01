@@ -54,8 +54,7 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
     // Here we provide the different implementations.
     // Another solution would be to make sure that every constructor is similar
     // so this would not be needed.
-    static ALLOCATOR CreateAllocatorDescriptor(DaphneContext *ctx,
-                                               const std::string &addr,
+    static ALLOCATOR CreateAllocatorDescriptor(DaphneContext *ctx, const std::string &addr,
                                                const DistributedData &data) {
         if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorMPI>)
             return AllocationDescriptorMPI(std::stoi(addr), ctx, data);
@@ -106,10 +105,8 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
         auto range = CreateRange();
 
         DataPlacement *dp;
-        if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(
-                 workerAddr))) {
-            auto data = dynamic_cast<ALLOCATOR &>(*(dp->allocation))
-                            .getDistributedData();
+        if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(workerAddr))) {
+            auto data = dynamic_cast<ALLOCATOR &>(*(dp->allocation)).getDistributedData();
 
             // Check if existing placement matches the same ranges we currently
             // need
@@ -118,36 +115,30 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
                 if (*existingRange == range)
                     data.isPlacedAtWorker = true;
                 else {
-                    mat->getMetaDataObject()->updateRangeDataPlacementByID(
-                        dp->dp_id, &range);
+                    mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
                     data.isPlacedAtWorker = false;
                 }
             } else
-                mat->getMetaDataObject()->updateRangeDataPlacementByID(
-                    dp->dp_id, &range);
+                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
             // TODO Currently we do not support distributing/splitting
             // by columns. When we do, this should be changed (e.g. Index(0,
             // taskIndex)) This can be decided based on DistributionSchema
             data.ix = GetDistributedIndex();
-            dynamic_cast<ALLOCATOR &>(*(dp->allocation))
-                .updateDistributedData(data);
+            dynamic_cast<ALLOCATOR &>(*(dp->allocation)).updateDistributedData(data);
         } else { // Else, create new object metadata entry
             DistributedData data;
             // TODO Currently we do not support distributing/splitting
             // by columns. When we do, this should be changed (e.g. Index(0,
             // taskIndex))
             data.ix = GetDistributedIndex();
-            auto allocationDescriptor =
-                CreateAllocatorDescriptor(dctx, workerAddr, data);
-            dp = mat->getMetaDataObject()->addDataPlacement(
-                &allocationDescriptor, &range);
+            auto allocationDescriptor = CreateAllocatorDescriptor(dctx, workerAddr, data);
+            dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
         }
         taskIndex++;
         return dp;
     }
 
-    static void SetOutputsMetadata(DT **&outputs, size_t numOutputs,
-                                   VectorCombine *&vectorCombine, DCTX(dctx)) {
+    static void SetOutputsMetadata(DT **&outputs, size_t numOutputs, VectorCombine *&vectorCombine, DCTX(dctx)) {
         auto ctx = DistributedContext::get(dctx);
         auto workers = ctx->getWorkers();
         // Initialize Distributed index array, needed for results
@@ -170,9 +161,8 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
                     k = (*outputs[i])->getNumCols() / workersSize;
                     m = (*outputs[i])->getNumCols() % workersSize;
                 } else
-                    throw std::runtime_error(
-                        "LoadPartitioningDistributed: Only Rows/Cols "
-                        "combineType supported atm");
+                    throw std::runtime_error("LoadPartitioningDistributed: Only Rows/Cols "
+                                             "combineType supported atm");
 
                 DistributedData data;
                 data.ix = ix[i];
@@ -183,47 +173,30 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
                 // and set ranges for objmetadata
                 Range range;
                 if (vectorCombine[i] == VectorCombine::ROWS) {
-                    ix[i] =
-                        DistributedIndex(ix[i].getRow() + 1, ix[i].getCol());
+                    ix[i] = DistributedIndex(ix[i].getRow() + 1, ix[i].getCol());
 
-                    range.r_start =
-                        data.ix.getRow() * k + std::min(data.ix.getRow(), m);
-                    range.r_len = ((data.ix.getRow() + 1) * k +
-                                   std::min((data.ix.getRow() + 1), m)) -
-                                  range.r_start;
+                    range.r_start = data.ix.getRow() * k + std::min(data.ix.getRow(), m);
+                    range.r_len = ((data.ix.getRow() + 1) * k + std::min((data.ix.getRow() + 1), m)) - range.r_start;
                     range.c_start = 0;
                     range.c_len = (*outputs[i])->getNumCols();
                 }
-                if (vectorCombine[i] == VectorCombine::COLS ||
-                    vectorCombine[i] == VectorCombine::ADD) {
-                    ix[i] =
-                        DistributedIndex(ix[i].getRow(), ix[i].getCol() + 1);
+                if (vectorCombine[i] == VectorCombine::COLS || vectorCombine[i] == VectorCombine::ADD) {
+                    ix[i] = DistributedIndex(ix[i].getRow(), ix[i].getCol() + 1);
 
                     range.r_start = 0;
                     range.r_len = (*outputs[i])->getNumRows();
-                    range.c_start =
-                        data.ix.getCol() * k + std::min(data.ix.getCol(), m);
-                    range.c_len = ((data.ix.getCol() + 1) * k +
-                                   std::min((data.ix.getCol() + 1), m)) -
-                                  range.c_start;
+                    range.c_start = data.ix.getCol() * k + std::min(data.ix.getCol(), m);
+                    range.c_len = ((data.ix.getCol() + 1) * k + std::min((data.ix.getCol() + 1), m)) - range.c_start;
                 }
 
                 // If dp already exists for this worker, update the range and
                 // data
-                if (auto dp = (*outputs[i])
-                                  ->getMetaDataObject()
-                                  ->getDataPlacementByLocation(workerAddr)) {
-                    (*outputs[i])
-                        ->getMetaDataObject()
-                        ->updateRangeDataPlacementByID(dp->dp_id, &range);
-                    dynamic_cast<ALLOCATOR &>(*(dp->allocation))
-                        .updateDistributedData(data);
+                if (auto dp = (*outputs[i])->getMetaDataObject()->getDataPlacementByLocation(workerAddr)) {
+                    (*outputs[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
+                    dynamic_cast<ALLOCATOR &>(*(dp->allocation)).updateDistributedData(data);
                 } else { // else create new dp entry
-                    auto allocationDescriptor =
-                        CreateAllocatorDescriptor(dctx, workerAddr, data);
-                    ((*outputs[i]))
-                        ->getMetaDataObject()
-                        ->addDataPlacement(&allocationDescriptor, &range);
+                    auto allocationDescriptor = CreateAllocatorDescriptor(dctx, workerAddr, data);
+                    ((*outputs[i]))->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
                 }
             }
         }

@@ -25,7 +25,7 @@
 
 template <typename QT> class UniqueBoundedSet : std::set<QT> {
   public:
-    UniqueBoundedSet(size_t K) : K(K) {};
+    UniqueBoundedSet(size_t K) : K(K){};
 
     /**
      * @brief Inserts into the set until K unique values are contained.

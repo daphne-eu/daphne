@@ -52,10 +52,8 @@ template <class DTArg> void typeOfObj(char *&res, const DTArg *arg, DCTX(ctx)) {
 
 template <typename VT> struct TypeOfObj<DenseMatrix<VT>> {
     static void apply(char *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
-        const std::string typeName = std::string("DenseMatrix(") +
-                                     std::to_string(arg->getNumRows()) + "x" +
-                                     std::to_string(arg->getNumCols()) + ", " +
-                                     ValueTypeUtils::cppNameFor<VT> + ")";
+        const std::string typeName = std::string("DenseMatrix(") + std::to_string(arg->getNumRows()) + "x" +
+                                     std::to_string(arg->getNumCols()) + ", " + ValueTypeUtils::cppNameFor<VT> + ")";
         if (res == nullptr)
             res = new char[typeName.size() + 1];
         std::memcpy(res, typeName.c_str(), typeName.size() + 1);
@@ -68,10 +66,8 @@ template <typename VT> struct TypeOfObj<DenseMatrix<VT>> {
 
 template <typename VT> struct TypeOfObj<CSRMatrix<VT>> {
     static void apply(char *&res, const CSRMatrix<VT> *arg, DCTX(ctx)) {
-        const std::string typeName = std::string("CSRMatrix(") +
-                                     std::to_string(arg->getNumRows()) + "x" +
-                                     std::to_string(arg->getNumCols()) + ", " +
-                                     ValueTypeUtils::cppNameFor<VT> + ")";
+        const std::string typeName = std::string("CSRMatrix(") + std::to_string(arg->getNumRows()) + "x" +
+                                     std::to_string(arg->getNumCols()) + ", " + ValueTypeUtils::cppNameFor<VT> + ")";
         if (res == nullptr)
             res = new char[typeName.size() + 1];
         std::memcpy(res, typeName.c_str(), typeName.size() + 1);
@@ -84,13 +80,11 @@ template <typename VT> struct TypeOfObj<CSRMatrix<VT>> {
 
 template <> struct TypeOfObj<Frame> {
     static void apply(char *&res, const Frame *arg, DCTX(ctx)) {
-        std::string typeName = std::string("Frame(") +
-                               std::to_string(arg->getNumRows()) + "x" +
-                               std::to_string(arg->getNumCols()) + ", [";
+        std::string typeName =
+            std::string("Frame(") + std::to_string(arg->getNumRows()) + "x" + std::to_string(arg->getNumCols()) + ", [";
         const std::string *labels = arg->getLabels();
         for (size_t i = 0; i < arg->getNumCols(); i++) {
-            typeName += labels[i] + ":" +
-                        ValueTypeUtils::cppNameForCode(arg->getColumnType(i));
+            typeName += labels[i] + ":" + ValueTypeUtils::cppNameForCode(arg->getColumnType(i));
             if (i < arg->getNumCols() - 1) {
                 typeName += ", ";
             }

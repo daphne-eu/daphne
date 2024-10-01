@@ -19,37 +19,28 @@
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
 template <typename T>
-static void launch_cublas_gemm(const CUDAContext &ctx, size_t nr1, size_t nc1,
-                               size_t nc2, const T *alpha, const T *beta,
-                               const T *d_lhs, const T *d_rhs, T *d_res);
+static void launch_cublas_gemm(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2, const T *alpha,
+                               const T *beta, const T *d_lhs, const T *d_rhs, T *d_res);
 
 template <>
-[[maybe_unused]] void
-launch_cublas_gemm<float>(const CUDAContext &ctx, size_t nr1, size_t nc1,
-                          size_t nc2, const float *alpha, const float *beta,
-                          const float *d_lhs, const float *d_rhs,
-                          float *d_res) {
-    CHECK_CUBLAS(cublasSgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N,
-                             nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs, nc1, beta,
-                             d_res, nc2));
+[[maybe_unused]] void launch_cublas_gemm<float>(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2,
+                                                const float *alpha, const float *beta, const float *d_lhs,
+                                                const float *d_rhs, float *d_res) {
+    CHECK_CUBLAS(cublasSgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
+                             nc1, beta, d_res, nc2));
 }
 
 template <>
-[[maybe_unused]] void
-launch_cublas_gemm<double>(const CUDAContext &ctx, size_t nr1, size_t nc1,
-                           size_t nc2, const double *alpha, const double *beta,
-                           const double *d_lhs, const double *d_rhs,
-                           double *d_res) {
-    CHECK_CUBLAS(cublasDgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N,
-                             nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs, nc1, beta,
-                             d_res, nc2));
+[[maybe_unused]] void launch_cublas_gemm<double>(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2,
+                                                 const double *alpha, const double *beta, const double *d_lhs,
+                                                 const double *d_rhs, double *d_res) {
+    CHECK_CUBLAS(cublasDgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
+                             nc1, beta, d_res, nc2));
 }
 
 namespace CUDA::NN::Affine {
 template <typename DTRes, typename DTArg>
-void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data,
-                                  const DTArg *weights, const DTArg *bias,
-                                  DCTX(dctx)) {
+void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx)) {
     const size_t deviceID = 0; // ToDo: multi device support
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
@@ -63,37 +54,30 @@ void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data,
     const VT *d_weights = weights->getValues(&alloc_desc);
 
     if (nc1 != weights->getNumRows()) {
-        throw std::runtime_error(fmt::format(
-            "CUDA::NN::Affine: #cols of lhs and #rows of rhs must be "
-            "the same ({} != {})",
-            nc1, weights->getNumRows()));
+        throw std::runtime_error(fmt::format("CUDA::NN::Affine: #cols of lhs and #rows of rhs must be "
+                                             "the same ({} != {})",
+                                             nc1, weights->getNumRows()));
     }
 
     if (res == nullptr)
-        res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false,
-                                                         &alloc_desc);
+        res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false, &alloc_desc);
     VT *d_res = res->getValues(&alloc_desc);
 
     // reverse order to accommodate cublas' col major format (-> res = rhs *
     // lhs)
-    launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta,
-                           d_input, d_weights, d_res);
+    launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_input, d_weights, d_res);
 
     if (bias) {
         if (bias->getNumRows() != 1)
-            throw std::runtime_error(
-                "Affine (CUDA): bias dimensions not matching up with weights "
-                "matrix (W[MxN] -> b[1xN]");
+            throw std::runtime_error("Affine (CUDA): bias dimensions not matching up with weights "
+                                     "matrix (W[MxN] -> b[1xN]");
         const VT *d_bias = bias->getValues(&alloc_desc);
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(
-            ctx->src_tensor_desc, ctx->tensor_format,
-            ctx->getCUDNNDataType<VT>(), 1, bias->getNumCols(), 1, 1));
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(
-            ctx->dst_tensor_desc, ctx->tensor_format,
-            ctx->template getCUDNNDataType<VT>(), nr1, nc2, 1, 1));
+        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1,
+                                               bias->getNumCols(), 1, 1));
+        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format,
+                                               ctx->template getCUDNNDataType<VT>(), nr1, nc2, 1, 1));
         blend_beta = 1;
-        CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha,
-                                   ctx->src_tensor_desc, d_bias, &blend_beta,
+        CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_bias, &blend_beta,
                                    ctx->dst_tensor_desc, d_res));
     }
 }

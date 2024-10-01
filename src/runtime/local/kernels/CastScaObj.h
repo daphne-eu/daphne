@@ -35,8 +35,7 @@ template <class DTRes, typename VTArg> struct CastScaObj {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, typename VTArg>
-void castScaObj(DTRes *&res, const VTArg arg, DCTX(ctx)) {
+template <class DTRes, typename VTArg> void castScaObj(DTRes *&res, const VTArg arg, DCTX(ctx)) {
     CastScaObj<DTRes, VTArg>::apply(res, arg, ctx);
 }
 
@@ -48,8 +47,7 @@ void castScaObj(DTRes *&res, const VTArg arg, DCTX(ctx)) {
 // DenseMatrix <- Scalar
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg>
-struct CastScaObj<DenseMatrix<VTRes>, VTArg> {
+template <typename VTRes, typename VTArg> struct CastScaObj<DenseMatrix<VTRes>, VTArg> {
     static void apply(DenseMatrix<VTRes> *&res, const VTArg arg, DCTX(ctx)) {
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, 1, false);

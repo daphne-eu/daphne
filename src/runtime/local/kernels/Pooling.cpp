@@ -26,12 +26,11 @@ namespace NN::Pooling {
 // }
 
 template <template <typename> class OP, typename DTRes, typename DTArg>
-void Forward<OP, DTRes, DTArg>::apply(
-    DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data,
-    const size_t batch_size, const size_t num_channels, const size_t img_h,
-    const size_t img_w, const size_t pool_h, const size_t pool_w,
-    const size_t stride_h, const size_t stride_w, const size_t pad_h,
-    const size_t pad_w, DCTX(dctx)) {
+void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data,
+                                      const size_t batch_size, const size_t num_channels, const size_t img_h,
+                                      const size_t img_w, const size_t pool_h, const size_t pool_w,
+                                      const size_t stride_h, const size_t stride_w, const size_t pad_h,
+                                      const size_t pad_w, DCTX(dctx)) {
     auto HW = img_h * img_w;
     auto C = num_channels;
     auto CHW = C * HW;
@@ -48,13 +47,11 @@ void Forward<OP, DTRes, DTArg>::apply(
     auto oi = start * CPQ;
 
     // 1 / pool length for averaging
-    auto plen = static_cast<typename DTRes::VT>(1) /
-                static_cast<typename DTRes::VT>(pool_w * pool_h);
+    auto plen = static_cast<typename DTRes::VT>(1) / static_cast<typename DTRes::VT>(pool_w * pool_h);
 
     auto padded_img_h = img_h + 2 * pad_h;
     auto padded_img_w = img_w + 2 * pad_w;
-    DTArg *padded_data =
-        DataObjectFactory::create<DTArg>(1, padded_img_h * padded_img_w, true);
+    DTArg *padded_data = DataObjectFactory::create<DTArg>(1, padded_img_h * padded_img_w, true);
 
     if (res == nullptr) {
         res = DataObjectFactory::create<DTRes>(batch_size, CPQ, true);
@@ -64,69 +61,45 @@ void Forward<OP, DTRes, DTArg>::apply(
         // simplified inner loops for P = 1, Q = 1, W = 1
         uint32_t lenh = std::min(pool_h, img_h);
         for (uint32_t i = start; i < stop; i++, oi += C)
-            for (uint32_t c = 0, off = ii + (i - start) * CHW; c < C;
-                 c++, off += img_h) {
-                res->getValues()[oi + c] = OP<typename DTArg::VT>::run(
-                    OP<typename DTArg::VT>::getNeutralElement(),
-                    data->getValues(), off, lenh, plen);
+            for (uint32_t c = 0, off = ii + (i - start) * CHW; c < C; c++, off += img_h) {
+                res->getValues()[oi + c] = OP<typename DTArg::VT>::run(OP<typename DTArg::VT>::getNeutralElement(),
+                                                                       data->getValues(), off, lenh, plen);
             }
     } else if (stride_w == 1 && stride_h == 1 && pad_h == 0 && pad_w == 0) {
         // quick-path w/o materialized index arrays
         for (uint32_t i = start; i < stop; i++)
-            for (uint32_t c = 0, off = ii + (i - start) * CHW,
-                          oix = oi + (i - start) * CPQ;
-                 c < C; c++, off += HW)
+            for (uint32_t c = 0, off = ii + (i - start) * CHW, oix = oi + (i - start) * CPQ; c < C; c++, off += HW)
                 for (uint32_t p = 0; p < P; p++, oix += Q)
                     for (uint32_t h = p; h < std::min(p + pool_h, img_h); h++)
-                        for (uint32_t q = 0, off2 = off + h * img_w; q < Q;
-                             q++) {
+                        for (uint32_t q = 0, off2 = off + h * img_w; q < Q; q++) {
                             res->getValues()[oix + q] =
-                                OP<typename DTArg::VT>::run(
-                                    res->getValues()[oix + q],
-                                    data->getValues(), off2 + q,
-                                    std::min(pool_w, img_w - q), plen);
+                                OP<typename DTArg::VT>::run(res->getValues()[oix + q], data->getValues(), off2 + q,
+                                                            std::min(pool_w, img_w - q), plen);
                         }
     } else if (pad_h == 0 && pad_w == 0) {
         // throw std::runtime_error("ToDo: pooling general case with stride &
         // padding");
         for (uint32_t i = start; i < stop; i++)
-            for (uint32_t c = 0, off = ii + (i - start) * CHW,
-                          oix = oi + (i - start) * CPQ;
-                 c < C; c++, off += HW)
+            for (uint32_t c = 0, off = ii + (i - start) * CHW, oix = oi + (i - start) * CPQ; c < C; c++, off += HW)
                 for (uint32_t p = 0; p < P; p++, oix += Q)
-                    for (uint32_t h = p * stride_h;
-                         h < std::min(p * stride_h + pool_h, img_h); h++)
-                        for (uint32_t q = 0, off2 = off + h * img_w; q < Q;
-                             q++) {
-                            res->getValues()[oix + q] =
-                                OP<typename DTArg::VT>::run(
-                                    res->getValues()[oix + q],
-                                    data->getValues(), off2 + q * stride_w,
-                                    std::min(pool_w, img_w - q * stride_w),
-                                    plen);
+                    for (uint32_t h = p * stride_h; h < std::min(p * stride_h + pool_h, img_h); h++)
+                        for (uint32_t q = 0, off2 = off + h * img_w; q < Q; q++) {
+                            res->getValues()[oix + q] = OP<typename DTArg::VT>::run(
+                                res->getValues()[oix + q], data->getValues(), off2 + q * stride_w,
+                                std::min(pool_w, img_w - q * stride_w), plen);
                         }
     } else {
         for (uint32_t i = start; i < stop; i++)
-            for (uint32_t c = 0, off = ii + (i - start) * CHW,
-                          oix = oi + (i - start) * CPQ;
-                 c < C; c++, off += HW) {
+            for (uint32_t c = 0, off = ii + (i - start) * CHW, oix = oi + (i - start) * CPQ; c < C; c++, off += HW) {
 
-                Padding(padded_data->getValues(), data->getValues(), pad_h,
-                        pad_w, img_w, img_h, off);
+                Padding(padded_data->getValues(), data->getValues(), pad_h, pad_w, img_w, img_h, off);
 
                 for (uint32_t p = 0; p < P; p++, oix += Q)
-                    for (uint32_t h = p * stride_h;
-                         h < std::min(p * stride_h + pool_h, padded_img_h); h++)
-                        for (uint32_t q = 0, off2 = h * padded_img_w; q < Q;
-                             q++) {
-                            res->getValues()[oix + q] =
-                                OP<typename DTArg::VT>::run(
-                                    res->getValues()[oix + q],
-                                    padded_data->getValues(),
-                                    off2 + q * stride_w,
-                                    std::min(pool_w,
-                                             padded_img_w - q * stride_w),
-                                    plen);
+                    for (uint32_t h = p * stride_h; h < std::min(p * stride_h + pool_h, padded_img_h); h++)
+                        for (uint32_t q = 0, off2 = h * padded_img_w; q < Q; q++) {
+                            res->getValues()[oix + q] = OP<typename DTArg::VT>::run(
+                                res->getValues()[oix + q], padded_data->getValues(), off2 + q * stride_w,
+                                std::min(pool_w, padded_img_w - q * stride_w), plen);
                         }
             }
     }

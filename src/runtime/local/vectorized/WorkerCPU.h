@@ -37,16 +37,12 @@ class WorkerCPU : public Worker {
 
   public:
     // ToDo: remove compile-time verbose parameter and use logger
-    WorkerCPU(std::vector<TaskQueue *> deques, std::vector<int> physical_ids,
-              std::vector<int> unique_threads, DCTX(dctx), bool verbose,
-              uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0,
-              int numQueues = 0, int queueMode = 0, int stealLogic = 0,
-              bool pinWorkers = 0)
-        : Worker(dctx), _q(deques), _physical_ids(physical_ids),
-          _unique_threads(unique_threads), _verbose(verbose), _fid(fid),
-          _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues),
-          _queueMode(queueMode), _stealLogic(stealLogic),
-          _pinWorkers(pinWorkers) {
+    WorkerCPU(std::vector<TaskQueue *> deques, std::vector<int> physical_ids, std::vector<int> unique_threads,
+              DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
+              int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0)
+        : Worker(dctx), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads), _verbose(verbose),
+          _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode),
+          _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPU::run, this);
     }
@@ -142,8 +138,7 @@ class WorkerCPU : public Worker {
                 // stealing from random workers until all workers EOF
 
                 eofWorkers.fill(false);
-                while (std::accumulate(eofWorkers.begin(), eofWorkers.end(),
-                                       0) < _numQueues) {
+                while (std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < _numQueues) {
                     targetQueue = rand() % _numQueues;
                     if (eofWorkers[targetQueue] == false) {
                         t = _q[targetQueue]->dequeueTask();
@@ -169,8 +164,7 @@ class WorkerCPU : public Worker {
                     }
                 }
                 if (_queueMode == 2) {
-                    while (std::accumulate(eofWorkers.begin(), eofWorkers.end(),
-                                           0) < queuesThisDomain) {
+                    while (std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < queuesThisDomain) {
                         targetQueue = rand() % _numQueues;
                         if (_physical_ids[targetQueue] == currentDomain) {
                             if (eofWorkers[targetQueue] == false) {
@@ -190,8 +184,7 @@ class WorkerCPU : public Worker {
                 // stealing from other domain This could also be done by keeping
                 // a list of EOF workers on the other domain
 
-                while (std::accumulate(eofWorkers.begin(), eofWorkers.end(),
-                                       0) < _numQueues) {
+                while (std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < _numQueues) {
                     targetQueue = rand() % _numQueues;
                     // no need to check if they are on the other domain, because
                     // otherwise they would be EOF anyway

@@ -31,11 +31,8 @@ class AllocationDescriptorHost : public IAllocationDescriptor {
     std::shared_ptr<std::byte> getData() override { return data; }
     void transferTo(std::byte *src, size_t size) override {}
     void transferFrom(std::byte *dst, size_t size) override {}
-    [[nodiscard]] std::unique_ptr<IAllocationDescriptor>
-    clone() const override {
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorHost>(*this);
     }
-    bool operator==(const IAllocationDescriptor *other) const override {
-        return (getType() == other->getType());
-    }
+    bool operator==(const IAllocationDescriptor *other) const override { return (getType() == other->getType()); }
 };

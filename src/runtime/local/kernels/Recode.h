@@ -32,8 +32,7 @@
 // ****************************************************************************
 
 template <class DTRes, class DTDict, class DTArg> struct Recode {
-    static void apply(DTRes *&res, DTDict *&dict, const DTArg *arg,
-                      bool orderPreserving, DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, DTDict *&dict, const DTArg *arg, bool orderPreserving, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,8 +40,7 @@ template <class DTRes, class DTDict, class DTArg> struct Recode {
 // ****************************************************************************
 
 template <class DTRes, class DTDict, class DTArg>
-void recode(DTRes *&res, DTDict *&dict, const DTArg *arg, bool orderPreserving,
-            DCTX(ctx)) {
+void recode(DTRes *&res, DTDict *&dict, const DTArg *arg, bool orderPreserving, DCTX(ctx)) {
     Recode<DTRes, DTDict, DTArg>::apply(res, dict, arg, orderPreserving, ctx);
 }
 
@@ -54,16 +52,13 @@ void recode(DTRes *&res, DTDict *&dict, const DTArg *arg, bool orderPreserving,
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTVal, typename VTCode>
-struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
-    static void apply(DenseMatrix<VTCode> *&res, DenseMatrix<VTVal> *&dict,
-                      const DenseMatrix<VTVal> *arg, bool orderPreserving,
-                      DCTX(ctx)) {
+template <typename VTVal, typename VTCode> struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
+    static void apply(DenseMatrix<VTCode> *&res, DenseMatrix<VTVal> *&dict, const DenseMatrix<VTVal> *arg,
+                      bool orderPreserving, DCTX(ctx)) {
         // Validation.
         // TODO Remove this requirement, it's not strictly necessary.
         if (arg->getNumCols() != 1)
-            throw std::runtime_error(
-                "recode: the argument must have exactly one column");
+            throw std::runtime_error("recode: the argument must have exactly one column");
 
         if (orderPreserving) {
             // Determine the distinct values in the input.
@@ -78,8 +73,7 @@ struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
 
             // Allocate output for the decoding dictionary.
             if (dict == nullptr)
-                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(
-                    distinct.size(), 1, false);
+                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(distinct.size(), 1, false);
 
             // Create recoding dictionary and store decoding dictionary.
             std::unordered_map<VTVal, VTCode> recodeDict;
@@ -94,8 +88,7 @@ struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
 
             // Allocate output for recoded data.
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VTCode>>(numRowsArg,
-                                                                     1, false);
+                res = DataObjectFactory::create<DenseMatrix<VTCode>>(numRowsArg, 1, false);
 
             // Recode the data.
             valuesArg = arg->getValues(); // rewind
@@ -111,8 +104,7 @@ struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
 
             // Allocate output for recoded data.
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VTCode>>(numRowsArg,
-                                                                     1, false);
+                res = DataObjectFactory::create<DenseMatrix<VTCode>>(numRowsArg, 1, false);
 
             // Internal data structure.
             VTCode nextCode = 0;
@@ -141,8 +133,7 @@ struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
 
             // Allocate output for the decoding dictionary.
             if (dict == nullptr)
-                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(
-                    recodeDict.size(), 1, false);
+                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(recodeDict.size(), 1, false);
 
             // Store decoding dictionary.
             VTVal *valuesDict = dict->getValues();
@@ -160,22 +151,18 @@ struct Recode<DenseMatrix<VTCode>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
 // Matrix <- Matrix
 // ----------------------------------------------------------------------------
 
-template <typename VTVal, typename VTCode>
-struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
-    static void apply(Matrix<VTCode> *&res, Matrix<VTVal> *&dict,
-                      const Matrix<VTVal> *arg, bool orderPreserving,
+template <typename VTVal, typename VTCode> struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
+    static void apply(Matrix<VTCode> *&res, Matrix<VTVal> *&dict, const Matrix<VTVal> *arg, bool orderPreserving,
                       DCTX(ctx)) {
         // Validation.
         // TODO Remove this requirement, it's not strictly necessary.
         if (arg->getNumCols() != 1)
-            throw std::runtime_error(
-                "recode: the argument must have exactly one column");
+            throw std::runtime_error("recode: the argument must have exactly one column");
 
         const size_t numRowsArg = arg->getNumRows();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTCode>>(numRowsArg, 1,
-                                                                 false);
+            res = DataObjectFactory::create<DenseMatrix<VTCode>>(numRowsArg, 1, false);
 
         if (orderPreserving) {
             // Determine the distinct values in the input.
@@ -186,8 +173,7 @@ struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
 
             // Allocate output for the decoding dictionary.
             if (dict == nullptr)
-                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(
-                    distinct.size(), 1, false);
+                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(distinct.size(), 1, false);
 
             // Create recoding dictionary and store decoding dictionary.
             VTCode nextCode = 0;
@@ -227,8 +213,7 @@ struct Recode<Matrix<VTCode>, Matrix<VTVal>, Matrix<VTVal>> {
 
             // Allocate output for the decoding dictionary.
             if (dict == nullptr)
-                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(
-                    recodeDict.size(), 1, false);
+                dict = DataObjectFactory::create<DenseMatrix<VTVal>>(recodeDict.size(), 1, false);
 
             // Store decoding dictionary.
             // recodeDict is unordered so we cannot use append here

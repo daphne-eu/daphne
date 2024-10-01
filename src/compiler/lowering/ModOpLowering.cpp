@@ -32,132 +32,97 @@
 
 using namespace mlir;
 
-class EwModOpLowering
-    : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
+class EwModOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
   public:
     using OpConversionPattern::OpConversionPattern;
 
     [[nodiscard]] bool optimization_viable(mlir::Value divisor) const {
-        std::pair<bool, int64_t> isConstant =
-            CompilerUtils::isConstant<int64_t>(divisor);
-        return isConstant.first &&
-               (isConstant.second & (isConstant.second - 1)) == 0;
+        std::pair<bool, int64_t> isConstant = CompilerUtils::isConstant<int64_t>(divisor);
+        return isConstant.first && (isConstant.second & (isConstant.second - 1)) == 0;
     }
 
-    void optimizeEwModOp(mlir::Value memRef, mlir::Value divisor,
-                         ArrayRef<int64_t> shape,
-                         ConversionPatternRewriter &rewriter,
-                         Location loc) const {
+    void optimizeEwModOp(mlir::Value memRef, mlir::Value divisor, ArrayRef<int64_t> shape,
+                         ConversionPatternRewriter &rewriter, Location loc) const {
         // divisor - 1
-        mlir::Value cst_one = rewriter.create<mlir::arith::ConstantOp>(
-            loc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(1));
+        mlir::Value cst_one =
+            rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(1));
 
-        auto casted_divisor = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getI64Type(), ValueRange{divisor});
+        auto casted_divisor =
+            typeConverter->materializeTargetConversion(rewriter, loc, rewriter.getI64Type(), ValueRange{divisor});
 
-        mlir::Value rhs =
-            rewriter.create<mlir::arith::SubIOp>(loc, casted_divisor, cst_one);
+        mlir::Value rhs = rewriter.create<mlir::arith::SubIOp>(loc, casted_divisor, cst_one);
 
         SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
         SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
         buildAffineLoopNest(
-            rewriter, loc, lowerBounds, shape, steps,
-            [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
-                mlir::Value load =
-                    nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
+            rewriter, loc, lowerBounds, shape, steps, [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
+                mlir::Value load = nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
                 mlir::Value res{};
 
-                Value castedLhs =
-                    this->typeConverter->materializeTargetConversion(
-                        nestedBuilder, loc,
-                        nestedBuilder.getIntegerType(
-                            divisor.getType().getIntOrFloatBitWidth()),
-                        ValueRange{load});
+                Value castedLhs = this->typeConverter->materializeTargetConversion(
+                    nestedBuilder, loc, nestedBuilder.getIntegerType(divisor.getType().getIntOrFloatBitWidth()),
+                    ValueRange{load});
 
                 res = nestedBuilder.create<arith::AndIOp>(loc, castedLhs, rhs);
-                Value castedRes =
-                    this->typeConverter->materializeSourceConversion(
-                        nestedBuilder, loc, divisor.getType(), ValueRange{res});
+                Value castedRes = this->typeConverter->materializeSourceConversion(nestedBuilder, loc,
+                                                                                   divisor.getType(), ValueRange{res});
 
-                nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef,
-                                                    ivs);
+                nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef, ivs);
             });
     }
 
-    void lowerEwModOp(mlir::Value memRef, mlir::Value divisor,
-                      ArrayRef<int64_t> shape,
+    void lowerEwModOp(mlir::Value memRef, mlir::Value divisor, ArrayRef<int64_t> shape,
                       ConversionPatternRewriter &rewriter, Location loc) const {
         SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
         SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
         buildAffineLoopNest(
-            rewriter, loc, lowerBounds, shape, steps,
-            [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
-                mlir::Value load =
-                    nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
+            rewriter, loc, lowerBounds, shape, steps, [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
+                mlir::Value load = nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
                 mlir::Value res{};
 
                 // this is enough since divisor will be casted to float if
                 // matrix is float
                 if (llvm::isa<mlir::FloatType>(divisor.getType())) {
-                    res =
-                        nestedBuilder.create<arith::RemFOp>(loc, load, divisor);
+                    res = nestedBuilder.create<arith::RemFOp>(loc, load, divisor);
                     nestedBuilder.create<AffineStoreOp>(loc, res, memRef, ivs);
                     return;
                 }
 
-                Value castedLhs =
-                    this->typeConverter->materializeTargetConversion(
-                        nestedBuilder, loc,
-                        nestedBuilder.getIntegerType(
-                            divisor.getType().getIntOrFloatBitWidth()),
-                        ValueRange{load});
+                Value castedLhs = this->typeConverter->materializeTargetConversion(
+                    nestedBuilder, loc, nestedBuilder.getIntegerType(divisor.getType().getIntOrFloatBitWidth()),
+                    ValueRange{load});
 
-                Value castedRhs =
-                    this->typeConverter->materializeTargetConversion(
-                        nestedBuilder, loc,
-                        nestedBuilder.getIntegerType(
-                            divisor.getType().getIntOrFloatBitWidth()),
-                        ValueRange{divisor});
+                Value castedRhs = this->typeConverter->materializeTargetConversion(
+                    nestedBuilder, loc, nestedBuilder.getIntegerType(divisor.getType().getIntOrFloatBitWidth()),
+                    ValueRange{divisor});
 
-                res = nestedBuilder.create<arith::RemSIOp>(loc, castedLhs,
-                                                           castedRhs);
-                Value castedRes =
-                    this->typeConverter->materializeSourceConversion(
-                        nestedBuilder, loc, divisor.getType(), ValueRange{res});
+                res = nestedBuilder.create<arith::RemSIOp>(loc, castedLhs, castedRhs);
+                Value castedRes = this->typeConverter->materializeSourceConversion(nestedBuilder, loc,
+                                                                                   divisor.getType(), ValueRange{res});
 
-                nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef,
-                                                    ivs);
+                nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef, ivs);
             });
     }
 
-    mlir::LogicalResult
-    matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
-                    mlir::ConversionPatternRewriter &rewriter) const override {
-        mlir::daphne::MatrixType lhsTensor =
-            adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+    mlir::LogicalResult matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
+                                        mlir::ConversionPatternRewriter &rewriter) const override {
+        mlir::daphne::MatrixType lhsTensor = adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
         auto lhsRows = lhsTensor.getNumRows();
         auto lhsCols = lhsTensor.getNumCols();
 
-        auto lhsMemRefType = mlir::MemRefType::get({lhsRows, lhsCols},
-                                                   lhsTensor.getElementType());
+        auto lhsMemRefType = mlir::MemRefType::get({lhsRows, lhsCols}, lhsTensor.getElementType());
 
         // daphne::Matrix -> memref
         mlir::Value lhs =
-            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
-                op->getLoc(), lhsMemRefType, adaptor.getLhs());
+            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(op->getLoc(), lhsMemRefType, adaptor.getLhs());
         mlir::Value rhs = adaptor.getRhs();
 
         if (optimization_viable(rhs))
-            optimizeEwModOp(lhs, rhs,
-                            {lhsTensor.getNumRows(), lhsTensor.getNumCols()},
-                            rewriter, op->getLoc());
+            optimizeEwModOp(lhs, rhs, {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, rewriter, op->getLoc());
         else
-            lowerEwModOp(lhs, rhs,
-                         {lhsTensor.getNumRows(), lhsTensor.getNumCols()},
-                         rewriter, op->getLoc());
+            lowerEwModOp(lhs, rhs, {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, rewriter, op->getLoc());
 
-        mlir::Value output = convertMemRefToDenseMatrix(op->getLoc(), rewriter,
-                                                        lhs, op.getType());
+        mlir::Value output = convertMemRefToDenseMatrix(op->getLoc(), rewriter, lhs, op.getType());
         rewriter.replaceOp(op, output);
         return success();
     }
@@ -172,15 +137,12 @@ namespace {
  * If possible, we additionally perform the integer modulo optimization by
  * replacing the modulo with an bitwise AND and a subtraction.
  */
-struct ModOpLoweringPass
-    : public mlir::PassWrapper<ModOpLoweringPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
+struct ModOpLoweringPass : public mlir::PassWrapper<ModOpLoweringPass, mlir::OperationPass<mlir::ModuleOp>> {
     explicit ModOpLoweringPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry
-            .insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                    mlir::memref::MemRefDialect, mlir::daphne::DaphneDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect,
+                        mlir::daphne::DaphneDialect>();
     }
     void runOnOperation() final;
 
@@ -222,6 +184,4 @@ void ModOpLoweringPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createModOpLoweringPass() {
-    return std::make_unique<ModOpLoweringPass>();
-}
+std::unique_ptr<mlir::Pass> mlir::daphne::createModOpLoweringPass() { return std::make_unique<ModOpLoweringPass>(); }

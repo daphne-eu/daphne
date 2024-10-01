@@ -23,8 +23,7 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server_builder.h>
 
-WorkerImplGRPCAsync::WorkerImplGRPCAsync(const std::string &addr,
-                                         DaphneUserConfig &_cfg)
+WorkerImplGRPCAsync::WorkerImplGRPCAsync(const std::string &addr, DaphneUserConfig &_cfg)
     : WorkerImpl(_cfg), stream_(&ctx_), responder_(&ctx_) {
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
     cq_ = builder.AddCompletionQueue();
@@ -52,10 +51,8 @@ void WorkerImplGRPCAsync::Wait() {
     }
 }
 
-grpc::Status
-WorkerImplGRPCAsync::StoreGRPC(::grpc::ServerContext *context,
-                               const ::distributed::Data *request,
-                               ::distributed::StoredData *response) {
+grpc::Status WorkerImplGRPCAsync::StoreGRPC(::grpc::ServerContext *context, const ::distributed::Data *request,
+                                            ::distributed::StoredData *response) {
     StoredInfo storedInfo;
     size_t bufferLength = request->bytes().size();
     // If deserializer's chunk size is 0, it means we just begin receiving data
@@ -66,17 +63,14 @@ WorkerImplGRPCAsync::StoreGRPC(::grpc::ServerContext *context,
         this->isFirstChunk = false;
         size_t chunkSize;
         auto buffer = request->bytes().data();
-        std::copy(buffer, buffer + sizeof(size_t),
-                  reinterpret_cast<char *>(&chunkSize));
+        std::copy(buffer, buffer + sizeof(size_t), reinterpret_cast<char *>(&chunkSize));
         deserializer->chunkSize = chunkSize;
         return grpc::Status::OK;
     }
 
     // Handle value case
-    if (*deserializerIter == deserializer->begin() &&
-        DF_Dtype(request->bytes().data()) == DF_data_t::Value_t) {
-        double val =
-            DaphneSerializer<double>::deserialize(request->bytes().data());
+    if (*deserializerIter == deserializer->begin() && DF_Dtype(request->bytes().data()) == DF_data_t::Value_t) {
+        double val = DaphneSerializer<double>::deserialize(request->bytes().data());
         storedInfo = WorkerImpl::Store(&val);
         response->set_identifier(storedInfo.identifier);
         response->set_num_rows(storedInfo.numRows);
@@ -88,10 +82,8 @@ WorkerImplGRPCAsync::StoreGRPC(::grpc::ServerContext *context,
         if ((*deserializerIter)->second->size() < bufferLength)
             (*deserializerIter)->second->resize(bufferLength);
         (*deserializerIter)
-            ->second->assign(
-                static_cast<const char *>(request->bytes().data()),
-                static_cast<const char *>(request->bytes().data()) +
-                    bufferLength);
+            ->second->assign(static_cast<const char *>(request->bytes().data()),
+                             static_cast<const char *>(request->bytes().data()) + bufferLength);
 
         // advance iterator, this also partially deserializes
         ++(*deserializerIter);
@@ -110,28 +102,23 @@ WorkerImplGRPCAsync::StoreGRPC(::grpc::ServerContext *context,
 
 void WorkerImplGRPCAsync::PrepareStoreGRPC() {
     this->isFirstChunk = true;
-    size_t chunkSize = DaphneSerializer<Structure>::HEADER_BUFFER_SIZE +
-                       1; // This will be updated when the first request happens
-                          // and master node sends the chunk size
-    deserializer.reset(
-        new DaphneDeserializerChunks<Structure>(&mat, chunkSize));
-    deserializerIter.reset(new DaphneDeserializerChunks<Structure>::Iterator(
-        deserializer->begin()));
+    size_t chunkSize =
+        DaphneSerializer<Structure>::HEADER_BUFFER_SIZE + 1; // This will be updated when the first request happens
+                                                             // and master node sends the chunk size
+    deserializer.reset(new DaphneDeserializerChunks<Structure>(&mat, chunkSize));
+    deserializerIter.reset(new DaphneDeserializerChunks<Structure>::Iterator(deserializer->begin()));
     (*deserializerIter)->second->resize(chunkSize);
 }
 
-grpc::Status
-WorkerImplGRPCAsync::ComputeGRPC(::grpc::ServerContext *context,
-                                 const ::distributed::Task *request,
-                                 ::distributed::ComputeResult *response) {
+grpc::Status WorkerImplGRPCAsync::ComputeGRPC(::grpc::ServerContext *context, const ::distributed::Task *request,
+                                              ::distributed::ComputeResult *response) {
     std::vector<StoredInfo> inputs;
     inputs.reserve(request->inputs().size());
 
     std::vector<StoredInfo> outputs = std::vector<StoredInfo>();
     for (auto input : request->inputs()) {
         auto stored = input.stored();
-        inputs.push_back(StoredInfo(
-            {stored.identifier(), stored.num_rows(), stored.num_cols()}));
+        inputs.push_back(StoredInfo({stored.identifier(), stored.num_rows(), stored.num_cols()}));
     }
     auto respMsg = Compute(&outputs, inputs, request->mlir_code());
     for (auto output : outputs) {
@@ -144,16 +131,12 @@ WorkerImplGRPCAsync::ComputeGRPC(::grpc::ServerContext *context,
     if (respMsg.ok())
         return ::grpc::Status::OK;
     else
-        return ::grpc::Status(grpc::StatusCode::ABORTED,
-                              respMsg.error_message());
+        return ::grpc::Status(grpc::StatusCode::ABORTED, respMsg.error_message());
 }
 
-grpc::Status
-WorkerImplGRPCAsync::TransferGRPC(::grpc::ServerContext *context,
-                                  const ::distributed::StoredData *request,
-                                  ::distributed::Data *response) {
-    StoredInfo info(
-        {request->identifier(), request->num_rows(), request->num_cols()});
+grpc::Status WorkerImplGRPCAsync::TransferGRPC(::grpc::ServerContext *context, const ::distributed::StoredData *request,
+                                               ::distributed::Data *response) {
+    StoredInfo info({request->identifier(), request->num_rows(), request->num_cols()});
     std::vector<char> buffer;
     size_t bufferLength;
     Structure *mat = Transfer(info);

@@ -59,26 +59,24 @@ using namespace aocl_utils;
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#define DPRINTF(...)                                                           \
-    printf(__VA_ARGS__);                                                       \
+#define DPRINTF(...)                                                                                                   \
+    printf(__VA_ARGS__);                                                                                               \
     fflush(stdout);
 
 #define NUM_QUEUES_TO_CREATE 4
 #define NUM_KERNELS_TO_CREATE 4
 
-#define CHECK(status)                                                          \
-    if (status != CL_SUCCESS) {                                                \
-        printf("error %d in line %d.\n", status, __LINE__);                    \
-        exit(1);                                                               \
+#define CHECK(status)                                                                                                  \
+    if (status != CL_SUCCESS) {                                                                                        \
+        printf("error %d in line %d.\n", status, __LINE__);                                                            \
+        exit(1);                                                                                                       \
     }
 
 #define ACL_ALIGNMENT 64
 
-const char *syrk_kernel_name[] = {"kernel_ALoader", "kernel_BLoader",
-                                  "kernel_Out", "kernel_unloader"};
+const char *syrk_kernel_name[] = {"kernel_ALoader", "kernel_BLoader", "kernel_Out", "kernel_unloader"};
 
-int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
-         DCTX(ctx)) {
+int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K, DCTX(ctx)) {
     const int OUTERMOST_J = OUTERMOST_I;
     const int TOTAL_I = III * II * OUTERMOST_I;
     const int TOTAL_J = JJJ * JJ * OUTERMOST_J;
@@ -89,12 +87,10 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     long int num_elem_C = (long int)TOTAL_I * TOTAL_J;
 
     float *serialized_A, *serialized_B;
-    if ((serialized_A =
-             (float *)acl_aligned_malloc(num_elem_A * sizeof(float))) == NULL) {
+    if ((serialized_A = (float *)acl_aligned_malloc(num_elem_A * sizeof(float))) == NULL) {
         perror("Failed malloc of matrix serialized_A");
     }
-    if ((serialized_B =
-             (float *)acl_aligned_malloc(num_elem_B * sizeof(float))) == NULL) {
+    if ((serialized_B = (float *)acl_aligned_malloc(num_elem_B * sizeof(float))) == NULL) {
         perror("Failed malloc of matrix serialized_A");
     }
 
@@ -108,8 +104,7 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
                         for (int kkk = 0; kkk < KKK; kkk++) {
                             int total_k = kkk + KKK * kk + KKK * KK * k;
                             int total_i = iii + III * ii + III * II * i;
-                            serialized_A[addr++] =
-                                A[total_k + total_i * TOTAL_K];
+                            serialized_A[addr++] = A[total_k + total_i * TOTAL_K];
                         }
     // Serialize B
     addr = 0;
@@ -121,10 +116,7 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
                         for (int kkk = 0; kkk < KKK; kkk++) {
                             int total_k = kkk + KKK * kk + KKK * KK * k;
                             int total_j = jjj + JJJ * jj + JJJ * JJ * j;
-                            serialized_B[addr++] =
-                                A[total_j +
-                                  total_k *
-                                      TOTAL_J]; // B[total_j + total_k*TOTAL_J];
+                            serialized_B[addr++] = A[total_j + total_k * TOTAL_J]; // B[total_j + total_k*TOTAL_J];
                         }
 #ifndef NDEBUG
     DPRINTF("\n===== Host-CPU setting up the OpenCL platform and device in "
@@ -138,22 +130,20 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     // Create command queues
     //---------------------------------------------
 
-    cl_command_queue
-        cmdQueue[NUM_QUEUES_TO_CREATE + 1]; // extra queue for reading buffer D
+    cl_command_queue cmdQueue[NUM_QUEUES_TO_CREATE + 1]; // extra queue for reading buffer D
 
     // Create a command queue using clCreateCommandQueue(),
     // and associate it with the device you want to execute on
     for (int i = 0; i < NUM_QUEUES_TO_CREATE; i++) {
         // fDPRINTF(stdout,"cmdQueue i = %d\n", i);
-        cmdQueue[i] = clCreateCommandQueue(fctx->context, fctx->devices[0],
-                                           CL_QUEUE_PROFILING_ENABLE, &status);
+        cmdQueue[i] = clCreateCommandQueue(fctx->context, fctx->devices[0], CL_QUEUE_PROFILING_ENABLE, &status);
         CHECK(status);
     }
 
     // fDPRINTF(stdout,"cmdQueue i = %d, a queue for reading the C buffer\n",
     // i);
-    cmdQueue[NUM_QUEUES_TO_CREATE] = clCreateCommandQueue(
-        fctx->context, fctx->devices[0], CL_QUEUE_PROFILING_ENABLE, &status);
+    cmdQueue[NUM_QUEUES_TO_CREATE] =
+        clCreateCommandQueue(fctx->context, fctx->devices[0], CL_QUEUE_PROFILING_ENABLE, &status);
     CHECK(status);
 
     //----------------------------------------------
@@ -169,20 +159,17 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
 #endif
     input_A_buf = clCreateBuffer(fctx->context,
                                  // CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA,
-                                 CL_MEM_READ_ONLY,
-                                 num_elem_A * sizeof(cl_float), NULL, &status);
+                                 CL_MEM_READ_ONLY, num_elem_A * sizeof(cl_float), NULL, &status);
     CHECK(status);
 
     input_B_buf = clCreateBuffer(fctx->context,
                                  // CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA,
-                                 CL_MEM_READ_ONLY,
-                                 num_elem_B * sizeof(cl_float), NULL, &status);
+                                 CL_MEM_READ_ONLY, num_elem_B * sizeof(cl_float), NULL, &status);
     CHECK(status);
 
     output_C_buf = clCreateBuffer(fctx->context,
                                   // CL_MEM_WRITE_ONLY | CL_MEM_BANK_1_ALTERA,
-                                  CL_MEM_WRITE_ONLY,
-                                  num_elem_C * sizeof(cl_float), NULL, &status);
+                                  CL_MEM_WRITE_ONLY, num_elem_C * sizeof(cl_float), NULL, &status);
     CHECK(status);
 
     //----------------------------------------------
@@ -190,22 +177,19 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     //----------------------------------------------
 
     // blocking writes
-    status = clEnqueueWriteBuffer(cmdQueue[0], input_A_buf, CL_TRUE, 0,
-                                  num_elem_A * sizeof(cl_float), serialized_A,
-                                  0, NULL, NULL);
+    status = clEnqueueWriteBuffer(cmdQueue[0], input_A_buf, CL_TRUE, 0, num_elem_A * sizeof(cl_float), serialized_A, 0,
+                                  NULL, NULL);
     CHECK(status);
 
-    status = clEnqueueWriteBuffer(cmdQueue[1], input_B_buf, CL_TRUE, 0,
-                                  num_elem_B * sizeof(cl_float), serialized_B,
-                                  0, NULL, NULL);
+    status = clEnqueueWriteBuffer(cmdQueue[1], input_B_buf, CL_TRUE, 0, num_elem_B * sizeof(cl_float), serialized_B, 0,
+                                  NULL, NULL);
     CHECK(status);
 
     //----------------------------------------------
     // Create the program from binaries
     //----------------------------------------------
 #ifndef NDEBUG
-    DPRINTF(
-        "\n===== Host-CPU setting up OpenCL program and kernels ======\n\n");
+    DPRINTF("\n===== Host-CPU setting up OpenCL program and kernels ======\n\n");
 #endif
     cl_program program;
 
@@ -240,9 +224,8 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     DPRINTF("Create program with binary\n");
 #endif
     // Create a program using clCreateProgramWithBinary()
-    program = clCreateProgramWithBinary(
-        fctx->context, 1, fctx->devices, &binary_length,
-        (const unsigned char **)&binary, &status, NULL);
+    program = clCreateProgramWithBinary(fctx->context, 1, fctx->devices, &binary_length,
+                                        (const unsigned char **)&binary, &status, NULL);
     CHECK(status);
 
     //----------------------------------------------
@@ -252,8 +235,7 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     status = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (status != CL_SUCCESS) {
         char log[128 * 1024] = {0};
-        clGetProgramBuildInfo(program, fctx->devices[0], CL_PROGRAM_BUILD_LOG,
-                              128 * 1024, log, NULL);
+        clGetProgramBuildInfo(program, fctx->devices[0], CL_PROGRAM_BUILD_LOG, 128 * 1024, log, NULL);
         DPRINTF("%s\n", log);
         CHECK(status);
     }
@@ -264,8 +246,7 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
 #ifndef NDEBUG
         DPRINTF("Creating kernel[%d]: %s\n", j, syrk_kernel_name[j]);
 #endif
-        kernel[j] =
-            clCreateKernel(program, (const char *)syrk_kernel_name[j], &status);
+        kernel[j] = clCreateKernel(program, (const char *)syrk_kernel_name[j], &status);
         CHECK(status);
     }
 #ifndef NDEBUG
@@ -301,8 +282,7 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     CHECK(status);
     status = clSetKernelArg(kernel[3], 1, sizeof(int), (void *)&TOTAL_J);
     CHECK(status);
-    status =
-        clSetKernelArg(kernel[3], 2, sizeof(cl_mem), (void *)&output_C_buf);
+    status = clSetKernelArg(kernel[3], 2, sizeof(cl_mem), (void *)&output_C_buf);
     CHECK(status);
 
     //----------------------------------------------
@@ -332,8 +312,7 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
 #ifndef NDEBUG
         DPRINTF("clEnqueueNDRangeKernel[%d]: %s!\n", i, syrk_kernel_name[i]);
 #endif
-        status = clEnqueueNDRangeKernel(cmdQueue[i], kernel[i], 1, NULL,
-                                        globalWorkSize, localWorkSize, 0, NULL,
+        status = clEnqueueNDRangeKernel(cmdQueue[i], kernel[i], 1, NULL, globalWorkSize, localWorkSize, 0, NULL,
                                         &kernel_exec_event[i]);
         CHECK(status);
     }
@@ -362,8 +341,7 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     double k_exec_time[NUM_KERNELS_TO_CREATE];
     double max_time = 0;
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
-        k_exec_time[i] = compute_kernel_execution_time(
-            kernel_exec_event[i], k_start_time[i], k_end_time[i]);
+        k_exec_time[i] = compute_kernel_execution_time(kernel_exec_event[i], k_start_time[i], k_end_time[i]);
         if (k_exec_time[i] > max_time) {
             max_time = k_exec_time[i];
         }
@@ -387,11 +365,9 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     k_latest_end_time = k_end_time[NUM_KERNELS_TO_CREATE - 1];
 
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
-        printf(
-            "  Kernel execution time on FPGA: %s, \n   \t\t\t\t\t\t\t\t\texec "
-            "time = %.5f s, start=%.5f s, end=%.5f s\n",
-            syrk_kernel_name[i], k_exec_time[i], k_start_time[i],
-            k_end_time[i]);
+        printf("  Kernel execution time on FPGA: %s, \n   \t\t\t\t\t\t\t\t\texec "
+               "time = %.5f s, start=%.5f s, end=%.5f s\n",
+               syrk_kernel_name[i], k_exec_time[i], k_start_time[i], k_end_time[i]);
     }
 
     double k_overall_exec_time = k_latest_end_time - k_earliest_start_time;
@@ -404,20 +380,17 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
     // multiplied by 1.0e-9 to get G-FLOPs
     printf("\n");
 
-    double num_operations =
-        (double)2.0 * (TOTAL_K) * (double)(TOTAL_I) * (double)(TOTAL_J);
+    double num_operations = (double)2.0 * (TOTAL_K) * (double)(TOTAL_I) * (double)(TOTAL_J);
 
     printf("  # operations = %.0f\n", num_operations);
-    printf("  Throughput: %.5f GFLOPS\n",
-           (double)1.0e-9 * num_operations / k_overall_exec_time);
+    printf("  Throughput: %.5f GFLOPS\n", (double)1.0e-9 * num_operations / k_overall_exec_time);
 
     DPRINTF("\n===== Host-CPU transferring result matrix C from the FPGA "
             "device global memory (DDR4) via PCIe ======\n\n");
 #endif
     // Read the results back from the device, blocking read
     float *serialized_Z;
-    if ((serialized_Z =
-             (float *)acl_aligned_malloc(num_elem_C * sizeof(float))) == NULL) {
+    if ((serialized_Z = (float *)acl_aligned_malloc(num_elem_C * sizeof(float))) == NULL) {
         perror("Failed malloc of matrix serialized_Z");
     }
 
@@ -425,8 +398,7 @@ int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K,
         // cmdQueue[KID_DRAIN_MAT_C],
         cmdQueue[NUM_KERNELS_TO_CREATE], // using a special queue for reading
                                          // buffer C
-        output_C_buf, CL_TRUE, 0, num_elem_C * sizeof(cl_float), serialized_Z,
-        0, NULL, NULL);
+        output_C_buf, CL_TRUE, 0, num_elem_C * sizeof(cl_float), serialized_Z, 0, NULL, NULL);
     CHECK(status);
 
     printf("\nDeserialization...\n");

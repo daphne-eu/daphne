@@ -18,59 +18,49 @@
 
 namespace CUDA {
 template <>
-[[maybe_unused]] void
-launch_cublas_geam<double>(const CUDAContext &ctx, size_t m, size_t n,
-                           const double *alpha, const double *beta,
-                           const double *A, double *C) {
+[[maybe_unused]] void launch_cublas_geam<double>(const CUDAContext &ctx, size_t m, size_t n, const double *alpha,
+                                                 const double *beta, const double *A, double *C) {
     auto lda = n;
     auto ldb = n;
     auto ldc = m;
-    CHECK_CUBLAS(cublasDgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m,
-                             n, alpha, A, lda, beta, A, ldb, C, ldc));
+    CHECK_CUBLAS(
+        cublasDgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m, n, alpha, A, lda, beta, A, ldb, C, ldc));
 }
 
 template <>
-[[maybe_unused]] void
-launch_cublas_geam<float>(const CUDAContext &ctx, size_t m, size_t n,
-                          const float *alpha, const float *beta, const float *A,
-                          float *C) {
+[[maybe_unused]] void launch_cublas_geam<float>(const CUDAContext &ctx, size_t m, size_t n, const float *alpha,
+                                                const float *beta, const float *A, float *C) {
     auto lda = n;
     auto ldb = n;
     auto ldc = m;
-    CHECK_CUBLAS(cublasSgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m,
-                             n, alpha, A, lda, beta, A, ldb, C, ldc));
+    CHECK_CUBLAS(
+        cublasSgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m, n, alpha, A, lda, beta, A, ldb, C, ldc));
 }
 
 template <>
-[[maybe_unused]] void
-launch_cublas_geam<int64_t>(const CUDAContext &ctx, size_t m, size_t n,
-                            const int64_t *alpha, const int64_t *beta,
-                            const int64_t *A, int64_t *C) {
+[[maybe_unused]] void launch_cublas_geam<int64_t>(const CUDAContext &ctx, size_t m, size_t n, const int64_t *alpha,
+                                                  const int64_t *beta, const int64_t *A, int64_t *C) {
     auto lda = n;
     auto ldb = n;
     auto ldc = m;
     auto alpha_ = static_cast<double>(*alpha);
     auto beta_ = static_cast<double>(*beta);
-    CHECK_CUBLAS(cublasDgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m,
-                             n, &alpha_, reinterpret_cast<const double *>(A),
-                             lda, &beta_, reinterpret_cast<const double *>(A),
-                             ldb, reinterpret_cast<double *>(C), ldc));
+    CHECK_CUBLAS(cublasDgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m, n, &alpha_,
+                             reinterpret_cast<const double *>(A), lda, &beta_, reinterpret_cast<const double *>(A), ldb,
+                             reinterpret_cast<double *>(C), ldc));
 }
 
 template <>
-[[maybe_unused]] void
-launch_cublas_geam<uint64_t>(const CUDAContext &ctx, size_t m, size_t n,
-                             const uint64_t *alpha, const uint64_t *beta,
-                             const uint64_t *A, uint64_t *C) {
+[[maybe_unused]] void launch_cublas_geam<uint64_t>(const CUDAContext &ctx, size_t m, size_t n, const uint64_t *alpha,
+                                                   const uint64_t *beta, const uint64_t *A, uint64_t *C) {
     auto lda = n;
     auto ldb = n;
     auto ldc = m;
     auto alpha_ = static_cast<double>(*alpha);
     auto beta_ = static_cast<double>(*beta);
-    CHECK_CUBLAS(cublasDgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m,
-                             n, &alpha_, reinterpret_cast<const double *>(A),
-                             lda, &beta_, reinterpret_cast<const double *>(A),
-                             ldb, reinterpret_cast<double *>(C), ldc));
+    CHECK_CUBLAS(cublasDgeam(ctx.getCublasHandle(), CUBLAS_OP_T, CUBLAS_OP_T, m, n, &alpha_,
+                             reinterpret_cast<const double *>(A), lda, &beta_, reinterpret_cast<const double *>(A), ldb,
+                             reinterpret_cast<double *>(C), ldc));
 }
 
 // ----------------------------------------------------------------------------
@@ -78,8 +68,7 @@ launch_cublas_geam<uint64_t>(const CUDAContext &ctx, size_t m, size_t n,
 // ----------------------------------------------------------------------------
 
 template <typename VT>
-void Transpose<DenseMatrix<VT>, DenseMatrix<VT>>::apply(
-    DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(dctx)) {
+void Transpose<DenseMatrix<VT>, DenseMatrix<VT>>::apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(dctx)) {
     const size_t numRows = arg->getNumRows();
     const size_t numCols = arg->getNumCols();
     const size_t deviceID = 0; // ToDo: multi device support
@@ -94,11 +83,9 @@ void Transpose<DenseMatrix<VT>, DenseMatrix<VT>>::apply(
         res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg);
     } else {
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(
-                numCols, numRows, false, &alloc_desc);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false, &alloc_desc);
         VT *d_res = res->getValues(&alloc_desc);
-        launch_cublas_geam<VT>(*ctx, numRows, numCols, &blend_alpha,
-                               &blend_beta, d_arg, d_res);
+        launch_cublas_geam<VT>(*ctx, numRows, numCols, &blend_alpha, &blend_beta, d_arg, d_res);
     }
 }
 template struct Transpose<DenseMatrix<double>, DenseMatrix<double>>;

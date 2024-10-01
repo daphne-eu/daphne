@@ -28,11 +28,9 @@ class CallData {
 };
 class StoreCallData final : public CallData {
   public:
-    StoreCallData(WorkerImplGRPCAsync *worker_,
-                  grpc::ServerCompletionQueue *scq,
-                  grpc::ServerCompletionQueue *cq)
-        : worker(worker_), service_(&worker_->service_), scq_(scq), cq_(cq),
-          stream_(&ctx_), responder_(&ctx_), status_(CREATE) {
+    StoreCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *scq, grpc::ServerCompletionQueue *cq)
+        : worker(worker_), service_(&worker_->service_), scq_(scq), cq_(cq), stream_(&ctx_), responder_(&ctx_),
+          status_(CREATE) {
         // Invoke the serving logic right away.
         Proceed(true);
     }
@@ -60,10 +58,8 @@ class StoreCallData final : public CallData {
 };
 class ComputeCallData final : public CallData {
   public:
-    ComputeCallData(WorkerImplGRPCAsync *worker_,
-                    grpc::ServerCompletionQueue *cq)
-        : worker(worker_), service_(&worker_->service_), cq_(cq),
-          responder_(&ctx_), status_(CREATE) {
+    ComputeCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *cq)
+        : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE) {
         // Invoke the serving logic right away.
         Proceed(true);
     }
@@ -90,10 +86,8 @@ class ComputeCallData final : public CallData {
 
 class TransferCallData final : public CallData {
   public:
-    TransferCallData(WorkerImplGRPCAsync *worker_,
-                     grpc::ServerCompletionQueue *cq)
-        : worker(worker_), service_(&worker_->service_), cq_(cq),
-          responder_(&ctx_), status_(CREATE) {
+    TransferCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *cq)
+        : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE) {
         // Invoke the serving logic right away.
         Proceed(true);
     }

@@ -34,10 +34,8 @@ inline double hsum_double_avx2(__m256d v) {
 
 extern "C" {
 
-void spmv_simd_parallel_omp(DenseMatrix<double> *&res,
-                            const CSRMatrix<double> *lhs,
-                            const DenseMatrix<double> *rhs, bool transa,
-                            bool transb, DaphneContext *ctx) {
+void spmv_simd_parallel_omp(DenseMatrix<double> *&res, const CSRMatrix<double> *lhs, const DenseMatrix<double> *rhs,
+                            bool transa, bool transb, DaphneContext *ctx) {
     LIKWID_MARKER_INIT;
     const size_t nr_lhs = lhs->getNumRows();
     [[maybe_unused]] const size_t nc_lhs = lhs->getNumCols();
@@ -46,13 +44,11 @@ void spmv_simd_parallel_omp(DenseMatrix<double> *&res,
     const size_t nc_rhs = rhs->getNumCols();
 
     if (nc_lhs != nr_rhs) {
-        throw std::runtime_error(
-            "Gemv - #cols of mat and #rows of vec must be the same");
+        throw std::runtime_error("Gemv - #cols of mat and #rows of vec must be the same");
     }
 
     if (res == nullptr)
-        res = DataObjectFactory::create<DenseMatrix<double>>(nr_lhs, nc_rhs,
-                                                             false);
+        res = DataObjectFactory::create<DenseMatrix<double>>(nr_lhs, nc_rhs, false);
 
     const auto *valuesRhs = rhs->getValues();
     auto *valuesRes = res->getValues();
@@ -78,8 +74,7 @@ void spmv_simd_parallel_omp(DenseMatrix<double> *&res,
                 // Load doubles from LHS matrix
                 __m256d mat_v = _mm256_loadu_pd(&values[idx]);
                 // Load RHS column indices
-                __m256i col_idxs =
-                    _mm256_loadu_si256((const __m256i *)&col_idx[idx]);
+                __m256i col_idxs = _mm256_loadu_si256((const __m256i *)&col_idx[idx]);
                 // Gather values from RHS vector
                 __m256d vec_v = _mm256_i64gather_pd(valuesRhs, col_idxs, 8);
                 // Multiply and add to accumulator
@@ -88,8 +83,7 @@ void spmv_simd_parallel_omp(DenseMatrix<double> *&res,
             // Horizontal sum of accumulator
             row_sum = hsum_double_avx2(row_acc);
             // Handle remaining elements
-            for (auto i = row_offsets[row] + rounds * 4;
-                 i < row_offsets[row + 1]; ++i) {
+            for (auto i = row_offsets[row] + rounds * 4; i < row_offsets[row + 1]; ++i) {
                 row_sum += values[i] * valuesRhs[col_idx[i]];
             }
             // Store result

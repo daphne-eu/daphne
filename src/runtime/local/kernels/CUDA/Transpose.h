@@ -24,8 +24,7 @@
 
 namespace CUDA {
 template <typename T>
-void launch_cublas_geam(const CUDAContext &ctx, size_t m, size_t n,
-                        const T *alpha, const T *beta, const T *A, T *C);
+void launch_cublas_geam(const CUDAContext &ctx, size_t m, size_t n, const T *alpha, const T *beta, const T *A, T *C);
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -36,16 +35,14 @@ template <class DTRes, class DTArg> struct Transpose {
 };
 
 template <typename VT> struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      DCTX(ctx));
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx));
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void transpose(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void transpose(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     Transpose<DTRes, DTArg>::apply(res, arg, ctx);
 }
 } // namespace CUDA

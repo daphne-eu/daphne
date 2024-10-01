@@ -28,11 +28,9 @@ class MPICoordinator {
 
   public:
     template <class DT>
-    static void
-    handleCoordinationPart(DT ***res, size_t numOutputs,
-                           const Structure **inputs, size_t numInputs,
-                           const char *mlirCode, std::vector<bool> scalars,
-                           VectorCombine *combines, DaphneContext *dctx) {
+    static void handleCoordinationPart(DT ***res, size_t numOutputs, const Structure **inputs, size_t numInputs,
+                                       const char *mlirCode, std::vector<bool> scalars, VectorCombine *combines,
+                                       DaphneContext *dctx) {
         std::vector<WorkerImpl::StoredInfo> outputsStoredInfo;
         std::vector<WorkerImpl::StoredInfo> inputsStoredInfo;
         size_t partitionSize;
@@ -96,18 +94,12 @@ class MPICoordinator {
             // range.c_start)<<std::endl;
             std::string addr = std::to_string(COORDINATOR);
             // If dp already exists for this worker, update the range and data
-            if (auto dp =
-                    (*res[i])->getMetaDataObject()->getDataPlacementByLocation(
-                        addr)) {
-                (*res[i])->getMetaDataObject()->updateRangeDataPlacementByID(
-                    dp->dp_id, &range);
-                dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation))
-                    .updateDistributedData(data);
+            if (auto dp = (*res[i])->getMetaDataObject()->getDataPlacementByLocation(addr)) {
+                (*res[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
+                dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).updateDistributedData(data);
             } else { // else create new dp entry
-                AllocationDescriptorMPI allocationDescriptor(dctx, COORDINATOR,
-                                                             data);
-                ((*res[i]))->getMetaDataObject()->addDataPlacement(
-                    &allocationDescriptor, &range);
+                AllocationDescriptorMPI allocationDescriptor(dctx, COORDINATOR, data);
+                ((*res[i]))->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
             }
         }
         // solver.Compute(&outputsStoredInfo, inputsStoredInfo, mlirCode);

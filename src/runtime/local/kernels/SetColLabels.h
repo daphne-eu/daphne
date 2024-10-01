@@ -30,8 +30,7 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabels(Frame *&res, const Frame *arg, const char **labels,
-                  size_t numLabels, DCTX(ctx)) {
+void setColLabels(Frame *&res, const Frame *arg, const char **labels, size_t numLabels, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     if (numLabels != numCols)
         throw std::runtime_error("the number of given labels does not match "
@@ -45,8 +44,7 @@ void setColLabels(Frame *&res, const Frame *arg, const char **labels,
     auto colIdxs = new size_t[numCols];
     for (size_t c = 0; c < numCols; c++)
         colIdxs[c] = c;
-    res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), numCols,
-                                           colIdxs);
+    res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), numCols, colIdxs);
     delete[] colIdxs;
     res->setLabels(labelsStr);
 

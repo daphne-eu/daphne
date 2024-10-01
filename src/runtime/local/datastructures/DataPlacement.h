@@ -37,8 +37,6 @@ struct DataPlacement {
     std::unique_ptr<Range> range{};
 
     DataPlacement() = delete;
-    DataPlacement(std::unique_ptr<IAllocationDescriptor> _a,
-                  std::unique_ptr<Range> _r)
-        : dp_id(instance_count++), allocation(std::move(_a)),
-          range(std::move(_r)) {}
+    DataPlacement(std::unique_ptr<IAllocationDescriptor> _a, std::unique_ptr<Range> _r)
+        : dp_id(instance_count++), allocation(std::move(_a)), range(std::move(_r)) {}
 };

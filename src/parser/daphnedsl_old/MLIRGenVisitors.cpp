@@ -57,12 +57,10 @@ Location DaphneMlirVisitor::getLocMLIR(antlr4::Token *token) {
     auto filename = token->getTokenSource()->getSourceName();
     auto line = token->getLine();
     auto col = token->getCharPositionInLine();
-    return mlir::FileLineColLoc::get(builder.getIdentifier(filename), line,
-                                     col);
+    return mlir::FileLineColLoc::get(builder.getIdentifier(filename), line, col);
 }
 
-antlrcpp::Any
-DaphneMlirVisitor::visitFloatType(DaphneParser::FloatTypeContext *ctx) {
+antlrcpp::Any DaphneMlirVisitor::visitFloatType(DaphneParser::FloatTypeContext *ctx) {
     switch (ctx->FLOAT_TYPE()->getSymbol()->getType()) {
     case DaphneLexer::F64:
         return builder.getF64Type();
@@ -72,8 +70,7 @@ DaphneMlirVisitor::visitFloatType(DaphneParser::FloatTypeContext *ctx) {
     llvm_unreachable("Parser does not handle float type bit-size");
 }
 
-antlrcpp::Any
-DaphneMlirVisitor::visitIntegerType(DaphneParser::IntegerTypeContext *ctx) {
+antlrcpp::Any DaphneMlirVisitor::visitIntegerType(DaphneParser::IntegerTypeContext *ctx) {
     switch (ctx->INTEGER_TYPE()->getSymbol()->getType()) {
     case DaphneLexer::I64:
         return builder.getI64Type();
@@ -91,14 +88,12 @@ std::string removeLiteralUnderscores(llvm::StringRef literal) {
     return str;
 }
 
-llvm::Optional<llvm::APFloat>
-DaphneMlirVisitor::parseFloatLiteral(Location loc,
-                                     llvm::StringRef floatLiteral) {
+llvm::Optional<llvm::APFloat> DaphneMlirVisitor::parseFloatLiteral(Location loc, llvm::StringRef floatLiteral) {
     return llvm::APFloat(std::stod(removeLiteralUnderscores(floatLiteral)));
 }
 
-llvm::Optional<llvm::APInt> DaphneMlirVisitor::parseIntegerLiteral(
-    Location loc, llvm::StringRef decimalLiteral, unsigned int bitWidth) {
+llvm::Optional<llvm::APInt> DaphneMlirVisitor::parseIntegerLiteral(Location loc, llvm::StringRef decimalLiteral,
+                                                                   unsigned int bitWidth) {
     auto literal = removeLiteralUnderscores(decimalLiteral);
     llvm::APInt number;
     if (llvm::StringRef(literal).getAsInteger(10, number)) {
@@ -108,8 +103,7 @@ llvm::Optional<llvm::APInt> DaphneMlirVisitor::parseIntegerLiteral(
     if (number.getBitWidth() > bitWidth) {
         emitError(loc) << "Integer literal does not fit in variable, too small "
                           "bit width. Needed: `"
-                       << number.getBitWidth() << "` Actual: `" << bitWidth
-                       << "`\n";
+                       << number.getBitWidth() << "` Actual: `" << bitWidth << "`\n";
         return llvm::None;
     } else if (number.getBitWidth() < bitWidth) {
         number = number.zext(bitWidth);
@@ -117,11 +111,9 @@ llvm::Optional<llvm::APInt> DaphneMlirVisitor::parseIntegerLiteral(
     return std::move(number);
 }
 
-std::string
-DaphneMlirVisitor::parseStringLiteral(llvm::StringRef rawStringLiteral) {
+std::string DaphneMlirVisitor::parseStringLiteral(llvm::StringRef rawStringLiteral) {
     // remove starting and ending "
-    std::string str =
-        std::string(rawStringLiteral.substr(1, rawStringLiteral.size() - 2));
+    std::string str = std::string(rawStringLiteral.substr(1, rawStringLiteral.size() - 2));
 
     // std::string notBackslash = R"([^\\])";
     // auto multiple2Backslash = R"((\\)*)";
@@ -160,23 +152,19 @@ antlrcpp::Any ItemVisitor::visitItem(DaphneParser::ItemContext *ctx) {
     return functionVisitor.visitFunction(ctx->function());
 }
 
-antlrcpp::Any
-FunctionVisitor::visitFunction(DaphneParser::FunctionContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitFunction(DaphneParser::FunctionContext *ctx) {
     auto loc = getLocMLIR(ctx->KW_DEF()->getSymbol());
     auto *funcBlock = new Block();
     {
         OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(funcBlock, funcBlock->begin());
 
-        if (ctx->functionArgs() != nullptr &&
-            failed(
-                visitFunctionArgs(ctx->functionArgs()).as<LogicalResult>())) {
+        if (ctx->functionArgs() != nullptr && failed(visitFunctionArgs(ctx->functionArgs()).as<LogicalResult>())) {
             return nullptr;
         }
 
         auto endLoc = getLocMLIR(ctx->RPAREN()->getSymbol());
-        if (failed(visitBlockStatement(ctx->blockStatement())
-                       .as<LogicalResult>())) {
+        if (failed(visitBlockStatement(ctx->blockStatement()).as<LogicalResult>())) {
             return nullptr;
         }
         if (!funcBlock->back().mightHaveTrait<OpTrait::IsTerminator>()) {
@@ -190,17 +178,14 @@ FunctionVisitor::visitFunction(DaphneParser::FunctionContext *ctx) {
 
     auto *terminator = funcBlock->getTerminator();
     auto funcType =
-        FunctionType::get(builder.getContext(), funcBlock->getArgumentTypes(),
-                          terminator->getOperandTypes());
+        FunctionType::get(builder.getContext(), funcBlock->getArgumentTypes(), terminator->getOperandTypes());
     // TODO The function name prefix should probably not be inserted here.
-    auto func = builder.create<FuncOp>(
-        loc, "_mlir__mlir_ciface_" + ctx->IDENTIFIER()->getText(), funcType);
+    auto func = builder.create<FuncOp>(loc, "_mlir__mlir_ciface_" + ctx->IDENTIFIER()->getText(), funcType);
     func.push_back(funcBlock);
     return func.getOperation();
 }
 
-antlrcpp::Any
-FunctionVisitor::visitFunctionArgs(DaphneParser::FunctionArgsContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitFunctionArgs(DaphneParser::FunctionArgsContext *ctx) {
     for (auto arg : ctx->functionArg()) {
         if (failed(visitFunctionArg(arg).as<LogicalResult>())) {
             return failure();
@@ -209,8 +194,7 @@ FunctionVisitor::visitFunctionArgs(DaphneParser::FunctionArgsContext *ctx) {
     return success();
 }
 
-antlrcpp::Any
-FunctionVisitor::visitFunctionArg(DaphneParser::FunctionArgContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitFunctionArg(DaphneParser::FunctionArgContext *ctx) {
     Type argType = visit(ctx->type()).as<Type>();
     auto arg = builder.getBlock()->addArgument(argType);
     if (failed(declareVar(ctx->IDENTIFIER()->getText(), arg))) {
@@ -220,21 +204,18 @@ FunctionVisitor::visitFunctionArg(DaphneParser::FunctionArgContext *ctx) {
     return success();
 }
 
-antlrcpp::Any FunctionVisitor::visitLiteralExpression(
-    DaphneParser::LiteralExpressionContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitLiteralExpression(DaphneParser::LiteralExpressionContext *ctx) {
     auto res = visitLiteralExpressionRule(ctx->literalExpressionRule());
     auto loc = getLocMLIR(ctx->start);
     Value value = nullptr;
     if (res.is<APFloat>()) {
         // TODO: get bit type, if specified
         Type type = builder.getF64Type();
-        value = builder.create<daphne::ConstantOp>(
-            loc, builder.getFloatAttr(type, res.as<APFloat>()));
+        value = builder.create<daphne::ConstantOp>(loc, builder.getFloatAttr(type, res.as<APFloat>()));
     } else if (res.is<APInt>()) {
         // TODO: get bit type, if specified
         Type type = builder.getIntegerType(64, true);
-        value = builder.create<daphne::ConstantOp>(
-            loc, builder.getIntegerAttr(type, res.as<APInt>()));
+        value = builder.create<daphne::ConstantOp>(loc, builder.getIntegerAttr(type, res.as<APInt>()));
     }
 #if 0
     else if (res.is<MatrixLiteral>()) {
@@ -278,8 +259,7 @@ antlrcpp::Any FunctionVisitor::visitLiteralExpression(
     return value;
 }
 
-antlrcpp::Any FunctionVisitor::visitLiteralExpressionRule(
-    DaphneParser::LiteralExpressionRuleContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitLiteralExpressionRule(DaphneParser::LiteralExpressionRuleContext *ctx) {
     if (auto floatLiteral = ctx->FLOAT_LITERAL()) {
         auto loc = getLocMLIR(floatLiteral->getSymbol());
         if (auto val = parseFloatLiteral(loc, floatLiteral->getText()))
@@ -289,8 +269,7 @@ antlrcpp::Any FunctionVisitor::visitLiteralExpressionRule(
         Type type = builder.getI64Type();
         auto bitWidth = type.cast<IntegerType>().getWidth();
         auto loc = getLocMLIR(intLiteral->getSymbol());
-        if (auto val =
-                parseIntegerLiteral(loc, intLiteral->getText(), bitWidth))
+        if (auto val = parseIntegerLiteral(loc, intLiteral->getText(), bitWidth))
             return static_cast<APInt>(val.getValue());
     } else if (auto strLiteral = ctx->STRING_LITERAL()) {
         return strLiteral->getText();
@@ -303,20 +282,17 @@ antlrcpp::Any FunctionVisitor::visitLiteralExpressionRule(
     return nullptr;
 }
 
-antlrcpp::Any
-FunctionVisitor::visitMatrixLiteral(DaphneParser::MatrixLiteralContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitMatrixLiteral(DaphneParser::MatrixLiteralContext *ctx) {
     return visitMatrixLiteralElements(ctx->matrixLiteralElements());
 }
 
-antlrcpp::Any FunctionVisitor::visitMatrixLiteralElements(
-    DaphneParser::MatrixLiteralElementsContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitMatrixLiteralElements(DaphneParser::MatrixLiteralElementsContext *ctx) {
     MatrixLiteral matrixLiteral;
     for (auto litExprRule : ctx->literalExpressionRule()) {
         auto loc = getLocMLIR(litExprRule->start);
         auto val = visitLiteralExpressionRule(litExprRule);
         if (val.isNull()) {
-            emitError(loc)
-                << "Could not parse at least one of the literal expressions";
+            emitError(loc) << "Could not parse at least one of the literal expressions";
             return nullptr;
         }
         matrixLiteral.addData(loc, builder, std::move(val));
@@ -324,37 +300,32 @@ antlrcpp::Any FunctionVisitor::visitMatrixLiteralElements(
     return matrixLiteral;
 }
 
-antlrcpp::Any
-FunctionVisitor::visitBlockStatement(DaphneParser::BlockStatementContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitBlockStatement(DaphneParser::BlockStatementContext *ctx) {
     // scope handling here?
     for (auto statement : ctx->statement()) {
         auto result = visitStatement(statement);
-        if (result.isNull() || (result.is<LogicalResult>() &&
-                                failed(result.as<LogicalResult>()))) {
+        if (result.isNull() || (result.is<LogicalResult>() && failed(result.as<LogicalResult>()))) {
             return failure();
         }
     }
     return success();
 }
 
-antlrcpp::Any FunctionVisitor::visitExpressionStatement(
-    DaphneParser::ExpressionStatementContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitExpressionStatement(DaphneParser::ExpressionStatementContext *ctx) {
     if (visit(ctx->expression()).isNotNull()) {
         return success();
     }
     return failure();
 }
 
-antlrcpp::Any FunctionVisitor::visitAssignmentExpression(
-    DaphneParser::AssignmentExpressionContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitAssignmentExpression(DaphneParser::AssignmentExpressionContext *ctx) {
     auto varName = ctx->IDENTIFIER()->getText();
     // TODO: check if shadowing is allowed
     auto val = visit(ctx->expression());
     if (val.isNull()) {
         return nullptr;
     } else if (val.is<Operation *>()) {
-        emitError(getLocMLIR(ctx->EQ()->getSymbol()))
-            << "Can't assign expression that does not return a value";
+        emitError(getLocMLIR(ctx->EQ()->getSymbol())) << "Can't assign expression that does not return a value";
         return nullptr;
     }
     if (failed(declareVar(varName, val.as<Value>(), true))) {
@@ -363,21 +334,18 @@ antlrcpp::Any FunctionVisitor::visitAssignmentExpression(
     return val;
 }
 
-antlrcpp::Any FunctionVisitor::visitGroupedExpression(
-    DaphneParser::GroupedExpressionContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitGroupedExpression(DaphneParser::GroupedExpressionContext *ctx) {
     return visit(ctx->expression());
 }
 
-antlrcpp::Any
-FunctionVisitor::visitLetStatement(DaphneParser::LetStatementContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitLetStatement(DaphneParser::LetStatementContext *ctx) {
     auto val = visit(ctx->expression());
     if (val.isNull()) {
         return failure();
     }
     if (val.is<Operation *>()) {
-        emitError(getLocMLIR(ctx->start))
-            << "Can't initialize variable with expression that does not return "
-               "a value";
+        emitError(getLocMLIR(ctx->start)) << "Can't initialize variable with expression that does not return "
+                                             "a value";
         return failure();
     }
     if (failed(declareVar(ctx->IDENTIFIER()->getText(), val.as<Value>()))) {
@@ -386,8 +354,7 @@ FunctionVisitor::visitLetStatement(DaphneParser::LetStatementContext *ctx) {
     return success();
 }
 
-antlrcpp::Any FunctionVisitor::visitIdentifierExpression(
-    DaphneParser::IdentifierExpressionContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitIdentifierExpression(DaphneParser::IdentifierExpressionContext *ctx) {
     auto varName = ctx->IDENTIFIER()->getText();
     auto it = symbolTable.find(varName);
     if (it != symbolTable.end()) {
@@ -399,8 +366,7 @@ antlrcpp::Any FunctionVisitor::visitIdentifierExpression(
     return nullptr;
 }
 
-antlrcpp::Any
-FunctionVisitor::visitCallExpression(DaphneParser::CallExpressionContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitCallExpression(DaphneParser::CallExpressionContext *ctx) {
     std::vector<Value> parameters;
     if (ctx->parameters()) {
         auto parametersRet = visitParameters(ctx->parameters());
@@ -413,12 +379,10 @@ FunctionVisitor::visitCallExpression(DaphneParser::CallExpressionContext *ctx) {
         parameters = parametersRet.as<std::vector<Value>>();
     }
     auto loc = getLocMLIR(ctx->IDENTIFIER()->getSymbol());
-    auto builtin =
-        Builtins::build(builder, loc, parameters, ctx->fn->getText());
+    auto builtin = Builtins::build(builder, loc, parameters, ctx->fn->getText());
     if (builtin.isNull()) {
         // TODO: check user defined functions
-        emitError(getLocMLIR(ctx->start))
-            << "Unknown function call `" << ctx->getText() << '`';
+        emitError(getLocMLIR(ctx->start)) << "Unknown function call `" << ctx->getText() << '`';
         return nullptr;
     }
     if (builtin.is<Value>()) {
@@ -427,20 +391,17 @@ FunctionVisitor::visitCallExpression(DaphneParser::CallExpressionContext *ctx) {
     return builtin.as<Operation *>();
 }
 
-antlrcpp::Any FunctionVisitor::visitArithmeticExpression(
-    DaphneParser::ArithmeticExpressionContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitArithmeticExpression(DaphneParser::ArithmeticExpressionContext *ctx) {
     auto lhsAny = visit(ctx->lhs);
     if (lhsAny.isNull()) {
-        emitError(getLocMLIR(ctx->lhs->start))
-            << "left hand side of arithmetic expression did not return a value";
+        emitError(getLocMLIR(ctx->lhs->start)) << "left hand side of arithmetic expression did not return a value";
         return nullptr;
     }
     Value lhs = lhsAny.as<Value>();
     auto rhsAny = visit(ctx->rhs);
     if (rhsAny.isNull()) {
-        emitError(getLocMLIR(ctx->rhs->start))
-            << "right hand side of arithmetic expression did not return a "
-               "value";
+        emitError(getLocMLIR(ctx->rhs->start)) << "right hand side of arithmetic expression did not return a "
+                                                  "value";
         return nullptr;
     }
     Value rhs = rhsAny.as<Value>();
@@ -461,8 +422,7 @@ antlrcpp::Any FunctionVisitor::visitArithmeticExpression(
     return retVal;
 }
 
-antlrcpp::Any
-FunctionVisitor::visitParameters(DaphneParser::ParametersContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitParameters(DaphneParser::ParametersContext *ctx) {
     std::vector<Value> parameters;
     for (auto parameter : ctx->parameter()) {
         auto val = visitParameter(parameter);
@@ -474,21 +434,18 @@ FunctionVisitor::visitParameters(DaphneParser::ParametersContext *ctx) {
     return parameters;
 }
 
-antlrcpp::Any
-FunctionVisitor::visitParameter(DaphneParser::ParameterContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitParameter(DaphneParser::ParameterContext *ctx) {
     auto valRet = visit(ctx->expression());
     if (valRet.isNull()) {
         return nullptr;
     } else if (valRet.is<Operation *>()) {
-        emitError(getLocMLIR(ctx->start))
-            << "Parameter expression has to return a value";
+        emitError(getLocMLIR(ctx->start)) << "Parameter expression has to return a value";
         return nullptr;
     }
     return valRet;
 }
 
-antlrcpp::Any
-FunctionVisitor::visitStatement(DaphneParser::StatementContext *ctx) {
+antlrcpp::Any FunctionVisitor::visitStatement(DaphneParser::StatementContext *ctx) {
     if (ctx->blockStatement()) {
         return visitBlockStatement(ctx->blockStatement());
     } else if (ctx->expressionStatement()) {
@@ -500,20 +457,17 @@ FunctionVisitor::visitStatement(DaphneParser::StatementContext *ctx) {
     return failure();
 }
 
-LogicalResult FunctionVisitor::declareVar(std::string name, Value value,
-                                          bool allowShadowing) {
+LogicalResult FunctionVisitor::declareVar(std::string name, Value value, bool allowShadowing) {
     if (symbolTable.count(name) && !allowShadowing) {
-        emitError(value.getLoc())
-            << "Variable with name `" << name
-            << "` already exists and shadowing is not allowed here";
+        emitError(value.getLoc()) << "Variable with name `" << name
+                                  << "` already exists and shadowing is not allowed here";
         return failure();
     }
     symbolTable[name] = value;
     return success();
 }
 
-void MatrixLiteral::addData(Location &loc, OpBuilder &builder,
-                            antlrcpp::Any data) {
+void MatrixLiteral::addData(Location &loc, OpBuilder &builder, antlrcpp::Any data) {
     if (data.is<MatrixLiteral>()) {
         auto childLit = data.as<MatrixLiteral>();
         if (!initialized) {
@@ -536,21 +490,18 @@ void MatrixLiteral::addData(Location &loc, OpBuilder &builder,
                               "match for matrix literals";
         }
         if (elementType.isa<FloatType>()) {
-            linearizedFloatData.insert(linearizedFloatData.end(),
-                                       childLit.linearizedFloatData.begin(),
+            linearizedFloatData.insert(linearizedFloatData.end(), childLit.linearizedFloatData.begin(),
                                        childLit.linearizedFloatData.end());
         } else {
-            linearizedIntData.insert(linearizedIntData.end(),
-                                     childLit.linearizedIntData.begin(),
+            linearizedIntData.insert(linearizedIntData.end(), childLit.linearizedIntData.begin(),
                                      childLit.linearizedIntData.end());
         }
     } else if (rows != -1) {
         emitError(loc) << "Matrix literals have to be nested exactly 2 times";
-        emitRemark(loc)
-            << "Single 'array'/'row' which can be reshaped to a matrix shape "
-               "will be supported in the future:\n"
-            << "Some syntax similar to the following line will be supported.\n"
-            << "\tlet a: 2x2 = [1., 2., 3., 4.];";
+        emitRemark(loc) << "Single 'array'/'row' which can be reshaped to a matrix shape "
+                           "will be supported in the future:\n"
+                        << "Some syntax similar to the following line will be supported.\n"
+                        << "\tlet a: 2x2 = [1., 2., 3., 4.];";
         return;
     } else if (data.is<APFloat>()) {
         if (!initialized) {

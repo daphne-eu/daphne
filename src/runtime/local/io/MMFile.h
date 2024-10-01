@@ -59,8 +59,7 @@ inline int mm_is_valid(MM_typecode matcode) {
         return 0;
     if (mm_is_real(matcode) && mm_is_hermitian(matcode))
         return 0;
-    if (mm_is_pattern(matcode) &&
-        (mm_is_hermitian(matcode) || mm_is_skew(matcode)))
+    if (mm_is_pattern(matcode) && (mm_is_hermitian(matcode) || mm_is_skew(matcode)))
         return 0;
     return 1;
 }
@@ -83,9 +82,7 @@ inline int mm_is_valid(MM_typecode matcode) {
 #define mm_set_skew(typecode) ((*typecode)[3] = 'K')
 #define mm_set_hermitian(typecode) ((*typecode)[3] = 'H')
 
-#define mm_clear_typecode(typecode)                                            \
-    ((*typecode)[0] = (*typecode)[1] = (*typecode)[2] = ' ',                   \
-     (*typecode)[3] = 'G')
+#define mm_clear_typecode(typecode) ((*typecode)[0] = (*typecode)[1] = (*typecode)[2] = ' ', (*typecode)[3] = 'G')
 
 #define mm_initialize_typecode(typecode) mm_clear_typecode(typecode)
 
@@ -143,8 +140,7 @@ inline int mm_read_banner(File *f, MM_typecode *matcode) {
     if (ret == -1)
         throw std::runtime_error("mm_read_banner: getFileLine failed");
 
-    if (sscanf(f->line, "%s %s %s %s %s", banner, mtx, crd, data_type,
-               storage_scheme) != 5)
+    if (sscanf(f->line, "%s %s %s %s %s", banner, mtx, crd, data_type, storage_scheme) != 5)
         return MM_PREMATURE_EOF;
 
     for (p = mtx; *p != '\0'; *p = tolower(*p), p++)
@@ -213,8 +209,7 @@ inline int mm_read_mtx_crd_size(File *f, size_t *M, size_t *N, size_t *nz) {
         if ((ssize_t)f->read == EOF)
             return MM_PREMATURE_EOF;
         if (ret == -1)
-            throw std::runtime_error(
-                "mm_read_mtx_crd_size: getFileLine failed");
+            throw std::runtime_error("mm_read_mtx_crd_size: getFileLine failed");
 
         num_items_read = sscanf(f->line, "%lu %lu %lu", M, N, nz);
     } while (num_items_read != 3);
@@ -231,8 +226,7 @@ inline int mm_read_mtx_array_size(File *f, size_t *M, size_t *N) {
         if ((ssize_t)f->read == EOF)
             return MM_PREMATURE_EOF;
         if (ret == -1)
-            throw std::runtime_error(
-                "mm_read_mtx_array_size: getFileLine failed");
+            throw std::runtime_error("mm_read_mtx_array_size: getFileLine failed");
         num_items_read = sscanf(f->line, "%lu %lu", M, N);
     } while (num_items_read != 2);
 
@@ -279,12 +273,8 @@ template <typename VT> class MMFile {
     struct Entry {
         size_t row, col;
         VT val;
-        friend bool operator==(const Entry &a, const Entry &b) {
-            return a.row == b.row && a.col == b.col;
-        }
-        friend bool operator!=(const Entry &a, const Entry &b) {
-            return !(a == b);
-        }
+        friend bool operator==(const Entry &a, const Entry &b) { return a.row == b.row && a.col == b.col; }
+        friend bool operator!=(const Entry &a, const Entry &b) { return !(a == b); }
         friend bool operator>(const Entry &a, const Entry &b) {
             return (a.row > b.row || (a.row == b.row && a.col > b.col));
         }
@@ -316,8 +306,7 @@ template <typename VT> class MMFile {
                 return;
             }
             if (ret == -1)
-                throw std::runtime_error(
-                    "MMIterator::readEntry: getFileLine failed");
+                throw std::runtime_error("MMIterator::readEntry: getFileLine failed");
 
             size_t pos = 0;
             if (mm_is_coordinate(file.typecode)) {
@@ -384,12 +373,8 @@ template <typename VT> class MMFile {
             return tmp;
         }
 
-        friend bool operator==(const MMIterator &a, const MMIterator &b) {
-            return *(a.m_ptr) == *(b.m_ptr);
-        };
-        friend bool operator!=(const MMIterator &a, const MMIterator &b) {
-            return *(a.m_ptr) != *(b.m_ptr);
-        };
+        friend bool operator==(const MMIterator &a, const MMIterator &b) { return *(a.m_ptr) == *(b.m_ptr); };
+        friend bool operator!=(const MMIterator &a, const MMIterator &b) { return *(a.m_ptr) != *(b.m_ptr); };
     };
 
     MMIterator begin() { return MMIterator(*this); }

@@ -65,8 +65,7 @@ template <class DTRes> struct ReadHDFS {
             distributedRead<DTRes>(res, hdfsFilename, dctx);
         } else {
             if (extension == ".csv") {
-                readHDFSCsv(res, hdfsFilename, fmd.numRows, fmd.numCols, ',',
-                            dctx);
+                readHDFSCsv(res, hdfsFilename, fmd.numRows, fmd.numCols, ',', dctx);
             } else if (extension == ".dbdf") {
                 readDaphneHDFS(res, hdfsFilename, dctx);
             }
@@ -78,7 +77,6 @@ template <class DTRes> struct ReadHDFS {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes>
-void readHDFS(DTRes *&res, const char *hdfsFilename, DCTX(dctx)) {
+template <class DTRes> void readHDFS(DTRes *&res, const char *hdfsFilename, DCTX(dctx)) {
     ReadHDFS<DTRes>::apply(res, hdfsFilename, dctx);
 }

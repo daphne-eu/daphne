@@ -49,17 +49,15 @@ using mlir::daphne::VectorSplit;
 
 // One output.
 template <class DTRes>
-void distributedPipeline(DTRes **outputs, size_t numOutputs,
-                         const Structure **inputs, size_t numInputs,
-                         int64_t *outRows, int64_t *outCols, int64_t *splits,
-                         int64_t *combines, const char *irCode, DCTX(ctx)) {
+void distributedPipeline(DTRes **outputs, size_t numOutputs, const Structure **inputs, size_t numInputs,
+                         int64_t *outRows, int64_t *outCols, int64_t *splits, int64_t *combines, const char *irCode,
+                         DCTX(ctx)) {
 
     auto wrapper = std::make_unique<DistributedWrapper<DTRes>>(ctx);
     // TODO *** -> **
     DTRes ***res = new DTRes **[numOutputs];
     for (size_t i = 0; i < numOutputs; i++)
         res[i] = outputs + i;
-    wrapper->execute(irCode, res, inputs, numInputs, numOutputs, outRows,
-                     outCols, reinterpret_cast<VectorSplit *>(splits),
-                     reinterpret_cast<VectorCombine *>(combines));
+    wrapper->execute(irCode, res, inputs, numInputs, numOutputs, outRows, outCols,
+                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines));
 }

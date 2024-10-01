@@ -48,8 +48,7 @@ using namespace mlir;
  * catalog into account to find out for which type combinations there are
  * available kernels.
  */
-struct AdaptTypesToKernelsPass
-    : public PassWrapper<AdaptTypesToKernelsPass, OperationPass<func::FuncOp>> {
+struct AdaptTypesToKernelsPass : public PassWrapper<AdaptTypesToKernelsPass, OperationPass<func::FuncOp>> {
     void runOnOperation() final;
     StringRef getArgument() const final { return "adapt-types-to-kernels"; }
     StringRef getDescription() const final { return "TODO"; }
@@ -72,9 +71,8 @@ void AdaptTypesToKernelsPass::runOnOperation() {
             // TODO Support frame ops.
             // Skip frame ops, since we cannot easily cast the column types of
             // frames anyway.
-            if (llvm::any_of(op->getOperands(), [](Value operand) {
-                    return llvm::isa<daphne::FrameType>(operand.getType());
-                }))
+            if (llvm::any_of(op->getOperands(),
+                             [](Value operand) { return llvm::isa<daphne::FrameType>(operand.getType()); }))
                 return;
 
             // Cast all inputs to the most general input value type.
@@ -82,8 +80,7 @@ void AdaptTypesToKernelsPass::runOnOperation() {
                 operandIdxs.push_back(i);
             std::vector<Type> argVTys;
             for (size_t i = 0; i < numOperands; i++)
-                argVTys.push_back(
-                    CompilerUtils::getValueType(op->getOperand(i).getType()));
+                argVTys.push_back(CompilerUtils::getValueType(op->getOperand(i).getType()));
             targetVTy = mostGeneralVt(argVTys);
         } else {
             // All remaining related traits consider the result type.
@@ -95,8 +92,7 @@ void AdaptTypesToKernelsPass::runOnOperation() {
             // TODO Support frame ops.
             // Skip frame ops, since we cannot easily cast the column types of
             // frames anyway.
-            if (llvm::isa<daphne::FrameType>(resTy) ||
-                llvm::any_of(op->getOperands(), [](Value operand) {
+            if (llvm::isa<daphne::FrameType>(resTy) || llvm::any_of(op->getOperands(), [](Value operand) {
                     return llvm::isa<daphne::FrameType>(operand.getType());
                 }))
                 return;
@@ -128,17 +124,12 @@ void AdaptTypesToKernelsPass::runOnOperation() {
                 Value argVal = op->getOperand(i);
                 Type argTy = argVal.getType();
                 if (CompilerUtils::getValueType(argTy) != targetVTy) {
-                    op->setOperand(
-                        i, builder.create<daphne::CastOp>(
-                               argVal.getLoc(),
-                               CompilerUtils::setValueType(argTy, targetVTy),
-                               argVal));
+                    op->setOperand(i, builder.create<daphne::CastOp>(
+                                          argVal.getLoc(), CompilerUtils::setValueType(argTy, targetVTy), argVal));
                 }
             }
         }
     });
 }
 
-std::unique_ptr<Pass> daphne::createAdaptTypesToKernelsPass() {
-    return std::make_unique<AdaptTypesToKernelsPass>();
-}
+std::unique_ptr<Pass> daphne::createAdaptTypesToKernelsPass() { return std::make_unique<AdaptTypesToKernelsPass>(); }

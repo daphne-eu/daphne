@@ -61,8 +61,7 @@ class SQLVisitor : public SQLGrammarVisitor {
     /**
      * @brief creates ColBindOp to add the matirx to the currentFrame.
      */
-    mlir::Value addMatrixToCurrentFrame(mlir::Value matrix,
-                                        std::string newColumnName);
+    mlir::Value addMatrixToCurrentFrame(mlir::Value matrix, std::string newColumnName);
 
     /**
      * @brief creates a GetColIdxOp for a specific colName of the frame.
@@ -72,8 +71,7 @@ class SQLVisitor : public SQLGrammarVisitor {
     /**
      * @brief creates ExtractColOp and CastOp
      */
-    mlir::Value extractColumnAsMatrixFromFrame(mlir::Value frame,
-                                               mlir::Value colname);
+    mlir::Value extractColumnAsMatrixFromFrame(mlir::Value frame, mlir::Value colname);
 
     /**
      * @brief returns GroupEnumAttr for a given aggregation function
@@ -96,17 +94,14 @@ class SQLVisitor : public SQLGrammarVisitor {
      * @brief returns a frame in which the contents of a column specified by
      * the columnName is copied.
      */
-    mlir::Value extractColumnFromFrame(mlir::Value frame,
-                                       mlir::Value columnName);
+    mlir::Value extractColumnFromFrame(mlir::Value frame, mlir::Value columnName);
 
     // Data Structures and access functions
     std::unordered_map<std::string, mlir::Value> view;  // name, mlir::Value
     std::unordered_map<std::string, mlir::Value> alias; // name, mlir::Value
 
-    std::unordered_map<std::string, std::string>
-        framePrefix; // framename, prefix
-    std::unordered_map<std::string, std::string>
-        reverseFramePrefix; // prefix, framename
+    std::unordered_map<std::string, std::string> framePrefix;        // framename, prefix
+    std::unordered_map<std::string, std::string> reverseFramePrefix; // prefix, framename
 
     /**
      * @brief adds a mlir Value under the string into the alias map for later
@@ -135,9 +130,7 @@ class SQLVisitor : public SQLGrammarVisitor {
      * @brief checks if a given prefix already given to annother framename
      * otherwise registers the prefix for this framename
      */
-    std::string setFramePrefix(const std::string &framename,
-                               const std::string &prefix, bool necessary,
-                               bool ignore);
+    std::string setFramePrefix(const std::string &framename, const std::string &prefix, bool necessary, bool ignore);
 
     /**
      * @brief looks up the prefix for a given framename
@@ -169,12 +162,10 @@ class SQLVisitor : public SQLGrammarVisitor {
     int64_t groupCounterCodegen = 0;
 
   public:
-    [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder &builder,
-                                         mlir::daphne::SqlOp sqlOp)
-        : utils(builder), builder(builder), queryLoc(sqlOp.getLoc()) {};
+    [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder &builder, mlir::daphne::SqlOp sqlOp)
+        : utils(builder), builder(builder), queryLoc(sqlOp.getLoc()){};
 
-    SQLVisitor(mlir::OpBuilder &builder,
-               std::unordered_map<std::string, mlir::Value> view_arg,
+    SQLVisitor(mlir::OpBuilder &builder, std::unordered_map<std::string, mlir::Value> view_arg,
                mlir::daphne::SqlOp sqlOp)
         : utils(builder), builder(builder), queryLoc(sqlOp.getLoc()) {
         view = std::move(view_arg);
@@ -193,71 +184,53 @@ class SQLVisitor : public SQLGrammarVisitor {
     antlrcpp::Any visitSelect(SQLGrammarParser::SelectContext *ctx) override;
 
     // subquery
-    antlrcpp::Any
-    visitSubquery(SQLGrammarParser::SubqueryContext *ctx) override;
+    antlrcpp::Any visitSubquery(SQLGrammarParser::SubqueryContext *ctx) override;
 
     // subqueryExpr
-    antlrcpp::Any
-    visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext *ctx) override;
+    antlrcpp::Any visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext *ctx) override;
 
     // selectExpr
-    antlrcpp::Any
-    visitSelectExpr(SQLGrammarParser::SelectExprContext *ctx) override;
+    antlrcpp::Any visitSelectExpr(SQLGrammarParser::SelectExprContext *ctx) override;
 
     // tableExpr
-    antlrcpp::Any
-    visitTableExpr(SQLGrammarParser::TableExprContext *ctx) override;
+    antlrcpp::Any visitTableExpr(SQLGrammarParser::TableExprContext *ctx) override;
 
     // distinctExpr
-    antlrcpp::Any
-    visitDistinctExpr(SQLGrammarParser::DistinctExprContext *ctx) override;
+    antlrcpp::Any visitDistinctExpr(SQLGrammarParser::DistinctExprContext *ctx) override;
 
     // fromExpr
-    antlrcpp::Any visitTableIdentifierExpr(
-        SQLGrammarParser::TableIdentifierExprContext *ctx) override;
+    antlrcpp::Any visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitCartesianExpr(SQLGrammarParser::CartesianExprContext *ctx) override;
+    antlrcpp::Any visitCartesianExpr(SQLGrammarParser::CartesianExprContext *ctx) override;
 
     // joinExpr
-    antlrcpp::Any
-    visitInnerJoin(SQLGrammarParser::InnerJoinContext *ctx) override;
+    antlrcpp::Any visitInnerJoin(SQLGrammarParser::InnerJoinContext *ctx) override;
 
     // whereClause
-    antlrcpp::Any
-    visitWhereClause(SQLGrammarParser::WhereClauseContext *ctx) override;
+    antlrcpp::Any visitWhereClause(SQLGrammarParser::WhereClauseContext *ctx) override;
 
     // groupByClause
-    antlrcpp::Any
-    visitGroupByClause(SQLGrammarParser::GroupByClauseContext *ctx) override;
+    antlrcpp::Any visitGroupByClause(SQLGrammarParser::GroupByClauseContext *ctx) override;
 
     // havingClause
-    antlrcpp::Any
-    visitHavingClause(SQLGrammarParser::HavingClauseContext *ctx) override;
+    antlrcpp::Any visitHavingClause(SQLGrammarParser::HavingClauseContext *ctx) override;
 
     // orderByClause
-    antlrcpp::Any
-    visitOrderByClause(SQLGrammarParser::OrderByClauseContext *ctx) override;
+    antlrcpp::Any visitOrderByClause(SQLGrammarParser::OrderByClauseContext *ctx) override;
 
     // orderInformation
-    antlrcpp::Any visitOrderInformation(
-        SQLGrammarParser::OrderInformationContext *ctx) override;
+    antlrcpp::Any visitOrderInformation(SQLGrammarParser::OrderInformationContext *ctx) override;
 
     // generalExpr
-    antlrcpp::Any
-    visitLiteralExpr(SQLGrammarParser::LiteralExprContext *ctx) override;
+    antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitStarExpr(SQLGrammarParser::StarExprContext *ctx) override;
+    antlrcpp::Any visitStarExpr(SQLGrammarParser::StarExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext *ctx) override;
+    antlrcpp::Any visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitGroupAggExpr(SQLGrammarParser::GroupAggExprContext *ctx) override;
+    antlrcpp::Any visitGroupAggExpr(SQLGrammarParser::GroupAggExprContext *ctx) override;
 
-    antlrcpp::Any visitParanthesesExpr(
-        SQLGrammarParser::ParanthesesExprContext *ctx) override;
+    antlrcpp::Any visitParanthesesExpr(SQLGrammarParser::ParanthesesExprContext *ctx) override;
 
     antlrcpp::Any visitMulExpr(SQLGrammarParser::MulExprContext *ctx) override;
 
@@ -270,12 +243,10 @@ class SQLVisitor : public SQLGrammarVisitor {
     antlrcpp::Any visitOrExpr(SQLGrammarParser::OrExprContext *ctx) override;
 
     // tableReference
-    antlrcpp::Any
-    visitTableReference(SQLGrammarParser::TableReferenceContext *ctx) override;
+    antlrcpp::Any visitTableReference(SQLGrammarParser::TableReferenceContext *ctx) override;
 
     // selectIdent
-    antlrcpp::Any
-    visitStringIdent(SQLGrammarParser::StringIdentContext *ctx) override;
+    antlrcpp::Any visitStringIdent(SQLGrammarParser::StringIdentContext *ctx) override;
 
     // literal
     antlrcpp::Any visitLiteral(SQLGrammarParser::LiteralContext *ctx) override;

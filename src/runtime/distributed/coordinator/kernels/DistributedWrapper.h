@@ -45,10 +45,8 @@ template <class DT> class DistributedWrapper {
     DCTX(_dctx);
 
   protected:
-    bool isBroadcast(mlir::daphne::VectorSplit splitMethod,
-                     const Structure *input) {
-        return splitMethod == VectorSplit::NONE ||
-               (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1);
+    bool isBroadcast(mlir::daphne::VectorSplit splitMethod, const Structure *input) {
+        return splitMethod == VectorSplit::NONE || (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1);
     }
 
   public:
@@ -59,17 +57,14 @@ template <class DT> class DistributedWrapper {
     ~DistributedWrapper() = default; // TODO Terminate workers (e.g. with gRPC,
                                      // resource manager, etc.)
 
-    void execute(const char *mlirCode, DT ***res, const Structure **inputs,
-                 size_t numInputs, size_t numOutputs, int64_t *outRows,
-                 int64_t *outCols, VectorSplit *splits,
-                 VectorCombine *combines) {
+    void execute(const char *mlirCode, DT ***res, const Structure **inputs, size_t numInputs, size_t numOutputs,
+                 int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines) {
         auto ctx = DistributedContext::get(_dctx);
         auto workers = ctx->getWorkers();
 
         // Backend Implementation
         // gRPC hard-coded selection
-        const auto allocation_type =
-            _dctx->getUserConfig().distributedBackEndSetup;
+        const auto allocation_type = _dctx->getUserConfig().distributedBackEndSetup;
         // std::cout<<"Distributed wrapper " <<std::endl;
         //  output allocation for row-wise combine
         for (size_t i = 0; i < numOutputs; ++i) {
@@ -77,8 +72,7 @@ template <class DT> class DistributedWrapper {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
                 // TODO we know result is only DenseMatrix<double> for now,
                 // but in the future this will change to support other DataTypes
-                *(res[i]) = DataObjectFactory::create<DT>(outRows[i],
-                                                          outCols[i], zeroOut);
+                *(res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
             }
         }
 
@@ -97,12 +91,10 @@ template <class DT> class DistributedWrapper {
         for (size_t i = 0; i < numInputs; i++)
             vec.push_back(inputs[i]);
         sort(vec.begin(), vec.end());
-        const bool hasDuplicates =
-            std::adjacent_find(vec.begin(), vec.end()) != vec.end();
+        const bool hasDuplicates = std::adjacent_find(vec.begin(), vec.end()) != vec.end();
         if (hasDuplicates)
-            throw std::runtime_error(
-                "Distributed runtime only supports unique inputs for now (no "
-                "duplicate inputs in a pipeline)");
+            throw std::runtime_error("Distributed runtime only supports unique inputs for now (no "
+                                     "duplicate inputs in a pipeline)");
 
         // Parse mlir code fragment to determin pipeline inputs/outputs
         auto inputTypes = getPipelineInputTypes(mlirCode);
@@ -123,32 +115,22 @@ template <class DT> class DistributedWrapper {
                 if (type == INPUT_TYPE::Matrix) {
                     if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
 #ifdef USE_MPI
-                        broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], false,
-                                                             _dctx);
+                        broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], false, _dctx);
 #endif
-                    } else if (allocation_type ==
-                               ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
-                        broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(
-                            inputs[i], false, _dctx);
-                    } else if (allocation_type ==
-                               ALLOCATION_TYPE::DIST_GRPC_SYNC) {
-                        broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC>(
-                            inputs[i], false, _dctx);
+                    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], false, _dctx);
+                    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], false, _dctx);
                     }
                 } else {
                     if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
 #ifdef USE_MPI
-                        broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], true,
-                                                             _dctx);
+                        broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], true, _dctx);
 #endif
-                    } else if (allocation_type ==
-                               ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
-                        broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(
-                            inputs[i], true, _dctx);
-                    } else if (allocation_type ==
-                               ALLOCATION_TYPE::DIST_GRPC_SYNC) {
-                        broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i],
-                                                                   true, _dctx);
+                    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], true, _dctx);
+                    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], true, _dctx);
                     }
                 }
             } else {
@@ -161,28 +143,25 @@ template <class DT> class DistributedWrapper {
 #ifdef USE_MPI
                     distribute<ALLOCATION_TYPE::DIST_MPI>(inputs[i], _dctx);
 #endif
-                } else if (allocation_type ==
-                           ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
-                    distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i],
-                                                                 _dctx);
+                } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+                    distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], _dctx);
                 } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
-                    distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i],
-                                                                _dctx);
+                    distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], _dctx);
                 }
             }
         }
 
         if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
 #ifdef USE_MPI
-            distributedCompute<ALLOCATION_TYPE::DIST_MPI>(
-                res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+            distributedCompute<ALLOCATION_TYPE::DIST_MPI>(res, numOutputs, inputs, numInputs, mlirCode, combines,
+                                                          _dctx);
 #endif
         } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
-            distributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(
-                res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+            distributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(res, numOutputs, inputs, numInputs, mlirCode, combines,
+                                                                 _dctx);
         } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
-            distributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC>(
-                res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+            distributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC>(res, numOutputs, inputs, numInputs, mlirCode, combines,
+                                                                _dctx);
         }
         // handle my part as coordinator we currently exclude the coordinator
         /*if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
@@ -196,15 +175,12 @@ template <class DT> class DistributedWrapper {
         for (size_t o = 0; o < numOutputs; o++) {
             if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
 #ifdef USE_MPI
-                distributedCollect<ALLOCATION_TYPE::DIST_MPI>(
-                    *res[o], combines[o], _dctx);
+                distributedCollect<ALLOCATION_TYPE::DIST_MPI>(*res[o], combines[o], _dctx);
 #endif
             } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
-                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(
-                    *res[o], combines[o], _dctx);
+                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(*res[o], combines[o], _dctx);
             } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
-                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC>(
-                    *res[o], combines[o], _dctx);
+                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC>(*res[o], combines[o], _dctx);
             }
         }
     }
@@ -222,11 +198,9 @@ template <class DT> class DistributedWrapper {
         ctx.getOrLoadDialect<mlir::func::FuncDialect>();
         ctx.allowUnregisteredDialects();
         // std::cout<<mlirCode<<std::endl;
-        mlir::OwningOpRef<mlir::ModuleOp> module(
-            mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
+        mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
         if (!module) {
-            auto message =
-                "DistributedWrapper: Failed to parse source string.\n";
+            auto message = "DistributedWrapper: Failed to parse source string.\n";
             throw std::runtime_error(message);
         }
         auto *distOp = module->lookupSymbol("dist");

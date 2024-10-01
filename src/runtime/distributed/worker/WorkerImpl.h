@@ -32,8 +32,8 @@ class WorkerImpl {
         std::string error_message_;
 
       public:
-        Status(bool ok) : ok_(ok), error_message_("") {};
-        Status(bool ok, std::string msg) : ok_(ok), error_message_(msg) {};
+        Status(bool ok) : ok_(ok), error_message_(""){};
+        Status(bool ok, std::string msg) : ok_(ok), error_message_(msg){};
         bool ok() const { return ok_; };
         std::string error_message() const { return error_message_; };
     };
@@ -51,8 +51,7 @@ class WorkerImpl {
         std::string identifier;
         size_t numRows, numCols;
         std::string toString() const {
-            return identifier + "," + std::to_string(numRows) + "," +
-                   std::to_string(numCols);
+            return identifier + "," + std::to_string(numRows) + "," + std::to_string(numCols);
         }
     };
 
@@ -75,10 +74,8 @@ class WorkerImpl {
      * @return WorkerImpl::Status contains if everything went fine, with an
      * optional error message
      */
-    WorkerImpl::Status
-    Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
-            const std::vector<WorkerImpl::StoredInfo> &inputs,
-            const std::string &mlirCode);
+    WorkerImpl::Status Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
+                               const std::vector<WorkerImpl::StoredInfo> &inputs, const std::string &mlirCode);
 
     /**
      * @brief Returns a matrix stored in worker's memory
@@ -102,13 +99,11 @@ class WorkerImpl {
      * invoked function
      * @return packed pointers to inputs and outputs
      */
-    std::vector<void *> createPackedCInterfaceInputsOutputs(
-        mlir::FunctionType functionType,
-        std::vector<WorkerImpl::StoredInfo> workInputs,
-        std::vector<void *> &outputs, std::vector<void *> &inputs);
+    std::vector<void *> createPackedCInterfaceInputsOutputs(mlir::FunctionType functionType,
+                                                            std::vector<WorkerImpl::StoredInfo> workInputs,
+                                                            std::vector<void *> &outputs, std::vector<void *> &inputs);
 
-    Structure *readOrGetMatrix(const std::string &identifier, size_t numRows,
-                               size_t numCols, bool isSparse = false,
+    Structure *readOrGetMatrix(const std::string &identifier, size_t numRows, size_t numCols, bool isSparse = false,
                                bool isFloat = false, bool isScalar = false);
     void *loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput);
 };

@@ -36,8 +36,7 @@
 // ****************************************************************************
 
 template <class DT> struct CheckEqApprox {
-    static bool apply(const DT *lhs, const DT *rhs, double eps,
-                      DCTX(ctx)) = delete;
+    static bool apply(const DT *lhs, const DT *rhs, double eps, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -56,8 +55,7 @@ template <class DT> struct CheckEqApprox {
  * @param eps The similarity threshold.
  * @return `true` if they are equal, `false` otherwise.
  */
-template <class DT>
-bool checkEqApprox(const DT *lhs, const DT *rhs, double eps, DCTX(ctx)) {
+template <class DT> bool checkEqApprox(const DT *lhs, const DT *rhs, double eps, DCTX(ctx)) {
     return CheckEqApprox<DT>::apply(lhs, rhs, eps, ctx);
 }
 
@@ -87,8 +85,7 @@ bool operator==(const DT & lhs, const DT & rhs) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct CheckEqApprox<DenseMatrix<VT>> {
-    static bool apply(const DenseMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
-                      double eps, DCTX(ctx)) {
+    static bool apply(const DenseMatrix<VT> *lhs, const DenseMatrix<VT> *rhs, double eps, DCTX(ctx)) {
         if (lhs == rhs)
             return true;
 
@@ -129,8 +126,7 @@ template <typename VT> struct CheckEqApprox<DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct CheckEqApprox<CSRMatrix<VT>> {
-    static bool apply(const CSRMatrix<VT> *lhs, const CSRMatrix<VT> *rhs,
-                      double eps, DCTX(ctx)) {
+    static bool apply(const CSRMatrix<VT> *lhs, const CSRMatrix<VT> *rhs, double eps, DCTX(ctx)) {
         if (lhs == rhs)
             return true;
 
@@ -165,8 +161,7 @@ template <typename VT> struct CheckEqApprox<CSRMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <> struct CheckEqApprox<Frame> {
-    static bool apply(const Frame *lhs, const Frame *rhs, double eps,
-                      DCTX(ctx)) {
+    static bool apply(const Frame *lhs, const Frame *rhs, double eps, DCTX(ctx)) {
         if (lhs == rhs)
             return true;
 
@@ -176,8 +171,7 @@ template <> struct CheckEqApprox<Frame> {
         if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
 
-        if (memcmp(lhs->getSchema(), rhs->getSchema(),
-                   numCols * sizeof(ValueTypeCode)) != 0)
+        if (memcmp(lhs->getSchema(), rhs->getSchema(), numCols * sizeof(ValueTypeCode)) != 0)
             return false;
 
         const std::string *labelsLhs = lhs->getLabels();
@@ -191,48 +185,39 @@ template <> struct CheckEqApprox<Frame> {
             switch (lhs->getColumnType(c)) {
             // For all value types:
             case ValueTypeCode::F64:
-                if (!checkEqApprox(lhs->getColumn<double>(c),
-                                   rhs->getColumn<double>(c), eps, ctx))
+                if (!checkEqApprox(lhs->getColumn<double>(c), rhs->getColumn<double>(c), eps, ctx))
                     return false;
                 break;
             case ValueTypeCode::F32:
-                if (!checkEqApprox(lhs->getColumn<float>(c),
-                                   rhs->getColumn<float>(c), eps, ctx))
+                if (!checkEqApprox(lhs->getColumn<float>(c), rhs->getColumn<float>(c), eps, ctx))
                     return false;
                 break;
             case ValueTypeCode::SI64:
-                if (!checkEqApprox(lhs->getColumn<int64_t>(c),
-                                   rhs->getColumn<int64_t>(c), eps, ctx))
+                if (!checkEqApprox(lhs->getColumn<int64_t>(c), rhs->getColumn<int64_t>(c), eps, ctx))
                     return false;
                 break;
             case ValueTypeCode::SI32:
-                if (!checkEqApprox(lhs->getColumn<int32_t>(c),
-                                   rhs->getColumn<int32_t>(c), eps, ctx))
+                if (!checkEqApprox(lhs->getColumn<int32_t>(c), rhs->getColumn<int32_t>(c), eps, ctx))
                     return false;
                 break;
             case ValueTypeCode::SI8:
-                if (!checkEqApprox(lhs->getColumn<int8_t>(c),
-                                   rhs->getColumn<int8_t>(c), eps, ctx))
+                if (!checkEqApprox(lhs->getColumn<int8_t>(c), rhs->getColumn<int8_t>(c), eps, ctx))
                     return false;
                 break;
             case ValueTypeCode::UI64:
-                if (!checkEqApprox(lhs->getColumn<uint64_t>(c),
-                                   rhs->getColumn<uint64_t>(c), eps, ctx))
+                if (!checkEqApprox(lhs->getColumn<uint64_t>(c), rhs->getColumn<uint64_t>(c), eps, ctx))
                     return false;
                 break;
             case ValueTypeCode::UI32:
-                if (!checkEqApprox(lhs->getColumn<uint32_t>(c),
-                                   rhs->getColumn<uint32_t>(c), eps, ctx))
+                if (!checkEqApprox(lhs->getColumn<uint32_t>(c), rhs->getColumn<uint32_t>(c), eps, ctx))
                     return false;
                 break;
             case ValueTypeCode::UI8:
-                if (!checkEqApprox(lhs->getColumn<uint8_t>(c),
-                                   rhs->getColumn<uint8_t>(c), eps, ctx))
+                if (!checkEqApprox(lhs->getColumn<uint8_t>(c), rhs->getColumn<uint8_t>(c), eps, ctx))
                     return false;
                 break;
             default:
-                throw std::runtime_error(
-                    "CheckEqApprox::apply: unknown value type code");
+                throw std::runtime_error("CheckEqApprox::apply: unknown value type code");
             }
         }
         return true;
@@ -244,8 +229,7 @@ template <> struct CheckEqApprox<Frame> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct CheckEqApprox<Matrix<VT>> {
-    static bool apply(const Matrix<VT> *lhs, const Matrix<VT> *rhs, double eps,
-                      DCTX(ctx)) {
+    static bool apply(const Matrix<VT> *lhs, const Matrix<VT> *rhs, double eps, DCTX(ctx)) {
         if (lhs == rhs)
             return true;
 

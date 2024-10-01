@@ -30,8 +30,7 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabelsPrefix(Frame *&res, const Frame *arg, const char *prefix,
-                        DCTX(ctx)) {
+void setColLabelsPrefix(Frame *&res, const Frame *arg, const char *prefix, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     const std::string *oldLabels = arg->getLabels();
     std::string *newLabels = new std::string[numCols];
@@ -44,8 +43,7 @@ void setColLabelsPrefix(Frame *&res, const Frame *arg, const char *prefix,
     auto colIdxs = new size_t[numCols];
     for (size_t c = 0; c < numCols; c++)
         colIdxs[c] = c;
-    res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), numCols,
-                                           colIdxs);
+    res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), numCols, colIdxs);
     delete[] colIdxs;
     res->setLabels(newLabels);
 

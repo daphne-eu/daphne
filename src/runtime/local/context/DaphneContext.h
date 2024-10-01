@@ -72,11 +72,9 @@ struct DaphneContext {
 
     std::shared_ptr<spdlog::logger> logger;
 
-    explicit DaphneContext(DaphneUserConfig &config,
-                           KernelDispatchMapping &dispatchMapping,
-                           Statistics &stats, StringRefCounter &stringRefCnt)
-        : config(config), dispatchMapping(dispatchMapping), stats(stats),
-          stringRefCount(stringRefCnt) {
+    explicit DaphneContext(DaphneUserConfig &config, KernelDispatchMapping &dispatchMapping, Statistics &stats,
+                           StringRefCounter &stringRefCnt)
+        : config(config), dispatchMapping(dispatchMapping), stats(stats), stringRefCount(stringRefCnt) {
         logger = spdlog::get("runtime");
     }
 
@@ -94,9 +92,7 @@ struct DaphneContext {
 #ifdef USE_CUDA
     // ToDo: in a multi device setting this should use a find call instead of a
     // direct [] access
-    [[nodiscard]] IContext *getCUDAContext(size_t dev_id) const {
-        return cuda_contexts[dev_id].get();
-    }
+    [[nodiscard]] IContext *getCUDAContext(size_t dev_id) const { return cuda_contexts[dev_id].get(); }
 #endif
 #ifdef USE_FPGAOPENCL
     // ToDo: in a multi device setting this should use a find call instead of a
@@ -114,13 +110,9 @@ struct DaphneContext {
     [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
     [[nodiscard]] bool useFPGA() const { return !fpga_contexts.empty(); }
 
-    [[nodiscard]] IContext *getDistributedContext() const {
-        return distributed_context.get();
-    }
+    [[nodiscard]] IContext *getDistributedContext() const { return distributed_context.get(); }
 #ifdef USE_HDFS
-    [[nodiscard]] IContext *getHDFSContext() const {
-        return hdfs_context.get();
-    }
+    [[nodiscard]] IContext *getHDFSContext() const { return hdfs_context.get(); }
 #endif
 
     [[nodiscard]] DaphneUserConfig &getUserConfig() const { return config; }

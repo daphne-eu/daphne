@@ -23,9 +23,7 @@
 
 namespace CUDA::NN::Activation {
 struct ReLU {
-    static inline cudnnActivationMode_t getActivationType() {
-        return CUDNN_ACTIVATION_RELU;
-    }
+    static inline cudnnActivationMode_t getActivationType() { return CUDNN_ACTIVATION_RELU; }
 };
 
 template <typename OP, typename DTRes, typename DTArg> struct Forward {

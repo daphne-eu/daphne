@@ -18,9 +18,7 @@
 #include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #include "runtime/local/kernels/CUDA/EwBinaryMat.h"
 
-template <typename VT>
-void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid,
-                                                        uint32_t batchSize) {
+template <typename VT> void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batchSize) {
     // local add aggregation to minimize locking
     std::vector<DenseMatrix<VT> *> localAddRes(_data._numOutputs);
     std::vector<DenseMatrix<VT> *> localResults(_data._numOutputs);
@@ -55,8 +53,7 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid,
                 result = localAddRes[o];
                 _resLock.unlock();
             } else {
-                CUDA::ewBinaryMat(BinaryOpCode::ADD, result, result,
-                                  localAddRes[o], _data._ctx);
+                CUDA::ewBinaryMat(BinaryOpCode::ADD, result, result, localAddRes[o], _data._ctx);
                 _resLock.unlock();
                 // cleanup
                 DataObjectFactory::destroy(localAddRes[o]);
@@ -66,10 +63,9 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid,
 }
 
 template <typename VT>
-void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(
-    std::vector<DenseMatrix<VT> *> &localResults,
-    std::vector<DenseMatrix<VT> *> &localAddRes, uint64_t rowStart,
-    uint64_t rowEnd) {
+void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults,
+                                                                  std::vector<DenseMatrix<VT> *> &localAddRes,
+                                                                  uint64_t rowStart, uint64_t rowEnd) {
 
     // TODO: in-place computation via better compiled pipelines
     // TODO: multi-return
@@ -82,9 +78,7 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(
             auto bufsize = localResults[o]->getBufferSize();
             auto data = result->getValues(&alloc_desc);
             data += result->getRowSkip() * rowStart;
-            CHECK_CUDART(cudaMemcpy(data,
-                                    localResults[o]->getValues(&alloc_desc),
-                                    bufsize, cudaMemcpyDeviceToDevice));
+            CHECK_CUDART(cudaMemcpy(data, localResults[o]->getValues(&alloc_desc), bufsize, cudaMemcpyDeviceToDevice));
             //                debugPrintCUDABuffer("TaskCUDA: accumulate
             //                outputs", localResults[o]->getValues(&alloc_desc),
             //                localResults[o]->getNumItems());
@@ -94,18 +88,14 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(
             auto res_base_ptr = result->getValues(&alloc_desc);
             auto lres_data_base_ptr = localResults[o]->getValues(&alloc_desc);
             auto rlen = rowEnd - rowStart;
-            auto slice =
-                result->slice(0, this->_data._outRows[o], rowStart, rowEnd);
+            auto slice = result->slice(0, this->_data._outRows[o], rowStart, rowEnd);
             for (auto i = 0u; i < slice->getNumRows(); ++i) {
-                auto data_src =
-                    lres_data_base_ptr + localResults[o]->getRowSkip() * i;
+                auto data_src = lres_data_base_ptr + localResults[o]->getRowSkip() * i;
                 //                    auto data_dst = res_base_ptr +
                 //                    result->getRowSkip() * i + rowStart;
-                auto data_dst =
-                    res_base_ptr + result->getNumCols() * i + rowStart;
+                auto data_dst = res_base_ptr + result->getNumCols() * i + rowStart;
                 //                    auto data_dst = res_base_ptr;
-                CHECK_CUDART(cudaMemcpy(data_dst, data_src, sizeof(VT) * rlen,
-                                        cudaMemcpyDeviceToDevice));
+                CHECK_CUDART(cudaMemcpy(data_dst, data_src, sizeof(VT) * rlen, cudaMemcpyDeviceToDevice));
             }
             DataObjectFactory::destroy(slice);
             break;
@@ -116,23 +106,19 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(
                 localAddRes[o] = localResults[o];
                 localResults[o] = nullptr;
             } else {
-                CUDA::ewBinaryMat(BinaryOpCode::ADD, localAddRes[o],
-                                  localAddRes[o], localResults[o], nullptr);
+                CUDA::ewBinaryMat(BinaryOpCode::ADD, localAddRes[o], localAddRes[o], localResults[o], nullptr);
             }
             break;
         }
         default: {
-            throw std::runtime_error(
-                ("VectorCombine case `" +
-                 std::to_string(static_cast<int64_t>(_data._combines[o])) +
-                 "` not supported"));
+            throw std::runtime_error(("VectorCombine case `" +
+                                      std::to_string(static_cast<int64_t>(_data._combines[o])) + "` not supported"));
         }
         }
     }
 }
 
-template <typename VT>
-uint64_t CompiledPipelineTaskCUDA<DenseMatrix<VT>>::getTaskSize() {
+template <typename VT> uint64_t CompiledPipelineTaskCUDA<DenseMatrix<VT>>::getTaskSize() {
     return _data._ru - _data._rl;
 }
 

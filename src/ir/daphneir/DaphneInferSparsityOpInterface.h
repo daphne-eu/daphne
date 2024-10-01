@@ -36,23 +36,18 @@ namespace mlir::OpTrait {
 // Traits definitions
 // ============================================================================
 
-template <class ConcreteOp>
-class CompletelyDense : public TraitBase<ConcreteOp, CompletelyDense> {};
+template <class ConcreteOp> class CompletelyDense : public TraitBase<ConcreteOp, CompletelyDense> {};
 
 template <size_t i> struct SparsityFromIthScalar {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 template <size_t i> struct SparsityFromIthArg {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
-template <class ConcreteOp>
-class EwSparseIfEither : public TraitBase<ConcreteOp, EwSparseIfEither> {};
-template <class ConcreteOp>
-class EwSparseIfBoth : public TraitBase<ConcreteOp, EwSparseIfBoth> {};
+template <class ConcreteOp> class EwSparseIfEither : public TraitBase<ConcreteOp, EwSparseIfEither> {};
+template <class ConcreteOp> class EwSparseIfBoth : public TraitBase<ConcreteOp, EwSparseIfBoth> {};
 
 } // namespace mlir::OpTrait
 

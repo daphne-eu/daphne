@@ -24,8 +24,7 @@
 
 namespace CUDA::BatchNorm {
 template <typename DTRes, typename DTArg> struct Forward {
-    static void apply(DTRes *&res, const DTArg *data, const DTArg *gamma,
-                      const DTArg *beta, const DTArg *ema_mean,
+    static void apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta, const DTArg *ema_mean,
                       const DTArg *ema_var, typename DTArg::VT eps, DCTX(dctx));
 };
 } // namespace CUDA::BatchNorm

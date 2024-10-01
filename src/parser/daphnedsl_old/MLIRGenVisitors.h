@@ -36,18 +36,15 @@ class DaphneMlirVisitor : public DaphneParserBaseVisitor {
     mlir::OpBuilder &builder;
 
     mlir::Location getLocMLIR(antlr4::Token *token);
-    static llvm::Optional<llvm::APFloat>
-    parseFloatLiteral(mlir::Location loc, llvm::StringRef floatLiteral);
-    static llvm::Optional<llvm::APInt>
-    parseIntegerLiteral(mlir::Location loc, llvm::StringRef decimalLiteral,
-                        unsigned int bitWidth);
+    static llvm::Optional<llvm::APFloat> parseFloatLiteral(mlir::Location loc, llvm::StringRef floatLiteral);
+    static llvm::Optional<llvm::APInt> parseIntegerLiteral(mlir::Location loc, llvm::StringRef decimalLiteral,
+                                                           unsigned int bitWidth);
 
   public:
     explicit DaphneMlirVisitor(mlir::OpBuilder &builder);
 
     antlrcpp::Any visitFloatType(DaphneParser::FloatTypeContext *ctx) override;
-    antlrcpp::Any
-    visitIntegerType(DaphneParser::IntegerTypeContext *ctx) override;
+    antlrcpp::Any visitIntegerType(DaphneParser::IntegerTypeContext *ctx) override;
 
     static std::string parseStringLiteral(llvm::StringRef floatLiteral);
 };
@@ -68,45 +65,29 @@ class FunctionVisitor : public DaphneMlirVisitor {
     //  to exists.
     std::map<std::string, mlir::Value> symbolTable;
 
-    __attribute_warn_unused_result__ mlir::LogicalResult
-    declareVar(std::string name, mlir::Value value,
-               bool allowShadowing = false);
+    __attribute_warn_unused_result__ mlir::LogicalResult declareVar(std::string name, mlir::Value value,
+                                                                    bool allowShadowing = false);
 
   public:
     using DaphneMlirVisitor::DaphneMlirVisitor;
     antlrcpp::Any visitFunction(DaphneParser::FunctionContext *ctx) override;
-    antlrcpp::Any
-    visitFunctionArgs(DaphneParser::FunctionArgsContext *ctx) override;
-    antlrcpp::Any
-    visitFunctionArg(DaphneParser::FunctionArgContext *ctx) override;
-    antlrcpp::Any visitLiteralExpression(
-        DaphneParser::LiteralExpressionContext *ctx) override;
-    antlrcpp::Any visitLiteralExpressionRule(
-        DaphneParser::LiteralExpressionRuleContext *ctx) override;
-    antlrcpp::Any
-    visitBlockStatement(DaphneParser::BlockStatementContext *ctx) override;
-    antlrcpp::Any visitAssignmentExpression(
-        DaphneParser::AssignmentExpressionContext *ctx) override;
-    antlrcpp::Any
-    visitLetStatement(DaphneParser::LetStatementContext *ctx) override;
-    antlrcpp::Any
-    visitCallExpression(DaphneParser::CallExpressionContext *ctx) override;
-    antlrcpp::Any visitIdentifierExpression(
-        DaphneParser::IdentifierExpressionContext *ctx) override;
+    antlrcpp::Any visitFunctionArgs(DaphneParser::FunctionArgsContext *ctx) override;
+    antlrcpp::Any visitFunctionArg(DaphneParser::FunctionArgContext *ctx) override;
+    antlrcpp::Any visitLiteralExpression(DaphneParser::LiteralExpressionContext *ctx) override;
+    antlrcpp::Any visitLiteralExpressionRule(DaphneParser::LiteralExpressionRuleContext *ctx) override;
+    antlrcpp::Any visitBlockStatement(DaphneParser::BlockStatementContext *ctx) override;
+    antlrcpp::Any visitAssignmentExpression(DaphneParser::AssignmentExpressionContext *ctx) override;
+    antlrcpp::Any visitLetStatement(DaphneParser::LetStatementContext *ctx) override;
+    antlrcpp::Any visitCallExpression(DaphneParser::CallExpressionContext *ctx) override;
+    antlrcpp::Any visitIdentifierExpression(DaphneParser::IdentifierExpressionContext *ctx) override;
     antlrcpp::Any visitStatement(DaphneParser::StatementContext *ctx) override;
-    antlrcpp::Any visitExpressionStatement(
-        DaphneParser::ExpressionStatementContext *ctx) override;
-    antlrcpp::Any
-    visitParameters(DaphneParser::ParametersContext *ctx) override;
+    antlrcpp::Any visitExpressionStatement(DaphneParser::ExpressionStatementContext *ctx) override;
+    antlrcpp::Any visitParameters(DaphneParser::ParametersContext *ctx) override;
     antlrcpp::Any visitParameter(DaphneParser::ParameterContext *ctx) override;
-    antlrcpp::Any visitArithmeticExpression(
-        DaphneParser::ArithmeticExpressionContext *ctx) override;
-    antlrcpp::Any visitGroupedExpression(
-        DaphneParser::GroupedExpressionContext *ctx) override;
-    antlrcpp::Any
-    visitMatrixLiteral(DaphneParser::MatrixLiteralContext *ctx) override;
-    antlrcpp::Any visitMatrixLiteralElements(
-        DaphneParser::MatrixLiteralElementsContext *ctx) override;
+    antlrcpp::Any visitArithmeticExpression(DaphneParser::ArithmeticExpressionContext *ctx) override;
+    antlrcpp::Any visitGroupedExpression(DaphneParser::GroupedExpressionContext *ctx) override;
+    antlrcpp::Any visitMatrixLiteral(DaphneParser::MatrixLiteralContext *ctx) override;
+    antlrcpp::Any visitMatrixLiteralElements(DaphneParser::MatrixLiteralElementsContext *ctx) override;
 };
 
 class MatrixLiteral {
@@ -118,17 +99,12 @@ class MatrixLiteral {
     std::vector<llvm::APInt> linearizedIntData;
 
   public:
-    void addData(mlir::Location &loc, mlir::OpBuilder &builder,
-                 antlrcpp::Any data);
+    void addData(mlir::Location &loc, mlir::OpBuilder &builder, antlrcpp::Any data);
     [[nodiscard]] long getRows() const { return rows; }
     [[nodiscard]] long getCols() const { return cols; }
     [[nodiscard]] mlir::Type getElementType() const { return elementType; }
-    [[nodiscard]] std::vector<llvm::APFloat> getLinFloatData() const {
-        return linearizedFloatData;
-    }
-    [[nodiscard]] std::vector<llvm::APInt> getLinIntData() const {
-        return linearizedIntData;
-    }
+    [[nodiscard]] std::vector<llvm::APFloat> getLinFloatData() const { return linearizedFloatData; }
+    [[nodiscard]] std::vector<llvm::APInt> getLinIntData() const { return linearizedIntData; }
 };
 } // namespace mlir_gen
 #endif // SRC_PARSER_DAPHNEDSL_MLIRGENVISITORS_H

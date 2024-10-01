@@ -30,8 +30,7 @@ class Structure {
     mutable size_t refCounter;
     mutable std::mutex refCounterMutex;
 
-    template <class DataType>
-    friend void DataObjectFactory::destroy(const DataType *obj);
+    template <class DataType> friend void DataObjectFactory::destroy(const DataType *obj);
 
   protected:
     size_t row_offset{};
@@ -49,13 +48,10 @@ class Structure {
     virtual ~Structure() = default;
 
     explicit operator std::unique_ptr<Range>() const {
-        return std::make_unique<Range>(
-            Range(0ul, 0ul, this->getNumRows(), this->getNumCols()));
+        return std::make_unique<Range>(Range(0ul, 0ul, this->getNumRows(), this->getNumCols()));
     }
 
-    explicit operator Range() const {
-        return Range(0, 0, this->getNumRows(), this->getNumCols());
-    }
+    explicit operator Range() const { return Range(0, 0, this->getNumRows(), this->getNumCols()); }
 
     size_t getRefCounter() const { return refCounter; }
 
@@ -131,8 +127,7 @@ class Structure {
      * @param cu Column range upper bound (exclusive).
      * @return
      */
-    virtual Structure *slice(size_t rl, size_t ru, size_t cl,
-                             size_t cu) const = 0;
+    virtual Structure *slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
 
     /**
      * @brief Serializes the object to a void buffer.

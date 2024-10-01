@@ -52,8 +52,7 @@ class LoadPartitioning {
     }
 
   public:
-    LoadPartitioning(int method, uint64_t tasks, uint64_t chunk,
-                     uint32_t workers, bool autoChunk) {
+    LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autoChunk) {
         schedulingMethod = method;
         totalTasks = tasks;
         double tSize = (totalTasks + workers - 1.0) / workers;
@@ -74,8 +73,7 @@ class LoadPartitioning {
         remainingTasks = tasks;
         schedulingStep = 0;
         scheduledTasks = 0;
-        tssChunk =
-            (uint64_t)ceil((double)totalTasks / ((double)2.0 * totalWorkers));
+        tssChunk = (uint64_t)ceil((double)totalTasks / ((double)2.0 * totalWorkers));
         uint64_t nTemp = (uint64_t)ceil(2.0 * totalTasks / (tssChunk + 1.0));
         tssDelta = (uint64_t)(tssChunk - 1.0) / (double)(nTemp - 1.0);
     }
@@ -99,51 +97,39 @@ class LoadPartitioning {
             chunkSize = tssChunk - tssDelta * schedulingStep;
             break;
         }
-        case FAC2: { // factoring (FAC2)
-            uint64_t actualStep =
-                schedulingStep / totalWorkers; // has to be an integer division
-            chunkSize = (uint64_t)ceil(pow(0.5, actualStep + 1) *
-                                       (totalTasks / totalWorkers));
+        case FAC2: {                                             // factoring (FAC2)
+            uint64_t actualStep = schedulingStep / totalWorkers; // has to be an integer division
+            chunkSize = (uint64_t)ceil(pow(0.5, actualStep + 1) * (totalTasks / totalWorkers));
             break;
         }
         case TFSS: { // trapezoid factoring self-scheduling (TFSS)
-            chunkSize = (uint64_t)ceil((double)remainingTasks /
-                                       ((double)2.0 * totalWorkers));
+            chunkSize = (uint64_t)ceil((double)remainingTasks / ((double)2.0 * totalWorkers));
             break;
         }
         case FISS: { // fixed increase self-scheduling (FISS)
             // TODO
             uint64_t X = fissStages + 2;
-            uint64_t initChunk = (uint64_t)ceil(
-                totalTasks / ((2.0 + fissStages) * totalWorkers));
-            chunkSize = initChunk +
-                        schedulingStep *
-                            (uint64_t)ceil(
-                                (2.0 * totalTasks * (1.0 - (fissStages / X))) /
-                                (totalWorkers * fissStages *
-                                 (fissStages -
-                                  1))); // chunksize with increment after init
+            uint64_t initChunk = (uint64_t)ceil(totalTasks / ((2.0 + fissStages) * totalWorkers));
+            chunkSize =
+                initChunk + schedulingStep * (uint64_t)ceil((2.0 * totalTasks * (1.0 - (fissStages / X))) /
+                                                            (totalWorkers * fissStages *
+                                                             (fissStages - 1))); // chunksize with increment after init
             break;
         }
         case VISS: { // variable increase self-scheduling (VISS)
             // TODO
             uint64_t schedulingStepnew = schedulingStep / totalWorkers;
-            uint64_t initChunk = (uint64_t)ceil(
-                totalTasks / ((2.0 + fissStages) * totalWorkers));
-            chunkSize =
-                initChunk *
-                (uint64_t)ceil((double)(1 - pow(0.5, schedulingStepnew)) / 0.5);
+            uint64_t initChunk = (uint64_t)ceil(totalTasks / ((2.0 + fissStages) * totalWorkers));
+            chunkSize = initChunk * (uint64_t)ceil((double)(1 - pow(0.5, schedulingStepnew)) / 0.5);
             break;
         }
         case PLS: { // performance-based loop self-scheduling (PLS)
             // TODO
             double SWR = 0.5; // static workload ratio
             if (remainingTasks > totalTasks - (totalTasks * SWR)) {
-                chunkSize =
-                    (uint64_t)ceil((double)totalTasks * SWR / totalWorkers);
+                chunkSize = (uint64_t)ceil((double)totalTasks * SWR / totalWorkers);
             } else {
-                chunkSize =
-                    (uint64_t)ceil((double)remainingTasks / totalWorkers);
+                chunkSize = (uint64_t)ceil((double)remainingTasks / totalWorkers);
             }
             break;
         }
@@ -151,8 +137,7 @@ class LoadPartitioning {
             // E[P] is the average number of idle processor, for now we use
             // still totalWorkers
             double averageIdleProc = (double)totalWorkers;
-            chunkSize = (uint64_t)ceil((double)remainingTasks /
-                                       (1.5 * averageIdleProc));
+            chunkSize = (uint64_t)ceil((double)remainingTasks / (1.5 * averageIdleProc));
             // TODO
             break;
         }

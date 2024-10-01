@@ -54,14 +54,13 @@ static constexpr auto RESET_COLOR = "\x1b[0m";
  *       |
  *       |
  */
-std::runtime_error ErrorHandler::makeError(std::string header, std::string msg,
-                                           std::string file, unsigned int line,
+std::runtime_error ErrorHandler::makeError(std::string header, std::string msg, std::string file, unsigned int line,
                                            unsigned int col) {
     std::stringstream s;
     s << header;
     std::filesystem::path p = file;
-    s << INDENT << DAPHNE_BLUE << " | " << RESET_COLOR << "Source file -> "
-      << std::filesystem::absolute(p) << ':' << line << ':' << col << "\n";
+    s << INDENT << DAPHNE_BLUE << " | " << RESET_COLOR << "Source file -> " << std::filesystem::absolute(p) << ':'
+      << line << ':' << col << "\n";
 
     auto fStream = std::ifstream(file);
     s << INDENT << DAPHNE_BLUE << " | " << RESET_COLOR << "\n";
@@ -72,50 +71,39 @@ std::runtime_error ErrorHandler::makeError(std::string header, std::string msg,
 
     s << DAPHNE_BLUE << std::setw(3) << line << " | " << RESET_COLOR << l;
     std::string hint = std::string(col, ' ') + "^" + std::string(2, '~');
-    s << "\n"
-      << INDENT << DAPHNE_BLUE << " | " << DAPHNE_RED << hint << RESET_COLOR
-      << "\n\n";
+    s << "\n" << INDENT << DAPHNE_BLUE << " | " << DAPHNE_RED << hint << RESET_COLOR << "\n\n";
 
     return std::runtime_error(s.str());
 }
 
 static constexpr int UNREGISTERED = -1;
-std::runtime_error ErrorHandler::runtimeError(int kId, std::string msg,
-                                              KernelDispatchMapping *kdm) {
+std::runtime_error ErrorHandler::runtimeError(int kId, std::string msg, KernelDispatchMapping *kdm) {
     if (kId == UNREGISTERED)
         return std::runtime_error(msg);
 
     auto kdi = kdm->getKernelDispatchInfo(kId);
-    std::string header =
-        std::string("The kernel-function ") + DAPHNE_BLUE + kdi.kernelName +
-        RESET_COLOR + " failed during runtime with the following message [ " +
-        DAPHNE_RED + msg + RESET_COLOR + " ]\n";
+    std::string header = std::string("The kernel-function ") + DAPHNE_BLUE + kdi.kernelName + RESET_COLOR +
+                         " failed during runtime with the following message [ " + DAPHNE_RED + msg + RESET_COLOR +
+                         " ]\n";
 
     return makeError(header, msg, kdi.fileName, kdi.line, kdi.column);
 }
 
-std::runtime_error ErrorHandler::compilerError(mlir::Operation *op,
-                                               const std::string &pass,
-                                               const std::string &msg) {
+std::runtime_error ErrorHandler::compilerError(mlir::Operation *op, const std::string &pass, const std::string &msg) {
     return compilerError(op->getLoc(), pass, msg);
 }
 
-std::runtime_error ErrorHandler::compilerError(mlir::Location loc,
-                                               const std::string &pass,
-                                               const std::string &msg) {
+std::runtime_error ErrorHandler::compilerError(mlir::Location loc, const std::string &pass, const std::string &msg) {
 
     auto flcLoc = llvm::dyn_cast<mlir::FileLineColLoc>(loc);
     std::stringstream header;
     auto fName = flcLoc.getFilename().str();
-    header << DAPHNE_BLUE << pass << RESET_COLOR
-           << " failed with the following message [ " << DAPHNE_RED << msg
+    header << DAPHNE_BLUE << pass << RESET_COLOR << " failed with the following message [ " << DAPHNE_RED << msg
            << RESET_COLOR << " ]\n";
-    return makeError(header.str(), msg, fName, flcLoc.getLine(),
-                     flcLoc.getColumn());
+    return makeError(header.str(), msg, fName, flcLoc.getLine(), flcLoc.getColumn());
 }
 
-std::runtime_error ErrorHandler::rethrowError(const std::string &action,
-                                              const std::string &msg) {
+std::runtime_error ErrorHandler::rethrowError(const std::string &action, const std::string &msg) {
     std::stringstream s;
     s << action << BREADCRUMB << msg;
     return std::runtime_error(s.str());

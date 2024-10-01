@@ -78,8 +78,7 @@
 #include <vector>
 
 namespace mlir::OpTrait {
-template <class ConcreteOp>
-class FPGAOPENCLSupport : public TraitBase<ConcreteOp, FPGAOPENCLSupport> {};
+template <class ConcreteOp> class FPGAOPENCLSupport : public TraitBase<ConcreteOp, FPGAOPENCLSupport> {};
 } // namespace mlir::OpTrait
 
 namespace mlir::daphne {

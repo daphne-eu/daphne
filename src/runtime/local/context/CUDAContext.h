@@ -46,9 +46,7 @@ class CUDAContext final : public IContext {
     std::map<size_t, std::shared_ptr<std::byte>> allocations;
     static size_t alloc_count;
 
-    explicit CUDAContext(int id) : device_id(id) {
-        logger = spdlog::get("runtime::cuda");
-    }
+    explicit CUDAContext(int id) : device_id(id) { logger = spdlog::get("runtime::cuda"); }
 
     void init();
 
@@ -61,20 +59,12 @@ class CUDAContext final : public IContext {
     void destroy() override;
     static std::unique_ptr<IContext> createCudaContext(int id);
 
-    [[nodiscard]] cublasHandle_t getCublasHandle() const {
-        return cublas_handle;
-    }
-    [[nodiscard]] cusparseHandle_t getCusparseHandle() const {
-        return cusparse_handle;
-    }
+    [[nodiscard]] cublasHandle_t getCublasHandle() const { return cublas_handle; }
+    [[nodiscard]] cusparseHandle_t getCusparseHandle() const { return cusparse_handle; }
 
-    [[nodiscard]] const cudaDeviceProp *getDeviceProperties() const {
-        return &device_properties;
-    }
+    [[nodiscard]] const cudaDeviceProp *getDeviceProperties() const { return &device_properties; }
     [[nodiscard]] cudnnHandle_t getCUDNNHandle() const { return cudnn_handle; }
-    [[nodiscard]] cusolverDnHandle_t getCUSOLVERHandle() const {
-        return cusolver_handle;
-    }
+    [[nodiscard]] cusolverDnHandle_t getCUSOLVERHandle() const { return cusolver_handle; }
     cudaStream_t getCuSolverStream() { return cusolver_stream; }
 
     template <class T> [[nodiscard]] cudnnDataType_t getCUDNNDataType() const;
@@ -94,12 +84,9 @@ class CUDAContext final : public IContext {
     void free(size_t id);
 
     template <typename T>
-    static void debugPrintCUDABuffer(const CUDAContext &ctx,
-                                     std::string_view title, const T *data,
-                                     size_t num_items) {
+    static void debugPrintCUDABuffer(const CUDAContext &ctx, std::string_view title, const T *data, size_t num_items) {
         std::vector<T> tmp(num_items);
-        CHECK_CUDART(cudaMemcpy(tmp.data(), data, num_items * sizeof(T),
-                                cudaMemcpyDeviceToHost));
+        CHECK_CUDART(cudaMemcpy(tmp.data(), data, num_items * sizeof(T), cudaMemcpyDeviceToHost));
         auto out = fmt::memory_buffer();
         fmt::format_to(std::back_inserter(out), "{} \n", title);
         fmt::format_to(std::back_inserter(out), fmt::join(tmp, ", "));
@@ -108,8 +95,7 @@ class CUDAContext final : public IContext {
 
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
-    cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{},
-        bn_tensor_desc{};
+    cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
     cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
     cudnnFilterDescriptor_t filter_desc{};
     cudnnActivationDescriptor_t activation_desc{};

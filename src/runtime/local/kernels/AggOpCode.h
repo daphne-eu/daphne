@@ -53,8 +53,7 @@ struct AggOpCodeUtils {
 
     static BinaryOpCode getBinaryOpCode(AggOpCode opCode) {
         if (!isPureBinaryReduction(opCode)) {
-            throw std::runtime_error(
-                "Aggregation kernel expects pure binary reduction.");
+            throw std::runtime_error("Aggregation kernel expects pure binary reduction.");
         }
         switch (opCode) {
         case AggOpCode::SUM:
@@ -72,8 +71,7 @@ struct AggOpCodeUtils {
 
     template <typename VT> static VT getNeutral(AggOpCode opCode) {
         if (!isPureBinaryReduction(opCode)) {
-            throw std::runtime_error(
-                "Aggregation kernel expects pure binary reduction.");
+            throw std::runtime_error("Aggregation kernel expects pure binary reduction.");
         }
         switch (opCode) {
         case AggOpCode::SUM:
@@ -81,13 +79,11 @@ struct AggOpCodeUtils {
         case AggOpCode::PROD:
             return VT(1);
         case AggOpCode::MIN:
-            return std::numeric_limits<VT>::has_infinity
-                       ? std::numeric_limits<VT>::infinity()
-                       : std::numeric_limits<VT>::max();
+            return std::numeric_limits<VT>::has_infinity ? std::numeric_limits<VT>::infinity()
+                                                         : std::numeric_limits<VT>::max();
         case AggOpCode::MAX:
-            return std::numeric_limits<VT>::has_infinity
-                       ? -std::numeric_limits<VT>::infinity()
-                       : std::numeric_limits<VT>::min();
+            return std::numeric_limits<VT>::has_infinity ? -std::numeric_limits<VT>::infinity()
+                                                         : std::numeric_limits<VT>::min();
         default:
             throw std::runtime_error("unsupported AggOpCode");
         }

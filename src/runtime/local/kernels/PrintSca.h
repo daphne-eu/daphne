@@ -30,8 +30,7 @@
  *
  * @param arg The value to print.
  */
-template <typename VT>
-void printSca(VT arg, bool newline, bool err, DCTX(ctx)) {
+template <typename VT> void printSca(VT arg, bool newline, bool err, DCTX(ctx)) {
     std::ostream &os = err ? std::cerr : std::cout;
     os << arg;
     if (newline)

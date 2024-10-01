@@ -28,16 +28,14 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct AggCum {
-    static void apply(AggOpCode opCode, DTRes *&res, const DTArg *arg,
-                      DCTX(ctx)) = delete;
+    static void apply(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void aggCum(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void aggCum(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     AggCum<DTRes, DTArg>::apply(opCode, res, arg, ctx);
 }
 
@@ -49,10 +47,8 @@ void aggCum(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg>
-struct AggCum<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *&res,
-                      const DenseMatrix<VTArg> *arg, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct AggCum<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *arg, DCTX(ctx)) {
         if (!AggOpCodeUtils::isPureBinaryReduction(opCode))
             throw std::runtime_error("the aggregation function used in aggCum "
                                      "must be a pure binary reduction");
@@ -61,16 +57,14 @@ struct AggCum<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows,
-                                                                numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
 
         const VTArg *valuesArg = arg->getValues();
         VTRes *valuesResPrv = res->getValues();
         VTRes *valuesResCur = valuesResPrv;
 
         EwBinaryScaFuncPtr<VTRes, VTRes, VTArg> func =
-            getEwBinaryScaFuncPtr<VTRes, VTRes, VTArg>(
-                AggOpCodeUtils::getBinaryOpCode(opCode));
+            getEwBinaryScaFuncPtr<VTRes, VTRes, VTArg>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
         // First row: copy from arg to res.
         for (size_t c = 0; c < numCols; c++)
@@ -92,10 +86,8 @@ struct AggCum<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 // Matrix <- Matrix
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg>
-struct AggCum<Matrix<VTRes>, Matrix<VTArg>> {
-    static void apply(AggOpCode opCode, Matrix<VTRes> *&res,
-                      const Matrix<VTArg> *arg, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct AggCum<Matrix<VTRes>, Matrix<VTArg>> {
+    static void apply(AggOpCode opCode, Matrix<VTRes> *&res, const Matrix<VTArg> *arg, DCTX(ctx)) {
         if (!AggOpCodeUtils::isPureBinaryReduction(opCode))
             throw std::runtime_error("AggCum: the aggregation function must be "
                                      "a pure binary reduction");
@@ -104,12 +96,10 @@ struct AggCum<Matrix<VTRes>, Matrix<VTArg>> {
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows,
-                                                                numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
 
         EwBinaryScaFuncPtr<VTRes, VTRes, VTArg> func =
-            getEwBinaryScaFuncPtr<VTRes, VTRes, VTArg>(
-                AggOpCodeUtils::getBinaryOpCode(opCode));
+            getEwBinaryScaFuncPtr<VTRes, VTRes, VTArg>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
         // First row: copy from arg to res.
         res->prepareAppend();

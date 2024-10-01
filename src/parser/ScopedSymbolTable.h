@@ -49,8 +49,7 @@ class ScopedSymbolTable {
             // nothing to do
         }
 
-        SymbolInfo(mlir::Value value, bool isReadOnly)
-            : value(value), isReadOnly(isReadOnly) {
+        SymbolInfo(mlir::Value value, bool isReadOnly) : value(value), isReadOnly(isReadOnly) {
             // nothing to do
         }
     };
@@ -286,8 +285,7 @@ class ScopedSymbolTable {
      * @param rhs Some single-level symbol table.
      * @return The union of the symbol in the two input symbol tables.
      */
-    static std::set<std::string> mergeSymbols(SymbolTable lhs,
-                                              SymbolTable rhs) {
+    static std::set<std::string> mergeSymbols(SymbolTable lhs, SymbolTable rhs) {
         std::set<std::string> res;
 
         for (auto it = lhs.begin(); it != lhs.end(); it++)

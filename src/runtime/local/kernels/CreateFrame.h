@@ -30,8 +30,8 @@
 // Convenience function
 // ****************************************************************************
 
-void createFrame(Frame *&res, Structure **colMats, size_t numColMats,
-                 const char **labels, size_t numLabels, DCTX(ctx)) {
+void createFrame(Frame *&res, Structure **colMats, size_t numColMats, const char **labels, size_t numLabels,
+                 DCTX(ctx)) {
     std::vector<Structure *> colMatsVec;
     for (size_t c = 0; c < numColMats; c++)
         colMatsVec.push_back(colMats[c]);

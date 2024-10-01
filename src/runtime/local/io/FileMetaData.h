@@ -44,22 +44,17 @@ struct FileMetaData {
     /**
      * @brief Construct a new File Meta Data object for Frames
      */
-    FileMetaData(size_t numRows, size_t numCols, bool isSingleValueType,
-                 std::vector<ValueTypeCode> schema,
-                 std::vector<std::string> labels, ssize_t numNonZeros = -1,
-                 HDFSMetaData hdfs = {})
-        : numRows(numRows), numCols(numCols),
-          isSingleValueType(isSingleValueType), schema(std::move(schema)),
+    FileMetaData(size_t numRows, size_t numCols, bool isSingleValueType, std::vector<ValueTypeCode> schema,
+                 std::vector<std::string> labels, ssize_t numNonZeros = -1, HDFSMetaData hdfs = {})
+        : numRows(numRows), numCols(numCols), isSingleValueType(isSingleValueType), schema(std::move(schema)),
           labels(std::move(labels)), numNonZeros(numNonZeros), hdfs(hdfs) {}
 
     /**
      * @brief Construct a new File Meta Data object for Matrix
      */
-    FileMetaData(size_t numRows, size_t numCols, bool isSingleValueType,
-                 ValueTypeCode valueType, ssize_t numNonZeros = -1,
-                 HDFSMetaData hdfs = {})
-        : numRows(numRows), numCols(numCols),
-          isSingleValueType(isSingleValueType), numNonZeros(numNonZeros),
+    FileMetaData(size_t numRows, size_t numCols, bool isSingleValueType, ValueTypeCode valueType,
+                 ssize_t numNonZeros = -1, HDFSMetaData hdfs = {})
+        : numRows(numRows), numCols(numCols), isSingleValueType(isSingleValueType), numNonZeros(numNonZeros),
           hdfs(hdfs) {
         schema.emplace_back(valueType);
     }

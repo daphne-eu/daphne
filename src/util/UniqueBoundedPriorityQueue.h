@@ -21,10 +21,9 @@
 #include <cstdint>
 #include <queue>
 
-template <typename QT>
-class UniqueBoundedPriorityQueue : public std::priority_queue<QT> {
+template <typename QT> class UniqueBoundedPriorityQueue : public std::priority_queue<QT> {
   public:
-    UniqueBoundedPriorityQueue(size_t K) : K(K) {};
+    UniqueBoundedPriorityQueue(size_t K) : K(K){};
     void push(const QT &val) {
 
         if (std::priority_queue<QT>::size() < K) {

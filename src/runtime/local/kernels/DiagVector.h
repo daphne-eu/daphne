@@ -37,8 +37,7 @@ template <class DTRes, class DTArg> struct DiagVector {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void diagVector(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void diagVector(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     DiagVector<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
@@ -51,8 +50,7 @@ void diagVector(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct DiagVector<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
         //------handling corner cases -------
         if (!arg) {
             throw std::runtime_error("arg must not be nullptr");
@@ -82,8 +80,7 @@ template <typename VT> struct DiagVector<DenseMatrix<VT>, DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct DiagVector<DenseMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const CSRMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, const CSRMatrix<VT> *arg, DCTX(ctx)) {
         //-------handling corner cases ---------
         if (arg == nullptr) {
             throw std::runtime_error("arg must not be nullptr");

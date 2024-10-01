@@ -19,20 +19,16 @@
 
 namespace mlir::OpTrait {
 
-template <class ConcreteOp>
-class CastArgsToResType : public TraitBase<ConcreteOp, CastArgsToResType> {};
+template <class ConcreteOp> class CastArgsToResType : public TraitBase<ConcreteOp, CastArgsToResType> {};
 
 template <class ConcreteOp>
-class CastFirstTwoArgsToResType
-    : public TraitBase<ConcreteOp, CastFirstTwoArgsToResType> {};
+class CastFirstTwoArgsToResType : public TraitBase<ConcreteOp, CastFirstTwoArgsToResType> {};
 
 template <class ConcreteOp>
-class CastArgsToResTypeRandMatrixOp
-    : public TraitBase<ConcreteOp, CastArgsToResTypeRandMatrixOp> {};
+class CastArgsToResTypeRandMatrixOp : public TraitBase<ConcreteOp, CastArgsToResTypeRandMatrixOp> {};
 
 template <class ConcreteOp>
-class CastArgsToMostGeneralArgType
-    : public TraitBase<ConcreteOp, CastArgsToMostGeneralArgType> {};
+class CastArgsToMostGeneralArgType : public TraitBase<ConcreteOp, CastArgsToMostGeneralArgType> {};
 
 } // namespace mlir::OpTrait
 

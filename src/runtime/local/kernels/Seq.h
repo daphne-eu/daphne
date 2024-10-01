@@ -31,17 +31,14 @@
 // ****************************************************************************
 
 template <class DT> struct Seq {
-    static void apply(DT *&res, typename DT::VT start, typename DT::VT end,
-                      typename DT::VT inc, DCTX(ctx)) = delete;
+    static void apply(DT *&res, typename DT::VT start, typename DT::VT end, typename DT::VT inc, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DT>
-void seq(DT *&res, typename DT::VT start, typename DT::VT end,
-         typename DT::VT inc, DCTX(ctx)) {
+template <class DT> void seq(DT *&res, typename DT::VT start, typename DT::VT end, typename DT::VT inc, DCTX(ctx)) {
     Seq<DT>::apply(res, start, end, inc, ctx);
 }
 
@@ -50,8 +47,7 @@ void seq(DT *&res, typename DT::VT start, typename DT::VT end,
 // ****************************************************************************
 
 template <typename VT> struct Seq<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, VT start, VT end, VT inc,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, VT start, VT end, VT inc, DCTX(ctx)) {
         if (std::isnan(inc))
             throw std::runtime_error("inc cannot be NaN");
         if (std::isnan(start))
@@ -69,17 +65,14 @@ template <typename VT> struct Seq<DenseMatrix<VT>> {
 
         VT initialDistanceToEnd = abs(end - start);
         const size_t expectedNumRows =
-            ceil((initialDistanceToEnd / abs(inc))) +
-            1; // number of steps = expectedNumRows and numRows might =
-               // expectedNumRows -1 ot expectedNumRows
+            ceil((initialDistanceToEnd / abs(inc))) + 1; // number of steps = expectedNumRows and numRows might =
+                                                         // expectedNumRows -1 ot expectedNumRows
         const size_t numCols = 1;
         // should the kernel do such a check or reallocate res matrix directly?
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(expectedNumRows,
-                                                             numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(expectedNumRows, numCols, false);
         else if (res->getNumRows() != expectedNumRows)
-            throw std::runtime_error(
-                "input matrix is not null and may not fit the sequence");
+            throw std::runtime_error("input matrix is not null and may not fit the sequence");
 
         VT *allValues = res->getValues();
 

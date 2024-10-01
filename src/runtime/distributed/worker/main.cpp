@@ -34,18 +34,15 @@ int main(int argc, char *argv[]) {
             ConfigParser::readUserConfig(configFile, user_config);
         }
     } catch (std::exception &e) {
-        spdlog::error("Parser error while reading worker config:\n{}",
-                      e.what());
-        spdlog::error(
-            "You can create a WorkerConfig.json to configure the worker.\n");
+        spdlog::error("Parser error while reading worker config:\n{}", e.what());
+        spdlog::error("You can create a WorkerConfig.json to configure the worker.\n");
     }
 
     user_config.resolveLibDir();
     auto logger = std::make_unique<DaphneLogger>(user_config);
 
     if (argc < 2 || argc > 3) {
-        std::cout << "Usage: " << argv[0] << " <Address:Port> [ConfigFile]"
-                  << std::endl;
+        std::cout << "Usage: " << argv[0] << " <Address:Port> [ConfigFile]" << std::endl;
         exit(1);
     }
     auto addr = argv[1];

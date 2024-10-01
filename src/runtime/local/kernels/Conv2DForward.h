@@ -38,14 +38,10 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct Conv2DForward {
-    static void apply(DTRes *&res, size_t &res_h, size_t &res_w,
-                      const DTArg *data, const DTArg *filter, const DTArg *bias,
-                      const size_t batch_size, const size_t num_channels,
-                      const size_t img_h, const size_t img_w,
-                      const size_t filter_h, const size_t filter_w,
-                      const size_t stride_h, const size_t stride_w,
-                      const size_t pad_h, const size_t pad_w,
-                      DCTX(dctx)) = delete;
+    static void apply(DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data, const DTArg *filter,
+                      const DTArg *bias, const size_t batch_size, const size_t num_channels, const size_t img_h,
+                      const size_t img_w, const size_t filter_h, const size_t filter_w, const size_t stride_h,
+                      const size_t stride_w, const size_t pad_h, const size_t pad_w, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -53,16 +49,12 @@ template <class DTRes, class DTArg> struct Conv2DForward {
 // ****************************************************************************
 
 template <class DTRes, class DTArg>
-void conv2DForward(DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data,
-                   const DTArg *filter, const DTArg *bias,
-                   const size_t batch_size, const size_t num_channels,
-                   const size_t img_h, const size_t img_w,
-                   const size_t filter_h, const size_t filter_w,
-                   const size_t stride_h, const size_t stride_w,
+void conv2DForward(DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data, const DTArg *filter, const DTArg *bias,
+                   const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
+                   const size_t filter_h, const size_t filter_w, const size_t stride_h, const size_t stride_w,
                    const size_t pad_h, const size_t pad_w, DCTX(dctx)) {
-    Conv2DForward<DTRes, DTArg>::apply(
-        res, res_h, res_w, data, filter, bias, batch_size, num_channels, img_h,
-        img_w, filter_h, filter_w, stride_h, stride_w, pad_h, pad_w, dctx);
+    Conv2DForward<DTRes, DTArg>::apply(res, res_h, res_w, data, filter, bias, batch_size, num_channels, img_h, img_w,
+                                       filter_h, filter_w, stride_h, stride_w, pad_h, pad_w, dctx);
 }
 
 // ****************************************************************************
@@ -74,8 +66,7 @@ void conv2DForward(DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data,
 // ----------------------------------------------------------------------------
 
 template <typename VT>
-static inline VT ConvOp(VT initial_value, const VT *in, const VT *filter,
-                        uint32_t in_start, uint32_t filter_start,
+static inline VT ConvOp(VT initial_value, const VT *in, const VT *filter, uint32_t in_start, uint32_t filter_start,
                         uint32_t length) {
     VT ret = 0;
     for (uint32_t i = 0; i < length; ++i)
@@ -83,16 +74,11 @@ static inline VT ConvOp(VT initial_value, const VT *in, const VT *filter,
     return ret + initial_value;
 }
 
-template <typename VTRes, typename VTArg>
-struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void apply(DenseMatrix<VTRes> *&res, size_t &res_h, size_t &res_w,
-                      const DenseMatrix<VTArg> *data,
-                      const DenseMatrix<VTArg> *filter,
-                      const DenseMatrix<VTArg> *bias, const size_t batch_size,
-                      const size_t num_channels, const size_t img_h,
-                      const size_t img_w, const size_t filter_h,
-                      const size_t filter_w, const size_t stride_h,
-                      const size_t stride_w, const size_t pad_h,
+template <typename VTRes, typename VTArg> struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(DenseMatrix<VTRes> *&res, size_t &res_h, size_t &res_w, const DenseMatrix<VTArg> *data,
+                      const DenseMatrix<VTArg> *filter, const DenseMatrix<VTArg> *bias, const size_t batch_size,
+                      const size_t num_channels, const size_t img_h, const size_t img_w, const size_t filter_h,
+                      const size_t filter_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
                       const size_t pad_w, DCTX(dctx)) {
         auto HW = img_h * img_w;
         auto C = num_channels;
@@ -118,12 +104,10 @@ struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         auto padded_img_h = img_h + 2 * pad_h;
         auto padded_img_w = img_w + 2 * pad_w;
         DenseMatrix<VTArg> *padded_data =
-            DataObjectFactory::create<DenseMatrix<VTArg>>(
-                1, padded_img_h * padded_img_w, true);
+            DataObjectFactory::create<DenseMatrix<VTArg>>(1, padded_img_h * padded_img_w, true);
 
         if (res == nullptr) {
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(batch_size, CPQ,
-                                                                true);
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(batch_size, CPQ, true);
         }
 
         u_int32_t off_o, off_i_padded, off_i = 0;
@@ -132,37 +116,23 @@ struct Conv2DForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 for (uint32_t c = 0; c < C; c++) {
                     off_i = ii + (i - start) * CHW + c * HW;
 
-                    Padding(padded_data->getValues(), data->getValues(), pad_h,
-                            pad_w, img_w, img_h, off_i);
+                    Padding(padded_data->getValues(), data->getValues(), pad_h, pad_w, img_w, img_h, off_i);
 
                     for (u_int32_t p = 0; p < P; p++)
-                        for (u_int32_t h = 0;
-                             h <
-                             std::min(filter_h, padded_img_h - p * stride_h);
-                             h++)
+                        for (u_int32_t h = 0; h < std::min(filter_h, padded_img_h - p * stride_h); h++)
                             for (u_int32_t q = 0; q < Q; q++)
-                                for (u_int32_t w = 0;
-                                     w < std::min(filter_w,
-                                                  padded_img_w - q * stride_w);
-                                     w++) {
-                                    off_o = oi + (i - start) * CPQ +
-                                            c_new * PQ + p * Q + q;
-                                    off_i_padded =
-                                        (p * stride_h + h) * padded_img_w +
-                                        q * stride_w + w;
-                                    off_f = c_new * f_CHW +
-                                            c * filter_h * filter_w +
-                                            h * filter_w + w;
+                                for (u_int32_t w = 0; w < std::min(filter_w, padded_img_w - q * stride_w); w++) {
+                                    off_o = oi + (i - start) * CPQ + c_new * PQ + p * Q + q;
+                                    off_i_padded = (p * stride_h + h) * padded_img_w + q * stride_w + w;
+                                    off_f = c_new * f_CHW + c * filter_h * filter_w + h * filter_w + w;
 
                                     res->getValues()[off_o] =
                                         res->getValues()[off_o] +
-                                        padded_data->getValues()[off_i_padded] *
-                                            filter->getValues()[off_f];
+                                        padded_data->getValues()[off_i_padded] * filter->getValues()[off_f];
                                 }
                 }
                 for (u_int32_t l = 0; l < PQ; l++)
-                    res->getValues()[oi + (i - start) * CPQ + c_new * PQ + l] +=
-                        bias->getValues()[c_new];
+                    res->getValues()[oi + (i - start) * CPQ + c_new * PQ + l] += bias->getValues()[c_new];
             }
         }
         DataObjectFactory::destroy(padded_data);

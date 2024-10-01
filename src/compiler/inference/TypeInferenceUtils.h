@@ -64,8 +64,7 @@ mlir::Type mostGeneralVt(const std::vector<mlir::Type> &vt);
  * @param num Optionally, only consider the first `num` lists of value types.
  * @return
  */
-mlir::Type mostGeneralVt(const std::vector<std::vector<mlir::Type>> &vts,
-                         size_t num = 0);
+mlir::Type mostGeneralVt(const std::vector<std::vector<mlir::Type>> &vts, size_t num = 0);
 
 /**
  * @brief Infers the value type assuming the type inference trait
@@ -75,9 +74,8 @@ mlir::Type mostGeneralVt(const std::vector<std::vector<mlir::Type>> &vts,
  * @param argVts Information on the argument value types.
  * @return The infered value type.
  */
-std::vector<mlir::Type>
-inferValueTypeFromArgs(const std::vector<DataTypeCode> &argDtc,
-                       std::vector<std::vector<mlir::Type>> &argVts);
+std::vector<mlir::Type> inferValueTypeFromArgs(const std::vector<DataTypeCode> &argDtc,
+                                               std::vector<std::vector<mlir::Type>> &argVts);
 
 /**
  * @brief Infers the type of the result of the given operation based on its
@@ -125,8 +123,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
 
     DataTypeCode resDtc = DataTypeCode::UNKNOWN;
 
-    if (op->template hasTrait<DataTypeFromFirstArg>() ||
-        op->template hasTrait<TypeFromFirstArg>())
+    if (op->template hasTrait<DataTypeFromFirstArg>() || op->template hasTrait<TypeFromFirstArg>())
         resDtc = argDtc[0];
     else if (op->template hasTrait<DataTypeFromArgs>()) {
         resDtc = argDtc[0];
@@ -156,24 +153,18 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
         // of the comparison of two strings as a string.
         for (size_t i = 0; i < resVts.size(); i++)
             if (llvm::isa<daphne::StringType>(resVts[i]))
-                resVts[i] = IntegerType::get(
-                    ctx, 64, IntegerType::SignednessSemantics::Signed);
+                resVts[i] = IntegerType::get(ctx, 64, IntegerType::SignednessSemantics::Signed);
     } else if (op->template hasTrait<TypeFromFirstArg>())
         resVts = argVts[0];
     else if (op->template hasTrait<ValueTypeFromFirstArg>()) {
-        if (resDtc == DataTypeCode::FRAME &&
-            argDtc[0] == DataTypeCode::MATRIX) {
+        if (resDtc == DataTypeCode::FRAME && argDtc[0] == DataTypeCode::MATRIX) {
             // We need to make sure that the value type of the input matrix is
             // repeated in the column value types of the output frame to match
             // the number of columns of the input matrix.
-            const ssize_t numCols = op->getOperand(0)
-                                        .getType()
-                                        .template dyn_cast<daphne::MatrixType>()
-                                        .getNumCols();
+            const ssize_t numCols = op->getOperand(0).getType().template dyn_cast<daphne::MatrixType>().getNumCols();
             if (numCols == -1)
                 // The input's number of columns is unknown.
-                resVts = {
-                    u}; // TODO How to properly represent such cases (see #421)?
+                resVts = {u}; // TODO How to properly represent such cases (see #421)?
             else
                 // The input's number of columns is known.
                 resVts = std::vector(numCols, argVts[0][0]);
@@ -186,19 +177,14 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
     // and ValueTypeFromThirdArg into one parametric trait ValueTypeFromArg<N>,
     // see #487.
     else if (op->template hasTrait<ValueTypeFromThirdArg>()) {
-        if (resDtc == DataTypeCode::FRAME &&
-            argDtc[2] == DataTypeCode::MATRIX) {
+        if (resDtc == DataTypeCode::FRAME && argDtc[2] == DataTypeCode::MATRIX) {
             // We need to make sure that the value type of the input matrix is
             // repeated in the column value types of the output frame to match
             // the number of columns of the input matrix.
-            const ssize_t numCols = op->getOperand(2)
-                                        .getType()
-                                        .template dyn_cast<daphne::MatrixType>()
-                                        .getNumCols();
+            const ssize_t numCols = op->getOperand(2).getType().template dyn_cast<daphne::MatrixType>().getNumCols();
             if (numCols == -1)
                 // The input's number of columns is unknown.
-                resVts = {
-                    u}; // TODO How to properly represent such cases (see #421)?
+                resVts = {u}; // TODO How to properly represent such cases (see #421)?
             else
                 // The input's number of columns is known.
                 resVts = std::vector(numCols, argVts[2][0]);
@@ -215,8 +201,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
         // ...and replace them by the most general floating-point type where
         // necessary.
         for (size_t i = 0; i < resVts.size(); i++)
-            if (!llvm::isa<FloatType>(resVts[i]) &&
-                !llvm::isa<daphne::UnknownType>(resVts[i]))
+            if (!llvm::isa<FloatType>(resVts[i]) && !llvm::isa<daphne::UnknownType>(resVts[i]))
                 resVts[i] = FloatType::getF64(ctx);
     } else if (op->template hasTrait<ValueTypeFromArgsInt>()) {
         // Get the most general value types...
@@ -225,16 +210,13 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
         // ...and replace them by the most general integer type where
         // necessary.
         for (size_t i = 0; i < resVts.size(); i++)
-            if (!llvm::isa<IntegerType>(resVts[i]) &&
-                !llvm::isa<daphne::UnknownType>(resVts[i]))
-                resVts[i] = IntegerType::get(
-                    ctx, 64, IntegerType::SignednessSemantics::Unsigned);
+            if (!llvm::isa<IntegerType>(resVts[i]) && !llvm::isa<daphne::UnknownType>(resVts[i]))
+                resVts[i] = IntegerType::get(ctx, 64, IntegerType::SignednessSemantics::Unsigned);
     } else if (op->template hasTrait<ValueTypesConcat>()) {
         const size_t numArgsConsider = 2;
         if (argVts.size() < numArgsConsider)
-            throw std::runtime_error(
-                "type inference trait ValueTypesConcat requires at least "
-                "two arguments");
+            throw std::runtime_error("type inference trait ValueTypesConcat requires at least "
+                                     "two arguments");
 
         switch (resDtc) {
         case DataTypeCode::FRAME:
@@ -250,10 +232,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
                     break;
                 case DataTypeCode::MATRIX: {
                     const ssize_t numCols =
-                        op->getOperand(i)
-                            .getType()
-                            .template dyn_cast<daphne::MatrixType>()
-                            .getNumCols();
+                        op->getOperand(i).getType().template dyn_cast<daphne::MatrixType>().getNumCols();
                     if (numCols == -1) {
                         // The number of columns of this input matrix
                         // is unknown, so it is unclear how often its
@@ -278,8 +257,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
                 case DataTypeCode::UNKNOWN:
                     // It is unclear how this input contributes to
                     // the result's column types.
-                    resVts = {
-                        u}; // TODO How to best represent this case (see #421)?
+                    resVts = {u}; // TODO How to best represent this case (see #421)?
                     abort = true;
                     break;
                 }
@@ -296,8 +274,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
             break;
         }
     } else if (op->template hasTrait<ValueTypeSI64>())
-        resVts = {IntegerType::get(ctx, 64,
-                                   IntegerType::SignednessSemantics::Signed)};
+        resVts = {IntegerType::get(ctx, 64, IntegerType::SignednessSemantics::Signed)};
     else if (op->template hasTrait<ValueTypeSize>())
         resVts = {IndexType::get(ctx)};
     else if (op->template hasTrait<ValueTypeStr>())

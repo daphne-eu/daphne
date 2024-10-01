@@ -31,16 +31,14 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct EwUnaryMat {
-    static void apply(UnaryOpCode opCode, DTRes *&res, const DTArg *arg,
-                      DCTX(ctx)) = delete;
+    static void apply(UnaryOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void ewUnaryMat(UnaryOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void ewUnaryMat(UnaryOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     EwUnaryMat<DTRes, DTArg>::apply(opCode, res, arg, ctx);
 }
 
@@ -53,14 +51,12 @@ void ewUnaryMat(UnaryOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(UnaryOpCode opCode, DenseMatrix<VT> *&res,
-                      const DenseMatrix<VT> *arg, DCTX(ctx)) {
+    static void apply(UnaryOpCode opCode, DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         const VT *valuesArg = arg->getValues();
         VT *valuesRes = res->getValues();
@@ -81,14 +77,12 @@ template <typename VT> struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct EwUnaryMat<Matrix<VT>, Matrix<VT>> {
-    static void apply(UnaryOpCode opCode, Matrix<VT> *&res,
-                      const Matrix<VT> *arg, DCTX(ctx)) {
+    static void apply(UnaryOpCode opCode, Matrix<VT> *&res, const Matrix<VT> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
 

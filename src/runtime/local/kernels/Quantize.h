@@ -31,21 +31,18 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct Quantize {
-    static void apply(DTRes *&res, const DTArg *arg, float min, float max,
-                      DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTArg *arg, float min, float max, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void quantize(DTRes *&res, const DTArg *arg, float min, float max, DCTX(ctx)) {
+template <class DTRes, class DTArg> void quantize(DTRes *&res, const DTArg *arg, float min, float max, DCTX(ctx)) {
     Quantize<DTRes, DTArg>::apply(res, arg, min, max, ctx);
 }
 
-void calc_quantization_params(float min, float max, float &scale,
-                              uint8_t &quantized_zero) {
+void calc_quantization_params(float min, float max, float &scale, uint8_t &quantized_zero) {
     // Make sure that 0 is included
     min = (min > 0) ? 0 : min;
     max = (max < 0) ? 0 : max;
@@ -87,14 +84,12 @@ uint8_t quantize_value(float a, float scale, uint8_t quantized_zero) {
 // ----------------------------------------------------------------------------
 
 template <> struct Quantize<DenseMatrix<uint8_t>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<uint8_t> *&res, const DenseMatrix<float> *arg,
-                      float min, float max, DCTX(ctx)) {
+    static void apply(DenseMatrix<uint8_t> *&res, const DenseMatrix<float> *arg, float min, float max, DCTX(ctx)) {
         const size_t nr1 = arg->getNumRows();
         const size_t nc1 = arg->getNumCols();
 
         if (res == nullptr) {
-            res = DataObjectFactory::create<DenseMatrix<uint8_t>>(nr1, nc1,
-                                                                  false);
+            res = DataObjectFactory::create<DenseMatrix<uint8_t>>(nr1, nc1, false);
         } else {
             if (nr1 != res->getNumRows()) {
                 throw std::runtime_error("Quantize - #rows of res and #rows of "
@@ -122,18 +117,14 @@ template <> struct Quantize<DenseMatrix<uint8_t>, DenseMatrix<float>> {
 // ----------------------------------------------------------------------------
 
 template <> struct Quantize<Matrix<uint8_t>, Matrix<float>> {
-    static void apply(Matrix<uint8_t> *&res, const Matrix<float> *arg,
-                      float min, float max, DCTX(ctx)) {
+    static void apply(Matrix<uint8_t> *&res, const Matrix<float> *arg, float min, float max, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr) {
-            res = DataObjectFactory::create<DenseMatrix<uint8_t>>(
-                numRows, numCols, false);
-        } else if (numRows != res->getNumRows() ||
-                   numCols != res->getNumCols()) {
-            throw std::runtime_error(
-                "Quantize: res must have the same shape as arg");
+            res = DataObjectFactory::create<DenseMatrix<uint8_t>>(numRows, numCols, false);
+        } else if (numRows != res->getNumRows() || numCols != res->getNumCols()) {
+            throw std::runtime_error("Quantize: res must have the same shape as arg");
         }
 
         float scale = 0;
@@ -143,8 +134,7 @@ template <> struct Quantize<Matrix<uint8_t>, Matrix<float>> {
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r) {
             for (size_t c = 0; c < numCols; ++c) {
-                res->append(r, c,
-                            quantize_value(arg->get(r, c), scale, q_zero));
+                res->append(r, c, quantize_value(arg->get(r, c), scale, q_zero));
             }
         }
         res->finishAppend();

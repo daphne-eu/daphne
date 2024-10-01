@@ -45,22 +45,17 @@ void groupJoinCol(
     // results
     Frame *&res, DenseMatrix<VTTid> *&resLhsTid,
     // arguments
-    const DenseMatrix<VTLhs> *argLhs, const DenseMatrix<VTRhs> *argRhs,
-    const DenseMatrix<VTAgg> *argAgg,
+    const DenseMatrix<VTLhs> *argLhs, const DenseMatrix<VTRhs> *argRhs, const DenseMatrix<VTAgg> *argAgg,
     // context
     DCTX(ctx)) {
     if (argLhs->getNumCols() != 1)
-        throw std::runtime_error(
-            "parameter argLhs must be a single-column matrix");
+        throw std::runtime_error("parameter argLhs must be a single-column matrix");
     if (argRhs->getNumCols() != 1)
-        throw std::runtime_error(
-            "parameter argRhs must be a single-column matrix");
+        throw std::runtime_error("parameter argRhs must be a single-column matrix");
     if (argAgg->getNumCols() != 1)
-        throw std::runtime_error(
-            "parameter argAgg must be a single-column matrix");
+        throw std::runtime_error("parameter argAgg must be a single-column matrix");
     if (argRhs->getNumRows() != argAgg->getNumRows())
-        throw std::runtime_error(
-            "parameters argRhs and argAgg must have the same number of rows");
+        throw std::runtime_error("parameters argRhs and argAgg must have the same number of rows");
 
     std::unordered_map<VTLhs, std::tuple<size_t, VTAgg, bool>> ht;
 
@@ -95,16 +90,13 @@ void groupJoinCol(
 
     // Create the output data objects.
     if (res == nullptr) {
-        ValueTypeCode schema[] = {ValueTypeUtils::codeFor<VTLhs>,
-                                  ValueTypeUtils::codeFor<VTAgg>};
-        res =
-            DataObjectFactory::create<Frame>(numRes, 2, schema, nullptr, false);
+        ValueTypeCode schema[] = {ValueTypeUtils::codeFor<VTLhs>, ValueTypeUtils::codeFor<VTAgg>};
+        res = DataObjectFactory::create<Frame>(numRes, 2, schema, nullptr, false);
     }
     auto resLhs = res->getColumn<VTLhs>(0);
     auto resAgg = res->getColumn<VTAgg>(1);
     if (resLhsTid == nullptr)
-        resLhsTid =
-            DataObjectFactory::create<DenseMatrix<VTTid>>(numRes, 1, false);
+        resLhsTid = DataObjectFactory::create<DenseMatrix<VTTid>>(numRes, 1, false);
 
     // Write the results.
     size_t pos = 0;
@@ -135,12 +127,10 @@ void groupJoinColIf(
     const char *lhsOn, const char *rhsOn, const char *rhsAgg,
     // context
     DCTX(ctx)) {
-    if (vtcLhs == ValueTypeUtils::codeFor<VTLhs> &&
-        vtcRhs == ValueTypeUtils::codeFor<VTRhs> &&
+    if (vtcLhs == ValueTypeUtils::codeFor<VTLhs> && vtcRhs == ValueTypeUtils::codeFor<VTRhs> &&
         vtcAgg == ValueTypeUtils::codeFor<VTAgg>) {
-        groupJoinCol<VTLhs, VTRhs, VTAgg, VTTid>(
-            res, resLhsTid, lhs->getColumn<VTLhs>(lhsOn),
-            rhs->getColumn<VTRhs>(rhsOn), rhs->getColumn<VTAgg>(rhsAgg), ctx);
+        groupJoinCol<VTLhs, VTRhs, VTAgg, VTTid>(res, resLhsTid, lhs->getColumn<VTLhs>(lhsOn),
+                                                 rhs->getColumn<VTRhs>(rhsOn), rhs->getColumn<VTAgg>(rhsAgg), ctx);
     }
 }
 
@@ -166,16 +156,13 @@ void groupJoin(
     // Call the groupJoin-kernel on columns for the actual combination of
     // value types.
     // Repeat this for all type combinations...
-    groupJoinColIf<int64_t, int64_t, double, VTLhsTid>(
-        vtcLhsOn, vtcRhsOn, vtcRhsAgg, res, lhsTid, lhs, rhs, lhsOn, rhsOn,
-        rhsAgg, ctx);
-    groupJoinColIf<int64_t, int64_t, int64_t, VTLhsTid>(
-        vtcLhsOn, vtcRhsOn, vtcRhsAgg, res, lhsTid, lhs, rhs, lhsOn, rhsOn,
-        rhsAgg, ctx);
+    groupJoinColIf<int64_t, int64_t, double, VTLhsTid>(vtcLhsOn, vtcRhsOn, vtcRhsAgg, res, lhsTid, lhs, rhs, lhsOn,
+                                                       rhsOn, rhsAgg, ctx);
+    groupJoinColIf<int64_t, int64_t, int64_t, VTLhsTid>(vtcLhsOn, vtcRhsOn, vtcRhsAgg, res, lhsTid, lhs, rhs, lhsOn,
+                                                        rhsOn, rhsAgg, ctx);
 
     // Set the column labels of the result frame.
-    std::string labels[] = {lhsOn,
-                            std::string("SUM(") + rhsAgg + std::string(")")};
+    std::string labels[] = {lhsOn, std::string("SUM(") + rhsAgg + std::string(")")};
     res->setLabels(labels);
 }
 

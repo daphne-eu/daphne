@@ -31,8 +31,7 @@
 namespace NN::Pooling {
 
 template <typename VT> struct AVG {
-    static inline VT run(VT initial_value, const VT *in, uint32_t start,
-                         uint32_t length, VT plen) {
+    static inline VT run(VT initial_value, const VT *in, uint32_t start, uint32_t length, VT plen) {
         VT ret = 0;
         auto end = start + length;
         for (auto i = start; i < end; ++i)
@@ -45,8 +44,8 @@ template <typename VT> struct AVG {
 };
 
 template <typename VT> struct MAX {
-    static inline VT run(VT initial_value, const VT *in, uint32_t start,
-                         uint32_t length, __attribute__((unused)) VT plen) {
+    static inline VT run(VT initial_value, const VT *in, uint32_t start, uint32_t length,
+                         __attribute__((unused)) VT plen) {
         VT ret = initial_value;
         auto end = start + length;
         for (auto i = start; i < end; ++i)
@@ -54,15 +53,12 @@ template <typename VT> struct MAX {
         return ret;
     }
 
-    static inline VT getNeutralElement() {
-        return std::numeric_limits<VT>::max();
-    }
+    static inline VT getNeutralElement() { return std::numeric_limits<VT>::max(); }
     static inline bool isMAX() { return true; }
 };
 
 template <typename VT> struct GetPaddedData {
-    static inline void run(const VT *data, VT *padded_data, VT *selected_data,
-                           size_t pad_w, size_t pad_h, size_t img_w,
+    static inline void run(const VT *data, VT *padded_data, VT *selected_data, size_t pad_w, size_t pad_h, size_t img_w,
                            size_t img_h, size_t padded_img_w, uint32_t off) {
         uint32_t j = 0;
         uint32_t k = 0;
@@ -86,14 +82,10 @@ template <typename VT> struct GetPaddedData {
     }
 };
 
-template <template <typename> class OP, typename DTRes, typename DTArg>
-struct Forward {
-    static void apply(DTRes *&res, size_t &res_h, size_t &res_w,
-                      const DTArg *data, const size_t batch_size,
-                      const size_t num_channels, const size_t img_h,
-                      const size_t img_w, const size_t pool_h,
-                      const size_t pool_w, const size_t stride_h,
-                      const size_t stride_w, const size_t pad_h,
+template <template <typename> class OP, typename DTRes, typename DTArg> struct Forward {
+    static void apply(DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data, const size_t batch_size,
+                      const size_t num_channels, const size_t img_h, const size_t img_w, const size_t pool_h,
+                      const size_t pool_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
                       const size_t pad_w, DCTX(dctx));
 };
 } // namespace NN::Pooling

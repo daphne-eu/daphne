@@ -43,9 +43,8 @@ class DistributedContext final : public IContext {
             // config/cli arguments and keep environmental variables optional.
             auto envVar = std::getenv("DISTRIBUTED_WORKERS");
             if (envVar == nullptr) {
-                throw std::runtime_error(
-                    "--distributed execution is set with gRPC but EV "
-                    "DISTRIBUTED_WORKERS is empty");
+                throw std::runtime_error("--distributed execution is set with gRPC but EV "
+                                         "DISTRIBUTED_WORKERS is empty");
             }
 
             std::string workersStr(envVar);
@@ -61,8 +60,7 @@ class DistributedContext final : public IContext {
                 grpc::ChannelArguments ch_args;
                 ch_args.SetMaxSendMessageSize(-1);
                 ch_args.SetMaxReceiveMessageSize(-1);
-                auto channel = grpc::CreateCustomChannel(
-                    workerAddr, grpc::InsecureChannelCredentials(), ch_args);
+                auto channel = grpc::CreateCustomChannel(workerAddr, grpc::InsecureChannelCredentials(), ch_args);
                 auto stub = distributed::Worker::NewStub(channel);
                 stubs[workerAddr] = std::move(stub);
             }
@@ -79,10 +77,8 @@ class DistributedContext final : public IContext {
     }
     ~DistributedContext() = default;
 
-    static std::unique_ptr<IContext>
-    createDistributedContext(const DaphneUserConfig &cfg) {
-        auto ctx =
-            std::unique_ptr<DistributedContext>(new DistributedContext(cfg));
+    static std::unique_ptr<IContext> createDistributedContext(const DaphneUserConfig &cfg) {
+        auto ctx = std::unique_ptr<DistributedContext>(new DistributedContext(cfg));
         return ctx;
     };
 

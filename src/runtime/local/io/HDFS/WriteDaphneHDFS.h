@@ -47,16 +47,14 @@
 // ****************************************************************************
 
 template <class DTArg> struct WriteDaphneHDFS {
-    static void apply(const DTArg *arg, const char *hdfsFilename,
-                      DCTX(dctx)) = delete;
+    static void apply(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg>
-void writeDaphneHDFS(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
+template <class DTArg> void writeDaphneHDFS(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
     WriteDaphneHDFS<DTArg>::apply(arg, hdfsFilename, dctx);
 }
 
@@ -69,8 +67,7 @@ void writeDaphneHDFS(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct WriteDaphneHDFS<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename,
-                      DCTX(dctx)) {
+    static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename, DCTX(dctx)) {
         size_t length;
         length = DaphneSerializer<DenseMatrix<VT>>::length(arg);
 
@@ -84,8 +81,7 @@ template <typename VT> struct WriteDaphneHDFS<DenseMatrix<VT>> {
         }
 
         // Write related fmd
-        FileMetaData fmd(arg->getNumRows(), arg->getNumCols(), true,
-                         ValueTypeUtils::codeFor<VT>);
+        FileMetaData fmd(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
         auto fmdStr = MetaDataParser::writeMetaDataToString(fmd);
         auto fn = std::string(hdfsFilename);
         auto mdtFn = fn + ".meta";
@@ -93,8 +89,7 @@ template <typename VT> struct WriteDaphneHDFS<DenseMatrix<VT>> {
         if (hdfsFile == NULL) {
             throw std::runtime_error("Error opening HDFS file");
         }
-        hdfsWrite(*fs, hdfsFile, static_cast<const void *>(fmdStr.c_str()),
-                  fmdStr.size());
+        hdfsWrite(*fs, hdfsFile, static_cast<const void *>(fmdStr.c_str()), fmdStr.size());
         hdfsCloseFile(*fs, hdfsFile);
 
         // Write binary

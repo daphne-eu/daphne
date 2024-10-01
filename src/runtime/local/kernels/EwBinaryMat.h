@@ -31,8 +31,7 @@
 // ****************************************************************************
 
 template <class DTRes, class DTLhs, class DTRhs> struct EwBinaryMat {
-    static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs,
-                      const DTRhs *rhs, DCTX(ctx)) = delete;
+    static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -40,8 +39,7 @@ template <class DTRes, class DTLhs, class DTRhs> struct EwBinaryMat {
 // ****************************************************************************
 
 template <class DTRes, class DTLhs, class DTRhs>
-void ewBinaryMat(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs,
-                 const DTRhs *rhs, DCTX(ctx)) {
+void ewBinaryMat(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
     EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
@@ -55,8 +53,7 @@ void ewBinaryMat(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs,
 
 template <typename VTres, typename VTlhs, typename VTrhs>
 struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *&res,
-                      const DenseMatrix<VTlhs> *lhs,
+    static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs,
                       const DenseMatrix<VTrhs> *rhs, DCTX(ctx)) {
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();
@@ -64,15 +61,13 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         const size_t numColsRhs = rhs->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTres>>(
-                numRowsLhs, numColsLhs, false);
+            res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
 
         const VTlhs *valuesLhs = lhs->getValues();
         const VTrhs *valuesRhs = rhs->getValues();
         VTres *valuesRes = res->getValues();
 
-        EwBinaryScaFuncPtr<VTres, VTlhs, VTrhs> func =
-            getEwBinaryScaFuncPtr<VTres, VTlhs, VTrhs>(opCode);
+        EwBinaryScaFuncPtr<VTres, VTlhs, VTrhs> func = getEwBinaryScaFuncPtr<VTres, VTlhs, VTrhs>(opCode);
 
         if (numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
             // matrix op matrix (same size)
@@ -83,8 +78,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 valuesRhs += rhs->getRowSkip();
                 valuesRes += res->getRowSkip();
             }
-        } else if (numColsLhs == numColsRhs &&
-                   (numRowsRhs == 1 || numRowsLhs == 1)) {
+        } else if (numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
             // matrix op row-vector
             for (size_t r = 0; r < numRowsLhs; r++) {
                 for (size_t c = 0; c < numColsLhs; c++)
@@ -92,8 +86,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 valuesLhs += lhs->getRowSkip();
                 valuesRes += res->getRowSkip();
             }
-        } else if (numRowsLhs == numRowsRhs &&
-                   (numColsRhs == 1 || numColsLhs == 1)) {
+        } else if (numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
             // matrix op col-vector
             for (size_t r = 0; r < numRowsLhs; r++) {
                 for (size_t c = 0; c < numColsLhs; c++)
@@ -103,15 +96,13 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 valuesRes += res->getRowSkip();
             }
         } else {
-            throw std::runtime_error(
-                "EwBinaryMat(Dense) - lhs and rhs must either "
-                "have the same dimensions, or one of them must be a row/column "
-                "vector "
-                "with the width/height of the other, but lhs has shape (" +
-                std::to_string(numRowsLhs) + " x " +
-                std::to_string(numColsLhs) + ") and rhs has shape (" +
-                std::to_string(numRowsRhs) + " x " +
-                std::to_string(numColsRhs) + ")");
+            throw std::runtime_error("EwBinaryMat(Dense) - lhs and rhs must either "
+                                     "have the same dimensions, or one of them must be a row/column "
+                                     "vector "
+                                     "with the width/height of the other, but lhs has shape (" +
+                                     std::to_string(numRowsLhs) + " x " + std::to_string(numColsLhs) +
+                                     ") and rhs has shape (" + std::to_string(numRowsRhs) + " x " +
+                                     std::to_string(numColsRhs) + ")");
         }
     }
 };
@@ -120,10 +111,8 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
 // CSRMatrix <- CSRMatrix, CSRMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT>
-struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *&res,
-                      const CSRMatrix<VT> *lhs, const CSRMatrix<VT> *rhs,
+template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *&res, const CSRMatrix<VT> *lhs, const CSRMatrix<VT> *rhs,
                       DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
@@ -144,13 +133,11 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
         }
 
         if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,
-                                                           maxNnz, false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNnz, false);
 
         size_t *rowOffsetsRes = res->getRowOffsets();
 
-        EwBinaryScaFuncPtr<VT, VT, VT> func =
-            getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
 
         rowOffsetsRes[0] = 0;
 
@@ -172,8 +159,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                     size_t posRes = 0;
                     while (posLhs < nnzRowLhs && posRhs < nnzRowRhs) {
                         if (colIdxsRowLhs[posLhs] == colIdxsRowRhs[posRhs]) {
-                            VT funcRes = func(valuesRowLhs[posLhs],
-                                              valuesRowRhs[posRhs], ctx);
+                            VT funcRes = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
                             if (funcRes != VT(0)) {
                                 valuesRowRes[posRes] = funcRes;
                                 colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
@@ -181,8 +167,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                             }
                             posLhs++;
                             posRhs++;
-                        } else if (colIdxsRowLhs[posLhs] <
-                                   colIdxsRowRhs[posRhs]) {
+                        } else if (colIdxsRowLhs[posLhs] < colIdxsRowRhs[posRhs]) {
                             valuesRowRes[posRes] = valuesRowLhs[posLhs];
                             colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                             posLhs++;
@@ -196,35 +181,24 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                     }
                     // copy from left
                     const size_t restRowLhs = nnzRowLhs - posLhs;
-                    memcpy(valuesRowRes + posRes, valuesRowLhs + posLhs,
-                           restRowLhs * sizeof(VT));
-                    memcpy(colIdxsRowRes + posRes, colIdxsRowLhs + posLhs,
-                           restRowLhs * sizeof(size_t));
+                    memcpy(valuesRowRes + posRes, valuesRowLhs + posLhs, restRowLhs * sizeof(VT));
+                    memcpy(colIdxsRowRes + posRes, colIdxsRowLhs + posLhs, restRowLhs * sizeof(size_t));
                     // copy from right
                     const size_t restRowRhs = nnzRowRhs - posRhs;
-                    memcpy(valuesRowRes + posRes, valuesRowRhs + posRhs,
-                           restRowRhs * sizeof(VT));
-                    memcpy(colIdxsRowRes + posRes, colIdxsRowRhs + posRhs,
-                           restRowRhs * sizeof(size_t));
+                    memcpy(valuesRowRes + posRes, valuesRowRhs + posRhs, restRowRhs * sizeof(VT));
+                    memcpy(colIdxsRowRes + posRes, colIdxsRowRhs + posRhs, restRowRhs * sizeof(size_t));
 
-                    rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes +
-                                                restRowLhs + restRowRhs;
+                    rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes + restRowLhs + restRowRhs;
                 } else if (nnzRowLhs) {
                     // copy from left
-                    memcpy(res->getValues(rowIdx), lhs->getValues(rowIdx),
-                           nnzRowLhs * sizeof(VT));
-                    memcpy(res->getColIdxs(rowIdx), lhs->getColIdxs(rowIdx),
-                           nnzRowLhs * sizeof(size_t));
-                    rowOffsetsRes[rowIdx + 1] =
-                        rowOffsetsRes[rowIdx] + nnzRowLhs;
+                    memcpy(res->getValues(rowIdx), lhs->getValues(rowIdx), nnzRowLhs * sizeof(VT));
+                    memcpy(res->getColIdxs(rowIdx), lhs->getColIdxs(rowIdx), nnzRowLhs * sizeof(size_t));
+                    rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + nnzRowLhs;
                 } else if (nnzRowRhs) {
                     // copy from right
-                    memcpy(res->getValues(rowIdx), rhs->getValues(rowIdx),
-                           nnzRowRhs * sizeof(VT));
-                    memcpy(res->getColIdxs(rowIdx), rhs->getColIdxs(rowIdx),
-                           nnzRowRhs * sizeof(size_t));
-                    rowOffsetsRes[rowIdx + 1] =
-                        rowOffsetsRes[rowIdx] + nnzRowRhs;
+                    memcpy(res->getValues(rowIdx), rhs->getValues(rowIdx), nnzRowRhs * sizeof(VT));
+                    memcpy(res->getColIdxs(rowIdx), rhs->getColIdxs(rowIdx), nnzRowRhs * sizeof(size_t));
+                    rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + nnzRowRhs;
                 } else
                     // empty row in result
                     rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx];
@@ -248,15 +222,12 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                     size_t posRes = 0;
                     while (posLhs < nnzRowLhs && posRhs < nnzRowRhs) {
                         if (colIdxsRowLhs[posLhs] == colIdxsRowRhs[posRhs]) {
-                            valuesRowRes[posRes] =
-                                func(valuesRowLhs[posLhs], valuesRowRhs[posRhs],
-                                     ctx);
+                            valuesRowRes[posRes] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
                             colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                             posLhs++;
                             posRhs++;
                             posRes++;
-                        } else if (colIdxsRowLhs[posLhs] <
-                                   colIdxsRowRhs[posRhs])
+                        } else if (colIdxsRowLhs[posLhs] < colIdxsRowRhs[posRhs])
                             posLhs++;
                         else
                             posRhs++;
@@ -280,10 +251,8 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
 // CSRMatrix <- CSRMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT>
-struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *&res,
-                      const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
+template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *&res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
                       DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
@@ -303,13 +272,11 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         }
 
         if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,
-                                                           maxNnz, false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNnz, false);
 
         size_t *rowOffsetsRes = res->getRowOffsets();
 
-        EwBinaryScaFuncPtr<VT, VT, VT> func =
-            getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
 
         rowOffsetsRes[0] = 0;
 
@@ -326,13 +293,10 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
                     auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
                     size_t posRes = 0;
                     for (size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
-                        auto rhsCol =
-                            (rhs->getNumCols() == 1 ? 0
-                                                    : colIdxsRowLhs[posLhs]);
+                        auto rhsCol = (rhs->getNumCols() == 1 ? 0 : colIdxsRowLhs[posLhs]);
                         auto rVal = rhs->get(rhsRow, rhsCol);
                         if (rVal != 0) {
-                            valuesRowRes[posRes] =
-                                func(valuesRowLhs[posLhs], rVal, ctx);
+                            valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rVal, ctx);
                             colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                             posRes++;
                         }
@@ -357,22 +321,18 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
-    static void apply(BinaryOpCode opCode, Matrix<VT> *&res,
-                      const Matrix<VT> *lhs, const Matrix<VT> *rhs, DCTX(ctx)) {
+    static void apply(BinaryOpCode opCode, Matrix<VT> *&res, const Matrix<VT> *lhs, const Matrix<VT> *rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
-            throw std::runtime_error(
-                "EwBinaryMat - lhs and rhs must have the same dimensions.");
+            throw std::runtime_error("EwBinaryMat - lhs and rhs must have the same dimensions.");
 
         // TODO Choose matrix implementation depending on expected number of
         // non-zeros.
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
-        EwBinaryScaFuncPtr<VT, VT, VT> func =
-            getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r)

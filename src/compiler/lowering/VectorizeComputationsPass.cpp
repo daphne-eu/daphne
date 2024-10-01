@@ -66,18 +66,15 @@ bool valueDependsOnResultOf(Value value, Operation *op) {
  * @param pipeline The pipeline
  * @return true if it can be directly fused, false otherwise
  */
-bool isDirectlyFusible(daphne::Vectorizable opBefore,
-                       const std::vector<daphne::Vectorizable> &pipeline) {
+bool isDirectlyFusible(daphne::Vectorizable opBefore, const std::vector<daphne::Vectorizable> &pipeline) {
     for (auto pipeOp : pipeline) {
         for (auto operand : pipeOp->getOperands()) {
-            if (std::find(pipeline.begin(), pipeline.end(),
-                          operand.getDefiningOp()) != pipeline.end()) {
+            if (std::find(pipeline.begin(), pipeline.end(), operand.getDefiningOp()) != pipeline.end()) {
                 // transitive dependencies inside the pipeline are of course
                 // fine.
                 continue;
             }
-            if (operand.getDefiningOp() != opBefore &&
-                valueDependsOnResultOf(operand, opBefore)) {
+            if (operand.getDefiningOp() != opBefore && valueDependsOnResultOf(operand, opBefore)) {
                 return false;
             }
         }
@@ -95,10 +92,9 @@ bool isDirectlyFusible(daphne::Vectorizable opBefore,
  * @param operationToCheck The operation we possibly want to fuse into the
  * current pipeline
  */
-void greedyPipelineFusion(
-    std::map<daphne::Vectorizable, size_t> &operationToPipelineIx,
-    std::vector<std::vector<daphne::Vectorizable>> &pipelines,
-    size_t currentPipelineIx, daphne::Vectorizable operationToCheck) {
+void greedyPipelineFusion(std::map<daphne::Vectorizable, size_t> &operationToPipelineIx,
+                          std::vector<std::vector<daphne::Vectorizable>> &pipelines, size_t currentPipelineIx,
+                          daphne::Vectorizable operationToCheck) {
     auto &currentPipeline = pipelines[currentPipelineIx];
     auto existingPipelineIt = operationToPipelineIx.find(operationToCheck);
     if (existingPipelineIt != operationToPipelineIx.end()) {
@@ -112,8 +108,7 @@ void greedyPipelineFusion(
             }
         }
         // append existing to current
-        currentPipeline.insert(currentPipeline.end(), existingPipeline.begin(),
-                               existingPipeline.end());
+        currentPipeline.insert(currentPipeline.end(), existingPipeline.begin(), existingPipeline.end());
         for (auto vectorizable : existingPipeline) {
             operationToPipelineIx[vectorizable] = currentPipelineIx;
         }
@@ -133,9 +128,8 @@ void greedyPipelineFusion(
  * @param pipelinePosition The position where the pipeline will be
  * @param pipeline The pipeline for which this function should be executed
  */
-void movePipelineInterleavedOperations(
-    Block::iterator pipelinePosition,
-    const std::vector<daphne::Vectorizable> &pipeline) {
+void movePipelineInterleavedOperations(Block::iterator pipelinePosition,
+                                       const std::vector<daphne::Vectorizable> &pipeline) {
     // first operation in pipeline vector is last in IR, and the last is the
     // first
     auto startPos = pipeline.back()->getIterator();
@@ -177,8 +171,7 @@ void movePipelineInterleavedOperations(
     }
 
     for (auto moveBeforeOp : moveBeforeOps) {
-        moveBeforeOp->moveBefore(pipelinePosition->getBlock(),
-                                 pipelinePosition);
+        moveBeforeOp->moveBefore(pipelinePosition->getBlock(), pipelinePosition);
     }
     for (auto moveAfterOp : moveAfterOps) {
         moveAfterOp->moveAfter(pipelinePosition->getBlock(), pipelinePosition);
@@ -186,9 +179,7 @@ void movePipelineInterleavedOperations(
     }
 }
 
-struct VectorizeComputationsPass
-    : public PassWrapper<VectorizeComputationsPass,
-                         OperationPass<func::FuncOp>> {
+struct VectorizeComputationsPass : public PassWrapper<VectorizeComputationsPass, OperationPass<func::FuncOp>> {
     void runOnOperation() final;
 };
 } // namespace
@@ -206,15 +197,13 @@ void VectorizeComputationsPass::runOnOperation() {
         if (CompilerUtils::isMatrixComputation(op))
             vectOps.emplace_back(op);
     });
-    std::vector<daphne::Vectorizable> vectorizables(vectOps.begin(),
-                                                    vectOps.end());
+    std::vector<daphne::Vectorizable> vectorizables(vectOps.begin(), vectOps.end());
     std::multimap<daphne::Vectorizable, daphne::Vectorizable> possibleMerges;
     for (auto v : vectorizables) {
         for (auto e : llvm::zip(v->getOperands(), v.getVectorSplits())) {
             auto operand = std::get<0>(e);
             auto defOp = operand.getDefiningOp<daphne::Vectorizable>();
-            if (defOp && v->getBlock() == defOp->getBlock() &&
-                CompilerUtils::isMatrixComputation(defOp)) {
+            if (defOp && v->getBlock() == defOp->getBlock() && CompilerUtils::isMatrixComputation(defOp)) {
                 // defOp is not a candidate for fusion with v, if the
                 // result/operand along which we would fuse is used within a
                 // nested block (e.g., control structure) between defOp and v.
@@ -243,8 +232,7 @@ void VectorizeComputationsPass::runOnOperation() {
                     auto split = std::get<1>(e);
                     // find the corresponding `OpResult` to figure out combine
                     auto opResult = *llvm::find(defOp->getResults(), operand);
-                    auto combine =
-                        defOp.getVectorCombines()[opResult.getResultNumber()];
+                    auto combine = defOp.getVectorCombines()[opResult.getResultNumber()];
 
                     if (split == daphne::VectorSplit::ROWS) {
                         if (combine == daphne::VectorCombine::ROWS)
@@ -252,10 +240,9 @@ void VectorizeComputationsPass::runOnOperation() {
                     } else if (split == daphne::VectorSplit::NONE) {
                         // can't be merged
                     } else {
-                        throw ErrorHandler::compilerError(
-                            v, "VectorizeComputationsPass",
-                            "VectorSplit case `" + stringifyEnum(split).str() +
-                                "` not handled");
+                        throw ErrorHandler::compilerError(v, "VectorizeComputationsPass",
+                                                          "VectorSplit case `" + stringifyEnum(split).str() +
+                                                              "` not handled");
                     }
                 }
             }
@@ -266,8 +253,7 @@ void VectorizeComputationsPass::runOnOperation() {
     // pipelines
     std::map<daphne::Vectorizable, size_t> operationToPipelineIx;
     std::vector<std::vector<daphne::Vectorizable>> pipelines;
-    for (auto vIt = vectorizables.rbegin(); vIt != vectorizables.rend();
-         ++vIt) {
+    for (auto vIt = vectorizables.rbegin(); vIt != vectorizables.rend(); ++vIt) {
         auto v = *vIt;
         size_t pipelineIx;
         auto pipelineIt = operationToPipelineIx.find(v);
@@ -286,8 +272,7 @@ void VectorizeComputationsPass::runOnOperation() {
             auto operandVectorizable = it->second;
             // TODO: this fuses greedily, the first pipeline we can fuse this
             // operation into, we do. improve
-            greedyPipelineFusion(operationToPipelineIx, pipelines, pipelineIx,
-                                 operandVectorizable);
+            greedyPipelineFusion(operationToPipelineIx, pipelines, pipelineIx, operandVectorizable);
         }
     }
 
@@ -298,9 +283,7 @@ void VectorizeComputationsPass::runOnOperation() {
             continue;
         }
         auto valueIsPartOfPipeline = [&](Value operand) {
-            return llvm::any_of(pipeline, [&](daphne::Vectorizable lv) {
-                return lv == operand.getDefiningOp();
-            });
+            return llvm::any_of(pipeline, [&](daphne::Vectorizable lv) { return lv == operand.getDefiningOp(); });
         };
         std::vector<Attribute> vSplitAttrs;
         std::vector<Attribute> vCombineAttrs;
@@ -314,8 +297,7 @@ void VectorizeComputationsPass::runOnOperation() {
         builder.setInsertionPoint(pipeline.front());
         // move all operations, between the operations that will be part of the
         // pipeline, before or after the completed pipeline
-        movePipelineInterleavedOperations(builder.getInsertionPoint(),
-                                          pipeline);
+        movePipelineInterleavedOperations(builder.getInsertionPoint(), pipeline);
         for (auto vIt = pipeline.rbegin(); vIt != pipeline.rend(); ++vIt) {
             auto v = *vIt;
             auto vSplits = v.getVectorSplits();
@@ -326,14 +308,12 @@ void VectorizeComputationsPass::runOnOperation() {
             for (auto i = 0u; i < v->getNumOperands(); ++i) {
                 auto operand = v->getOperand(i);
                 if (!valueIsPartOfPipeline(operand)) {
-                    vSplitAttrs.push_back(daphne::VectorSplitAttr::get(
-                        &getContext(), vSplits[i]));
+                    vSplitAttrs.push_back(daphne::VectorSplitAttr::get(&getContext(), vSplits[i]));
                     operands.push_back(operand);
                 }
             }
             for (auto vCombine : vCombines) {
-                vCombineAttrs.push_back(
-                    daphne::VectorCombineAttr::get(&getContext(), vCombine));
+                vCombineAttrs.push_back(daphne::VectorCombineAttr::get(&getContext(), vCombine));
             }
             locations.push_back(v->getLoc());
             for (auto result : v->getResults()) {
@@ -351,8 +331,7 @@ void VectorizeComputationsPass::runOnOperation() {
         }
         auto loc = builder.getFusedLoc(locs);
         auto pipelineOp = builder.create<daphne::VectorizedPipelineOp>(
-            loc, ValueRange(results).getTypes(), operands, outRows, outCols,
-            builder.getArrayAttr(vSplitAttrs),
+            loc, ValueRange(results).getTypes(), operands, outRows, outCols, builder.getArrayAttr(vSplitAttrs),
             builder.getArrayAttr(vCombineAttrs), nullptr);
         Block *bodyBlock = builder.createBlock(&pipelineOp.getBody());
 
@@ -387,9 +366,7 @@ void VectorizeComputationsPass::runOnOperation() {
                 }
             }
 
-            auto pipelineReplaceResults =
-                pipelineOp->getResults().drop_front(resultsIx).take_front(
-                    numResults);
+            auto pipelineReplaceResults = pipelineOp->getResults().drop_front(resultsIx).take_front(numResults);
             resultsIx += numResults;
             for (auto z : llvm::zip(v->getResults(), pipelineReplaceResults)) {
                 auto old = std::get<0>(z);
@@ -401,15 +378,11 @@ void VectorizeComputationsPass::runOnOperation() {
                 for (auto &use : old.getUses()) {
                     auto *op = use.getOwner();
                     if (auto nrowOp = llvm::dyn_cast<daphne::NumRowsOp>(op)) {
-                        nrowOp.replaceAllUsesWith(
-                            pipelineOp
-                                .getOutRows()[replacement.getResultNumber()]);
+                        nrowOp.replaceAllUsesWith(pipelineOp.getOutRows()[replacement.getResultNumber()]);
                         nrowOp.erase();
                     }
                     if (auto ncolOp = llvm::dyn_cast<daphne::NumColsOp>(op)) {
-                        ncolOp.replaceAllUsesWith(
-                            pipelineOp
-                                .getOutCols()[replacement.getResultNumber()]);
+                        ncolOp.replaceAllUsesWith(pipelineOp.getOutCols()[replacement.getResultNumber()]);
                         ncolOp.erase();
                     }
                 }

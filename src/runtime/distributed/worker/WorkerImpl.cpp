@@ -39,11 +39,9 @@
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
-WorkerImpl::WorkerImpl(DaphneUserConfig &_cfg)
-    : cfg(_cfg), tmp_file_counter_(0), localData_() {}
+WorkerImpl::WorkerImpl(DaphneUserConfig &_cfg) : cfg(_cfg), tmp_file_counter_(0), localData_() {}
 
-template <>
-WorkerImpl::StoredInfo WorkerImpl::Store<Structure>(Structure *mat) {
+template <> WorkerImpl::StoredInfo WorkerImpl::Store<Structure>(Structure *mat) {
     auto identifier = "tmp_" + std::to_string(tmp_file_counter_++);
     localData_[identifier] = mat;
     return StoredInfo({identifier, mat->getNumRows(), mat->getNumCols()});
@@ -63,10 +61,8 @@ template <> WorkerImpl::StoredInfo WorkerImpl::Store<double>(double *val) {
     return StoredInfo({identifier, 0, 0});
 }
 
-WorkerImpl::Status
-WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
-                    const std::vector<WorkerImpl::StoredInfo> &inputs,
-                    const std::string &mlirCode) {
+WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
+                                       const std::vector<WorkerImpl::StoredInfo> &inputs, const std::string &mlirCode) {
     cfg.use_vectorized_exec = true;
     cfg.use_distributed = false;
 
@@ -83,9 +79,7 @@ WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
     if (executor.getUserConfig().use_cuda)
         kcp.parseKernelCatalog(cfg.libdir + "/CUDAcatalog.json", kc);
 
-    mlir::OwningOpRef<mlir::ModuleOp> module(
-        mlir::parseSourceString<mlir::ModuleOp>(mlirCode,
-                                                executor.getContext()));
+    mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, executor.getContext()));
     if (!module) {
         auto message = "Failed to parse source string.\n";
         llvm::errs() << message;
@@ -103,8 +97,7 @@ WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
 
     std::vector<void *> inputsObj;
     std::vector<void *> outputsObj;
-    auto packedInputsOutputs = createPackedCInterfaceInputsOutputs(
-        distFuncTy, inputs, outputsObj, inputsObj);
+    auto packedInputsOutputs = createPackedCInterfaceInputsOutputs(distFuncTy, inputs, outputsObj, inputsObj);
 
     // Increase the reference counters of all inputs to the `dist` function.
     // (But only consider data objects, not scalars.)
@@ -116,8 +109,7 @@ WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
     for (size_t i = 0; i < inputsObj.size(); i++)
         // TODO Use CompilerUtils::isObjType() once this branch has been
         // rebased. if(CompilerUtils::isObjType(distFuncTy.getInput(i)))
-        if (llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(
-                distFuncTy.getInput(i)))
+        if (llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(distFuncTy.getInput(i)))
             reinterpret_cast<Structure *>(inputsObj[i])->increaseRefCounter();
 
     // Execution
@@ -138,12 +130,10 @@ WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
 
     auto engine = executor.createExecutionEngine(module.get());
     if (!engine) {
-        return WorkerImpl::Status(
-            false, std::string("Failed to create JIT-Execution engine"));
+        return WorkerImpl::Status(false, std::string("Failed to create JIT-Execution engine"));
     }
-    auto error = engine->invokePacked(
-        DISTRIBUTED_FUNCTION_NAME,
-        llvm::MutableArrayRef<void *>{&packedInputsOutputs[0], (size_t)0});
+    auto error = engine->invokePacked(DISTRIBUTED_FUNCTION_NAME,
+                                      llvm::MutableArrayRef<void *>{&packedInputsOutputs[0], (size_t)0});
 
     if (error) {
         std::stringstream ss("JIT-Engine invocation failed.");
@@ -159,8 +149,7 @@ WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
 
         auto mat = static_cast<Structure *>(output);
 
-        outputs->push_back(
-            StoredInfo({identification, mat->getNumRows(), mat->getNumCols()}));
+        outputs->push_back(StoredInfo({identification, mat->getNumRows(), mat->getNumCols()}));
     }
     // TODO: cache management (Write to file/evict matrices present as files)
     return WorkerImpl::Status(true);
@@ -181,15 +170,14 @@ WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
 // }
 
 Structure *WorkerImpl::Transfer(StoredInfo info) {
-    Structure *mat =
-        readOrGetMatrix(info.identifier, info.numRows, info.numCols);
+    Structure *mat = readOrGetMatrix(info.identifier, info.numRows, info.numCols);
     return mat;
 }
 
-std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(
-    mlir::FunctionType functionType,
-    std::vector<WorkerImpl::StoredInfo> workInputs,
-    std::vector<void *> &outputs, std::vector<void *> &inputs) {
+std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::FunctionType functionType,
+                                                                    std::vector<WorkerImpl::StoredInfo> workInputs,
+                                                                    std::vector<void *> &outputs,
+                                                                    std::vector<void *> &inputs) {
     if (static_cast<size_t>(functionType.getNumInputs()) != workInputs.size())
         throw std::runtime_error("WorkerImpl: Number of inputs received have "
                                  "to match number of MLIR fragment inputs");
@@ -199,8 +187,7 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(
     inputs.reserve(workInputs.size());
     outputs.reserve(functionType.getNumResults());
 
-    for (const auto &typeAndWorkInput :
-         llvm::zip(functionType.getInputs(), workInputs)) {
+    for (const auto &typeAndWorkInput : llvm::zip(functionType.getInputs(), workInputs)) {
         auto type = std::get<0>(typeAndWorkInput);
         auto workInput = std::get<1>(typeAndWorkInput);
 
@@ -216,27 +203,22 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(
     return inputsAndOutputs;
 }
 
-void *WorkerImpl::loadWorkInputData(mlir::Type mlirType,
-                                    StoredInfo &workInput) {
+void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput) {
     // TODO: all types
     bool isSparse = false;
     bool isFloat = false;
     bool isScalar = false;
     if (llvm::isa<mlir::daphne::MatrixType>(mlirType)) {
         auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();
-        isSparse = matTy.getRepresentation() ==
-                   mlir::daphne::MatrixRepresentation::Sparse;
+        isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;
         isFloat = llvm::isa<mlir::Float64Type>(matTy.getElementType());
     } else
         isScalar = true;
-    return readOrGetMatrix(workInput.identifier, workInput.numRows,
-                           workInput.numCols, isSparse, isFloat, isScalar);
+    return readOrGetMatrix(workInput.identifier, workInput.numRows, workInput.numCols, isSparse, isFloat, isScalar);
 }
 
-Structure *WorkerImpl::readOrGetMatrix(const std::string &identifier,
-                                       size_t numRows, size_t numCols,
-                                       bool isSparse /*= false */,
-                                       bool isFloat /* = false*/,
+Structure *WorkerImpl::readOrGetMatrix(const std::string &identifier, size_t numRows, size_t numCols,
+                                       bool isSparse /*= false */, bool isFloat /* = false*/,
                                        bool isScalar /* = false */) {
     auto data_it = localData_.find(identifier);
     if (data_it != localData_.end()) {
@@ -268,21 +250,18 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &identifier,
             // TODO use read
             if (isFloat) {
                 DenseMatrix<double> *m2 = nullptr;
-                readCsvFile<DenseMatrix<double>>(m2, file, numRows, numCols,
-                                                 delim);
+                readCsvFile<DenseMatrix<double>>(m2, file, numRows, numCols, delim);
                 m = m2;
             } else {
                 DenseMatrix<int64_t> *m2 = nullptr;
-                readCsvFile<DenseMatrix<int64_t>>(m2, file, numRows, numCols,
-                                                  delim);
+                readCsvFile<DenseMatrix<int64_t>>(m2, file, numRows, numCols, delim);
                 m = m2;
             }
             closeFile(file);
         }
 
         if (!localData_.insert({identifier, m}).second)
-            throw std::runtime_error(
-                "WorkerImpl: Value should always be inserted");
+            throw std::runtime_error("WorkerImpl: Value should always be inserted");
 
         return m;
     }

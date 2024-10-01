@@ -64,46 +64,32 @@
 struct DaphneInlinerInterface : public mlir::DialectInlinerInterface {
     using DialectInlinerInterface::DialectInlinerInterface;
 
-    bool isLegalToInline(mlir::Operation *call, mlir::Operation *callable,
-                         bool wouldBeCloned) const final {
+    bool isLegalToInline(mlir::Operation *call, mlir::Operation *callable, bool wouldBeCloned) const final {
         return true;
     }
 
-    bool isLegalToInline(mlir::Operation *, mlir::Region *, bool,
-                         mlir::IRMapping &) const final {
-        return true;
-    }
+    bool isLegalToInline(mlir::Operation *, mlir::Region *, bool, mlir::IRMapping &) const final { return true; }
 
-    bool isLegalToInline(mlir::Region *, mlir::Region *, bool,
-                         mlir::IRMapping &) const final {
-        return true;
-    }
+    bool isLegalToInline(mlir::Region *, mlir::Region *, bool, mlir::IRMapping &) const final { return true; }
 
-    void
-    handleTerminator(mlir::Operation *op,
-                     mlir::ArrayRef<mlir::Value> valuesToRepl) const final {
+    void handleTerminator(mlir::Operation *op, mlir::ArrayRef<mlir::Value> valuesToRepl) const final {
         auto returnOp = mlir::dyn_cast<mlir::daphne::ReturnOp>(op);
 
         // Replace the values directly with the return operands.
         if (returnOp.getNumOperands() != valuesToRepl.size()) {
-            throw ErrorHandler::compilerError(
-                op, "DaphneInlinerInterface (handleTerminator)",
-                "number of operands " +
-                    std::to_string(returnOp.getNumOperands()) + " from " +
-                    op->getName().getStringRef().str() + " do not match size " +
-                    std::to_string(valuesToRepl.size()));
+            throw ErrorHandler::compilerError(op, "DaphneInlinerInterface (handleTerminator)",
+                                              "number of operands " + std::to_string(returnOp.getNumOperands()) +
+                                                  " from " + op->getName().getStringRef().str() +
+                                                  " do not match size " + std::to_string(valuesToRepl.size()));
         }
 
         for (const auto &it : llvm::enumerate(returnOp.getOperands()))
             valuesToRepl[it.index()].replaceAllUsesWith(it.value());
     }
 
-    mlir::Operation *
-    materializeCallConversion(mlir::OpBuilder &builder, mlir::Value input,
-                              mlir::Type resultType,
-                              mlir::Location conversionLoc) const final {
-        return builder.create<mlir::daphne::CastOp>(conversionLoc, resultType,
-                                                    input);
+    mlir::Operation *materializeCallConversion(mlir::OpBuilder &builder, mlir::Value input, mlir::Type resultType,
+                                               mlir::Location conversionLoc) const final {
+        return builder.create<mlir::daphne::CastOp>(conversionLoc, resultType, input);
     }
 };
 
@@ -119,13 +105,12 @@ void mlir::daphne::DaphneDialect::initialize() {
     addInterfaces<DaphneInlinerInterface>();
 }
 
-mlir::Operation *mlir::daphne::DaphneDialect::materializeConstant(
-    OpBuilder &builder, Attribute value, Type type, mlir::Location loc) {
+mlir::Operation *mlir::daphne::DaphneDialect::materializeConstant(OpBuilder &builder, Attribute value, Type type,
+                                                                  mlir::Location loc) {
     return builder.create<mlir::daphne::ConstantOp>(loc, type, value);
 }
 
-mlir::Type
-mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser) const {
+mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser) const {
     llvm::StringRef keyword;
     mlir::ParseResult pr = parser.parseKeyword(&keyword);
     if (mlir::failed(pr))
@@ -139,8 +124,7 @@ mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser) const {
         ssize_t numRows = -1;
         ssize_t numCols = -1;
         double sparsity = -1.0;
-        MatrixRepresentation representation =
-            MatrixRepresentation::Default; // default is dense
+        MatrixRepresentation representation = MatrixRepresentation::Default; // default is dense
         mlir::Type elementType;
         if (parser.parseLess()) {
             return nullptr;
@@ -171,14 +155,12 @@ mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser) const {
                     // read sparsity twice
                     return nullptr;
                 }
-                if (parser.parseLSquare() || parser.parseFloat(sparsity) ||
-                    parser.parseRSquare()) {
+                if (parser.parseLSquare() || parser.parseFloat(sparsity) || parser.parseRSquare()) {
                     return nullptr;
                 }
             } else if (succeeded(parser.parseOptionalKeyword("rep"))) {
                 llvm::StringRef repName;
-                if (parser.parseLSquare() || parser.parseKeyword(&repName) ||
-                    parser.parseRSquare()) {
+                if (parser.parseLSquare() || parser.parseKeyword(&repName) || parser.parseRSquare()) {
                     return nullptr;
                 }
                 representation = stringToMatrixRepresentation(repName.str());
@@ -190,16 +172,15 @@ mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser) const {
             return nullptr;
         }
 
-        return MatrixType::get(parser.getBuilder().getContext(), elementType,
-                               numRows, numCols, sparsity, representation);
+        return MatrixType::get(parser.getBuilder().getContext(), elementType, numRows, numCols, sparsity,
+                               representation);
     } else if (keyword == "Frame") {
         ssize_t numRows = -1;
         ssize_t numCols = -1;
         if (parser.parseLess() || parser.parseOptionalQuestion() ||
             // TODO Parse #rows if there was no '?'.
             // parser.parseInteger<ssize_t>(numRows) ||
-            parser.parseKeyword("x") || parser.parseLSquare() ||
-            parser.parseOptionalQuestion() ||
+            parser.parseKeyword("x") || parser.parseLSquare() || parser.parseOptionalQuestion() ||
             // TODO Parse #cols if there was no '?'.
             // parser.parseInteger<ssize_t>(numCols) ||
             // TODO Parse sparsity
@@ -216,43 +197,33 @@ mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser) const {
         if (parser.parseRSquare() || parser.parseGreater()) {
             return nullptr;
         }
-        return FrameType::get(parser.getBuilder().getContext(), cts, numRows,
-                              numCols, nullptr);
+        return FrameType::get(parser.getBuilder().getContext(), cts, numRows, numCols, nullptr);
     } else if (keyword == "Handle") {
         mlir::Type dataType;
-        if (parser.parseLess() || parser.parseType(dataType) ||
-            parser.parseGreater()) {
+        if (parser.parseLess() || parser.parseType(dataType) || parser.parseGreater()) {
             return nullptr;
         }
-        return mlir::daphne::HandleType::get(parser.getBuilder().getContext(),
-                                             dataType);
+        return mlir::daphne::HandleType::get(parser.getBuilder().getContext(), dataType);
     } else if (keyword == "String") {
         return StringType::get(parser.getBuilder().getContext());
     } else if (keyword == "DaphneContext") {
-        return mlir::daphne::DaphneContextType::get(
-            parser.getBuilder().getContext());
+        return mlir::daphne::DaphneContextType::get(parser.getBuilder().getContext());
     } else {
-        parser.emitError(parser.getCurrentLocation())
-            << "Parsing failed, keyword `" << keyword << "` not recognized!";
+        parser.emitError(parser.getCurrentLocation()) << "Parsing failed, keyword `" << keyword << "` not recognized!";
         return nullptr;
     }
 }
 
-std::string unknownStrIf(ssize_t val) {
-    return (val == -1) ? "?" : std::to_string(val);
-}
+std::string unknownStrIf(ssize_t val) { return (val == -1) ? "?" : std::to_string(val); }
 
-std::string unknownStrIf(double val) {
-    return (val == -1.0) ? "?" : std::to_string(val);
-}
+std::string unknownStrIf(double val) { return (val == -1.0) ? "?" : std::to_string(val); }
 
-void mlir::daphne::DaphneDialect::printType(mlir::Type type,
-                                            mlir::DialectAsmPrinter &os) const {
+void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPrinter &os) const {
     if (type.isa<mlir::daphne::StructureType>())
         os << "Structure";
     else if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
-        os << "Matrix<" << unknownStrIf(t.getNumRows()) << 'x'
-           << unknownStrIf(t.getNumCols()) << 'x' << t.getElementType();
+        os << "Matrix<" << unknownStrIf(t.getNumRows()) << 'x' << unknownStrIf(t.getNumCols()) << 'x'
+           << t.getElementType();
         auto sparsity = t.getSparsity();
         auto representation = t.getRepresentation();
 
@@ -260,13 +231,11 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
             os << ":sp[" << sparsity << ']';
         }
         if (representation != MatrixRepresentation::Default) {
-            os << ":rep[" << matrixRepresentationToString(representation)
-               << ']';
+            os << ":rep[" << matrixRepresentationToString(representation) << ']';
         }
         os << '>';
     } else if (auto t = type.dyn_cast<mlir::daphne::FrameType>()) {
-        os << "Frame<" << unknownStrIf(t.getNumRows()) << "x["
-           << unknownStrIf(t.getNumCols()) << ": ";
+        os << "Frame<" << unknownStrIf(t.getNumRows()) << "x[" << unknownStrIf(t.getNumCols()) << ": ";
         // Column types.
         std::vector<mlir::Type> cts = t.getColumnTypes();
         for (size_t i = 0; i < cts.size(); i++) {
@@ -308,28 +277,24 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "Unknown";
 }
 
-std::string
-mlir::daphne::matrixRepresentationToString(MatrixRepresentation rep) {
+std::string mlir::daphne::matrixRepresentationToString(MatrixRepresentation rep) {
     switch (rep) {
     case MatrixRepresentation::Dense:
         return "dense";
     case MatrixRepresentation::Sparse:
         return "sparse";
     default:
-        throw std::runtime_error("unknown mlir::daphne::MatrixRepresentation " +
-                                 std::to_string(static_cast<int>(rep)));
+        throw std::runtime_error("unknown mlir::daphne::MatrixRepresentation " + std::to_string(static_cast<int>(rep)));
     }
 }
 
-mlir::daphne::MatrixRepresentation
-mlir::daphne::stringToMatrixRepresentation(const std::string &str) {
+mlir::daphne::MatrixRepresentation mlir::daphne::stringToMatrixRepresentation(const std::string &str) {
     if (str == "dense")
         return MatrixRepresentation::Dense;
     else if (str == "sparse")
         return MatrixRepresentation::Sparse;
     else
-        throw std::runtime_error(
-            "No matrix representation equals the string `" + str + "`");
+        throw std::runtime_error("No matrix representation equals the string `" + str + "`");
 }
 
 namespace mlir::daphne {
@@ -340,15 +305,13 @@ struct MatrixTypeStorage : public ::mlir::TypeStorage {
     //  the choosen epsilon directly defines how accurate our sparsity inference
     //  can be
     constexpr static const double epsilon = 1e-6;
-    MatrixTypeStorage(::mlir::Type elementType, ssize_t numRows,
-                      ssize_t numCols, double sparsity,
+    MatrixTypeStorage(::mlir::Type elementType, ssize_t numRows, ssize_t numCols, double sparsity,
                       MatrixRepresentation representation)
-        : elementType(elementType), numRows(numRows), numCols(numCols),
-          sparsity(sparsity), representation(representation) {}
+        : elementType(elementType), numRows(numRows), numCols(numCols), sparsity(sparsity),
+          representation(representation) {}
 
     /// The hash key is a tuple of the parameter types.
-    using KeyTy = std::tuple<::mlir::Type, ssize_t, ssize_t, double,
-                             MatrixRepresentation>;
+    using KeyTy = std::tuple<::mlir::Type, ssize_t, ssize_t, double, MatrixRepresentation>;
     bool operator==(const KeyTy &tblgenKey) const {
         if (!(elementType == std::get<0>(tblgenKey)))
             return false;
@@ -363,25 +326,22 @@ struct MatrixTypeStorage : public ::mlir::TypeStorage {
         return true;
     }
     static ::llvm::hash_code hashKey(const KeyTy &tblgenKey) {
-        auto float_hashable =
-            static_cast<ssize_t>(std::get<3>(tblgenKey) / epsilon);
-        return ::llvm::hash_combine(
-            std::get<0>(tblgenKey), std::get<1>(tblgenKey),
-            std::get<2>(tblgenKey), float_hashable, std::get<4>(tblgenKey));
+        auto float_hashable = static_cast<ssize_t>(std::get<3>(tblgenKey) / epsilon);
+        return ::llvm::hash_combine(std::get<0>(tblgenKey), std::get<1>(tblgenKey), std::get<2>(tblgenKey),
+                                    float_hashable, std::get<4>(tblgenKey));
     }
 
     /// Define a construction method for creating a new instance of this
     /// storage.
-    static MatrixTypeStorage *construct(::mlir::TypeStorageAllocator &allocator,
-                                        const KeyTy &tblgenKey) {
+    static MatrixTypeStorage *construct(::mlir::TypeStorageAllocator &allocator, const KeyTy &tblgenKey) {
         auto elementType = std::get<0>(tblgenKey);
         auto numRows = std::get<1>(tblgenKey);
         auto numCols = std::get<2>(tblgenKey);
         auto sparsity = std::get<3>(tblgenKey);
         auto representation = std::get<4>(tblgenKey);
 
-        return new (allocator.allocate<MatrixTypeStorage>()) MatrixTypeStorage(
-            elementType, numRows, numCols, sparsity, representation);
+        return new (allocator.allocate<MatrixTypeStorage>())
+            MatrixTypeStorage(elementType, numRows, numCols, sparsity, representation);
     }
     ::mlir::Type elementType;
     ssize_t numRows;
@@ -390,35 +350,24 @@ struct MatrixTypeStorage : public ::mlir::TypeStorage {
     MatrixRepresentation representation;
 };
 } // namespace detail
-::mlir::Type MatrixType::getElementType() const {
-    return getImpl()->elementType;
-}
+::mlir::Type MatrixType::getElementType() const { return getImpl()->elementType; }
 ssize_t MatrixType::getNumRows() const { return getImpl()->numRows; }
 ssize_t MatrixType::getNumCols() const { return getImpl()->numCols; }
 double MatrixType::getSparsity() const { return getImpl()->sparsity; }
-MatrixRepresentation MatrixType::getRepresentation() const {
-    return getImpl()->representation;
-}
+MatrixRepresentation MatrixType::getRepresentation() const { return getImpl()->representation; }
 } // namespace mlir::daphne
 
-
-::mlir::LogicalResult mlir::daphne::MatrixType::verify(
-    ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
-    Type elementType, ssize_t numRows, ssize_t numCols, double sparsity,
-    MatrixRepresentation rep) {
+::mlir::LogicalResult mlir::daphne::MatrixType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+                                                       Type elementType, ssize_t numRows, ssize_t numCols,
+                                                       double sparsity, MatrixRepresentation rep) {
     if ((
             // Value type is unknown.
             llvm::isa<mlir::daphne::UnknownType>(elementType)
             // Value type is known.
-            || elementType.isSignedInteger(64) ||
-            elementType.isUnsignedInteger(8) ||
-            elementType.isUnsignedInteger(64) || elementType.isF32() ||
-            elementType.isF64() || elementType.isIndex() ||
-            elementType.isInteger(1) ||
-            llvm::isa<mlir::daphne::StringType>(elementType) ||
-            elementType.isUnsignedInteger(64) ||
-            elementType.isUnsignedInteger(32) ||
-            elementType.isSignedInteger(32) ||
+            || elementType.isSignedInteger(64) || elementType.isUnsignedInteger(8) ||
+            elementType.isUnsignedInteger(64) || elementType.isF32() || elementType.isF64() || elementType.isIndex() ||
+            elementType.isInteger(1) || llvm::isa<mlir::daphne::StringType>(elementType) ||
+            elementType.isUnsignedInteger(64) || elementType.isUnsignedInteger(32) || elementType.isSignedInteger(32) ||
             elementType.isSignedInteger(8)) &&
         (
             // Number of rows and columns are valid (-1 for unknown).
@@ -429,10 +378,9 @@ MatrixRepresentation MatrixType::getRepresentation() const {
         return emitError() << "invalid matrix element type: " << elementType;
 }
 
-::mlir::LogicalResult mlir::daphne::FrameType::verify(
-    ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
-    std::vector<Type> columnTypes, ssize_t numRows, ssize_t numCols,
-    std::vector<std::string> *labels) {
+::mlir::LogicalResult mlir::daphne::FrameType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+                                                      std::vector<Type> columnTypes, ssize_t numRows, ssize_t numCols,
+                                                      std::vector<std::string> *labels) {
     // TODO Verify the individual column types.
     if (numRows < -1 || numCols < -1)
         return mlir::failure();
@@ -450,14 +398,10 @@ MatrixRepresentation MatrixType::getRepresentation() const {
     return mlir::success();
 }
 
-::mlir::LogicalResult mlir::daphne::HandleType::verify(
-    ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
-    Type dataType) {
+::mlir::LogicalResult mlir::daphne::HandleType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+                                                       Type dataType) {
     if (llvm::isa<MatrixType>(dataType)) {
         return mlir::success();
     } else
-        return emitError()
-               << "only matrix type is supported for handle atm, got: "
-               << dataType;
+        return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
 }
-

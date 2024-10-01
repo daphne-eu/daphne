@@ -39,8 +39,7 @@ class HDFSContext final : public IContext {
 #if USE_HDFS
         auto IpPort = HDFSUtils::parseIPAddress(cfg.hdfs_Address);
         fs = std::make_unique<hdfsFS>(
-            hdfsConnectAsUser(std::get<0>(IpPort).c_str(), std::get<1>(IpPort),
-                              cfg.hdfs_username.c_str()));
+            hdfsConnectAsUser(std::get<0>(IpPort).c_str(), std::get<1>(IpPort), cfg.hdfs_username.c_str()));
 #endif
     }
     ~HDFSContext() {
@@ -49,8 +48,7 @@ class HDFSContext final : public IContext {
 #endif
     };
 
-    static std::unique_ptr<IContext>
-    createHDFSContext(const DaphneUserConfig &cfg) {
+    static std::unique_ptr<IContext> createHDFSContext(const DaphneUserConfig &cfg) {
         auto ctx = std::unique_ptr<HDFSContext>(new HDFSContext(cfg));
         return ctx;
     };
@@ -59,9 +57,7 @@ class HDFSContext final : public IContext {
         // Clean up
     };
 #if USE_HDFS
-    static HDFSContext *get(DaphneContext *ctx) {
-        return dynamic_cast<HDFSContext *>(ctx->getHDFSContext());
-    };
+    static HDFSContext *get(DaphneContext *ctx) { return dynamic_cast<HDFSContext *>(ctx->getHDFSContext()); };
     hdfsFS *getConnection() { return fs.get(); };
 #endif
 };

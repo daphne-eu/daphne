@@ -39,11 +39,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(SelfSchedulingScheme, {{INVALID, nullptr},
 class ConfigParser {
   public:
     static bool fileExists(const std::string &filename);
-    static void readUserConfig(const std::string &filename,
-                               DaphneUserConfig &config);
+    static void readUserConfig(const std::string &filename, DaphneUserConfig &config);
 
   private:
     static bool keyExists(const nlohmann::json &j, const std::string &key);
-    static void checkAnyUnexpectedKeys(const nlohmann::basic_json<> &j,
-                                       const std::string &filename);
+    static void checkAnyUnexpectedKeys(const nlohmann::basic_json<> &j, const std::string &filename);
 };

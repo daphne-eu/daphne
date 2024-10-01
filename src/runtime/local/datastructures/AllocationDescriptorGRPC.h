@@ -33,32 +33,27 @@ class AllocationDescriptorGRPC : public IAllocationDescriptor {
     std::shared_ptr<std::byte> data;
 
   public:
-    AllocationDescriptorGRPC() {};
-    AllocationDescriptorGRPC(DaphneContext *ctx, const std::string &address,
-                             const DistributedData &data)
-        : ctx(ctx), workerAddress(address), distributedData(data) {};
+    AllocationDescriptorGRPC(){};
+    AllocationDescriptorGRPC(DaphneContext *ctx, const std::string &address, const DistributedData &data)
+        : ctx(ctx), workerAddress(address), distributedData(data){};
 
-    ~AllocationDescriptorGRPC() override {};
+    ~AllocationDescriptorGRPC() override{};
     [[nodiscard]] ALLOCATION_TYPE getType() const override { return type; };
 
     std::string getLocation() const override { return workerAddress; };
     void createAllocation(size_t size, bool zero) override {}
     // TODO: Implement transferTo and transferFrom functions
     std::shared_ptr<std::byte> getData() override {
-        throw std::runtime_error(
-            "TransferTo/From functions are not implemented yet.");
+        throw std::runtime_error("TransferTo/From functions are not implemented yet.");
     }
 
     bool operator==(const IAllocationDescriptor *other) const override {
         if (getType() == other->getType())
-            return (getLocation() ==
-                    dynamic_cast<const AllocationDescriptorGRPC *>(other)
-                        ->getLocation());
+            return (getLocation() == dynamic_cast<const AllocationDescriptorGRPC *>(other)->getLocation());
         return false;
     }
 
-    [[nodiscard]] std::unique_ptr<IAllocationDescriptor>
-    clone() const override {
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorGRPC>(*this);
     }
 
@@ -75,18 +70,14 @@ class AllocationDescriptorGRPC : public IAllocationDescriptor {
     */
     void transferTo(std::byte *src, size_t size) override {
         /* TODO */
-        throw std::runtime_error(
-            "TransferTo (gRPC) function is not implemented yet.");
+        throw std::runtime_error("TransferTo (gRPC) function is not implemented yet.");
     };
     void transferFrom(std::byte *src, size_t size) override {
         /* TODO */
-        throw std::runtime_error(
-            "TransferFrom (gRPC) function is not implemented yet.");
+        throw std::runtime_error("TransferFrom (gRPC) function is not implemented yet.");
     };
 
     const DistributedIndex getDistributedIndex() { return distributedData.ix; }
     const DistributedData getDistributedData() { return distributedData; }
-    void updateDistributedData(DistributedData data_) {
-        distributedData = data_;
-    }
+    void updateDistributedData(DistributedData data_) { distributedData = data_; }
 };

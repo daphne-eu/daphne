@@ -36,8 +36,7 @@
 // ****************************************************************************
 
 template <class DTRes1, class DTRes2, class VTArg> struct EigenCal {
-    static void apply(DTRes1 *&res1, DTRes2 *&res2, const VTArg *inMat,
-                      DCTX(ctx)) = delete;
+    static void apply(DTRes1 *&res1, DTRes2 *&res2, const VTArg *inMat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -56,24 +55,19 @@ void eigenCal(DTRes1 *&res1, DTRes2 *&res2, const VTArg *inMat, DCTX(ctx)) {
 // DenseMatrix
 // Double Value types as input
 // ----------------------------------------------------------------------------
-template <>
-struct EigenCal<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
-    static void apply(DenseMatrix<double> *&res1, DenseMatrix<double> *&res2,
-                      const DenseMatrix<double> *inMat, DCTX(ctx)) {
+template <> struct EigenCal<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
+    static void apply(DenseMatrix<double> *&res1, DenseMatrix<double> *&res2, const DenseMatrix<double> *inMat,
+                      DCTX(ctx)) {
         const auto nr = static_cast<size_t>(inMat->getNumRows());
         const auto nc = static_cast<size_t>(inMat->getNumCols());
         if (!isSymmetric<DenseMatrix<double>>(inMat, nullptr)) {
-            throw std::runtime_error(
-                "EigenCal - Input matrix must be symmetric");
+            throw std::runtime_error("EigenCal - Input matrix must be symmetric");
         }
 
-        Eigen::MatrixXd inputMatrix =
-            Eigen::Map<const Eigen::MatrixXd>(inMat->getValues(), nr, nc);
+        Eigen::MatrixXd inputMatrix = Eigen::Map<const Eigen::MatrixXd>(inMat->getValues(), nr, nc);
 
         // the instance s(A) includes the eigensystem
-        Eigen::EigenSolver<
-            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>>
-            s(inputMatrix);
+        Eigen::EigenSolver<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> s(inputMatrix);
 
         size_t eigenValuesrows = s.eigenvalues().rows();
         size_t eigenValuescols = s.eigenvalues().cols();
@@ -87,12 +81,10 @@ struct EigenCal<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
         // that to create the DenseMatrix
 
         if (res1 == nullptr)
-            res1 = DataObjectFactory::create<DenseMatrix<double>>(
-                eigenValuesrows, eigenValuescols, false);
+            res1 = DataObjectFactory::create<DenseMatrix<double>>(eigenValuesrows, eigenValuescols, false);
 
         if (res2 == nullptr)
-            res2 = DataObjectFactory::create<DenseMatrix<double>>(
-                eigenVectorsrows, eigenVectorscols, false);
+            res2 = DataObjectFactory::create<DenseMatrix<double>>(eigenVectorsrows, eigenVectorscols, false);
 
         for (size_t r = 0; r < eigenValuesrows; r++) {
             for (size_t c = 0; c < eigenValuescols; c++) {
@@ -111,24 +103,20 @@ struct EigenCal<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
 // DenseMatrix
 // Float Value types as input
 // ----------------------------------------------------------------------------
-template <>
-struct EigenCal<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<float> *&res1, DenseMatrix<float> *&res2,
-                      const DenseMatrix<float> *inMat, DCTX(ctx)) {
+template <> struct EigenCal<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
+    static void apply(DenseMatrix<float> *&res1, DenseMatrix<float> *&res2, const DenseMatrix<float> *inMat,
+                      DCTX(ctx)) {
         const auto nr = static_cast<size_t>(inMat->getNumRows());
         const auto nc = static_cast<size_t>(inMat->getNumCols());
 
         if (!isSymmetric<DenseMatrix<float>>(inMat, nullptr)) {
-            throw std::runtime_error(
-                "EigenCal - Input matrix must be symmetric");
+            throw std::runtime_error("EigenCal - Input matrix must be symmetric");
         }
 
-        Eigen::MatrixXf inputMatrix =
-            Eigen::Map<const Eigen::MatrixXf>(inMat->getValues(), nr, nc);
+        Eigen::MatrixXf inputMatrix = Eigen::Map<const Eigen::MatrixXf>(inMat->getValues(), nr, nc);
 
         // the instance s(A) includes the eigensystem
-        Eigen::EigenSolver<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>
-            s(inputMatrix);
+        Eigen::EigenSolver<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>> s(inputMatrix);
 
         size_t eigenValuesrows = s.eigenvalues().rows();
         size_t eigenValuescols = s.eigenvalues().cols();
@@ -154,12 +142,10 @@ struct EigenCal<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
         }
 
         if (res1 == nullptr)
-            res1 = DataObjectFactory::create<DenseMatrix<float>>(
-                eigenValuesrows, eigenValuescols, false);
+            res1 = DataObjectFactory::create<DenseMatrix<float>>(eigenValuesrows, eigenValuescols, false);
 
         if (res2 == nullptr)
-            res2 = DataObjectFactory::create<DenseMatrix<float>>(
-                eigenVectorsrows, eigenVectorscols, false);
+            res2 = DataObjectFactory::create<DenseMatrix<float>>(eigenVectorsrows, eigenVectorscols, false);
 
         for (size_t r = 0; r < eigenValuesrows; r++)
             for (size_t c = 0; c < eigenValuescols; c++)

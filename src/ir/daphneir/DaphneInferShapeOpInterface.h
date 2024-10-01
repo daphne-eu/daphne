@@ -38,65 +38,51 @@ namespace mlir::OpTrait {
 
 // Constant one.
 
-template <class ConcreteOp>
-class OneRow : public TraitBase<ConcreteOp, OneRow> {};
+template <class ConcreteOp> class OneRow : public TraitBase<ConcreteOp, OneRow> {};
 
-template <class ConcreteOp>
-class OneCol : public TraitBase<ConcreteOp, OneCol> {};
+template <class ConcreteOp> class OneCol : public TraitBase<ConcreteOp, OneCol> {};
 
 // Same as i-th scalar argument.
 
 template <size_t i> struct NumRowsFromIthScalar {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 template <size_t i> struct NumColsFromIthScalar {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 // Same as i-th argument's same dimension.
 
 template <size_t i> struct NumRowsFromIthArg {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 template <size_t i> struct NumColsFromIthArg {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 // Same as i-th argument's other dimension.
 
 template <size_t i> struct NumRowsFromIthArgNumCols {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 template <size_t i> struct NumColsFromIthArgNumRows {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 // Same as all inputs' same dimension (they must all be the same).
 
-template <class ConcreteOp>
-class NumRowsFromAllArgs : public TraitBase<ConcreteOp, NumRowsFromAllArgs> {};
+template <class ConcreteOp> class NumRowsFromAllArgs : public TraitBase<ConcreteOp, NumRowsFromAllArgs> {};
 
-template <class ConcreteOp>
-class NumColsFromAllArgs : public TraitBase<ConcreteOp, NumColsFromAllArgs> {};
+template <class ConcreteOp> class NumColsFromAllArgs : public TraitBase<ConcreteOp, NumColsFromAllArgs> {};
 
 // Sum of all inputs' same dimension.
 
-template <class ConcreteOp>
-class NumRowsFromSumOfAllArgs
-    : public TraitBase<ConcreteOp, NumRowsFromSumOfAllArgs> {};
+template <class ConcreteOp> class NumRowsFromSumOfAllArgs : public TraitBase<ConcreteOp, NumRowsFromSumOfAllArgs> {};
 
-template <class ConcreteOp>
-class NumColsFromSumOfAllArgs
-    : public TraitBase<ConcreteOp, NumColsFromSumOfAllArgs> {};
+template <class ConcreteOp> class NumColsFromSumOfAllArgs : public TraitBase<ConcreteOp, NumColsFromSumOfAllArgs> {};
 
 // ============================================================================
 // Traits determining #rows and #cols together
@@ -105,14 +91,12 @@ class NumColsFromSumOfAllArgs
 // Same shape as i-th argument.
 
 template <size_t i> struct ShapeFromIthArg {
-    template <class ConcreteOp>
-    class Impl : public TraitBase<ConcreteOp, Impl> {};
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 // Broadcast-aware shape of elementwise binary operations.
 
-template <class ConcreteOp>
-class ShapeEwBinary : public TraitBase<ConcreteOp, ShapeEwBinary> {};
+template <class ConcreteOp> class ShapeEwBinary : public TraitBase<ConcreteOp, ShapeEwBinary> {};
 
 } // namespace mlir::OpTrait
 

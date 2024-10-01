@@ -34,8 +34,7 @@
  * @tparam  Argument The class used as argument for the call
  * @tparam  ReturnType The result class returned by the call
  */
-template <class StoredInfo, class Argument, class ReturnType>
-class DistributedGRPCCaller {
+template <class StoredInfo, class Argument, class ReturnType> class DistributedGRPCCaller {
   private:
     /**
      * @brief   Map to keep channels.
@@ -43,8 +42,7 @@ class DistributedGRPCCaller {
      *          across different Distributed kernels.
      *          TODO: Move channels map to DistributedContext.
      */
-    inline static std::map<std::string, std::shared_ptr<grpc::Channel>>
-        channels;
+    inline static std::map<std::string, std::shared_ptr<grpc::Channel>> channels;
     struct ResultData {
         // Contains struct StoredInfo, that was passed when call was made
         StoredInfo storedInfo;
@@ -63,14 +61,13 @@ class DistributedGRPCCaller {
     DistributedContext *ctx;
 
     std::map<std::string, AsyncClientCall *> calls;
-    std::map<std::string, std::unique_ptr<grpc::ClientAsyncWriter<Argument>>>
-        writers;
+    std::map<std::string, std::unique_ptr<grpc::ClientAsyncWriter<Argument>>> writers;
 
     size_t EMPTY_TAG = 0;
 
   public:
     DistributedGRPCCaller(DCTX(dctx)) { ctx = DistributedContext::get(dctx); };
-    ~DistributedGRPCCaller() {};
+    ~DistributedGRPCCaller(){};
 
     /**
      * @brief Enqueues an asynchronous Store call to be executed.
@@ -85,8 +82,7 @@ class DistributedGRPCCaller {
         calls[addr] = call;
 
         auto stub = ctx->stubs[addr].get();
-        writers[addr] = std::move(stub->AsyncStore(
-            &call->context_, &call->result, &cq_, (void *)call));
+        writers[addr] = std::move(stub->AsyncStore(&call->context_, &call->result, &cq_, (void *)call));
         void *tag;
         bool ok;
         cq_.Next(&tag, &ok);
@@ -106,8 +102,7 @@ class DistributedGRPCCaller {
         for (auto &writer : writers) {
             // Use different tag, we won't be using this one.
             writer.second->WritesDone((void *)EMPTY_TAG);
-            writer.second->Finish(&calls[writer.first]->status,
-                                  (void *)calls[writer.first]);
+            writer.second->Finish(&calls[writer.first]->status, (void *)calls[writer.first]);
         }
     }
 
@@ -119,8 +114,7 @@ class DistributedGRPCCaller {
      * ready
      * @param  arg Argument passed to the asynchronous call
      */
-    void asyncComputeCall(const std::string &workerAddr,
-                          const StoredInfo &storedInfo, const Argument &arg) {
+    void asyncComputeCall(const std::string &workerAddr, const StoredInfo &storedInfo, const Argument &arg) {
         AsyncClientCall *call = new AsyncClientCall;
         call->storedInfo = storedInfo;
 
@@ -138,8 +132,7 @@ class DistributedGRPCCaller {
      * ready
      * @param  arg Argument passed to the asynchronous call
      */
-    void asyncTransferCall(const std::string &workerAddr,
-                           const StoredInfo &storedInfo, const Argument &arg) {
+    void asyncTransferCall(const std::string &workerAddr, const StoredInfo &storedInfo, const Argument &arg) {
         AsyncClientCall *call = new AsyncClientCall;
         call->storedInfo = storedInfo;
 
@@ -157,8 +150,7 @@ class DistributedGRPCCaller {
      * ready
      * @param  arg Argument passed to the asynchronous call
      */
-    void asyncFreeMemCall(const std::string &workerAddr,
-                          const StoredInfo &storedInfo, const Argument &arg) {
+    void asyncFreeMemCall(const std::string &workerAddr, const StoredInfo &storedInfo, const Argument &arg) {
         AsyncClientCall *call = new AsyncClientCall;
         call->storedInfo = storedInfo;
 

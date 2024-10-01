@@ -37,24 +37,17 @@
 /**
  * @brief Deserializes a DF_data_t struct.
  */
-inline DF_data_t DF_Dtype(const char *buf) {
-    return (DF_data_t)((const DF_header *)buf)->dt;
-}
-inline DF_data_t DF_Dtype(const std::vector<char> &buf) {
-    return DF_Dtype(buf.data());
-};
+inline DF_data_t DF_Dtype(const char *buf) { return (DF_data_t)((const DF_header *)buf)->dt; }
+inline DF_data_t DF_Dtype(const std::vector<char> &buf) { return DF_Dtype(buf.data()); };
 
 /**
  * @brief Deserializes the ValueTypeCode.
  */
 inline ValueTypeCode DF_Vtype(const char *buf) {
-    const ValueTypeCode *vt =
-        (const ValueTypeCode *)((const char *)buf + sizeof(DF_header));
+    const ValueTypeCode *vt = (const ValueTypeCode *)((const char *)buf + sizeof(DF_header));
     return *vt;
 }
-inline ValueTypeCode DF_Vtype(const std::vector<char> &buf) {
-    return DF_Vtype(buf.data());
-}
+inline ValueTypeCode DF_Vtype(const std::vector<char> &buf) { return DF_Vtype(buf.data()); }
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -62,13 +55,10 @@ inline ValueTypeCode DF_Vtype(const std::vector<char> &buf) {
 /**
  * @brief Serialize and deserialize Daphne objects.
  */
-template <class DTArg, bool isFundumental = std::is_fundamental<DTArg>::value>
-struct DaphneSerializer {
+template <class DTArg, bool isFundumental = std::is_fundamental<DTArg>::value> struct DaphneSerializer {
     static size_t length(const DTArg *arg);
-    static size_t serialize(const DTArg *arg, char *buf, size_t chunkSize = 0,
-                            size_t serializeFromByte = 0);
-    static Structure *deserialize(const char *buf, size_t chunkSize = 0,
-                                  DTArg *arg = nullptr,
+    static size_t serialize(const DTArg *arg, char *buf, size_t chunkSize = 0, size_t serializeFromByte = 0);
+    static Structure *deserialize(const char *buf, size_t chunkSize = 0, DTArg *arg = nullptr,
                                   size_t deserializeFromByte = 0);
 };
 
@@ -96,9 +86,7 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
     /**
      * @brief Returns the size of the header.
      */
-    static size_t headerSize(const DenseMatrix<VT> *arg) {
-        return HEADER_BUFFER_SIZE;
-    }
+    static size_t headerSize(const DenseMatrix<VT> *arg) { return HEADER_BUFFER_SIZE; }
 
     /**
      * @brief Calculates the byte length of the object.
@@ -126,8 +114,7 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
      * @param buffer A pointer to copy the data.
      * @param bufferIdx (optional) A byte index for the buffer pointer.
      */
-    static size_t serializeHeader(const DenseMatrix<VT> *arg, char *buffer,
-                                  size_t bufferIdx = 0) {
+    static size_t serializeHeader(const DenseMatrix<VT> *arg, char *buffer, size_t bufferIdx = 0) {
         size_t serializationIdx = 0;
 
         if (buffer == nullptr)
@@ -140,16 +127,14 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
         h.nbrows = (uint64_t)arg->getNumRows();
         h.nbcols = (uint64_t)arg->getNumCols();
 
-        std::copy(reinterpret_cast<const char *>(&h),
-                  reinterpret_cast<const char *>(&h) + sizeof(h), buffer);
+        std::copy(reinterpret_cast<const char *>(&h), reinterpret_cast<const char *>(&h) + sizeof(h), buffer);
         bufferIdx += sizeof(h);
         serializationIdx += sizeof(h);
 
         // value type
         const ValueTypeCode vt = ValueTypeUtils::codeFor<VT>;
 
-        std::copy(reinterpret_cast<const char *>(&vt),
-                  reinterpret_cast<const char *>(&vt) + sizeof(vt),
+        std::copy(reinterpret_cast<const char *>(&vt), reinterpret_cast<const char *>(&vt) + sizeof(vt),
                   buffer + bufferIdx);
         bufferIdx += sizeof(vt);
         serializationIdx += sizeof(vt);
@@ -160,8 +145,7 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
         b.rx = 0;
         b.cx = 0;
 
-        std::copy(reinterpret_cast<const char *>(&b),
-                  reinterpret_cast<const char *>(&b) + sizeof(b),
+        std::copy(reinterpret_cast<const char *>(&b), reinterpret_cast<const char *>(&b) + sizeof(b),
                   buffer + bufferIdx);
         bufferIdx += sizeof(b);
         serializationIdx += sizeof(b);
@@ -172,15 +156,13 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
         bb.nbcols = (uint32_t)arg->getNumCols();
         bb.bt = (uint8_t)DF_body_t::dense;
 
-        std::copy(reinterpret_cast<const char *>(&bb),
-                  reinterpret_cast<const char *>(&bb) + sizeof(bb),
+        std::copy(reinterpret_cast<const char *>(&bb), reinterpret_cast<const char *>(&bb) + sizeof(bb),
                   buffer + bufferIdx);
         bufferIdx += sizeof(bb);
         serializationIdx += sizeof(bb);
 
         // value type
-        std::copy(reinterpret_cast<const char *>(&vt),
-                  reinterpret_cast<const char *>(&vt) + sizeof(vt),
+        std::copy(reinterpret_cast<const char *>(&vt), reinterpret_cast<const char *>(&vt) + sizeof(vt),
                   buffer + bufferIdx);
         bufferIdx += sizeof(vt);
         serializationIdx += sizeof(vt);
@@ -201,15 +183,11 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
      * @param serializeFromByte Optional The byte index of the object, at which
      * serialization should begin (default 0).
      */
-    static size_t
-    serialize(const DenseMatrix<VT> *arg, char *buffer,
-              size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE,
-              size_t serializeFromByte = 0) {
+    static size_t serialize(const DenseMatrix<VT> *arg, char *buffer,
+                            size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE, size_t serializeFromByte = 0) {
         size_t bufferIdx = 0;
         size_t serializationIdx = 0;
-        chunkSize = chunkSize != 0
-                        ? chunkSize
-                        : DaphneSerializer<DenseMatrix<VT>>::length(arg);
+        chunkSize = chunkSize != 0 ? chunkSize : DaphneSerializer<DenseMatrix<VT>>::length(arg);
 
         if (buffer == nullptr) {
             throw std::runtime_error("Buffer is nullptr");
@@ -219,8 +197,7 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
         // size should be HEADER_BUFFER_SIZE bytes (so the header won't be
         // partially serialized).
         if (serializeFromByte == 0 && chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum starting chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum starting chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
 
         if (serializeFromByte == 0) {
@@ -236,24 +213,17 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
         size_t valuesSize = arg->getNumRows() * arg->getNumCols() * sizeof(VT);
 
         if (serializeFromByte < serializationIdx) {
-            bytesToCopy = (chunkSize >
-                           (serializationIdx - serializeFromByte) + valuesSize)
-                              ? valuesSize
-                              : (chunkSize - bufferIdx);
+            bytesToCopy = (chunkSize > (serializationIdx - serializeFromByte) + valuesSize) ? valuesSize
+                                                                                            : (chunkSize - bufferIdx);
         } else {
-            bytesToCopy =
-                (serializeFromByte + chunkSize > valuesSize + serializationIdx)
-                    ? (valuesSize + serializationIdx - serializeFromByte)
-                    : (chunkSize - bufferIdx);
+            bytesToCopy = (serializeFromByte + chunkSize > valuesSize + serializationIdx)
+                              ? (valuesSize + serializationIdx - serializeFromByte)
+                              : (chunkSize - bufferIdx);
         }
 
-        size_t startOffset = (serializeFromByte > serializationIdx
-                                  ? serializeFromByte - serializationIdx
-                                  : 0);
+        size_t startOffset = (serializeFromByte > serializationIdx ? serializeFromByte - serializationIdx : 0);
         std::copy(reinterpret_cast<const char *>(valuesArg) + startOffset,
-                  reinterpret_cast<const char *>(valuesArg) + startOffset +
-                      bytesToCopy,
-                  buffer + bufferIdx);
+                  reinterpret_cast<const char *>(valuesArg) + startOffset + bytesToCopy, buffer + bufferIdx);
         bufferIdx += bytesToCopy;
 
         return bufferIdx;
@@ -270,13 +240,10 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
      * @param serializeFromByte Optional The byte index of the object, at which
      * serialization should begin (default 0).
      */
-    static size_t serialize(const DenseMatrix<VT> *arg, char **buffer,
-                            size_t chunkSize = 0,
+    static size_t serialize(const DenseMatrix<VT> *arg, char **buffer, size_t chunkSize = 0,
                             size_t serializeFromByte = 0) {
         if (*buffer == nullptr) {
-            chunkSize = chunkSize != 0
-                            ? chunkSize
-                            : DaphneSerializer<DenseMatrix<VT>>::length(arg);
+            chunkSize = chunkSize != 0 ? chunkSize : DaphneSerializer<DenseMatrix<VT>>::length(arg);
             *buffer = new char[chunkSize];
         }
         return serialize(arg, *buffer, chunkSize, serializeFromByte);
@@ -292,14 +259,10 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
      * @param serializeFromByte Optional The byte index at which serialization
      * should start (default 0).
      */
-    static size_t serialize(const DenseMatrix<VT> *arg,
-                            std::vector<char> &buffer,
-                            size_t serializeFromByte = 0) {
+    static size_t serialize(const DenseMatrix<VT> *arg, std::vector<char> &buffer, size_t serializeFromByte = 0) {
         // if caller provides an empty buffer, assume we want to serialize the
         // whole object
-        size_t chunkSize = buffer.size() == 0
-                               ? DaphneSerializer<DenseMatrix<VT>>::length(arg)
-                               : buffer.size();
+        size_t chunkSize = buffer.size() == 0 ? DaphneSerializer<DenseMatrix<VT>>::length(arg) : buffer.size();
         if (buffer.size() == 0)
             buffer.resize(chunkSize);
 
@@ -314,8 +277,7 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
      * @param matrix The DenseMatrix to initialize with the header information.
      * @return DenseMatrix<VT>* The result matrix.
      */
-    static DenseMatrix<VT> *
-    deserializeHeader(const char *buf, DenseMatrix<VT> *matrix = nullptr) {
+    static DenseMatrix<VT> *deserializeHeader(const char *buf, DenseMatrix<VT> *matrix = nullptr) {
         size_t bufIdx = 0;
         if (DF_Dtype(buf) != DF_data_t::DenseMatrix_t)
             throw std::runtime_error("DenseMatrix deserialize(): DT mismatch");
@@ -327,8 +289,7 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
         bufIdx += sizeof(DF_body);
 
         DF_body_block bb;
-        std::copy(buf + bufIdx, buf + bufIdx + sizeof(DF_body_block),
-                  reinterpret_cast<char *>(&bb));
+        std::copy(buf + bufIdx, buf + bufIdx + sizeof(DF_body_block), reinterpret_cast<char *>(&bb));
 
         bufIdx += sizeof(DF_body_block);
         // empty Matrix
@@ -340,8 +301,7 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
             bufIdx += sizeof(ValueTypeCode);
             // Allocate if first chunk
             if (matrix == nullptr) {
-                matrix = DataObjectFactory::create<DenseMatrix<VT>>(
-                    (size_t)bb.nbrows, (size_t)bb.nbcols, false);
+                matrix = DataObjectFactory::create<DenseMatrix<VT>>((size_t)bb.nbrows, (size_t)bb.nbcols, false);
             }
         } else {
             throw std::runtime_error("unknown body type code");
@@ -365,15 +325,13 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
      * deserialization should begin writing data.
      * @return DenseMatrix<VT>* The result matrix.
      */
-    static DenseMatrix<VT> *deserialize(const char *buf, size_t chunkSize,
-                                        DenseMatrix<VT> *matrix = nullptr,
+    static DenseMatrix<VT> *deserialize(const char *buf, size_t chunkSize, DenseMatrix<VT> *matrix = nullptr,
                                         size_t deserializeFromByte = 0) {
         // Since at least one chunk will contain the header, the minimum chunk
         // size should be HEADER_BUFFER_SIZE bytes (so the header won't be
         // partially serialized).
         if (deserializeFromByte == 0 && chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum starting chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum starting chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
 
         size_t bufIdx = 0;
@@ -387,29 +345,20 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
 
         auto valuesArg = matrix->getValues();
         size_t bytesToCopy = 0;
-        size_t valuesSize =
-            matrix->getNumRows() * matrix->getNumCols() * sizeof(VT);
+        size_t valuesSize = matrix->getNumRows() * matrix->getNumCols() * sizeof(VT);
 
-        size_t valuesOffset = deserializeFromByte == 0
-                                  ? 0
-                                  : deserializeFromByte - HEADER_BUFFER_SIZE;
+        size_t valuesOffset = deserializeFromByte == 0 ? 0 : deserializeFromByte - HEADER_BUFFER_SIZE;
 
         if (deserializeFromByte < serializationIdx) {
             bytesToCopy =
-                (chunkSize >
-                 (serializationIdx - deserializeFromByte) + valuesSize)
-                    ? valuesSize
-                    : (chunkSize - bufIdx);
+                (chunkSize > (serializationIdx - deserializeFromByte) + valuesSize) ? valuesSize : (chunkSize - bufIdx);
         } else {
-            bytesToCopy =
-                (deserializeFromByte + chunkSize >
-                 valuesSize + serializationIdx)
-                    ? (valuesSize + serializationIdx - deserializeFromByte)
-                    : (chunkSize - bufIdx);
+            bytesToCopy = (deserializeFromByte + chunkSize > valuesSize + serializationIdx)
+                              ? (valuesSize + serializationIdx - deserializeFromByte)
+                              : (chunkSize - bufIdx);
         }
 
-        std::copy(buf + bufIdx, buf + bufIdx + bytesToCopy,
-                  reinterpret_cast<char *>(valuesArg) + valuesOffset);
+        std::copy(buf + bufIdx, buf + bufIdx + bytesToCopy, reinterpret_cast<char *>(valuesArg) + valuesOffset);
 
         return matrix;
     };
@@ -426,11 +375,9 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
      * deserialization should begin writing data.
      * @return DenseMatrix<VT>* The result matrix.
      */
-    static DenseMatrix<VT> *deserialize(const std::vector<char> &buffer,
-                                        DenseMatrix<VT> *matrix = nullptr,
+    static DenseMatrix<VT> *deserialize(const std::vector<char> &buffer, DenseMatrix<VT> *matrix = nullptr,
                                         size_t deserializeFromByte = 0) {
-        return deserialize(buffer.data(), buffer.size(), matrix,
-                           deserializeFromByte);
+        return deserialize(buffer.data(), buffer.size(), matrix, deserializeFromByte);
     }
 };
 
@@ -439,8 +386,7 @@ template <typename VT> struct DaphneSerializer<DenseMatrix<VT>, false> {
 // ----------------------------------------------------------------------------
 
 template <typename VT>
-struct DaphneSerializer<const DenseMatrix<VT>, false>
-    : public DaphneSerializer<DenseMatrix<VT>, false> {};
+struct DaphneSerializer<const DenseMatrix<VT>, false> : public DaphneSerializer<DenseMatrix<VT>, false> {};
 
 // ----------------------------------------------------------------------------
 // CSRMatrix
@@ -464,30 +410,24 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
     /**
      * @brief Returns the size of the header.
      */
-    static size_t headerSize(const CSRMatrix<VT> *arg) {
-        return HEADER_BUFFER_SIZE;
-    }
+    static size_t headerSize(const CSRMatrix<VT> *arg) { return HEADER_BUFFER_SIZE; }
 
-    DaphneSerializer(const CSRMatrix<VT> *matrix,
-                     size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE)
+    DaphneSerializer(const CSRMatrix<VT> *matrix, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE)
         : matrix(matrix), chunkSize(chunkSize) {
         // Since at least one chunk will contain the header, the minimum chunk
         // size should be HEADER_BUFFER_SIZE bytes (so the header won't be
         // partially serialized).
         if (chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
     };
-    DaphneSerializer(CSRMatrix<VT> **matrix,
-                     size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE)
+    DaphneSerializer(CSRMatrix<VT> **matrix, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE)
         : matrixPtr(matrix), chunkSize(chunkSize) {
         // Since at least one chunk will contain the header, the minimum chunk
         // size should be HEADER_BUFFER_SIZE bytes (so the header won't be
         // partially serialized).
         if (chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
     };
     /**
@@ -537,8 +477,7 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
      * @param buffer A pointer to copy the data.
      * @param bufferIdx (optional) A byte index for the buffer pointer.
      */
-    static size_t serializeHeader(const CSRMatrix<VT> *arg, char *buffer,
-                                  size_t bufferIdx = 0) {
+    static size_t serializeHeader(const CSRMatrix<VT> *arg, char *buffer, size_t bufferIdx = 0) {
         size_t serializationIdx = 0;
 
         if (buffer == nullptr) {
@@ -552,16 +491,14 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
         h.nbrows = (uint64_t)arg->getNumRows();
         h.nbcols = (uint64_t)arg->getNumCols();
 
-        std::copy(reinterpret_cast<const char *>(&h),
-                  reinterpret_cast<const char *>(&h) + sizeof(h), buffer);
+        std::copy(reinterpret_cast<const char *>(&h), reinterpret_cast<const char *>(&h) + sizeof(h), buffer);
         bufferIdx += sizeof(h);
         serializationIdx += sizeof(h);
 
         // value type
         const ValueTypeCode vt = ValueTypeUtils::codeFor<VT>;
         // Check if we actually need this
-        std::copy(reinterpret_cast<const char *>(&vt),
-                  reinterpret_cast<const char *>(&vt) + sizeof(vt),
+        std::copy(reinterpret_cast<const char *>(&vt), reinterpret_cast<const char *>(&vt) + sizeof(vt),
                   buffer + bufferIdx);
         bufferIdx += sizeof(vt);
         serializationIdx += sizeof(vt);
@@ -572,8 +509,7 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
         b.rx = 0;
         b.cx = 0;
 
-        std::copy(reinterpret_cast<const char *>(&b),
-                  reinterpret_cast<const char *>(&b) + sizeof(b),
+        std::copy(reinterpret_cast<const char *>(&b), reinterpret_cast<const char *>(&b) + sizeof(b),
                   buffer + bufferIdx);
         bufferIdx += sizeof(b);
         serializationIdx += sizeof(b);
@@ -584,15 +520,13 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
         bb.nbcols = (uint32_t)arg->getNumCols();
         bb.bt = (uint8_t)DF_body_t::sparse;
 
-        std::copy(reinterpret_cast<const char *>(&bb),
-                  reinterpret_cast<const char *>(&bb) + sizeof(bb),
+        std::copy(reinterpret_cast<const char *>(&bb), reinterpret_cast<const char *>(&bb) + sizeof(bb),
                   buffer + bufferIdx);
         bufferIdx += sizeof(bb);
         serializationIdx += sizeof(bb);
 
         // value type
-        std::copy(reinterpret_cast<const char *>(&vt),
-                  reinterpret_cast<const char *>(&vt) + sizeof(vt),
+        std::copy(reinterpret_cast<const char *>(&vt), reinterpret_cast<const char *>(&vt) + sizeof(vt),
                   buffer + bufferIdx);
         bufferIdx += sizeof(vt);
         serializationIdx += sizeof(vt);
@@ -602,8 +536,7 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
         for (size_t r = 0; r < arg->getNumRows(); r++) {
             nzb += arg->getNumNonZeros(r);
         }
-        std::copy(reinterpret_cast<const char *>(&nzb),
-                  reinterpret_cast<const char *>(&nzb) + sizeof(nzb),
+        std::copy(reinterpret_cast<const char *>(&nzb), reinterpret_cast<const char *>(&nzb) + sizeof(nzb),
                   buffer + bufferIdx);
         bufferIdx += sizeof(nzb);
         serializationIdx += sizeof(nzb);
@@ -622,22 +555,17 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
      * @param serializeFromByte Optional The byte index of the object, at which
      * serialization should begin (default 0).
      */
-    static size_t
-    serialize(const CSRMatrix<VT> *arg, char *buffer,
-              size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE,
-              size_t serializeFromByte = 0) {
+    static size_t serialize(const CSRMatrix<VT> *arg, char *buffer,
+                            size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE, size_t serializeFromByte = 0) {
         size_t bufferIdx = 0;
         size_t serializationIdx = 0;
-        chunkSize = chunkSize != 0
-                        ? chunkSize
-                        : DaphneSerializer<CSRMatrix<VT>>::length(arg);
+        chunkSize = chunkSize != 0 ? chunkSize : DaphneSerializer<CSRMatrix<VT>>::length(arg);
 
         // Since at least one chunk will contain the header, the minimum chunk
         // size should be HEADER_BUFFER_SIZE bytes (so the header won't be
         // partially serialized).
         if (chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
 
         if (serializeFromByte == 0) {
@@ -652,8 +580,7 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
             nzb += arg->getNumNonZeros(r);
         }
 
-        if (serializeFromByte <
-            serializationIdx + (arg->getNumRows() + 1) * sizeof(size_t)) {
+        if (serializeFromByte < serializationIdx + (arg->getNumRows() + 1) * sizeof(size_t)) {
             const size_t *rowOffsets = arg->getRowOffsets();
             const size_t offset_diff = *arg->getRowOffsets();
             auto new_rows = std::make_unique<size_t[]>(arg->getNumRows() + 1);
@@ -661,27 +588,19 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
                 auto newVal = *(rowOffsets + r) - offset_diff;
                 new_rows.get()[r] = newVal;
             }
-            size_t startOffset = serializeFromByte > serializationIdx
-                                     ? serializeFromByte - serializationIdx
-                                     : 0;
+            size_t startOffset = serializeFromByte > serializationIdx ? serializeFromByte - serializationIdx : 0;
             size_t bytesToCopy = 0;
             size_t arraySize = (arg->getNumRows() + 1) * sizeof(size_t);
             if (serializeFromByte < serializationIdx) {
-                bytesToCopy = chunkSize - bufferIdx > arraySize
-                                  ? arraySize
-                                  : chunkSize - bufferIdx;
+                bytesToCopy = chunkSize - bufferIdx > arraySize ? arraySize : chunkSize - bufferIdx;
             } else {
-                bytesToCopy =
-                    chunkSize > arraySize + serializationIdx - serializeFromByte
-                        ? arraySize + serializationIdx - serializeFromByte
-                        : chunkSize - bufferIdx;
+                bytesToCopy = chunkSize > arraySize + serializationIdx - serializeFromByte
+                                  ? arraySize + serializationIdx - serializeFromByte
+                                  : chunkSize - bufferIdx;
             }
 
-            std::copy(reinterpret_cast<const char *>(new_rows.get()) +
-                          startOffset,
-                      reinterpret_cast<const char *>(new_rows.get()) +
-                          startOffset + bytesToCopy,
-                      buffer + bufferIdx);
+            std::copy(reinterpret_cast<const char *>(new_rows.get()) + startOffset,
+                      reinterpret_cast<const char *>(new_rows.get()) + startOffset + bytesToCopy, buffer + bufferIdx);
             bufferIdx += bytesToCopy;
         }
         serializationIdx += sizeof(size_t) * (arg->getNumRows() + 1);
@@ -691,25 +610,18 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
 
         const size_t *colIdxs = arg->getColIdxs(0);
         if (serializeFromByte < serializationIdx + nzb * sizeof(size_t)) {
-            size_t startOffset = serializeFromByte > serializationIdx
-                                     ? serializeFromByte - serializationIdx
-                                     : 0;
+            size_t startOffset = serializeFromByte > serializationIdx ? serializeFromByte - serializationIdx : 0;
             size_t bytesToCopy = 0;
             size_t arraySize = (nzb * sizeof(size_t));
             if (serializeFromByte < serializationIdx) {
-                bytesToCopy = chunkSize - bufferIdx > arraySize
-                                  ? arraySize
-                                  : chunkSize - bufferIdx;
+                bytesToCopy = chunkSize - bufferIdx > arraySize ? arraySize : chunkSize - bufferIdx;
             } else {
-                bytesToCopy =
-                    chunkSize > arraySize + serializationIdx - serializeFromByte
-                        ? arraySize + serializationIdx - serializeFromByte
-                        : chunkSize - bufferIdx;
+                bytesToCopy = chunkSize > arraySize + serializationIdx - serializeFromByte
+                                  ? arraySize + serializationIdx - serializeFromByte
+                                  : chunkSize - bufferIdx;
             }
             std::copy(reinterpret_cast<const char *>(colIdxs) + startOffset,
-                      reinterpret_cast<const char *>(colIdxs) + startOffset +
-                          bytesToCopy,
-                      buffer + bufferIdx);
+                      reinterpret_cast<const char *>(colIdxs) + startOffset + bytesToCopy, buffer + bufferIdx);
             bufferIdx += bytesToCopy;
         }
         serializationIdx += sizeof(size_t) * nzb;
@@ -720,25 +632,18 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
 
         const VT *vals = arg->getValues(0);
         if (serializeFromByte < serializationIdx + nzb * sizeof(VT)) {
-            size_t startOffset = serializeFromByte > serializationIdx
-                                     ? serializeFromByte - serializationIdx
-                                     : 0;
+            size_t startOffset = serializeFromByte > serializationIdx ? serializeFromByte - serializationIdx : 0;
             size_t bytesToCopy = 0;
             size_t arraySize = nzb * sizeof(VT);
             if (serializeFromByte < serializationIdx) {
-                bytesToCopy = chunkSize - bufferIdx > arraySize
-                                  ? arraySize
-                                  : chunkSize - bufferIdx;
+                bytesToCopy = chunkSize - bufferIdx > arraySize ? arraySize : chunkSize - bufferIdx;
             } else {
-                bytesToCopy =
-                    chunkSize > arraySize + serializationIdx - serializeFromByte
-                        ? arraySize + serializationIdx - serializeFromByte
-                        : chunkSize - bufferIdx;
+                bytesToCopy = chunkSize > arraySize + serializationIdx - serializeFromByte
+                                  ? arraySize + serializationIdx - serializeFromByte
+                                  : chunkSize - bufferIdx;
             }
             std::copy(reinterpret_cast<const char *>(vals) + startOffset,
-                      reinterpret_cast<const char *>(vals) + startOffset +
-                          bytesToCopy,
-                      buffer + bufferIdx);
+                      reinterpret_cast<const char *>(vals) + startOffset + bytesToCopy, buffer + bufferIdx);
             bufferIdx += bytesToCopy;
         }
 
@@ -756,12 +661,9 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
      * @param serializeFromByte Optional The byte index of the object, at which
      * serialization should begin (default 0).
      */
-    static size_t serialize(const CSRMatrix<VT> *arg, char **buffer,
-                            size_t chunkSize = 0,
+    static size_t serialize(const CSRMatrix<VT> *arg, char **buffer, size_t chunkSize = 0,
                             size_t serializeFromByte = 0) {
-        chunkSize = chunkSize == 0
-                        ? DaphneSerializer<CSRMatrix<VT>>::length(arg)
-                        : chunkSize;
+        chunkSize = chunkSize == 0 ? DaphneSerializer<CSRMatrix<VT>>::length(arg) : chunkSize;
 
         if (*buffer == nullptr) // Maybe if is unecessary here..
             *buffer = new char[sizeof(chunkSize)];
@@ -779,13 +681,10 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
      * @param serializeFromByte Optional The byte index of the object, at which
      * serialization should begin.
      */
-    static size_t serialize(const CSRMatrix<VT> *arg, std::vector<char> &buffer,
-                            size_t serializeFromByte = 0) {
+    static size_t serialize(const CSRMatrix<VT> *arg, std::vector<char> &buffer, size_t serializeFromByte = 0) {
         // if caller provides an empty buffer, assume we want to serialize the
         // whole object
-        size_t chunkSize = buffer.size() == 0
-                               ? DaphneSerializer<CSRMatrix<VT>>::length(arg)
-                               : buffer.size();
+        size_t chunkSize = buffer.size() == 0 ? DaphneSerializer<CSRMatrix<VT>>::length(arg) : buffer.size();
         if (buffer.size() < chunkSize) // Maybe if is unecessary here..
             buffer.resize(chunkSize);
 
@@ -799,8 +698,7 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
      * @param matrix The CSRMatrix to initialize with the header information.
      * @return CSRMatrix<VT>* The result matrix.
      */
-    static CSRMatrix<VT> *deserializeHeader(const char *buffer,
-                                            CSRMatrix<VT> *matrix = nullptr) {
+    static CSRMatrix<VT> *deserializeHeader(const char *buffer, CSRMatrix<VT> *matrix = nullptr) {
         if (DF_Dtype(buffer) != DF_data_t::CSRMatrix_t)
             throw std::runtime_error("CSRMatrix deserialize(): DT mismatch");
         if (DF_Vtype(buffer) != ValueTypeUtils::codeFor<VT>)
@@ -823,13 +721,11 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
             bufferIdx += sizeof(ValueTypeCode);
 
             size_t nzb;
-            std::copy(buffer + bufferIdx, buffer + bufferIdx + sizeof(nzb),
-                      reinterpret_cast<char *>(&nzb));
+            std::copy(buffer + bufferIdx, buffer + bufferIdx + sizeof(nzb), reinterpret_cast<char *>(&nzb));
             bufferIdx += sizeof(nzb);
 
             if (matrix == nullptr) {
-                matrix = DataObjectFactory::create<CSRMatrix<VT>>(
-                    bb->nbrows, bb->nbcols, nzb, true);
+                matrix = DataObjectFactory::create<CSRMatrix<VT>>(bb->nbrows, bb->nbcols, nzb, true);
             }
             // /* TODO MPI: No COO support for write? */
             // // COO Matrix
@@ -863,15 +759,13 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
      * deserialization should begin writing data.
      * @return CSRMatrix<VT>* The result matrix.
      */
-    static CSRMatrix<VT> *deserialize(const char *buffer, size_t chunkSize,
-                                      CSRMatrix<VT> *matrix = nullptr,
+    static CSRMatrix<VT> *deserialize(const char *buffer, size_t chunkSize, CSRMatrix<VT> *matrix = nullptr,
                                       size_t deserializeFromByte = 0) {
         // Since at least one chunk will contain the header, the minimum chunk
         // size should be HEADER_BUFFER_SIZE bytes (so the header won't be
         // partially serialized).
         if (deserializeFromByte == 0 && chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum starting chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum starting chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
 
         size_t bufferIdx = 0;
@@ -883,27 +777,19 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
         }
         serializationIdx += HEADER_BUFFER_SIZE;
 
-        if (deserializeFromByte <
-            serializationIdx + sizeof(size_t) * (matrix->getNumRows() + 1)) {
+        if (deserializeFromByte < serializationIdx + sizeof(size_t) * (matrix->getNumRows() + 1)) {
             size_t *rowOffsets = matrix->getRowOffsets();
-            size_t rowOffsets_offset =
-                deserializeFromByte == 0
-                    ? 0
-                    : deserializeFromByte - serializationIdx;
+            size_t rowOffsets_offset = deserializeFromByte == 0 ? 0 : deserializeFromByte - serializationIdx;
 
             size_t bufferLen = 0;
             size_t arraySize = sizeof(size_t) * (matrix->getNumRows() + 1);
             if (deserializeFromByte < serializationIdx)
-                bufferLen = deserializeFromByte + chunkSize >
-                                    serializationIdx + arraySize
-                                ? arraySize
-                                : chunkSize - bufferIdx;
-            else
                 bufferLen =
-                    deserializeFromByte + chunkSize >
-                            serializationIdx + arraySize
-                        ? arraySize + serializationIdx - deserializeFromByte
-                        : chunkSize - bufferIdx;
+                    deserializeFromByte + chunkSize > serializationIdx + arraySize ? arraySize : chunkSize - bufferIdx;
+            else
+                bufferLen = deserializeFromByte + chunkSize > serializationIdx + arraySize
+                                ? arraySize + serializationIdx - deserializeFromByte
+                                : chunkSize - bufferIdx;
 
             std::copy(buffer + bufferIdx, buffer + bufferIdx + bufferLen,
                       reinterpret_cast<char *>(rowOffsets) + rowOffsets_offset);
@@ -916,24 +802,17 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
         size_t nzb = matrix->getMaxNumNonZeros();
         if (deserializeFromByte < serializationIdx + sizeof(size_t) * nzb) {
             size_t *colIdxs = matrix->getColIdxs();
-            size_t colIdxs_offset =
-                deserializeFromByte < serializationIdx
-                    ? 0
-                    : deserializeFromByte - serializationIdx;
+            size_t colIdxs_offset = deserializeFromByte < serializationIdx ? 0 : deserializeFromByte - serializationIdx;
 
             size_t bufferLen = 0;
             size_t arraySize = sizeof(size_t) * nzb;
             if (deserializeFromByte < serializationIdx)
-                bufferLen = deserializeFromByte + chunkSize >
-                                    serializationIdx + arraySize
-                                ? arraySize
-                                : chunkSize - bufferIdx;
-            else
                 bufferLen =
-                    deserializeFromByte + chunkSize >
-                            serializationIdx + arraySize
-                        ? arraySize + serializationIdx - deserializeFromByte
-                        : chunkSize - bufferIdx;
+                    deserializeFromByte + chunkSize > serializationIdx + arraySize ? arraySize : chunkSize - bufferIdx;
+            else
+                bufferLen = deserializeFromByte + chunkSize > serializationIdx + arraySize
+                                ? arraySize + serializationIdx - deserializeFromByte
+                                : chunkSize - bufferIdx;
 
             std::copy(buffer + bufferIdx, buffer + bufferIdx + bufferLen,
                       reinterpret_cast<char *>(colIdxs) + colIdxs_offset);
@@ -945,26 +824,19 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
 
         if (deserializeFromByte < serializationIdx + sizeof(VT) * nzb) {
             VT *vals = matrix->getValues();
-            size_t vals_offset = deserializeFromByte < serializationIdx
-                                     ? 0
-                                     : deserializeFromByte - serializationIdx;
+            size_t vals_offset = deserializeFromByte < serializationIdx ? 0 : deserializeFromByte - serializationIdx;
 
             size_t bufferLen = 0;
             size_t arraySize = sizeof(VT) * nzb;
             if (deserializeFromByte < serializationIdx)
-                bufferLen = deserializeFromByte + chunkSize >
-                                    serializationIdx + arraySize
-                                ? arraySize
-                                : chunkSize - bufferIdx;
-            else
                 bufferLen =
-                    deserializeFromByte + chunkSize >
-                            serializationIdx + arraySize
-                        ? arraySize + serializationIdx - deserializeFromByte
-                        : chunkSize - bufferIdx;
+                    deserializeFromByte + chunkSize > serializationIdx + arraySize ? arraySize : chunkSize - bufferIdx;
+            else
+                bufferLen = deserializeFromByte + chunkSize > serializationIdx + arraySize
+                                ? arraySize + serializationIdx - deserializeFromByte
+                                : chunkSize - bufferIdx;
 
-            std::copy(buffer + bufferIdx, buffer + bufferIdx + bufferLen,
-                      reinterpret_cast<char *>(vals) + vals_offset);
+            std::copy(buffer + bufferIdx, buffer + bufferIdx + bufferLen, reinterpret_cast<char *>(vals) + vals_offset);
         }
 
         return matrix;
@@ -1031,11 +903,9 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
      * deserialization should begin writing data.
      * @return CSRMatrix<VT>* The result matrix.
      */
-    static CSRMatrix<VT> *deserialize(const std::vector<char> &buffer,
-                                      CSRMatrix<VT> *matrix = nullptr,
+    static CSRMatrix<VT> *deserialize(const std::vector<char> &buffer, CSRMatrix<VT> *matrix = nullptr,
                                       size_t deserializeFromByte = 0) {
-        return deserialize(buffer.data(), buffer.size(), matrix,
-                           deserializeFromByte);
+        return deserialize(buffer.data(), buffer.size(), matrix, deserializeFromByte);
     }
 };
 
@@ -1043,8 +913,7 @@ template <typename VT> struct DaphneSerializer<CSRMatrix<VT>, false> {
 // const CSRMatrix
 // ----------------------------------------------------------------------------
 template <typename VT>
-struct DaphneSerializer<const CSRMatrix<VT>, false>
-    : public DaphneSerializer<CSRMatrix<VT>, false> {};
+struct DaphneSerializer<const CSRMatrix<VT>, false> : public DaphneSerializer<CSRMatrix<VT>, false> {};
 // ----------------------------------------------------------------------------
 // Frame
 // ----------------------------------------------------------------------------
@@ -1056,23 +925,17 @@ struct DaphneSerializer<const CSRMatrix<VT>, false>
  * deserializing Frame objects.
  */
 template <> struct DaphneSerializer<Frame> {
-    static size_t length(const Frame *arg) {
-        throw std::runtime_error("not implemented");
-    };
+    static size_t length(const Frame *arg) { throw std::runtime_error("not implemented"); };
 
-    static size_t serialize(const Frame *arg, char *buf, size_t chunkSize = 0,
-                            size_t serializeFromByte = 0) {
+    static size_t serialize(const Frame *arg, char *buf, size_t chunkSize = 0, size_t serializeFromByte = 0) {
         throw std::runtime_error("not implemented");
     };
-    static size_t serialize(const Frame *arg, std::vector<char> &buf,
-                            size_t chunkSize = 0,
+    static size_t serialize(const Frame *arg, std::vector<char> &buf, size_t chunkSize = 0,
                             size_t serializeFromByte = 0) {
         return serialize(arg, buf.data(), chunkSize, serializeFromByte);
     }
 
-    static Frame *deserialize(const char *buf) {
-        throw std::runtime_error("not implemented");
-    };
+    static Frame *deserialize(const char *buf) { throw std::runtime_error("not implemented"); };
 };
 
 // ----------------------------------------------------------------------------
@@ -1095,27 +958,22 @@ template <> struct DaphneSerializer<Structure> {
     // should be the maximum possible header size in bytes (so the header won't
     // be partially serialized).
     // TODO Other types?
-    static const size_t HEADER_BUFFER_SIZE =
-        std::min(DaphneSerializer<DenseMatrix<double>>::HEADER_BUFFER_SIZE,
-                 DaphneSerializer<CSRMatrix<double>>::HEADER_BUFFER_SIZE);
+    static const size_t HEADER_BUFFER_SIZE = std::min(DaphneSerializer<DenseMatrix<double>>::HEADER_BUFFER_SIZE,
+                                                      DaphneSerializer<CSRMatrix<double>>::HEADER_BUFFER_SIZE);
 
     const Structure *obj;
     Structure **objPtr;
     size_t chunkSize;
-    DaphneSerializer(const Structure *obj,
-                     size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE)
+    DaphneSerializer(const Structure *obj, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE)
         : obj(obj), chunkSize(chunkSize) {
         if (chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
     };
-    DaphneSerializer(Structure **obj,
-                     size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE)
+    DaphneSerializer(Structure **obj, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE)
         : objPtr(obj), chunkSize(chunkSize) {
         if (chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
     };
     // TODO Use macros for dynamic_casts
@@ -1211,57 +1069,40 @@ template <> struct DaphneSerializer<Structure> {
     static size_t serializeHeader(const Structure *arg, char *buffer) {
         /* DenseMatrix */
         if (auto mat = dynamic_cast<const DenseMatrix<double> *>(arg))
-            return DaphneSerializer<DenseMatrix<double>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<DenseMatrix<double>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const DenseMatrix<float> *>(arg))
-            return DaphneSerializer<DenseMatrix<float>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<DenseMatrix<float>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const DenseMatrix<int8_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int8_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<DenseMatrix<int8_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const DenseMatrix<int32_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int32_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<DenseMatrix<int32_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const DenseMatrix<int64_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int64_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<DenseMatrix<int64_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const DenseMatrix<uint8_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint8_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<DenseMatrix<uint8_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const DenseMatrix<uint32_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint32_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<DenseMatrix<uint32_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const DenseMatrix<uint64_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint64_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<DenseMatrix<uint64_t>>::serializeHeader(mat, buffer);
         /* CSRMatrix */
         if (auto mat = dynamic_cast<const CSRMatrix<double> *>(arg))
-            return DaphneSerializer<CSRMatrix<double>>::serializeHeader(mat,
-                                                                        buffer);
+            return DaphneSerializer<CSRMatrix<double>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const CSRMatrix<float> *>(arg))
-            return DaphneSerializer<CSRMatrix<float>>::serializeHeader(mat,
-                                                                       buffer);
+            return DaphneSerializer<CSRMatrix<float>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const CSRMatrix<int8_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int8_t>>::serializeHeader(mat,
-                                                                        buffer);
+            return DaphneSerializer<CSRMatrix<int8_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const CSRMatrix<int32_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int32_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<CSRMatrix<int32_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const CSRMatrix<int64_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int64_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<CSRMatrix<int64_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const CSRMatrix<uint8_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint8_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<CSRMatrix<uint8_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const CSRMatrix<uint32_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint32_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<CSRMatrix<uint32_t>>::serializeHeader(mat, buffer);
         if (auto mat = dynamic_cast<const CSRMatrix<uint64_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint64_t>>::serializeHeader(
-                mat, buffer);
+            return DaphneSerializer<CSRMatrix<uint64_t>>::serializeHeader(mat, buffer);
         // else
-        throw std::runtime_error(
-            "Serialization serializeHeader: uknown value type");
+        throw std::runtime_error("Serialization serializeHeader: uknown value type");
     };
     /**
      * @brief Serializes a structure object to a buffer.
@@ -1274,70 +1115,50 @@ template <> struct DaphneSerializer<Structure> {
      * serialization should begin (default 0)
      * @return size_t
      */
-    static size_t serialize(const Structure *arg, char *buf,
-                            size_t chunkSize = 0,
-                            size_t serializeFromByte = 0) {
+    static size_t serialize(const Structure *arg, char *buf, size_t chunkSize = 0, size_t serializeFromByte = 0) {
         /* DenseMatrix */
         if (auto mat = dynamic_cast<const DenseMatrix<double> *>(arg))
-            return DaphneSerializer<DenseMatrix<double>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<DenseMatrix<double>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const DenseMatrix<float> *>(arg))
-            return DaphneSerializer<DenseMatrix<float>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<DenseMatrix<float>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const DenseMatrix<int8_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int8_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<DenseMatrix<int8_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const DenseMatrix<int32_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int32_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<DenseMatrix<int32_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const DenseMatrix<int64_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int64_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<DenseMatrix<int64_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const DenseMatrix<uint8_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint8_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<DenseMatrix<uint8_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const DenseMatrix<uint32_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint32_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<DenseMatrix<uint32_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const DenseMatrix<uint64_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint64_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<DenseMatrix<uint64_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
 
         /* CSRMatrix */
         if (auto mat = dynamic_cast<const CSRMatrix<double> *>(arg))
-            return DaphneSerializer<CSRMatrix<double>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<CSRMatrix<double>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const CSRMatrix<float> *>(arg))
-            return DaphneSerializer<CSRMatrix<float>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<CSRMatrix<float>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const CSRMatrix<int8_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int8_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<CSRMatrix<int8_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const CSRMatrix<int32_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int32_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<CSRMatrix<int32_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const CSRMatrix<int64_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int64_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<CSRMatrix<int64_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const CSRMatrix<uint8_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint8_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<CSRMatrix<uint8_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const CSRMatrix<uint32_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint32_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<CSRMatrix<uint32_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         if (auto mat = dynamic_cast<const CSRMatrix<uint64_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint64_t>>::serialize(
-                mat, buf, chunkSize, serializeFromByte);
+            return DaphneSerializer<CSRMatrix<uint64_t>>::serialize(mat, buf, chunkSize, serializeFromByte);
         // else
         throw std::runtime_error("Serialization serialize: uknown value type");
     };
     // Gets the address of a pointer buffer and if it is nullptr,
     // it allocates chunksize memory
-    static size_t serialize(const Structure *arg, std::vector<char> &buffer,
-                            size_t chunkSize = 0,
+    static size_t serialize(const Structure *arg, std::vector<char> &buffer, size_t chunkSize = 0,
                             size_t serializeFromByte = 0) {
-        chunkSize = chunkSize == 0 ? DaphneSerializer<Structure>::length(arg)
-                                   : chunkSize;
+        chunkSize = chunkSize == 0 ? DaphneSerializer<Structure>::length(arg) : chunkSize;
 
         if (buffer.size() < chunkSize) // Maybe if is unecessary here..
             buffer.resize(chunkSize);
@@ -1345,11 +1166,8 @@ template <> struct DaphneSerializer<Structure> {
     }
     // Serializes into the vector<char> buffer. If capacity is less than
     // chunksize, it reserves memory.
-    static size_t serialize(const Structure *arg, char **buffer,
-                            size_t chunkSize = 0,
-                            size_t serializeFromByte = 0) {
-        chunkSize = chunkSize == 0 ? DaphneSerializer<Structure>::length(arg)
-                                   : chunkSize;
+    static size_t serialize(const Structure *arg, char **buffer, size_t chunkSize = 0, size_t serializeFromByte = 0) {
+        chunkSize = chunkSize == 0 ? DaphneSerializer<Structure>::length(arg) : chunkSize;
 
         if (*buffer == nullptr)
             *buffer = new char[sizeof(chunkSize)];
@@ -1363,36 +1181,28 @@ template <> struct DaphneSerializer<Structure> {
         if (DF_Dtype(buffer) == DF_data_t::DenseMatrix_t) {
             switch (DF_Vtype(buffer)) {
             case ValueTypeCode::SI8:
-                return DaphneSerializer<DenseMatrix<int8_t>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<DenseMatrix<int8_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::SI32:
-                return DaphneSerializer<
-                    DenseMatrix<int32_t>>::deserializeHeader(buffer);
+                return DaphneSerializer<DenseMatrix<int32_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::SI64:
-                return DaphneSerializer<
-                    DenseMatrix<int64_t>>::deserializeHeader(buffer);
+                return DaphneSerializer<DenseMatrix<int64_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::UI8:
-                return DaphneSerializer<
-                    DenseMatrix<uint8_t>>::deserializeHeader(buffer);
+                return DaphneSerializer<DenseMatrix<uint8_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::UI32:
-                return DaphneSerializer<
-                    DenseMatrix<uint32_t>>::deserializeHeader(buffer);
+                return DaphneSerializer<DenseMatrix<uint32_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::UI64:
-                return DaphneSerializer<
-                    DenseMatrix<uint64_t>>::deserializeHeader(buffer);
+                return DaphneSerializer<DenseMatrix<uint64_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::F32:
-                return DaphneSerializer<DenseMatrix<float>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<DenseMatrix<float>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::F64:
-                return DaphneSerializer<DenseMatrix<double>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<DenseMatrix<double>>::deserializeHeader(buffer);
                 break;
             default:
                 throw std::runtime_error("unknown value type code");
@@ -1400,36 +1210,28 @@ template <> struct DaphneSerializer<Structure> {
         } else if (DF_Dtype(buffer) == DF_data_t::CSRMatrix_t) {
             switch (DF_Vtype(buffer)) {
             case ValueTypeCode::SI8:
-                return DaphneSerializer<CSRMatrix<int8_t>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<CSRMatrix<int8_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::SI32:
-                return DaphneSerializer<CSRMatrix<int32_t>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<CSRMatrix<int32_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::SI64:
-                return DaphneSerializer<CSRMatrix<int64_t>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<CSRMatrix<int64_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::UI8:
-                return DaphneSerializer<CSRMatrix<uint8_t>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<CSRMatrix<uint8_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::UI32:
-                return DaphneSerializer<CSRMatrix<uint32_t>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<CSRMatrix<uint32_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::UI64:
-                return DaphneSerializer<CSRMatrix<uint64_t>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<CSRMatrix<uint64_t>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::F32:
-                return DaphneSerializer<CSRMatrix<float>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<CSRMatrix<float>>::deserializeHeader(buffer);
                 break;
             case ValueTypeCode::F64:
-                return DaphneSerializer<CSRMatrix<double>>::deserializeHeader(
-                    buffer);
+                return DaphneSerializer<CSRMatrix<double>>::deserializeHeader(buffer);
                 break;
             default:
                 throw std::runtime_error("unknown value type code");
@@ -1438,60 +1240,43 @@ template <> struct DaphneSerializer<Structure> {
             throw std::runtime_error("unknown value type code");
         }
     };
-    static Structure *deserialize(const char *buffer, size_t chunkSize,
-                                  Structure *arg = nullptr,
+    static Structure *deserialize(const char *buffer, size_t chunkSize, Structure *arg = nullptr,
                                   size_t deserializeFromByte = 0) {
         /* DenseMatrix */
         if (auto mat = dynamic_cast<DenseMatrix<double> *>(arg))
-            return DaphneSerializer<DenseMatrix<double>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<DenseMatrix<double>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<DenseMatrix<float> *>(arg))
-            return DaphneSerializer<DenseMatrix<float>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<DenseMatrix<float>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<DenseMatrix<int8_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int8_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<DenseMatrix<int8_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<DenseMatrix<int32_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int32_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<DenseMatrix<int32_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<DenseMatrix<int64_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<int64_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<DenseMatrix<int64_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<DenseMatrix<uint8_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint8_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<DenseMatrix<uint8_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<DenseMatrix<uint32_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint32_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<DenseMatrix<uint32_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<DenseMatrix<uint64_t> *>(arg))
-            return DaphneSerializer<DenseMatrix<uint64_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<DenseMatrix<uint64_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
 
         /* CSRMatrix */
         if (auto mat = dynamic_cast<CSRMatrix<double> *>(arg))
-            return DaphneSerializer<CSRMatrix<double>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<CSRMatrix<double>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<CSRMatrix<float> *>(arg))
-            return DaphneSerializer<CSRMatrix<float>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<CSRMatrix<float>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<CSRMatrix<int8_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int8_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<CSRMatrix<int8_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<CSRMatrix<int32_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int32_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<CSRMatrix<int32_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<CSRMatrix<int64_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<int64_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<CSRMatrix<int64_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<CSRMatrix<uint8_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint8_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<CSRMatrix<uint8_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<CSRMatrix<uint32_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint32_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<CSRMatrix<uint32_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         if (auto mat = dynamic_cast<CSRMatrix<uint64_t> *>(arg))
-            return DaphneSerializer<CSRMatrix<uint64_t>>::deserialize(
-                buffer, chunkSize, mat, deserializeFromByte);
+            return DaphneSerializer<CSRMatrix<uint64_t>>::deserialize(buffer, chunkSize, mat, deserializeFromByte);
         // else
         throw std::runtime_error("Serialization serialize: uknown value type");
     };
@@ -1501,9 +1286,7 @@ template <> struct DaphneSerializer<Structure> {
 // const DaphneSerializer<const Structure>
 // ----------------------------------------------------------------------------
 
-template <>
-struct DaphneSerializer<const Structure> : public DaphneSerializer<Structure> {
-};
+template <> struct DaphneSerializer<const Structure> : public DaphneSerializer<Structure> {};
 
 // ----------------------------------------------------------------------------
 // Partial specialization for fundumental types */
@@ -1533,18 +1316,15 @@ template <typename VT> struct DaphneSerializer<VT, true> {
         h.version = 1;
         h.dt = (uint8_t)DF_data_t::Value_t;
 
-        std::copy(reinterpret_cast<char *>(&h),
-                  reinterpret_cast<char *>(&h) + sizeof(h), buf + bufferIdx);
+        std::copy(reinterpret_cast<char *>(&h), reinterpret_cast<char *>(&h) + sizeof(h), buf + bufferIdx);
         bufferIdx += sizeof(h);
 
         const ValueTypeCode vt = ValueTypeUtils::codeFor<VT>;
-        std::copy(reinterpret_cast<const char *>(&vt),
-                  reinterpret_cast<const char *>(&vt) + sizeof(vt),
+        std::copy(reinterpret_cast<const char *>(&vt), reinterpret_cast<const char *>(&vt) + sizeof(vt),
                   buf + bufferIdx);
         bufferIdx += sizeof(vt);
 
-        std::copy(reinterpret_cast<const char *>(&arg),
-                  reinterpret_cast<const char *>(&arg) + sizeof(VT),
+        std::copy(reinterpret_cast<const char *>(&arg), reinterpret_cast<const char *>(&arg) + sizeof(VT),
                   buf + bufferIdx);
         return length(arg);
     };
@@ -1569,14 +1349,11 @@ template <typename VT> struct DaphneSerializer<VT, true> {
         bufferIdx += sizeof(DF_header);
         bufferIdx += sizeof(ValueTypeCode);
         VT val;
-        std::copy(buf + bufferIdx, buf + bufferIdx + sizeof(val),
-                  reinterpret_cast<char *>(&val));
+        std::copy(buf + bufferIdx, buf + bufferIdx + sizeof(val), reinterpret_cast<char *>(&val));
 
         return val;
     };
-    static VT deserialize(const std::vector<char> &buf) {
-        return deserialize(buf.data());
-    }
+    static VT deserialize(const std::vector<char> &buf) { return deserialize(buf.data()); }
 };
 
 /**
@@ -1591,36 +1368,28 @@ inline Structure *DF_deserialize(const char *buf, size_t bufferSize) {
     if (DF_Dtype(buf) == DF_data_t::DenseMatrix_t) {
         switch (DF_Vtype(buf)) {
         case ValueTypeCode::SI8:
-            return DaphneSerializer<DenseMatrix<int8_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<DenseMatrix<int8_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::SI32:
-            return DaphneSerializer<DenseMatrix<int32_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<DenseMatrix<int32_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::SI64:
-            return DaphneSerializer<DenseMatrix<int64_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<DenseMatrix<int64_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::UI8:
-            return DaphneSerializer<DenseMatrix<uint8_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<DenseMatrix<uint8_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::UI32:
-            return DaphneSerializer<DenseMatrix<uint32_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<DenseMatrix<uint32_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::UI64:
-            return DaphneSerializer<DenseMatrix<uint64_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<DenseMatrix<uint64_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::F32:
-            return DaphneSerializer<DenseMatrix<float>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<DenseMatrix<float>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::F64:
-            return DaphneSerializer<DenseMatrix<double>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<DenseMatrix<double>>::deserialize(buf, bufferSize);
             break;
         default:
             throw std::runtime_error("unknown value type code");
@@ -1628,36 +1397,28 @@ inline Structure *DF_deserialize(const char *buf, size_t bufferSize) {
     } else if (DF_Dtype(buf) == DF_data_t::CSRMatrix_t) {
         switch (DF_Vtype(buf)) {
         case ValueTypeCode::SI8:
-            return DaphneSerializer<CSRMatrix<int8_t>>::deserialize(buf,
-                                                                    bufferSize);
+            return DaphneSerializer<CSRMatrix<int8_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::SI32:
-            return DaphneSerializer<CSRMatrix<int32_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<CSRMatrix<int32_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::SI64:
-            return DaphneSerializer<CSRMatrix<int64_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<CSRMatrix<int64_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::UI8:
-            return DaphneSerializer<CSRMatrix<uint8_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<CSRMatrix<uint8_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::UI32:
-            return DaphneSerializer<CSRMatrix<uint32_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<CSRMatrix<uint32_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::UI64:
-            return DaphneSerializer<CSRMatrix<uint64_t>>::deserialize(
-                buf, bufferSize);
+            return DaphneSerializer<CSRMatrix<uint64_t>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::F32:
-            return DaphneSerializer<CSRMatrix<float>>::deserialize(buf,
-                                                                   bufferSize);
+            return DaphneSerializer<CSRMatrix<float>>::deserialize(buf, bufferSize);
             break;
         case ValueTypeCode::F64:
-            return DaphneSerializer<CSRMatrix<double>>::deserialize(buf,
-                                                                    bufferSize);
+            return DaphneSerializer<CSRMatrix<double>>::deserialize(buf, bufferSize);
             break;
         default:
             throw std::runtime_error("unknown value type code");
@@ -1673,9 +1434,7 @@ inline Structure *DF_deserialize(const char *buf, size_t bufferSize) {
  *
  * @return Pointer to structure of deserialized object.
  */
-inline Structure *DF_deserialize(const std::vector<char> &buf) {
-    return DF_deserialize(buf.data(), buf.size());
-}
+inline Structure *DF_deserialize(const std::vector<char> &buf) { return DF_deserialize(buf.data(), buf.size()); }
 
 /**
  * @brief Serialization out of order.
@@ -1709,11 +1468,9 @@ template <class DT> struct DaphneSerializerOutOfOrderChunks {
      * @param chunkSize_ (optional) The chunk size what will be used for each
      * chunk (default DEFAULT_SERIALIZATION_BUFFER_SIZE)
      */
-    DaphneSerializerOutOfOrderChunks(
-        DT *obj, size_t chunkSize_ = DEFAULT_SERIALIZATION_BUFFER_SIZE)
+    DaphneSerializerOutOfOrderChunks(DT *obj, size_t chunkSize_ = DEFAULT_SERIALIZATION_BUFFER_SIZE)
         : obj(obj), chunkSize(chunkSize_), startOffset(0) {
-        chunkSize =
-            chunkSize_ == 0 ? DaphneSerializer<DT>::length(obj) : chunkSize_;
+        chunkSize = chunkSize_ == 0 ? DaphneSerializer<DT>::length(obj) : chunkSize_;
     };
 
   public:
@@ -1734,18 +1491,15 @@ template <class DT> struct DaphneSerializerOutOfOrderChunks {
 
         // Serialize header (needed for all chunks, we don't know which arrives
         // first)
-        auto bufferIdx =
-            DaphneSerializer<DT>::serializeHeader(obj, buffer.data());
+        auto bufferIdx = DaphneSerializer<DT>::serializeHeader(obj, buffer.data());
 
         // Serialize startOffset index
-        std::memcpy(buffer.data() + bufferIdx,
-                    reinterpret_cast<char *>(&startOffset),
-                    sizeof(startOffset));
+        std::memcpy(buffer.data() + bufferIdx, reinterpret_cast<char *>(&startOffset), sizeof(startOffset));
         bufferIdx += sizeof(startOffset);
 
         // TODO use locks for parallel serialization
-        size_t len = DaphneSerializer<DT>::serialize(
-            obj, buffer.data() + bufferIdx, chunkSize - bufferIdx, startOffset);
+        size_t len =
+            DaphneSerializer<DT>::serialize(obj, buffer.data() + bufferIdx, chunkSize - bufferIdx, startOffset);
         bufferIdx += len;
         startOffset += len;
 
@@ -1758,9 +1512,7 @@ template <class DT> struct DaphneSerializerOutOfOrderChunks {
      * @return true
      * @return false
      */
-    bool HasNextChunk() {
-        return startOffset != DaphneSerializer<DT>::length(obj);
-    }
+    bool HasNextChunk() { return startOffset != DaphneSerializer<DT>::length(obj); }
 };
 
 /**
@@ -1784,8 +1536,7 @@ template <class DT> struct DaphneDeserializerOutOfOrderChunks {
      * @brief Construct a new Daphne Deserializer Out Of Order Chunks object
      *
      */
-    DaphneDeserializerOutOfOrderChunks()
-        : obj(nullptr), bytesDeserialized(0) {};
+    DaphneDeserializerOutOfOrderChunks() : obj(nullptr), bytesDeserialized(0){};
 
     /**
      * @brief Deserializes a chunk and writes the contents to the object.
@@ -1803,14 +1554,12 @@ template <class DT> struct DaphneDeserializerOutOfOrderChunks {
             obj = DaphneSerializer<DT>::deserializeHeader(buffer.data(), obj);
         bufferIdx += DaphneSerializer<DT>::headerSize(obj);
 
-        std::memcpy(reinterpret_cast<char *>(&startOffset),
-                    buffer.data() + bufferIdx, sizeof(size_t));
+        std::memcpy(reinterpret_cast<char *>(&startOffset), buffer.data() + bufferIdx, sizeof(size_t));
         bufferIdx += sizeof(size_t);
 
         // TODO use locks for parallel deserialization
         size_t deserializeLength = chunkSize - bufferIdx;
-        obj = DaphneSerializer<DT>::deserialize(
-            buffer.data() + bufferIdx, deserializeLength, obj, startOffset);
+        obj = DaphneSerializer<DT>::deserialize(buffer.data() + bufferIdx, deserializeLength, obj, startOffset);
         bytesDeserialized += deserializeLength;
 
         return obj;
@@ -1844,8 +1593,7 @@ template <class DT> struct DaphneSerializerChunks {
      * @brief The buffer size should be at least big enough to serialize the
      * header.
      */
-    static const size_t HEADER_BUFFER_SIZE =
-        DaphneSerializer<DT>::HEADER_BUFFER_SIZE;
+    static const size_t HEADER_BUFFER_SIZE = DaphneSerializer<DT>::HEADER_BUFFER_SIZE;
 
     DT *obj;
     size_t chunkSize;
@@ -1858,20 +1606,17 @@ template <class DT> struct DaphneSerializerChunks {
      * the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so
      * the header won't be partially serialized).
      */
-    DaphneSerializerChunks(
-        DT *obj, size_t chunkSize_ = DEFAULT_SERIALIZATION_BUFFER_SIZE)
+    DaphneSerializerChunks(DT *obj, size_t chunkSize_ = DEFAULT_SERIALIZATION_BUFFER_SIZE)
         : obj(obj), chunkSize(chunkSize_) {
         // Since at least one chunk will contain the header, the minimum chunk
         // size should be HEADER_BUFFER_SIZE bytes (so the header won't be
         // partially serialized).
         if (chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
         // Get minimum possible chunk size
-        this->chunkSize = chunkSize_ > DaphneSerializer<DT>::length(obj)
-                              ? DaphneSerializer<DT>::length(obj)
-                              : chunkSize_;
+        this->chunkSize =
+            chunkSize_ > DaphneSerializer<DT>::length(obj) ? DaphneSerializer<DT>::length(obj) : chunkSize_;
     };
     /**
      * @brief An iterator used to serialize the object
@@ -1895,21 +1640,18 @@ template <class DT> struct DaphneSerializerChunks {
         size_t index;
 
         // Constructors
-        Iterator() {};
+        Iterator(){};
         Iterator(const DT *obj, size_t chunkSize)
-            : obj(obj), chunkSize(chunkSize), numberOfBytesSerialized(0),
-              index(0) {
+            : obj(obj), chunkSize(chunkSize), numberOfBytesSerialized(0), index(0) {
             if (chunkSize < HEADER_BUFFER_SIZE)
-                throw std::runtime_error("Minimum chunk size " +
-                                         std::to_string(HEADER_BUFFER_SIZE) +
+                throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                          " bytes"); // For now..?
             // assign buffer
             serializedData.second = std::make_shared<std::vector<char>>();
             serializedData.second->resize(chunkSize);
 
-            serializedData.first = DaphneSerializer<DT>::serialize(
-                obj, serializedData.second->data(), chunkSize,
-                numberOfBytesSerialized);
+            serializedData.first =
+                DaphneSerializer<DT>::serialize(obj, serializedData.second->data(), chunkSize, numberOfBytesSerialized);
             numberOfBytesSerialized += serializedData.first;
         };
 
@@ -1919,9 +1661,8 @@ template <class DT> struct DaphneSerializerChunks {
         // Prefix increment
         Iterator operator++() {
             index++;
-            serializedData.first = DaphneSerializer<DT>::serialize(
-                obj, serializedData.second->data(), chunkSize,
-                numberOfBytesSerialized);
+            serializedData.first =
+                DaphneSerializer<DT>::serialize(obj, serializedData.second->data(), chunkSize, numberOfBytesSerialized);
             numberOfBytesSerialized += serializedData.first;
             return *this;
         };
@@ -1933,12 +1674,8 @@ template <class DT> struct DaphneSerializerChunks {
             ;
         }
 
-        friend bool operator==(const Iterator &a, const Iterator &b) {
-            return a.index == b.index;
-        };
-        friend bool operator!=(const Iterator &a, const Iterator &b) {
-            return a.index != b.index;
-        };
+        friend bool operator==(const Iterator &a, const Iterator &b) { return a.index == b.index; };
+        friend bool operator!=(const Iterator &a, const Iterator &b) { return a.index != b.index; };
     };
     /**
      * @brief Returns an iterator containing the first chunk of the
@@ -1956,8 +1693,7 @@ template <class DT> struct DaphneSerializerChunks {
      */
     Iterator end() {
         Iterator iter;
-        iter.index =
-            std::ceil(DaphneSerializer<DT>::length(obj) / (double)chunkSize);
+        iter.index = std::ceil(DaphneSerializer<DT>::length(obj) / (double)chunkSize);
         return iter;
     }
 };
@@ -1972,8 +1708,7 @@ template <class DT> struct DaphneDeserializerChunks {
      * @brief The buffer size should be at least big enough to serialize the
      * header.
      */
-    static const size_t HEADER_BUFFER_SIZE =
-        DaphneSerializer<DT>::HEADER_BUFFER_SIZE;
+    static const size_t HEADER_BUFFER_SIZE = DaphneSerializer<DT>::HEADER_BUFFER_SIZE;
 
     DT **objPtr;
     size_t chunkSize;
@@ -1983,11 +1718,9 @@ template <class DT> struct DaphneDeserializerChunks {
      * @param obj The object to write data to.
      * @param chunkSize The chunk size used to deserialize
      */
-    DaphneDeserializerChunks(DT **obj, size_t chunkSize_)
-        : objPtr(obj), chunkSize(chunkSize_) {
+    DaphneDeserializerChunks(DT **obj, size_t chunkSize_) : objPtr(obj), chunkSize(chunkSize_) {
         if (chunkSize < HEADER_BUFFER_SIZE)
-            throw std::runtime_error("Minimum chunk size " +
-                                     std::to_string(HEADER_BUFFER_SIZE) +
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                      " bytes"); // For now..?
     };
     struct Iterator {
@@ -2009,13 +1742,11 @@ template <class DT> struct DaphneDeserializerChunks {
         size_t index;
 
         // Constructors
-        Iterator() {};
+        Iterator(){};
         Iterator(DT **obj, size_t chunkSize)
-            : objPtr(obj), chunkSize(chunkSize), numberOfBytesDeserialized(0),
-              index(0) {
+            : objPtr(obj), chunkSize(chunkSize), numberOfBytesDeserialized(0), index(0) {
             if (chunkSize < HEADER_BUFFER_SIZE)
-                throw std::runtime_error("Minimum chunk size " +
-                                         std::to_string(HEADER_BUFFER_SIZE) +
+                throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) +
                                          " bytes"); // For now..?
             // assign buffer
             serializedData.second = std::make_shared<std::vector<char>>();
@@ -2028,13 +1759,11 @@ template <class DT> struct DaphneDeserializerChunks {
         // Prefix increment
         Iterator operator++() {
             if (index == 0 || objPtr == nullptr) {
-                *objPtr = DaphneSerializer<DT>::deserializeHeader(
-                    serializedData.second->data(), *objPtr);
+                *objPtr = DaphneSerializer<DT>::deserializeHeader(serializedData.second->data(), *objPtr);
             }
             index++;
-            *objPtr = DaphneSerializer<DT>::deserialize(
-                serializedData.second->data(), serializedData.first, *objPtr,
-                numberOfBytesDeserialized);
+            *objPtr = DaphneSerializer<DT>::deserialize(serializedData.second->data(), serializedData.first, *objPtr,
+                                                        numberOfBytesDeserialized);
             numberOfBytesDeserialized += serializedData.first;
             return *this;
         }
@@ -2045,12 +1774,8 @@ template <class DT> struct DaphneDeserializerChunks {
             return tmp;
         }
 
-        friend bool operator==(const Iterator &a, const Iterator &b) {
-            return a.index == b.index;
-        };
-        friend bool operator!=(const Iterator &a, const Iterator &b) {
-            return a.index != b.index;
-        };
+        friend bool operator==(const Iterator &a, const Iterator &b) { return a.index == b.index; };
+        friend bool operator!=(const Iterator &a, const Iterator &b) { return a.index != b.index; };
     };
     Iterator begin() { return Iterator(objPtr, chunkSize); }
     // Iterator end
@@ -2062,8 +1787,7 @@ template <class DT> struct DaphneDeserializerChunks {
         // Iterator::end() as 1, otherwise we calculate it based on object
         // information.
         if (*objPtr != nullptr)
-            iter.index = std::ceil(DaphneSerializer<DT>::length(*objPtr) /
-                                   (double)chunkSize);
+            iter.index = std::ceil(DaphneSerializer<DT>::length(*objPtr) / (double)chunkSize);
         else
             iter.index = 1;
         return iter;

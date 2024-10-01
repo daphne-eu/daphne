@@ -32,31 +32,26 @@ class AllocationDescriptorMPI : public IAllocationDescriptor {
     std::shared_ptr<std::byte> data;
 
   public:
-    AllocationDescriptorMPI() {};
+    AllocationDescriptorMPI(){};
     AllocationDescriptorMPI(int id, DaphneContext *ctx, DistributedData data)
-        : processRankID(id), ctx(ctx), distributedData(data) {};
+        : processRankID(id), ctx(ctx), distributedData(data){};
 
-    ~AllocationDescriptorMPI() override {};
+    ~AllocationDescriptorMPI() override{};
 
     [[nodiscard]] ALLOCATION_TYPE getType() const override { return type; };
 
-    std::string getLocation() const override {
-        return std::to_string(processRankID);
-    };
+    std::string getLocation() const override { return std::to_string(processRankID); };
 
     void createAllocation(size_t size, bool zero) override {};
     std::shared_ptr<std::byte> getData() override { return nullptr; };
 
     bool operator==(const IAllocationDescriptor *other) const override {
         if (getType() == other->getType())
-            return (getLocation() ==
-                    dynamic_cast<const AllocationDescriptorMPI *>(other)
-                        ->getLocation());
+            return (getLocation() == dynamic_cast<const AllocationDescriptorMPI *>(other)->getLocation());
         return false;
     };
 
-    [[nodiscard]] std::unique_ptr<IAllocationDescriptor>
-    clone() const override {
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorMPI>(*this);
     }
 
@@ -65,9 +60,7 @@ class AllocationDescriptorMPI : public IAllocationDescriptor {
 
     const DistributedIndex getDistributedIndex() { return distributedData.ix; }
     const DistributedData getDistributedData() { return distributedData; }
-    void updateDistributedData(DistributedData data_) {
-        distributedData = data_;
-    }
+    void updateDistributedData(DistributedData data_) { distributedData = data_; }
     int getRank() { return processRankID; }
 };
 

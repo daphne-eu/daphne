@@ -48,17 +48,14 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadDaphneHDFS {
-    static void apply(DTRes *&res, const char *hdfsDir, DCTX(dctx),
-                      size_t startRow = 0) = delete;
+    static void apply(DTRes *&res, const char *hdfsDir, DCTX(dctx), size_t startRow = 0) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes>
-void readDaphneHDFS(DTRes *&res, const char *hdfsDir, DCTX(dctx),
-                    size_t startRow = 0) {
+template <class DTRes> void readDaphneHDFS(DTRes *&res, const char *hdfsDir, DCTX(dctx), size_t startRow = 0) {
     ReadDaphneHDFS<DTRes>::apply(res, hdfsDir, dctx, startRow);
 }
 
@@ -71,8 +68,7 @@ void readDaphneHDFS(DTRes *&res, const char *hdfsDir, DCTX(dctx),
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadDaphneHDFS<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const char *hdfsDir, DCTX(dctx),
-                      size_t startRow = 0) {
+    static void apply(DenseMatrix<VT> *&res, const char *hdfsDir, DCTX(dctx), size_t startRow = 0) {
         if (res == NULL) {
             throw std::runtime_error("Could not initialize result matrix");
         }
@@ -88,20 +84,18 @@ template <typename VT> struct ReadDaphneHDFS<DenseMatrix<VT>> {
 
         auto headerSize = DaphneSerializer<DenseMatrix<VT>>::headerSize(res);
 
-        auto [startSegment, offset] = HDFSUtils::findSegmendAndOffset(
-            *fs, headerSize, startRow, hdfsDir, numCols * sizeof(VT));
+        auto [startSegment, offset] =
+            HDFSUtils::findSegmendAndOffset(*fs, headerSize, startRow, hdfsDir, numCols * sizeof(VT));
 
         size_t parsedRows = 0;
         auto segment = startSegment;
         size_t startSerByte = headerSize;
         while (parsedRows < numRows) {
-            auto hdfsFn = std::string(hdfsDir) + "/" +
-                          HDFSUtils::getBaseFile(hdfsDir) + "_segment_" +
-                          std::to_string(segment++);
+            auto hdfsFn =
+                std::string(hdfsDir) + "/" + HDFSUtils::getBaseFile(hdfsDir) + "_segment_" + std::to_string(segment++);
             auto segFmd = HDFSUtils::parseHDFSMetaData(hdfsFn, *fs);
 
-            hdfsFile hFile =
-                hdfsOpenFile(*fs, hdfsFn.c_str(), O_RDONLY, 0, 0, 0);
+            hdfsFile hFile = hdfsOpenFile(*fs, hdfsFn.c_str(), O_RDONLY, 0, 0, 0);
             if (hFile == NULL) {
                 throw std::runtime_error("Error opening HDFS file");
             }
@@ -136,8 +130,7 @@ template <typename VT> struct ReadDaphneHDFS<DenseMatrix<VT>> {
             if (numRows - parsedRows < segFmd.numRows) {
                 bufferEnd = (numRows - parsedRows) * numCols * sizeof(VT);
             }
-            res = DaphneSerializer<DenseMatrix<VT>>::deserialize(
-                buffer.data(), bufferEnd, res, startSerByte);
+            res = DaphneSerializer<DenseMatrix<VT>>::deserialize(buffer.data(), bufferEnd, res, startSerByte);
             startSerByte += bufferEnd - offset;
 
             hdfsCloseFile(*fs, hFile);

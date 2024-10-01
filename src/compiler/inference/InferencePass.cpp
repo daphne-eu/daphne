@@ -30,26 +30,19 @@
 
 using namespace mlir;
 
-daphne::InferenceConfig::InferenceConfig(bool partialInferenceAllowed,
-                                         bool typeInference,
-                                         bool shapeInference,
-                                         bool frameLabelInference,
-                                         bool sparsityInference)
-    : partialInferenceAllowed(partialInferenceAllowed),
-      typeInference(typeInference), shapeInference(shapeInference),
-      frameLabelInference(frameLabelInference),
-      sparsityInference(sparsityInference) {}
+daphne::InferenceConfig::InferenceConfig(bool partialInferenceAllowed, bool typeInference, bool shapeInference,
+                                         bool frameLabelInference, bool sparsityInference)
+    : partialInferenceAllowed(partialInferenceAllowed), typeInference(typeInference), shapeInference(shapeInference),
+      frameLabelInference(frameLabelInference), sparsityInference(sparsityInference) {}
 
 namespace {
-void castOperandIf(OpBuilder &builder, Operation *op, size_t operandIdx,
-                   Type type) {
+void castOperandIf(OpBuilder &builder, Operation *op, size_t operandIdx, Type type) {
     Value operand = op->getOperand(operandIdx);
     if (operand.getType() != type) {
         builder.setInsertionPoint(op);
-        op->setOperand(
-            operandIdx,
-            // TODO Is this the right loc?
-            builder.create<daphne::CastOp>(op->getLoc(), type, operand));
+        op->setOperand(operandIdx,
+                       // TODO Is this the right loc?
+                       builder.create<daphne::CastOp>(op->getLoc(), type, operand));
     }
 }
 
@@ -79,12 +72,10 @@ Type getTypeWithCommonInfo(Type t1, Type t2) {
         const ssize_t sp2 = mat2.getSparsity();
         const daphne::MatrixRepresentation repr1 = mat1.getRepresentation();
         const daphne::MatrixRepresentation repr2 = mat2.getRepresentation();
-        return daphne::MatrixType::get(
-            ctx, (vt1 == vt2) ? vt1 : u, (nr1 == nr2) ? nr1 : -1,
-            (nc1 == nc2) ? nc1 : -1,
-            // TODO Maybe do approximate comparison of floating-point values.
-            (sp1 == sp2) ? sp1 : -1,
-            (repr1 == repr2) ? repr1 : daphne::MatrixRepresentation::Default);
+        return daphne::MatrixType::get(ctx, (vt1 == vt2) ? vt1 : u, (nr1 == nr2) ? nr1 : -1, (nc1 == nc2) ? nc1 : -1,
+                                       // TODO Maybe do approximate comparison of floating-point values.
+                                       (sp1 == sp2) ? sp1 : -1,
+                                       (repr1 == repr2) ? repr1 : daphne::MatrixRepresentation::Default);
     } else if (frm1 && frm2) { // both types are frames
         const std::vector<Type> cts1 = frm1.getColumnTypes();
         const std::vector<Type> cts2 = frm2.getColumnTypes();
@@ -102,8 +93,7 @@ Type getTypeWithCommonInfo(Type t1, Type t2) {
         const ssize_t nc2 = frm2.getNumCols();
         std::vector<std::string> *lbls1 = frm1.getLabels();
         std::vector<std::string> *lbls2 = frm2.getLabels();
-        return daphne::FrameType::get(ctx, cts3, (nr1 == nr2) ? nr1 : -1,
-                                      (nc1 == nc2) ? nc1 : -1,
+        return daphne::FrameType::get(ctx, cts3, (nr1 == nr2) ? nr1 : -1, (nc1 == nc2) ? nc1 : -1,
                                       // TODO Take #485 into account.
                                       (lbls1 == lbls2) ? lbls1 : nullptr);
     } else if (mat1 || mat2 || frm1 || frm2) // t1 and t2 are of different data
@@ -126,8 +116,7 @@ Type getTypeWithCommonInfo(Type t1, Type t2) {
  * Note that the actual inference logic is outsourced to MLIR operation
  * interfaces.
  */
-class InferencePass
-    : public PassWrapper<InferencePass, OperationPass<func::FuncOp>> {
+class InferencePass : public PassWrapper<InferencePass, OperationPass<func::FuncOp>> {
     daphne::InferenceConfig cfg;
 
     /**
@@ -154,22 +143,18 @@ class InferencePass
      * @brief Triggers the inference of all properties on the given operation.
      */
     std::function<WalkResult(Operation *)> walkOp = [&](Operation *op) {
-        const bool isScfOp =
-            op->getDialect() ==
-            op->getContext()->getOrLoadDialect<scf::SCFDialect>();
+        const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
 
         // ----------------------------------------------------------------
         // Handle all non-control-flow (non-SCF) operations
         // ----------------------------------------------------------------
         if (llvm::isa<arith::SelectOp>(op)) {
-            Type typeWithCommonInfo = getTypeWithCommonInfo(
-                op->getOperand(1).getType(), op->getOperand(2).getType());
+            Type typeWithCommonInfo = getTypeWithCommonInfo(op->getOperand(1).getType(), op->getOperand(2).getType());
             if (!typeWithCommonInfo) {
-                throw ErrorHandler::compilerError(
-                    op, "InferencePass.cpp:" + std::to_string(__LINE__),
-                    " a variable must not be assigned values of "
-                    "different data types (matrix, frame, scalar) "
-                    "in then/else branches (arith.select)");
+                throw ErrorHandler::compilerError(op, "InferencePass.cpp:" + std::to_string(__LINE__),
+                                                  " a variable must not be assigned values of "
+                                                  "different data types (matrix, frame, scalar) "
+                                                  "in then/else branches (arith.select)");
             }
             OpBuilder builder(op->getContext());
             castOperandIf(builder, op, 1, typeWithCommonInfo);
@@ -181,31 +166,24 @@ class InferencePass
                 try {
                     daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
                 } catch (std::runtime_error &re) {
-                    throw ErrorHandler::rethrowError(
-                        "InferencePass.cpp:" + std::to_string(__LINE__),
-                        re.what());
+                    throw ErrorHandler::rethrowError("InferencePass.cpp:" + std::to_string(__LINE__), re.what());
                 }
             }
             if (cfg.shapeInference && returnsUnknownShape(op)) {
                 // Try to infer the shapes of all results of this operation.
-                std::vector<std::pair<ssize_t, ssize_t>> shapes =
-                    daphne::tryInferShape(op);
+                std::vector<std::pair<ssize_t, ssize_t>> shapes = daphne::tryInferShape(op);
                 const size_t numRes = op->getNumResults();
                 if (shapes.size() != numRes) {
-                    throw ErrorHandler::compilerError(
-                        op, "InferencePass.cpp:" + std::to_string(__LINE__),
-                        "shape inference for op " +
-                            op->getName().getStringRef().str() + " returned " +
-                            std::to_string(shapes.size()) +
-                            " shapes, but the op has " +
-                            std::to_string(numRes) + " results");
+                    throw ErrorHandler::compilerError(op, "InferencePass.cpp:" + std::to_string(__LINE__),
+                                                      "shape inference for op " + op->getName().getStringRef().str() +
+                                                          " returned " + std::to_string(shapes.size()) +
+                                                          " shapes, but the op has " + std::to_string(numRes) +
+                                                          " results");
                 }
                 // Set the infered shapes on all results of this operation.
                 for (size_t i = 0; i < numRes; i++) {
-                    if (llvm::isa<mlir::daphne::MatrixType>(
-                            op->getResultTypes()[i]) ||
-                        llvm::isa<mlir::daphne::FrameType>(
-                            op->getResultTypes()[i])) {
+                    if (llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
+                        llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])) {
                         const ssize_t numRows = shapes[i].first;
                         const ssize_t numCols = shapes[i].second;
                         Value rv = op->getResult(i);
@@ -215,14 +193,12 @@ class InferencePass
                         else if (auto ft = rt.dyn_cast<daphne::FrameType>())
                             rv.setType(ft.withShape(numRows, numCols));
                         else
-                            throw ErrorHandler::compilerError(
-                                op,
-                                "InferencePass.cpp:" + std::to_string(__LINE__),
-                                "shape inference cannot set the shape of op " +
-                                    op->getName().getStringRef().str() +
-                                    " operand " + std::to_string(i) +
-                                    ", since it "
-                                    "is neither a matrix nor a frame");
+                            throw ErrorHandler::compilerError(op, "InferencePass.cpp:" + std::to_string(__LINE__),
+                                                              "shape inference cannot set the shape of op " +
+                                                                  op->getName().getStringRef().str() + " operand " +
+                                                                  std::to_string(i) +
+                                                                  ", since it "
+                                                                  "is neither a matrix nor a frame");
                     }
                 }
             }
@@ -231,21 +207,18 @@ class InferencePass
                 std::vector<double> sparsities = daphne::tryInferSparsity(op);
                 const size_t numRes = op->getNumResults();
                 if (sparsities.size() != numRes)
-                    throw ErrorHandler::compilerError(
-                        op, "InferencePass",
-                        "sparsity inference for op " +
-                            op->getName().getStringRef().str() + " returned " +
-                            std::to_string(sparsities.size()) +
-                            " shapes, but the "
-                            "op has " +
-                            std::to_string(numRes) + " results");
+                    throw ErrorHandler::compilerError(op, "InferencePass",
+                                                      "sparsity inference for op " +
+                                                          op->getName().getStringRef().str() + " returned " +
+                                                          std::to_string(sparsities.size()) +
+                                                          " shapes, but the "
+                                                          "op has " +
+                                                          std::to_string(numRes) + " results");
                 // Set the inferred sparsities on all results of this operation.
                 for (size_t i = 0; i < numRes; i++) {
                     const double sparsity = sparsities[i];
-                    if (llvm::isa<mlir::daphne::MatrixType>(
-                            op->getResultTypes()[i]) ||
-                        llvm::isa<mlir::daphne::FrameType>(
-                            op->getResultTypes()[i])) {
+                    if (llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
+                        llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])) {
                         Value rv = op->getResult(i);
                         const Type rt = rv.getType();
                         auto mt = rt.dyn_cast<daphne::MatrixType>();
@@ -256,20 +229,18 @@ class InferencePass
                             // We do not support sparsity for frames, but if the
                             // sparsity for a frame result is provided as
                             // unknown (-1) that's okay.
-                            throw ErrorHandler::compilerError(
-                                op, "InferencePass",
-                                "sparsity inference cannot set the shape of "
-                                "op " +
-                                    op->getName().getStringRef().str() +
-                                    " operand " + std::to_string(i) +
-                                    ", since it "
-                                    "is not a matrix");
+                            throw ErrorHandler::compilerError(op, "InferencePass",
+                                                              "sparsity inference cannot set the shape of "
+                                                              "op " +
+                                                                  op->getName().getStringRef().str() + " operand " +
+                                                                  std::to_string(i) +
+                                                                  ", since it "
+                                                                  "is not a matrix");
                     }
                 }
             }
             if (cfg.frameLabelInference && returnsFrameWithUnknownLabels(op)) {
-                if (auto inferFrameLabelsOp =
-                        llvm::dyn_cast<daphne::InferFrameLabels>(op))
+                if (auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
                     inferFrameLabelsOp.inferFrameLabels();
                 // Else: Not a problem, since currently we use the frame labels
                 // only to aid type inference, and for this purpose, we don't
@@ -321,9 +292,7 @@ class InferencePass
                 Operation *condOp = beforeBlock.getTerminator();
 
                 if (!llvm::isa<scf::ConditionOp>(condOp))
-                    throw ErrorHandler::compilerError(
-                        op, "InferencePass",
-                        "WhileOp terminator is not a ConditionOp");
+                    throw ErrorHandler::compilerError(op, "InferencePass", "WhileOp terminator is not a ConditionOp");
 
                 // Transfer the ConditionOp's operand types to the block
                 // arguments of the after-block and the results of the WhileOp
@@ -344,10 +313,9 @@ class InferencePass
                 Operation *yieldOp = afterBlock.getTerminator();
 
                 if (whileOp->getNumOperands() != yieldOp->getNumOperands())
-                    throw ErrorHandler::compilerError(
-                        op, "InferencePass",
-                        "WhileOp and YieldOp must have the same number of "
-                        "operands");
+                    throw ErrorHandler::compilerError(op, "InferencePass",
+                                                      "WhileOp and YieldOp must have the same number of "
+                                                      "operands");
 
                 // Check if the inferred MLIR types match the result MLIR types.
                 // If any interesting properties were changed inside the loop
@@ -359,15 +327,13 @@ class InferencePass
                     if (yieldedTy != operandTy) {
                         // Get a type with the conflicting properties set to
                         // unknown.
-                        Type typeWithCommonInfo =
-                            getTypeWithCommonInfo(yieldedTy, operandTy);
+                        Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, operandTy);
                         if (!typeWithCommonInfo) {
-                            throw ErrorHandler::compilerError(
-                                op, "InferencePass",
-                                "the data type (matrix, frame, scalar) of a "
-                                "variable "
-                                "must not be changed within the body of a "
-                                "while-loop");
+                            throw ErrorHandler::compilerError(op, "InferencePass",
+                                                              "the data type (matrix, frame, scalar) of a "
+                                                              "variable "
+                                                              "must not be changed within the body of a "
+                                                              "while-loop");
                         }
                         // Use casts to remove those properties accordingly.
                         castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
@@ -431,21 +397,16 @@ class InferencePass
                     if (yieldedTy != resultTy) {
                         // Get a type with the conflicting properties set to
                         // unknown.
-                        Type typeWithCommonInfo =
-                            getTypeWithCommonInfo(yieldedTy, resultTy);
+                        Type typeWithCommonInfo = getTypeWithCommonInfo(yieldedTy, resultTy);
                         if (!typeWithCommonInfo)
-                            throw ErrorHandler::compilerError(
-                                op,
-                                "InferencePass.cpp:" + std::to_string(__LINE__),
-                                "the data type (matrix, frame, scalar) of a "
-                                "variable "
-                                "must not be changed within the body of a "
-                                "for-loop.");
+                            throw ErrorHandler::compilerError(op, "InferencePass.cpp:" + std::to_string(__LINE__),
+                                                              "the data type (matrix, frame, scalar) of a "
+                                                              "variable "
+                                                              "must not be changed within the body of a "
+                                                              "for-loop.");
                         // Use casts to remove those properties accordingly.
                         castOperandIf(builder, yieldOp, i, typeWithCommonInfo);
-                        castOperandIf(builder, forOp,
-                                      forOp.getNumControlOperands() + i,
-                                      typeWithCommonInfo);
+                        castOperandIf(builder, forOp, forOp.getNumControlOperands() + i, typeWithCommonInfo);
                         // Since the WhileOp's argument types/properties have
                         // changed, we must repeat the inference for the loop
                         // body.
@@ -479,15 +440,13 @@ class InferencePass
                 scf::YieldOp elseYield = ifOp.elseYield();
                 OpBuilder builder(ifOp.getContext());
                 for (size_t i = 0; i < ifOp.getNumResults(); i++) {
-                    Type typeWithCommonInfo = getTypeWithCommonInfo(
-                        thenYield->getOperand(i).getType(),
-                        elseYield->getOperand(i).getType());
+                    Type typeWithCommonInfo =
+                        getTypeWithCommonInfo(thenYield->getOperand(i).getType(), elseYield->getOperand(i).getType());
                     if (!typeWithCommonInfo)
-                        throw ErrorHandler::compilerError(
-                            op, "InferencePass" + std::to_string(__LINE__),
-                            "a variable must not be assigned values of "
-                            "different data types (matrix, frame, scalar) "
-                            "in then/else branches");
+                        throw ErrorHandler::compilerError(op, "InferencePass" + std::to_string(__LINE__),
+                                                          "a variable must not be assigned values of "
+                                                          "different data types (matrix, frame, scalar) "
+                                                          "in then/else branches");
                     castOperandIf(builder, thenYield, i, typeWithCommonInfo);
                     castOperandIf(builder, elseYield, i, typeWithCommonInfo);
                     ifOp.getResult(i).setType(typeWithCommonInfo);
@@ -510,13 +469,11 @@ class InferencePass
         try {
             f.walk<WalkOrder::PreOrder>(walkOp);
         } catch (std::runtime_error &re) {
-            throw ErrorHandler::rethrowError(
-                "InferencePass.cpp:" + std::to_string(__LINE__), re.what());
+            throw ErrorHandler::rethrowError("InferencePass.cpp:" + std::to_string(__LINE__), re.what());
         }
         // infer function return types
-        f.setType(FunctionType::get(
-            &getContext(), f.getFunctionType().getInputs(),
-            f.getBody().back().getTerminator()->getOperandTypes()));
+        f.setType(FunctionType::get(&getContext(), f.getFunctionType().getInputs(),
+                                    f.getBody().back().getTerminator()->getOperandTypes()));
     }
 
     static bool returnsUnknownType(Operation *op) {

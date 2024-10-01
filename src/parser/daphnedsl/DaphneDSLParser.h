@@ -32,14 +32,10 @@ class DaphneDSLParser : public Parser {
     DaphneUserConfig userConf;
 
   public:
-    DaphneDSLParser(std::unordered_map<std::string, std::string> args,
-                    DaphneUserConfig userConf)
+    DaphneDSLParser(std::unordered_map<std::string, std::string> args, DaphneUserConfig userConf)
         : args(std::move(args)), userConf(std::move(userConf)) {}
 
-    DaphneDSLParser()
-        : DaphneDSLParser(std::unordered_map<std::string, std::string>(),
-                          DaphneUserConfig()) {}
+    DaphneDSLParser() : DaphneDSLParser(std::unordered_map<std::string, std::string>(), DaphneUserConfig()) {}
 
-    void parseStream(mlir::OpBuilder &builder, std::istream &stream,
-                     const std::string &sourceName) override;
+    void parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) override;
 };

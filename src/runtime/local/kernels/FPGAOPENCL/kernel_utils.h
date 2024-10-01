@@ -8,6 +8,5 @@ using namespace aocl_utils;
 
 void *acl_aligned_malloc(size_t size);
 
-double compute_kernel_execution_time(cl_event &event, double &start_d,
-                                     double &end_d);
+double compute_kernel_execution_time(cl_event &event, double &start_d, double &end_d);
 #endif

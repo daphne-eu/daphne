@@ -36,8 +36,7 @@ template <class DTRes, class DTArg> struct Syrk {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void syrk(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void syrk(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     Syrk<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
@@ -50,18 +49,15 @@ void syrk(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <> struct Syrk<DenseMatrix<double>, DenseMatrix<double>> {
-    static void apply(DenseMatrix<double> *&res, const DenseMatrix<double> *arg,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<double> *&res, const DenseMatrix<double> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<double>>(
-                numCols, numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<double>>(numCols, numCols, false);
 
-        cblas_dsyrk(CblasRowMajor, CblasUpper, CblasTrans, numCols, numRows,
-                    1.0, arg->getValues(), arg->getRowSkip(), 0.0,
-                    res->getValues(), res->getRowSkip());
+        cblas_dsyrk(CblasRowMajor, CblasUpper, CblasTrans, numCols, numRows, 1.0, arg->getValues(), arg->getRowSkip(),
+                    0.0, res->getValues(), res->getRowSkip());
         for (auto r = 0u; r < numCols; ++r) {
             for (auto c = r + 1; c < numCols; ++c) {
                 res->set(c, r, res->get(r, c));
@@ -71,18 +67,15 @@ template <> struct Syrk<DenseMatrix<double>, DenseMatrix<double>> {
 };
 
 template <> struct Syrk<DenseMatrix<float>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<float> *&res, const DenseMatrix<float> *arg,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<float> *&res, const DenseMatrix<float> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<float>>(numCols,
-                                                                numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<float>>(numCols, numCols, false);
 
-        cblas_ssyrk(CblasRowMajor, CblasUpper, CblasTrans, numCols, numRows,
-                    1.0, arg->getValues(), arg->getRowSkip(), 0.0,
-                    res->getValues(), res->getRowSkip());
+        cblas_ssyrk(CblasRowMajor, CblasUpper, CblasTrans, numCols, numRows, 1.0, arg->getValues(), arg->getRowSkip(),
+                    0.0, res->getValues(), res->getRowSkip());
         for (auto r = 0u; r < numCols; ++r) {
             for (auto c = r + 1; c < numCols; ++c) {
                 res->set(c, r, res->get(r, c));
@@ -96,14 +89,12 @@ template <> struct Syrk<DenseMatrix<float>, DenseMatrix<float>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Syrk<CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(
-                numCols, numRows, arg->getNumNonZeros(), false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numCols, numRows, arg->getNumNonZeros(), false);
         throw std::runtime_error("TODO: Syrk for Sparse");
     }
 };

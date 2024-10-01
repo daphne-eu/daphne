@@ -30,8 +30,7 @@ class AllocationDescriptorCUDA : public IAllocationDescriptor {
   public:
     AllocationDescriptorCUDA() = delete;
 
-    AllocationDescriptorCUDA(DaphneContext *ctx, uint32_t device_id)
-        : device_id(device_id), dctx(ctx) {}
+    AllocationDescriptorCUDA(DaphneContext *ctx, uint32_t device_id) : device_id(device_id), dctx(ctx) {}
 
     ~AllocationDescriptorCUDA() override {
         // ToDo: for now we free if this is the last context-external ref to the
@@ -44,9 +43,7 @@ class AllocationDescriptorCUDA : public IAllocationDescriptor {
     [[nodiscard]] ALLOCATION_TYPE getType() const override { return type; }
 
     // [[nodiscard]] uint32_t getLocation() const { return device_id; }
-    [[nodiscard]] std::string getLocation() const override {
-        return std::to_string(device_id);
-    }
+    [[nodiscard]] std::string getLocation() const override { return std::to_string(device_id); }
 
     void createAllocation(size_t size, bool zero) override {
         auto ctx = CUDAContext::get(dctx, device_id);
@@ -55,8 +52,7 @@ class AllocationDescriptorCUDA : public IAllocationDescriptor {
 
     std::shared_ptr<std::byte> getData() override { return data; }
 
-    [[nodiscard]] std::unique_ptr<IAllocationDescriptor>
-    clone() const override {
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorCUDA>(*this);
     }
 
@@ -69,9 +65,7 @@ class AllocationDescriptorCUDA : public IAllocationDescriptor {
 
     bool operator==(const IAllocationDescriptor *other) const override {
         if (getType() == other->getType())
-            return (getLocation() ==
-                    dynamic_cast<const AllocationDescriptorCUDA *>(other)
-                        ->getLocation());
+            return (getLocation() == dynamic_cast<const AllocationDescriptorCUDA *>(other)->getLocation());
         return false;
     }
 };

@@ -75,8 +75,7 @@ std::vector<double> daphne::MatMulOp::inferSparsity() {
         return {-1.0};
     else
         // unbiased estimate
-        return {1.0 -
-                std::pow(1.0 - lhsTy.getSparsity() * rhsTy.getSparsity(), k)};
+        return {1.0 - std::pow(1.0 - lhsTy.getSparsity() * rhsTy.getSparsity(), k)};
 }
 
 std::vector<double> daphne::TriOp::inferSparsity() {
@@ -89,16 +88,14 @@ std::vector<double> daphne::TriOp::inferSparsity() {
 }
 
 std::vector<double> daphne::ReadOp::inferSparsity() {
-    std::pair<bool, std::string> p =
-        CompilerUtils::isConstant<std::string>(getFileName());
+    std::pair<bool, std::string> p = CompilerUtils::isConstant<std::string>(getFileName());
     if (p.first) {
         FileMetaData fmd = MetaDataParser::readMetaData(p.second);
         if (fmd.numNonZeros == -1)
             return {-1.0};
         // TODO: maybe use type shape info instead of file? (would require
         // correct order of optimization passes)
-        return {(static_cast<double>(fmd.numNonZeros) / fmd.numRows) /
-                fmd.numCols};
+        return {(static_cast<double>(fmd.numNonZeros) / fmd.numRows) / fmd.numCols};
     } else
         return {-1.0};
 }
@@ -113,25 +110,20 @@ std::vector<double> daphne::ReadOp::inferSparsity() {
  * @brief Utility for trying a parametric trait for all values of the parameter
  * from 0 to some upper bound.
  */
-template <size_t upper, template <size_t> class tryParametricTrait>
-struct tryParamTraitUntil {
+template <size_t upper, template <size_t> class tryParametricTrait> struct tryParamTraitUntil {
     static void apply(double &sparsity, Operation *op) {
         tryParametricTrait<upper>::apply(sparsity, op);
         tryParamTraitUntil<upper - 1, tryParametricTrait>::apply(sparsity, op);
     }
 };
-template <template <size_t> class tryParametricTrait>
-struct tryParamTraitUntil<0, tryParametricTrait> {
-    static void apply(double &sparsity, Operation *op) {
-        tryParametricTrait<0>::apply(sparsity, op);
-    }
+template <template <size_t> class tryParametricTrait> struct tryParamTraitUntil<0, tryParametricTrait> {
+    static void apply(double &sparsity, Operation *op) { tryParametricTrait<0>::apply(sparsity, op); }
 };
 
 template <size_t i> struct trySparsityFromIthScalar {
     static void apply(double &sparsity, Operation *op) {
         if (op->hasTrait<SparsityFromIthScalar<i>::template Impl>())
-            sparsity =
-                CompilerUtils::constantOrDefault<double>(op->getOperand(i), -1);
+            sparsity = CompilerUtils::constantOrDefault<double>(op->getOperand(i), -1);
     }
 };
 

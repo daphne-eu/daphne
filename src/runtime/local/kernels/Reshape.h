@@ -31,8 +31,7 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct Reshape {
-    static void apply(DTRes *&res, const DTArg *arg, size_t numRows,
-                      size_t numCols, DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTArg *arg, size_t numRows, size_t numCols, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -40,8 +39,7 @@ template <class DTRes, class DTArg> struct Reshape {
 // ****************************************************************************
 
 template <class DTRes, class DTArg>
-void reshape(DTRes *&res, const DTArg *arg, size_t numRows, size_t numCols,
-             DCTX(ctx)) {
+void reshape(DTRes *&res, const DTArg *arg, size_t numRows, size_t numCols, DCTX(ctx)) {
     Reshape<DTRes, DTArg>::apply(res, arg, numRows, numCols, ctx);
 }
 
@@ -54,18 +52,15 @@ void reshape(DTRes *&res, const DTArg *arg, size_t numRows, size_t numCols,
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      size_t numRows, size_t numCols, DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, size_t numRows, size_t numCols, DCTX(ctx)) {
         if (numRows * numCols != arg->getNumRows() * arg->getNumCols())
             throw std::runtime_error("reshape must retain the number of cells");
 
         if (arg->getRowSkip() == arg->getNumCols() && res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(
-                numRows, numCols, arg->getValuesSharedPtr());
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg->getValuesSharedPtr());
         else {
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(
-                    numRows, numCols, false);
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
             auto resVals = res->getValues();
             auto argVals = arg->getValues();
@@ -85,17 +80,14 @@ template <typename VT> struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Reshape<Matrix<VT>, Matrix<VT>> {
-    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, size_t numRows,
-                      size_t numCols, DCTX(ctx)) {
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, size_t numRows, size_t numCols, DCTX(ctx)) {
         const size_t numColsArg = arg->getNumCols();
 
         if (numRows * numCols != arg->getNumRows() * numColsArg)
-            throw std::runtime_error(
-                "Reshape: new shape must retain the number of cells");
+            throw std::runtime_error("Reshape: new shape must retain the number of cells");
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         res->prepareAppend();
         for (size_t r = 0, rArg = 0, cArg = 0; r < numRows; ++r)

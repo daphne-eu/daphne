@@ -31,14 +31,13 @@
 using namespace std;
 using namespace aocl_utils;
 
-#define DPRINTF(...)                                                           \
-    printf(__VA_ARGS__);                                                       \
+#define DPRINTF(...)                                                                                                   \
+    printf(__VA_ARGS__);                                                                                               \
     fflush(stdout);
 
-#define CHECK(status)                                                          \
-    if (status != CL_SUCCESS) {                                                \
-        throw std::runtime_error(                                              \
-            fmt::format("error {} in line {}", status, __LINE__));             \
+#define CHECK(status)                                                                                                  \
+    if (status != CL_SUCCESS) {                                                                                        \
+        throw std::runtime_error(fmt::format("error {} in line {}", status, __LINE__));                                \
     }
 
 void FPGAContext::destroy() { spdlog::debug("Destroying FPGA context..."); }
@@ -68,12 +67,10 @@ void FPGAContext::init() {
     DPRINTF("Initializing IDs\n");
 #endif
     for (int i = 0; i < (int)numPlatforms; i++) {
-        status = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, maxDevices,
-                                devices, &numDevices);
+        status = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, maxDevices, devices, &numDevices);
 
         if (status == CL_SUCCESS) {
-            clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, 4096, buffer,
-                              NULL);
+            clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, 4096, buffer, NULL);
 #if defined(ALTERA_CL)
             if (strstr(buffer, "Altera") != NULL) {
                 device_found = 1;
@@ -105,16 +102,12 @@ void FPGAContext::init() {
         DPRINTF("\nDevice Name: %s\n", buffer);
         clGetDeviceInfo(devices[i], CL_DEVICE_VENDOR, 4096, buffer, NULL);
         DPRINTF("Device Vendor: %s\n", buffer);
-        clGetDeviceInfo(devices[i], CL_DEVICE_MAX_COMPUTE_UNITS,
-                        sizeof(buf_uint), &buf_uint, NULL);
+        clGetDeviceInfo(devices[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(buf_uint), &buf_uint, NULL);
         DPRINTF("Device Computing Units: %u\n", buf_uint);
-        clGetDeviceInfo(devices[i], CL_DEVICE_GLOBAL_MEM_SIZE,
-                        sizeof(unsigned long), &buffer, NULL);
+        clGetDeviceInfo(devices[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(unsigned long), &buffer, NULL);
         DPRINTF("Global Memory Size: %li\n", *((unsigned long *)buffer));
-        clGetDeviceInfo(devices[i], CL_DEVICE_MAX_MEM_ALLOC_SIZE,
-                        sizeof(unsigned long), &buffer, NULL);
-        DPRINTF("Global Memory Allocation Size: %li\n\n",
-                *((unsigned long *)buffer));
+        clGetDeviceInfo(devices[i], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(unsigned long), &buffer, NULL);
+        DPRINTF("Global Memory Allocation Size: %li\n\n", *((unsigned long *)buffer));
     }
 #endif
     //----------------------------------------------

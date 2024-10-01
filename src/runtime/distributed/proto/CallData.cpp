@@ -28,8 +28,7 @@ void StoreCallData::Proceed(bool ok) {
             stream_.Read(&data, this);
             grpc::Status status = worker->StoreGRPC(&ctx_, &data, &storedData);
             if (!status.ok())
-                throw std::runtime_error(
-                    "Error while receiving/storing partial data");
+                throw std::runtime_error("Error while receiving/storing partial data");
         } else {
             new StoreCallData(worker, scq_, cq_);
             status_ = FINISH;
@@ -69,8 +68,7 @@ void TransferCallData::Proceed(bool ok) {
         // Make this instance progress to the PROCESS state.
         status_ = PROCESS;
 
-        service_->RequestTransfer(&ctx_, &storedData, &responder_, cq_, cq_,
-                                  this);
+        service_->RequestTransfer(&ctx_, &storedData, &responder_, cq_, cq_, this);
     } else if (status_ == PROCESS) {
         if (!ok)
             delete this;

@@ -33,16 +33,14 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg, typename VT> struct Replace {
-    static void apply(DTRes *&res, const DTArg *arg, VT pattern, VT replacement,
-                      DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTArg *arg, VT pattern, VT replacement, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 template <class DTRes, class DTArg, typename VT>
-void replace(DTRes *&res, const DTArg *arg, VT pattern, VT replacement,
-             DCTX(ctx)) {
+void replace(DTRes *&res, const DTArg *arg, VT pattern, VT replacement, DCTX(ctx)) {
     Replace<DTRes, DTArg, VT>::apply(res, arg, pattern, replacement, ctx);
 }
 
@@ -55,8 +53,7 @@ void replace(DTRes *&res, const DTArg *arg, VT pattern, VT replacement,
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      VT pattern, VT replacement, DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, VT pattern, VT replacement, DCTX(ctx)) {
         //------handling corner cases -------
         if (!arg) {
             throw std::runtime_error("Replace - arg must not be nullptr");
@@ -65,11 +62,10 @@ template <typename VT> struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
         const size_t numRows = arg->getNumRows(); // number of rows
         const size_t numCols = arg->getNumCols(); // number of columns
         const size_t elementCount = numRows * numCols;
-        bool requireCopy =
-            false; // this variable is to indicate whether we need to copy to
-                   // res (when not using inplace update semantic)s
-        if (elementCount == 0) { // This case means that the kernel do nothing,
-                                 // i.e.,  no values to replace
+        bool requireCopy = false; // this variable is to indicate whether we need to copy to
+                                  // res (when not using inplace update semantic)s
+        if (elementCount == 0) {  // This case means that the kernel do nothing,
+                                  // i.e.,  no values to replace
             return;
         }
         if (res != nullptr) { // In this case, the caller reuses the res matrix
@@ -83,13 +79,11 @@ template <typename VT> struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
             }
         }
         if ((replacement != replacement && pattern != pattern) ||
-            (pattern ==
-             replacement)) { // nothing to be done pattern equals replacement
+            (pattern == replacement)) {         // nothing to be done pattern equals replacement
             if (res != nullptr && res == arg) { // arg and res are the same
                 return;
             } else if (res == nullptr) {
-                res = DataObjectFactory::create<DenseMatrix<VT>>(
-                    numRows, numCols, false);
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
             }
             // copy and return in this case replace will be a copy function that
             // copies arg to res
@@ -105,8 +99,7 @@ template <typename VT> struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
             return;
         }
         if (res == nullptr) {
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
             requireCopy = true;
         }
         const VT *allValues = arg->getValues();
@@ -145,8 +138,7 @@ template <typename VT> struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
-    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, VT pattern,
-                      VT replacement, DCTX(ctx)) {
+    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, VT pattern, VT replacement, DCTX(ctx)) {
         if (!arg) {
             throw std::runtime_error("Replace - arg must not be nullptr");
         }
@@ -161,8 +153,7 @@ template <typename VT> struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
                                 // i.e.,  no values to replace
             return;
         }
-        if (res != arg &&
-            res != nullptr) { // In this case, the caller reuses the res matrix
+        if (res != arg && res != nullptr) { // In this case, the caller reuses the res matrix
             if (res->getNumRows() != numRows) {
                 throw std::runtime_error("res is a not a nullptr but it has a "
                                          "different numRows than arg");
@@ -177,33 +168,24 @@ template <typename VT> struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
             }
         }
         if ((replacement != replacement && pattern != pattern) ||
-            (pattern ==
-             replacement)) { // nothing to be done pattern equals replacement
+            (pattern == replacement)) {         // nothing to be done pattern equals replacement
             if (res != nullptr && res == arg) { // arg and res are the same
                 return;
             } else if (res == nullptr) {
-                res = DataObjectFactory::create<CSRMatrix<VT>>(
-                    numRows, numCols, nnzElements, false);
+                res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, nnzElements, false);
             }
             // copy and return in this case replace will be a copy function that
             // copies arg to res
-            memcpy(res->getRowOffsets(), arg->getRowOffsets(),
-                   (numRows + 1) * sizeof(size_t));
-            memcpy(res->getColIdxs(), arg->getColIdxs(),
-                   nnzElements * sizeof(size_t));
-            memcpy(res->getValues(), arg->getValues(),
-                   nnzElements * sizeof(VT));
+            memcpy(res->getRowOffsets(), arg->getRowOffsets(), (numRows + 1) * sizeof(size_t));
+            memcpy(res->getColIdxs(), arg->getColIdxs(), nnzElements * sizeof(size_t));
+            memcpy(res->getValues(), arg->getValues(), nnzElements * sizeof(VT));
             return;
         }
         if (res == nullptr) {
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,
-                                                           nnzElements, false);
-            memcpy(res->getRowOffsets(), arg->getRowOffsets(),
-                   (numRows + 1) * sizeof(size_t));
-            memcpy(res->getColIdxs(), arg->getColIdxs(),
-                   nnzElements * sizeof(size_t));
-            memcpy(res->getValues(), arg->getValues(),
-                   nnzElements * sizeof(VT));
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, nnzElements, false);
+            memcpy(res->getRowOffsets(), arg->getRowOffsets(), (numRows + 1) * sizeof(size_t));
+            memcpy(res->getColIdxs(), arg->getColIdxs(), nnzElements * sizeof(size_t));
+            memcpy(res->getValues(), arg->getValues(), nnzElements * sizeof(VT));
         }
         //--------main logic --------------------------
         if (pattern != pattern) { // pattern is NaN
@@ -237,11 +219,9 @@ template <typename VT> struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Replace<Matrix<VT>, Matrix<VT>, VT> {
-    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, VT pattern,
-                      VT replacement, DCTX(ctx)) {
-        bool requireCopy =
-            false; // this variable is to indicate whether we need to copy to
-                   // res (when not using inplace update semantics)
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, VT pattern, VT replacement, DCTX(ctx)) {
+        bool requireCopy = false; // this variable is to indicate whether we need to copy to
+                                  // res (when not using inplace update semantics)
 
         //------handling corner cases -------
         if (arg == nullptr)
@@ -253,19 +233,15 @@ template <typename VT> struct Replace<Matrix<VT>, Matrix<VT>, VT> {
         if ((numRows == 0) && (numCols == 0))
             return;
 
-        if (res != nullptr &&
-            (numRows != res->getNumRows() || numCols != res->getNumCols()))
-            throw std::runtime_error(
-                "Replace: res must have the same shape as arg");
+        if (res != nullptr && (numRows != res->getNumRows() || numCols != res->getNumCols()))
+            throw std::runtime_error("Replace: res must have the same shape as arg");
 
         if ((replacement != replacement && pattern != pattern) ||
-            (pattern ==
-             replacement)) { // nothing to be done pattern equals replacement
+            (pattern == replacement)) {       // nothing to be done pattern equals replacement
             if (res != nullptr && res == arg) // arg and res are the same
                 return;
             else if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(
-                    numRows, numCols, false);
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
             // copy and return in this case replace will be a copy function that
             // copies arg to res
@@ -279,8 +255,7 @@ template <typename VT> struct Replace<Matrix<VT>, Matrix<VT>, VT> {
         }
 
         if (res == nullptr) {
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
             requireCopy = true;
         }
 

@@ -57,10 +57,8 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
 
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
-    template <class DataType, typename... ArgTypes>
-    friend DataType *DataObjectFactory::create(ArgTypes...);
-    template <class DataType>
-    friend void DataObjectFactory::destroy(const DataType *obj);
+    template <class DataType, typename... ArgTypes> friend DataType *DataObjectFactory::create(ArgTypes...);
+    template <class DataType> friend void DataObjectFactory::destroy(const DataType *obj);
 
     /**
      * @brief Creates a `DenseMatrix` and allocates enough memory for the
@@ -71,8 +69,7 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      * @param zero Whether the allocated memory of the `values` array shall be
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
-    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero,
-                IAllocationDescriptor *allocInfo = nullptr);
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor *allocInfo = nullptr);
 
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values without
@@ -82,8 +79,7 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      * @param numCols The exact number of columns.
      * @param values A `std::shared_ptr` to an existing array of values.
      */
-    DenseMatrix(size_t numRows, size_t numCols,
-                std::shared_ptr<ValueType[]> &values);
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]> &values);
 
     /**
      * @brief Creates a `DenseMatrix` around a sub-matrix of another
@@ -99,12 +95,10 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      * @param colUpperExcl Exclusive upper bound for the range of columns to
      * extract.
      */
-    DenseMatrix(const DenseMatrix<ValueType> *src, int64_t rowLowerIncl,
-                int64_t rowUpperExcl, int64_t colLowerIncl,
+    DenseMatrix(const DenseMatrix<ValueType> *src, int64_t rowLowerIncl, int64_t rowUpperExcl, int64_t colLowerIncl,
                 int64_t colUpperExcl);
-    DenseMatrix(const DenseMatrix<ValueType> *src, int64_t rowLowerIncl,
-                int64_t rowUpperExcl)
-        : DenseMatrix(src, rowLowerIncl, rowUpperExcl, 0, src->numCols) {};
+    DenseMatrix(const DenseMatrix<ValueType> *src, int64_t rowLowerIncl, int64_t rowUpperExcl)
+        : DenseMatrix(src, rowLowerIncl, rowUpperExcl, 0, src->numCols){};
 
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values without
@@ -114,13 +108,11 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      * @param numCols The exact number of columns.
      * @param values A `std::shared_ptr` to an existing array of values.
      */
-    DenseMatrix(size_t numRows, size_t numCols,
-                const DenseMatrix<ValueType> *src);
+    DenseMatrix(size_t numRows, size_t numCols, const DenseMatrix<ValueType> *src);
 
     ~DenseMatrix() override = default;
 
-    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx,
-                             bool rowSkipOverride = false) const {
+    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx, bool rowSkipOverride = false) const {
         if (rowIdx >= numRows)
             throw std::runtime_error("rowIdx is out of bounds");
         if (colIdx >= numCols)
@@ -130,16 +122,13 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
 
     void fillZeroUntil(size_t rowIdx, size_t colIdx) {
         if (rowSkip == numCols || lastAppendedRowIdx == rowIdx) {
-            const size_t startPosIncl =
-                pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
+            const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
             const size_t endPosExcl = pos(rowIdx, colIdx);
             if (startPosIncl < endPosExcl)
-                memset(values.get() + startPosIncl, 0,
-                       (endPosExcl - startPosIncl) * sizeof(ValueType));
+                memset(values.get() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
         } else {
             auto v = values.get() + lastAppendedRowIdx * rowSkip;
-            memset(v + lastAppendedColIdx + 1, 0,
-                   (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
+            memset(v + lastAppendedColIdx + 1, 0, (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
             v += rowSkip;
             for (size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
                 memset(v, 0, numCols * sizeof(ValueType));
@@ -152,8 +141,7 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
 
     void printValue(std::ostream &os, ValueType val) const;
 
-    void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr,
-                             size_t offset = 0);
+    void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
 
     /**
      * @brief The getValuesInternal method fetches a pointer to an allocation of
@@ -183,26 +171,19 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      */
 
     auto getValuesInternal(const IAllocationDescriptor *alloc_desc = nullptr,
-                           const Range *range = nullptr)
-        -> std::tuple<bool, size_t, ValueType *>;
+                           const Range *range = nullptr) -> std::tuple<bool, size_t, ValueType *>;
 
-    [[nodiscard]] size_t offset() const {
-        return this->row_offset * rowSkip + this->col_offset;
-    }
+    [[nodiscard]] size_t offset() const { return this->row_offset * rowSkip + this->col_offset; }
 
-    ValueType *startAddress() const {
-        return isPartialBuffer() ? values.get() + offset() : values.get();
-    }
+    ValueType *startAddress() const { return isPartialBuffer() ? values.get() + offset() : values.get(); }
 
   public:
-    template <typename NewValueType>
-    using WithValueType = DenseMatrix<NewValueType>;
+    template <typename NewValueType> using WithValueType = DenseMatrix<NewValueType>;
 
     static std::string getName() { return "DenseMatrix"; }
 
     [[nodiscard]] bool isPartialBuffer() const {
-        return bufferSize !=
-               this->getNumRows() * this->getRowSkip() * sizeof(ValueType);
+        return bufferSize != this->getNumRows() * this->getRowSkip() * sizeof(ValueType);
     }
 
     void shrinkNumRows(size_t numRows) {
@@ -233,12 +214,8 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      * of a data structure.
      * @return A pointer to the data in the requested memory space
      */
-    const ValueType *
-    getValues(const IAllocationDescriptor *alloc_desc = nullptr,
-              const Range *range = nullptr) const {
-        auto [isLatest, id, ptr] =
-            const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(
-                alloc_desc, range);
+    const ValueType *getValues(const IAllocationDescriptor *alloc_desc = nullptr, const Range *range = nullptr) const {
+        auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
         if (!isLatest)
             this->mdo->addLatest(id);
         return ptr;
@@ -260,11 +237,8 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      * of a data structure.
      * @return A pointer to the data in the requested memory space
      */
-    ValueType *getValues(IAllocationDescriptor *alloc_desc = nullptr,
-                         const Range *range = nullptr) {
-        auto [isLatest, id, ptr] =
-            const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(
-                alloc_desc, range);
+    ValueType *getValues(IAllocationDescriptor *alloc_desc = nullptr, const Range *range = nullptr) {
+        auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
         if (!isLatest)
             this->mdo->setLatest(id);
         return ptr;
@@ -302,14 +276,13 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
     void finishAppend() override {
         // The matrix might be empty.
         if ((numRows != 0 && numCols != 0) &&
-            ((lastAppendedRowIdx + 1 < numRows) ||
-             (lastAppendedColIdx + 1 < numCols)))
+            ((lastAppendedRowIdx + 1 < numRows) || (lastAppendedColIdx + 1 < numCols)))
             append(numRows - 1, numCols - 1, ValueType(0));
     }
 
     void print(std::ostream &os) const override {
-        os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
-           << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
+        os << "DenseMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<ValueType> << ')'
+           << std::endl;
 
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
@@ -321,18 +294,12 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
         }
     }
 
-    DenseMatrix<ValueType> *sliceRow(size_t rl, size_t ru) const override {
-        return slice(rl, ru, 0, numCols);
-    }
+    DenseMatrix<ValueType> *sliceRow(size_t rl, size_t ru) const override { return slice(rl, ru, 0, numCols); }
 
-    DenseMatrix<ValueType> *sliceCol(size_t cl, size_t cu) const override {
-        return slice(0, numRows, cl, cu);
-    }
+    DenseMatrix<ValueType> *sliceCol(size_t cl, size_t cu) const override { return slice(0, numRows, cl, cu); }
 
-    DenseMatrix<ValueType> *slice(size_t rl, size_t ru, size_t cl,
-                                  size_t cu) const override {
-        return DataObjectFactory::create<DenseMatrix<ValueType>>(this, rl, ru,
-                                                                 cl, cu);
+    DenseMatrix<ValueType> *slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
+        return DataObjectFactory::create<DenseMatrix<ValueType>>(this, rl, ru, cl, cu);
     }
 
     [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
@@ -361,8 +328,7 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
             return true;
 
         if (rowSkipLhs == numCols && rowSkipRhs == numCols)
-            return !memcmp(valuesLhs, valuesRhs,
-                           numRows * numCols * sizeof(ValueType));
+            return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
         else {
             for (size_t r = 0; r < numRows; r++) {
                 if (memcmp(valuesLhs, valuesRhs, numCols * sizeof(ValueType)))
@@ -377,8 +343,7 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
     size_t serialize(std::vector<char> &buf) const override;
 };
 
-template <typename ValueType>
-std::ostream &operator<<(std::ostream &os, const DenseMatrix<ValueType> &obj) {
+template <typename ValueType> std::ostream &operator<<(std::ostream &os, const DenseMatrix<ValueType> &obj) {
     obj.print(os);
     return os;
 }
@@ -395,20 +360,17 @@ struct CharBuf {
     size_t capacity;
     size_t numCells;
 
-    CharBuf(size_t capacity_, size_t numCells_)
-        : capacity(capacity_), numCells(numCells_) {
+    CharBuf(size_t capacity_, size_t numCells_) : capacity(capacity_), numCells(numCells_) {
         strings = new char[capacity];
         currentTop = strings;
     }
     ~CharBuf() { delete[] strings; }
 
-    void expandStringBuffer(const size_t toFit, const char **vals,
-                            size_t numRows, size_t rowSkip,
+    void expandStringBuffer(const size_t toFit, const char **vals, size_t numRows, size_t rowSkip,
                             const size_t valsSize) {
         size_t strBufSize = getSize();
 
-        size_t largerStrCapacity =
-            (capacity * 2) > toFit ? (capacity * 2) : toFit;
+        size_t largerStrCapacity = (capacity * 2) > toFit ? (capacity * 2) : toFit;
         char *largerStrings = new char[largerStrCapacity];
         memcpy(largerStrings, strings, strBufSize);
 
@@ -449,22 +411,16 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
 
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
-    template <class DataType, typename... ArgTypes>
-    friend DataType *DataObjectFactory::create(ArgTypes...);
-    template <class DataType>
-    friend void DataObjectFactory::destroy(const DataType *obj);
+    template <class DataType, typename... ArgTypes> friend DataType *DataObjectFactory::create(ArgTypes...);
+    template <class DataType> friend void DataObjectFactory::destroy(const DataType *obj);
 
-    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero,
-                size_t strBufCapacity = 1024,
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, size_t strBufCapacity = 1024,
                 ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST);
 
-    DenseMatrix(size_t numRows, size_t numCols,
-                std::shared_ptr<const char *[]> &strings,
-                size_t strBufCapacity = 1024,
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<const char *[]> &strings, size_t strBufCapacity = 1024,
                 std::shared_ptr<const char *> cuda_ptr_ = nullptr);
 
-    DenseMatrix(const DenseMatrix<const char *> *src, int64_t rowLowerIncl,
-                int64_t rowUpperExcl, int64_t colLowerIncl,
+    DenseMatrix(const DenseMatrix<const char *> *src, int64_t rowLowerIncl, int64_t rowUpperExcl, int64_t colLowerIncl,
                 int64_t colUpperExcl);
 
     ~DenseMatrix() override = default;
@@ -478,8 +434,7 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
      * a partial buffer
      * @return linearized position
      */
-    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx,
-                             bool rowSkipOverride = false) const {
+    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx, bool rowSkipOverride = false) const {
         if (rowIdx >= numRows)
             throw std::runtime_error("rowIdx is out of bounds");
         if (colIdx >= numCols)
@@ -498,17 +453,14 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
     void fillZeroUntil(size_t rowIdx, size_t colIdx) {
         auto vals = values.get();
         if (rowSkip == numCols || lastAppendedRowIdx == rowIdx) {
-            const size_t startPosIncl =
-                pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
+            const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
             const size_t endPosExcl = pos(rowIdx, colIdx);
             if (startPosIncl < endPosExcl) {
-                appendZerosRange(&vals[startPosIncl],
-                                 endPosExcl - startPosIncl);
+                appendZerosRange(&vals[startPosIncl], endPosExcl - startPosIncl);
             }
         } else {
             auto v = vals + lastAppendedRowIdx * rowSkip;
-            appendZerosRange(&v[lastAppendedColIdx + 1],
-                             numCols - lastAppendedColIdx - 1);
+            appendZerosRange(&v[lastAppendedColIdx + 1], numCols - lastAppendedColIdx - 1);
             v += rowSkip;
 
             for (size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
@@ -523,14 +475,11 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
 
     void printValue(std::ostream &os, const char *val) const;
 
-    void alloc_shared_values(std::shared_ptr<const char *[]> src = nullptr,
-                             size_t offset = 0);
+    void alloc_shared_values(std::shared_ptr<const char *[]> src = nullptr, size_t offset = 0);
 
-    void alloc_shared_strings(std::shared_ptr<CharBuf> src = nullptr,
-                              size_t strBufferCapacity = 1024);
+    void alloc_shared_strings(std::shared_ptr<CharBuf> src = nullptr, size_t strBufferCapacity = 1024);
 
-    void alloc_shared_cuda_buffer(std::shared_ptr<const char *> src = nullptr,
-                                  size_t offset = 0);
+    void alloc_shared_cuda_buffer(std::shared_ptr<const char *> src = nullptr, size_t offset = 0);
 
   public:
     void shrinkNumRows(size_t numRows) {
@@ -569,13 +518,9 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
         return strBuf.get();
     }
 
-    std::shared_ptr<const char *[]> getValuesSharedPtr() const {
-        return values;
-    }
+    std::shared_ptr<const char *[]> getValuesSharedPtr() const { return values; }
 
-    const char *get(size_t rowIdx, size_t colIdx) const override {
-        return getValues()[pos(rowIdx, colIdx, false)];
-    }
+    const char *get(size_t rowIdx, size_t colIdx) const override { return getValues()[pos(rowIdx, colIdx, false)]; }
 
     void set(size_t rowIdx, size_t colIdx, const char *value) override {
         auto vals = getValues();
@@ -585,8 +530,7 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
         int32_t diff = strlen(value) - strlen(currentVal);
 
         if (currentSize + diff > strBuf->capacity) {
-            strBuf.get()->expandStringBuffer(currentSize + diff, vals, numRows,
-                                             rowSkip, getNumItems());
+            strBuf.get()->expandStringBuffer(currentSize + diff, vals, numRows, rowSkip, getNumItems());
             currentVal = vals[currentPos];
         }
 
@@ -599,8 +543,7 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
         memcpy(const_cast<char *>(currentVal), value, strlen(value) + 1);
 
         if (diff) {
-            for (size_t offset = currentPos + 1; offset < getStrBuf()->numCells;
-                 offset++)
+            for (size_t offset = currentPos + 1; offset < getStrBuf()->numCells; offset++)
                 vals[offset] += diff;
         }
 
@@ -625,9 +568,7 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
         size_t currentSize = strBuf.get()->getSize();
 
         if (currentSize + length > strBuf->capacity)
-            strBuf.get()->expandStringBuffer(currentSize + length, vals,
-                                             numRows, rowSkip,
-                                             getNumRows() * getNumCols());
+            strBuf.get()->expandStringBuffer(currentSize + length, vals, numRows, rowSkip, getNumRows() * getNumCols());
 
         memcpy(strBuf->currentTop, value, length);
         vals[pos(rowIdx, colIdx)] = strBuf->currentTop;
@@ -641,14 +582,13 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
     void finishAppend() override {
         // numRows/numCols are unsigned and can underflow
         if ((numRows != 0 && numCols != 0) &&
-            ((lastAppendedRowIdx + 1 < numRows) ||
-             (lastAppendedColIdx + 1 < numCols)))
+            ((lastAppendedRowIdx + 1 < numRows) || (lastAppendedColIdx + 1 < numCols)))
             append(numRows - 1, numCols - 1, "\0");
     }
 
     void print(std::ostream &os) const override {
-        os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
-           << ValueTypeUtils::cppNameFor<const char *> << ')' << std::endl;
+        os << "DenseMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<const char *> << ')'
+           << std::endl;
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
                 printValue(os, get(r, c));
@@ -659,23 +599,15 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
         }
     }
 
-    DenseMatrix<const char *> *sliceRow(size_t rl, size_t ru) const override {
-        return slice(rl, ru, 0, numCols);
+    DenseMatrix<const char *> *sliceRow(size_t rl, size_t ru) const override { return slice(rl, ru, 0, numCols); }
+
+    DenseMatrix<const char *> *sliceCol(size_t cl, size_t cu) const override { return slice(0, numRows, cl, cu); }
+
+    DenseMatrix<const char *> *slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
+        return DataObjectFactory::create<DenseMatrix<const char *>>(this, rl, ru, cl, cu);
     }
 
-    DenseMatrix<const char *> *sliceCol(size_t cl, size_t cu) const override {
-        return slice(0, numRows, cl, cu);
-    }
-
-    DenseMatrix<const char *> *slice(size_t rl, size_t ru, size_t cl,
-                                     size_t cu) const override {
-        return DataObjectFactory::create<DenseMatrix<const char *>>(this, rl,
-                                                                    ru, cl, cu);
-    }
-
-    float printBufferSize() const {
-        return static_cast<float>(numRows * numCols) / (1048576);
-    }
+    float printBufferSize() const { return static_cast<float>(numRows * numCols) / (1048576); }
 
     bool operator==(const DenseMatrix<const char *> &M) const {
         if (getNumRows() == 0 || getNumCols() == 0 || !strBuf || !values)
@@ -688,7 +620,5 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
         return true;
     }
 
-    size_t serialize(std::vector<char> &buf) const override {
-        throw std::runtime_error("Not implemented");
-    }
+    size_t serialize(std::vector<char> &buf) const override { throw std::runtime_error("Not implemented"); }
 };

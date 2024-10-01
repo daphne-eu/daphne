@@ -73,8 +73,7 @@ template <class DTArg> struct WriteHDFS {
         } else {
             // clear directory
             int numEntries;
-            hdfsFileInfo *files =
-                hdfsListDirectory(*fs, dirFileName.c_str(), &numEntries);
+            hdfsFileInfo *files = hdfsListDirectory(*fs, dirFileName.c_str(), &numEntries);
             for (int i = 0; i < numEntries; i++)
                 hdfsDelete(*fs, files[i].mName, 1);
             hdfsFreeFileInfo(files, numEntries);
@@ -99,7 +98,6 @@ template <class DTArg> struct WriteHDFS {
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg>
-void writeHDFS(const DTArg *arg, const char *filename, DCTX(dctx)) {
+template <class DTArg> void writeHDFS(const DTArg *arg, const char *filename, DCTX(dctx)) {
     WriteHDFS<DTArg>::apply(arg, filename, dctx);
 }

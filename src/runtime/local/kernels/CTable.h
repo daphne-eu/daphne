@@ -30,9 +30,8 @@
 // ****************************************************************************
 
 template <class DTRes, class DTLhs, class DTRhs, class VTWeight> struct CTable {
-    static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs,
-                      VTWeight weight, int64_t resNumRows, int64_t resNumCols,
-                      DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, VTWeight weight, int64_t resNumRows,
+                      int64_t resNumCols, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -40,10 +39,9 @@ template <class DTRes, class DTLhs, class DTRhs, class VTWeight> struct CTable {
 // ****************************************************************************
 
 template <class DTRes, class DTLhs, class DTRhs, class VTWeight>
-void ctable(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, VTWeight weight,
-            int64_t resNumRows, int64_t resNumCols, DCTX(ctx)) {
-    CTable<DTRes, DTLhs, DTRhs, VTWeight>::apply(res, lhs, rhs, weight,
-                                                 resNumRows, resNumCols, ctx);
+void ctable(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, VTWeight weight, int64_t resNumRows, int64_t resNumCols,
+            DCTX(ctx)) {
+    CTable<DTRes, DTLhs, DTRhs, VTWeight>::apply(res, lhs, rhs, weight, resNumRows, resNumCols, ctx);
 }
 
 // ****************************************************************************
@@ -55,12 +53,9 @@ void ctable(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, VTWeight weight,
 // ----------------------------------------------------------------------------
 
 template <typename VTCoord, class VTWeight>
-struct CTable<DenseMatrix<VTWeight>, DenseMatrix<VTCoord>, DenseMatrix<VTCoord>,
-              VTWeight> {
-    static void apply(DenseMatrix<VTWeight> *&res,
-                      const DenseMatrix<VTCoord> *lhs,
-                      const DenseMatrix<VTCoord> *rhs, VTWeight weight,
-                      int64_t resNumRows, int64_t resNumCols, DCTX(ctx)) {
+struct CTable<DenseMatrix<VTWeight>, DenseMatrix<VTCoord>, DenseMatrix<VTCoord>, VTWeight> {
+    static void apply(DenseMatrix<VTWeight> *&res, const DenseMatrix<VTCoord> *lhs, const DenseMatrix<VTCoord> *rhs,
+                      VTWeight weight, int64_t resNumRows, int64_t resNumCols, DCTX(ctx)) {
         const size_t lhsNumRows = lhs->getNumRows();
         const size_t lhsNumCols = lhs->getNumCols();
         const size_t rhsNumRows = rhs->getNumRows();
@@ -70,23 +65,18 @@ struct CTable<DenseMatrix<VTWeight>, DenseMatrix<VTCoord>, DenseMatrix<VTCoord>,
         auto rhsVals = rhs->getValues();
 
         if ((lhsNumCols != 1) || (rhsNumCols != 1))
-            throw std::runtime_error(
-                "ctable: lhs and rhs must have only one column");
+            throw std::runtime_error("ctable: lhs and rhs must have only one column");
         if (lhsNumRows != rhsNumRows)
-            throw std::runtime_error(
-                "ctable: lhs and rhs must have the same number of rows");
+            throw std::runtime_error("ctable: lhs and rhs must have the same number of rows");
 
         const bool isResNumRowsFromLhs = resNumRows < 0;
         const bool isResNumColsFromRhs = resNumCols < 0;
         if (res == nullptr) {
             if (isResNumRowsFromLhs)
-                resNumRows =
-                    *std::max_element(lhsVals, &lhsVals[lhsNumRows]) + 1;
+                resNumRows = *std::max_element(lhsVals, &lhsVals[lhsNumRows]) + 1;
             if (isResNumColsFromRhs)
-                resNumCols =
-                    *std::max_element(rhsVals, &rhsVals[rhsNumRows]) + 1;
-            res = DataObjectFactory::create<DenseMatrix<VTWeight>>(
-                resNumRows, resNumCols, true);
+                resNumCols = *std::max_element(rhsVals, &rhsVals[rhsNumRows]) + 1;
+            res = DataObjectFactory::create<DenseMatrix<VTWeight>>(resNumRows, resNumCols, true);
         }
 
         // res[i, j] = |{ k | lhs[k] = i and rhs[k] = j, 0 ≤ k ≤ n-1 }|.
@@ -119,12 +109,9 @@ struct CTable<DenseMatrix<VTWeight>, DenseMatrix<VTCoord>, DenseMatrix<VTCoord>,
 // CSRMatrix <- DenseMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 template <typename VTCoord, class VTWeight>
-struct CTable<CSRMatrix<VTWeight>, DenseMatrix<VTCoord>, DenseMatrix<VTCoord>,
-              VTWeight> {
-    static void apply(CSRMatrix<VTWeight> *&res,
-                      const DenseMatrix<VTCoord> *lhs,
-                      const DenseMatrix<VTCoord> *rhs, VTWeight weight,
-                      int64_t resNumRows, int64_t resNumCols, DCTX(ctx)) {
+struct CTable<CSRMatrix<VTWeight>, DenseMatrix<VTCoord>, DenseMatrix<VTCoord>, VTWeight> {
+    static void apply(CSRMatrix<VTWeight> *&res, const DenseMatrix<VTCoord> *lhs, const DenseMatrix<VTCoord> *rhs,
+                      VTWeight weight, int64_t resNumRows, int64_t resNumCols, DCTX(ctx)) {
         const size_t lhsNumRows = lhs->getNumRows();
         const size_t lhsNumCols = lhs->getNumCols();
         const size_t rhsNumRows = rhs->getNumRows();
@@ -134,26 +121,19 @@ struct CTable<CSRMatrix<VTWeight>, DenseMatrix<VTCoord>, DenseMatrix<VTCoord>,
         auto rhsVals = rhs->getValues();
 
         if ((lhsNumCols != 1) || (rhsNumCols != 1))
-            throw std::runtime_error(
-                "ctable: lhs and rhs must have only one column");
+            throw std::runtime_error("ctable: lhs and rhs must have only one column");
         if (lhsNumRows != rhsNumRows)
-            throw std::runtime_error(
-                "ctable: lhs and rhs must have the same number of rows");
+            throw std::runtime_error("ctable: lhs and rhs must have the same number of rows");
 
         const bool isResNumRowsFromLhs = resNumRows < 0;
         const bool isResNumColsFromRhs = resNumCols < 0;
         if (res == nullptr) {
             if (isResNumRowsFromLhs)
-                resNumRows =
-                    *std::max_element(lhsVals, &lhsVals[lhsNumRows]) + 1;
+                resNumRows = *std::max_element(lhsVals, &lhsVals[lhsNumRows]) + 1;
             if (isResNumColsFromRhs)
-                resNumCols =
-                    *std::max_element(rhsVals, &rhsVals[rhsNumRows]) + 1;
+                resNumCols = *std::max_element(rhsVals, &rhsVals[rhsNumRows]) + 1;
             res = DataObjectFactory::create<CSRMatrix<VTWeight>>(
-                resNumRows, resNumCols,
-                std::min(static_cast<ssize_t>(lhsNumRows),
-                         resNumRows * resNumCols),
-                true);
+                resNumRows, resNumCols, std::min(static_cast<ssize_t>(lhsNumRows), resNumRows * resNumCols), true);
         }
 
         if (isResNumRowsFromLhs && isResNumColsFromRhs) {
@@ -185,17 +165,14 @@ struct CTable<CSRMatrix<VTWeight>, DenseMatrix<VTCoord>, DenseMatrix<VTCoord>,
 
 template <typename VTCoord, class VTWeight>
 struct CTable<Matrix<VTWeight>, Matrix<VTCoord>, Matrix<VTCoord>, VTWeight> {
-    static void apply(Matrix<VTWeight> *&res, const Matrix<VTCoord> *lhs,
-                      const Matrix<VTCoord> *rhs, VTWeight weight,
+    static void apply(Matrix<VTWeight> *&res, const Matrix<VTCoord> *lhs, const Matrix<VTCoord> *rhs, VTWeight weight,
                       int64_t resNumRows, int64_t resNumCols, DCTX(ctx)) {
         const size_t lhsNumRows = lhs->getNumRows();
 
         if ((lhs->getNumCols() != 1) || (rhs->getNumCols() != 1))
-            throw std::runtime_error(
-                "ctable: lhs and rhs must have only one column");
+            throw std::runtime_error("ctable: lhs and rhs must have only one column");
         if (lhsNumRows != rhs->getNumRows())
-            throw std::runtime_error(
-                "ctable: lhs and rhs must have the same number of rows");
+            throw std::runtime_error("ctable: lhs and rhs must have the same number of rows");
 
         const bool isResNumRowsFromLhs = resNumRows < 0;
         const bool isResNumColsFromRhs = resNumCols < 0;
@@ -216,8 +193,7 @@ struct CTable<Matrix<VTWeight>, Matrix<VTCoord>, Matrix<VTCoord>, VTWeight> {
                 resNumRows = static_cast<int64_t>(getMaxVal(lhs)) + 1;
             if (isResNumColsFromRhs)
                 resNumCols = static_cast<int64_t>(getMaxVal(rhs)) + 1;
-            res = DataObjectFactory::create<DenseMatrix<VTWeight>>(
-                resNumRows, resNumCols, true);
+            res = DataObjectFactory::create<DenseMatrix<VTWeight>>(resNumRows, resNumCols, true);
         }
 
         // res[i, j] = |{ k | lhs[k] = i and rhs[k] = j, 0 ≤ k ≤ n-1 }|.

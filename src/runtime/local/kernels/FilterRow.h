@@ -35,8 +35,7 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg, typename VTSel> struct FilterRow {
-    static void apply(DTRes *&res, const DTArg *arg,
-                      const DenseMatrix<VTSel> *sel, DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -44,8 +43,7 @@ template <class DTRes, class DTArg, typename VTSel> struct FilterRow {
 // ****************************************************************************
 
 template <class DTRes, class DTArg, typename VTSel>
-void filterRow(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel,
-               DCTX(ctx)) {
+void filterRow(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
     FilterRow<DTRes, DTArg, VTSel>::apply(res, arg, sel, ctx);
 }
 
@@ -57,16 +55,13 @@ void filterRow(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel,
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename VTSel>
-struct FilterRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
+template <typename VT, typename VTSel> struct FilterRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (sel->getNumRows() != numRowsArg)
-            throw std::runtime_error(
-                "sel must have exactly one entry (row) for each row in arg");
+            throw std::runtime_error("sel must have exactly one entry (row) for each row in arg");
         if (sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
@@ -75,8 +70,7 @@ struct FilterRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             numRowsRes += sel->get(r, 0);
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes,
-                                                             numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
 
         const VT *valuesArg = arg->getValues();
         VT *valuesRes = res->getValues();
@@ -100,29 +94,25 @@ struct FilterRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
 #define FILTERROW_FRAME_MODE 0
 
 template <typename VTSel> struct FilterRow<Frame, Frame, VTSel> {
-    static void apply(Frame *&res, const Frame *arg,
-                      const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
+    static void apply(Frame *&res, const Frame *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         const ValueTypeCode *schema = arg->getSchema();
 
         if (sel->getNumRows() != numRows)
-            throw std::runtime_error(
-                "sel must have exactly one entry (row) for each row in arg");
+            throw std::runtime_error("sel must have exactly one entry (row) for each row in arg");
         if (sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
 #if FILTERROW_FRAME_MODE == 0
         // Add some padding due to stores in units of 8 bytes (see below). This
         // formula is a little pessimistic, though.
-        const size_t numRowsAlloc =
-            numRows + sizeof(uint64_t) / sizeof(uint8_t) - 1;
+        const size_t numRowsAlloc = numRows + sizeof(uint64_t) / sizeof(uint8_t) - 1;
 #elif FILTERROW_FRAME_MODE == 1
         const size_t numRowsAlloc = numRows;
 #endif
         if (res == nullptr)
-            res = DataObjectFactory::create<Frame>(
-                numRowsAlloc, numCols, schema, arg->getLabels(), false);
+            res = DataObjectFactory::create<Frame>(numRowsAlloc, numCols, schema, arg->getLabels(), false);
 
         const VTSel *valuesSel = sel->getValues();
 
@@ -134,8 +124,7 @@ template <typename VTSel> struct FilterRow<Frame, Frame, VTSel> {
         // Initialize information on each column.
         for (size_t c = 0; c < numCols; c++) {
             elementSizes[c] = ValueTypeUtils::sizeOf(schema[c]);
-            argCols[c] =
-                reinterpret_cast<const uint8_t *>(arg->getColumnRaw(c));
+            argCols[c] = reinterpret_cast<const uint8_t *>(arg->getColumnRaw(c));
             resCols[c] = reinterpret_cast<uint8_t *>(res->getColumnRaw(c));
         }
         // Actual filtering.
@@ -147,8 +136,7 @@ template <typename VTSel> struct FilterRow<Frame, Frame, VTSel> {
                     // be overwritten by the next match. With this approach, we
                     // do not need to call memcpy for each element, nor
                     // interpret the types for a L/S of fitting size.
-                    *reinterpret_cast<uint64_t *>(resCols[c]) =
-                        *reinterpret_cast<const uint64_t *>(argCols[c]);
+                    *reinterpret_cast<uint64_t *>(resCols[c]) = *reinterpret_cast<const uint64_t *>(argCols[c]);
                     resCols[c] += elementSizes[c];
                 }
             }
@@ -174,16 +162,13 @@ template <typename VTSel> struct FilterRow<Frame, Frame, VTSel> {
 // Matrix <- Matrix
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename VTSel>
-struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
-    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg,
-                      const Matrix<VTSel> *sel, DCTX(ctx)) {
+template <typename VT, typename VTSel> struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, const Matrix<VTSel> *sel, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (sel->getNumRows() != numRowsArg)
-            throw std::runtime_error(
-                "sel must have exactly one entry (row) for each row in arg");
+            throw std::runtime_error("sel must have exactly one entry (row) for each row in arg");
         if (sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
@@ -192,8 +177,7 @@ struct FilterRow<Matrix<VT>, Matrix<VT>, VTSel> {
             numRowsRes += sel->get(r, 0);
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes,
-                                                             numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
 
         size_t resRow = 0;
         res->prepareAppend();

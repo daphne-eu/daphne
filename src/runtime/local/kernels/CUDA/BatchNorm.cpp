@@ -19,10 +19,9 @@
 
 namespace CUDA::BatchNorm {
 template <typename DTRes, typename DTArg>
-void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data,
-                                  const DTArg *gamma, const DTArg *beta,
-                                  const DTArg *ema_mean, const DTArg *ema_var,
-                                  const typename DTArg::VT eps, DCTX(dctx)) {
+void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta,
+                                  const DTArg *ema_mean, const DTArg *ema_var, const typename DTArg::VT eps,
+                                  DCTX(dctx)) {
     const size_t deviceID = 0; // ToDo: multi device support
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
@@ -40,23 +39,19 @@ void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data,
 
     size_t HW = nc1 / num_channels;
     auto H = static_cast<size_t>(std::sqrt(HW));
-    CHECK_CUDNN(cudnnSetTensor4dDescriptor(
-        ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
-        nr1, num_channels, H, H));
-    CHECK_CUDNN(cudnnSetTensor4dDescriptor(
-        ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
-        nr1, num_channels, H, H));
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), nr1,
+                                           num_channels, H, H));
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), nr1,
+                                           num_channels, H, H));
 
     if (res == nullptr) {
         res = DataObjectFactory::create<DTRes>(nr1, nc1, false, &alloc_desc);
     }
     VT *d_res = res->getValues(&alloc_desc);
-    CHECK_CUDNN(cudnnDeriveBNTensorDescriptor(
-        ctx->bn_tensor_desc, ctx->src_tensor_desc, ctx->bn_mode));
+    CHECK_CUDNN(cudnnDeriveBNTensorDescriptor(ctx->bn_tensor_desc, ctx->src_tensor_desc, ctx->bn_mode));
     CHECK_CUDNN(cudnnBatchNormalizationForwardInference(
-        ctx->getCUDNNHandle(), ctx->bn_mode, &blend_alpha, &blend_beta,
-        ctx->src_tensor_desc, d_input, ctx->dst_tensor_desc, d_res,
-        ctx->bn_tensor_desc, d_gamma, d_beta, d_ema_mean, d_ema_var, eps));
+        ctx->getCUDNNHandle(), ctx->bn_mode, &blend_alpha, &blend_beta, ctx->src_tensor_desc, d_input,
+        ctx->dst_tensor_desc, d_res, ctx->bn_tensor_desc, d_gamma, d_beta, d_ema_mean, d_ema_var, eps));
 }
 
 template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;

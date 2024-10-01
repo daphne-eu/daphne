@@ -28,27 +28,22 @@
 using namespace mlir;
 
 class SelectMatrixRepresentationsPass
-    : public PassWrapper<SelectMatrixRepresentationsPass,
-                         OperationPass<func::FuncOp>> {
+    : public PassWrapper<SelectMatrixRepresentationsPass, OperationPass<func::FuncOp>> {
     const DaphneUserConfig &cfg;
 
     std::function<WalkResult(Operation *)> walkOp = [&](Operation *op) {
         if (returnsKnownProperties(op)) {
-            const bool isScfOp =
-                op->getDialect() ==
-                op->getContext()->getOrLoadDialect<scf::SCFDialect>();
+            const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
             // ----------------------------------------------------------------
             // Handle all non-SCF operations
             // ----------------------------------------------------------------
             if (!isScfOp) {
                 // Set the matrix representation for all result types
                 for (auto res : op->getResults()) {
-                    if (auto matTy =
-                            res.getType().dyn_cast<daphne::MatrixType>()) {
+                    if (auto matTy = res.getType().dyn_cast<daphne::MatrixType>()) {
                         const double sparsity = matTy.getSparsity();
                         if (sparsity < cfg.sparsity_threshold) {
-                            res.setType(matTy.withRepresentation(
-                                daphne::MatrixRepresentation::Sparse));
+                            res.setType(matTy.withRepresentation(daphne::MatrixRepresentation::Sparse));
                         }
                     }
                 }
@@ -85,10 +80,9 @@ class SelectMatrixRepresentationsPass
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
                     if (yieldedTy != resultTy)
-                        throw ErrorHandler::compilerError(
-                            whileOp, "SelectMatrixRepresentationsPass",
-                            "the representation of a matrix must not be "
-                            "changed within the body of a while-loop.");
+                        throw ErrorHandler::compilerError(whileOp, "SelectMatrixRepresentationsPass",
+                                                          "the representation of a matrix must not be "
+                                                          "changed within the body of a while-loop.");
                 }
                 // Tell the walker to skip the descendants of the WhileOp, we
                 // have already triggered a walk on them explicitly.
@@ -117,10 +111,9 @@ class SelectMatrixRepresentationsPass
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
                     if (yieldedTy != resultTy)
-                        throw ErrorHandler::compilerError(
-                            forOp, "SelectMatrixRepresentationsPass",
-                            "the representation of a matrix must not be "
-                            "changed within the body of a for-loop");
+                        throw ErrorHandler::compilerError(forOp, "SelectMatrixRepresentationsPass",
+                                                          "the representation of a matrix must not be "
+                                                          "changed within the body of a for-loop");
                 }
                 // Tell the walker to skip the descendants of the ForOp, we
                 // have already triggered a walk on them explicitly.
@@ -141,10 +134,9 @@ class SelectMatrixRepresentationsPass
                     Type thenTy = thenYield->getOperand(i).getType();
                     Type elseTy = elseYield->getOperand(i).getType();
                     if (thenTy != elseTy)
-                        throw ErrorHandler::compilerError(
-                            ifOp, "SelectMatrixRepresentationsPass",
-                            "a matrix must not be assigned two values of "
-                            "different representations in then/else branches");
+                        throw ErrorHandler::compilerError(ifOp, "SelectMatrixRepresentationsPass",
+                                                          "a matrix must not be assigned two values of "
+                                                          "different representations in then/else branches");
                     ifOp.getResult(i).setType(thenTy);
                 }
                 // Tell the walker to skip the descendants of the IfOp, we
@@ -157,22 +149,18 @@ class SelectMatrixRepresentationsPass
     };
 
   public:
-    explicit SelectMatrixRepresentationsPass(const DaphneUserConfig &cfg)
-        : cfg(cfg) {}
+    explicit SelectMatrixRepresentationsPass(const DaphneUserConfig &cfg) : cfg(cfg) {}
 
     void runOnOperation() override {
         func::FuncOp f = getOperation();
         f.walk<WalkOrder::PreOrder>(walkOp);
         // infer function return types
         // TODO: cast for UDFs?
-        f.setType(FunctionType::get(
-            &getContext(), f.getFunctionType().getInputs(),
-            f.getBody().back().getTerminator()->getOperandTypes()));
+        f.setType(FunctionType::get(&getContext(), f.getFunctionType().getInputs(),
+                                    f.getBody().back().getTerminator()->getOperandTypes()));
     }
 
-    StringRef getArgument() const final {
-        return "select-matrix-representations";
-    }
+    StringRef getArgument() const final { return "select-matrix-representations"; }
     StringRef getDescription() const final { return "TODO"; }
 
     static bool returnsKnownProperties(Operation *op) {
@@ -184,7 +172,6 @@ class SelectMatrixRepresentationsPass
     }
 };
 
-std::unique_ptr<Pass>
-daphne::createSelectMatrixRepresentationsPass(const DaphneUserConfig &cfg) {
+std::unique_ptr<Pass> daphne::createSelectMatrixRepresentationsPass(const DaphneUserConfig &cfg) {
     return std::make_unique<SelectMatrixRepresentationsPass>(cfg);
 }

@@ -48,8 +48,7 @@ template <class DTArg, typename TestType> struct HasSpecialValue {
  * @param testVal The value to test for in the matrix.
  * @return Returns true when finding a matchin element.
  */
-template <class DTArg, typename TestType>
-bool hasSpecialValue(const DTArg *arg, TestType testVal, DCTX(ctx)) {
+template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg, TestType testVal, DCTX(ctx)) {
     return HasSpecialValue<DTArg, TestType>::apply(arg, testVal, ctx);
 }
 
@@ -61,8 +60,7 @@ bool hasSpecialValue(const DTArg *arg, TestType testVal, DCTX(ctx)) {
 // Bool <- DenseMatrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType>
-struct HasSpecialValue<DenseMatrix<VT>, TestType> {
+template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>, TestType> {
     static bool apply(const DenseMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
         auto numCols = arg->getNumCols();
@@ -95,8 +93,7 @@ struct HasSpecialValue<DenseMatrix<VT>, TestType> {
 // Bool <- CSRMatrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType>
-struct HasSpecialValue<CSRMatrix<VT>, TestType> {
+template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, TestType> {
     static bool apply(const CSRMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
         auto numCols = arg->getNumCols();
@@ -133,8 +130,7 @@ struct HasSpecialValue<CSRMatrix<VT>, TestType> {
 // Bool <- Matrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType>
-struct HasSpecialValue<Matrix<VT>, TestType> {
+template <typename VT, typename TestType> struct HasSpecialValue<Matrix<VT>, TestType> {
     static bool apply(const Matrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();

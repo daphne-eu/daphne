@@ -22,8 +22,7 @@
 
 using namespace mlir;
 
-struct MarkFPGAOPENCLOpsPass
-    : public PassWrapper<MarkFPGAOPENCLOpsPass, OperationPass<func::FuncOp>> {
+struct MarkFPGAOPENCLOpsPass : public PassWrapper<MarkFPGAOPENCLOpsPass, OperationPass<func::FuncOp>> {
 
     /**
      * @brief User configuration influencing the rewrite pass
@@ -52,8 +51,7 @@ void MarkFPGAOPENCLOpsPass::runOnOperation() {
     });
 }
 
-std::unique_ptr<Pass>
-daphne::createMarkFPGAOPENCLOpsPass(const DaphneUserConfig &cfg) {
+std::unique_ptr<Pass> daphne::createMarkFPGAOPENCLOpsPass(const DaphneUserConfig &cfg) {
     return std::make_unique<MarkFPGAOPENCLOpsPass>(cfg);
 }
 #endif

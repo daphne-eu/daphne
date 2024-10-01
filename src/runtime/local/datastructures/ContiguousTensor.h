@@ -39,8 +39,7 @@
  * equivalent of row-major order".
  *
  */
-template <typename ValueType>
-class ContiguousTensor : public Tensor<ValueType> {
+template <typename ValueType> class ContiguousTensor : public Tensor<ValueType> {
   public:
     std::vector<size_t> strides;
 
@@ -49,16 +48,12 @@ class ContiguousTensor : public Tensor<ValueType> {
   private:
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
-    template <class DataType, typename... ArgTypes>
-    friend DataType *DataObjectFactory::create(ArgTypes...);
-    template <class DataType>
-    friend void DataObjectFactory::destroy(const DataType *obj);
+    template <class DataType, typename... ArgTypes> friend DataType *DataObjectFactory::create(ArgTypes...);
+    template <class DataType> friend void DataObjectFactory::destroy(const DataType *obj);
 
-    ContiguousTensor(const std::vector<size_t> &tensor_shape,
-                     InitCode init_code)
+    ContiguousTensor(const std::vector<size_t> &tensor_shape, InitCode init_code)
         : Tensor<ValueType>::Tensor(tensor_shape),
-          data(new ValueType[this->total_element_count],
-               std::default_delete<ValueType[]>()) {
+          data(new ValueType[this->total_element_count], std::default_delete<ValueType[]>()) {
         strides.resize(this->rank);
         if (this->rank > 0) {
             strides[0] = 1;
@@ -66,8 +61,7 @@ class ContiguousTensor : public Tensor<ValueType> {
 
         for (size_t i = 0; i < this->rank; i++) {
             if (tensor_shape[i] == 0) {
-                throw std::runtime_error(
-                    "Tensors with dimensions of extend 0 are disallowed.");
+                throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
         }
 
@@ -107,16 +101,14 @@ class ContiguousTensor : public Tensor<ValueType> {
 
     template <typename VTArg>
     ContiguousTensor(const ContiguousTensor<VTArg> *other)
-        : Tensor<ValueType>::Tensor(other->tensor_shape),
-          strides(other->strides) {
+        : Tensor<ValueType>::Tensor(other->tensor_shape), strides(other->strides) {
         // workarround for old versions of gcc with template specialization bug
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85282
         if constexpr (std::is_same<VTArg, ValueType>::value) {
             data = other->data;
         } else {
-            data = std::shared_ptr<ValueType[]>(
-                new ValueType[this->total_element_count],
-                std::default_delete<ValueType[]>());
+            data = std::shared_ptr<ValueType[]>(new ValueType[this->total_element_count],
+                                                std::default_delete<ValueType[]>());
             for (size_t i = 0; i < this->total_element_count; i++) {
                 data[i] = static_cast<ValueType>(other->data[i]);
             }
@@ -124,23 +116,19 @@ class ContiguousTensor : public Tensor<ValueType> {
     };
 
     ContiguousTensor(const DenseMatrix<ValueType> *other)
-        : Tensor<ValueType>::Tensor(other->getNumRows(), other->getNumCols()),
-          data(other->getValuesSharedPtr()) {
+        : Tensor<ValueType>::Tensor(other->getNumRows(), other->getNumCols()), data(other->getValuesSharedPtr()) {
         strides = {1, other->getRowSkip()};
         for (size_t i = 0; i < this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
-                throw std::runtime_error(
-                    "Tensors with dimensions of extend 0 are disallowed.");
+                throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
         }
     }
 
     // Copies passed data
-    ContiguousTensor(ValueType *input_data,
-                     const std::vector<size_t> &tensor_shape)
+    ContiguousTensor(ValueType *input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape),
-          data(new ValueType[this->total_element_count],
-               std::default_delete<ValueType[]>()) {
+          data(new ValueType[this->total_element_count], std::default_delete<ValueType[]>()) {
         strides.resize(this->rank);
         if (this->rank > 0) {
             strides[0] = 1;
@@ -148,8 +136,7 @@ class ContiguousTensor : public Tensor<ValueType> {
 
         for (size_t i = 0; i < this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
-                throw std::runtime_error(
-                    "Tensors with dimensions of extend 0 are disallowed.");
+                throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
         }
 
@@ -157,12 +144,10 @@ class ContiguousTensor : public Tensor<ValueType> {
             strides[i] = strides[i - 1] * this->tensor_shape[i - 1];
         }
 
-        std::memcpy(data.get(), input_data,
-                    this->total_element_count * sizeof(ValueType));
+        std::memcpy(data.get(), input_data, this->total_element_count * sizeof(ValueType));
     }
 
-    ContiguousTensor(std::shared_ptr<ValueType[]> &input_data,
-                     const std::vector<size_t> &tensor_shape)
+    ContiguousTensor(std::shared_ptr<ValueType[]> &input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape) {
         data = input_data;
         strides.resize(this->rank);
@@ -172,8 +157,7 @@ class ContiguousTensor : public Tensor<ValueType> {
 
         for (size_t i = 0; i < this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
-                throw std::runtime_error(
-                    "Tensors with dimensions of extend 0 are disallowed.");
+                throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
         }
 
@@ -183,8 +167,7 @@ class ContiguousTensor : public Tensor<ValueType> {
     }
 
     // Takes ownership of data
-    ContiguousTensor(std::unique_ptr<ValueType[]> input_data,
-                     const std::vector<size_t> &tensor_shape)
+    ContiguousTensor(std::unique_ptr<ValueType[]> input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape), data(std::move(input_data)) {
         strides.resize(this->rank);
         if (this->rank > 0) {
@@ -193,8 +176,7 @@ class ContiguousTensor : public Tensor<ValueType> {
 
         for (size_t i = 0; i < this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
-                throw std::runtime_error(
-                    "Tensors with dimensions of extend 0 are disallowed.");
+                throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
         }
 
@@ -214,8 +196,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         }
 
         return !static_cast<bool>(
-            std::memcmp(data.get(), rhs.data.get(),
-                        this->total_element_count * sizeof(ValueType)));
+            std::memcmp(data.get(), rhs.data.get(), this->total_element_count * sizeof(ValueType)));
     }
 
     DenseMatrix<ValueType> *tryToGetDenseMatrix() const {
@@ -223,12 +204,10 @@ class ContiguousTensor : public Tensor<ValueType> {
             return nullptr;
         }
 
-        return DataObjectFactory::create<DenseMatrix<ValueType>>(
-            this->tensor_shape[1], this->tensor_shape[0], data);
+        return DataObjectFactory::create<DenseMatrix<ValueType>>(this->tensor_shape[1], this->tensor_shape[0], data);
     }
 
-    std::optional<ValueType>
-    tryGet(const std::vector<size_t> &element_indices) const {
+    std::optional<ValueType> tryGet(const std::vector<size_t> &element_indices) const {
         if (element_indices.size() != this->rank) {
             return std::nullopt;
         }
@@ -318,15 +297,13 @@ class ContiguousTensor : public Tensor<ValueType> {
 
     // Ranges inclusive on lower bound and exclusive on upper bound i.e. [x,y]
     // at dsl lvl is in math == [x:y)
-    ContiguousTensor<ValueType> *
-    tryDice(std::vector<std::pair<size_t, size_t>> index_ranges) const {
+    ContiguousTensor<ValueType> *tryDice(std::vector<std::pair<size_t, size_t>> index_ranges) const {
         if (index_ranges.size() != this->rank) {
             return nullptr;
         }
 
         for (size_t i = 0; i < this->rank; i++) {
-            index_ranges[i] = {std::get<0>(index_ranges[i]),
-                               std::get<1>(index_ranges[i]) - 1};
+            index_ranges[i] = {std::get<0>(index_ranges[i]), std::get<1>(index_ranges[i]) - 1};
             if (std::get<0>(index_ranges[i]) >= this->tensor_shape[i] ||
                 std::get<1>(index_ranges[i]) >= this->tensor_shape[i] ||
                 std::get<0>(index_ranges[i]) > std::get<1>(index_ranges[i])) {
@@ -337,13 +314,11 @@ class ContiguousTensor : public Tensor<ValueType> {
         std::vector<size_t> new_tensor_shape;
         new_tensor_shape.resize(this->rank);
         for (size_t i = 0; i < this->rank; i++) {
-            new_tensor_shape[i] =
-                std::get<1>(index_ranges[i]) - std::get<0>(index_ranges[i]) + 1;
+            new_tensor_shape[i] = std::get<1>(index_ranges[i]) - std::get<0>(index_ranges[i]) + 1;
         }
 
         ContiguousTensor<ValueType> *new_tensor =
-            DataObjectFactory::create<ContiguousTensor<ValueType>>(
-                new_tensor_shape, InitCode::NONE);
+            DataObjectFactory::create<ContiguousTensor<ValueType>>(new_tensor_shape, InitCode::NONE);
 
         std::vector<size_t> current_indices;
         current_indices.resize(this->rank);
@@ -351,9 +326,8 @@ class ContiguousTensor : public Tensor<ValueType> {
             size_t tmp = i;
 
             for (int64_t j = this->rank - 1; j >= 0; j--) {
-                current_indices[static_cast<size_t>(j)] =
-                    (tmp / new_tensor->strides[static_cast<size_t>(j)]) +
-                    std::get<0>(index_ranges[static_cast<size_t>(j)]);
+                current_indices[static_cast<size_t>(j)] = (tmp / new_tensor->strides[static_cast<size_t>(j)]) +
+                                                          std::get<0>(index_ranges[static_cast<size_t>(j)]);
                 tmp = tmp % new_tensor->strides[static_cast<size_t>(j)];
             }
             new_tensor->data[i] = get(current_indices);
@@ -376,7 +350,6 @@ class ContiguousTensor : public Tensor<ValueType> {
     size_t getNumItems() const override { return this->total_element_count; }
 
     size_t serialize(std::vector<char> &buf) const override {
-        throw std::runtime_error(
-            "ContiguousTensor::serialize() is not supported (yet)");
+        throw std::runtime_error("ContiguousTensor::serialize() is not supported (yet)");
     }
 };

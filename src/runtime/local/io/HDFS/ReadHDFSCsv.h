@@ -31,8 +31,7 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadHDFSCsv {
-    static void apply(DTRes *&res, const char *hdfsDir, size_t numRows,
-                      size_t numCols, char delim, DCTX(dctx),
+    static void apply(DTRes *&res, const char *hdfsDir, size_t numRows, size_t numCols, char delim, DCTX(dctx),
                       size_t startRow = 0) = delete;
 };
 
@@ -41,10 +40,9 @@ template <class DTRes> struct ReadHDFSCsv {
 // ****************************************************************************
 
 template <class DTRes>
-void readHDFSCsv(DTRes *&res, const char *hdfsDir, size_t numRows,
-                 size_t numCols, char delim, DCTX(dctx), size_t startRow = 0) {
-    ReadHDFSCsv<DTRes>::apply(res, hdfsDir, numRows, numCols, delim, dctx,
-                              startRow);
+void readHDFSCsv(DTRes *&res, const char *hdfsDir, size_t numRows, size_t numCols, char delim, DCTX(dctx),
+                 size_t startRow = 0) {
+    ReadHDFSCsv<DTRes>::apply(res, hdfsDir, numRows, numCols, delim, dctx, startRow);
 }
 
 // ****************************************************************************
@@ -56,9 +54,8 @@ void readHDFSCsv(DTRes *&res, const char *hdfsDir, size_t numRows,
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const char *hdfsDir,
-                      size_t numRows, size_t numCols, char delim, DCTX(dctx),
-                      size_t startRow = 0) {
+    static void apply(DenseMatrix<VT> *&res, const char *hdfsDir, size_t numRows, size_t numCols, char delim,
+                      DCTX(dctx), size_t startRow = 0) {
         if (hdfsDir == nullptr) {
             throw std::runtime_error("File required");
         }
@@ -70,8 +67,7 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
         }
 
         if (res == nullptr) {
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         }
 
         auto hdfsCtx = HDFSContext::get(dctx);
@@ -81,8 +77,7 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
         }
 
         [[maybe_unused]] auto [startSegment, dummy] =
-            HDFSUtils::findSegmendAndOffset(*fs, 0, startRow, hdfsDir,
-                                            numCols * sizeof(VT));
+            HDFSUtils::findSegmendAndOffset(*fs, 0, startRow, hdfsDir, numCols * sizeof(VT));
         // TODO verify file exists
 
         size_t parsedRows = 0;
@@ -94,13 +89,11 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
         VT *valuesRes = res->getValues();
 
         while (parsedRows < numRows) {
-            auto hdfsFn = std::string(hdfsDir) + "/" +
-                          HDFSUtils::getBaseFile(hdfsDir) + "_segment_" +
-                          std::to_string(segment++);
+            auto hdfsFn =
+                std::string(hdfsDir) + "/" + HDFSUtils::getBaseFile(hdfsDir) + "_segment_" + std::to_string(segment++);
             auto segFmd = HDFSUtils::parseHDFSMetaData(hdfsFn, *fs);
 
-            hdfsFile hFile =
-                hdfsOpenFile(*fs, hdfsFn.c_str(), O_RDONLY, 0, 0, 0);
+            hdfsFile hFile = hdfsOpenFile(*fs, hdfsFn.c_str(), O_RDONLY, 0, 0, 0);
             if (hFile == NULL) {
                 throw std::runtime_error("Error opening HDFS file");
             }
@@ -116,8 +109,7 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
                     if (cur == nullptr) {
                         n = hdfsRead(*fs, hFile, buffer, 1UL << 20);
                         if (n <= 0) {
-                            throw std::runtime_error(
-                                "Could not read hdfs file");
+                            throw std::runtime_error("Could not read hdfs file");
                         }
                         cur = buffer;
                     }
@@ -132,8 +124,7 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
                     }
                 } while (cur == nullptr);
                 // If first segment, skip rows
-                if (parsedRows == 0 &&
-                    startRow > (segment - 2) * segFmd.numRows + r)
+                if (parsedRows == 0 && startRow > (segment - 2) * segFmd.numRows + r)
                     continue;
 
                 size_t pos = 0;

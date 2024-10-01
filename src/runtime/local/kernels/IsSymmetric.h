@@ -33,9 +33,7 @@ template <class DTArg> struct IsSymmetric {
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg> bool isSymmetric(const DTArg *arg, DCTX(ctx)) {
-    return IsSymmetric<DTArg>::apply(arg, ctx);
-}
+template <class DTArg> bool isSymmetric(const DTArg *arg, DCTX(ctx)) { return IsSymmetric<DTArg>::apply(arg, ctx); }
 
 // ****************************************************************************
 // (Partial) template specializations for different DataTypes
@@ -113,8 +111,7 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
             for (size_t idx = 0; idx < numNonZerosA; idx++) {
                 const size_t colIdxA = colIdxsA[idx];
 
-                if (colIdxA <=
-                    rowIdx) { // Exit early if diagonal element or before.
+                if (colIdxA <= rowIdx) { // Exit early if diagonal element or before.
                     continue;
                 }
 
@@ -129,25 +126,22 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
                 positions[colIdxA]++; // colIdxA is rowIdxB
                 const size_t posB = positions[colIdxA];
 
-                if (numNonZerosB <=
-                    posB) { // Does the next expected element exist?
+                if (numNonZerosB <= posB) { // Does the next expected element exist?
                     return false;
                 }
 
                 const size_t colIdxB = colIdxsB[posB];
                 VT valB = rowB[posB];
 
-                if (colIdxB != rowIdx ||
-                    valA != valB) { // Indexes or values differ, not sym.
+                if (colIdxB != rowIdx || valA != valB) { // Indexes or values differ, not sym.
                     return false;
                 }
             }
 
             const size_t rowLastPos = positions[rowIdx];
 
-            if (rowLastPos == static_cast<size_t>(-1) &&
-                numNonZerosA != 0) { // Not all elements of this row were
-                                     // iterated over, not sym!
+            if (rowLastPos == static_cast<size_t>(-1) && numNonZerosA != 0) { // Not all elements of this row were
+                                                                              // iterated over, not sym!
                 return false;
             }
         }
@@ -165,8 +159,7 @@ template <typename VT> struct IsSymmetric<Matrix<VT>> {
         const size_t numCols = arg->getNumCols();
 
         if (numRows != numCols)
-            throw std::runtime_error(
-                "isSymmetric: Provided matrix is not square.");
+            throw std::runtime_error("isSymmetric: Provided matrix is not square.");
 
         // singular matrix is considered symmetric.
         if (numRows <= 1)

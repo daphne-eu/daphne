@@ -38,8 +38,7 @@
 // ****************************************************************************
 
 template <class DTRes, typename VTArg> struct RandMatrix {
-    static void apply(DTRes *&res, size_t numRows, size_t numCols, VTArg min,
-                      VTArg max, double sparsity, int64_t seed,
+    static void apply(DTRes *&res, size_t numRows, size_t numCols, VTArg min, VTArg max, double sparsity, int64_t seed,
                       DCTX(ctx)) = delete;
 };
 
@@ -48,10 +47,9 @@ template <class DTRes, typename VTArg> struct RandMatrix {
 // ****************************************************************************
 
 template <class DTRes, typename VTArg>
-void randMatrix(DTRes *&res, size_t numRows, size_t numCols, VTArg min,
-                VTArg max, double sparsity, int64_t seed, DCTX(ctx)) {
-    RandMatrix<DTRes, VTArg>::apply(res, numRows, numCols, min, max, sparsity,
-                                    seed, ctx);
+void randMatrix(DTRes *&res, size_t numRows, size_t numCols, VTArg min, VTArg max, double sparsity, int64_t seed,
+                DCTX(ctx)) {
+    RandMatrix<DTRes, VTArg>::apply(res, numRows, numCols, min, max, sparsity, seed, ctx);
 }
 
 // ****************************************************************************
@@ -59,8 +57,7 @@ void randMatrix(DTRes *&res, size_t numRows, size_t numCols, VTArg min,
 // ****************************************************************************
 
 template <typename VTArg>
-void validateArgsRandMatrix(size_t numRows, size_t numCols, VTArg min,
-                            VTArg max, double sparsity) {
+void validateArgsRandMatrix(size_t numRows, size_t numCols, VTArg min, VTArg max, double sparsity) {
     if (!(numRows > 0))
         throw std::runtime_error("RandMatrix - numRows must be > 0");
     if (!(numCols > 0))
@@ -68,12 +65,10 @@ void validateArgsRandMatrix(size_t numRows, size_t numCols, VTArg min,
     if (min > max)
         throw std::runtime_error("RandMatrix - min must be <= max");
     if (!min && !max)
-        throw std::runtime_error(
-            "RandMatrix - min and max must not both be zero, consider "
-            "setting sparsity to zero instead");
+        throw std::runtime_error("RandMatrix - min and max must not both be zero, consider "
+                                 "setting sparsity to zero instead");
     if (sparsity < 0.0 || sparsity > 1.0)
-        throw std::runtime_error(
-            "sparsity has to be in the interval [0.0, 1.0]");
+        throw std::runtime_error("sparsity has to be in the interval [0.0, 1.0]");
 }
 
 // ****************************************************************************
@@ -85,14 +80,12 @@ void validateArgsRandMatrix(size_t numRows, size_t numCols, VTArg min,
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct RandMatrix<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *&res, size_t numRows, size_t numCols,
-                      VT min, VT max, double sparsity, int64_t seed,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, size_t numRows, size_t numCols, VT min, VT max, double sparsity,
+                      int64_t seed, DCTX(ctx)) {
         validateArgsRandMatrix(numRows, numCols, min, max, sparsity);
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         if (seed == -1) {
             std::random_device rd;
@@ -103,14 +96,11 @@ template <typename VT> struct RandMatrix<DenseMatrix<VT>, VT> {
         std::mt19937 genVal(seed);
         std::mt19937 genIndex(seed * 3);
 
-        static_assert(
-            std::is_floating_point<VT>::value || std::is_integral<VT>::value,
-            "the value type must be either floating point or integral");
+        static_assert(std::is_floating_point<VT>::value || std::is_integral<VT>::value,
+                      "the value type must be either floating point or integral");
 
-        typename std::conditional<std::is_floating_point<VT>::value,
-                                  std::uniform_real_distribution<VT>,
-                                  std::uniform_int_distribution<VT>>::type
-            distrVal(min, max);
+        typename std::conditional<std::is_floating_point<VT>::value, std::uniform_real_distribution<VT>,
+                                  std::uniform_int_distribution<VT>>::type distrVal(min, max);
         std::uniform_int_distribution<int> distrIndex(0, numCols * numRows - 1);
 
         VT *valuesRes = res->getValues();
@@ -120,8 +110,7 @@ template <typename VT> struct RandMatrix<DenseMatrix<VT>, VT> {
         // with zero values and insert random.
         size_t insertedValuesLimit;
         if (sparsity >= 0.5) {
-            insertedValuesLimit =
-                size_t(round((1 - sparsity) * numCols * numRows));
+            insertedValuesLimit = size_t(round((1 - sparsity) * numCols * numRows));
         } else {
             insertedValuesLimit = size_t(round(sparsity * numCols * numRows));
         }
@@ -152,9 +141,7 @@ template <typename VT> struct RandMatrix<DenseMatrix<VT>, VT> {
         // TODO If res->getRowSkip() == res->getNumCols(), it might be faster
         // not to calculate row and col by / and %, but to directly use the
         // generated index.
-        for (iRange = 0;
-             iRange < (numCols * numRows) && iSize < insertedValuesLimit;
-             iRange++) {
+        for (iRange = 0; iRange < (numCols * numRows) && iSize < insertedValuesLimit; iRange++) {
             size_t rRange = (numCols * numRows) - iRange;
             size_t rSize = insertedValuesLimit - iSize;
             if (fmod(distrIndex(genIndex), rRange) < rSize) {
@@ -165,8 +152,7 @@ template <typename VT> struct RandMatrix<DenseMatrix<VT>, VT> {
                 } else {
                     valuesRes[row * res->getRowSkip() + col] = distrVal(genVal);
                     while (valuesRes[row * res->getRowSkip() + col] == 0)
-                        valuesRes[row * res->getRowSkip() + col] =
-                            distrVal(genVal);
+                        valuesRes[row * res->getRowSkip() + col] = distrVal(genVal);
                 }
                 iSize++;
             }
@@ -179,36 +165,28 @@ template <typename VT> struct RandMatrix<DenseMatrix<VT>, VT> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct RandMatrix<CSRMatrix<VT>, VT> {
-    static void apply(CSRMatrix<VT> *&res, size_t numRows, size_t numCols,
-                      VT min, VT max, double sparsity, int64_t seed,
-                      DCTX(ctx)) {
+    static void apply(CSRMatrix<VT> *&res, size_t numRows, size_t numCols, VT min, VT max, double sparsity,
+                      int64_t seed, DCTX(ctx)) {
         validateArgsRandMatrix(numRows, numCols, min, max, sparsity);
 
         // The exact number of non-zeros to generate.
         // TODO Ideally, it should not be allowed that zero is included in [min,
         // max].
-        const auto nnz =
-            static_cast<size_t>(round(numRows * numCols * sparsity));
+        const auto nnz = static_cast<size_t>(round(numRows * numCols * sparsity));
 
         if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,
-                                                           nnz, false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, nnz, false);
 
         // Initialize pseudo random number generators.
         if (seed == -1)
-            seed = std::chrono::high_resolution_clock::now()
-                       .time_since_epoch()
-                       .count();
+            seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         std::default_random_engine gen(seed);
 
-        static_assert(
-            std::is_floating_point<VT>::value || std::is_integral<VT>::value,
-            "the value type must be either floating point or integral");
+        static_assert(std::is_floating_point<VT>::value || std::is_integral<VT>::value,
+                      "the value type must be either floating point or integral");
 
-        typename std::conditional<std::is_floating_point<VT>::value,
-                                  std::uniform_real_distribution<VT>,
-                                  std::uniform_int_distribution<VT>>::type
-            distrVal(min, max);
+        typename std::conditional<std::is_floating_point<VT>::value, std::uniform_real_distribution<VT>,
+                                  std::uniform_int_distribution<VT>>::type distrVal(min, max);
 
         std::uniform_int_distribution<size_t> distrRow(0, numRows - 1);
         std::uniform_int_distribution<size_t> distrCol(0, numCols - 1);
@@ -258,11 +236,9 @@ template <typename VT> struct RandMatrix<CSRMatrix<VT>, VT> {
             // Use the generated column indexes.
             for (size_t r = 0; r < numRows; r++) {
                 std::set<size_t> sortedColIdxs;
-                while (static_cast<ssize_t>(sortedColIdxs.size()) <
-                       nnzPerRow[r])
+                while (static_cast<ssize_t>(sortedColIdxs.size()) < nnzPerRow[r])
                     sortedColIdxs.emplace(distrCol(gen));
-                for (auto it = sortedColIdxs.begin(); it != sortedColIdxs.end();
-                     it++)
+                for (auto it = sortedColIdxs.begin(); it != sortedColIdxs.end(); it++)
                     *colIdxsRes++ = *it;
             }
         } else {
@@ -289,13 +265,12 @@ template <typename VT> struct RandMatrix<CSRMatrix<VT>, VT> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct RandMatrix<Matrix<VT>, VT> {
-    static void apply(Matrix<VT> *&res, size_t numRows, size_t numCols, VT min,
-                      VT max, double sparsity, int64_t seed, DCTX(ctx)) {
+    static void apply(Matrix<VT> *&res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed,
+                      DCTX(ctx)) {
         validateArgsRandMatrix(numRows, numCols, min, max, sparsity);
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         if (seed == -1) {
             std::random_device rd;
@@ -306,22 +281,17 @@ template <typename VT> struct RandMatrix<Matrix<VT>, VT> {
         std::mt19937 genVal(seed);
         std::mt19937 genIndex(seed * 3);
 
-        static_assert(
-            std::is_floating_point<VT>::value || std::is_integral<VT>::value,
-            "the value type must be either floating point or integral");
-        typename std::conditional<std::is_floating_point<VT>::value,
-                                  std::uniform_real_distribution<VT>,
-                                  std::uniform_int_distribution<VT>>::type
-            distrVal(min, max);
+        static_assert(std::is_floating_point<VT>::value || std::is_integral<VT>::value,
+                      "the value type must be either floating point or integral");
+        typename std::conditional<std::is_floating_point<VT>::value, std::uniform_real_distribution<VT>,
+                                  std::uniform_int_distribution<VT>>::type distrVal(min, max);
         std::uniform_int_distribution<int> distrIndex(0, numCols * numRows - 1);
 
         // If sparsity >= 0.5, we initialize with random values and insert
         // zeros, else if sparsity < 0.5, it is more efficient to initialize
         // with zero values and insert random.
-        size_t insertedValuesLimit =
-            (sparsity >= 0.5)
-                ? static_cast<size_t>(round((1 - sparsity) * numCols * numRows))
-                : static_cast<size_t>(round(sparsity * numCols * numRows));
+        size_t insertedValuesLimit = (sparsity >= 0.5) ? static_cast<size_t>(round((1 - sparsity) * numCols * numRows))
+                                                       : static_cast<size_t>(round(sparsity * numCols * numRows));
 
         // Fill Matrix with non-zero/random values
         // TODO It might be faster to pull the check on sparsity out of the
@@ -350,9 +320,7 @@ template <typename VT> struct RandMatrix<Matrix<VT>, VT> {
         // TODO If res->getRowSkip() == res->getNumCols(), it might be faster
         // not to calculate row and col by / and %, but to directly use the
         // generated index.
-        for (iRange = 0;
-             iRange < (numCols * numRows) && iSize < insertedValuesLimit;
-             ++iRange) {
+        for (iRange = 0; iRange < (numCols * numRows) && iSize < insertedValuesLimit; ++iRange) {
             size_t rRange = (numCols * numRows) - iRange;
             size_t rSize = insertedValuesLimit - iSize;
             if (fmod(distrIndex(genIndex), rRange) < rSize) {

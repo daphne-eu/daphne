@@ -19,8 +19,7 @@
 
 namespace CUDA::BiasAdd {
 template <typename DTRes, typename DTArg>
-void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data,
-                                  const DTArg *bias, DCTX(dctx)) {
+void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *bias, DCTX(dctx)) {
     const size_t deviceID = 0; // ToDo: multi device support
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
@@ -35,16 +34,13 @@ void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data,
     res = const_cast<DTArg *>(data);
     VT *d_res = const_cast<VT *>(d_input);
 
-    CHECK_CUDNN(cudnnSetTensor4dDescriptor(
-        ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
-        nr1, nc1, 1, 1));
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), nr1,
+                                           nc1, 1, 1));
 
-    CHECK_CUDNN(cudnnSetTensor4dDescriptor(
-        ctx->dst_tensor_desc, ctx->tensor_format,
-        ctx->template getCUDNNDataType<VT>(), nr1, nc1, 1, 1));
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format,
+                                           ctx->template getCUDNNDataType<VT>(), nr1, nc1, 1, 1));
 
-    CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha,
-                               ctx->src_tensor_desc, d_bias, &blend_beta,
+    CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_bias, &blend_beta,
                                ctx->dst_tensor_desc, d_res));
 }
 

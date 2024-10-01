@@ -43,18 +43,15 @@ size_t ValueTypeUtils::sizeOf(ValueTypeCode type) {
     case ValueTypeCode::F64:
         return sizeof(double);
     default:
-        throw std::runtime_error(
-            "ValueTypeUtils::sizeOf: unknown value type code");
+        throw std::runtime_error("ValueTypeUtils::sizeOf: unknown value type code");
     }
 }
 
-void ValueTypeUtils::printValue(std::ostream &os, ValueTypeCode type,
-                                const void *array, size_t pos) {
+void ValueTypeUtils::printValue(std::ostream &os, ValueTypeCode type, const void *array, size_t pos) {
     switch (type) {
     // Conversion int8->int32 for formating as number as opposed to character
     case ValueTypeCode::SI8:
-        os << static_cast<int32_t>(
-            reinterpret_cast<const int8_t *>(array)[pos]);
+        os << static_cast<int32_t>(reinterpret_cast<const int8_t *>(array)[pos]);
         break;
     case ValueTypeCode::SI32:
         os << reinterpret_cast<const int32_t *>(array)[pos];
@@ -64,8 +61,7 @@ void ValueTypeUtils::printValue(std::ostream &os, ValueTypeCode type,
         break;
     // Conversion uint8->uint32 for formating as number as opposed to character
     case ValueTypeCode::UI8:
-        os << static_cast<uint32_t>(
-            reinterpret_cast<const uint8_t *>(array)[pos]);
+        os << static_cast<uint32_t>(reinterpret_cast<const uint8_t *>(array)[pos]);
         break;
     case ValueTypeCode::UI32:
         os << reinterpret_cast<const uint32_t *>(array)[pos];
@@ -80,27 +76,18 @@ void ValueTypeUtils::printValue(std::ostream &os, ValueTypeCode type,
         os << reinterpret_cast<const double *>(array)[pos];
         break;
     default:
-        throw std::runtime_error(
-            "ValueTypeUtils::printValue: unknown value type code");
+        throw std::runtime_error("ValueTypeUtils::printValue: unknown value type code");
     }
 }
 
-template <>
-const ValueTypeCode ValueTypeUtils::codeFor<int8_t> = ValueTypeCode::SI8;
-template <>
-const ValueTypeCode ValueTypeUtils::codeFor<int32_t> = ValueTypeCode::SI32;
-template <>
-const ValueTypeCode ValueTypeUtils::codeFor<int64_t> = ValueTypeCode::SI64;
-template <>
-const ValueTypeCode ValueTypeUtils::codeFor<uint8_t> = ValueTypeCode::UI8;
-template <>
-const ValueTypeCode ValueTypeUtils::codeFor<uint32_t> = ValueTypeCode::UI32;
-template <>
-const ValueTypeCode ValueTypeUtils::codeFor<uint64_t> = ValueTypeCode::UI64;
-template <>
-const ValueTypeCode ValueTypeUtils::codeFor<float> = ValueTypeCode::F32;
-template <>
-const ValueTypeCode ValueTypeUtils::codeFor<double> = ValueTypeCode::F64;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<int8_t> = ValueTypeCode::SI8;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<int32_t> = ValueTypeCode::SI32;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<int64_t> = ValueTypeCode::SI64;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<uint8_t> = ValueTypeCode::UI8;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<uint32_t> = ValueTypeCode::UI32;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<uint64_t> = ValueTypeCode::UI64;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<float> = ValueTypeCode::F32;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<double> = ValueTypeCode::F64;
 
 template <> const std::string ValueTypeUtils::cppNameFor<int8_t> = "int8_t";
 template <> const std::string ValueTypeUtils::cppNameFor<int32_t> = "int32_t";
@@ -111,8 +98,7 @@ template <> const std::string ValueTypeUtils::cppNameFor<uint64_t> = "uint64_t";
 template <> const std::string ValueTypeUtils::cppNameFor<float> = "float";
 template <> const std::string ValueTypeUtils::cppNameFor<double> = "double";
 template <> const std::string ValueTypeUtils::cppNameFor<bool> = "bool";
-template <>
-const std::string ValueTypeUtils::cppNameFor<const char *> = "const char*";
+template <> const std::string ValueTypeUtils::cppNameFor<const char *> = "const char*";
 
 template <> const std::string ValueTypeUtils::irNameFor<int8_t> = "si8";
 template <> const std::string ValueTypeUtils::irNameFor<int32_t> = "si32";
@@ -142,8 +128,7 @@ const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
     case ValueTypeCode::F64:
         return cppNameFor<double>;
     default:
-        throw std::runtime_error(
-            "ValueTypeUtils::cppNameForCode: unknown value type code");
+        throw std::runtime_error("ValueTypeUtils::cppNameForCode: unknown value type code");
     }
 }
 
@@ -166,7 +151,6 @@ const std::string ValueTypeUtils::irNameForCode(ValueTypeCode type) {
     case ValueTypeCode::F64:
         return irNameFor<double>;
     default:
-        throw std::runtime_error(
-            "ValueTypeUtils::irNameForCode: unknown value type code");
+        throw std::runtime_error("ValueTypeUtils::irNameForCode: unknown value type code");
     }
 }

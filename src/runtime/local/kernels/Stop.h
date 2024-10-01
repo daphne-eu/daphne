@@ -18,6 +18,4 @@
 
 #include <runtime/local/context/DaphneContext.h>
 
-void stop(const char *message, DCTX(ctx)) {
-    throw std::runtime_error(std::string("system stopped: ") + message);
-}
+void stop(const char *message, DCTX(ctx)) { throw std::runtime_error(std::string("system stopped: ") + message); }

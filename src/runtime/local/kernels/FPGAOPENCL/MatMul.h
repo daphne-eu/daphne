@@ -36,8 +36,7 @@ namespace FPGAOPENCL {
 template <class DTRes, class DTLhs, class DTRhs> struct MatMul {
     //   static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs,
     //   DCTX(ctx)) = delete;
-    static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs,
-                      bool transa, bool transb, DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, bool transa, bool transb, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,8 +44,7 @@ template <class DTRes, class DTLhs, class DTRhs> struct MatMul {
 // ****************************************************************************
 
 template <class DTRes, class DTLhs, class DTRhs>
-void matMul(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, bool transa,
-            bool transb, DCTX(ctx)) {
+void matMul(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, bool transa, bool transb, DCTX(ctx)) {
     MatMul<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, transa, transb, ctx);
 }
 
@@ -58,11 +56,9 @@ void matMul(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, bool transa,
 // DenseMatrix <- DenseMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <>
-struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<float> *&res, const DenseMatrix<float> *lhs,
-                      const DenseMatrix<float> *rhs, bool transa, bool transb,
-                      DCTX(ctx)) {
+template <> struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
+    static void apply(DenseMatrix<float> *&res, const DenseMatrix<float> *lhs, const DenseMatrix<float> *rhs,
+                      bool transa, bool transb, DCTX(ctx)) {
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nc2 = rhs->getNumCols();
@@ -160,8 +156,7 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
             sgemv(A, B, C, OUTERMOST_I, OUTERMOST_K, ctx);
 
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2,
-                                                                    false);
+                res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
 
             memcpy(res->getValues(), C,
                    num_elem_C * sizeof(float)); // sizeof(C)
@@ -202,8 +197,7 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
             sgemm(A, B, C, OUTERMOST_I, OUTERMOST_J, OUTERMOST_K, ctx);
 
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2,
-                                                                    false);
+                res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
 
             memcpy(res->getValues(), C, num_elem_C * sizeof(float));
         }

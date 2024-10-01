@@ -46,9 +46,7 @@ template <class DTArg> struct WriteCsv {
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg> void writeCsv(const DTArg *arg, File *file) {
-    WriteCsv<DTArg>::apply(arg, file);
-}
+template <class DTArg> void writeCsv(const DTArg *arg, File *file) { WriteCsv<DTArg>::apply(arg, file); }
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -69,12 +67,9 @@ template <typename VT> struct WriteCsv<DenseMatrix<VT>> {
 
         for (size_t i = 0; i < arg->getNumRows(); ++i) {
             for (size_t j = 0; j < argNumCols; ++j) {
-                fprintf(
-                    file->identifier,
-                    std::is_floating_point<VT>::value
-                        ? "%f"
-                        : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
-                    valuesArg[i * rowSkip + j]);
+                fprintf(file->identifier,
+                        std::is_floating_point<VT>::value ? "%f" : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
+                        valuesArg[i * rowSkip + j]);
                 if (j < (arg->getNumCols() - 1))
                     fprintf(file->identifier, ",");
                 else
@@ -104,39 +99,31 @@ template <> struct WriteCsv<Frame> {
                 // character.
                 case ValueTypeCode::SI8:
                     fprintf(file->identifier, "%" PRId8,
-                            static_cast<int32_t>(
-                                reinterpret_cast<const int8_t *>(array)[i]));
+                            static_cast<int32_t>(reinterpret_cast<const int8_t *>(array)[i]));
                     break;
                 case ValueTypeCode::SI32:
-                    fprintf(file->identifier, "%" PRId32,
-                            reinterpret_cast<const int32_t *>(array)[i]);
+                    fprintf(file->identifier, "%" PRId32, reinterpret_cast<const int32_t *>(array)[i]);
                     break;
                 case ValueTypeCode::SI64:
-                    fprintf(file->identifier, "%" PRId64,
-                            reinterpret_cast<const int64_t *>(array)[i]);
+                    fprintf(file->identifier, "%" PRId64, reinterpret_cast<const int64_t *>(array)[i]);
                     break;
                 // Conversion uint8->uint32 for formating as number as opposed
                 // to character.
                 case ValueTypeCode::UI8:
                     fprintf(file->identifier, "%" PRIu8,
-                            static_cast<uint32_t>(
-                                reinterpret_cast<const uint8_t *>(array)[i]));
+                            static_cast<uint32_t>(reinterpret_cast<const uint8_t *>(array)[i]));
                     break;
                 case ValueTypeCode::UI32:
-                    fprintf(file->identifier, "%" PRIu32,
-                            reinterpret_cast<const uint32_t *>(array)[i]);
+                    fprintf(file->identifier, "%" PRIu32, reinterpret_cast<const uint32_t *>(array)[i]);
                     break;
                 case ValueTypeCode::UI64:
-                    fprintf(file->identifier, "%" PRIu64,
-                            reinterpret_cast<const uint64_t *>(array)[i]);
+                    fprintf(file->identifier, "%" PRIu64, reinterpret_cast<const uint64_t *>(array)[i]);
                     break;
                 case ValueTypeCode::F32:
-                    fprintf(file->identifier, "%f",
-                            reinterpret_cast<const float *>(array)[i]);
+                    fprintf(file->identifier, "%f", reinterpret_cast<const float *>(array)[i]);
                     break;
                 case ValueTypeCode::F64:
-                    fprintf(file->identifier, "%f",
-                            reinterpret_cast<const double *>(array)[i]);
+                    fprintf(file->identifier, "%f", reinterpret_cast<const double *>(array)[i]);
                     break;
                 default:
                     throw std::runtime_error("unknown value type code");
@@ -165,12 +152,9 @@ template <typename VT> struct WriteCsv<Matrix<VT>> {
 
         for (size_t r = 0; r < numRows; ++r) {
             for (size_t c = 0; c < numCols; ++c) {
-                fprintf(
-                    file->identifier,
-                    std::is_floating_point<VT>::value
-                        ? "%f"
-                        : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
-                    arg->get(r, c));
+                fprintf(file->identifier,
+                        std::is_floating_point<VT>::value ? "%f" : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
+                        arg->get(r, c));
                 if (c < (numCols - 1))
                     fprintf(file->identifier, ",");
                 else

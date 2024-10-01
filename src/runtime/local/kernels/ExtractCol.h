@@ -33,8 +33,7 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg, class DTSel> struct ExtractCol {
-    static void apply(DTRes *&res, const DTArg *arg, const DTSel *sel,
-                      DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -55,13 +54,13 @@ void extractCol(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) {
 // ****************************************************************************
 
 // index boundaries are verified later for performance
-#define VALIDATE_ARGS(numColsSel)                                              \
-    if (numColsSel != 1) {                                                     \
-        std::ostringstream errMsg;                                             \
-        errMsg << "invalid argument passed to ExtractCol: column selection "   \
-                  "must be given as column matrix but has '"                   \
-               << numColsSel << "' columns instead of one";                    \
-        throw std::runtime_error(errMsg.str());                                \
+#define VALIDATE_ARGS(numColsSel)                                                                                      \
+    if (numColsSel != 1) {                                                                                             \
+        std::ostringstream errMsg;                                                                                     \
+        errMsg << "invalid argument passed to ExtractCol: column selection "                                           \
+                  "must be given as column matrix but has '"                                                           \
+               << numColsSel << "' columns instead of one";                                                            \
+        throw std::runtime_error(errMsg.str());                                                                        \
     }
 
 // ****************************************************************************
@@ -74,8 +73,8 @@ void extractCol(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) {
 
 template <typename VTArg, typename VTSel>
 struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
-    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg,
-                      const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
+    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg, const DenseMatrix<VTSel> *sel,
+                      DCTX(ctx)) {
         VALIDATE_ARGS(sel->getNumCols());
 
         // left as VTSel to enable more boundary validation, converted to size_t
@@ -86,8 +85,7 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
         const size_t numColsArg = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(
-                numRows, numColsRes, false);
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, numColsRes, false);
 
         const VTArg *valuesArg = arg->getValues();
         VTArg *valuesRes = res->getValues();
@@ -121,39 +119,32 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
 // ----------------------------------------------------------------------------
 
 template <> struct ExtractCol<Frame, Frame, char> {
-    static void apply(Frame *&res, const Frame *arg, const char *sel,
-                      DCTX(ctx)) {
+    static void apply(Frame *&res, const Frame *arg, const char *sel, DCTX(ctx)) {
         std::string delimiter = ".";
         const std::string colName = std::string(sel);
-        const std::string frameName =
-            colName.substr(0, colName.find(delimiter));
-        const std::string colLabel = colName.substr(
-            colName.find(delimiter) + delimiter.length(), colName.length());
+        const std::string frameName = colName.substr(0, colName.find(delimiter));
+        const std::string colLabel = colName.substr(colName.find(delimiter) + delimiter.length(), colName.length());
         if (colLabel.compare("*") == 0) {
             const std::string *labels = arg->getLabels();
             const size_t numLabels = arg->getNumCols();
             std::vector<size_t> extractLabelIdxs;
             for (size_t i = 0; i < numLabels; i++) {
-                std::string labelFrameName =
-                    labels[i].substr(0, labels[i].find(delimiter));
+                std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
                 if (labelFrameName.compare(frameName) == 0) {
                     extractLabelIdxs.push_back(arg->getColumnIdx(labels[i]));
                 }
             }
-            res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(),
-                                                   extractLabelIdxs.size(),
+            res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), extractLabelIdxs.size(),
                                                    extractLabelIdxs.data());
         } else {
             size_t colIdx = arg->getColumnIdx(sel);
-            res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1,
-                                                   &colIdx);
+            res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
         }
     }
 };
 
 template <typename VTSel> struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
-    static void apply(Frame *&res, const Frame *arg,
-                      const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
+    static void apply(Frame *&res, const Frame *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
         VALIDATE_ARGS(sel->getNumCols());
 
         // left as VTSel to enable more boundary validation, converted to size_t
@@ -174,8 +165,7 @@ template <typename VTSel> struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
                 throw std::out_of_range(errMsg.str());
             }
         }
-        res = DataObjectFactory::create<Frame>(arg, 0, numRowsRes, numColsRes,
-                                               colIdxs);
+        res = DataObjectFactory::create<Frame>(arg, 0, numRowsRes, numColsRes, colIdxs);
     }
 };
 
@@ -183,10 +173,8 @@ template <typename VTSel> struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
 // Matrix <- Matrix, Matrix (positions)
 // ----------------------------------------------------------------------------
 
-template <typename VTArg, typename VTSel>
-struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
-    static void apply(Matrix<VTArg> *&res, const Matrix<VTArg> *arg,
-                      const Matrix<VTSel> *sel, DCTX(ctx)) {
+template <typename VTArg, typename VTSel> struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
+    static void apply(Matrix<VTArg> *&res, const Matrix<VTArg> *arg, const Matrix<VTSel> *sel, DCTX(ctx)) {
         VALIDATE_ARGS(sel->getNumCols());
 
         const size_t numColsRes = sel->getNumRows();
@@ -194,8 +182,7 @@ struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
         const size_t numColsArg = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(
-                numRowsRes, numColsRes, false);
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsRes, numColsRes, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRowsRes; ++r) {

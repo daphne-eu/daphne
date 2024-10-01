@@ -33,8 +33,7 @@ template <typename VTRes, class DTArg> struct AggAll {
 // Convenience function
 // ****************************************************************************
 
-template <typename VTRes, class DTArg>
-VTRes aggAll(AggOpCode opCode, const DTArg *arg, DCTX(dctx)) {
+template <typename VTRes, class DTArg> VTRes aggAll(AggOpCode opCode, const DTArg *arg, DCTX(dctx)) {
     return AggAll<VTRes, DTArg>::apply(opCode, arg, dctx);
 }
 
@@ -46,9 +45,7 @@ VTRes aggAll(AggOpCode opCode, const DTArg *arg, DCTX(dctx)) {
 // scalar <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg>
-struct AggAll<VTRes, DenseMatrix<VTArg>> {
-    static VTRes apply(AggOpCode opCode, const DenseMatrix<VTArg> *arg,
-                       DCTX(dctx));
+template <typename VTRes, typename VTArg> struct AggAll<VTRes, DenseMatrix<VTArg>> {
+    static VTRes apply(AggOpCode opCode, const DenseMatrix<VTArg> *arg, DCTX(dctx));
 };
 } // namespace CUDA

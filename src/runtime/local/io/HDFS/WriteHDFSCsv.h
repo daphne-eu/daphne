@@ -35,16 +35,14 @@
 // ****************************************************************************
 
 template <class DTArg> struct WriteHDFSCsv {
-    static void apply(const DTArg *arg, const char *hdfsFilename,
-                      DCTX(dctx)) = delete;
+    static void apply(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg>
-void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
+template <class DTArg> void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
     WriteHDFSCsv<DTArg>::apply(arg, hdfsFilename, dctx);
 }
 
@@ -57,8 +55,7 @@ void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct WriteHDFSCsv<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename,
-                      DCTX(dctx)) {
+    static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename, DCTX(dctx)) {
         if (hdfsFilename == nullptr) {
             throw std::runtime_error("Could not read hdfs file");
         }
@@ -80,8 +77,7 @@ template <typename VT> struct WriteHDFSCsv<DenseMatrix<VT>> {
             // and the file
             // TODO extract directory path from filename
             if (fn.find("/") == std::string::npos)
-                throw std::runtime_error(
-                    "HDFS subdirectories not supported atm");
+                throw std::runtime_error("HDFS subdirectories not supported atm");
             // if(hdfsCreateDirectory(fs, fn.c_str()) == -1)
             //     throw std::runtime_error("Failed to create file");
         }
@@ -90,16 +86,14 @@ template <typename VT> struct WriteHDFSCsv<DenseMatrix<VT>> {
             fn = "/" + fn;
 
         // Write related fmd
-        FileMetaData fmd(arg->getNumRows(), arg->getNumCols(), true,
-                         ValueTypeUtils::codeFor<VT>);
+        FileMetaData fmd(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
         auto fmdStr = MetaDataParser::writeMetaDataToString(fmd);
         auto mdtFn = fn + ".meta";
         hdfsFile hdfsFile = hdfsOpenFile(*fs, mdtFn.c_str(), O_WRONLY, 0, 0, 0);
         if (hdfsFile == NULL) {
             throw std::runtime_error("Error opening HDFS file");
         }
-        hdfsWrite(*fs, hdfsFile, static_cast<const void *>(fmdStr.c_str()),
-                  fmdStr.size());
+        hdfsWrite(*fs, hdfsFile, static_cast<const void *>(fmdStr.c_str()), fmdStr.size());
         hdfsCloseFile(*fs, hdfsFile);
         // Open the HDFS file for writing
         hdfsFile = hdfsOpenFile(*fs, fn.c_str(), O_WRONLY, 0, 0, 0);
@@ -114,15 +108,11 @@ template <typename VT> struct WriteHDFSCsv<DenseMatrix<VT>> {
                 // Convert the numeric value to a string and add a comma
                 std::ostringstream oss;
                 oss << valuesArg[cell];
-                oss << (j < (arg->getNumCols() - 1)
-                            ? ","
-                            : ""); // Add a comma unless it's the last column
+                oss << (j < (arg->getNumCols() - 1) ? "," : ""); // Add a comma unless it's the last column
                 const std::string &valueStr = oss.str();
 
                 // Write the value string to the HDFS file
-                if (hdfsWrite(*fs, hdfsFile,
-                              static_cast<const void *>(valueStr.c_str()),
-                              valueStr.size()) == -1) {
+                if (hdfsWrite(*fs, hdfsFile, static_cast<const void *>(valueStr.c_str()), valueStr.size()) == -1) {
                     hdfsCloseFile(*fs, hdfsFile);
                     throw std::runtime_error("Failed to write to HDFS file");
                 }
@@ -130,8 +120,7 @@ template <typename VT> struct WriteHDFSCsv<DenseMatrix<VT>> {
             }
             // Add a newline character at the end of each row
             const char newline = '\n';
-            if (hdfsWrite(*fs, hdfsFile, static_cast<const void *>(&newline),
-                          1) == -1) {
+            if (hdfsWrite(*fs, hdfsFile, static_cast<const void *>(&newline), 1) == -1) {
                 hdfsCloseFile(*fs, hdfsFile);
                 throw std::runtime_error("Failed to write to HDFS file");
             }

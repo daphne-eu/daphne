@@ -17,15 +17,10 @@
 #include "MetaDataObject.h"
 #include "DataPlacement.h"
 
-DataPlacement *
-MetaDataObject::addDataPlacement(const IAllocationDescriptor *allocInfo,
-                                 Range *r) {
+DataPlacement *MetaDataObject::addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r) {
     data_placements[static_cast<size_t>(allocInfo->getType())].emplace_back(
-        std::make_unique<DataPlacement>(allocInfo->clone(),
-                                        r == nullptr ? nullptr : r->clone()));
-    return data_placements[static_cast<size_t>(allocInfo->getType())]
-        .back()
-        .get();
+        std::make_unique<DataPlacement>(allocInfo->clone(), r == nullptr ? nullptr : r->clone()));
+    return data_placements[static_cast<size_t>(allocInfo->getType())].back().get();
 }
 
 auto MetaDataObject::getDataPlacementByType(ALLOCATION_TYPE type) const
@@ -33,8 +28,7 @@ auto MetaDataObject::getDataPlacementByType(ALLOCATION_TYPE type) const
     return &(data_placements[static_cast<size_t>(type)]);
 }
 
-DataPlacement *
-MetaDataObject::getDataPlacementByLocation(const std::string &location) const {
+DataPlacement *MetaDataObject::getDataPlacementByLocation(const std::string &location) const {
     for (const auto &_omdType : data_placements) {
         for (auto &_omd : _omdType) {
             if (_omd->allocation->getLocation() == location)
@@ -65,9 +59,8 @@ DataPlacement *MetaDataObject::getDataPlacementByID(size_t id) const {
     return nullptr;
 }
 
-const DataPlacement *
-MetaDataObject::findDataPlacementByType(const IAllocationDescriptor *alloc_desc,
-                                        const Range *range) const {
+const DataPlacement *MetaDataObject::findDataPlacementByType(const IAllocationDescriptor *alloc_desc,
+                                                             const Range *range) const {
     auto res = getDataPlacementByType(alloc_desc->getType());
     if (res->empty())
         return nullptr;
@@ -75,8 +68,7 @@ MetaDataObject::findDataPlacementByType(const IAllocationDescriptor *alloc_desc,
         for (size_t i = 0; i < res->size(); ++i) {
             if ((*res)[i]->allocation->operator==(alloc_desc)) {
                 if (((*res)[i]->range == nullptr && range == nullptr) ||
-                    ((*res)[i]->range != nullptr &&
-                     (*res)[i]->range->operator==(range))) {
+                    ((*res)[i]->range != nullptr && (*res)[i]->range->operator==(range))) {
                     return (*res)[i].get();
                 }
             }
@@ -86,8 +78,7 @@ MetaDataObject::findDataPlacementByType(const IAllocationDescriptor *alloc_desc,
 }
 
 bool MetaDataObject::isLatestVersion(size_t placement) const {
-    return (std::find(latest_version.begin(), latest_version.end(),
-                      placement) != latest_version.end());
+    return (std::find(latest_version.begin(), latest_version.end(), placement) != latest_version.end());
 }
 
 void MetaDataObject::addLatest(size_t id) { latest_version.push_back(id); }
@@ -97,6 +88,4 @@ void MetaDataObject::setLatest(size_t id) {
     latest_version.push_back(id);
 }
 
-auto MetaDataObject::getLatest() const -> std::vector<size_t> {
-    return latest_version;
-}
+auto MetaDataObject::getLatest() const -> std::vector<size_t> { return latest_version; }

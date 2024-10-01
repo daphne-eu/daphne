@@ -59,8 +59,7 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtDense), mtDense);
         // Matrix type for CSRMatrix.
         mlir::Type mtCSR =
-            mlir::daphne::MatrixType::get(mctx, st).withRepresentation(
-                mlir::daphne::MatrixRepresentation::Sparse);
+            mlir::daphne::MatrixType::get(mctx, st).withRepresentation(mlir::daphne::MatrixRepresentation::Sparse);
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtCSR), mtCSR);
 
         // List type for list of DenseMatrix.
@@ -83,8 +82,7 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
     // Structure, Frame, DaphneContext, MemRef.
     std::vector<mlir::Type> otherTypes = {
         mlir::daphne::StructureType::get(mctx),
-        mlir::daphne::FrameType::get(mctx,
-                                     {mlir::daphne::UnknownType::get(mctx)}),
+        mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)}),
         mlir::daphne::DaphneContextType::get(mctx),
     };
     for (mlir::Type t : otherTypes) {
@@ -92,12 +90,9 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
     }
 }
 
-void KernelCatalogParser::mapTypes(const std::vector<std::string> &in,
-                                   std::vector<mlir::Type> &out,
-                                   const std::string &word,
-                                   const std::string &kernelFuncName,
-                                   const std::string &opMnemonic,
-                                   const std::string &backend) const {
+void KernelCatalogParser::mapTypes(const std::vector<std::string> &in, std::vector<mlir::Type> &out,
+                                   const std::string &word, const std::string &kernelFuncName,
+                                   const std::string &opMnemonic, const std::string &backend) const {
     for (size_t i = 0; i < in.size(); i++) {
         const std::string name = in[i];
         auto it = typeMap.find(name);
@@ -105,52 +100,38 @@ void KernelCatalogParser::mapTypes(const std::vector<std::string> &in,
             out.push_back(it->second);
         else {
             std::stringstream s;
-            s << "KernelCatalogParser: error while parsing " + word +
-                     " types of kernel `"
-              << kernelFuncName << "` for operation `" << opMnemonic
-              << "` (backend `" << backend << "`): unknown type for " << word
+            s << "KernelCatalogParser: error while parsing " + word + " types of kernel `" << kernelFuncName
+              << "` for operation `" << opMnemonic << "` (backend `" << backend << "`): unknown type for " << word
               << " #" << i << ": `" << name << '`';
             throw std::runtime_error(s.str());
         }
     }
 }
 
-void KernelCatalogParser::parseKernelCatalog(const std::string &filePath,
-                                             KernelCatalog &kc) const {
-    std::filesystem::path dirPath =
-        std::filesystem::path(filePath).parent_path();
+void KernelCatalogParser::parseKernelCatalog(const std::string &filePath, KernelCatalog &kc) const {
+    std::filesystem::path dirPath = std::filesystem::path(filePath).parent_path();
     try {
         std::ifstream kernelsConfigFile(filePath);
         if (!kernelsConfigFile.good())
             throw std::runtime_error("could not open file for reading");
-        nlohmann::json kernelsConfigData =
-            nlohmann::json::parse(kernelsConfigFile);
+        nlohmann::json kernelsConfigData = nlohmann::json::parse(kernelsConfigFile);
         for (auto kernelData : kernelsConfigData) {
-            const std::string opMnemonic =
-                kernelData["opMnemonic"].get<std::string>();
+            const std::string opMnemonic = kernelData["opMnemonic"].get<std::string>();
             // TODO Remove this workaround.
             // Skip these two problematic operations, which return multiple
             // results in the wrong way.
             if (opMnemonic == "Avg_Forward" || opMnemonic == "Max_Forward")
                 continue;
-            const std::string kernelFuncName =
-                kernelData["kernelFuncName"].get<std::string>();
-            const std::string backend =
-                kernelData["backend"].get<std::string>();
-            const std::string libPath =
-                dirPath / kernelData["libPath"].get<std::string>();
+            const std::string kernelFuncName = kernelData["kernelFuncName"].get<std::string>();
+            const std::string backend = kernelData["backend"].get<std::string>();
+            const std::string libPath = dirPath / kernelData["libPath"].get<std::string>();
             std::vector<mlir::Type> resTypes;
-            mapTypes(kernelData["resTypes"], resTypes, "result", kernelFuncName,
-                     opMnemonic, backend);
+            mapTypes(kernelData["resTypes"], resTypes, "result", kernelFuncName, opMnemonic, backend);
             std::vector<mlir::Type> argTypes;
-            mapTypes(kernelData["argTypes"], argTypes, "argument",
-                     kernelFuncName, opMnemonic, backend);
-            kc.registerKernel(opMnemonic,
-                              KernelInfo(kernelFuncName, resTypes, argTypes,
-                                         backend, libPath));
+            mapTypes(kernelData["argTypes"], argTypes, "argument", kernelFuncName, opMnemonic, backend);
+            kc.registerKernel(opMnemonic, KernelInfo(kernelFuncName, resTypes, argTypes, backend, libPath));
         }
     } catch (std::exception &e) {
-        throw std::runtime_error("error while parsing kernel catalog file `" +
-                                 filePath + "`: " + e.what());
+        throw std::runtime_error("error while parsing kernel catalog file `" + filePath + "`: " + e.what());
     }
 }

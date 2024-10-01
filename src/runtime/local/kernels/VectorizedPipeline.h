@@ -32,19 +32,15 @@ using mlir::daphne::VectorSplit;
 // ****************************************************************************
 
 template <class DTRes> struct VectorizedPipeline {
-    static void apply(DTRes **outputs, size_t numOutputs, bool *isScalar,
-                      Structure **inputs, size_t numInputs, int64_t *outRows,
-                      int64_t *outCols, int64_t *splits, int64_t *combines,
-                      size_t numFuncs, void **fun, DCTX(ctx)) {
+    static void apply(DTRes **outputs, size_t numOutputs, bool *isScalar, Structure **inputs, size_t numInputs,
+                      int64_t *outRows, int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs,
+                      void **fun, DCTX(ctx)) {
         auto wrapper = std::make_unique<MTWrapper<DTRes>>(numFuncs, ctx);
 
-        std::vector<std::function<void(DTRes ***, Structure **, DCTX(ctx))>>
-            funcs;
+        std::vector<std::function<void(DTRes ***, Structure **, DCTX(ctx))>> funcs;
         for (auto i = 0ul; i < numFuncs; ++i) {
-            funcs.emplace_back(std::function<void(DTRes ***, Structure **,
-                                                  DCTX(ctx))>(
-                reinterpret_cast<void (*)(DTRes ***, Structure **, DCTX(ctx))>(
-                    reinterpret_cast<void *>(fun[i]))));
+            funcs.emplace_back(std::function<void(DTRes ***, Structure **, DCTX(ctx))>(
+                reinterpret_cast<void (*)(DTRes ***, Structure **, DCTX(ctx))>(reinterpret_cast<void *>(fun[i]))));
         }
 
         // TODO Do we really need *** here, isn't ** enough?
@@ -53,21 +49,17 @@ template <class DTRes> struct VectorizedPipeline {
             outputs2[i] = outputs + i;
 
         if (ctx->getUserConfig().vectorized_single_queue) {
-            wrapper->executeSingleQueue(
-                funcs, outputs2, isScalar, inputs, numInputs, numOutputs,
-                outRows, outCols, reinterpret_cast<VectorSplit *>(splits),
-                reinterpret_cast<VectorCombine *>(combines), ctx, false);
-        } else if (!ctx->getUserConfig().vectorized_single_queue &&
-                   numFuncs == 1) {
-            wrapper->executeCpuQueues(
-                funcs, outputs2, isScalar, inputs, numInputs, numOutputs,
-                outRows, outCols, reinterpret_cast<VectorSplit *>(splits),
-                reinterpret_cast<VectorCombine *>(combines), ctx, false);
+            wrapper->executeSingleQueue(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                        reinterpret_cast<VectorSplit *>(splits),
+                                        reinterpret_cast<VectorCombine *>(combines), ctx, false);
+        } else if (!ctx->getUserConfig().vectorized_single_queue && numFuncs == 1) {
+            wrapper->executeCpuQueues(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                      reinterpret_cast<VectorSplit *>(splits),
+                                      reinterpret_cast<VectorCombine *>(combines), ctx, false);
         } else {
-            wrapper->executeQueuePerDeviceType(
-                funcs, outputs2, isScalar, inputs, numInputs, numOutputs,
-                outRows, outCols, reinterpret_cast<VectorSplit *>(splits),
-                reinterpret_cast<VectorCombine *>(combines), ctx, false);
+            wrapper->executeQueuePerDeviceType(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows,
+                                               outCols, reinterpret_cast<VectorSplit *>(splits),
+                                               reinterpret_cast<VectorCombine *>(combines), ctx, false);
         }
 
         delete[] outputs2;
@@ -79,12 +71,9 @@ template <class DTRes> struct VectorizedPipeline {
 // ****************************************************************************
 
 template <class DTRes>
-[[maybe_unused]] void
-vectorizedPipeline(DTRes **outputs, size_t numOutputs, bool *isScalar,
-                   Structure **inputs, size_t numInputs, int64_t *outRows,
-                   int64_t *outCols, int64_t *splits, int64_t *combines,
-                   size_t numFuncs, void **fun, DCTX(ctx)) {
-    VectorizedPipeline<DTRes>::apply(outputs, numOutputs, isScalar, inputs,
-                                     numInputs, outRows, outCols, splits,
+[[maybe_unused]] void vectorizedPipeline(DTRes **outputs, size_t numOutputs, bool *isScalar, Structure **inputs,
+                                         size_t numInputs, int64_t *outRows, int64_t *outCols, int64_t *splits,
+                                         int64_t *combines, size_t numFuncs, void **fun, DCTX(ctx)) {
+    VectorizedPipeline<DTRes>::apply(outputs, numOutputs, isScalar, inputs, numInputs, outRows, outCols, splits,
                                      combines, numFuncs, fun, ctx);
 }

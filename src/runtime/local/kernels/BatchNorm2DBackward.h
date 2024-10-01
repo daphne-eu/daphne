@@ -36,10 +36,9 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct BatchNorm2DBackward {
-    static void apply(DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta,
-                      const DTArg *mean, const DTArg *invVar, const DTArg *in,
-                      const DTArg *dout, const DTArg *gamma,
-                      const typename DTArg::VT eps, DCTX(dctx)) = delete;
+    static void apply(DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta, const DTArg *mean, const DTArg *invVar,
+                      const DTArg *in, const DTArg *dout, const DTArg *gamma, const typename DTArg::VT eps,
+                      DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -47,12 +46,10 @@ template <class DTRes, class DTArg> struct BatchNorm2DBackward {
 // ****************************************************************************
 
 template <class DTRes, class DTArg>
-void batchNorm2DBackward(DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta,
-                         const DTArg *mean, const DTArg *invVar,
-                         const DTArg *in, const DTArg *dout, const DTArg *gamma,
-                         const typename DTArg::VT eps, DCTX(dctx)) {
-    BatchNorm2DBackward<DTRes, DTArg>::apply(dX, dGamma, dBeta, mean, invVar,
-                                             in, dout, gamma, eps, dctx);
+void batchNorm2DBackward(DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta, const DTArg *mean, const DTArg *invVar,
+                         const DTArg *in, const DTArg *dout, const DTArg *gamma, const typename DTArg::VT eps,
+                         DCTX(dctx)) {
+    BatchNorm2DBackward<DTRes, DTArg>::apply(dX, dGamma, dBeta, mean, invVar, in, dout, gamma, eps, dctx);
 }
 
 // ****************************************************************************
@@ -63,14 +60,10 @@ void batchNorm2DBackward(DTRes *&dX, DTRes *&dGamma, DTRes *&dBeta,
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg>
-struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void
-    apply(DenseMatrix<VTRes> *&dX, DenseMatrix<VTRes> *&dGamma,
-          DenseMatrix<VTRes> *&dBeta, const DenseMatrix<VTArg> *mean,
-          const DenseMatrix<VTArg> *invVar, const DenseMatrix<VTArg> *in,
-          const DenseMatrix<VTArg> *dout, const DenseMatrix<VTArg> *gamma,
-          const VTArg eps, DCTX(dctx)) {
+template <typename VTRes, typename VTArg> struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(DenseMatrix<VTRes> *&dX, DenseMatrix<VTRes> *&dGamma, DenseMatrix<VTRes> *&dBeta,
+                      const DenseMatrix<VTArg> *mean, const DenseMatrix<VTArg> *invVar, const DenseMatrix<VTArg> *in,
+                      const DenseMatrix<VTArg> *dout, const DenseMatrix<VTArg> *gamma, const VTArg eps, DCTX(dctx)) {
 
         auto start = 0;
         auto stop = in->getNumRows();
@@ -79,8 +72,7 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         auto HW = CHW / C;
         VTArg m = stop * HW;
 
-        auto half = static_cast<typename DenseMatrix<VTArg>::VT>(1) /
-                    static_cast<typename DenseMatrix<VTArg>::VT>(2);
+        auto half = static_cast<typename DenseMatrix<VTArg>::VT>(1) / static_cast<typename DenseMatrix<VTArg>::VT>(2);
         auto const_2_m = static_cast<typename DenseMatrix<VTArg>::VT>(2) / m;
         // auto const_1_m = static_cast<typename DenseMatrix<VTArg>::VT>(1) / m;
 
@@ -105,13 +97,10 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                     off = i * CHW + c * HW + j;
                     sum_dBeta += dout->getValues()[off];
                     sum_dGamma +=
-                        dout->getValues()[off] *
-                        (in->getValues()[off] - mean->getValues()[c]) *
-                        invVar->getValues()[c];
+                        dout->getValues()[off] * (in->getValues()[off] - mean->getValues()[c]) * invVar->getValues()[c];
                     dX_hat = dout->getValues()[off] * gamma->getValues()[c];
-                    dVar -= dX_hat *
-                            (in->getValues()[off] - mean->getValues()[c]) *
-                            half * std::pow(invVar->getValues()[c], 3);
+                    dVar -= dX_hat * (in->getValues()[off] - mean->getValues()[c]) * half *
+                            std::pow(invVar->getValues()[c], 3);
                 }
             dBeta->getValues()[c] = sum_dBeta;
             dGamma->getValues()[c] = sum_dGamma;
@@ -121,18 +110,14 @@ struct BatchNorm2DBackward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                     off = i * CHW + c * HW + j;
                     dX_hat = dout->getValues()[off] * gamma->getValues()[c];
                     dMean += dX_hat * (-invVar->getValues()[c]) +
-                             dVar * (-const_2_m) *
-                                 (in->getValues()[off] - mean->getValues()[c]);
+                             dVar * (-const_2_m) * (in->getValues()[off] - mean->getValues()[c]);
                 }
             for (uint32_t i = start; i < stop; i++)
                 for (uint32_t j = 0; j < HW; j++) {
                     off = i * CHW + c * HW + j;
                     dX_hat = dout->getValues()[off] * gamma->getValues()[c];
-                    dX->getValues()[off] =
-                        dX_hat * invVar->getValues()[c] +
-                        dVar * const_2_m *
-                            (in->getValues()[off] - mean->getValues()[c]) +
-                        dMean / m;
+                    dX->getValues()[off] = dX_hat * invVar->getValues()[c] +
+                                           dVar * const_2_m * (in->getValues()[off] - mean->getValues()[c]) + dMean / m;
                 }
         }
     }

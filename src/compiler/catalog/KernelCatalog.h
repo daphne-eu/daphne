@@ -60,12 +60,9 @@ struct KernelInfo {
      */
     const std::string libPath;
 
-    KernelInfo(const std::string kernelFuncName,
-               const std::vector<mlir::Type> resTypes,
-               const std::vector<mlir::Type> argTypes,
-               const std::string backend, const std::string libPath)
-        : kernelFuncName(kernelFuncName), resTypes(resTypes),
-          argTypes(argTypes), backend(backend), libPath(libPath) {
+    KernelInfo(const std::string kernelFuncName, const std::vector<mlir::Type> resTypes,
+               const std::vector<mlir::Type> argTypes, const std::string backend, const std::string libPath)
+        : kernelFuncName(kernelFuncName), resTypes(resTypes), argTypes(argTypes), backend(backend), libPath(libPath) {
         //
     }
 };
@@ -90,11 +87,9 @@ class KernelCatalog {
      * @param kernelInfos The kernel information to print.
      * @param os The stream to print to. Defaults to `std::cerr`.
      */
-    void dumpKernelInfos(const std::string &opMnemonic,
-                         const std::vector<KernelInfo> &kernelInfos,
+    void dumpKernelInfos(const std::string &opMnemonic, const std::vector<KernelInfo> &kernelInfos,
                          std::ostream &os = std::cerr) const {
-        os << "- operation `" << opMnemonic << "` (" << kernelInfos.size()
-           << " kernels)" << std::endl;
+        os << "- operation `" << opMnemonic << "` (" << kernelInfos.size() << " kernels)" << std::endl;
         for (KernelInfo ki : kernelInfos) {
             os << "  - kernel `" << ki.kernelFuncName << "`: (";
             for (size_t i = 0; i < ki.argTypes.size(); i++) {
@@ -108,8 +103,7 @@ class KernelCatalog {
                 if (i < ki.resTypes.size() - 1)
                     os << ", ";
             }
-            os << ") for backend `" << ki.backend << "` (in `" << ki.libPath
-               << "`)" << std::endl;
+            os << ") for backend `" << ki.backend << "` (in `" << ki.libPath << "`)" << std::endl;
         }
     }
 
@@ -133,8 +127,7 @@ class KernelCatalog {
      * @return A vector of kernel information, or an empty vector if no kernels
      * are registered for the given operation.
      */
-    const std::vector<KernelInfo>
-    getKernelInfos(const std::string &opMnemonic) const {
+    const std::vector<KernelInfo> getKernelInfos(const std::string &opMnemonic) const {
         auto it = kernelInfosByOp.find(opMnemonic);
         if (it != kernelInfosByOp.end())
             return it->second;
@@ -157,8 +150,7 @@ class KernelCatalog {
                 if (it2.kernelFuncName == kernelFuncName)
                     return opMnemonic;
         }
-        throw std::runtime_error("no kernel with name `" + kernelFuncName +
-                                 "` registered in the kernel catalog");
+        throw std::runtime_error("no kernel with name `" + kernelFuncName + "` registered in the kernel catalog");
     }
 
     /**
@@ -169,11 +161,9 @@ class KernelCatalog {
     void stats(std::ostream &os = std::cerr) const {
         const size_t numOps = kernelInfosByOp.size();
         size_t numKernels = 0;
-        for (auto it = kernelInfosByOp.begin(); it != kernelInfosByOp.end();
-             it++)
+        for (auto it = kernelInfosByOp.begin(); it != kernelInfosByOp.end(); it++)
             numKernels += it->second.size();
-        os << "KernelCatalog (" << numOps << " ops, " << numKernels
-           << " kernels)" << std::endl;
+        os << "KernelCatalog (" << numOps << " ops, " << numKernels << " kernels)" << std::endl;
     }
 
     /**
@@ -188,8 +178,7 @@ class KernelCatalog {
         stats(os);
         if (opMnemonic.empty())
             // Print info on all ops.
-            for (auto it = kernelInfosByOp.begin(); it != kernelInfosByOp.end();
-                 it++)
+            for (auto it = kernelInfosByOp.begin(); it != kernelInfosByOp.end(); it++)
                 dumpKernelInfos(it->first, it->second, os);
         else
             // Print info on specified op only.

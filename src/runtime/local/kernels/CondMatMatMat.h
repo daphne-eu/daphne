@@ -29,10 +29,9 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes, class DTCond, class DTThen, class DTElse>
-struct CondMatMatMat {
-    static void apply(DTRes *&res, const DTCond *cond, const DTThen *thenVal,
-                      const DTElse *elseVal, DCTX(ctx)) = delete;
+template <class DTRes, class DTCond, class DTThen, class DTElse> struct CondMatMatMat {
+    static void apply(DTRes *&res, const DTCond *cond, const DTThen *thenVal, const DTElse *elseVal,
+                      DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -40,10 +39,8 @@ struct CondMatMatMat {
 // ****************************************************************************
 
 template <class DTRes, class DTCond, class DTThen, class DTElse>
-void condMatMatMat(DTRes *&res, const DTCond *cond, const DTThen *thenVal,
-                   const DTElse *elseVal, DCTX(ctx)) {
-    CondMatMatMat<DTRes, DTCond, DTThen, DTElse>::apply(res, cond, thenVal,
-                                                        elseVal, ctx);
+void condMatMatMat(DTRes *&res, const DTCond *cond, const DTThen *thenVal, const DTElse *elseVal, DCTX(ctx)) {
+    CondMatMatMat<DTRes, DTCond, DTThen, DTElse>::apply(res, cond, thenVal, elseVal, ctx);
 }
 
 // ****************************************************************************
@@ -55,24 +52,19 @@ void condMatMatMat(DTRes *&res, const DTCond *cond, const DTThen *thenVal,
 // ----------------------------------------------------------------------------
 
 template <typename VTVal, typename VTCond>
-struct CondMatMatMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>,
-                     DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
-    static void apply(DenseMatrix<VTVal> *&res, const DenseMatrix<VTCond> *cond,
-                      const DenseMatrix<VTVal> *thenVal,
+struct CondMatMatMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>, DenseMatrix<VTVal>, DenseMatrix<VTVal>> {
+    static void apply(DenseMatrix<VTVal> *&res, const DenseMatrix<VTCond> *cond, const DenseMatrix<VTVal> *thenVal,
                       const DenseMatrix<VTVal> *elseVal, DCTX(ctx)) {
         const size_t numRows = cond->getNumRows();
         const size_t numCols = cond->getNumCols();
 
-        if (numRows != thenVal->getNumRows() ||
-            numRows != elseVal->getNumRows() ||
-            numCols != thenVal->getNumCols() ||
+        if (numRows != thenVal->getNumRows() || numRows != elseVal->getNumRows() || numCols != thenVal->getNumCols() ||
             numCols != elseVal->getNumCols())
             throw std::runtime_error("CondMatMatMat: condition/then/else "
                                      "matrices must have the same shape");
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows,
-                                                                numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
 
         VTVal *valuesRes = res->getValues();
         const VTCond *valuesCond = cond->getValues();
@@ -85,8 +77,7 @@ struct CondMatMatMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>,
 
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++)
-                valuesRes[c] = static_cast<bool>(valuesCond[c]) ? valuesThen[c]
-                                                                : valuesElse[c];
+                valuesRes[c] = static_cast<bool>(valuesCond[c]) ? valuesThen[c] : valuesElse[c];
             valuesRes += rowSkipRes;
             valuesCond += rowSkipCond;
             valuesThen += rowSkipThen;
@@ -100,39 +91,29 @@ struct CondMatMatMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>,
 // ----------------------------------------------------------------------------
 
 template <typename VTVal, typename VTCond>
-struct CondMatMatMat<Matrix<VTVal>, Matrix<VTCond>, Matrix<VTVal>,
-                     Matrix<VTVal>> {
-    static void apply(Matrix<VTVal> *&res, const Matrix<VTCond> *cond,
-                      const Matrix<VTVal> *thenVal,
+struct CondMatMatMat<Matrix<VTVal>, Matrix<VTCond>, Matrix<VTVal>, Matrix<VTVal>> {
+    static void apply(Matrix<VTVal> *&res, const Matrix<VTCond> *cond, const Matrix<VTVal> *thenVal,
                       const Matrix<VTVal> *elseVal, DCTX(ctx)) {
         const size_t numRows = cond->getNumRows();
         const size_t numCols = cond->getNumCols();
 
-        if (numRows != thenVal->getNumRows() ||
-            numRows != elseVal->getNumRows() ||
-            numCols != thenVal->getNumCols() ||
+        if (numRows != thenVal->getNumRows() || numRows != elseVal->getNumRows() || numCols != thenVal->getNumCols() ||
             numCols != elseVal->getNumCols()) {
             std::ostringstream errMsg;
             errMsg << "CondMatMatMat: condition/then/else matrices must have "
                       "the same shape but have ("
-                   << numRows << "," << numCols << "), ("
-                   << thenVal->getNumRows() << "," << thenVal->getNumCols()
-                   << ") and (" << elseVal->getNumRows() << ","
-                   << elseVal->getNumCols() << ")";
+                   << numRows << "," << numCols << "), (" << thenVal->getNumRows() << "," << thenVal->getNumCols()
+                   << ") and (" << elseVal->getNumRows() << "," << elseVal->getNumCols() << ")";
             throw std::runtime_error(errMsg.str());
         }
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows,
-                                                                numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r)
             for (size_t c = 0; c < numCols; ++c)
-                res->append(r, c,
-                            static_cast<bool>(cond->get(r, c))
-                                ? thenVal->get(r, c)
-                                : elseVal->get(r, c));
+                res->append(r, c, static_cast<bool>(cond->get(r, c)) ? thenVal->get(r, c) : elseVal->get(r, c));
         res->finishAppend();
     }
 };

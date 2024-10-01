@@ -29,14 +29,12 @@
 
 namespace CUDA {
 template <class DTRes, class DTLhs, class DTRhs> struct EwBinaryMat {
-    static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs,
-                      const DTRhs *rhs, DCTX(ctx)) = delete;
+    static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) = delete;
 };
 
 template <typename VTres, typename VTlhs, typename VTrhs>
 struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *&res,
-                      const DenseMatrix<VTlhs> *lhs,
+    static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs,
                       const DenseMatrix<VTrhs> *rhs, DCTX(ctx));
 };
 
@@ -44,8 +42,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
 // Convenience function
 // ****************************************************************************
 template <class DTRes, class DTLhs, class DTRhs>
-void ewBinaryMat(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs,
-                 const DTRhs *rhs, DCTX(ctx)) {
+void ewBinaryMat(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
     EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 } // namespace CUDA

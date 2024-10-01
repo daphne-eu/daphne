@@ -22,14 +22,11 @@
 
 namespace NN::Activation {
 struct ReLU {
-    static inline int getActivationType() { /* ToDo: ReLU activation */
-        return 0;
-    }
+    static inline int getActivationType() { /* ToDo: ReLU activation */ return 0; }
 };
 
 template <typename OP, typename DTRes, typename DTArg> struct Forward {
-    static void apply(DTRes *&res, [[maybe_unused]] const DTArg *data,
-                      DCTX(dctx)) {
+    static void apply(DTRes *&res, [[maybe_unused]] const DTArg *data, DCTX(dctx)) {
         throw std::runtime_error("C++ ReLU activation not implemented");
     }
 };

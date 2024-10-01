@@ -80,9 +80,7 @@ class ParserUtils {
      * @param vt
      * @return
      */
-    mlir::daphne::MatrixType matrixOf(mlir::Type vt) {
-        return mlir::daphne::MatrixType::get(builder.getContext(), vt);
-    }
+    mlir::daphne::MatrixType matrixOf(mlir::Type vt) { return mlir::daphne::MatrixType::get(builder.getContext(), vt); }
 
     /**
      * @brief Get a `daphne::MatrixType` with the type of the given value as
@@ -99,12 +97,9 @@ class ParserUtils {
     // ************************************************************************
 
     ParserUtils(mlir::OpBuilder &builder)
-        : builder(builder), sizeType(builder.getIndexType()),
-          boolType(builder.getI1Type()),
-          seedType(builder.getIntegerType(64, true)),
-          strType(mlir::daphne::StringType::get(builder.getContext())),
-          matrixOfSizeType(static_cast<mlir::Type>(
-              mlir::daphne::MatrixType::get(builder.getContext(), sizeType))),
+        : builder(builder), sizeType(builder.getIndexType()), boolType(builder.getI1Type()),
+          seedType(builder.getIntegerType(64, true)), strType(mlir::daphne::StringType::get(builder.getContext())),
+          matrixOfSizeType(static_cast<mlir::Type>(mlir::daphne::MatrixType::get(builder.getContext(), sizeType))),
           unknownType(mlir::daphne::UnknownType::get(builder.getContext())) {
         // nothing to do
     }
@@ -136,33 +131,19 @@ class ParserUtils {
 
     mlir::Value castStrIf(mlir::Value v) { return castIf(strType, v); }
 
-    mlir::Value castUI8If(mlir::Value v) {
-        return castIf(builder.getIntegerType(8, false), v);
-    }
+    mlir::Value castUI8If(mlir::Value v) { return castIf(builder.getIntegerType(8, false), v); }
 
-    mlir::Value castUI32If(mlir::Value v) {
-        return castIf(builder.getIntegerType(32, false), v);
-    }
+    mlir::Value castUI32If(mlir::Value v) { return castIf(builder.getIntegerType(32, false), v); }
 
-    mlir::Value castUI64If(mlir::Value v) {
-        return castIf(builder.getIntegerType(64, false), v);
-    }
+    mlir::Value castUI64If(mlir::Value v) { return castIf(builder.getIntegerType(64, false), v); }
 
-    mlir::Value castSI8If(mlir::Value v) {
-        return castIf(builder.getIntegerType(8, true), v);
-    }
+    mlir::Value castSI8If(mlir::Value v) { return castIf(builder.getIntegerType(8, true), v); }
 
-    mlir::Value castSI32If(mlir::Value v) {
-        return castIf(builder.getIntegerType(32, true), v);
-    }
+    mlir::Value castSI32If(mlir::Value v) { return castIf(builder.getIntegerType(32, true), v); }
 
-    mlir::Value castSI64If(mlir::Value v) {
-        return castIf(builder.getIntegerType(64, true), v);
-    }
+    mlir::Value castSI64If(mlir::Value v) { return castIf(builder.getIntegerType(64, true), v); }
 
-    mlir::Value castF64If(mlir::Value v) {
-        return castIf(builder.getF64Type(), v);
-    }
+    mlir::Value castF64If(mlir::Value v) { return castIf(builder.getF64Type(), v); }
 
     // ************************************************************************
     // Type parsing
@@ -212,43 +193,38 @@ class ParserUtils {
             // Typically happens when a *user-defined* function with zero return
             // values is used in a place where exactly one value is required
             // (e.g., in an expression).
-            throw ErrorHandler::compilerError(
-                loc, "DSLVisitor",
-                "the expression was expected to return a single value, but it "
-                "returns no value");
+            throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                                              "the expression was expected to return a single value, but it "
+                                              "returns no value");
         if (a.is<mlir::Operation *>())
             // Typically happens when a *built-in* function with zero return
             // values is used in a place where exactly one value is required
             // (e.g., in an expression).
-            throw ErrorHandler::compilerError(
-                loc, "DSLVisitor",
-                "the expression was expected to return a single value, but it "
-                "returns no value");
+            throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                                              "the expression was expected to return a single value, but it "
+                                              "returns no value");
         if (a.is<mlir::ResultRange>()) {
             // Typically happens when a *built-in or user-defined* function with
             // more than one return values is used in a place where exactly one
             // value is required (e.g., in an expression).
             auto rr = a.as<mlir::ResultRange>();
-            throw ErrorHandler::compilerError(
-                loc, "DSLVisitor",
-                "the expression was expected to return a single value, but it "
-                "returns " +
-                    std::to_string(rr.size()) + " values");
+            throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                                              "the expression was expected to return a single value, but it "
+                                              "returns " +
+                                                  std::to_string(rr.size()) + " values");
         }
         // This should never happen. If it happens, that indicates that this
         // function is called on an invalid argument or that some visitor
         // returns a wrong result type.
-        throw ErrorHandler::compilerError(
-            loc, "DSLVisitor",
-            "the expression was expected to return a single value, but it is "
-            "something unexpected");
+        throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                                          "the expression was expected to return a single value, but it is "
+                                          "something unexpected");
     }
 
     mlir::Type typeOrError(antlrcpp::Any a) {
         if (a.is<mlir::Type>())
             return a.as<mlir::Type>();
-        throw std::runtime_error(
-            "something was expected to be an mlir::Type, but it was none");
+        throw std::runtime_error("something was expected to be an mlir::Type, but it was none");
     }
 
     /**
@@ -258,9 +234,8 @@ class ParserUtils {
      * @return mlir location representing the position of the token in the file
      */
     mlir::Location getLoc(antlr4::Token *start) {
-        return mlir::FileLineColLoc::get(
-            builder.getStringAttr(start->getTokenSource()->getSourceName()),
-            start->getLine(), start->getCharPositionInLine());
+        return mlir::FileLineColLoc::get(builder.getStringAttr(start->getTokenSource()->getSourceName()),
+                                         start->getLine(), start->getCharPositionInLine());
     }
 
     /**

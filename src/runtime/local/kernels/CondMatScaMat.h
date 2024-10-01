@@ -28,10 +28,8 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes, class DTCond, class VTThen, class DTElse>
-struct CondMatScaMat {
-    static void apply(DTRes *&res, const DTCond *cond, VTThen thenVal,
-                      const DTElse *elseVal, DCTX(ctx)) = delete;
+template <class DTRes, class DTCond, class VTThen, class DTElse> struct CondMatScaMat {
+    static void apply(DTRes *&res, const DTCond *cond, VTThen thenVal, const DTElse *elseVal, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,10 +37,8 @@ struct CondMatScaMat {
 // ****************************************************************************
 
 template <class DTRes, class DTCond, class VTThen, class DTElse>
-void condMatScaMat(DTRes *&res, const DTCond *cond, VTThen thenVal,
-                   const DTElse *elseVal, DCTX(ctx)) {
-    CondMatScaMat<DTRes, DTCond, VTThen, DTElse>::apply(res, cond, thenVal,
-                                                        elseVal, ctx);
+void condMatScaMat(DTRes *&res, const DTCond *cond, VTThen thenVal, const DTElse *elseVal, DCTX(ctx)) {
+    CondMatScaMat<DTRes, DTCond, VTThen, DTElse>::apply(res, cond, thenVal, elseVal, ctx);
 }
 
 // ****************************************************************************
@@ -54,22 +50,18 @@ void condMatScaMat(DTRes *&res, const DTCond *cond, VTThen thenVal,
 // ----------------------------------------------------------------------------
 
 template <typename VTVal, typename VTCond>
-struct CondMatScaMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal,
-                     DenseMatrix<VTVal>> {
-    static void apply(DenseMatrix<VTVal> *&res, const DenseMatrix<VTCond> *cond,
-                      VTVal thenVal, const DenseMatrix<VTVal> *elseVal,
-                      DCTX(ctx)) {
+struct CondMatScaMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, DenseMatrix<VTVal>> {
+    static void apply(DenseMatrix<VTVal> *&res, const DenseMatrix<VTCond> *cond, VTVal thenVal,
+                      const DenseMatrix<VTVal> *elseVal, DCTX(ctx)) {
         const size_t numRows = cond->getNumRows();
         const size_t numCols = cond->getNumCols();
 
-        if (numRows != elseVal->getNumRows() ||
-            numCols != elseVal->getNumCols())
+        if (numRows != elseVal->getNumRows() || numCols != elseVal->getNumCols())
             throw std::runtime_error("CondMatScaMat: condition/else matrices "
                                      "must have the same shape");
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows,
-                                                                numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
 
         VTVal *valuesRes = res->getValues();
         const VTCond *valuesCond = cond->getValues();
@@ -80,8 +72,7 @@ struct CondMatScaMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal,
 
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++)
-                valuesRes[c] =
-                    static_cast<bool>(valuesCond[c]) ? thenVal : valuesElse[c];
+                valuesRes[c] = static_cast<bool>(valuesCond[c]) ? thenVal : valuesElse[c];
             valuesRes += rowSkipRes;
             valuesCond += rowSkipCond;
             valuesElse += rowSkipElse;
@@ -93,35 +84,28 @@ struct CondMatScaMat<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal,
 // Matrix <- Matrix, scalar, Matrix
 // ----------------------------------------------------------------------------
 
-template <typename VTVal, typename VTCond>
-struct CondMatScaMat<Matrix<VTVal>, Matrix<VTCond>, VTVal, Matrix<VTVal>> {
-    static void apply(Matrix<VTVal> *&res, const Matrix<VTCond> *cond,
-                      VTVal thenVal, const Matrix<VTVal> *elseVal, DCTX(ctx)) {
+template <typename VTVal, typename VTCond> struct CondMatScaMat<Matrix<VTVal>, Matrix<VTCond>, VTVal, Matrix<VTVal>> {
+    static void apply(Matrix<VTVal> *&res, const Matrix<VTCond> *cond, VTVal thenVal, const Matrix<VTVal> *elseVal,
+                      DCTX(ctx)) {
         const size_t numRows = cond->getNumRows();
         const size_t numCols = cond->getNumCols();
 
-        if (numRows != elseVal->getNumRows() ||
-            numCols != elseVal->getNumCols()) {
+        if (numRows != elseVal->getNumRows() || numCols != elseVal->getNumCols()) {
             std::ostringstream errMsg;
             errMsg << "CondMatScaMat: condition/else matrices must have the "
                       "same shape but have ("
-                   << numRows << "," << numCols << ") and ("
-                   << elseVal->getNumRows() << "," << elseVal->getNumCols()
+                   << numRows << "," << numCols << ") and (" << elseVal->getNumRows() << "," << elseVal->getNumCols()
                    << ")";
             throw std::runtime_error(errMsg.str());
         }
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows,
-                                                                numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r)
             for (size_t c = 0; c < numCols; ++c)
-                res->append(r, c,
-                            static_cast<bool>(cond->get(r, c))
-                                ? thenVal
-                                : elseVal->get(r, c));
+                res->append(r, c, static_cast<bool>(cond->get(r, c)) ? thenVal : elseVal->get(r, c));
         res->finishAppend();
     }
 };

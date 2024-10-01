@@ -25,14 +25,13 @@
 
 namespace CUDA {
 template <class DTRes, class DTArg, class DTSel> struct ExtractCol {
-    static void apply(DTRes *&res, const DTArg *arg, const DTSel *sel,
-                      DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) = delete;
 };
 
 template <class DTRes, class DTArg, class DTSel>
 struct ExtractCol<DenseMatrix<DTRes>, DenseMatrix<DTArg>, DenseMatrix<DTSel>> {
-    static void apply(DenseMatrix<DTRes> *&res, const DenseMatrix<DTArg> *arg,
-                      const DenseMatrix<DTSel> *sel, DCTX(ctx));
+    static void apply(DenseMatrix<DTRes> *&res, const DenseMatrix<DTArg> *arg, const DenseMatrix<DTSel> *sel,
+                      DCTX(ctx));
 };
 
 // ****************************************************************************

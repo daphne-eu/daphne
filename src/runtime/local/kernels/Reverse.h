@@ -39,8 +39,7 @@ template <class DTRes, typename DTArg> struct Reverse {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, typename DTArg>
-void reverse(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, typename DTArg> void reverse(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     Reverse<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
@@ -53,13 +52,11 @@ void reverse(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Reverse<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
         size_t numRows = arg->getNumRows();
         size_t numCols = arg->getNumCols();
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         const VT *valuesArg = arg->getValues();
         VT *valuesRes = res->getValues();
@@ -70,8 +67,7 @@ template <typename VT> struct Reverse<DenseMatrix<VT>, DenseMatrix<VT>> {
                                       // Matrix (see DenseMatrix.h)
             std::reverse_copy(valuesArg, valuesArg + numRows, valuesRes);
         } else {
-            const VT *valuesArgLastRow =
-                valuesArg + ((numRows - 1) * arg->getRowSkip());
+            const VT *valuesArgLastRow = valuesArg + ((numRows - 1) * arg->getRowSkip());
             for (size_t r = 0; r < numRows; r++) {
                 memcpy(valuesRes, valuesArgLastRow, numCols * sizeof(VT));
                 valuesRes += res->getRowSkip();
@@ -91,8 +87,7 @@ template <typename VT> struct Reverse<Matrix<VT>, Matrix<VT>> {
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r)

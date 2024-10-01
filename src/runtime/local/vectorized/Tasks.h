@@ -64,8 +64,7 @@ template <class DT> struct CompiledPipelineTaskData {
     const uint64_t _offset;
     DCTX(_ctx);
 
-    [[maybe_unused]] CompiledPipelineTaskData<DT>
-    withDifferentRange(uint64_t newRl, uint64_t newRu) {
+    [[maybe_unused]] CompiledPipelineTaskData<DT> withDifferentRange(uint64_t newRl, uint64_t newRu) {
         CompiledPipelineTaskData<DT> flatCopy = *this;
         flatCopy._rl = newRl;
         flatCopy._ru = newRu;
@@ -78,19 +77,16 @@ template <class DT> class CompiledPipelineTaskBase : public Task {
     CompiledPipelineTaskData<DT> _data;
 
   public:
-    explicit CompiledPipelineTaskBase(CompiledPipelineTaskData<DT> data)
-        : _data(data) {}
+    explicit CompiledPipelineTaskBase(CompiledPipelineTaskData<DT> data) : _data(data) {}
     void execute(uint32_t fid, uint32_t batchSize) override = 0;
     uint64_t getTaskSize() override = 0;
 
   protected:
     bool isBroadcast(mlir::daphne::VectorSplit splitMethod, Structure *input) {
-        return splitMethod == VectorSplit::NONE ||
-               (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1);
+        return splitMethod == VectorSplit::NONE || (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1);
     }
 
-    std::vector<Structure *> createFuncInputs(uint64_t rowStart,
-                                              uint64_t rowEnd) {
+    std::vector<Structure *> createFuncInputs(uint64_t rowStart, uint64_t rowEnd) {
         std::vector<Structure *> linputs;
         for (auto i = 0u; i < _data._numInputs; i++) {
             if (isBroadcast(_data._splits[i], _data._inputs[i])) {
@@ -114,43 +110,33 @@ template <class DT> class CompiledPipelineTaskBase : public Task {
     }
 };
 
-template <class DT>
-class CompiledPipelineTask : public CompiledPipelineTaskBase<DT> {};
+template <class DT> class CompiledPipelineTask : public CompiledPipelineTaskBase<DT> {};
 
-template <typename VT>
-class CompiledPipelineTask<DenseMatrix<VT>>
-    : public CompiledPipelineTaskBase<DenseMatrix<VT>> {
+template <typename VT> class CompiledPipelineTask<DenseMatrix<VT>> : public CompiledPipelineTaskBase<DenseMatrix<VT>> {
     std::mutex &_resLock;
     DenseMatrix<VT> ***_res;
     using CompiledPipelineTaskBase<DenseMatrix<VT>>::_data;
 
   public:
-    CompiledPipelineTask(CompiledPipelineTaskData<DenseMatrix<VT>> data,
-                         std::mutex &resLock, DenseMatrix<VT> ***res)
-        : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock),
-          _res(res) {}
+    CompiledPipelineTask(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock, DenseMatrix<VT> ***res)
+        : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
 
     void execute(uint32_t fid, uint32_t batchSize) override;
     uint64_t getTaskSize() override;
 
   private:
-    void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults,
-                           std::vector<DenseMatrix<VT> *> &localAddRes,
+    void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
                            uint64_t rowStart, uint64_t rowEnd);
 };
 
-template <typename VT>
-class CompiledPipelineTask<CSRMatrix<VT>>
-    : public CompiledPipelineTaskBase<CSRMatrix<VT>> {
+template <typename VT> class CompiledPipelineTask<CSRMatrix<VT>> : public CompiledPipelineTaskBase<CSRMatrix<VT>> {
     std::vector<VectorizedDataSink<CSRMatrix<VT>> *> &_resultSinks;
     using CompiledPipelineTaskBase<CSRMatrix<VT>>::_data;
 
   public:
-    CompiledPipelineTask(
-        CompiledPipelineTaskData<CSRMatrix<VT>> data,
-        std::vector<VectorizedDataSink<CSRMatrix<VT>> *> &resultSinks)
-        : CompiledPipelineTaskBase<CSRMatrix<VT>>(data),
-          _resultSinks(resultSinks) {}
+    CompiledPipelineTask(CompiledPipelineTaskData<CSRMatrix<VT>> data,
+                         std::vector<VectorizedDataSink<CSRMatrix<VT>> *> &resultSinks)
+        : CompiledPipelineTaskBase<CSRMatrix<VT>>(data), _resultSinks(resultSinks) {}
 
     void execute(uint32_t fid, uint32_t batchSize) override;
     uint64_t getTaskSize() override;

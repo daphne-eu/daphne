@@ -46,8 +46,7 @@ bool isUntypedFunction(func::FuncOp op) {
     return llvm::any_of(op.getFunctionType().getInputs(), [&](Type ty) {
         auto matTy = ty.dyn_cast<daphne::MatrixType>();
         return llvm::isa<daphne::UnknownType>(ty) ||
-               (matTy &&
-                (llvm::isa<daphne::UnknownType>(matTy.getElementType())));
+               (matTy && (llvm::isa<daphne::UnknownType>(matTy.getElementType())));
     });
 }
 
@@ -67,10 +66,8 @@ bool isFunctionTemplate(func::FuncOp op) {
     return llvm::any_of(op.getFunctionType().getInputs(), [&](Type ty) {
         auto matTy = ty.dyn_cast<daphne::MatrixType>();
         return llvm::isa<daphne::UnknownType>(ty) ||
-               (matTy &&
-                (llvm::isa<daphne::UnknownType>(matTy.getElementType()) ||
-                 (matTy.getNumRows() == -1 && matTy.getNumCols() == -1 &&
-                  matTy.getSparsity() == -1)));
+               (matTy && (llvm::isa<daphne::UnknownType>(matTy.getElementType()) ||
+                          (matTy.getNumRows() == -1 && matTy.getNumCols() == -1 && matTy.getSparsity() == -1)));
     });
 }
 
@@ -86,8 +83,7 @@ std::string uniqueSpecializedFuncName(const std::string &functionName) {
  * @param callTypes The types used in the call
  * @return true if the types match for a call, false otherwise
  */
-bool callTypesMatchFunctionTypes(FunctionType functionType,
-                                 TypeRange callTypes) {
+bool callTypesMatchFunctionTypes(FunctionType functionType, TypeRange callTypes) {
     for (auto zipIt : llvm::zip(functionType.getInputs(), callTypes)) {
         auto funcTy = std::get<0>(zipIt);
         auto callTy = std::get<1>(zipIt);
@@ -107,32 +103,22 @@ bool callTypesMatchFunctionTypes(FunctionType functionType,
  * @param callLoc The location of the call
  * @return The argument types to use for the specialized version
  */
-std::vector<Type> getSpecializedFuncArgTypes(FunctionType functionType,
-                                             TypeRange callTypes,
-                                             const std::string &funcName,
-                                             mlir::Location callLoc) {
+std::vector<Type> getSpecializedFuncArgTypes(FunctionType functionType, TypeRange callTypes,
+                                             const std::string &funcName, mlir::Location callLoc) {
     auto unknownTy = daphne::UnknownType::get(functionType.getContext());
     std::vector<mlir::Type> specializedTypes;
-    for (auto it :
-         llvm::enumerate(llvm::zip(functionType.getInputs(), callTypes))) {
+    for (auto it : llvm::enumerate(llvm::zip(functionType.getInputs(), callTypes))) {
         auto index = it.index();
         auto funcInTy = std::get<0>(it.value());
         auto specializedTy = std::get<1>(it.value());
         if (funcInTy != specializedTy) {
             auto funcMatTy = funcInTy.dyn_cast<daphne::MatrixType>();
-            auto specializedMatTy =
-                specializedTy.dyn_cast<daphne::MatrixType>();
-            bool isMatchingUnknownMatrix =
-                funcMatTy && specializedMatTy &&
-                funcMatTy.getElementType() == unknownTy;
+            auto specializedMatTy = specializedTy.dyn_cast<daphne::MatrixType>();
+            bool isMatchingUnknownMatrix = funcMatTy && specializedMatTy && funcMatTy.getElementType() == unknownTy;
             bool isMatchingUnknownPropertiesMatrix =
-                funcMatTy && specializedMatTy &&
-                funcMatTy.getElementType() ==
-                    specializedMatTy.getElementType() &&
-                funcMatTy.getNumRows() == -1 && funcMatTy.getNumCols() == -1 &&
-                funcMatTy.getSparsity() == -1;
-            if (!isMatchingUnknownMatrix &&
-                !isMatchingUnknownPropertiesMatrix && funcInTy != unknownTy) {
+                funcMatTy && specializedMatTy && funcMatTy.getElementType() == specializedMatTy.getElementType() &&
+                funcMatTy.getNumRows() == -1 && funcMatTy.getNumCols() == -1 && funcMatTy.getSparsity() == -1;
+            if (!isMatchingUnknownMatrix && !isMatchingUnknownPropertiesMatrix && funcInTy != unknownTy) {
                 std::string s;
                 llvm::raw_string_ostream stream(s);
                 // TODO The function name funcName has a cryptic suffix from
@@ -142,12 +128,9 @@ std::vector<Type> getSpecializedFuncArgTypes(FunctionType functionType,
                 // which are no "templates", which is confusing for a user.
                 // TODO The index seems to be off by 1 (too large)... (or not,
                 // simply 0-based counting).
-                stream << "call to function template `" << funcName
-                       << "` with invalid types for argument " << index
-                       << ": expected `" << funcInTy << "`, got `"
-                       << specializedTy << "`";
-                throw ErrorHandler::compilerError(
-                    callLoc, "SpecializeGenericFunctionsPass", stream.str());
+                stream << "call to function template `" << funcName << "` with invalid types for argument " << index
+                       << ": expected `" << funcInTy << "`, got `" << specializedTy << "`";
+                throw ErrorHandler::compilerError(callLoc, "SpecializeGenericFunctionsPass", stream.str());
             }
         }
         // Note that specializedTy may explicitly contain property information
@@ -198,17 +181,14 @@ func::FuncOp inferTypesInFunction(func::FuncOp function) {
     pm.addPass(daphne::createInferencePass({true, true, true, true, true}));
     pm.addPass(createCanonicalizerPass());
     if (failed(pm.run(function))) {
-        throw ErrorHandler::compilerError(
-            function.getOperation(), "SpecializeGenericFunctionsPass",
-            "could not infer types for a call of function template: " +
-                function.getName().str());
+        throw ErrorHandler::compilerError(function.getOperation(), "SpecializeGenericFunctionsPass",
+                                          "could not infer types for a call of function template: " +
+                                              function.getName().str());
     }
     return function;
 }
 
-class SpecializeGenericFunctionsPass
-    : public PassWrapper<SpecializeGenericFunctionsPass,
-                         OperationPass<ModuleOp>> {
+class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunctionsPass, OperationPass<ModuleOp>> {
     std::unordered_map<std::string, func::FuncOp> functions;
     std::multimap<std::string, func::FuncOp> specializedVersions;
     std::set<func::FuncOp> visited;
@@ -219,8 +199,7 @@ class SpecializeGenericFunctionsPass
     std::shared_ptr<spdlog::logger> logger;
 
   public:
-    explicit SpecializeGenericFunctionsPass(const DaphneUserConfig &cfg)
-        : userConfig(cfg) {
+    explicit SpecializeGenericFunctionsPass(const DaphneUserConfig &cfg) : userConfig(cfg) {
         logger = spdlog::get("compiler");
     }
 
@@ -232,31 +211,27 @@ class SpecializeGenericFunctionsPass
      * @param operands The operands of the call operation
      * @return The specialized function
      */
-    func::FuncOp createSpecializedFunction(func::FuncOp templateFunction,
-                                           TypeRange specializedTypes,
+    func::FuncOp createSpecializedFunction(func::FuncOp templateFunction, TypeRange specializedTypes,
                                            ValueRange operands) {
         OpBuilder builder(templateFunction);
         auto specializedFunc = templateFunction.clone();
         builder.insert(specializedFunc);
 
-        auto uniqueFuncName =
-            uniqueSpecializedFuncName(templateFunction.getSymName().str());
+        auto uniqueFuncName = uniqueSpecializedFuncName(templateFunction.getSymName().str());
         specializedFunc.setName(uniqueFuncName);
         functions.insert({uniqueFuncName, specializedFunc});
 
         // change argument types
-        specializedFunc.setType(builder.getFunctionType(
-            specializedTypes, specializedFunc.getFunctionType().getResults()));
-        for (auto it :
-             llvm::zip(specializedFunc.getArguments(), specializedTypes)) {
+        specializedFunc.setType(
+            builder.getFunctionType(specializedTypes, specializedFunc.getFunctionType().getResults()));
+        for (auto it : llvm::zip(specializedFunc.getArguments(), specializedTypes)) {
             std::get<0>(it).setType(std::get<1>(it));
         }
 
         bool insertedConst = false;
         // Don't propagate constants into untyped functions, since that still
         // causes problems for some reason.
-        if (userConfig.use_ipa_const_propa &&
-            !isUntypedFunction(templateFunction)) {
+        if (userConfig.use_ipa_const_propa && !isUntypedFunction(templateFunction)) {
             // Insert compile-time constant scalar call operands into the
             // function.
             Block &specializedFuncBodyBlock = specializedFunc.getBody().front();
@@ -270,8 +245,7 @@ class SpecializeGenericFunctionsPass
                     builder.insert(coNew);
                     // Replace all uses of the corresponding block argument by
                     // the newly inserted constant.
-                    specializedFuncBodyBlock.getArgument(i).replaceAllUsesWith(
-                        coNew->getResult(0));
+                    specializedFuncBodyBlock.getArgument(i).replaceAllUsesWith(coNew->getResult(0));
                     // TODO We could even remove the corresponding function
                     // argument.
                     insertedConst = true;
@@ -283,8 +257,7 @@ class SpecializeGenericFunctionsPass
         // TODO We could reuse it for other calls with the same constant (it's
         // just more book-keeping effort).
         if (!insertedConst)
-            specializedVersions.insert(
-                {templateFunction.getSymName().str(), specializedFunc});
+            specializedVersions.insert({templateFunction.getSymName().str(), specializedFunc});
 
         return inferTypesInFunction(specializedFunc);
     }
@@ -299,8 +272,7 @@ class SpecializeGenericFunctionsPass
      * operation
      * @return either an existing and matching `FuncOp`, `nullptr` otherwise
      */
-    func::FuncOp tryReuseExistingSpecialization(TypeRange operandTypes,
-                                                ValueRange operands,
+    func::FuncOp tryReuseExistingSpecialization(TypeRange operandTypes, ValueRange operands,
                                                 func::FuncOp templateFunction) {
         if (userConfig.use_ipa_const_propa) {
             // If any call operand is a compile-time constant scalar, we don't
@@ -315,13 +287,11 @@ class SpecializeGenericFunctionsPass
 
         // Try to find a reusable function specialization based on types and
         // data properties.
-        auto eqIt = specializedVersions.equal_range(
-            templateFunction.getSymName().str());
+        auto eqIt = specializedVersions.equal_range(templateFunction.getSymName().str());
         for (auto it = eqIt.first; it != eqIt.second; ++it) {
             auto specializedFunc = it->second;
 
-            if (callTypesMatchFunctionTypes(specializedFunc.getFunctionType(),
-                                            operandTypes)) {
+            if (callTypesMatchFunctionTypes(specializedFunc.getFunctionType(), operandTypes)) {
                 // reuse existing specialized function
                 return specializedFunc;
             }
@@ -341,27 +311,21 @@ class SpecializeGenericFunctionsPass
      * specialization shall be created or reused
      * @return A `FuncOp`for the specialization
      */
-    func::FuncOp createOrReuseSpecialization(TypeRange operandTypes,
-                                             ValueRange operands,
-                                             func::FuncOp calledFunction,
+    func::FuncOp createOrReuseSpecialization(TypeRange operandTypes, ValueRange operands, func::FuncOp calledFunction,
                                              mlir::Location callLoc) {
         // check for existing specialization that matches
-        func::FuncOp specializedFunc = tryReuseExistingSpecialization(
-            operandTypes, operands, calledFunction);
+        func::FuncOp specializedFunc = tryReuseExistingSpecialization(operandTypes, operands, calledFunction);
         if (!specializedFunc) {
             // Create specialized function
-            auto specializedTypes = getSpecializedFuncArgTypes(
-                calledFunction.getFunctionType(), operandTypes,
-                calledFunction.getSymName().str(), callLoc);
-            specializedFunc = createSpecializedFunction(
-                calledFunction, specializedTypes, operands);
+            auto specializedTypes = getSpecializedFuncArgTypes(calledFunction.getFunctionType(), operandTypes,
+                                                               calledFunction.getSymName().str(), callLoc);
+            specializedFunc = createSpecializedFunction(calledFunction, specializedTypes, operands);
         }
         if (logger->should_log(spdlog::level::debug)) {
             std::string s;
             llvm::raw_string_ostream stream(s);
             calledFunction->getLoc().print(stream);
-            logger->debug("calledFunction\n\tname: {}\n\tlocation: {}",
-                          calledFunction.getSymName().str(), s);
+            logger->debug("calledFunction\n\tname: {}\n\tlocation: {}", calledFunction.getSymName().str(), s);
         }
         templateFunctions.insert(calledFunction);
         return specializedFunc;
@@ -380,17 +344,13 @@ class SpecializeGenericFunctionsPass
         // Specialize all functions called directly
         function.walk([&](daphne::GenericCallOp callOp) {
             auto calledFunction = functions[callOp.getCallee().str()];
-            bool hasConstantInput =
-                llvm::any_of(callOp.getOperands(), [&](Value v) {
-                    return CompilerUtils::constantOfAnyType(v) != nullptr;
-                });
+            bool hasConstantInput = llvm::any_of(
+                callOp.getOperands(), [&](Value v) { return CompilerUtils::constantOfAnyType(v) != nullptr; });
             if (isFunctionTemplate(calledFunction) || hasConstantInput) {
                 func::FuncOp specializedFunc = createOrReuseSpecialization(
-                    callOp.getOperandTypes(), callOp.getOperands(),
-                    calledFunction, callOp.getLoc());
+                    callOp.getOperandTypes(), callOp.getOperands(), calledFunction, callOp.getLoc());
                 callOp.setCalleeAttr(specializedFunc.getSymNameAttr());
-                if (fixResultTypes(callOp->getResults(),
-                                   specializedFunc.getFunctionType())) {
+                if (fixResultTypes(callOp->getResults(), specializedFunc.getFunctionType())) {
                     inferTypesInFunction(function);
                 }
                 specializeCallsInFunction(specializedFunc);
@@ -409,9 +369,8 @@ class SpecializeGenericFunctionsPass
                 // mapped on
                 mlir::Type opTy = mapOp.getArg().getType();
                 auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
-                func::FuncOp specializedFunc = createOrReuseSpecialization(
-                    inpMatrixTy.getElementType(), {}, calledFunction,
-                    mapOp.getLoc());
+                func::FuncOp specializedFunc =
+                    createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction, mapOp.getLoc());
                 mapOp.setFuncAttr(specializedFunc.getSymNameAttr());
 
                 // We only allow functions that return exactly one result for
@@ -421,27 +380,21 @@ class SpecializeGenericFunctionsPass
                         mapOp.getOperation(), "SpecializeGenericFunctionsPass",
                         "map expects a function with exactly one return "
                         "value. The provided function returns" +
-                            std::to_string(specializedFunc.getFunctionType()
-                                               .getNumResults()) +
-                            "values instead.");
+                            std::to_string(specializedFunc.getFunctionType().getNumResults()) + "values instead.");
                 }
 
                 // Get current mapOp result matrix type and fix it if needed.
                 // If we fixed something we rerun inference of the whole
                 // function
-                daphne::MatrixType resMatrixTy =
-                    mapOp.getType().dyn_cast<daphne::MatrixType>();
-                mlir::Type funcResTy =
-                    specializedFunc.getFunctionType().getResult(0);
+                daphne::MatrixType resMatrixTy = mapOp.getType().dyn_cast<daphne::MatrixType>();
+                mlir::Type funcResTy = specializedFunc.getFunctionType().getResult(0);
 
                 // The matrix that results from the mapOp has the same dimension
                 // as the input matrix and the element-type returned by the
                 // specialized function
                 if (resMatrixTy.getNumCols() != inpMatrixTy.getNumCols() ||
-                    resMatrixTy.getNumRows() != inpMatrixTy.getNumRows() ||
-                    resMatrixTy.getElementType() != funcResTy) {
-                    mapOp.getResult().setType(
-                        inpMatrixTy.withElementType(funcResTy));
+                    resMatrixTy.getNumRows() != inpMatrixTy.getNumRows() || resMatrixTy.getElementType() != funcResTy) {
+                    mapOp.getResult().setType(inpMatrixTy.withElementType(funcResTy));
                     inferTypesInFunction(function);
                 }
 
@@ -483,9 +436,7 @@ class SpecializeGenericFunctionsPass
 void SpecializeGenericFunctionsPass::runOnOperation() {
     auto module = getOperation();
 
-    module.walk([&](func::FuncOp funcOp) {
-        functions.insert({funcOp.getSymName().str(), funcOp});
-    });
+    module.walk([&](func::FuncOp funcOp) { functions.insert({funcOp.getSymName().str(), funcOp}); });
 
     // `entryFunctions` will hold entry functions like `main`, but also `dist`
     // (for distributed computation) we could also directly specify the names
@@ -496,14 +447,12 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
         entryFunctions.push_back(entry.second);
     }
     for (const auto &function : entryFunctions) {
-        if (isFunctionTemplate(function) || visited.count(function) ||
-            templateFunctions.count(function))
+        if (isFunctionTemplate(function) || visited.count(function) || templateFunctions.count(function))
             continue;
         try {
             inferTypesInFunction(function);
         } catch (std::runtime_error &e) {
-            throw ErrorHandler::rethrowError("SpecializeGenericFunctionsPass",
-                                             e.what());
+            throw ErrorHandler::rethrowError("SpecializeGenericFunctionsPass", e.what());
         }
         specializeCallsInFunction(function);
     }
@@ -519,7 +468,6 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<Pass>
-daphne::createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg) {
+std::unique_ptr<Pass> daphne::createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg) {
     return std::make_unique<SpecializeGenericFunctionsPass>(cfg);
 }

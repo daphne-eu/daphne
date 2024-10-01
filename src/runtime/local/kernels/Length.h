@@ -17,8 +17,8 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/List.h>
 
 // ****************************************************************************
@@ -26,6 +26,4 @@
 // ****************************************************************************
 
 // TODO Don't specialize for the data/value type, use the List-level.
-template <class DT> size_t length(const List<DT> *arg, DCTX(ctx)) {
-    return arg->length();
-}
+template <class DT> size_t length(const List<DT> *arg, DCTX(ctx)) { return arg->length(); }

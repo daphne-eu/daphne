@@ -38,45 +38,34 @@ Type getWrappedType(Value v) {
     // Remove all information on interesting properties except for the type.
     // This is necessary since these properties do not necessarily hold for a
     // distributed partition of the whole data object.
-    return wrappedType.dyn_cast<daphne::MatrixType>()
-        .withSameElementTypeAndRepr();
+    return wrappedType.dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
 }
 
 template <class EwBinaryOp>
-std::vector<mlir::Value>
-createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *op,
-                                          mlir::OpBuilder &builder,
-                                          mlir::ValueRange distributedInputs) {
+std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *op, mlir::OpBuilder &builder,
+                                                                   mlir::ValueRange distributedInputs) {
     auto loc = op->getLoc();
     auto compute = builder.create<daphne::DistributedComputeOp>(
-        loc,
-        ArrayRef<Type>{
-            daphne::HandleType::get(op->getContext(), op->getType())},
-        distributedInputs);
+        loc, ArrayRef<Type>{daphne::HandleType::get(op->getContext(), op->getType())}, distributedInputs);
     auto &block = compute.getBody().emplaceBlock();
-    auto argLhs = block.addArgument(getWrappedType(distributedInputs[0]),
-                                    builder.getUnknownLoc());
-    auto argRhs = block.addArgument(getWrappedType(distributedInputs[1]),
-                                    builder.getUnknownLoc());
+    auto argLhs = block.addArgument(getWrappedType(distributedInputs[0]), builder.getUnknownLoc());
+    auto argRhs = block.addArgument(getWrappedType(distributedInputs[1]), builder.getUnknownLoc());
 
     {
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(&block, block.begin());
 
         mlir::Type resTyOrig = op->getType();
-        mlir::Type resTy = resTyOrig.dyn_cast<mlir::daphne::MatrixType>()
-                               .withSameElementTypeAndRepr();
+        mlir::Type resTy = resTyOrig.dyn_cast<mlir::daphne::MatrixType>().withSameElementTypeAndRepr();
         auto addOp = builder.create<EwBinaryOp>(loc, resTy, argLhs, argRhs);
         builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{addOp});
     }
 
-    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(
-        loc, compute.getResult(0))});
+    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(loc, compute.getResult(0))});
     return ret;
 }
 
-template <class EwBinaryOp>
-std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
+template <class EwBinaryOp> std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
     Type tL0 = op->getLhs().getType();
     auto tL = tL0.dyn_cast<daphne::MatrixType>();
     Type tR0 = op->getRhs().getType();
@@ -87,11 +76,10 @@ std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
     const ssize_t ncR = tR.getNumCols();
 
     if (nrL == -1 || nrR == -1 || ncL == -1 || ncR == -1)
-        throw ErrorHandler::compilerError(
-            op->getLoc(), "DistributableOpInterface",
-            "unknown shapes of left and/or right operand to elementwise "
-            "binary operation are not supported while deciding "
-            "distribute/broadcast");
+        throw ErrorHandler::compilerError(op->getLoc(), "DistributableOpInterface",
+                                          "unknown shapes of left and/or right operand to elementwise "
+                                          "binary operation are not supported while deciding "
+                                          "distribute/broadcast");
 
     if (nrL == nrR && ncL == ncR)    // matrix-matrix
         return {false, false};       // distribute both inputs
@@ -100,25 +88,23 @@ std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
     else if (nrL == nrR && ncR == 1) // matrix-col
         return {false, true};        // distribute lhs, broadcast rhs
     else
-        throw ErrorHandler::compilerError(
-            op->getLoc(), "DistributableOpInterface",
-            "mismatching shapes of left and right operand to elementwise "
-            "binary operation while deciding distribute/broadcast");
+        throw ErrorHandler::compilerError(op->getLoc(), "DistributableOpInterface",
+                                          "mismatching shapes of left and right operand to elementwise "
+                                          "binary operation while deciding distribute/broadcast");
 }
 
 // ****************************************************************************
 // DistributableOpInterface implementations
 // ****************************************************************************
 
-#define IMPL_EWBINARYOP(OP)                                                    \
-    std::vector<mlir::Value> mlir::daphne::OP::createEquivalentDistributedDAG( \
-        mlir::OpBuilder &builder, mlir::ValueRange distributedInputs) {        \
-        return createEquivalentDistributedDAG_EwBinaryOp(this, builder,        \
-                                                         distributedInputs);   \
-    }                                                                          \
-                                                                               \
-    std::vector<bool> mlir::daphne::OP::getOperandDistrPrimitives() {          \
-        return getOperandDistrPrimitives_EwBinaryOp(this);                     \
+#define IMPL_EWBINARYOP(OP)                                                                                            \
+    std::vector<mlir::Value> mlir::daphne::OP::createEquivalentDistributedDAG(mlir::OpBuilder &builder,                \
+                                                                              mlir::ValueRange distributedInputs) {    \
+        return createEquivalentDistributedDAG_EwBinaryOp(this, builder, distributedInputs);                            \
+    }                                                                                                                  \
+                                                                                                                       \
+    std::vector<bool> mlir::daphne::OP::getOperandDistrPrimitives() {                                                  \
+        return getOperandDistrPrimitives_EwBinaryOp(this);                                                             \
     }
 
 // TODO We should use traits (like for shape inference) so that we don't need
@@ -156,32 +142,25 @@ IMPL_EWBINARYOP(EwLeOp)
 IMPL_EWBINARYOP(EwGtOp)
 IMPL_EWBINARYOP(EwGeOp)
 
-std::vector<mlir::Value> daphne::RowAggMaxOp::createEquivalentDistributedDAG(
-    OpBuilder &builder, ValueRange distributedInputs) {
+std::vector<mlir::Value> daphne::RowAggMaxOp::createEquivalentDistributedDAG(OpBuilder &builder,
+                                                                             ValueRange distributedInputs) {
     auto loc = getLoc();
     auto compute = builder.create<daphne::DistributedComputeOp>(
-        loc, ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())},
-        distributedInputs);
+        loc, ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())}, distributedInputs);
     auto &block = compute.getBody().emplaceBlock();
-    auto arg = block.addArgument(getWrappedType(distributedInputs[0]),
-                                 builder.getUnknownLoc());
+    auto arg = block.addArgument(getWrappedType(distributedInputs[0]), builder.getUnknownLoc());
 
     {
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(&block, block.begin());
 
-        mlir::Type resTy = getType()
-                               .dyn_cast<mlir::daphne::MatrixType>()
-                               .withSameElementTypeAndRepr();
+        mlir::Type resTy = getType().dyn_cast<mlir::daphne::MatrixType>().withSameElementTypeAndRepr();
         auto aggOp = builder.create<RowAggMaxOp>(loc, resTy, arg);
         builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{aggOp});
     }
 
-    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(
-        loc, compute.getResult(0))});
+    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(loc, compute.getResult(0))});
     return ret;
 }
 
-std::vector<bool> daphne::RowAggMaxOp::getOperandDistrPrimitives() {
-    return {false};
-}
+std::vector<bool> daphne::RowAggMaxOp::getOperandDistrPrimitives() { return {false}; }

@@ -38,24 +38,19 @@ class WorkerImplGRPCAsync : public WorkerImpl {
 
     // Store in chunks
     std::unique_ptr<DaphneDeserializerChunks<Structure>> deserializer;
-    std::unique_ptr<DaphneDeserializerChunks<Structure>::Iterator>
-        deserializerIter;
+    std::unique_ptr<DaphneDeserializerChunks<Structure>::Iterator> deserializerIter;
     Structure *mat;
     bool isFirstChunk = false;
 
   public:
-    explicit WorkerImplGRPCAsync(const std::string &addr,
-                                 DaphneUserConfig &_cfg);
+    explicit WorkerImplGRPCAsync(const std::string &addr, DaphneUserConfig &_cfg);
     void Wait() override;
 
-    grpc::Status StoreGRPC(::grpc::ServerContext *context,
-                           const ::distributed::Data *request,
+    grpc::Status StoreGRPC(::grpc::ServerContext *context, const ::distributed::Data *request,
                            ::distributed::StoredData *response);
-    grpc::Status ComputeGRPC(::grpc::ServerContext *context,
-                             const ::distributed::Task *request,
+    grpc::Status ComputeGRPC(::grpc::ServerContext *context, const ::distributed::Task *request,
                              ::distributed::ComputeResult *response);
-    grpc::Status TransferGRPC(::grpc::ServerContext *context,
-                              const ::distributed::StoredData *request,
+    grpc::Status TransferGRPC(::grpc::ServerContext *context, const ::distributed::StoredData *request,
                               ::distributed::Data *response);
 
     distributed::Worker::AsyncService service_;

@@ -29,20 +29,16 @@ namespace CUDA {
 // Struct for partial template specialization
 // ****************************************************************************
 template <class DTRes, class DTLhs, class DTRhs> struct MatMul {
-    static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs,
-                      bool transa, bool transb, DCTX(dctx)) = delete;
+    static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, bool transa, bool transb, DCTX(dctx)) = delete;
 };
 
-template <typename T>
-struct MatMul<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>> {
-    static void apply(DenseMatrix<T> *&res, const DenseMatrix<T> *lhs,
-                      const DenseMatrix<T> *rhs, bool transa, bool transb,
-                      DCTX(dctx));
+template <typename T> struct MatMul<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>> {
+    static void apply(DenseMatrix<T> *&res, const DenseMatrix<T> *lhs, const DenseMatrix<T> *rhs, bool transa,
+                      bool transb, DCTX(dctx));
 };
 
 template <typename T> struct MatMul<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>> {
-    static void apply(CSRMatrix<T> *&res, const CSRMatrix<T> *lhs,
-                      const CSRMatrix<T> *rhs, bool transa, bool transb,
+    static void apply(CSRMatrix<T> *&res, const CSRMatrix<T> *lhs, const CSRMatrix<T> *rhs, bool transa, bool transb,
                       DCTX(dctx));
 };
 
@@ -50,8 +46,7 @@ template <typename T> struct MatMul<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>> {
 // Convenience function
 // ****************************************************************************
 template <class DTRes, class DTLhs, class DTRhs>
-void matMul(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, bool transa,
-            bool transb, DCTX(ctx)) {
+void matMul(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, bool transa, bool transb, DCTX(ctx)) {
     MatMul<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, transa, transb, ctx);
 }
 } // namespace CUDA

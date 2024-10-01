@@ -33,8 +33,7 @@
 #include <util/Statistics.h>
 #include <util/StringRefCount.h>
 
-WorkerImplGRPCSync::WorkerImplGRPCSync(const std::string &addr,
-                                       DaphneUserConfig &_cfg)
+WorkerImplGRPCSync::WorkerImplGRPCSync(const std::string &addr, DaphneUserConfig &_cfg)
     : WorkerImpl(_cfg)
 
 {
@@ -47,10 +46,9 @@ WorkerImplGRPCSync::WorkerImplGRPCSync(const std::string &addr,
 
 void WorkerImplGRPCSync::Wait() { server->Wait(); }
 
-grpc::Status
-WorkerImplGRPCSync::Store(::grpc::ServerContext *context,
-                          ::grpc::ServerReader<::distributed::Data> *reader,
-                          ::distributed::StoredData *response) {
+grpc::Status WorkerImplGRPCSync::Store(::grpc::ServerContext *context,
+                                       ::grpc::ServerReader<::distributed::Data> *reader,
+                                       ::distributed::StoredData *response) {
     StoredInfo storedInfo;
     distributed::Data data;
     reader->Read(&data);
@@ -66,18 +64,14 @@ WorkerImplGRPCSync::Store(::grpc::ServerContext *context,
         response->set_num_cols(storedInfo.numCols);
     } else {
         deserializer.reset(new DaphneDeserializerChunks<Structure>(&mat, len));
-        deserializerIter.reset(
-            new DaphneDeserializerChunks<Structure>::Iterator(
-                deserializer->begin()));
+        deserializerIter.reset(new DaphneDeserializerChunks<Structure>::Iterator(deserializer->begin()));
 
         (*deserializerIter)->second->resize(len);
         (*deserializerIter)->first = len;
 
         if ((*deserializerIter)->second->size() < len)
             (*deserializerIter)->second->resize(len);
-        (*deserializerIter)
-            ->second->assign(static_cast<const char *>(buffer),
-                             static_cast<const char *>(buffer) + len);
+        (*deserializerIter)->second->assign(static_cast<const char *>(buffer), static_cast<const char *>(buffer) + len);
 
         // advance iterator, this also partially deserializes
         ++(*deserializerIter);
@@ -88,8 +82,7 @@ WorkerImplGRPCSync::Store(::grpc::ServerContext *context,
             if ((*deserializerIter)->second->size() < len)
                 (*deserializerIter)->second->resize(len);
             (*deserializerIter)
-                ->second->assign(static_cast<const char *>(buffer),
-                                 static_cast<const char *>(buffer) + len);
+                ->second->assign(static_cast<const char *>(buffer), static_cast<const char *>(buffer) + len);
 
             // advance iterator, this also partially deserializes
             ++(*deserializerIter);
@@ -102,18 +95,15 @@ WorkerImplGRPCSync::Store(::grpc::ServerContext *context,
     return ::grpc::Status::OK;
 }
 
-grpc::Status
-WorkerImplGRPCSync::Compute(::grpc::ServerContext *context,
-                            const ::distributed::Task *request,
-                            ::distributed::ComputeResult *response) {
+grpc::Status WorkerImplGRPCSync::Compute(::grpc::ServerContext *context, const ::distributed::Task *request,
+                                         ::distributed::ComputeResult *response) {
     std::vector<StoredInfo> inputs;
     inputs.reserve(request->inputs().size());
 
     std::vector<StoredInfo> outputs = std::vector<StoredInfo>();
     for (auto input : request->inputs()) {
         auto stored = input.stored();
-        inputs.push_back(StoredInfo(
-            {stored.identifier(), stored.num_rows(), stored.num_cols()}));
+        inputs.push_back(StoredInfo({stored.identifier(), stored.num_rows(), stored.num_cols()}));
     }
     auto respMsg = WorkerImpl::Compute(&outputs, inputs, request->mlir_code());
     for (auto output : outputs) {
@@ -126,16 +116,12 @@ WorkerImplGRPCSync::Compute(::grpc::ServerContext *context,
     if (respMsg.ok())
         return ::grpc::Status::OK;
     else
-        return ::grpc::Status(grpc::StatusCode::ABORTED,
-                              respMsg.error_message());
+        return ::grpc::Status(grpc::StatusCode::ABORTED, respMsg.error_message());
 }
 
-grpc::Status
-WorkerImplGRPCSync::Transfer(::grpc::ServerContext *context,
-                             const ::distributed::StoredData *request,
-                             ::distributed::Data *response) {
-    StoredInfo info(
-        {request->identifier(), request->num_rows(), request->num_cols()});
+grpc::Status WorkerImplGRPCSync::Transfer(::grpc::ServerContext *context, const ::distributed::StoredData *request,
+                                          ::distributed::Data *response) {
+    StoredInfo info({request->identifier(), request->num_rows(), request->num_cols()});
     std::vector<char> buffer;
     size_t bufferLength;
     Structure *mat = WorkerImpl::Transfer(info);
@@ -145,21 +131,17 @@ WorkerImplGRPCSync::Transfer(::grpc::ServerContext *context,
 }
 
 #if USE_HDFS
-grpc::Status
-WorkerImplGRPCSync::ReadHDFS(::grpc::ServerContext *context,
-                             const ::distributed::HDFSFile *request,
-                             ::distributed::StoredData *response) {
-    DaphneContext ctx(cfg, KernelDispatchMapping::instance(),
-                      Statistics::instance(), StringRefCounter::instance());
+grpc::Status WorkerImplGRPCSync::ReadHDFS(::grpc::ServerContext *context, const ::distributed::HDFSFile *request,
+                                          ::distributed::StoredData *response) {
+    DaphneContext ctx(cfg, KernelDispatchMapping::instance(), Statistics::instance(), StringRefCounter::instance());
     createHDFSContext(&ctx);
-    DenseMatrix<double> *res = DataObjectFactory::create<DenseMatrix<double>>(
-        request->num_rows(), request->num_cols(), false);
+    DenseMatrix<double> *res =
+        DataObjectFactory::create<DenseMatrix<double>>(request->num_rows(), request->num_cols(), false);
     if (request->filename().find("csv") != std::string::npos)
-        readHDFSCsv(res, request->filename().c_str(), request->num_rows(),
-                    request->num_cols(), ',', &ctx, request->start_row());
+        readHDFSCsv(res, request->filename().c_str(), request->num_rows(), request->num_cols(), ',', &ctx,
+                    request->start_row());
     else if (request->filename().find("dbdf") != std::string::npos)
-        readDaphneHDFS(res, request->filename().c_str(), &ctx,
-                       request->start_row());
+        readDaphneHDFS(res, request->filename().c_str(), &ctx, request->start_row());
     auto storedInfo = WorkerImpl::Store(dynamic_cast<Structure *>(res));
 
     response->set_identifier(storedInfo.identifier);
@@ -168,15 +150,11 @@ WorkerImplGRPCSync::ReadHDFS(::grpc::ServerContext *context,
     return ::grpc::Status::OK;
 }
 
-grpc::Status
-WorkerImplGRPCSync::WriteHDFS(::grpc::ServerContext *context,
-                              const ::distributed::HDFSWriteInfo *request,
-                              ::distributed::Empty *response) {
-    DaphneContext ctx(cfg, KernelDispatchMapping::instance(),
-                      Statistics::instance(), StringRefCounter::instance());
+grpc::Status WorkerImplGRPCSync::WriteHDFS(::grpc::ServerContext *context, const ::distributed::HDFSWriteInfo *request,
+                                           ::distributed::Empty *response) {
+    DaphneContext ctx(cfg, KernelDispatchMapping::instance(), Statistics::instance(), StringRefCounter::instance());
     createHDFSContext(&ctx);
-    StoredInfo si({request->matrix().identifier(), request->matrix().num_rows(),
-                   request->matrix().num_cols()});
+    StoredInfo si({request->matrix().identifier(), request->matrix().num_rows(), request->matrix().num_cols()});
     auto mat = dynamic_cast<DenseMatrix<double> *>(WorkerImpl::Transfer(si));
     if (request->dirname().find("csv") != std::string::npos)
         writeHDFSCsv(mat, request->dirname().c_str(), &ctx);

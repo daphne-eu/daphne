@@ -35,16 +35,14 @@
 // ****************************************************************************
 
 template <class DTArg> struct Write {
-    static void apply(const DTArg *arg, const char *filename,
-                      DCTX(ctx)) = delete;
+    static void apply(const DTArg *arg, const char *filename, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg>
-void write(const DTArg *arg, const char *filename, DCTX(ctx)) {
+template <class DTArg> void write(const DTArg *arg, const char *filename, DCTX(ctx)) {
     Write<DTArg>::apply(arg, filename, ctx);
 }
 
@@ -57,28 +55,24 @@ void write(const DTArg *arg, const char *filename, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Write<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT> *arg, const char *filename,
-                      DCTX(ctx)) {
+    static void apply(const DenseMatrix<VT> *arg, const char *filename, DCTX(ctx)) {
         std::string fn(filename);
         auto pos = fn.find_last_of('.');
         std::string ext(fn.substr(pos + 1));
         if (ext == "csv") {
             File *file = openFileForWrite(filename);
-            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true,
-                                  ValueTypeUtils::codeFor<VT>);
+            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
             MetaDataParser::writeMetaData(filename, metaData);
             writeCsv(arg, file);
             closeFile(file);
         } else if (ext == "dbdf") {
-            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true,
-                                  ValueTypeUtils::codeFor<VT>);
+            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
             MetaDataParser::writeMetaData(filename, metaData);
             writeDaphne(arg, filename);
 #if USE_HDFS
         } else if (ext == "hdfs") {
             HDFSMetaData hdfs = {true, filename};
-            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true,
-                                  ValueTypeUtils::codeFor<VT>, -1, hdfs);
+            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>, -1, hdfs);
             // Get file extension before .hdfs (e.g. file.csv.hdfs)
             auto posHdfs = pos;
             auto posExt = fn.find_last_of('.', pos - 1);
@@ -105,8 +99,7 @@ template <> struct Write<Frame> {
             vtcs.push_back(arg->getSchema()[i]);
             labels.push_back(arg->getLabels()[i]);
         }
-        FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), false, vtcs,
-                              labels);
+        FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), false, vtcs, labels);
         MetaDataParser::writeMetaData(filename, metaData);
         writeCsv(arg, file);
         closeFile(file);
@@ -124,15 +117,13 @@ template <typename VT> struct Write<Matrix<VT>> {
         std::string ext(fn.substr(pos + 1));
         if (ext == "csv") {
             File *file = openFileForWrite(filename);
-            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true,
-                                  ValueTypeUtils::codeFor<VT>);
+            FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
             MetaDataParser::writeMetaData(filename, metaData);
             writeCsv(arg, file);
             closeFile(file);
         } else {
-            throw std::runtime_error(
-                "[Write.h] - generic Matrix type currently only supports csv "
-                "file extension.");
+            throw std::runtime_error("[Write.h] - generic Matrix type currently only supports csv "
+                                     "file extension.");
         }
     }
 };

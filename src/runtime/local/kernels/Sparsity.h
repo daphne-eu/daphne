@@ -18,15 +18,13 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_SPARSITY_H
 
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg> double sparsity(const DTArg *arg, DCTX(ctx)) {
-    return -1.0;
-}
+template <class DTArg> double sparsity(const DTArg *arg, DCTX(ctx)) { return -1.0; }
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_SPARSITY_H

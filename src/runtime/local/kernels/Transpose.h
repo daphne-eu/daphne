@@ -36,8 +36,7 @@ template <class DTRes, class DTArg> struct Transpose {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void transpose(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void transpose(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     Transpose<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
@@ -50,19 +49,16 @@ void transpose(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         // skip data movement for vectors
         if ((numRows == 1 || numCols == 1) && !arg->isView()) {
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows,
-                                                             arg);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg);
         } else {
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(
-                    numCols, numRows, false);
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
 
             const VT *valuesArg = arg->getValues();
             const size_t rowSkipArg = arg->getRowSkip();
@@ -84,16 +80,14 @@ template <typename VT> struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg,
-                      DCTX(ctx)) {
+    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, DCTX(ctx)) {
         // Implementation inspired by SciPy
         // https://github.com/scipy/scipy/blob/8a64c938ddf1ae4c02a08d2c5e38daeb8d061d38/scipy/sparse/sparsetools/csr.h#L608
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(
-                numCols, numRows, arg->getNumNonZeros(), false);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numCols, numRows, arg->getNumNonZeros(), false);
 
         const VT *valuesArg = arg->getValues();
         const size_t *colIdxsArg = arg->getColIdxs();
@@ -119,8 +113,7 @@ template <typename VT> struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
         rowOffsetsRes[numCols] = numNonZeros;
 
         for (size_t row = 0; row < numRows; row++) {
-            for (size_t j = rowOffsetsArg[row]; j < rowOffsetsArg[row + 1];
-                 j++) {
+            for (size_t j = rowOffsetsArg[row]; j < rowOffsetsArg[row + 1]; j++) {
                 size_t col = colIdxsArg[j];
                 size_t dest = rowOffsetsRes[col];
                 colIdxsRes[dest] = row;
@@ -147,8 +140,7 @@ template <typename VT> struct Transpose<Matrix<VT>, Matrix<VT>> {
         const size_t numColsRes = arg->getNumRows();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes,
-                                                             numColsRes, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numColsRes, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRowsRes; ++r)

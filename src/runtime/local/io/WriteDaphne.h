@@ -48,8 +48,7 @@ template <class DTArg> struct WriteDaphne {
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg>
-void writeDaphne(const DTArg *arg, const char *filename) {
+template <class DTArg> void writeDaphne(const DTArg *arg, const char *filename) {
     WriteDaphne<DTArg>::apply(arg, filename);
 }
 
@@ -68,8 +67,7 @@ template <typename VT> struct WriteDaphne<DenseMatrix<VT>> {
         // TODO: check f.good()
 
         auto ser = DaphneSerializerChunks<const DenseMatrix<VT>>(
-            arg, DaphneSerializer<
-                     DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
+            arg, DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = ser.begin(); it != ser.end(); ++it) {
             f.write(it->second->data(), it->first);
         }
@@ -90,8 +88,7 @@ template <typename VT> struct WriteDaphne<CSRMatrix<VT>> {
         // TODO: check f.good()
 
         auto ser = DaphneSerializerChunks<const CSRMatrix<VT>>(
-            arg,
-            DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
+            arg, DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
         for (auto it = ser.begin(); it != ser.end(); ++it) {
             f.write(it->second->data(), it->first);
         }
@@ -150,40 +147,31 @@ template <> struct WriteDaphne<Frame> {
             for (size_t c = 0; c < h.nbcols; c++) {
                 switch (schema[c]) {
                 case ValueTypeCode::SI8:
-                    f.write((char *)&(reinterpret_cast<int8_t *>(vals[c])[r]),
-                            sizeof(int8_t));
+                    f.write((char *)&(reinterpret_cast<int8_t *>(vals[c])[r]), sizeof(int8_t));
                     break;
                 case ValueTypeCode::SI32:
-                    f.write((char *)&(reinterpret_cast<int32_t *>(vals[c])[r]),
-                            sizeof(int32_t));
+                    f.write((char *)&(reinterpret_cast<int32_t *>(vals[c])[r]), sizeof(int32_t));
                     break;
                 case ValueTypeCode::SI64:
-                    f.write((char *)&(reinterpret_cast<int64_t *>(vals[c])[r]),
-                            sizeof(int64_t));
+                    f.write((char *)&(reinterpret_cast<int64_t *>(vals[c])[r]), sizeof(int64_t));
                     break;
                 case ValueTypeCode::UI8:
-                    f.write((char *)&(reinterpret_cast<uint8_t *>(vals[c])[r]),
-                            sizeof(uint8_t));
+                    f.write((char *)&(reinterpret_cast<uint8_t *>(vals[c])[r]), sizeof(uint8_t));
                     break;
                 case ValueTypeCode::UI32:
-                    f.write((char *)&(reinterpret_cast<uint32_t *>(vals[c])[r]),
-                            sizeof(uint32_t));
+                    f.write((char *)&(reinterpret_cast<uint32_t *>(vals[c])[r]), sizeof(uint32_t));
                     break;
                 case ValueTypeCode::UI64:
-                    f.write((char *)&(reinterpret_cast<uint64_t *>(vals[c])[r]),
-                            sizeof(uint64_t));
+                    f.write((char *)&(reinterpret_cast<uint64_t *>(vals[c])[r]), sizeof(uint64_t));
                     break;
                 case ValueTypeCode::F32:
-                    f.write((char *)&(reinterpret_cast<float *>(vals[c])[r]),
-                            sizeof(float));
+                    f.write((char *)&(reinterpret_cast<float *>(vals[c])[r]), sizeof(float));
                     break;
                 case ValueTypeCode::F64:
-                    f.write((char *)&(reinterpret_cast<double *>(vals[c])[r]),
-                            sizeof(double));
+                    f.write((char *)&(reinterpret_cast<double *>(vals[c])[r]), sizeof(double));
                     break;
                 default:
-                    throw std::runtime_error(
-                        "WriteDaphne::apply: unknown value type code");
+                    throw std::runtime_error("WriteDaphne::apply: unknown value type code");
                 }
             }
         }

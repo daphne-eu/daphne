@@ -59,27 +59,26 @@ using namespace aocl_utils;
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#define DPRINTF(...)                                                           \
-    printf(__VA_ARGS__);                                                       \
+#define DPRINTF(...)                                                                                                   \
+    printf(__VA_ARGS__);                                                                                               \
     fflush(stdout);
 
 #define NUM_QUEUES_TO_CREATE 6
 #define NUM_KERNELS_TO_CREATE 6
 
-#define CHECK(status)                                                          \
-    if (status != CL_SUCCESS) {                                                \
-        printf("error %d in line %d.\n", status, __LINE__);                    \
-        exit(1);                                                               \
+#define CHECK(status)                                                                                                  \
+    if (status != CL_SUCCESS) {                                                                                        \
+        printf("error %d in line %d.\n", status, __LINE__);                                                            \
+        exit(1);                                                                                                       \
     }
 
 #define ACL_ALIGNMENT 64
 
-const char *sgemm_kernel_name[] = {
-    "kernel_A_loader", "kernel_B_loader", "kernel_unloader_WAIT_FINISH",
-    "kernel_A_feeder", "kernel_B_feeder", "kernel_Out"};
+const char *sgemm_kernel_name[] = {"kernel_A_loader", "kernel_B_loader", "kernel_unloader_WAIT_FINISH",
+                                   "kernel_A_feeder", "kernel_B_feeder", "kernel_Out"};
 
-int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
-          const int OUTERMOST_J, const int OUTERMOST_K, DCTX(ctx)) {
+int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const int OUTERMOST_J, const int OUTERMOST_K,
+          DCTX(ctx)) {
     const int TOTAL_I = III * II * OUTERMOST_I;
     const int TOTAL_J = JJJ * JJ * OUTERMOST_J;
     const int TOTAL_K = KKK * KK * OUTERMOST_K;
@@ -89,12 +88,10 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
     long int num_elem_C = (long int)TOTAL_I * TOTAL_J;
 
     float *serialized_A, *serialized_B;
-    if ((serialized_A =
-             (float *)acl_aligned_malloc(num_elem_A * sizeof(float))) == NULL) {
+    if ((serialized_A = (float *)acl_aligned_malloc(num_elem_A * sizeof(float))) == NULL) {
         perror("Failed malloc of matrix serialized_A");
     }
-    if ((serialized_B =
-             (float *)acl_aligned_malloc(num_elem_B * sizeof(float))) == NULL) {
+    if ((serialized_B = (float *)acl_aligned_malloc(num_elem_B * sizeof(float))) == NULL) {
         perror("Failed malloc of matrix serialized_A");
     }
 
@@ -118,22 +115,20 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
     // Create command queues
     //---------------------------------------------
 
-    cl_command_queue
-        cmdQueue[NUM_QUEUES_TO_CREATE + 1]; // extra queue for reading buffer D
+    cl_command_queue cmdQueue[NUM_QUEUES_TO_CREATE + 1]; // extra queue for reading buffer D
 
     // Create a command queue using clCreateCommandQueue(),
     // and associate it with the device you want to execute on
     for (int i = 0; i < NUM_QUEUES_TO_CREATE; i++) {
         // fDPRINTF(stdout,"cmdQueue i = %d\n", i);
-        cmdQueue[i] = clCreateCommandQueue(fctx->context, fctx->devices[0],
-                                           CL_QUEUE_PROFILING_ENABLE, &status);
+        cmdQueue[i] = clCreateCommandQueue(fctx->context, fctx->devices[0], CL_QUEUE_PROFILING_ENABLE, &status);
         CHECK(status);
     }
 
     // fDPRINTF(stdout,"cmdQueue i = %d, a queue for reading the C buffer\n",
     // i);
-    cmdQueue[NUM_QUEUES_TO_CREATE] = clCreateCommandQueue(
-        fctx->context, fctx->devices[0], CL_QUEUE_PROFILING_ENABLE, &status);
+    cmdQueue[NUM_QUEUES_TO_CREATE] =
+        clCreateCommandQueue(fctx->context, fctx->devices[0], CL_QUEUE_PROFILING_ENABLE, &status);
     CHECK(status);
 
     //----------------------------------------------
@@ -146,30 +141,25 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
     DPRINTF("\n===== Host-CPU transferring W and X to the FPGA device global "
             "memory (DDR4) via PCIe ======\n\n");
 #endif
-    input_A_buf = clCreateBuffer(fctx->context, CL_MEM_READ_ONLY,
-                                 num_elem_A * sizeof(cl_float), NULL, &status);
+    input_A_buf = clCreateBuffer(fctx->context, CL_MEM_READ_ONLY, num_elem_A * sizeof(cl_float), NULL, &status);
     CHECK(status);
 
-    input_B_buf = clCreateBuffer(fctx->context, CL_MEM_READ_ONLY,
-                                 num_elem_B * sizeof(cl_float), NULL, &status);
+    input_B_buf = clCreateBuffer(fctx->context, CL_MEM_READ_ONLY, num_elem_B * sizeof(cl_float), NULL, &status);
     CHECK(status);
 
-    output_C_buf = clCreateBuffer(fctx->context, CL_MEM_WRITE_ONLY,
-                                  num_elem_C * sizeof(cl_float), NULL, &status);
+    output_C_buf = clCreateBuffer(fctx->context, CL_MEM_WRITE_ONLY, num_elem_C * sizeof(cl_float), NULL, &status);
     CHECK(status);
 
     //----------------------------------------------
     // Write host data to device buffers
     //----------------------------------------------
     // blocking writes
-    status = clEnqueueWriteBuffer(cmdQueue[0], input_A_buf, CL_TRUE, 0,
-                                  num_elem_A * sizeof(cl_float), serialized_A,
-                                  0, NULL, NULL);
+    status = clEnqueueWriteBuffer(cmdQueue[0], input_A_buf, CL_TRUE, 0, num_elem_A * sizeof(cl_float), serialized_A, 0,
+                                  NULL, NULL);
     CHECK(status);
 
-    status = clEnqueueWriteBuffer(cmdQueue[1], input_B_buf, CL_TRUE, 0,
-                                  num_elem_B * sizeof(cl_float), serialized_B,
-                                  0, NULL, NULL);
+    status = clEnqueueWriteBuffer(cmdQueue[1], input_B_buf, CL_TRUE, 0, num_elem_B * sizeof(cl_float), serialized_B, 0,
+                                  NULL, NULL);
     CHECK(status);
 
     //----------------------------------------------
@@ -209,9 +199,8 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
 
     // DPRINTF("Create program with binary\n");
     //  Create a program using clCreateProgramWithBinary()
-    program = clCreateProgramWithBinary(
-        fctx->context, 1, fctx->devices, &binary_length,
-        (const unsigned char **)&binary, &status, NULL);
+    program = clCreateProgramWithBinary(fctx->context, 1, fctx->devices, &binary_length,
+                                        (const unsigned char **)&binary, &status, NULL);
     CHECK(status);
 
     //----------------------------------------------
@@ -220,16 +209,14 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
     status = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (status != CL_SUCCESS) {
         char log[128 * 1024] = {0};
-        clGetProgramBuildInfo(program, fctx->devices[0], CL_PROGRAM_BUILD_LOG,
-                              128 * 1024, log, NULL);
+        clGetProgramBuildInfo(program, fctx->devices[0], CL_PROGRAM_BUILD_LOG, 128 * 1024, log, NULL);
         CHECK(status);
     }
 
     cl_kernel kernel[NUM_KERNELS_TO_CREATE];
 
     for (int j = 0; j < NUM_KERNELS_TO_CREATE; j++) {
-        kernel[j] = clCreateKernel(program, (const char *)sgemm_kernel_name[j],
-                                   &status);
+        kernel[j] = clCreateKernel(program, (const char *)sgemm_kernel_name[j], &status);
         CHECK(status);
     }
 #ifndef NDEBUG
@@ -310,8 +297,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
 #ifndef NDEBUG
         DPRINTF("clEnqueueNDRangeKernel[%d]: %s!\n", i, sgemm_kernel_name[i]);
 #endif
-        status = clEnqueueNDRangeKernel(cmdQueue[i], kernel[i], 1, NULL,
-                                        globalWorkSize, localWorkSize, 0, NULL,
+        status = clEnqueueNDRangeKernel(cmdQueue[i], kernel[i], 1, NULL, globalWorkSize, localWorkSize, 0, NULL,
                                         &kernel_exec_event[i]);
         CHECK(status);
     }
@@ -341,8 +327,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
     double k_exec_time[NUM_KERNELS_TO_CREATE];
     double max_time = 0;
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
-        k_exec_time[i] = compute_kernel_execution_time(
-            kernel_exec_event[i], k_start_time[i], k_end_time[i]);
+        k_exec_time[i] = compute_kernel_execution_time(kernel_exec_event[i], k_start_time[i], k_end_time[i]);
         if (k_exec_time[i] > max_time) {
             max_time = k_exec_time[i];
         }
@@ -368,11 +353,9 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
     k_latest_end_time = k_end_time[NUM_KERNELS_TO_CREATE - 1];
 
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
-        printf(
-            "  Kernel execution time on FPGA: %s, \n   \t\t\t\t\t\t\t\t\texec "
-            "time = %.5f s, start=%.5f s, end=%.5f s\n",
-            sgemm_kernel_name[i], k_exec_time[i], k_start_time[i],
-            k_end_time[i]);
+        printf("  Kernel execution time on FPGA: %s, \n   \t\t\t\t\t\t\t\t\texec "
+               "time = %.5f s, start=%.5f s, end=%.5f s\n",
+               sgemm_kernel_name[i], k_exec_time[i], k_start_time[i], k_end_time[i]);
     }
     // #endif
 
@@ -386,20 +369,17 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
     // multiplied by 1.0e-9 to get G-FLOPs
     printf("\n");
 
-    double num_operations =
-        (double)2.0 * (TOTAL_K) * (double)(TOTAL_I) * (double)(TOTAL_J);
+    double num_operations = (double)2.0 * (TOTAL_K) * (double)(TOTAL_I) * (double)(TOTAL_J);
 
     printf("  # operations = %.0f\n", num_operations);
-    printf("  Throughput: %.5f GFLOPS\n",
-           (double)1.0e-9 * num_operations / k_overall_exec_time);
+    printf("  Throughput: %.5f GFLOPS\n", (double)1.0e-9 * num_operations / k_overall_exec_time);
 
     DPRINTF("\n===== Host-CPU transferring result matrix C from the FPGA "
             "device global memory (DDR4) via PCIe ======\n\n");
 #endif
     // Read the results back from the device, blocking read
     float *serialized_Z;
-    if ((serialized_Z =
-             (float *)acl_aligned_malloc(num_elem_C * sizeof(float))) == NULL) {
+    if ((serialized_Z = (float *)acl_aligned_malloc(num_elem_C * sizeof(float))) == NULL) {
         perror("Failed malloc of matrix serialized_Z");
     }
 
@@ -407,8 +387,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I,
         // cmdQueue[KID_DRAIN_MAT_C],
         cmdQueue[NUM_KERNELS_TO_CREATE], // using a special queue for reading
                                          // buffer C
-        output_C_buf, CL_TRUE, 0, num_elem_C * sizeof(cl_float), serialized_Z,
-        0, NULL, NULL);
+        output_C_buf, CL_TRUE, 0, num_elem_C * sizeof(cl_float), serialized_Z, 0, NULL, NULL);
     CHECK(status);
 
     // Deserialize Z

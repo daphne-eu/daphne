@@ -36,10 +36,8 @@
 // ****************************************************************************
 
 template <class DT> struct Group {
-    static void apply(DT *&res, const DT *arg, const char **keyCols,
-                      size_t numKeyCols, const char **aggCols,
-                      size_t numAggCols, mlir::daphne::GroupEnum *aggFuncs,
-                      size_t numAggFuncs, DCTX(ctx)) = delete;
+    static void apply(DT *&res, const DT *arg, const char **keyCols, size_t numKeyCols, const char **aggCols,
+                      size_t numAggCols, mlir::daphne::GroupEnum *aggFuncs, size_t numAggFuncs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -47,11 +45,9 @@ template <class DT> struct Group {
 // ****************************************************************************
 
 template <class DT>
-void group(DT *&res, const DT *arg, const char **keyCols, size_t numKeyCols,
-           const char **aggCols, size_t numAggCols,
+void group(DT *&res, const DT *arg, const char **keyCols, size_t numKeyCols, const char **aggCols, size_t numAggCols,
            mlir::daphne::GroupEnum *aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
-    Group<DT>::apply(res, arg, keyCols, numKeyCols, aggCols, numAggCols,
-                     aggFuncs, numAggFuncs, ctx);
+    Group<DT>::apply(res, arg, keyCols, numKeyCols, aggCols, numAggCols, aggFuncs, numAggFuncs, ctx);
 }
 
 // ****************************************************************************
@@ -65,8 +61,7 @@ void group(DT *&res, const DT *arg, const char **keyCols, size_t numKeyCols,
 // returns the result of the aggregation function aggFunc over the (contiguous)
 // memory between the begin and end pointer
 template <typename VTRes, typename VTArg>
-VTRes aggregate(const mlir::daphne::GroupEnum &aggFunc, const VTArg *begin,
-                const VTArg *end) {
+VTRes aggregate(const mlir::daphne::GroupEnum &aggFunc, const VTArg *begin, const VTArg *end) {
     using mlir::daphne::GroupEnum;
     switch (aggFunc) {
     case GroupEnum::COUNT:
@@ -95,8 +90,7 @@ VTRes aggregate(const mlir::daphne::GroupEnum &aggFunc, const VTArg *begin,
 // sepcified column (colIdx) of the argument frame (arg) and stores the result
 // in the specified column (colIdx) of the result frame (res)
 template <typename VTRes, typename VTArg> struct ColumnGroupAgg {
-    static void apply(Frame *res, const Frame *arg, size_t colIdx,
-                      std::vector<std::pair<size_t, size_t>> *groups,
+    static void apply(Frame *res, const Frame *arg, size_t colIdx, std::vector<std::pair<size_t, size_t>> *groups,
                       mlir::daphne::GroupEnum aggFunc, DCTX(ctx)) {
         VTRes *valuesRes = res->getColumn<VTRes>(colIdx)->getValues();
         const VTArg *valuesArg = arg->getColumn<VTArg>(colIdx)->getValues();
@@ -106,28 +100,20 @@ template <typename VTRes, typename VTArg> struct ColumnGroupAgg {
         // case for no duplicates
         if (groups == nullptr || groups->empty()) {
             for (size_t r = 0; r < numRows; r++)
-                valuesRes[rowRes++] = aggregate<VTRes, VTArg>(
-                    aggFunc, valuesArg + r, valuesArg + r + 1);
+                valuesRes[rowRes++] = aggregate<VTRes, VTArg>(aggFunc, valuesArg + r, valuesArg + r + 1);
             return;
         }
 
         for (size_t r = 0; r < groups->front().first; r++)
-            valuesRes[rowRes++] = aggregate<VTRes, VTArg>(
-                aggFunc, valuesArg + r, valuesArg + r + 1);
+            valuesRes[rowRes++] = aggregate<VTRes, VTArg>(aggFunc, valuesArg + r, valuesArg + r + 1);
         for (auto it = groups->begin(); it != groups->end(); ++it) {
-            valuesRes[rowRes++] = aggregate<VTRes, VTArg>(
-                aggFunc, valuesArg + it->first, valuesArg + it->second);
-            for (size_t r = it->second;
-                 r < (std::next(it) != groups->end() ? std::next(it)->first
-                                                     : it->second);
-                 r++) {
-                valuesRes[rowRes++] = aggregate<VTRes, VTArg>(
-                    aggFunc, valuesArg + r, valuesArg + r + 1);
+            valuesRes[rowRes++] = aggregate<VTRes, VTArg>(aggFunc, valuesArg + it->first, valuesArg + it->second);
+            for (size_t r = it->second; r < (std::next(it) != groups->end() ? std::next(it)->first : it->second); r++) {
+                valuesRes[rowRes++] = aggregate<VTRes, VTArg>(aggFunc, valuesArg + r, valuesArg + r + 1);
             }
         }
         for (size_t r = groups->back().second; r < numRows; r++)
-            valuesRes[rowRes++] = aggregate<VTRes, VTArg>(
-                aggFunc, valuesArg + r, valuesArg + r + 1);
+            valuesRes[rowRes++] = aggregate<VTRes, VTArg>(aggFunc, valuesArg + r, valuesArg + r + 1);
     }
 };
 
@@ -149,18 +135,14 @@ std::string myStringifyGroupEnum(mlir::daphne::GroupEnum val) {
 }
 
 template <> struct Group<Frame> {
-    static void apply(Frame *&res, const Frame *arg, const char **keyCols,
-                      size_t numKeyCols, const char **aggCols,
-                      size_t numAggCols, mlir::daphne::GroupEnum *aggFuncs,
-                      size_t numAggFuncs, DCTX(ctx)) {
+    static void apply(Frame *&res, const Frame *arg, const char **keyCols, size_t numKeyCols, const char **aggCols,
+                      size_t numAggCols, mlir::daphne::GroupEnum *aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
         size_t numRowsArg = arg->getNumRows();
         size_t numColsRes = numKeyCols + numAggCols;
         size_t numRowsRes = numRowsArg;
-        if (arg == nullptr || (keyCols == nullptr && numKeyCols != 0) ||
-            (aggCols == nullptr && numAggCols != 0) ||
+        if (arg == nullptr || (keyCols == nullptr && numKeyCols != 0) || (aggCols == nullptr && numAggCols != 0) ||
             (aggFuncs == nullptr && numAggFuncs != 0)) {
-            throw std::runtime_error(
-                "group-kernel called with invalid arguments");
+            throw std::runtime_error("group-kernel called with invalid arguments");
         }
 
         // check if labels contain *
@@ -174,17 +156,14 @@ template <> struct Group<Frame> {
         for (size_t i = 0; i < numKeyCols; i++) {
             std::string delimiter = ".";
             std::string keyLabel = keyCols[i];
-            const std::string frameName =
-                keyLabel.substr(0, keyLabel.find(delimiter));
+            const std::string frameName = keyLabel.substr(0, keyLabel.find(delimiter));
             const std::string colLabel =
-                keyLabel.substr(keyLabel.find(delimiter) + delimiter.length(),
-                                keyLabel.length());
+                keyLabel.substr(keyLabel.find(delimiter) + delimiter.length(), keyLabel.length());
             if (strcmp(keyCols[i], "*") == 0) {
                 for (size_t m = 0; m < numColsArg; m++) {
                     // check that we do not include columns in the result that
                     // are used for aggregations and would lead to duplicates
-                    if (std::find(aggColsVec.begin(), aggColsVec.end(),
-                                  argLabels[m]) == aggColsVec.end()) {
+                    if (std::find(aggColsVec.begin(), aggColsVec.end(), argLabels[m]) == aggColsVec.end()) {
                         starLabels.push_back(argLabels[m]);
                     }
                 }
@@ -194,10 +173,8 @@ template <> struct Group<Frame> {
                 numColsRes = starLabels.size() + numAggCols;
             } else if (colLabel.compare("*") == 0) { // f.*
                 for (size_t m = 0; m < numColsArg; m++) {
-                    std::string frameArg =
-                        argLabels[m].substr(0, argLabels[m].find(delimiter));
-                    if (frameName.compare(argLabels[m].substr(
-                            0, argLabels[m].find(delimiter))) == 0 &&
+                    std::string frameArg = argLabels[m].substr(0, argLabels[m].find(delimiter));
+                    if (frameName.compare(argLabels[m].substr(0, argLabels[m].find(delimiter))) == 0 &&
                         frameName.compare(frameArg) == 0) {
                         starLabels.push_back(argLabels[m]);
                     }
@@ -211,8 +188,7 @@ template <> struct Group<Frame> {
         numKeyCols = starLabels.size() ? starLabels.size() : numKeyCols;
         bool *ascending = new bool[starLabels.size()];
         for (size_t i = 0; i < numKeyCols; ++i) {
-            idxs[i] = starLabels.size() ? arg->getColumnIdx(starLabels[i])
-                                        : arg->getColumnIdx(keyCols[i]);
+            idxs[i] = starLabels.size() ? arg->getColumnIdx(starLabels[i]) : arg->getColumnIdx(keyCols[i]);
             ascending[i] = true;
         }
         for (size_t i = numKeyCols; i < numColsRes; i++) {
@@ -222,8 +198,7 @@ template <> struct Group<Frame> {
         // reduce frame columns to keyCols and numAggCols (without copying
         // values or the idx array) and reorder them accordingly
         Frame *reduced{};
-        auto sel =
-            DataObjectFactory::create<DenseMatrix<size_t>>(numColsRes, 1, idxs);
+        auto sel = DataObjectFactory::create<DenseMatrix<size_t>>(numColsRes, 1, idxs);
         extractCol(reduced, arg, sel, ctx);
         DataObjectFactory::destroy(sel);
 
@@ -233,8 +208,7 @@ template <> struct Group<Frame> {
 
         // order frame rows by groups and get the group vector;
         if (numKeyCols > 0) {
-            order(ordered, reduced, idxs.get(), numKeyCols, ascending,
-                  numKeyCols, false, ctx, groups);
+            order(ordered, reduced, idxs.get(), numKeyCols, ascending, numKeyCols, false, ctx, groups);
             DataObjectFactory::destroy(reduced);
         } else {
             // skip for pure aggregation over all rows (no grouping)
@@ -270,8 +244,7 @@ template <> struct Group<Frame> {
             //            labels[i] =
             //            mlir::daphne::stringifyGroupEnum(aggFuncs[i-numKeyCols]).str()
             //            + "(" +  aggCols[i-numKeyCols] + ")";
-            labels[i] = myStringifyGroupEnum(aggFuncs[i - numKeyCols]) + "(" +
-                        aggCols[i - numKeyCols] + ")";
+            labels[i] = myStringifyGroupEnum(aggFuncs[i - numKeyCols]) + "(" + aggCols[i - numKeyCols] + ")";
             switch (aggFuncs[i - numKeyCols]) {
             case GroupEnum::COUNT:
                 schema[i] = ValueTypeCode::UI64;
@@ -291,18 +264,15 @@ template <> struct Group<Frame> {
             }
         }
 
-        res = DataObjectFactory::create<Frame>(numRowsRes, numColsRes, schema,
-                                               labels, false);
+        res = DataObjectFactory::create<Frame>(numRowsRes, numColsRes, schema, labels, false);
         delete[] labels;
         delete[] schema;
 
         // copying key columns and column-wise group aggregation
         for (size_t i = 0; i < numColsRes; i++) {
             DeduceValueTypeAndExecute<ColumnGroupAgg>::apply(
-                res->getSchema()[i], ordered->getSchema()[i], res, ordered, i,
-                groups,
-                (i < numKeyCols) ? (GroupEnum)0 : aggFuncs[i - numKeyCols],
-                ctx);
+                res->getSchema()[i], ordered->getSchema()[i], res, ordered, i, groups,
+                (i < numKeyCols) ? (GroupEnum)0 : aggFuncs[i - numKeyCols], ctx);
         }
         delete groups;
         DataObjectFactory::destroy(ordered);

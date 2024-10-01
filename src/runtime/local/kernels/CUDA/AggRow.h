@@ -28,16 +28,14 @@ namespace CUDA {
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct AggRow {
-    static void apply(AggOpCode opCode, DenseMatrix<DTRes> *&res,
-                      const DenseMatrix<DTArg> *arg, DCTX(ctx));
+    static void apply(AggOpCode opCode, DenseMatrix<DTRes> *&res, const DenseMatrix<DTArg> *arg, DCTX(ctx));
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void aggRow(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void aggRow(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     AggRow<DTRes, DTArg>::apply(opCode, res, arg, ctx);
 }
 
@@ -50,7 +48,6 @@ void aggRow(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VT> *&res,
-                      const DenseMatrix<VT> *arg, DCTX(ctx));
+    static void apply(AggOpCode opCode, DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx));
 };
 } // namespace CUDA

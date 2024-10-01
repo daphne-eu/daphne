@@ -66,8 +66,7 @@ class MPIHelper {
             buffer.resize(this->sizeInBytes());
 
             auto bufIdx = buffer.begin();
-            std::copy(reinterpret_cast<char *>(&h),
-                      reinterpret_cast<char *>(&h) + sizeof(h), bufIdx);
+            std::copy(reinterpret_cast<char *>(&h), reinterpret_cast<char *>(&h) + sizeof(h), bufIdx);
             bufIdx += sizeof(h);
 
             std::copy(mlir_code.begin(), mlir_code.end(), bufIdx);
@@ -75,30 +74,22 @@ class MPIHelper {
 
             for (auto &inp : inputs) {
                 size_t strLen = inp.identifier.size();
-                std::copy(reinterpret_cast<char *>(&strLen),
-                          reinterpret_cast<char *>(&strLen) + sizeof(strLen),
+                std::copy(reinterpret_cast<char *>(&strLen), reinterpret_cast<char *>(&strLen) + sizeof(strLen),
                           bufIdx);
                 bufIdx += sizeof(strLen);
-                std::copy(inp.identifier.data(), inp.identifier.data() + strLen,
-                          bufIdx);
+                std::copy(inp.identifier.data(), inp.identifier.data() + strLen, bufIdx);
                 bufIdx += strLen;
                 std::copy(reinterpret_cast<char *>(&inp.numRows),
-                          reinterpret_cast<char *>(&inp.numRows) +
-                              sizeof(inp.numRows),
-                          bufIdx);
+                          reinterpret_cast<char *>(&inp.numRows) + sizeof(inp.numRows), bufIdx);
                 bufIdx += sizeof(inp.numRows);
                 std::copy(reinterpret_cast<char *>(&inp.numCols),
-                          reinterpret_cast<char *>(&inp.numCols) +
-                              sizeof(inp.numCols),
-                          bufIdx);
+                          reinterpret_cast<char *>(&inp.numCols) + sizeof(inp.numCols), bufIdx);
                 bufIdx += sizeof(inp.numCols);
             }
         }
         void deserialize(const std::vector<char> &buffer) {
-            size_t mlir_code_len =
-                (size_t)((const Header *)buffer.data())->mlir_code_len;
-            size_t num_inputs =
-                (size_t)((const Header *)buffer.data())->num_inputs;
+            size_t mlir_code_len = (size_t)((const Header *)buffer.data())->mlir_code_len;
+            size_t num_inputs = (size_t)((const Header *)buffer.data())->num_inputs;
 
             auto bufIdx = buffer.begin();
             bufIdx += sizeof(Header);
@@ -111,17 +102,14 @@ class MPIHelper {
 
             for (auto &inp : inputs) {
                 size_t strLen;
-                std::copy(bufIdx, bufIdx + sizeof(strLen),
-                          reinterpret_cast<char *>(&strLen));
+                std::copy(bufIdx, bufIdx + sizeof(strLen), reinterpret_cast<char *>(&strLen));
                 bufIdx += sizeof(strLen);
                 inp.identifier.resize(strLen);
                 std::copy(bufIdx, bufIdx + strLen, inp.identifier.data());
                 bufIdx += strLen;
-                std::copy(bufIdx, bufIdx + sizeof(inp.numRows),
-                          reinterpret_cast<char *>(&inp.numRows));
+                std::copy(bufIdx, bufIdx + sizeof(inp.numRows), reinterpret_cast<char *>(&inp.numRows));
                 bufIdx += sizeof(inp.numRows);
-                std::copy(bufIdx, bufIdx + sizeof(inp.numCols),
-                          reinterpret_cast<char *>(&inp.numCols));
+                std::copy(bufIdx, bufIdx + sizeof(inp.numCols), reinterpret_cast<char *>(&inp.numCols));
                 bufIdx += sizeof(inp.numCols);
             }
         }
@@ -148,8 +136,7 @@ class MPIHelper {
         sscanf(results.at(2).c_str(), "%zu", &info.numCols);
         return info;
     }
-    static std::vector<WorkerImpl::StoredInfo>
-    constructStoredInfoVector(std::vector<char> &buffer) {
+    static std::vector<WorkerImpl::StoredInfo> constructStoredInfoVector(std::vector<char> &buffer) {
         std::vector<WorkerImpl::StoredInfo> vecInfo;
         std::string str(buffer.begin(), buffer.end());
         std::stringstream s_stream(str);
@@ -163,8 +150,7 @@ class MPIHelper {
     static std::vector<char> getComputeResults(int rank) {
         size_t resultsLen = 0;
         std::vector<char> buffer;
-        getMessageFrom(rank, COMPUTERESULT, MPI_UNSIGNED_CHAR, buffer,
-                       &resultsLen);
+        getMessageFrom(rank, COMPUTERESULT, MPI_UNSIGNED_CHAR, buffer, &resultsLen);
         return buffer;
     }
 
@@ -185,25 +171,18 @@ class MPIHelper {
                 continue;
             MPI_Send(&message, 1, MPI_INT, rank, BROADCAST, MPI_COMM_WORLD);
         }
-        MPI_Bcast(data, message, MPI_UNSIGNED_CHAR, COORDINATOR,
-                  MPI_COMM_WORLD);
+        MPI_Bcast(data, message, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
     }
 
     static void initiateStreaming(int rank, size_t chunksize) {
         MPI_Send(&chunksize, 1, MPI_INT, rank, STREAM_INIT, MPI_COMM_WORLD);
     }
-    static void sendData(size_t messageLength, void *data, int rank) {
-        sendWithTag(DATA, messageLength, data, rank);
-    }
+    static void sendData(size_t messageLength, void *data, int rank) { sendWithTag(DATA, messageLength, data, rank); }
 
-    static void sendTask(size_t messageLength, void *data, int rank) {
-        sendWithTag(MLIR, messageLength, data, rank);
-    }
+    static void sendTask(size_t messageLength, void *data, int rank) { sendWithTag(MLIR, messageLength, data, rank); }
 
-    static void displayDataStructure(Structure *inputStruct,
-                                     std::string dataToDisplay) {
-        DenseMatrix<double> *res =
-            dynamic_cast<DenseMatrix<double> *>(inputStruct);
+    static void displayDataStructure(Structure *inputStruct, std::string dataToDisplay) {
+        DenseMatrix<double> *res = dynamic_cast<DenseMatrix<double> *>(inputStruct);
         double *allValues = res->getValues();
         for (size_t r = 0; r < res->getNumRows(); r++) {
             for (size_t c = 0; c < res->getNumCols(); c++) {
@@ -225,8 +204,7 @@ class MPIHelper {
         MPI_Send(message, len, MPI_CHAR, rank, TRANSFER, MPI_COMM_WORLD);
     }
 
-    static void getMessage(int *rank, int tag, MPI_Datatype type,
-                           std::vector<char> &data, size_t *len) {
+    static void getMessage(int *rank, int tag, MPI_Datatype type, std::vector<char> &data, size_t *len) {
         int size;
         MPI_Status status;
         MPI_Probe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
@@ -234,13 +212,11 @@ class MPIHelper {
         *rank = status.MPI_SOURCE;
 
         data.resize(size * sizeof(char));
-        MPI_Recv(data.data(), size, type, status.MPI_SOURCE, tag,
-                 MPI_COMM_WORLD, &status);
+        MPI_Recv(data.data(), size, type, status.MPI_SOURCE, tag, MPI_COMM_WORLD, &status);
         *len = size;
     }
 
-    static void getMessageFrom(int rank, int tag, MPI_Datatype type,
-                               std::vector<char> &data, size_t *len) {
+    static void getMessageFrom(int rank, int tag, MPI_Datatype type, std::vector<char> &data, size_t *len) {
         int size;
         MPI_Status status;
         MPI_Probe(rank, tag, MPI_COMM_WORLD, &status);
@@ -251,8 +227,7 @@ class MPIHelper {
         *len = size;
     }
 
-    static void sendWithTag(TypesOfMessages tag, size_t messageLength,
-                            void *data, int rank) {
+    static void sendWithTag(TypesOfMessages tag, size_t messageLength, void *data, int rank) {
         if (rank == COORDINATOR)
             return;
         int message = messageLength;
@@ -272,8 +247,7 @@ class MPIHelper {
         // std::cout<<"message size is "<< message << " tag "<< sizeTag
         // <<std::endl;
         MPI_Send(&message, 1, MPI_INT, rank, sizeTag, MPI_COMM_WORLD);
-        MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, dataTag,
-                 MPI_COMM_WORLD);
+        MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, dataTag, MPI_COMM_WORLD);
     }
 };
 

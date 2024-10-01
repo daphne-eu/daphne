@@ -27,23 +27,17 @@ class IntegerModOpt : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
         if (!op.getRhs().getType().isUnsignedInteger())
             return false;
 
-        std::pair<bool, uint64_t> isConstant =
-            CompilerUtils::isConstant<uint64_t>(op.getRhs());
+        std::pair<bool, uint64_t> isConstant = CompilerUtils::isConstant<uint64_t>(op.getRhs());
         // Apply (lhs % rhs) to (lhs & (rhs - 1)) optimization when rhs is a
         // power of two
-        return isConstant.first &&
-               (isConstant.second & (isConstant.second - 1)) == 0;
+        return isConstant.first && (isConstant.second & (isConstant.second - 1)) == 0;
     }
 
-    mlir::LogicalResult
-    matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
-                    mlir::ConversionPatternRewriter &rewriter) const override {
-        mlir::Value cst_one = rewriter.create<mlir::daphne::ConstantOp>(
-            op.getLoc(), static_cast<uint64_t>(1));
-        mlir::Value sub = rewriter.create<mlir::daphne::EwSubOp>(
-            op.getLoc(), adaptor.getRhs(), cst_one);
-        mlir::Value andOp = rewriter.create<mlir::daphne::EwBitwiseAndOp>(
-            op.getLoc(), adaptor.getLhs(), sub);
+    mlir::LogicalResult matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
+                                        mlir::ConversionPatternRewriter &rewriter) const override {
+        mlir::Value cst_one = rewriter.create<mlir::daphne::ConstantOp>(op.getLoc(), static_cast<uint64_t>(1));
+        mlir::Value sub = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), adaptor.getRhs(), cst_one);
+        mlir::Value andOp = rewriter.create<mlir::daphne::EwBitwiseAndOp>(op.getLoc(), adaptor.getLhs(), sub);
         rewriter.replaceOp(op, andOp);
         return success();
     }
@@ -55,14 +49,11 @@ namespace {
  * the DaphneDialect to a different set of operations also from the
  * DaphneDialect.
  */
-struct DenseMatrixOptPass
-    : public mlir::PassWrapper<DenseMatrixOptPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
+struct DenseMatrixOptPass : public mlir::PassWrapper<DenseMatrixOptPass, mlir::OperationPass<mlir::ModuleOp>> {
     explicit DenseMatrixOptPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::arith::ArithDialect,
-                        mlir::daphne::DaphneDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::arith::ArithDialect, mlir::daphne::DaphneDialect>();
     }
     void runOnOperation() final;
 
@@ -88,9 +79,7 @@ void DenseMatrixOptPass::runOnOperation() {
     target.addLegalDialect<mlir::daphne::DaphneDialect>();
 
     target.addDynamicallyLegalOp<mlir::daphne::EwModOp>(
-        [&](mlir::daphne::EwModOp op) {
-            return !IntegerModOpt::optimization_viable(op);
-        });
+        [&](mlir::daphne::EwModOp op) { return !IntegerModOpt::optimization_viable(op); });
 
     patterns.insert<IntegerModOpt>(typeConverter, &getContext());
 
@@ -100,6 +89,4 @@ void DenseMatrixOptPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createDaphneOptPass() {
-    return std::make_unique<DenseMatrixOptPass>();
-}
+std::unique_ptr<mlir::Pass> mlir::daphne::createDaphneOptPass() { return std::make_unique<DenseMatrixOptPass>(); }

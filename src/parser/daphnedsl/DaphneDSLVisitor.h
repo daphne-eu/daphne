@@ -87,10 +87,8 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * function
      * @return The `FuncOp`
      */
-    mlir::func::FuncOp
-    createUserDefinedFuncOp(const mlir::Location &loc,
-                            const mlir::FunctionType &funcType,
-                            const std::string &functionName);
+    mlir::func::FuncOp createUserDefinedFuncOp(const mlir::Location &loc, const mlir::FunctionType &funcType,
+                                               const std::string &functionName);
 
     /**
      * @brief Wraps the given SSA value into a RenameOp, if the given SSA value
@@ -104,16 +102,14 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     mlir::Value renameIf(mlir::Value v);
 
     void handleAssignmentPart(mlir::Location loc, const std::string &var,
-                              DaphneDSLGrammarParser::IndexingContext *idxCtx,
-                              ScopedSymbolTable &symbolTable, mlir::Value val);
+                              DaphneDSLGrammarParser::IndexingContext *idxCtx, ScopedSymbolTable &symbolTable,
+                              mlir::Value val);
 
     template <class ExtractAxOp, class SliceAxOp, class NumAxOp>
-    mlir::Value applyRightIndexing(mlir::Location loc, mlir::Value arg,
-                                   antlrcpp::Any ax, bool allowLabel);
+    mlir::Value applyRightIndexing(mlir::Location loc, mlir::Value arg, antlrcpp::Any ax, bool allowLabel);
 
     template <class InsertAxOp, class NumAxOp>
-    mlir::Value applyLeftIndexing(mlir::Location loc, mlir::Value arg,
-                                  mlir::Value ins, antlrcpp::Any ax,
+    mlir::Value applyLeftIndexing(mlir::Location loc, mlir::Value arg, mlir::Value ins, antlrcpp::Any ax,
                                   bool allowLabel);
 
     /**
@@ -126,10 +122,8 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @throws `std::runtime_error` if a UDF with the name exists but no
      * matching version was found
      */
-    std::optional<mlir::func::FuncOp>
-    findMatchingUDF(const std::string &functionName,
-                    const std::vector<mlir::Value> &args,
-                    mlir::Location loc) const;
+    std::optional<mlir::func::FuncOp> findMatchingUDF(const std::string &functionName,
+                                                      const std::vector<mlir::Value> &args, mlir::Location loc) const;
 
     /**
      * @brief Tries to find a unary (i.e. single param) UDF based on the
@@ -142,9 +136,8 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @throws `std::runtime_error` if a UDF with the name exists but no
      * matching version was found
      */
-    std::optional<mlir::func::FuncOp>
-    findMatchingUnaryUDF(mlir::Location loc, const std::string &functionName,
-                         mlir::Type argType) const;
+    std::optional<mlir::func::FuncOp> findMatchingUnaryUDF(mlir::Location loc, const std::string &functionName,
+                                                           mlir::Type argType) const;
 
     /**
      * @brief Checks if the type of an agrument to a UDF is compatible with the
@@ -173,9 +166,8 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @return MLIR value containing the built matrix
      */
     template <typename VT>
-    mlir::Value buildColMatrixFromValues(
-        mlir::Location loc, const std::vector<mlir::Value> &values,
-        const std::vector<mlir::Type> &valueTypes, mlir::Type matrixVt);
+    mlir::Value buildColMatrixFromValues(mlir::Location loc, const std::vector<mlir::Value> &values,
+                                         const std::vector<mlir::Type> &valueTypes, mlir::Type matrixVt);
 
     template <class Context> mlir::Value valueOrErrorOnVisit(Context *ctx) {
         return utils.valueOrError(utils.getLoc(ctx->start), visit(ctx));
@@ -185,138 +177,95 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
 
   public:
     DaphneDSLVisitor(mlir::ModuleOp &module, mlir::OpBuilder &builder,
-                     std::unordered_map<std::string, std::string> args,
-                     const std::string &rootScriptPath,
+                     std::unordered_map<std::string, std::string> args, const std::string &rootScriptPath,
                      DaphneUserConfig userConf_)
-        : module(module), builder(builder), utils(builder), builtins(builder),
-          args(std::move(args)) {
+        : module(module), builder(builder), utils(builder), builtins(builder), args(std::move(args)) {
         scriptPaths.push(rootScriptPath);
         userConf = std::move(userConf_);
         logger = spdlog::get("parser");
     };
 
-    antlrcpp::Any
-    visitScript(DaphneDSLGrammarParser::ScriptContext *ctx) override;
+    antlrcpp::Any visitScript(DaphneDSLGrammarParser::ScriptContext *ctx) override;
 
-    antlrcpp::Any
-    visitStatement(DaphneDSLGrammarParser::StatementContext *ctx) override;
+    antlrcpp::Any visitStatement(DaphneDSLGrammarParser::StatementContext *ctx) override;
 
-    antlrcpp::Any visitImportStatement(
-        DaphneDSLGrammarParser::ImportStatementContext *ctx) override;
+    antlrcpp::Any visitImportStatement(DaphneDSLGrammarParser::ImportStatementContext *ctx) override;
 
-    antlrcpp::Any visitBlockStatement(
-        DaphneDSLGrammarParser::BlockStatementContext *ctx) override;
+    antlrcpp::Any visitBlockStatement(DaphneDSLGrammarParser::BlockStatementContext *ctx) override;
 
-    antlrcpp::Any visitExprStatement(
-        DaphneDSLGrammarParser::ExprStatementContext *ctx) override;
+    antlrcpp::Any visitExprStatement(DaphneDSLGrammarParser::ExprStatementContext *ctx) override;
 
-    antlrcpp::Any visitAssignStatement(
-        DaphneDSLGrammarParser::AssignStatementContext *ctx) override;
+    antlrcpp::Any visitAssignStatement(DaphneDSLGrammarParser::AssignStatementContext *ctx) override;
 
-    antlrcpp::Any
-    visitIfStatement(DaphneDSLGrammarParser::IfStatementContext *ctx) override;
+    antlrcpp::Any visitIfStatement(DaphneDSLGrammarParser::IfStatementContext *ctx) override;
 
-    antlrcpp::Any visitWhileStatement(
-        DaphneDSLGrammarParser::WhileStatementContext *ctx) override;
+    antlrcpp::Any visitWhileStatement(DaphneDSLGrammarParser::WhileStatementContext *ctx) override;
 
-    antlrcpp::Any visitForStatement(
-        DaphneDSLGrammarParser::ForStatementContext *ctx) override;
+    antlrcpp::Any visitForStatement(DaphneDSLGrammarParser::ForStatementContext *ctx) override;
 
-    antlrcpp::Any visitFunctionStatement(
-        DaphneDSLGrammarParser::FunctionStatementContext *ctx) override;
+    antlrcpp::Any visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) override;
 
-    antlrcpp::Any visitReturnStatement(
-        DaphneDSLGrammarParser::ReturnStatementContext *ctx) override;
+    antlrcpp::Any visitReturnStatement(DaphneDSLGrammarParser::ReturnStatementContext *ctx) override;
 
-    antlrcpp::Any visitFunctionArgs(
-        DaphneDSLGrammarParser::FunctionArgsContext *ctx) override;
+    antlrcpp::Any visitFunctionArgs(DaphneDSLGrammarParser::FunctionArgsContext *ctx) override;
 
-    antlrcpp::Any
-    visitFunctionArg(DaphneDSLGrammarParser::FunctionArgContext *ctx) override;
+    antlrcpp::Any visitFunctionArg(DaphneDSLGrammarParser::FunctionArgContext *ctx) override;
 
-    antlrcpp::Any visitFunctionRetTypes(
-        DaphneDSLGrammarParser::FunctionRetTypesContext *ctx) override;
+    antlrcpp::Any visitFunctionRetTypes(DaphneDSLGrammarParser::FunctionRetTypesContext *ctx) override;
 
-    antlrcpp::Any
-    visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) override;
+    antlrcpp::Any visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) override;
 
-    antlrcpp::Any
-    visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext *ctx) override;
+    antlrcpp::Any visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitArgExpr(DaphneDSLGrammarParser::ArgExprContext *ctx) override;
+    antlrcpp::Any visitArgExpr(DaphneDSLGrammarParser::ArgExprContext *ctx) override;
 
-    antlrcpp::Any visitIdentifierExpr(
-        DaphneDSLGrammarParser::IdentifierExprContext *ctx) override;
+    antlrcpp::Any visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext *ctx) override;
 
-    antlrcpp::Any visitParanthesesExpr(
-        DaphneDSLGrammarParser::ParanthesesExprContext *ctx) override;
+    antlrcpp::Any visitParanthesesExpr(DaphneDSLGrammarParser::ParanthesesExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitCallExpr(DaphneDSLGrammarParser::CallExprContext *ctx) override;
+    antlrcpp::Any visitCallExpr(DaphneDSLGrammarParser::CallExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitCastExpr(DaphneDSLGrammarParser::CastExprContext *ctx) override;
+    antlrcpp::Any visitCastExpr(DaphneDSLGrammarParser::CastExprContext *ctx) override;
 
-    antlrcpp::Any visitRightIdxFilterExpr(
-        DaphneDSLGrammarParser::RightIdxFilterExprContext *ctx) override;
+    antlrcpp::Any visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext *ctx) override;
 
-    antlrcpp::Any visitRightIdxExtractExpr(
-        DaphneDSLGrammarParser::RightIdxExtractExprContext *ctx) override;
+    antlrcpp::Any visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitMinusExpr(DaphneDSLGrammarParser::MinusExprContext *ctx) override;
+    antlrcpp::Any visitMinusExpr(DaphneDSLGrammarParser::MinusExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext *ctx) override;
+    antlrcpp::Any visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitPowExpr(DaphneDSLGrammarParser::PowExprContext *ctx) override;
+    antlrcpp::Any visitPowExpr(DaphneDSLGrammarParser::PowExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitModExpr(DaphneDSLGrammarParser::ModExprContext *ctx) override;
+    antlrcpp::Any visitModExpr(DaphneDSLGrammarParser::ModExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitMulExpr(DaphneDSLGrammarParser::MulExprContext *ctx) override;
+    antlrcpp::Any visitMulExpr(DaphneDSLGrammarParser::MulExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitAddExpr(DaphneDSLGrammarParser::AddExprContext *ctx) override;
+    antlrcpp::Any visitAddExpr(DaphneDSLGrammarParser::AddExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitCmpExpr(DaphneDSLGrammarParser::CmpExprContext *ctx) override;
+    antlrcpp::Any visitCmpExpr(DaphneDSLGrammarParser::CmpExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitConjExpr(DaphneDSLGrammarParser::ConjExprContext *ctx) override;
+    antlrcpp::Any visitConjExpr(DaphneDSLGrammarParser::ConjExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitDisjExpr(DaphneDSLGrammarParser::DisjExprContext *ctx) override;
+    antlrcpp::Any visitDisjExpr(DaphneDSLGrammarParser::DisjExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitCondExpr(DaphneDSLGrammarParser::CondExprContext *ctx) override;
+    antlrcpp::Any visitCondExpr(DaphneDSLGrammarParser::CondExprContext *ctx) override;
 
-    antlrcpp::Any visitMatrixLiteralExpr(
-        DaphneDSLGrammarParser::MatrixLiteralExprContext *ctx) override;
+    antlrcpp::Any visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext *ctx) override;
 
-    antlrcpp::Any visitColMajorFrameLiteralExpr(
-        DaphneDSLGrammarParser::ColMajorFrameLiteralExprContext *ctx) override;
+    antlrcpp::Any visitColMajorFrameLiteralExpr(DaphneDSLGrammarParser::ColMajorFrameLiteralExprContext *ctx) override;
 
-    antlrcpp::Any visitRowMajorFrameLiteralExpr(
-        DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext *ctx) override;
+    antlrcpp::Any visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajorFrameLiteralExprContext *ctx) override;
 
-    antlrcpp::Any
-    visitFrameRow(DaphneDSLGrammarParser::FrameRowContext *ctx) override;
+    antlrcpp::Any visitFrameRow(DaphneDSLGrammarParser::FrameRowContext *ctx) override;
 
-    antlrcpp::Any
-    visitIndexing(DaphneDSLGrammarParser::IndexingContext *ctx) override;
+    antlrcpp::Any visitIndexing(DaphneDSLGrammarParser::IndexingContext *ctx) override;
 
-    antlrcpp::Any
-    visitRange(DaphneDSLGrammarParser::RangeContext *ctx) override;
+    antlrcpp::Any visitRange(DaphneDSLGrammarParser::RangeContext *ctx) override;
 
-    antlrcpp::Any
-    visitLiteral(DaphneDSLGrammarParser::LiteralContext *ctx) override;
+    antlrcpp::Any visitLiteral(DaphneDSLGrammarParser::LiteralContext *ctx) override;
 
-    antlrcpp::Any
-    visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext *ctx) override;
+    antlrcpp::Any visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext *ctx) override;
 };
 
 #endif // SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H

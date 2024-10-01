@@ -74,10 +74,8 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
 
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
-    template <class DataType, typename... ArgTypes>
-    friend DataType *DataObjectFactory::create(ArgTypes...);
-    template <class DataType>
-    friend void DataObjectFactory::destroy(const DataType *obj);
+    template <class DataType, typename... ArgTypes> friend DataType *DataObjectFactory::create(ArgTypes...);
+    template <class DataType> friend void DataObjectFactory::destroy(const DataType *obj);
 
     /**
      * @brief Creates a `CSRMatrix` and allocates enough memory for the
@@ -90,15 +88,11 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
      * @param zero Whether the allocated memory of the internal arrays shall be
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
-    CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros,
-              bool zero)
-        : Matrix<ValueType>(maxNumRows, numCols), numRowsAllocated(maxNumRows),
-          isRowAllocatedBefore(false), maxNumNonZeros(maxNumNonZeros),
-          values(new ValueType[maxNumNonZeros],
-                 std::default_delete<ValueType[]>()),
+    CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero)
+        : Matrix<ValueType>(maxNumRows, numCols), numRowsAllocated(maxNumRows), isRowAllocatedBefore(false),
+          maxNumNonZeros(maxNumNonZeros), values(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>()),
           colIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
-          rowOffsets(new size_t[numRows + 1], std::default_delete<size_t[]>()),
-          lastAppendedRowIdx(0) {
+          rowOffsets(new size_t[numRows + 1], std::default_delete<size_t[]>()), lastAppendedRowIdx(0) {
         if (zero) {
             memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
             memset(colIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
@@ -116,28 +110,23 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
      * @param rowUpperExcl Exclusive upper bound for the range of rows to
      * extract.
      */
-    CSRMatrix(const CSRMatrix<ValueType> *src, size_t rowLowerIncl,
-              size_t rowUpperExcl)
+    CSRMatrix(const CSRMatrix<ValueType> *src, size_t rowLowerIncl, size_t rowUpperExcl)
         : Matrix<ValueType>(rowUpperExcl - rowLowerIncl, src->numCols),
-          numRowsAllocated(src->numRowsAllocated - rowLowerIncl),
-          isRowAllocatedBefore(rowLowerIncl > 0), lastAppendedRowIdx(0) {
+          numRowsAllocated(src->numRowsAllocated - rowLowerIncl), isRowAllocatedBefore(rowLowerIncl > 0),
+          lastAppendedRowIdx(0) {
         if (!src)
             throw std::runtime_error("CSRMatrix: src must not be null");
         if (rowLowerIncl >= src->numRows)
-            throw std::runtime_error(
-                "CSRMatrix: rowLowerIncl is out of bounds");
+            throw std::runtime_error("CSRMatrix: rowLowerIncl is out of bounds");
         if (rowUpperExcl > src->numRows)
-            throw std::runtime_error(
-                "CSRMatrix: rowUpperExcl is out of bounds");
+            throw std::runtime_error("CSRMatrix: rowUpperExcl is out of bounds");
         if (rowLowerIncl >= rowUpperExcl)
-            throw std::runtime_error(
-                "CSRMatrix: rowLowerIncl must be lower than rowUpperExcl");
+            throw std::runtime_error("CSRMatrix: rowLowerIncl must be lower than rowUpperExcl");
 
         maxNumNonZeros = src->maxNumNonZeros;
         values = src->values;
         colIdxs = src->colIdxs;
-        rowOffsets = std::shared_ptr<size_t>(
-            src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
+        rowOffsets = std::shared_ptr<size_t>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
 
     virtual ~CSRMatrix() {
@@ -153,28 +142,23 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     }
 
   public:
-    template <typename NewValueType>
-    using WithValueType = CSRMatrix<NewValueType>;
+    template <typename NewValueType> using WithValueType = CSRMatrix<NewValueType>;
 
     static std::string getName() { return "CSRMatrix"; }
 
     void shrinkNumRows(size_t numRows) {
         if (numRows > this->numRows)
-            throw std::runtime_error(
-                "CSRMatrix (shrinkNumRows): numRows can only be shrunk");
+            throw std::runtime_error("CSRMatrix (shrinkNumRows): numRows can only be shrunk");
         // TODO Here we could reduce the allocated size of the rowOffsets array.
         this->numRows = numRows;
     }
 
     size_t getMaxNumNonZeros() const { return maxNumNonZeros; }
-    size_t getNumNonZeros() const {
-        return rowOffsets.get()[numRows] - rowOffsets.get()[0];
-    }
+    size_t getNumNonZeros() const { return rowOffsets.get()[numRows] - rowOffsets.get()[0]; }
 
     size_t getNumNonZeros(size_t rowIdx) const {
         if (rowIdx >= numRows)
-            throw std::runtime_error(
-                "CSRMatrix (getNumNonZeros): rowIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (getNumNonZeros): rowIdx is out of bounds");
         return rowOffsets.get()[rowIdx + 1] - rowOffsets.get()[rowIdx];
     }
 
@@ -193,8 +177,7 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     ValueType *getValues(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
         if (rowIdx > numRows)
-            throw std::runtime_error(
-                "CSRMatrix (getValues): rowIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (getValues): rowIdx is out of bounds");
         return values.get() + rowOffsets.get()[rowIdx];
     }
 
@@ -209,8 +192,7 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     size_t *getColIdxs(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
         if (rowIdx > numRows)
-            throw std::runtime_error(
-                "CSRMatrix (getColIdxs): rowIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (getColIdxs): rowIdx is out of bounds");
         return colIdxs.get() + rowOffsets.get()[rowIdx];
     }
 
@@ -224,16 +206,13 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
 
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         if (rowIdx >= numRows)
-            throw std::runtime_error(
-                "CSRMatrix (get): rowIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (get): rowIdx is out of bounds");
         if (colIdx >= numCols)
-            throw std::runtime_error(
-                "CSRMatrix (get): colIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (get): colIdx is out of bounds");
 
         const size_t *rowColIdxsBeg = getColIdxs(rowIdx);
         const size_t *rowColIdxsEnd = getColIdxs(rowIdx + 1);
-        const size_t *ptrExpected =
-            std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
+        const size_t *ptrExpected = std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
 
         if (ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx)
             // No entry for the given coordinates present.
@@ -245,20 +224,16 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
 
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
         if (rowIdx >= numRows)
-            throw std::runtime_error(
-                "CSRMatrix (set): rowIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (set): rowIdx is out of bounds");
         if (colIdx >= numCols)
-            throw std::runtime_error(
-                "CSRMatrix (set): colIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (set): colIdx is out of bounds");
 
         size_t *rowColIdxsBeg = getColIdxs(rowIdx);
         size_t *rowColIdxsEnd = getColIdxs(rowIdx + 1);
-        const size_t *ptrExpected =
-            std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
+        const size_t *ptrExpected = std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
         const size_t posExpected = ptrExpected - rowColIdxsBeg;
 
-        const size_t posEnd =
-            colIdxs.get() + rowOffsets.get()[numRowsAllocated] - rowColIdxsBeg;
+        const size_t posEnd = colIdxs.get() + rowOffsets.get()[numRowsAllocated] - rowColIdxsBeg;
         ValueType *rowValuesBeg = getValues(rowIdx);
 
         if (ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx) {
@@ -314,11 +289,9 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     // has been populated up to just before the row range of this view.
     void append(size_t rowIdx, size_t colIdx, ValueType value) override {
         if (rowIdx >= numRows)
-            throw std::runtime_error(
-                "CSRMatrix (append): rowIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (append): rowIdx is out of bounds");
         if (colIdx >= numCols)
-            throw std::runtime_error(
-                "CSRMatrix (append): colIdx is out of bounds");
+            throw std::runtime_error("CSRMatrix (append): colIdx is out of bounds");
 
         if (value == ValueType(0))
             return;
@@ -331,13 +304,9 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         rowOffsets.get()[rowIdx + 1]++;
     }
 
-    void finishAppend() override {
-        fillNextPosUntil(rowOffsets.get()[lastAppendedRowIdx + 1], numRows - 1);
-    }
+    void finishAppend() override { fillNextPosUntil(rowOffsets.get()[lastAppendedRowIdx + 1], numRows - 1); }
 
-    bool isView() const {
-        return (numRowsAllocated > numRows || isRowAllocatedBefore);
-    }
+    bool isView() const { return (numRowsAllocated > numRows || isRowAllocatedBefore); }
 
     void printValue(std::ostream &os, ValueType val) const {
         switch (ValueTypeUtils::codeFor<ValueType>) {
@@ -354,8 +323,8 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     }
 
     void print(std::ostream &os) const override {
-        os << "CSRMatrix(" << numRows << 'x' << numCols << ", "
-           << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
+        os << "CSRMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<ValueType> << ')'
+           << std::endl;
         // Note that, in general, the values within one row might not be sorted
         // by column index. Thus, the following is a little complicated.
         ValueType *oneRow = new ValueType[numCols];
@@ -386,8 +355,8 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
      * @param os The stream to print to.
      */
     void printRaw(std::ostream &os) const {
-        os << "CSRMatrix(" << numRows << 'x' << numCols << ", "
-           << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
+        os << "CSRMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<ValueType> << ')'
+           << std::endl;
         os << "maxNumNonZeros: \t" << maxNumNonZeros << std::endl;
         os << "values: \t";
         for (size_t i = 0; i < maxNumNonZeros; i++)
@@ -412,8 +381,7 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         throw std::runtime_error("CSRMatrix does not support sliceCol yet");
     }
 
-    CSRMatrix *slice(size_t rl, size_t ru, size_t cl,
-                     size_t cu) const override {
+    CSRMatrix *slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
         // TODO add boundary validation when implementing
         throw std::runtime_error("CSRMatrix does not support slice yet");
     }
@@ -462,8 +430,7 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     size_t serialize(std::vector<char> &buf) const override;
 };
 
-template <typename ValueType>
-std::ostream &operator<<(std::ostream &os, const CSRMatrix<ValueType> &obj) {
+template <typename ValueType> std::ostream &operator<<(std::ostream &os, const CSRMatrix<ValueType> &obj) {
     obj.print(os);
     return os;
 }

@@ -17,9 +17,9 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/List.h>
-#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/List.h>
 
 #include <iostream>
 
@@ -35,9 +35,7 @@
  *
  * @param arg The data object to print.
  */
-template <class DT>
-void printObj(const DT *arg, [[maybe_unused]] bool newline, bool err,
-              DCTX(ctx)) {
+template <class DT> void printObj(const DT *arg, [[maybe_unused]] bool newline, bool err, DCTX(ctx)) {
     arg->print(err ? std::cerr : std::cout);
 }
 

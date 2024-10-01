@@ -42,17 +42,14 @@ template <class DT> struct Tri {
      * @param diag Preserves (true) or zeroes (false) the diagonal
      * @param values Preserves (true) or replaces with 1s the remaining elements
      */
-    static void apply(DT *&res, const DT *arg, bool upper, bool diag,
-                      bool values, DCTX(ctx)) = delete;
+    static void apply(DT *&res, const DT *arg, bool upper, bool diag, bool values, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DT>
-void tri(DT *&res, const DT *arg, bool upper, bool diag, bool values,
-         DCTX(ctx)) {
+template <class DT> void tri(DT *&res, const DT *arg, bool upper, bool diag, bool values, DCTX(ctx)) {
     Tri<DT>::apply(res, arg, upper, diag, values, ctx);
 }
 
@@ -65,20 +62,18 @@ void tri(DT *&res, const DT *arg, bool upper, bool diag, bool values,
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Tri<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
-                      bool upper, bool diag, bool values, DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, bool upper, bool diag, bool values,
+                      DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (numRows != numCols) {
-            throw std::runtime_error("matrix must be square, but is of shape" +
-                                     std::to_string(numRows) + "x" +
+            throw std::runtime_error("matrix must be square, but is of shape" + std::to_string(numRows) + "x" +
                                      std::to_string(numCols));
         }
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             true);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, true);
 
         const VT *valuesArg = arg->getValues();
         VT *valuesRes = res->getValues();
@@ -107,21 +102,17 @@ template <typename VT> struct Tri<DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Tri<CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, bool upper,
-                      bool diag, bool values, DCTX(ctx)) {
+    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, bool upper, bool diag, bool values, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         if (numRows != numCols) {
-            throw std::runtime_error("matrix must be square, but is of shape" +
-                                     std::to_string(numRows) + "x" +
+            throw std::runtime_error("matrix must be square, but is of shape" + std::to_string(numRows) + "x" +
                                      std::to_string(numCols));
         }
         if (res == nullptr) {
-            const size_t nonZeros =
-                std::min(arg->getNumNonZeros(), numRows * (numRows + 1) / 2);
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,
-                                                           nonZeros, false);
+            const size_t nonZeros = std::min(arg->getNumNonZeros(), numRows * (numRows + 1) / 2);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, nonZeros, false);
         }
 
         size_t start = upper ? !diag : 0;
@@ -158,8 +149,7 @@ template <typename VT> struct Tri<CSRMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Tri<Matrix<VT>> {
-    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, bool upper,
-                      bool diag, bool values, DCTX(ctx)) {
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, bool upper, bool diag, bool values, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
@@ -169,8 +159,7 @@ template <typename VT> struct Tri<Matrix<VT>> {
         if (res == nullptr)
             // append sets non-appended values to zero so initialization of
             // zeros would be redundant
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
-                                                             false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
         size_t start = upper ? !diag : 0;
         size_t end = upper ? numCols : diag;

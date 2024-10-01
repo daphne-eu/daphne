@@ -32,9 +32,8 @@ int64_t now(DCTX(ctx)) {
     using clock = std::chrono::high_resolution_clock;
 
     if (clock::period::num != 1 || clock::period::den != 1000000000) {
-        throw std::runtime_error(
-            "now() expects std::chrono::high_resolution_clock to be in nano "
-            "seconds");
+        throw std::runtime_error("now() expects std::chrono::high_resolution_clock to be in nano "
+                                 "seconds");
     }
     return clock::now().time_since_epoch().count();
 }

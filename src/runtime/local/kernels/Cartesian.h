@@ -16,21 +16,17 @@
 #include <cstdint>
 
 template <typename VTCol>
-void cartesianSetValue(DenseMatrix<VTCol> *res, const DenseMatrix<VTCol> *arg,
-                       const int64_t targetRow, const int64_t fromRow,
-                       DCTX(ctx)) {
+void cartesianSetValue(DenseMatrix<VTCol> *res, const DenseMatrix<VTCol> *arg, const int64_t targetRow,
+                       const int64_t fromRow, DCTX(ctx)) {
     const VTCol argValue = arg->get(fromRow, 0);
     res->set(targetRow, 0, argValue);
 }
 
 template <typename VTCol>
-void cartesianSet(ValueTypeCode vtcType, Frame *&res, const Frame *arg,
-                  const int64_t toRow, const int64_t toCol,
+void cartesianSet(ValueTypeCode vtcType, Frame *&res, const Frame *arg, const int64_t toRow, const int64_t toCol,
                   const int64_t fromRow, const int64_t fromCol, DCTX(ctx)) {
     if (vtcType == ValueTypeUtils::codeFor<VTCol>) {
-        cartesianSetValue<VTCol>(res->getColumn<VTCol>(toCol),
-                                 arg->getColumn<VTCol>(fromCol), toRow, fromRow,
-                                 ctx);
+        cartesianSetValue<VTCol>(res->getColumn<VTCol>(toCol), arg->getColumn<VTCol>(fromCol), toRow, fromRow, ctx);
     }
 }
 
@@ -62,28 +58,21 @@ void cartesian(Frame *&res, const Frame *lhs, const Frame *rhs, DCTX(ctx)) {
     }
 
     // Creating Result Frame
-    res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema,
-                                           newlabels, false);
+    res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema, newlabels, false);
 
     for (size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++) {
         for (size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++) {
             col_idx_res = 0;
 
             for (size_t idx_c = 0; idx_c < numColLhs; idx_c++) {
-                cartesianSet<int64_t>(schema[col_idx_res], res, lhs,
-                                      row_idx_res, col_idx_res, row_idx_l,
-                                      idx_c, ctx);
-                cartesianSet<double>(schema[col_idx_res], res, lhs, row_idx_res,
-                                     col_idx_res, row_idx_l, idx_c, ctx);
+                cartesianSet<int64_t>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c, ctx);
+                cartesianSet<double>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c, ctx);
                 col_idx_res++;
             }
 
             for (size_t idx_c = 0; idx_c < numColRhs; idx_c++) {
-                cartesianSet<int64_t>(schema[col_idx_res], res, rhs,
-                                      row_idx_res, col_idx_res, row_idx_r,
-                                      idx_c, ctx);
-                cartesianSet<double>(schema[col_idx_res], res, rhs, row_idx_res,
-                                     col_idx_res, row_idx_r, idx_c, ctx);
+                cartesianSet<int64_t>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c, ctx);
+                cartesianSet<double>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c, ctx);
                 col_idx_res++;
             }
             row_idx_res++;

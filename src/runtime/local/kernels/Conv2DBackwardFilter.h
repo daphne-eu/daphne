@@ -37,13 +37,10 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct Conv2DBackwardFilter {
-    static void apply(DTRes *&dFilter, const DTArg *input, const DTArg *output,
-                      const size_t stride_h, const size_t stride_w,
-                      const size_t pad_h, const size_t pad_w,
-                      const size_t input_batch_size,
-                      const size_t input_num_channels, const size_t input_h,
-                      const size_t input_w, const size_t filter_num_filters,
-                      const size_t filter_num_channels, const size_t filter_h,
+    static void apply(DTRes *&dFilter, const DTArg *input, const DTArg *output, const size_t stride_h,
+                      const size_t stride_w, const size_t pad_h, const size_t pad_w, const size_t input_batch_size,
+                      const size_t input_num_channels, const size_t input_h, const size_t input_w,
+                      const size_t filter_num_filters, const size_t filter_num_channels, const size_t filter_h,
                       const size_t filter_w, DCTX(dctx)) = delete;
 };
 
@@ -52,19 +49,14 @@ template <class DTRes, class DTArg> struct Conv2DBackwardFilter {
 // ****************************************************************************
 
 template <class DTRes, class DTArg>
-void conv2DBackwardFilter(DTRes *&dFilter, const DTArg *input,
-                          const DTArg *output, const size_t stride_h,
-                          const size_t stride_w, const size_t pad_h,
-                          const size_t pad_w, const size_t input_batch_size,
-                          const size_t input_num_channels, const size_t input_h,
-                          const size_t input_w, const size_t filter_num_filters,
-                          const size_t filter_num_channels,
-                          const size_t filter_h, const size_t filter_w,
-                          DCTX(dctx)) {
-    Conv2DBackwardFilter<DTRes, DTArg>::apply(
-        dFilter, input, output, stride_h, stride_w, pad_h, pad_w,
-        input_batch_size, input_num_channels, input_h, input_w,
-        filter_num_filters, filter_num_channels, filter_h, filter_w, dctx);
+void conv2DBackwardFilter(DTRes *&dFilter, const DTArg *input, const DTArg *output, const size_t stride_h,
+                          const size_t stride_w, const size_t pad_h, const size_t pad_w, const size_t input_batch_size,
+                          const size_t input_num_channels, const size_t input_h, const size_t input_w,
+                          const size_t filter_num_filters, const size_t filter_num_channels, const size_t filter_h,
+                          const size_t filter_w, DCTX(dctx)) {
+    Conv2DBackwardFilter<DTRes, DTArg>::apply(dFilter, input, output, stride_h, stride_w, pad_h, pad_w,
+                                              input_batch_size, input_num_channels, input_h, input_w,
+                                              filter_num_filters, filter_num_channels, filter_h, filter_w, dctx);
 }
 
 // ****************************************************************************
@@ -76,12 +68,10 @@ void conv2DBackwardFilter(DTRes *&dFilter, const DTArg *input,
 // ----------------------------------------------------------------------------
 
 template <typename VT>
-static inline void
-GetGradientMatrix(VT *matrix, const VT *output, const size_t output_h,
-                  const size_t output_w, const size_t filter_h,
-                  const size_t filter_w, const size_t padded_img_h,
-                  const size_t padded_img_w, const size_t stride_h,
-                  const size_t stride_w, const uint32_t off) {
+static inline void GetGradientMatrix(VT *matrix, const VT *output, const size_t output_h, const size_t output_w,
+                                     const size_t filter_h, const size_t filter_w, const size_t padded_img_h,
+                                     const size_t padded_img_w, const size_t stride_h, const size_t stride_w,
+                                     const uint32_t off) {
     auto matrix_h = padded_img_h - (filter_h - 1);
     auto matrix_w = padded_img_w - (filter_w - 1);
 
@@ -96,18 +86,13 @@ GetGradientMatrix(VT *matrix, const VT *output, const size_t output_h,
         }
 }
 
-template <typename VTRes, typename VTArg>
-struct Conv2DBackwardFilter<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+template <typename VTRes, typename VTArg> struct Conv2DBackwardFilter<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
-    static void apply(DenseMatrix<VTRes> *&dFilter,
-                      const DenseMatrix<VTArg> *input,
-                      const DenseMatrix<VTArg> *output, const size_t stride_h,
-                      const size_t stride_w, const size_t pad_h,
-                      const size_t pad_w, const size_t input_batch_size,
-                      const size_t input_num_channels, const size_t input_h,
-                      const size_t input_w, const size_t filter_num_filters,
-                      const size_t filter_num_channels, const size_t filter_h,
-                      const size_t filter_w, DCTX(dctx)) {
+    static void apply(DenseMatrix<VTRes> *&dFilter, const DenseMatrix<VTArg> *input, const DenseMatrix<VTArg> *output,
+                      const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w,
+                      const size_t input_batch_size, const size_t input_num_channels, const size_t input_h,
+                      const size_t input_w, const size_t filter_num_filters, const size_t filter_num_channels,
+                      const size_t filter_h, const size_t filter_w, DCTX(dctx)) {
         auto HW = input_h * input_w;
         auto C = input_num_channels;
         auto CHW = C * HW;
@@ -133,44 +118,34 @@ struct Conv2DBackwardFilter<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         auto matrix_w = padded_img_w - (filter_w - 1);
 
         DenseMatrix<VTArg> *gradient_matrix =
-            DataObjectFactory::create<DenseMatrix<VTArg>>(
-                1, matrix_h * matrix_w, true);
+            DataObjectFactory::create<DenseMatrix<VTArg>>(1, matrix_h * matrix_w, true);
         DenseMatrix<VTArg> *padded_matrix =
-            DataObjectFactory::create<DenseMatrix<VTArg>>(
-                1, padded_img_h * padded_img_w, true);
+            DataObjectFactory::create<DenseMatrix<VTArg>>(1, padded_img_h * padded_img_w, true);
 
         if (dFilter == nullptr) {
-            dFilter = DataObjectFactory::create<DenseMatrix<VTArg>>(
-                filter_num_filters, filter_num_channels * filter_h * filter_w,
-                true);
+            dFilter = DataObjectFactory::create<DenseMatrix<VTArg>>(filter_num_filters,
+                                                                    filter_num_channels * filter_h * filter_w, true);
         }
 
         for (uint32_t f = 0; f < filter_num_filters; f++) {
             for (uint32_t c = 0; c < filter_num_channels; c++) {
                 for (uint32_t i = start; i < stop; i++) {
                     auto off_input = i * CHW + c * HW;
-                    Padding(padded_matrix->getValues(), input->getValues(),
-                            pad_h, pad_w, input_w, input_h, off_input);
+                    Padding(padded_matrix->getValues(), input->getValues(), pad_h, pad_w, input_w, input_h, off_input);
                     auto off_output = i * o_CHW + f * o_HW;
-                    GetGradientMatrix(
-                        gradient_matrix->getValues(), output->getValues(),
-                        output_h, output_w, filter_h, filter_w, padded_img_h,
-                        padded_img_w, stride_h, stride_w, off_output);
+                    GetGradientMatrix(gradient_matrix->getValues(), output->getValues(), output_h, output_w, filter_h,
+                                      filter_w, padded_img_h, padded_img_w, stride_h, stride_w, off_output);
 
                     for (uint32_t p = 0; p < filter_h; p++)
                         for (uint32_t q = 0; q < filter_w; q++)
                             for (uint32_t h = 0; h < matrix_h; h++)
                                 for (uint32_t w = 0; w < matrix_w; w++) {
-                                    auto off_filter =
-                                        f * f_CHW + c * f_HW + p * filter_h + q;
+                                    auto off_filter = f * f_CHW + c * f_HW + p * filter_h + q;
                                     auto off_matrix = h * matrix_w + w;
-                                    auto off_padded =
-                                        (p + h) * padded_img_w + q + w;
+                                    auto off_padded = (p + h) * padded_img_w + q + w;
                                     dFilter->getValues()[off_filter] =
-                                        dFilter->getValues()[off_filter] +
-                                        padded_matrix->getValues()[off_padded] *
-                                            gradient_matrix
-                                                ->getValues()[off_matrix];
+                                        dFilter->getValues()[off_filter] + padded_matrix->getValues()[off_padded] *
+                                                                               gradient_matrix->getValues()[off_matrix];
                                 }
                 }
             }

@@ -67,41 +67,36 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
     }
     // Float and Integer value type matrices have to be handled separately,
     // since arith operations are different.
-    LogicalResult
-    matchAndRewrite(daphne::AllAggSumOp op, OpAdaptor adaptor,
-                    ConversionPatternRewriter &rewriter) const override {
-        mlir::daphne::MatrixType matrixType =
-            adaptor.getArg().getType().dyn_cast<mlir::daphne::MatrixType>();
+    LogicalResult matchAndRewrite(daphne::AllAggSumOp op, OpAdaptor adaptor,
+                                  ConversionPatternRewriter &rewriter) const override {
+        mlir::daphne::MatrixType matrixType = adaptor.getArg().getType().dyn_cast<mlir::daphne::MatrixType>();
         auto loc = op->getLoc();
         auto nR = matrixType.getNumRows();
         auto nC = matrixType.getNumCols();
 
         auto matrixElementType = matrixType.getElementType();
         auto memRefType = mlir::MemRefType::get({nR, nC}, matrixElementType);
-        auto memRef = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
-            op->getLoc(), memRefType, adaptor.getArg());
+        auto memRef =
+            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(op->getLoc(), memRefType, adaptor.getArg());
 
         if (matrixElementType.isIntOrIndex()) {
-            IntegerType signless_type = rewriter.getIntegerType(
-                matrixElementType.getIntOrFloatBitWidth());
-            Value sum = rewriter.create<mlir::arith::ConstantOp>(
-                loc, signless_type, rewriter.getIntegerAttr(signless_type, 0));
+            IntegerType signless_type = rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth());
+            Value sum =
+                rewriter.create<mlir::arith::ConstantOp>(loc, signless_type, rewriter.getIntegerAttr(signless_type, 0));
 
             SmallVector<Value, 4> loopIvs;
             SmallVector<AffineForOp, 2> forOps;
-            auto outerLoop =
-                rewriter.create<AffineForOp>(loc, 0, nR, 1, ValueRange{sum});
+            auto outerLoop = rewriter.create<AffineForOp>(loc, 0, nR, 1, ValueRange{sum});
             for (Operation &nested : *outerLoop.getBody()) {
                 rewriter.eraseOp(&nested);
             }
             loopIvs.push_back(outerLoop.getInductionVar());
             // outer loop body
             rewriter.setInsertionPointToStart(outerLoop.getBody());
-            Value sum_iter = rewriter.create<mlir::arith::ConstantOp>(
-                loc, signless_type, rewriter.getIntegerAttr(signless_type, 0));
+            Value sum_iter =
+                rewriter.create<mlir::arith::ConstantOp>(loc, signless_type, rewriter.getIntegerAttr(signless_type, 0));
             // inner loop
-            auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nC, 1,
-                                                          ValueRange{sum_iter});
+            auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nC, 1, ValueRange{sum_iter});
             for (Operation &nested : *innerLoop.getBody()) {
                 rewriter.eraseOp(&nested);
             }
@@ -109,53 +104,46 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             // inner loop body
             rewriter.setInsertionPointToStart(innerLoop.getBody());
             // load value from memref
-            Value elementLoad =
-                rewriter.create<memref::LoadOp>(loc, memRef, loopIvs);
+            Value elementLoad = rewriter.create<memref::LoadOp>(loc, memRef, loopIvs);
             auto castedElement =
-                this->typeConverter->materializeSourceConversion(
-                    rewriter, loc, signless_type, ValueRange{elementLoad});
+                this->typeConverter->materializeSourceConversion(rewriter, loc, signless_type, ValueRange{elementLoad});
             // sum loop iter arg and memref value
-            mlir::Value inner_sum = rewriter.create<mlir::arith::AddIOp>(
-                loc, innerLoop.getRegionIterArgs()[0], castedElement);
+            mlir::Value inner_sum =
+                rewriter.create<mlir::arith::AddIOp>(loc, innerLoop.getRegionIterArgs()[0], castedElement);
             // yield inner loop result
             rewriter.setInsertionPointToEnd(innerLoop.getBody());
             rewriter.create<AffineYieldOp>(loc, inner_sum);
             // yield outer loop result
             rewriter.setInsertionPointToEnd(outerLoop.getBody());
-            mlir::Value outer_sum = rewriter.create<mlir::arith::AddIOp>(
-                loc, outerLoop.getRegionIterArgs()[0], innerLoop.getResult(0));
+            mlir::Value outer_sum =
+                rewriter.create<mlir::arith::AddIOp>(loc, outerLoop.getRegionIterArgs()[0], innerLoop.getResult(0));
             rewriter.create<AffineYieldOp>(loc, outer_sum);
 
             rewriter.setInsertionPointAfter(outerLoop);
             rewriter.create<daphne::DecRefOp>(loc, adaptor.getArg());
             // replace sumAll op with result of loops
-            auto castedRes = this->typeConverter->materializeTargetConversion(
-                rewriter, loc, matrixElementType,
-                ValueRange{outerLoop->getResult(0)});
+            auto castedRes = this->typeConverter->materializeTargetConversion(rewriter, loc, matrixElementType,
+                                                                              ValueRange{outerLoop->getResult(0)});
             rewriter.replaceOp(op, ValueRange{castedRes});
 
             return success();
         } else {
-            Value sum = rewriter.create<mlir::arith::ConstantOp>(
-                loc, matrixElementType,
-                rewriter.getFloatAttr(matrixElementType, 0));
+            Value sum = rewriter.create<mlir::arith::ConstantOp>(loc, matrixElementType,
+                                                                 rewriter.getFloatAttr(matrixElementType, 0));
 
             SmallVector<Value, 4> loopIvs;
             SmallVector<AffineForOp, 2> forOps;
-            auto outerLoop =
-                rewriter.create<AffineForOp>(loc, 0, nR, 1, ValueRange{sum});
+            auto outerLoop = rewriter.create<AffineForOp>(loc, 0, nR, 1, ValueRange{sum});
             for (Operation &nested : *outerLoop.getBody()) {
                 rewriter.eraseOp(&nested);
             }
             loopIvs.push_back(outerLoop.getInductionVar());
             // outer loop body
             rewriter.setInsertionPointToStart(outerLoop.getBody());
-            Value sum_iter = rewriter.create<mlir::arith::ConstantOp>(
-                loc, matrixElementType,
-                rewriter.getFloatAttr(matrixElementType, 0));
+            Value sum_iter = rewriter.create<mlir::arith::ConstantOp>(loc, matrixElementType,
+                                                                      rewriter.getFloatAttr(matrixElementType, 0));
             // inner loop
-            auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nC, 1,
-                                                          ValueRange{sum_iter});
+            auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nC, 1, ValueRange{sum_iter});
             for (Operation &nested : *innerLoop.getBody()) {
                 rewriter.eraseOp(&nested);
             }
@@ -163,18 +151,17 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             // inner loop body
             rewriter.setInsertionPointToStart(innerLoop.getBody());
             // load value from memref
-            auto elementLoad =
-                rewriter.create<memref::LoadOp>(loc, memRef, loopIvs);
+            auto elementLoad = rewriter.create<memref::LoadOp>(loc, memRef, loopIvs);
             // sum loop iter arg and memref value
-            mlir::Value inner_sum = rewriter.create<mlir::arith::AddFOp>(
-                loc, innerLoop.getRegionIterArgs()[0], elementLoad);
+            mlir::Value inner_sum =
+                rewriter.create<mlir::arith::AddFOp>(loc, innerLoop.getRegionIterArgs()[0], elementLoad);
             // yield inner loop result
             rewriter.setInsertionPointToEnd(innerLoop.getBody());
             rewriter.create<AffineYieldOp>(loc, inner_sum);
             // yield outer loop result
             rewriter.setInsertionPointToEnd(outerLoop.getBody());
-            mlir::Value outer_sum = rewriter.create<mlir::arith::AddFOp>(
-                loc, outerLoop.getRegionIterArgs()[0], innerLoop.getResult(0));
+            mlir::Value outer_sum =
+                rewriter.create<mlir::arith::AddFOp>(loc, outerLoop.getRegionIterArgs()[0], innerLoop.getResult(0));
             rewriter.create<AffineYieldOp>(loc, outer_sum);
 
             rewriter.setInsertionPointAfter(outerLoop);
@@ -196,9 +183,7 @@ namespace {
  * This rewrite may enable loop fusion of the produced affine loops by
  * running the loop fusion pass.
  */
-struct AggAllLoweringPass
-    : public mlir::PassWrapper<AggAllLoweringPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
+struct AggAllLoweringPass : public mlir::PassWrapper<AggAllLoweringPass, mlir::OperationPass<mlir::ModuleOp>> {
     explicit AggAllLoweringPass() {}
 
     StringRef getArgument() const final { return "lower-agg"; }
@@ -209,8 +194,7 @@ struct AggAllLoweringPass
     }
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                        mlir::memref::MemRefDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect>();
     }
     void runOnOperation() final;
 };

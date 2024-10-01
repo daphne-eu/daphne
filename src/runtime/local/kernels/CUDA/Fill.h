@@ -29,16 +29,14 @@ namespace CUDA {
 // ****************************************************************************
 
 template <class DTRes, typename VTArg> struct Fill {
-    static void apply(DTRes *&res, VTArg arg, size_t numRows, size_t numCols,
-                      DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, typename VTArg>
-void fill(DTRes *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+template <class DTRes, typename VTArg> void fill(DTRes *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
     Fill<DTRes, VTArg>::apply(res, arg, numRows, numCols, ctx);
 }
 
@@ -46,7 +44,6 @@ void fill(DTRes *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 template <typename VT> struct Fill<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *&res, VT arg, size_t numRows,
-                      size_t numCols, DCTX(ctx));
+    static void apply(DenseMatrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(ctx));
 };
 } // namespace CUDA

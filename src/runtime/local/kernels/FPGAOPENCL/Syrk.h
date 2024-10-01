@@ -40,8 +40,7 @@ template <class DTRes, class DTArg> struct Syrk {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg>
-void syrk(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void syrk(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     Syrk<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
@@ -54,8 +53,7 @@ void syrk(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template <> struct Syrk<DenseMatrix<float>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<float> *&res, const DenseMatrix<float> *arg,
-                      DCTX(ctx)) {
+    static void apply(DenseMatrix<float> *&res, const DenseMatrix<float> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
@@ -98,8 +96,7 @@ template <> struct Syrk<DenseMatrix<float>, DenseMatrix<float>> {
         printf("\nSyrk kernel finished!\n");
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<float>>(numCols,
-                                                                numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<float>>(numCols, numCols, false);
 
         memcpy(res->getValues(), C, num_elem_C * sizeof(float));
     }

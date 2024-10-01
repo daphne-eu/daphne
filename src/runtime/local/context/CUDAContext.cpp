@@ -51,8 +51,7 @@ void CUDAContext::init() {
 
     logger->info("Using CUDA device {}: {}\n\tAvailable mem: {} Total mem: {} "
                  "using {}% -> {}",
-                 device_id, device_properties.name, available, total,
-                 mem_usage * 100, mem_budget);
+                 device_id, device_properties.name, available, total, mem_usage * 100, mem_budget);
 
     CHECK_CUBLAS(cublasCreate(&cublas_handle));
     CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
@@ -66,8 +65,7 @@ void CUDAContext::init() {
     CHECK_CUDNN(cudnnCreateFilterDescriptor(&filter_desc));
     CHECK_CUSOLVER(cusolverDnCreate(&cusolver_handle));
 
-    CHECK_CUDART(
-        cudaStreamCreateWithFlags(&cusolver_stream, cudaStreamNonBlocking));
+    CHECK_CUDART(cudaStreamCreateWithFlags(&cusolver_stream, cudaStreamNonBlocking));
     CHECK_CUSOLVER(cusolverDnSetStream(cusolver_handle, cusolver_stream));
 
     getCUDNNWorkspace(64 * 1024 * 1024);
@@ -76,21 +74,13 @@ void CUDAContext::init() {
     //    CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));
 }
 
-template <> cudnnDataType_t CUDAContext::getCUDNNDataType<float>() const {
-    return CUDNN_DATA_FLOAT;
-}
+template <> cudnnDataType_t CUDAContext::getCUDNNDataType<float>() const { return CUDNN_DATA_FLOAT; }
 
-template <> cudnnDataType_t CUDAContext::getCUDNNDataType<double>() const {
-    return CUDNN_DATA_DOUBLE;
-}
+template <> cudnnDataType_t CUDAContext::getCUDNNDataType<double>() const { return CUDNN_DATA_DOUBLE; }
 
-template <> cudaDataType CUDAContext::getCUSparseDataType<float>() const {
-    return CUDA_R_32F;
-}
+template <> cudaDataType CUDAContext::getCUSparseDataType<float>() const { return CUDA_R_32F; }
 
-template <> cudaDataType CUDAContext::getCUSparseDataType<double>() const {
-    return CUDA_R_64F;
-}
+template <> cudaDataType CUDAContext::getCUSparseDataType<double>() const { return CUDA_R_64F; }
 
 void *CUDAContext::getCUDNNWorkspace(size_t size) {
     if (size > cudnn_workspace_size) {
@@ -98,8 +88,7 @@ void *CUDAContext::getCUDNNWorkspace(size_t size) {
         CHECK_CUDART(cudaMalloc(&cudnn_workspace, size));
         cudnn_workspace_size = size;
     } else {
-        logger->debug("Not allocating cuDNN conv workspace of size {} bytes",
-                      size);
+        logger->debug("Not allocating cuDNN conv workspace of size {} bytes", size);
     }
 
     return cudnn_workspace;
@@ -114,14 +103,12 @@ std::unique_ptr<IContext> CUDAContext::createCudaContext(int device_id) {
     CHECK_CUDART(cudaGetDeviceCount(&device_count));
 
     if (device_count < 1) {
-        ctx->logger->warn(
-            "Not creating requested CUDA context. No cuda devices available.");
+        ctx->logger->warn("Not creating requested CUDA context. No cuda devices available.");
         return nullptr;
     }
 
     if (device_id >= device_count) {
-        ctx->logger->warn("Requested device ID {} >= device count {}",
-                          device_id, device_count);
+        ctx->logger->warn("Requested device ID {} >= device count {}", device_id, device_count);
         return nullptr;
     }
 
@@ -130,13 +117,11 @@ std::unique_ptr<IContext> CUDAContext::createCudaContext(int device_id) {
     return ctx;
 }
 
-std::shared_ptr<std::byte> CUDAContext::malloc(size_t size, bool zero,
-                                               size_t &id) {
+std::shared_ptr<std::byte> CUDAContext::malloc(size_t size, bool zero, size_t &id) {
     id = alloc_count++;
     std::byte *dev_ptr;
     CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&dev_ptr), size));
-    allocations.emplace(
-        id, std::shared_ptr<std::byte>(dev_ptr, CudaDeleter<std::byte>()));
+    allocations.emplace(id, std::shared_ptr<std::byte>(dev_ptr, CudaDeleter<std::byte>()));
 
     if (zero)
         CHECK_CUDART(cudaMemset(dev_ptr, 0, size));
@@ -149,6 +134,4 @@ void CUDAContext::free(size_t id) {
     allocations.erase(id);
 }
 
-int CUDAContext::getMaxNumThreads() {
-    return device_properties.maxThreadsPerBlock;
-}
+int CUDAContext::getMaxNumThreads() { return device_properties.maxThreadsPerBlock; }

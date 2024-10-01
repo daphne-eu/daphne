@@ -32,34 +32,27 @@
 
 using namespace mlir;
 
-class InlineMapOpLowering
-    : public mlir::OpConversionPattern<mlir::daphne::MapOp> {
+class InlineMapOpLowering : public mlir::OpConversionPattern<mlir::daphne::MapOp> {
   public:
     using OpConversionPattern::OpConversionPattern;
 
-    mlir::LogicalResult
-    matchAndRewrite(mlir::daphne::MapOp op, OpAdaptor adaptor,
-                    mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult matchAndRewrite(mlir::daphne::MapOp op, OpAdaptor adaptor,
+                                        mlir::ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
 
-        mlir::daphne::MatrixType lhsMatrixType =
-            op->getOperandTypes().front().dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType lhsMatrixType = op->getOperandTypes().front().dyn_cast<mlir::daphne::MatrixType>();
         auto matrixElementType = lhsMatrixType.getElementType();
-        auto lhsMemRefType = mlir::MemRefType::get(
-            {lhsMatrixType.getNumRows(), lhsMatrixType.getNumCols()},
-            matrixElementType);
+        auto lhsMemRefType =
+            mlir::MemRefType::get({lhsMatrixType.getNumRows(), lhsMatrixType.getNumCols()}, matrixElementType);
 
         mlir::Value lhs =
-            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
-                loc, lhsMemRefType, adaptor.getArg());
+            rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc, lhsMemRefType, adaptor.getArg());
         mlir::ModuleOp module = op->getParentOfType<mlir::ModuleOp>();
-        func::FuncOp udfFuncOp =
-            module.lookupSymbol<func::FuncOp>(op.getFunc());
+        func::FuncOp udfFuncOp = module.lookupSymbol<func::FuncOp>(op.getFunc());
 
         SmallVector<Value, 4> loopIvs;
 
-        auto outerLoop =
-            rewriter.create<AffineForOp>(loc, 0, lhsMatrixType.getNumRows(), 1);
+        auto outerLoop = rewriter.create<AffineForOp>(loc, 0, lhsMatrixType.getNumRows(), 1);
         for (Operation &nested : *outerLoop.getBody()) {
             rewriter.eraseOp(&nested);
         }
@@ -67,8 +60,7 @@ class InlineMapOpLowering
 
         // outer loop body
         rewriter.setInsertionPointToStart(outerLoop.getBody());
-        auto innerLoop =
-            rewriter.create<AffineForOp>(loc, 0, lhsMatrixType.getNumCols(), 1);
+        auto innerLoop = rewriter.create<AffineForOp>(loc, 0, lhsMatrixType.getNumCols(), 1);
         for (Operation &nested : *innerLoop.getBody()) {
             rewriter.eraseOp(&nested);
         }
@@ -78,15 +70,12 @@ class InlineMapOpLowering
 
         // inner loop body
         mlir::Value lhsValue = rewriter.create<AffineLoadOp>(loc, lhs, loopIvs);
-        mlir::Value res =
-            rewriter.create<func::CallOp>(loc, udfFuncOp, ValueRange{lhsValue})
-                ->getResult(0);
+        mlir::Value res = rewriter.create<func::CallOp>(loc, udfFuncOp, ValueRange{lhsValue})->getResult(0);
         rewriter.create<AffineStoreOp>(loc, res, lhs, loopIvs);
         rewriter.create<AffineYieldOp>(loc);
 
         rewriter.setInsertionPointAfter(outerLoop);
-        mlir::Value output = convertMemRefToDenseMatrix(op->getLoc(), rewriter,
-                                                        lhs, op.getType());
+        mlir::Value output = convertMemRefToDenseMatrix(op->getLoc(), rewriter, lhs, op.getType());
         rewriter.replaceOp(op, output);
         return mlir::success();
     }
@@ -101,14 +90,11 @@ namespace {
  * This rewrite enables subsequent inlining pass to completely replace
  * the daphne::MapOp by inlining the produced CallOps from this pass.
  */
-struct MapOpLoweringPass
-    : public mlir::PassWrapper<MapOpLoweringPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
+struct MapOpLoweringPass : public mlir::PassWrapper<MapOpLoweringPass, mlir::OperationPass<mlir::ModuleOp>> {
     explicit MapOpLoweringPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                        mlir::memref::MemRefDialect,
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect,
                         mlir::daphne::DaphneDialect, mlir::func::FuncDialect>();
     }
     void runOnOperation() final;
@@ -129,8 +115,7 @@ void MapOpLoweringPass::runOnOperation() {
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
     mlir::LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
 
-    target.addLegalDialect<mlir::AffineDialect, arith::ArithDialect,
-                           memref::MemRefDialect, mlir::daphne::DaphneDialect,
+    target.addLegalDialect<mlir::AffineDialect, arith::ArithDialect, memref::MemRefDialect, mlir::daphne::DaphneDialect,
                            mlir::func::FuncDialect>();
 
     target.addIllegalOp<mlir::daphne::MapOp>();
@@ -142,6 +127,4 @@ void MapOpLoweringPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createMapOpLoweringPass() {
-    return std::make_unique<MapOpLoweringPass>();
-}
+std::unique_ptr<mlir::Pass> mlir::daphne::createMapOpLoweringPass() { return std::make_unique<MapOpLoweringPass>(); }
