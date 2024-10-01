@@ -28,14 +28,12 @@
 #define VALUE_TYPES_FRAC float, double
 
 template <class DT>
-void checkSeq(DT *&res, typename DT::VT start, typename DT::VT end,
-              typename DT::VT inc, DT *expectedMatrix) {
+void checkSeq(DT *&res, typename DT::VT start, typename DT::VT end, typename DT::VT inc, DT *expectedMatrix) {
     seq<DT>(res, start, end, inc, nullptr);
     CHECK(*res == *expectedMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-positive", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-positive", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
 
     using DT = TestType;
     DT *inputMatrix = nullptr;
@@ -53,8 +51,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-positive", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-positive", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-positive", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -71,8 +68,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-positive", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-negative", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-negative", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -89,8 +85,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-negative", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-negative", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-negative", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -107,8 +102,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-negative", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-mix", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-mix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -125,8 +119,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-mix", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-mix", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-mix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -143,8 +136,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-mix", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-floating-step-forward", TAG_KERNELS,
-                           (DATA_TYPES), (VALUE_TYPES_FRAC)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-floating-step-forward", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES_FRAC)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -168,8 +160,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-floating-step-forward", TAG_KERNELS,
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-floating-step-backward", TAG_KERNELS,
-                           (DATA_TYPES), (VALUE_TYPES_FRAC)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-floating-step-backward", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES_FRAC)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -193,8 +184,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-floating-step-backward", TAG_KERNELS,
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-step>end", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES_FRAC)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-step>end", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES_FRAC)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -210,8 +200,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-step>end", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-end is not in the sequence", TAG_KERNELS,
-                           (DATA_TYPES), (VALUE_TYPES_FRAC)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-end is not in the sequence", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES_FRAC)) {
     using DT = TestType;
     DT *inputMatrix = nullptr;
     DT *targetMatrix = nullptr;
@@ -233,8 +222,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-end is not in the sequence", TAG_KERNELS,
     DataObjectFactory::destroy(inputMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-inc-does-not-lead-to-end", TAG_KERNELS,
-                           (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-inc-does-not-lead-to-end", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
 
     DT *res = nullptr;

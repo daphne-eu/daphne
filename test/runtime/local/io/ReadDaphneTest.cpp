@@ -208,8 +208,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS", TAG_IO, (DenseMatrix), (int32_t)) {
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -230,8 +229,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -253,8 +251,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG (CSR)", TAG_IO, (CSRMatrix),
-                           (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG (CSR)", TAG_IO, (CSRMatrix), (double)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -274,8 +271,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS (CSR)", TAG_IO, (CSRMatrix),
-                           (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS (CSR)", TAG_IO, (CSRMatrix), (double)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -297,8 +293,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK (CSR)", TAG_IO, (CSRMatrix),
-                           (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK (CSR)", TAG_IO, (CSRMatrix), (double)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -322,8 +317,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -350,8 +344,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -375,8 +368,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -478,8 +470,7 @@ TEST_CASE("ReadDaphne CRS (Frame)", TAG_IO) {
 
     for (size_t r = 0; r < numRows; r++)
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<double>(c)->get(r, 0) ==
-                  m->getColumn<double>(r)->get(c, 0));
+            CHECK(m->getColumn<double>(c)->get(r, 0) == m->getColumn<double>(r)->get(c, 0));
 
     DataObjectFactory::destroy(m);
 }
@@ -502,8 +493,7 @@ TEST_CASE("ReadDaphne CRK (Frame)", TAG_IO) {
     for (size_t r = 0; r < numRows; r++) {
         CHECK(m->getColumn<double>(r)->get(r, 0) == 0);
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<double>(c)->get(r, 0) ==
-                  -m->getColumn<double>(r)->get(c, 0));
+            CHECK(m->getColumn<double>(c)->get(r, 0) == -m->getColumn<double>(r)->get(c, 0));
     }
 
     DataObjectFactory::destroy(m);
@@ -554,8 +544,7 @@ TEST_CASE("ReadDaphne AIK (Frame)", TAG_IO) {
     for (size_t r = 0; r < numRows; r++) {
         CHECK(m->getColumn<int64_t>(r)->get(r, 0) == 0);
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<int64_t>(c)->get(r, 0) ==
-                  -m->getColumn<int64_t>(r)->get(c, 0));
+            CHECK(m->getColumn<int64_t>(c)->get(r, 0) == -m->getColumn<int64_t>(r)->get(c, 0));
     }
 
     DataObjectFactory::destroy(m);
@@ -577,8 +566,7 @@ TEST_CASE("ReadDaphne AIS (Frame)", TAG_IO) {
 
     for (size_t r = 0; r < numRows; r++)
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<int64_t>(c)->get(r, 0) ==
-                  m->getColumn<int64_t>(r)->get(c, 0));
+            CHECK(m->getColumn<int64_t>(c)->get(r, 0) == m->getColumn<int64_t>(r)->get(c, 0));
 
     DataObjectFactory::destroy(m);
 }

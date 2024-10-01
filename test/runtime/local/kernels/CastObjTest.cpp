@@ -31,16 +31,14 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, single-column",
-                           TAG_KERNELS, (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, single-column", TAG_KERNELS, (DenseMatrix),
                            (double, int64_t, uint32_t)) {
     using DTRes = TestType;
     using VTRes = typename DTRes::VT;
 
     const size_t numRows = 4;
     auto c0 = genGivenVals<DenseMatrix<double>>(numRows, {0.0, 1.1, 2.2, 3.3});
-    auto c0Exp = genGivenVals<DenseMatrix<VTRes>>(
-        numRows, {VTRes(0.0), VTRes(1.1), VTRes(2.2), VTRes(3.3)});
+    auto c0Exp = genGivenVals<DenseMatrix<VTRes>>(numRows, {VTRes(0.0), VTRes(1.1), VTRes(2.2), VTRes(3.3)});
     std::vector<Structure *> cols = {c0};
     auto arg = DataObjectFactory::create<Frame>(cols, nullptr);
 
@@ -57,8 +55,7 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, single-column",
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, multi-column",
-                           TAG_KERNELS, (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, multi-column", TAG_KERNELS, (DenseMatrix),
                            (double, int64_t, uint32_t)) {
     using DTRes = TestType;
     using VTRes = typename DTRes::VT;
@@ -68,12 +65,9 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, multi-column",
     auto c0 = genGivenVals<DenseMatrix<double>>(numRows, {0.0, 1.1, 2.2, 3.3});
     auto c1 = genGivenVals<DenseMatrix<int64_t>>(numRows, {0, -10, -20, -30});
     auto c2 = genGivenVals<DenseMatrix<uint8_t>>(numRows, {0, 11, 22, 33});
-    auto c0Exp = genGivenVals<DenseMatrix<VTRes>>(
-        numRows, {VTRes(0.0), VTRes(1.1), VTRes(2.2), VTRes(3.3)});
-    auto c1Exp = genGivenVals<DenseMatrix<VTRes>>(
-        numRows, {VTRes(0), VTRes(-10), VTRes(-20), VTRes(-30)});
-    auto c2Exp = genGivenVals<DenseMatrix<VTRes>>(
-        numRows, {VTRes(0), VTRes(11), VTRes(22), VTRes(33)});
+    auto c0Exp = genGivenVals<DenseMatrix<VTRes>>(numRows, {VTRes(0.0), VTRes(1.1), VTRes(2.2), VTRes(3.3)});
+    auto c1Exp = genGivenVals<DenseMatrix<VTRes>>(numRows, {VTRes(0), VTRes(-10), VTRes(-20), VTRes(-30)});
+    auto c2Exp = genGivenVals<DenseMatrix<VTRes>>(numRows, {VTRes(0), VTRes(11), VTRes(22), VTRes(33)});
     std::vector<Structure *> cols = {c0, c1, c2};
     auto arg = DataObjectFactory::create<Frame>(cols, nullptr);
 
@@ -102,8 +96,7 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, multi-column",
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, single-column",
-                           TAG_KERNELS, (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, single-column", TAG_KERNELS, (DenseMatrix),
                            (double, int64_t, uint32_t)) {
     using DTArg = TestType;
     using VTArg = typename DTArg::VT;
@@ -127,24 +120,19 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, single-column",
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, multi-column",
-                           TAG_KERNELS, (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, multi-column", TAG_KERNELS, (DenseMatrix),
                            (double, int64_t, uint32_t)) {
     using DTArg = TestType;
     using VTArg = typename DTArg::VT;
 
     const size_t numRows = 4;
-    auto arg = genGivenVals<DenseMatrix<VTArg>>(
-        numRows, {VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3), VTArg(4.4),
-                  VTArg(5.5), VTArg(6.6), VTArg(7.7), VTArg(8.8), VTArg(9.9),
-                  VTArg(1.0), VTArg(2.0)});
+    auto arg = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3), VTArg(4.4),
+                                                          VTArg(5.5), VTArg(6.6), VTArg(7.7), VTArg(8.8), VTArg(9.9),
+                                                          VTArg(1.0), VTArg(2.0)});
 
-    auto c0 = genGivenVals<DenseMatrix<VTArg>>(
-        numRows, {VTArg(0.0), VTArg(3.3), VTArg(6.6), VTArg(9.9)});
-    auto c1 = genGivenVals<DenseMatrix<VTArg>>(
-        numRows, {VTArg(1.1), VTArg(4.4), VTArg(7.7), VTArg(1.0)});
-    auto c2 = genGivenVals<DenseMatrix<VTArg>>(
-        numRows, {VTArg(2.2), VTArg(5.5), VTArg(8.8), VTArg(2.0)});
+    auto c0 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(0.0), VTArg(3.3), VTArg(6.6), VTArg(9.9)});
+    auto c1 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(1.1), VTArg(4.4), VTArg(7.7), VTArg(1.0)});
+    auto c2 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(2.2), VTArg(5.5), VTArg(8.8), VTArg(2.0)});
     std::vector<Structure *> cols = {c0, c1, c2};
     auto exp = DataObjectFactory::create<Frame>(cols, nullptr);
 
@@ -157,22 +145,18 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, multi-column",
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame and back, multi-column",
-                           TAG_KERNELS, (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame and back, multi-column", TAG_KERNELS, (DenseMatrix),
                            (double, int64_t, uint32_t)) {
     using DT = TestType;
 
     auto m0 = genGivenVals<DT>(4, {
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                   });
     auto m1 = genGivenVals<DT>(4, {
-                                      1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                   });
     auto m2 = genGivenVals<DT>(4, {
-                                      2, 3, 1, 1, 2, 4, 1, 2, 1, 3, 1, 4,
-                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                      2, 3, 1, 1, 2, 4, 1, 2, 1, 3, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                                   });
 
     Frame *f0 = nullptr;
@@ -196,28 +180,24 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame and back, multi-column",
     DataObjectFactory::destroy(m2, f2, res2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, multi-column",
-                           TAG_KERNELS, (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, multi-column", TAG_KERNELS, (DenseMatrix),
                            (double, int64_t, uint32_t)) {
     using DTRes = TestType;
     using VTRes = typename DTRes::VT;
 
     const size_t numRows = 2;
 
-    auto arg1 =
-        genGivenVals<DenseMatrix<double>>(numRows, {3., 1., 4., 1., 5., 9.});
+    auto arg1 = genGivenVals<DenseMatrix<double>>(numRows, {3., 1., 4., 1., 5., 9.});
     DTRes *res1 = nullptr;
 
     auto arg2 = genGivenVals<DenseMatrix<int64_t>>(numRows, {3, 1, 4, 1, 5, 9});
     DTRes *res2 = nullptr;
 
-    auto arg3 =
-        genGivenVals<DenseMatrix<uint32_t>>(numRows, {3, 1, 4, 1, 5, 9});
+    auto arg3 = genGivenVals<DenseMatrix<uint32_t>>(numRows, {3, 1, 4, 1, 5, 9});
     DTRes *res3 = nullptr;
 
-    auto check123 = genGivenVals<DenseMatrix<VTRes>>(
-        numRows,
-        {VTRes(3.), VTRes(1.), VTRes(4.), VTRes(1.), VTRes(5.), VTRes(9.)});
+    auto check123 =
+        genGivenVals<DenseMatrix<VTRes>>(numRows, {VTRes(3.), VTRes(1.), VTRes(4.), VTRes(1.), VTRes(5.), VTRes(9.)});
 
     castObj<DenseMatrix<VTRes>, DenseMatrix<double>>(res1, arg1, nullptr);
     castObj<DenseMatrix<VTRes>, DenseMatrix<int64_t>>(res2, arg2, nullptr);
@@ -232,8 +212,8 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, multi-column",
     DataObjectFactory::destroy(check123);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, single dim", TAG_KERNELS,
-                           (DenseMatrix), (double, int64_t, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, single dim", TAG_KERNELS, (DenseMatrix),
+                           (double, int64_t, uint32_t)) {
     using DTRes = TestType;
     using VTRes = typename DTRes::VT;
 
@@ -249,8 +229,7 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, single dim", TAG_KERNELS,
     auto arg3 = genGivenVals<DenseMatrix<uint32_t>>(numRows, {3, 1, 4});
     DTRes *res3 = nullptr;
 
-    auto check123 = genGivenVals<DenseMatrix<VTRes>>(
-        numRows, {VTRes(3.), VTRes(1.), VTRes(4.)});
+    auto check123 = genGivenVals<DenseMatrix<VTRes>>(numRows, {VTRes(3.), VTRes(1.), VTRes(4.)});
 
     castObj<DenseMatrix<VTRes>, DenseMatrix<double>>(res1, arg1, nullptr);
     castObj<DenseMatrix<VTRes>, DenseMatrix<int64_t>>(res2, arg2, nullptr);
@@ -272,8 +251,7 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, single dim", TAG_KERNELS,
     auto arg6 = genGivenVals<DenseMatrix<uint32_t>>(numRows, {3, 1, 4});
     DTRes *res6 = nullptr;
 
-    auto check456 = genGivenVals<DenseMatrix<VTRes>>(
-        numRows, {VTRes(3.), VTRes(1.), VTRes(4.)});
+    auto check456 = genGivenVals<DenseMatrix<VTRes>>(numRows, {VTRes(3.), VTRes(1.), VTRes(4.)});
 
     castObj<DenseMatrix<VTRes>, DenseMatrix<double>>(res4, arg4, nullptr);
     castObj<DenseMatrix<VTRes>, DenseMatrix<int64_t>>(res5, arg5, nullptr);
@@ -288,8 +266,7 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, single dim", TAG_KERNELS,
     DataObjectFactory::destroy(check123, check456);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, zero dim & dim mismatch",
-                           TAG_KERNELS, (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, zero dim & dim mismatch", TAG_KERNELS, (DenseMatrix),
                            (double, int64_t, uint32_t)) {
     using DTRes = TestType;
     using VTRes = typename DTRes::VT;
@@ -298,18 +275,14 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, zero dim & dim mismatch",
     size_t numRows = 0;
 
     size_t numCols = 0;
-    auto arg1 =
-        DataObjectFactory::create<DenseMatrix<double>>(numRows, numCols, false);
+    auto arg1 = DataObjectFactory::create<DenseMatrix<double>>(numRows, numCols, false);
     DTRes *res1 = nullptr;
-    auto check1 =
-        DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+    auto check1 = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
 
     numCols = 1;
-    auto arg2 = DataObjectFactory::create<DenseMatrix<int64_t>>(numRows,
-                                                                numCols, false);
+    auto arg2 = DataObjectFactory::create<DenseMatrix<int64_t>>(numRows, numCols, false);
     DTRes *res2 = nullptr;
-    auto check2 =
-        DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+    auto check2 = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
 
     castObj<DenseMatrix<VTRes>, DenseMatrix<double>>(res1, arg1, nullptr);
     castObj<DenseMatrix<VTRes>, DenseMatrix<int64_t>>(res2, arg2, nullptr);
@@ -322,36 +295,29 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, zero dim & dim mismatch",
     DataObjectFactory::destroy(check1, check2);
 }
 
-TEMPLATE_TEST_CASE("CastObj CSRMatrix to DenseMatrix", TAG_KERNELS, double,
-                   float, int64_t) {
+TEMPLATE_TEST_CASE("CastObj CSRMatrix to DenseMatrix", TAG_KERNELS, double, float, int64_t) {
     using VT = TestType;
     using DTArg = CSRMatrix<VT>;
     using DTRes = DenseMatrix<VT>;
 
     auto m0 = genGivenVals<DTArg>(4, {
-                                         0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2,
-                                         0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto m1 = genGivenVals<DTArg>(4, {
-                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto m2 = genGivenVals<DTArg>(4, {
-                                         2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4,
-                                         0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
+                                         2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
                                      });
 
     auto d0 = genGivenVals<DTRes>(4, {
-                                         0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2,
-                                         0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto d1 = genGivenVals<DTRes>(4, {
-                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto d2 = genGivenVals<DTRes>(4, {
-                                         2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4,
-                                         0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
+                                         2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
                                      });
 
     DTRes *res0 = nullptr;
@@ -370,36 +336,29 @@ TEMPLATE_TEST_CASE("CastObj CSRMatrix to DenseMatrix", TAG_KERNELS, double,
     DataObjectFactory::destroy(m2, d2, res2);
 }
 
-TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, double,
-                   float, int64_t) {
+TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, double, float, int64_t) {
     using VT = TestType;
     using DTRes = CSRMatrix<VT>;
     using DTArg = DenseMatrix<VT>;
 
     auto m0 = genGivenVals<DTArg>(4, {
-                                         0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2,
-                                         0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto m1 = genGivenVals<DTArg>(4, {
-                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto m2 = genGivenVals<DTArg>(4, {
-                                         2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4,
-                                         0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
+                                         2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
                                      });
 
     auto d0 = genGivenVals<DTRes>(4, {
-                                         0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2,
-                                         0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto d1 = genGivenVals<DTRes>(4, {
-                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto d2 = genGivenVals<DTRes>(4, {
-                                         2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4,
-                                         0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
+                                         2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
                                      });
 
     DTRes *res0 = nullptr;

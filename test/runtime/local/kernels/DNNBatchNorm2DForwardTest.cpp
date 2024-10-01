@@ -21,18 +21,15 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 
 template <class DT>
-void checkBatchNorm2DTestForward(const DT *in, const DT *gamma, const DT *beta,
-                                 const DT *ema_mean, const DT *ema_var,
+void checkBatchNorm2DTestForward(const DT *in, const DT *gamma, const DT *beta, const DT *ema_mean, const DT *ema_var,
                                  const DT *exp, DaphneContext *dctx) {
     DT *res = nullptr;
     typename DT::VT epsilon = 1e-5;
-    BatchNorm2DTestForward<DT, DT>::apply(res, in, gamma, beta, ema_mean,
-                                          ema_var, epsilon, dctx);
+    BatchNorm2DTestForward<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("batch_norm_test_fwd", TAG_DNN, (DenseMatrix),
-                           (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("batch_norm_test_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
@@ -44,16 +41,14 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_test_fwd", TAG_DNN, (DenseMatrix),
 
     auto result = genGivenVals<DT>(1, {-3, -2, -1, 0, 1, 2, 3, 4, 5});
 
-    checkBatchNorm2DTestForward(input, gamma, beta, ema_mean, ema_var, result,
-                                dctx.get());
+    checkBatchNorm2DTestForward(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
 }
 
 template <class DT>
-void checkBatchNorm2DTrainForward(const DT *in, const DT *gamma, const DT *beta,
-                                  const DT *ema_mean, const DT *ema_var,
+void checkBatchNorm2DTrainForward(const DT *in, const DT *gamma, const DT *beta, const DT *ema_mean, const DT *ema_var,
                                   const DT *exp, DaphneContext *dctx) {
     DT *res = nullptr;
     DT *new_emaMean = nullptr;
@@ -62,38 +57,31 @@ void checkBatchNorm2DTrainForward(const DT *in, const DT *gamma, const DT *beta,
     DT *invVar = nullptr;
     typename DT::VT epsilon = 1e-5;
     typename DT::VT mu = 1;
-    BatchNorm2DTrainForward<DT, DT>::apply(res, new_emaMean, new_emaVar, Mean,
-                                           invVar, in, gamma, beta, ema_mean,
+    BatchNorm2DTrainForward<DT, DT>::apply(res, new_emaMean, new_emaVar, Mean, invVar, in, gamma, beta, ema_mean,
                                            ema_var, epsilon, mu, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("batch_norm_train_fwd", TAG_DNN, (DenseMatrix),
-                           (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("batch_norm_train_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
-    auto input = genGivenVals<DT>(
-        2, {-3, -2, -1, 0, 1, 2, 3, 4, 5, -3, -2, -1, 0, 1, 2, 3, 4, 5,
-            -3, -2, -1, 0, 1, 2, 3, 4, 5, -3, -2, -1, 0, 1, 2, 3, 4, 5,
-            -3, -2, -1, 0, 1, 2, 3, 4, 5, -3, -2, -1, 0, 1, 2, 3, 4, 5});
+    auto input =
+        genGivenVals<DT>(2, {-3, -2, -1, 0, 1, 2, 3, 4, 5, -3, -2, -1, 0, 1, 2, 3, 4, 5, -3, -2, -1, 0, 1, 2, 3, 4, 5,
+                             -3, -2, -1, 0, 1, 2, 3, 4, 5, -3, -2, -1, 0, 1, 2, 3, 4, 5, -3, -2, -1, 0, 1, 2, 3, 4, 5});
     auto gamma = genGivenVals<DT>(3, {1, 1, 1});
     auto beta = genGivenVals<DT>(3, {0, 0, 0});
     auto ema_mean = genGivenVals<DT>(3, {0, 0, 0});
     auto ema_var = genGivenVals<DT>(1, {1, 1, 1});
 
-    auto result = genGivenVals<DT>(
-        2,
-        {-1.5492, -1.1619, -0.7746, -0.3873, 0.0000,  0.3873,  0.7746,  1.1619,
-         1.5492,  -1.5492, -1.1619, -0.7746, -0.3873, 0.0000,  0.3873,  0.7746,
-         1.1619,  1.5492,  -1.5492, -1.1619, -0.7746, -0.3873, 0.0000,  0.3873,
-         0.7746,  1.1619,  1.5492,  -1.5492, -1.1619, -0.7746, -0.3873, 0.0000,
-         0.3873,  0.7746,  1.1619,  1.5492,  -1.5492, -1.1619, -0.7746, -0.3873,
-         0.0000,  0.3873,  0.7746,  1.1619,  1.5492,  -1.5492, -1.1619, -0.7746,
-         -0.3873, 0.0000,  0.3873,  0.7746,  1.1619,  1.5492});
+    auto result = genGivenVals<DT>(2, {-1.5492, -1.1619, -0.7746, -0.3873, 0.0000, 0.3873, 0.7746, 1.1619, 1.5492,
+                                       -1.5492, -1.1619, -0.7746, -0.3873, 0.0000, 0.3873, 0.7746, 1.1619, 1.5492,
+                                       -1.5492, -1.1619, -0.7746, -0.3873, 0.0000, 0.3873, 0.7746, 1.1619, 1.5492,
+                                       -1.5492, -1.1619, -0.7746, -0.3873, 0.0000, 0.3873, 0.7746, 1.1619, 1.5492,
+                                       -1.5492, -1.1619, -0.7746, -0.3873, 0.0000, 0.3873, 0.7746, 1.1619, 1.5492,
+                                       -1.5492, -1.1619, -0.7746, -0.3873, 0.0000, 0.3873, 0.7746, 1.1619, 1.5492});
 
-    checkBatchNorm2DTrainForward(input, gamma, beta, ema_mean, ema_var, result,
-                                 dctx.get());
+    checkBatchNorm2DTrainForward(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);

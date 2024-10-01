@@ -28,16 +28,13 @@
 #define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
-template <class DT>
-void checkTri(const DT *arg, const DT *exp, bool upper, bool diag,
-              bool values) {
+template <class DT> void checkTri(const DT *arg, const DT *exp, bool upper, bool diag, bool values) {
     DT *res = nullptr;
     tri<DT>(res, arg, upper, diag, values, nullptr);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("example"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("example"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
 
     auto m = genGivenVals<DT>(4, {

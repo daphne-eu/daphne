@@ -93,10 +93,8 @@ TEMPLATE_TEST_CASE("ExtractRow - Frame", TAG_KERNELS, double, int64_t,
     SECTION("selecting some, repeated") {
         numRowsExp = 8;
         sel = genGivenVals<DTSel>(numRowsExp, {3, 2, 2, 0, 1, 4, 4, 2});
-        c0Exp = genGivenVals<DT0>(numRowsExp,
-                                  {3.3, 2.2, 2.2, 0.0, 1.1, 4.4, 4.4, 2.2});
-        c1Exp = genGivenVals<DT1>(numRowsExp,
-                                  {-30, -20, -20, 0, -10, -40, -40, -20});
+        c0Exp = genGivenVals<DT0>(numRowsExp, {3.3, 2.2, 2.2, 0.0, 1.1, 4.4, 4.4, 2.2});
+        c1Exp = genGivenVals<DT1>(numRowsExp, {-30, -20, -20, 0, -10, -40, -40, -20});
         c2Exp = genGivenVals<DT2>(numRowsExp, {3, 2, 2, 0, 1, 4, 4, 2});
     }
 
@@ -126,15 +124,14 @@ TEMPLATE_TEST_CASE("ExtractRow - Frame", TAG_KERNELS, double, int64_t,
     DataObjectFactory::destroy(arg);
     DataObjectFactory::destroy(res);
 }
-TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix double naive", TAG_KERNELS,
-                           (DATA_TYPES), (uint32_t)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix double naive", TAG_KERNELS, (DATA_TYPES),
+                           (uint32_t)) { // NOLINT(cert-err58-cpp)
     using DT = typename TestType::template WithValueType<double>;
     using VT = typename TestType::VT;
     using DTSel = DenseMatrix<VT>;
 
-    auto argMatrix = genGivenVals<DT>(
-        4, {1.0, 10.0, 3.0, 7.0, 7.0, 7.0, 17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
-            7.0, 7.0,  1.0, 2.0, 3.0, 7.0, 7.0,  7.0, 7.0, 1.0, 2.0, 3.0});
+    auto argMatrix = genGivenVals<DT>(4, {1.0, 10.0, 3.0, 7.0, 7.0, 7.0, 17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
+                                          7.0, 7.0,  1.0, 2.0, 3.0, 7.0, 7.0,  7.0, 7.0, 1.0, 2.0, 3.0});
     auto selMatrix = genGivenVals<DTSel>(4, {0, 1, 2, 3});
     DT *resMatrix = nullptr;
 
@@ -143,41 +140,19 @@ TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix double naive", TAG_KERNELS,
     DataObjectFactory::destroy(argMatrix, selMatrix, resMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix double expanding", TAG_KERNELS,
-                           (DATA_TYPES), (uint32_t)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix double expanding", TAG_KERNELS, (DATA_TYPES),
+                           (uint32_t)) { // NOLINT(cert-err58-cpp)
     using DT = typename TestType::template WithValueType<double>;
     using VT = typename TestType::VT;
     using DTSel = DenseMatrix<VT>;
 
-    auto argMatrix = genGivenVals<DT>(
-        4, {1.0, 10.0, 3.0, 7.0, 7.0, 7.0, 17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
-            7.0, 7.0,  1.0, 2.0, 3.0, 7.0, 7.0,  7.0, 7.0, 1.0, 2.0, 3.0});
+    auto argMatrix = genGivenVals<DT>(4, {1.0, 10.0, 3.0, 7.0, 7.0, 7.0, 17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
+                                          7.0, 7.0,  1.0, 2.0, 3.0, 7.0, 7.0,  7.0, 7.0, 1.0, 2.0, 3.0});
     auto selMatrix = genGivenVals<DTSel>(8, {0, 1, 2, 3, 0, 1, 2, 3});
-    auto expMatrix = genGivenVals<DT>(
-        8, {1.0, 10.0, 3.0, 7.0, 7.0, 7.0, 17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
-            7.0, 7.0,  1.0, 2.0, 3.0, 7.0, 7.0,  7.0, 7.0, 1.0, 2.0, 3.0,
-            1.0, 10.0, 3.0, 7.0, 7.0, 7.0, 17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
-            7.0, 7.0,  1.0, 2.0, 3.0, 7.0, 7.0,  7.0, 7.0, 1.0, 2.0, 3.0});
-    DT *resMatrix = nullptr;
-
-    extractRow<DT, DT, VT>(resMatrix, argMatrix, selMatrix, nullptr);
-    CHECK(*resMatrix == *expMatrix);
-    DataObjectFactory::destroy(argMatrix, selMatrix, expMatrix, resMatrix);
-}
-
-TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix int unordered", TAG_KERNELS,
-                           (DATA_TYPES), (uint32_t)) { // NOLINT(cert-err58-cpp)
-    using DT = typename TestType::template WithValueType<int64_t>;
-    using VT = typename TestType::VT;
-    using DTSel = DenseMatrix<VT>;
-
-    auto argMatrix =
-        genGivenVals<DT>(4, {1, 10, 3, 7, 7, 7, 17, 1, 2, 3, 7, 7,
-                             7, 7,  1, 2, 3, 7, 7,  7, 7, 1, 2, 3});
-    auto selMatrix = genGivenVals<DTSel>(4, {2, 3, 0, 1});
     auto expMatrix =
-        genGivenVals<DT>(4, {7, 7,  1, 2, 3, 7, 7,  7, 7, 1, 2, 3,
-                             1, 10, 3, 7, 7, 7, 17, 1, 2, 3, 7, 7});
+        genGivenVals<DT>(8, {1.0, 10.0, 3.0, 7.0, 7.0, 7.0, 17.0, 1.0, 2.0, 3.0,  7.0, 7.0, 7.0, 7.0, 1.0,  2.0,
+                             3.0, 7.0,  7.0, 7.0, 7.0, 1.0, 2.0,  3.0, 1.0, 10.0, 3.0, 7.0, 7.0, 7.0, 17.0, 1.0,
+                             2.0, 3.0,  7.0, 7.0, 7.0, 7.0, 1.0,  2.0, 3.0, 7.0,  7.0, 7.0, 7.0, 1.0, 2.0,  3.0});
     DT *resMatrix = nullptr;
 
     extractRow<DT, DT, VT>(resMatrix, argMatrix, selMatrix, nullptr);
@@ -185,31 +160,39 @@ TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix int unordered", TAG_KERNELS,
     DataObjectFactory::destroy(argMatrix, selMatrix, expMatrix, resMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(
-    "ExtractRow - Matrix int repeated with initialized resMatrix", TAG_KERNELS,
-    (DATA_TYPES), (uint32_t)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix int unordered", TAG_KERNELS, (DATA_TYPES),
+                           (uint32_t)) { // NOLINT(cert-err58-cpp)
     using DT = typename TestType::template WithValueType<int64_t>;
     using VT = typename TestType::VT;
     using DTSel = DenseMatrix<VT>;
 
-    auto argMatrix =
-        genGivenVals<DT>(4, {1, 10, 3, 7, 7, 7, 17, 1, 2, 3, 7, 7,
-                             7, 7,  1, 2, 3, 7, 7,  7, 7, 1, 2, 3});
-    auto selMatrix = genGivenVals<DTSel>(4, {1, 1, 1, 1});
-    auto *expMatrix =
-        genGivenVals<DT>(4, {17, 1, 2, 3, 7, 7, 17, 1, 2, 3, 7, 7,
-                             17, 1, 2, 3, 7, 7, 17, 1, 2, 3, 7, 7});
-    auto *resMatrix =
-        genGivenVals<DT>(4, {7, 0,  0, 2,  3,  7, 7,  7, 7, 1, 2, 3,
-                             1, 10, 3, -7, -7, 7, 17, 1, 2, 3, 7, 7});
+    auto argMatrix = genGivenVals<DT>(4, {1, 10, 3, 7, 7, 7, 17, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3});
+    auto selMatrix = genGivenVals<DTSel>(4, {2, 3, 0, 1});
+    auto expMatrix = genGivenVals<DT>(4, {7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 1, 10, 3, 7, 7, 7, 17, 1, 2, 3, 7, 7});
+    DT *resMatrix = nullptr;
 
     extractRow<DT, DT, VT>(resMatrix, argMatrix, selMatrix, nullptr);
     CHECK(*resMatrix == *expMatrix);
     DataObjectFactory::destroy(argMatrix, selMatrix, expMatrix, resMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix boundary checking", TAG_KERNELS,
-                           (DATA_TYPES), (int32_t, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix int repeated with initialized resMatrix", TAG_KERNELS, (DATA_TYPES),
+                           (uint32_t)) { // NOLINT(cert-err58-cpp)
+    using DT = typename TestType::template WithValueType<int64_t>;
+    using VT = typename TestType::VT;
+    using DTSel = DenseMatrix<VT>;
+
+    auto argMatrix = genGivenVals<DT>(4, {1, 10, 3, 7, 7, 7, 17, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3});
+    auto selMatrix = genGivenVals<DTSel>(4, {1, 1, 1, 1});
+    auto *expMatrix = genGivenVals<DT>(4, {17, 1, 2, 3, 7, 7, 17, 1, 2, 3, 7, 7, 17, 1, 2, 3, 7, 7, 17, 1, 2, 3, 7, 7});
+    auto *resMatrix = genGivenVals<DT>(4, {7, 0, 0, 2, 3, 7, 7, 7, 7, 1, 2, 3, 1, 10, 3, -7, -7, 7, 17, 1, 2, 3, 7, 7});
+
+    extractRow<DT, DT, VT>(resMatrix, argMatrix, selMatrix, nullptr);
+    CHECK(*resMatrix == *expMatrix);
+    DataObjectFactory::destroy(argMatrix, selMatrix, expMatrix, resMatrix);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix boundary checking", TAG_KERNELS, (DATA_TYPES), (int32_t, double)) {
     using DT = TestType;
     using VT = typename DT::VT;
     using DTSel = DenseMatrix<VT>;
@@ -219,21 +202,14 @@ TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix boundary checking", TAG_KERNELS,
     DTSel *selMatrix = nullptr;
     DT *resMatrix = nullptr;
 
-    SECTION("sel out of bounds - negative") {
-        selMatrix = genGivenVals<DTSel>(3, {-1, 2, 2});
-    }
-    SECTION("sel out of bounds - too high") {
-        selMatrix = genGivenVals<DTSel>(3, {0, 2, 3});
-    }
+    SECTION("sel out of bounds - negative") { selMatrix = genGivenVals<DTSel>(3, {-1, 2, 2}); }
+    SECTION("sel out of bounds - too high") { selMatrix = genGivenVals<DTSel>(3, {0, 2, 3}); }
 
-    REQUIRE_THROWS_AS(
-        (extractRow<DT, DT, VT>(resMatrix, argMatrix, selMatrix, nullptr)),
-        std::out_of_range);
+    REQUIRE_THROWS_AS((extractRow<DT, DT, VT>(resMatrix, argMatrix, selMatrix, nullptr)), std::out_of_range);
     DataObjectFactory::destroy(argMatrix, selMatrix, resMatrix);
 }
 
-TEMPLATE_TEST_CASE("ExtractRow - Frame boundary checking", TAG_KERNELS, int32_t,
-                   double) {
+TEMPLATE_TEST_CASE("ExtractRow - Frame boundary checking", TAG_KERNELS, int32_t, double) {
     using VTSel = TestType;
     using DTSel = DenseMatrix<VTSel>;
 
@@ -266,8 +242,6 @@ TEMPLATE_TEST_CASE("ExtractRow - Frame boundary checking", TAG_KERNELS, int32_t,
                                            });
     }
 
-    REQUIRE_THROWS_AS(
-        (extractRow<Frame, Frame, VTSel>(res, arg, selMatrix, nullptr)),
-        std::out_of_range);
+    REQUIRE_THROWS_AS((extractRow<Frame, Frame, VTSel>(res, arg, selMatrix, nullptr)), std::out_of_range);
     DataObjectFactory::destroy(arg, selMatrix, res);
 }

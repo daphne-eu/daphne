@@ -35,18 +35,15 @@ TEST_CASE("Distributed runtime tests using gRPC", TAG_DISTRIBUTED) {
     auto addr2 = "0.0.0.0:50052";
     // Redirect worker output to null
     int nullFd = open("/dev/null", O_WRONLY);
-    auto pid1 = runProgramInBackground(nullFd, nullFd, "bin/DistributedWorker",
-                                       "DistributedWorker", addr1);
-    auto pid2 = runProgramInBackground(nullFd, nullFd, "bin/DistributedWorker",
-                                       "DistributedWorker", addr2);
+    auto pid1 = runProgramInBackground(nullFd, nullFd, "bin/DistributedWorker", "DistributedWorker", addr1);
+    auto pid2 = runProgramInBackground(nullFd, nullFd, "bin/DistributedWorker", "DistributedWorker", addr2);
     CHECK(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
 
     SECTION("Execution of scripts using distributed runtime (gRPC)") {
         // TODO Make these script individual DYNAMIC_SECTIONs.
         for (auto i = 1u; i <= 4; ++i) {
-            auto filename =
-                dirPath + "distributed_" + std::to_string(i) + ".daphne";
+            auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
 
             std::stringstream outLocal;
             std::stringstream errLocal;
@@ -59,10 +56,8 @@ TEST_CASE("Distributed runtime tests using gRPC", TAG_DISTRIBUTED) {
             std::stringstream outDist;
             std::stringstream errDist;
             setenv(envVar, distWorkerStr.c_str(), 1);
-            status = runDaphne(outDist, errDist,
-                               std::string("--distributed").c_str(),
-                               std::string("--dist_backend=sync-gRPC").c_str(),
-                               filename.c_str());
+            status = runDaphne(outDist, errDist, std::string("--distributed").c_str(),
+                               std::string("--dist_backend=sync-gRPC").c_str(), filename.c_str());
             unsetenv(envVar);
             CHECK(errDist.str() == "");
             REQUIRE(status == StatusCode::SUCCESS);
@@ -85,10 +80,9 @@ TEST_CASE("Distributed runtime tests using gRPC", TAG_DISTRIBUTED) {
         std::stringstream outDist;
         std::stringstream errDist;
         setenv(envVar, distWorkerStr.c_str(), 1);
-        status = runDaphne(
-            outDist, errDist, std::string("--max-distr-chunk-size=100").c_str(),
-            std::string("--distributed").c_str(),
-            std::string("--dist_backend=sync-gRPC").c_str(), filename.c_str());
+        status = runDaphne(outDist, errDist, std::string("--max-distr-chunk-size=100").c_str(),
+                           std::string("--distributed").c_str(), std::string("--dist_backend=sync-gRPC").c_str(),
+                           filename.c_str());
         unsetenv(envVar);
         CHECK(errDist.str() == "");
         REQUIRE(status == StatusCode::SUCCESS);
@@ -129,8 +123,7 @@ TEST_CASE("Distributed runtime tests using MPI", TAG_DISTRIBUTED) {
         // TODO Make these script individual DYNAMIC_SECTIONs.
 
         for (auto i = 1u; i <= 4; ++i) {
-            auto filename =
-                dirPath + "distributed_" + std::to_string(i) + ".daphne";
+            auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
 
             std::stringstream outLocal;
             std::stringstream errLocal;
@@ -141,10 +134,8 @@ TEST_CASE("Distributed runtime tests using MPI", TAG_DISTRIBUTED) {
 
             std::stringstream outDist;
             std::stringstream errDist;
-            status =
-                runProgram(outDist, errDist, "mpirun", "--allow-run-as-root",
-                           "-np", "4", "bin/daphne", "--distributed",
-                           "--dist_backend=MPI", filename.c_str());
+            status = runProgram(outDist, errDist, "mpirun", "--allow-run-as-root", "-np", "4", "bin/daphne",
+                                "--distributed", "--dist_backend=MPI", filename.c_str());
 
             CHECK(errDist.str() == "");
             REQUIRE(status == StatusCode::SUCCESS);
@@ -165,10 +156,8 @@ TEST_CASE("Distributed runtime tests using MPI", TAG_DISTRIBUTED) {
 
         std::stringstream outDist;
         std::stringstream errDist;
-        status =
-            runProgram(outDist, errDist, "mpirun", "--allow-run-as-root", "-np",
-                       "4", "bin/daphne", "--distributed", "--dist_backend=MPI",
-                       "--max-distr-chunk-size=100", filename.c_str());
+        status = runProgram(outDist, errDist, "mpirun", "--allow-run-as-root", "-np", "4", "bin/daphne",
+                            "--distributed", "--dist_backend=MPI", "--max-distr-chunk-size=100", filename.c_str());
         CHECK(errDist.str() == "");
         REQUIRE(status == StatusCode::SUCCESS);
 

@@ -29,8 +29,7 @@
 #define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
-TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
 
     using DT = TestType;
     using VT = typename DT::VT;
@@ -60,8 +59,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DATA_TYPES),
         std::generate_n(it, numElements / 100, std::rand);
 
         auto matZerosAtStart = genGivenVals<DT>(100, v);
-        approxResult =
-            numDistinctApprox(matZerosAtStart, 64, 1234567890, nullptr);
+        approxResult = numDistinctApprox(matZerosAtStart, 64, 1234567890, nullptr);
         expectedNumDistinct = 100;
     }
 
@@ -71,8 +69,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DATA_TYPES),
         v[0] = VT(1);
         auto twoDistinctValsMat = genGivenVals<DT>(100, v);
 
-        approxResult =
-            numDistinctApprox(twoDistinctValsMat, 64, 1234567890, nullptr);
+        approxResult = numDistinctApprox(twoDistinctValsMat, 64, 1234567890, nullptr);
         expectedNumDistinct = 2;
     }
 
@@ -81,8 +78,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DATA_TYPES),
     CHECK(Approx(approxResult).epsilon(1e-1) == expectedNumDistinct);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS,
-                           (DenseMatrix), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
 
     using DT = TestType;
     using VT = typename DT::VT;
@@ -99,26 +95,22 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS,
     std::generate_n(v.begin(), numElements, std::rand);
     auto mat10000 = genGivenVals<DT>(numRows, v);
 
-    SECTION(
-        "numDistinctApprox for Sub-DenseMatrix full matrix - sanity check") {
-        auto fullSubMat =
-            DataObjectFactory::create<DT>(mat10000, 0, numRows, 0, numCols);
+    SECTION("numDistinctApprox for Sub-DenseMatrix full matrix - sanity check") {
+        auto fullSubMat = DataObjectFactory::create<DT>(mat10000, 0, numRows, 0, numCols);
 
         approxResult = numDistinctApprox(fullSubMat, 64, 1234567890, nullptr);
         expectedNumDistinct = numElements;
     }
 
     SECTION("numDistinctApprox for Sub-DenseMatrix") {
-        auto subMat = DataObjectFactory::create<DT>(mat10000, 0, numRows / 100,
-                                                    0, numCols);
+        auto subMat = DataObjectFactory::create<DT>(mat10000, 0, numRows / 100, 0, numCols);
 
         approxResult = numDistinctApprox(subMat, 64, 1234567890, nullptr);
         expectedNumDistinct = numElements / 100;
     }
 
     SECTION("numDistinctApprox for Sub-DenseMatrix #distinct elements < K") {
-        auto smallSubMat = DataObjectFactory::create<DT>(
-            mat10000, 0, numRows / 100, 0, numCols / 10);
+        auto smallSubMat = DataObjectFactory::create<DT>(mat10000, 0, numRows / 100, 0, numCols / 10);
 
         approxResult = numDistinctApprox(smallSubMat, 64, 1234567890, nullptr);
         expectedNumDistinct = numElements / 1000;
@@ -129,8 +121,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS,
     CHECK(Approx(approxResult).epsilon(1e-1) == expectedNumDistinct);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS,
-                           (CSRMatrix), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
 
     using DT = TestType;
     using VT = typename DT::VT;
@@ -160,8 +151,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS,
     }
 
     SECTION("numDistinctApprox for Sub-CSRMatrix #distinct elements < K") {
-        auto smallSubMat =
-            DataObjectFactory::create<DT>(mat10000, 0, numRows / 100);
+        auto smallSubMat = DataObjectFactory::create<DT>(mat10000, 0, numRows / 100);
 
         approxResult = numDistinctApprox(smallSubMat, 128, 1234567890, nullptr);
         expectedNumDistinct = numElements / 100;

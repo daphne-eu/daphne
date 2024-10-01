@@ -31,8 +31,7 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
-TEMPLATE_PRODUCT_TEST_CASE("Reverse", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Reverse", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
 
     DT *arg = nullptr;

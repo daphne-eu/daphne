@@ -30,8 +30,7 @@
 #include <cstdint>
 
 template <class DTRes, class DTDict, class DTArg>
-void checkRecode(const DTArg *arg, bool orderPreserving, const DTRes *expRes,
-                 const DTDict *expDict) {
+void checkRecode(const DTArg *arg, bool orderPreserving, const DTRes *expRes, const DTDict *expDict) {
     DTRes *res = nullptr;
     DTDict *dict = nullptr;
     recode<DTRes, DTDict, DTArg>(res, dict, arg, orderPreserving, nullptr);
@@ -40,38 +39,29 @@ void checkRecode(const DTArg *arg, bool orderPreserving, const DTRes *expRes,
     DataObjectFactory::destroy(res, dict);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Recode", TAG_KERNELS, (DenseMatrix, Matrix),
-                           (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Recode", TAG_KERNELS, (DenseMatrix, Matrix), (double, uint32_t)) {
     using DTArg = TestType;
     using VTArg = typename DTArg::VT;
     using DTRes = typename DTArg::template WithValueType<int64_t>;
     using DTEmptyArg =
-        typename std::conditional<std::is_same<DTArg, Matrix<VTArg>>::value,
-                                  DenseMatrix<VTArg>, DTArg>::type;
+        typename std::conditional<std::is_same<DTArg, Matrix<VTArg>>::value, DenseMatrix<VTArg>, DTArg>::type;
     using DTEmptyRes =
-        typename std::conditional<std::is_same<DTArg, Matrix<VTArg>>::value,
-                                  DenseMatrix<int64_t>, DTRes>::type;
+        typename std::conditional<std::is_same<DTArg, Matrix<VTArg>>::value, DenseMatrix<int64_t>, DTRes>::type;
 
     DTArg *arg = nullptr;
     DTRes *expRes = nullptr;
     DTArg *expDict = nullptr;
 
     SECTION("empty arg, non-order-preserving recoding") {
-        arg = static_cast<DTArg *>(
-            DataObjectFactory::create<DTEmptyArg>(0, 1, false));
-        expRes = static_cast<DTRes *>(
-            DataObjectFactory::create<DTEmptyRes>(0, 1, false));
-        expDict = static_cast<DTArg *>(
-            DataObjectFactory::create<DTEmptyArg>(0, 1, false));
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmptyArg>(0, 1, false));
+        expRes = static_cast<DTRes *>(DataObjectFactory::create<DTEmptyRes>(0, 1, false));
+        expDict = static_cast<DTArg *>(DataObjectFactory::create<DTEmptyArg>(0, 1, false));
         checkRecode(arg, false, expRes, expDict);
     }
     SECTION("empty arg, order-preserving recoding") {
-        arg = static_cast<DTArg *>(
-            DataObjectFactory::create<DTEmptyArg>(0, 1, false));
-        expRes = static_cast<DTRes *>(
-            DataObjectFactory::create<DTEmptyRes>(0, 1, false));
-        expDict = static_cast<DTArg *>(
-            DataObjectFactory::create<DTEmptyArg>(0, 1, false));
+        arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmptyArg>(0, 1, false));
+        expRes = static_cast<DTRes *>(DataObjectFactory::create<DTEmptyRes>(0, 1, false));
+        expDict = static_cast<DTArg *>(DataObjectFactory::create<DTEmptyArg>(0, 1, false));
         checkRecode(arg, true, expRes, expDict);
     }
     SECTION("non-empty arg, non-order-preserving recoding") {

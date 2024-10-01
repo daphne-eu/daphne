@@ -35,8 +35,7 @@ template <class DT> void checkTranspose(const DT *arg, const DT *exp) {
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
 
     DT *m = nullptr;
@@ -73,15 +72,14 @@ TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DATA_TYPES),
                                  });
     }
     SECTION("sparse matrix") {
-        m = genGivenVals<DT>(5, {
-                                    0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0,
-                                    0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 6, 0,
-                                });
-        mt =
-            genGivenVals<DT>(6, {
-                                    0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0,
-                                    0, 0, 0, 0, 0, 0, 0, 4, 0, 6, 0, 0, 0, 0, 0,
-                                });
+        m = genGivenVals<DT>(
+            5, {
+                   0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 6, 0,
+               });
+        mt = genGivenVals<DT>(
+            6, {
+                   0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 6, 0, 0, 0, 0, 0,
+               });
     }
     SECTION("empty matrix") {
         m = genGivenVals<DT>(3, {

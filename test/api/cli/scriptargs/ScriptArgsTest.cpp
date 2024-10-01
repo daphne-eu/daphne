@@ -28,11 +28,9 @@ const std::string dirPath = "test/api/cli/scriptargs/";
 TEST_CASE("Print single script argument", TAG_SCRIPTARGS) {
     const std::string scriptPath = dirPath + "printSingleArg.daphne";
     compareDaphneToStr("123\n", scriptPath.c_str(), "--args", "foo=123");
-    compareDaphneToStr("-123.45\n", scriptPath.c_str(), "--args",
-                       "foo=-123.45");
+    compareDaphneToStr("-123.45\n", scriptPath.c_str(), "--args", "foo=-123.45");
     compareDaphneToStr("1\n", scriptPath.c_str(), "--args", "foo=true");
-    compareDaphneToStr("hello world\n", scriptPath.c_str(), "--args",
-                       "foo=\"hello world\"");
+    compareDaphneToStr("hello world\n", scriptPath.c_str(), "--args", "foo=\"hello world\"");
     compareDaphneToStr("nan\n", scriptPath.c_str(), "--args", "foo=nan");
     compareDaphneToStr("inf\n", scriptPath.c_str(), "--args", "foo=inf");
     compareDaphneToStr("-inf\n", scriptPath.c_str(), "--args", "foo=-inf");
@@ -48,8 +46,7 @@ TEST_CASE("Missing script argument", TAG_SCRIPTARGS) {
     // No script arguments provided.
     checkDaphneStatusCode(StatusCode::PARSER_ERROR, scriptPath.c_str());
     // Script arguments provided, but not the required one.
-    checkDaphneStatusCode(StatusCode::PARSER_ERROR, scriptPath.c_str(),
-                          "--args", "bar=123");
+    checkDaphneStatusCode(StatusCode::PARSER_ERROR, scriptPath.c_str(), "--args", "bar=123");
 }
 
 TEST_CASE("Superfluous script argument", TAG_SCRIPTARGS) {
@@ -59,14 +56,12 @@ TEST_CASE("Superfluous script argument", TAG_SCRIPTARGS) {
     // the user.
     // Passing superfluous script arguments, that are not actually used by the
     // script is okay.
-    checkDaphneStatusCode(StatusCode::SUCCESS, scriptPath.c_str(), "--args",
-                          "foo=123,bar=456");
+    checkDaphneStatusCode(StatusCode::SUCCESS, scriptPath.c_str(), "--args", "foo=123,bar=456");
 }
 
 TEST_CASE("Duplicate script argument") {
     const std::string scriptPath = dirPath + "printSingleArg.daphne";
-    checkDaphneStatusCode(StatusCode::PARSER_ERROR, scriptPath.c_str(),
-                          "--args", "foo=123,foo=456");
+    checkDaphneStatusCode(StatusCode::PARSER_ERROR, scriptPath.c_str(), "--args", "foo=123,foo=456");
 }
 
 TEST_CASE("Ways of specifying script arguments", TAG_SCRIPTARGS) {
@@ -76,18 +71,9 @@ TEST_CASE("Ways of specifying script arguments", TAG_SCRIPTARGS) {
     const std::string scriptPath = dirPath + "printMultipleArgs.daphne";
 
     int status;
-    SECTION("only after script file") {
-        status =
-            runDaphne(out, err, scriptPath.c_str(), "a=1", "b=2", "c=3", "d=4");
-    }
-    SECTION("only via --args") {
-        status = runDaphne(out, err, "--args", "a=1,b=2,c=3,d=4",
-                           scriptPath.c_str());
-    }
-    SECTION("mixed") {
-        status = runDaphne(out, err, "--args", "a=1,b=2", scriptPath.c_str(),
-                           "c=3", "d=4");
-    }
+    SECTION("only after script file") { status = runDaphne(out, err, scriptPath.c_str(), "a=1", "b=2", "c=3", "d=4"); }
+    SECTION("only via --args") { status = runDaphne(out, err, "--args", "a=1,b=2,c=3,d=4", scriptPath.c_str()); }
+    SECTION("mixed") { status = runDaphne(out, err, "--args", "a=1,b=2", scriptPath.c_str(), "c=3", "d=4"); }
 
     // Don't REQUIRE, such that out and err are also printed in case of a test
     // failure. Don't use empty() on err, such that err is printed on failure.
@@ -96,8 +82,7 @@ TEST_CASE("Ways of specifying script arguments", TAG_SCRIPTARGS) {
     CHECK(err.str() == "");
 }
 
-TEST_CASE("Don't support general expressions as script arguments",
-          TAG_SCRIPTARGS) {
+TEST_CASE("Don't support general expressions as script arguments", TAG_SCRIPTARGS) {
     const std::string scriptPath = dirPath + "printSingleArg.daphne";
     checkDaphneFails(scriptPath.c_str(), "--args", "foo=10+10");
     checkDaphneFails(scriptPath.c_str(), "--args", "foo=sin(1.23)");

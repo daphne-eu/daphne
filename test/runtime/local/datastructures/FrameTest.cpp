@@ -34,12 +34,10 @@ TEST_CASE("Frame allocates enough space", TAG_DATASTRUCTURES) {
     // crashing.
 
     const size_t numRows = 10000;
-    const ValueTypeCode schema[] = {ValueTypeCode::SI8, ValueTypeCode::UI32,
-                                    ValueTypeCode::F64};
+    const ValueTypeCode schema[] = {ValueTypeCode::SI8, ValueTypeCode::UI32, ValueTypeCode::F64};
     const size_t numCols = sizeof(schema) / sizeof(ValueTypeCode);
 
-    Frame *f = DataObjectFactory::create<Frame>(numRows, numCols, schema,
-                                                nullptr, false);
+    Frame *f = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
 
     int8_t *col0 = f->getColumn<int8_t>(0)->getValues();
     uint32_t *col1 = f->getColumn<uint32_t>(1)->getValues();
@@ -57,16 +55,13 @@ TEST_CASE("Frame allocates enough space", TAG_DATASTRUCTURES) {
 
 TEST_CASE("Frame sub-frame works properly", TAG_DATASTRUCTURES) {
     const size_t numRowsOrig = 10;
-    const ValueTypeCode schemaOrig[] = {ValueTypeCode::SI8, ValueTypeCode::UI32,
-                                        ValueTypeCode::F64};
+    const ValueTypeCode schemaOrig[] = {ValueTypeCode::SI8, ValueTypeCode::UI32, ValueTypeCode::F64};
     const size_t numColsOrig = sizeof(schemaOrig) / sizeof(ValueTypeCode);
 
-    Frame *fOrig = DataObjectFactory::create<Frame>(numRowsOrig, numColsOrig,
-                                                    schemaOrig, nullptr, true);
+    Frame *fOrig = DataObjectFactory::create<Frame>(numRowsOrig, numColsOrig, schemaOrig, nullptr, true);
     const size_t colIdxsSub[] = {2, 0};
     const size_t numColsSub = sizeof(colIdxsSub) / sizeof(size_t);
-    Frame *fSub =
-        DataObjectFactory::create<Frame>(fOrig, 3, 5, numColsSub, colIdxsSub);
+    Frame *fSub = DataObjectFactory::create<Frame>(fOrig, 3, 5, numColsSub, colIdxsSub);
 
     // Sub-frame dimensions are as expected.
     CHECK(fSub->getNumRows() == 2);
@@ -140,33 +135,27 @@ TEST_CASE("Frame columns can be accessed by label", TAG_DATASTRUCTURES) {
 }
 
 TEST_CASE("Frame cannot provide column for unknown label", TAG_DATASTRUCTURES) {
-    ValueTypeCode schema[] = {ValueTypeCode::SI64, ValueTypeCode::F64,
-                              ValueTypeCode::UI8};
+    ValueTypeCode schema[] = {ValueTypeCode::SI64, ValueTypeCode::F64, ValueTypeCode::UI8};
     auto f = DataObjectFactory::create<Frame>(4, 3, schema, nullptr, false);
     CHECK_THROWS(f->getColumn<double>("foo"));
     DataObjectFactory::destroy(f);
 }
 
 TEST_CASE("Frame column labels must be unique", TAG_DATASTRUCTURES) {
-    ValueTypeCode schema[] = {ValueTypeCode::SI64, ValueTypeCode::F64,
-                              ValueTypeCode::UI8};
+    ValueTypeCode schema[] = {ValueTypeCode::SI64, ValueTypeCode::F64, ValueTypeCode::UI8};
     const std::string labels[] = {"foo", "bar", "foo"};
     CHECK_THROWS(DataObjectFactory::create<Frame>(4, 3, schema, labels, false));
 }
 
-TEST_CASE("Frame sub-frame for empty source frame works properly",
-          TAG_DATASTRUCTURES) {
+TEST_CASE("Frame sub-frame for empty source frame works properly", TAG_DATASTRUCTURES) {
     const size_t numRowsOrig = 0;
-    const ValueTypeCode schemaOrig[] = {ValueTypeCode::SI8, ValueTypeCode::UI32,
-                                        ValueTypeCode::F64};
+    const ValueTypeCode schemaOrig[] = {ValueTypeCode::SI8, ValueTypeCode::UI32, ValueTypeCode::F64};
     const size_t numColsOrig = sizeof(schemaOrig) / sizeof(ValueTypeCode);
 
-    Frame *fOrig = DataObjectFactory::create<Frame>(numRowsOrig, numColsOrig,
-                                                    schemaOrig, nullptr, true);
+    Frame *fOrig = DataObjectFactory::create<Frame>(numRowsOrig, numColsOrig, schemaOrig, nullptr, true);
     const size_t colIdxsSub[] = {2, 0};
     const size_t numColsSub = sizeof(colIdxsSub) / sizeof(size_t);
-    Frame *fSub =
-        DataObjectFactory::create<Frame>(fOrig, 0, 0, numColsSub, colIdxsSub);
+    Frame *fSub = DataObjectFactory::create<Frame>(fOrig, 0, 0, numColsSub, colIdxsSub);
 
     // Sub-frame dimensions are as expected.
     CHECK(fSub->getNumRows() == 0);

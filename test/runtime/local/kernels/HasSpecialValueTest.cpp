@@ -26,62 +26,50 @@
 
 #define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS,
-                           (DATA_TYPES), (uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS, (DATA_TYPES), (uint32_t)) {
 
     using DT = TestType;
 
-    auto specialMat =
-        genGivenVals<DT>(4, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 2, 3, 4, 5, 1});
+    auto specialMat = genGivenVals<DT>(4, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 2, 3, 4, 5, 1});
 
     auto nonSpecialMat = genGivenVals<DT>(3, {0, 0, 3, 4, 5, 6, 7, 8, 9});
 
     SECTION("hasSpecialValue check if test function is applied correctly.") {
         CHECK(hasSpecialValue(specialMat, typename DT::VT(1), nullptr));
-        CHECK_FALSE(
-            hasSpecialValue(nonSpecialMat, typename DT::VT(1), nullptr));
+        CHECK_FALSE(hasSpecialValue(nonSpecialMat, typename DT::VT(1), nullptr));
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - DenseMatrix-Submatrix.",
-                           TAG_KERNELS, DenseMatrix, (uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - DenseMatrix-Submatrix.", TAG_KERNELS, DenseMatrix, (uint32_t)) {
 
     using DT = TestType;
 
-    auto specialMat =
-        genGivenVals<DT>(4, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 2, 3, 4, 5, 1});
+    auto specialMat = genGivenVals<DT>(4, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 2, 3, 4, 5, 1});
 
-    auto subNonSpecialMat = DataObjectFactory::create<DT>(
-        specialMat, 1, specialMat->getNumRows() - 1, 1,
-        specialMat->getNumCols() - 1);
+    auto subNonSpecialMat =
+        DataObjectFactory::create<DT>(specialMat, 1, specialMat->getNumRows() - 1, 1, specialMat->getNumCols() - 1);
 
     SECTION("hasSpecialValue for Sub-DenseMatrix") {
         CHECK(hasSpecialValue(specialMat, typename DT::VT(1), nullptr));
-        CHECK_FALSE(
-            hasSpecialValue(subNonSpecialMat, typename DT::VT(1), nullptr));
+        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, typename DT::VT(1), nullptr));
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - CSRMatrix-Submatrix.",
-                           TAG_KERNELS, CSRMatrix, (uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - CSRMatrix-Submatrix.", TAG_KERNELS, CSRMatrix, (uint32_t)) {
 
     using DT = TestType;
 
-    auto specialMat =
-        genGivenVals<DT>(4, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 2, 3, 4, 5, 1});
+    auto specialMat = genGivenVals<DT>(4, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 2, 3, 4, 5, 1});
 
-    auto subNonSpecialMat = DataObjectFactory::create<DT>(
-        specialMat, 1, specialMat->getNumRows() - 2);
+    auto subNonSpecialMat = DataObjectFactory::create<DT>(specialMat, 1, specialMat->getNumRows() - 2);
 
     SECTION("hasSpecialValue for Sub-CSRMatrix") {
         CHECK(hasSpecialValue(specialMat, typename DT::VT(1), nullptr));
-        CHECK_FALSE(
-            hasSpecialValue(subNonSpecialMat, typename DT::VT(1), nullptr));
+        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, typename DT::VT(1), nullptr));
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - floating point", TAG_KERNELS,
-                           (DATA_TYPES), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - floating point", TAG_KERNELS, (DATA_TYPES), (double)) {
 
     using DT = TestType;
 

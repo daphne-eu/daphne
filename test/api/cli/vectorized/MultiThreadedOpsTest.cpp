@@ -28,18 +28,17 @@ auto dirPath = "test/api/cli/vectorized/"sv;
 
 // TODO: check if `vectorizedPipeline` is used and compare vectorization with no
 // vectorization instead of file
-#define MAKE_TEST_CASE(name, suffix, param)                                    \
-    TEST_CASE(std::string(name) + std::string(suffix), TAG_OPERATIONS) {       \
-        std::string prefix(dirPath);                                           \
-        prefix += (name);                                                      \
-        compareDaphneToRef(prefix + ".txt", prefix + ".daphne", (param));      \
+#define MAKE_TEST_CASE(name, suffix, param)                                                                            \
+    TEST_CASE(std::string(name) + std::string(suffix), TAG_OPERATIONS) {                                               \
+        std::string prefix(dirPath);                                                                                   \
+        prefix += (name);                                                                                              \
+        compareDaphneToRef(prefix + ".txt", prefix + ".daphne", (param));                                              \
     }
-#define MAKE_TEST_CASE_SPARSE(name)                                            \
-    TEST_CASE(name, TAG_OPERATIONS) {                                          \
-        std::string prefix(dirPath);                                           \
-        prefix += (name);                                                      \
-        compareDaphneToRef(prefix + ".txt", prefix + ".daphne",                \
-                           "--select-matrix-representations", "--vec");        \
+#define MAKE_TEST_CASE_SPARSE(name)                                                                                    \
+    TEST_CASE(name, TAG_OPERATIONS) {                                                                                  \
+        std::string prefix(dirPath);                                                                                   \
+        prefix += (name);                                                                                              \
+        compareDaphneToRef(prefix + ".txt", prefix + ".daphne", "--select-matrix-representations", "--vec");           \
     }
 
 MAKE_TEST_CASE("runMatMult", "", "--vec")

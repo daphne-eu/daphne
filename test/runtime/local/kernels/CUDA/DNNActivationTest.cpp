@@ -19,15 +19,13 @@
 #include "runtime/local/datagen/GenGivenVals.h"
 #include "runtime/local/kernels/CUDA/Activation.h"
 
-template <class OP, class DT>
-void check(const DT *in, const DT *exp, DaphneContext *dctx) {
+template <class OP, class DT> void check(const DT *in, const DT *exp, DaphneContext *dctx) {
     DT *res = nullptr;
     CUDA::NN::Activation::Forward<OP, DT, DT>::apply(res, in, dctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Activation::ReLU::Forward", TAG_DNN,
-                           (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Activation::ReLU::Forward", TAG_DNN, (DenseMatrix),
                            (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 

@@ -28,8 +28,7 @@
 
 #include <vector>
 
-template <class DT>
-void checkSolve(const DT *lhs, const DT *rhs, const DT *exp, DCTX(dctx)) {
+template <class DT> void checkSolve(const DT *lhs, const DT *rhs, const DT *exp, DCTX(dctx)) {
     DT *res = nullptr;
     solve<DT, DT, DT>(res, lhs, rhs, dctx);
     // instead of CHECK(*res == * exp), we use the below approximate comparison
@@ -40,13 +39,11 @@ void checkSolve(const DT *lhs, const DT *rhs, const DT *exp, DCTX(dctx)) {
     CHECK(checkEqApprox(res, exp, 1e-6, nullptr));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix),
-                           (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix), (float, double)) {
     using DT = TestType;
     auto dctx = setupContextAndLogger();
 
-    auto X = genGivenVals<DT>(
-        7, {1, 4, 5, 3, 7, 1, 2, 3, 5, 9, 8, 1, 1, 2, 3, 5, 1, 9, 2, 3, 1});
+    auto X = genGivenVals<DT>(7, {1, 4, 5, 3, 7, 1, 2, 3, 5, 9, 8, 1, 1, 2, 3, 5, 1, 9, 2, 3, 1});
     auto w = genGivenVals<DT>(3, {
                                      1,
                                      2,

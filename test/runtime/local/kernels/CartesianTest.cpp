@@ -65,14 +65,10 @@ TEST_CASE("Cartesian", TAG_KERNELS) {
     CHECK(res->getLabels()[4] == "e");
 
     auto resC0Exp = genGivenVals<DenseMatrix<int64_t>>(6, {1, 1, 2, 2, 3, 3});
-    auto resC1Exp = genGivenVals<DenseMatrix<double>>(
-        6, {11.0, 11.0, 22.0, 22.0, 33.0, 33.0});
-    auto resC2Exp =
-        genGivenVals<DenseMatrix<int64_t>>(6, {100, 101, 100, 101, 100, 101});
-    auto resC3Exp =
-        genGivenVals<DenseMatrix<int64_t>>(6, {-10, -15, -10, -15, -10, -15});
-    auto resC4Exp =
-        genGivenVals<DenseMatrix<double>>(6, {0.1, 0.2, 0.1, 0.2, 0.1, 0.2});
+    auto resC1Exp = genGivenVals<DenseMatrix<double>>(6, {11.0, 11.0, 22.0, 22.0, 33.0, 33.0});
+    auto resC2Exp = genGivenVals<DenseMatrix<int64_t>>(6, {100, 101, 100, 101, 100, 101});
+    auto resC3Exp = genGivenVals<DenseMatrix<int64_t>>(6, {-10, -15, -10, -15, -10, -15});
+    auto resC4Exp = genGivenVals<DenseMatrix<double>>(6, {0.1, 0.2, 0.1, 0.2, 0.1, 0.2});
 
     CHECK(*(res->getColumn<int64_t>(0)) == *resC0Exp);
     CHECK(*(res->getColumn<double>(1)) == *resC1Exp);

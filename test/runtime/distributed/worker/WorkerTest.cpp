@@ -30,8 +30,7 @@
 
 const std::string dirPath = "test/runtime/distributed/worker/";
 
-TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test",
-                           TAG_DISTRIBUTED, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED, (DenseMatrix), (double)) {
     auto dctx = setupContextAndLogger();
     user_config.resolveLibDir();
     using DT = TestType;
@@ -54,24 +53,23 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test",
     }
 
     WHEN("Sending simple random generation task") {
-        std::string task(
-            "func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
-            "() -> !daphne.Matrix<?x?xf64> {\n"
-            "    %3 = \"daphne.constant\"() {value = 2 : si64} : () -> si64\n"
-            "    %4 = \"daphne.cast\"(%3) : (si64) -> index\n"
-            "    %5 = \"daphne.constant\"() {value = 3 : si64} : () -> si64\n"
-            "    %6 = \"daphne.cast\"(%5) : (si64) -> index\n"
-            "    %7 = \"daphne.constant\"() {value = 1.000000e+02 : f64} : () "
-            "-> f64\n"
-            "    %8 = \"daphne.constant\"() {value = 2.000000e+02 : f64} : () "
-            "-> f64\n"
-            "    %9 = \"daphne.constant\"() {value = 1.000000e+00 : f64} : () "
-            "-> f64\n"
-            "    %10 = \"daphne.constant\"() {value = -1 : si64} : () -> si64\n"
-            "    %11 = \"daphne.randMatrix\"(%4, %6, %7, %8, %9, %10) : "
-            "(index, index, f64, f64, f64, si64) -> !daphne.Matrix<?x?xf64>"
-            "    \"daphne.return\"(%11) : (!daphne.Matrix<?x?xf64>) -> ()\n"
-            "  }");
+        std::string task("func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
+                         "() -> !daphne.Matrix<?x?xf64> {\n"
+                         "    %3 = \"daphne.constant\"() {value = 2 : si64} : () -> si64\n"
+                         "    %4 = \"daphne.cast\"(%3) : (si64) -> index\n"
+                         "    %5 = \"daphne.constant\"() {value = 3 : si64} : () -> si64\n"
+                         "    %6 = \"daphne.cast\"(%5) : (si64) -> index\n"
+                         "    %7 = \"daphne.constant\"() {value = 1.000000e+02 : f64} : () "
+                         "-> f64\n"
+                         "    %8 = \"daphne.constant\"() {value = 2.000000e+02 : f64} : () "
+                         "-> f64\n"
+                         "    %9 = \"daphne.constant\"() {value = 1.000000e+00 : f64} : () "
+                         "-> f64\n"
+                         "    %10 = \"daphne.constant\"() {value = -1 : si64} : () -> si64\n"
+                         "    %11 = \"daphne.randMatrix\"(%4, %6, %7, %8, %9, %10) : "
+                         "(index, index, f64, f64, f64, si64) -> !daphne.Matrix<?x?xf64>"
+                         "    \"daphne.return\"(%11) : (!daphne.Matrix<?x?xf64>) -> ()\n"
+                         "  }");
 
         std::vector<WorkerImpl::StoredInfo> inputs, outputs;
         auto status = workerImpl.Compute(&outputs, inputs, task);
@@ -85,13 +83,12 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test",
     WHEN("Sending a task with a read on the worker") {
         std::vector<WorkerImpl::StoredInfo> inputs, outputs;
         inputs.push_back(WorkerImpl::StoredInfo({dirPath + "mat.csv", 2, 4}));
-        std::string task(
-            "func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
-            "(%mat: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
-            "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, "
-            "!daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-            "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
-            "}");
+        std::string task("func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
+                         "(%mat: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
+                         "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, "
+                         "!daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
+                         "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
+                         "}");
 
         auto status = workerImpl.Compute(&outputs, inputs, task);
 
@@ -109,13 +106,12 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test",
         size_t cols = 4;
         inputs.push_back(WorkerImpl::StoredInfo({identification, rows, cols}));
 
-        std::string task(
-            "func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
-            "(%mat: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
-            "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, "
-            "!daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-            "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
-            "}");
+        std::string task("func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
+                         "(%mat: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
+                         "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, "
+                         "!daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
+                         "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
+                         "}");
 
         auto status = workerImpl.Compute(&outputs, inputs, task);
 
@@ -137,8 +133,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test",
             readCsv(matOrig, identification.c_str(), rows, cols, delim);
 
             DT *matOrigTimes2 = nullptr;
-            EwBinaryMat<DT, DT, DT>::apply(BinaryOpCode::ADD, matOrigTimes2,
-                                           matOrig, matOrig, nullptr);
+            EwBinaryMat<DT, DT, DT>::apply(BinaryOpCode::ADD, matOrigTimes2, matOrig, matOrig, nullptr);
 
             // TODO: epsilon check once it is no longer ensured the same kernel
             // will be used

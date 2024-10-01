@@ -51,8 +51,7 @@ using namespace mlir::OpTrait;
  */
 template <class, class> struct is_same_template : std::false_type {};
 template <template <class> class Trait, class ConcreteOp1, class ConcreteOp2>
-struct is_same_template<Trait<ConcreteOp1>, Trait<ConcreteOp2>>
-    : std::true_type {};
+struct is_same_template<Trait<ConcreteOp1>, Trait<ConcreteOp2>> : std::true_type {};
 
 /**
  * @brief Mocks an `mlir::Value`, such that we can use its interface in unit
@@ -76,15 +75,12 @@ class ValueMock {
  * @brief Mocks an `mlir::Operation`, such that we can use its interface in
  * unit tests without fully wiring a real operation.
  */
-template <template <class> class DataTypeTrait,
-          template <class> class ValueTypeTrait>
-class OperationMock {
+template <template <class> class DataTypeTrait, template <class> class ValueTypeTrait> class OperationMock {
     MLIRContext *context;
     std::vector<Type> operandTypes;
 
   public:
-    OperationMock(MLIRContext *context, std::vector<Type> operandTypes)
-        : context(context), operandTypes(operandTypes) {
+    OperationMock(MLIRContext *context, std::vector<Type> operandTypes) : context(context), operandTypes(operandTypes) {
         //
     }
 
@@ -98,32 +94,27 @@ class OperationMock {
 
     std::vector<Type> getOperandTypes() const { return operandTypes; }
 
-    ValueMock getOperand(unsigned idx) const {
-        return ValueMock(operandTypes[idx]);
-    }
+    ValueMock getOperand(unsigned idx) const { return ValueMock(operandTypes[idx]); }
 };
 
 // ****************************************************************************
 // Macros simplifying test case definitions
 // ****************************************************************************
 
-#define MAKE_CASE(DataTypeTrait, ValueTypeTrait, operandTypes, expectedType)   \
-    {                                                                          \
-        OperationMock<DataTypeTrait, ValueTypeTrait> op(&ctx, operandTypes);   \
-        CHECK(inferTypeByTraits(&op) == expectedType);                         \
+#define MAKE_CASE(DataTypeTrait, ValueTypeTrait, operandTypes, expectedType)                                           \
+    {                                                                                                                  \
+        OperationMock<DataTypeTrait, ValueTypeTrait> op(&ctx, operandTypes);                                           \
+        CHECK(inferTypeByTraits(&op) == expectedType);                                                                 \
     }
 
-#define MAKE_CASE_COMMUTATIVE(DataTypeTrait, ValueTypeTrait, operandType0,     \
-                              operandType1, expectedType)                      \
-    MAKE_CASE(DataTypeTrait, ValueTypeTrait,                                   \
-              ONE({operandType0, operandType1}), expectedType)                 \
-    MAKE_CASE(DataTypeTrait, ValueTypeTrait,                                   \
-              ONE({operandType1, operandType0}), expectedType)
+#define MAKE_CASE_COMMUTATIVE(DataTypeTrait, ValueTypeTrait, operandType0, operandType1, expectedType)                 \
+    MAKE_CASE(DataTypeTrait, ValueTypeTrait, ONE({operandType0, operandType1}), expectedType)                          \
+    MAKE_CASE(DataTypeTrait, ValueTypeTrait, ONE({operandType1, operandType0}), expectedType)
 
-#define MAKE_CASE_THROWS(DataTypeTrait, ValueTypeTrait, operandTypes)          \
-    {                                                                          \
-        OperationMock<DataTypeTrait, ValueTypeTrait> op(&ctx, operandTypes);   \
-        CHECK_THROWS(inferTypeByTraits(&op));                                  \
+#define MAKE_CASE_THROWS(DataTypeTrait, ValueTypeTrait, operandTypes)                                                  \
+    {                                                                                                                  \
+        OperationMock<DataTypeTrait, ValueTypeTrait> op(&ctx, operandTypes);                                           \
+        CHECK_THROWS(inferTypeByTraits(&op));                                                                          \
     }
 
 // TODO Make this a general util.
@@ -142,9 +133,7 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     // TODO Can we have variadic args, such that we don't need {} at call-sites?
     // Utility function for creating a frame type with the specified column
     // types.
-    auto frm = [&ctx](std::vector<Type> columnTypes) {
-        return daphne::FrameType::get(&ctx, columnTypes);
-    };
+    auto frm = [&ctx](std::vector<Type> columnTypes) { return daphne::FrameType::get(&ctx, columnTypes); };
 
     // A few scalar types for convenient use below.
     [[maybe_unused]] Type u = daphne::UnknownType::get(&ctx);
@@ -161,26 +150,16 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
 
     // A few matrix types for convenient use below.
     [[maybe_unused]] daphne::MatrixType matu = daphne::MatrixType::get(&ctx, u);
-    [[maybe_unused]] daphne::MatrixType matstr =
-        daphne::MatrixType::get(&ctx, str);
-    [[maybe_unused]] daphne::MatrixType matf64 =
-        daphne::MatrixType::get(&ctx, f64);
-    [[maybe_unused]] daphne::MatrixType matf32 =
-        daphne::MatrixType::get(&ctx, f32);
-    [[maybe_unused]] daphne::MatrixType matui64 =
-        daphne::MatrixType::get(&ctx, ui64);
-    [[maybe_unused]] daphne::MatrixType matui32 =
-        daphne::MatrixType::get(&ctx, ui32);
-    [[maybe_unused]] daphne::MatrixType matui8 =
-        daphne::MatrixType::get(&ctx, ui8);
-    [[maybe_unused]] daphne::MatrixType matsi64 =
-        daphne::MatrixType::get(&ctx, si64);
-    [[maybe_unused]] daphne::MatrixType matsi32 =
-        daphne::MatrixType::get(&ctx, si32);
-    [[maybe_unused]] daphne::MatrixType matsi8 =
-        daphne::MatrixType::get(&ctx, si8);
-    [[maybe_unused]] daphne::MatrixType matbl =
-        daphne::MatrixType::get(&ctx, bl);
+    [[maybe_unused]] daphne::MatrixType matstr = daphne::MatrixType::get(&ctx, str);
+    [[maybe_unused]] daphne::MatrixType matf64 = daphne::MatrixType::get(&ctx, f64);
+    [[maybe_unused]] daphne::MatrixType matf32 = daphne::MatrixType::get(&ctx, f32);
+    [[maybe_unused]] daphne::MatrixType matui64 = daphne::MatrixType::get(&ctx, ui64);
+    [[maybe_unused]] daphne::MatrixType matui32 = daphne::MatrixType::get(&ctx, ui32);
+    [[maybe_unused]] daphne::MatrixType matui8 = daphne::MatrixType::get(&ctx, ui8);
+    [[maybe_unused]] daphne::MatrixType matsi64 = daphne::MatrixType::get(&ctx, si64);
+    [[maybe_unused]] daphne::MatrixType matsi32 = daphne::MatrixType::get(&ctx, si32);
+    [[maybe_unused]] daphne::MatrixType matsi8 = daphne::MatrixType::get(&ctx, si8);
+    [[maybe_unused]] daphne::MatrixType matbl = daphne::MatrixType::get(&ctx, bl);
 
     // A few frame types for convenient use below.
     [[maybe_unused]] Type frmf64 = frm({f64});
@@ -293,14 +272,12 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     MAKE_CASE_COMMUTATIVE(DTT, VTT, matu, matf64, matu)
     MAKE_CASE_COMMUTATIVE(DTT, VTT, matu, matstr, matu)
     // frame
-    MAKE_CASE_COMMUTATIVE(DTT, VTT, frm({ui8, f64, u, si64}),
-                          frm({si32, f32, f64, str}), frm({si32, f64, u, str}))
+    MAKE_CASE_COMMUTATIVE(DTT, VTT, frm({ui8, f64, u, si64}), frm({si32, f32, f64, str}), frm({si32, f64, u, str}))
     // multiple args, mixed data types, mixed value types
     MAKE_CASE(DTT, VTT, ONE({si64, matf32, frmf64, u}), u)
     MAKE_CASE(DTT, VTT, ONE({matf32, f64, si32}), matf64)
     MAKE_CASE(DTT, VTT, ONE({si32, matu, str}), matu)
-    MAKE_CASE(DTT, VTT, ONE({matf32, frm({ui8, u, str}), f64}),
-              frm({f64, u, str}))
+    MAKE_CASE(DTT, VTT, ONE({matf32, frm({ui8, u, str}), f64}), frm({f64, u, str}))
     MAKE_CASE(DTT, VTT, ONE({str, matu, frm({f64, str})}), frm({u, u}))
     // frames with different number of columns -> not allowed
     MAKE_CASE_THROWS(DTT, VTT, ONE({frmf64, frm({f32, si64})}))
@@ -347,8 +324,7 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     // unknown stays unknown
     MAKE_CASE(DTT, VTT, {matu}, matu)
     // frame
-    MAKE_CASE(DTT, VTT, {frm({bl, ui8, si32, f32, f64, str, u})},
-              frm({f64, f64, f64, f32, f64, f64, u}))
+    MAKE_CASE(DTT, VTT, {frm({bl, ui8, si32, f32, f64, str, u})}, frm({f64, f64, f64, f32, f64, f64, u}))
     // multiple args
     // scalar
     MAKE_CASE(DTT, VTT, ONE({ui8, si32}), f64)
@@ -363,8 +339,7 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     MAKE_CASE(DTT, VTT, ONE({matsi32, matf32, matstr}), matf64)
     MAKE_CASE(DTT, VTT, ONE({matsi32, matf32, matu}), matu)
     // frame
-    MAKE_CASE(DTT, VTT, ONE({frm({ui8, f32, str}), frm({si32, si8, u})}),
-              frm({f64, f32, u}))
+    MAKE_CASE(DTT, VTT, ONE({frm({ui8, f32, str}), frm({si32, si8, u})}), frm({f64, f32, u}))
     // mixed
     MAKE_CASE(DTT, VTT, ONE({matf32, si32}), matf32)
     MAKE_CASE(DTT, VTT, ONE({matsi32, si64}), matf64)
@@ -411,9 +386,8 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     MAKE_CASE(DTT, VTT, {matu}, matu)
     // frame
     MAKE_CASE(DTT, VTT, {frm({bl, ui8, si32, f32, f64, str, u})},
-              frm({bl, ui8, si32, ui64, ui64, ui64,
-                   u})) // TODO Is this what we want regarding bool?
-                        // multiple args
+              frm({bl, ui8, si32, ui64, ui64, ui64, u})) // TODO Is this what we want regarding bool?
+                                                         // multiple args
     // scalar
     MAKE_CASE(DTT, VTT, ONE({ui8, si32}), si32)
     MAKE_CASE(DTT, VTT, ONE({f32, f64}), ui64)
@@ -427,8 +401,7 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     MAKE_CASE(DTT, VTT, ONE({matsi32, matf32, matstr}), matui64)
     MAKE_CASE(DTT, VTT, ONE({matsi32, matf32, matu}), matu)
     // frame
-    MAKE_CASE(DTT, VTT, ONE({frm({ui8, f32, str}), frm({si32, si8, u})}),
-              frm({si32, ui64, u}))
+    MAKE_CASE(DTT, VTT, ONE({frm({ui8, f32, str}), frm({si32, si8, u})}), frm({si32, ui64, u}))
     // mixed
     MAKE_CASE(DTT, VTT, ONE({matf32, si32}), matui64)
     MAKE_CASE(DTT, VTT, ONE({matsi32, si64}), matsi64)
@@ -450,8 +423,7 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     MAKE_CASE(DTT, VTT, ONE({matf32, matf64}), matf64)
     MAKE_CASE(DTT, VTT, ONE({matf32, matu}), matu)
     MAKE_CASE(DTT, VTT, ONE({frm({f32}), frm({f64})}), frm({f32, f64}))
-    MAKE_CASE(DTT, VTT, ONE({frm({f32, u, si64}), frm({f64, f32})}),
-              frm({f32, u, si64, f64, f32}))
+    MAKE_CASE(DTT, VTT, ONE({frm({f32, u, si64}), frm({f64, f32})}), frm({f32, u, si64, f64, f32}))
     // same mixed type, mixed value types
     MAKE_CASE(DTT, VTT, ONE({matf32, f64}), matf64)
     MAKE_CASE(DTT, VTT, ONE({f32, frm({f64, si64})}), frm({f32, f64, si64}))
@@ -462,10 +434,8 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     //                ONE({matf32, frm({f64, si64})}),
     //                frm({u})
     //        )
-    MAKE_CASE(DTT, VTT, ONE({matf32.withShape(-1, 3), frm({f64, si64})}),
-              frm({f32, f32, f32, f64, si64}))
-    MAKE_CASE(DTT, VTT, ONE({frm({f64, si64}), matf32.withShape(-1, 3)}),
-              frm({f64, si64, f32, f32, f32}))
+    MAKE_CASE(DTT, VTT, ONE({matf32.withShape(-1, 3), frm({f64, si64})}), frm({f32, f32, f32, f64, si64}))
+    MAKE_CASE(DTT, VTT, ONE({frm({f64, si64}), matf32.withShape(-1, 3)}), frm({f64, si64, f32, f32, f32}))
     // more than two args -> additional args shouldn't impact the value type
     // (maybe we change this later) (same cases as above, just more args)
     // same data type, mixed value types
@@ -473,14 +443,11 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     MAKE_CASE(DTT, VTT, ONE({f32, u, str}), u)
     MAKE_CASE(DTT, VTT, ONE({matf32, matf64, matstr}), matf64)
     MAKE_CASE(DTT, VTT, ONE({matf32, matu, matstr}), matu)
-    MAKE_CASE(DTT, VTT, ONE({frm({f32}), frm({f64}), frm({str})}),
-              frm({f32, f64}))
-    MAKE_CASE(DTT, VTT, ONE({frm({f32, u, si64}), frm({f64, f32}), frm({str})}),
-              frm({f32, u, si64, f64, f32}))
+    MAKE_CASE(DTT, VTT, ONE({frm({f32}), frm({f64}), frm({str})}), frm({f32, f64}))
+    MAKE_CASE(DTT, VTT, ONE({frm({f32, u, si64}), frm({f64, f32}), frm({str})}), frm({f32, u, si64, f64, f32}))
     // same mixed type, mixed value types
     MAKE_CASE(DTT, VTT, ONE({matf32, f64, matstr}), matf64)
-    MAKE_CASE(DTT, VTT, ONE({f32, frm({f64, si64}), frm({str})}),
-              frm({f32, f64, si64}))
+    MAKE_CASE(DTT, VTT, ONE({f32, frm({f64, si64}), frm({str})}), frm({f32, f64, si64}))
     // TODO How to properly represent this case (see #421)?
     //        MAKE_CASE(
     //                DTT, VTT,
@@ -488,10 +455,8 @@ TEST_CASE("TypeInferenceTraits", TAG_INFERENCE) {
     //                ONE({matf32, frm({f64, si64}), frm({str})}),
     //                frm({u})
     //        )
-    MAKE_CASE(DTT, VTT, ONE({matf32.withShape(-1, 3), frm({f64, si64}), str}),
-              frm({f32, f32, f32, f64, si64}))
-    MAKE_CASE(DTT, VTT, ONE({frm({f64, si64}), matf32.withShape(-1, 3), str}),
-              frm({f64, si64, f32, f32, f32}))
+    MAKE_CASE(DTT, VTT, ONE({matf32.withShape(-1, 3), frm({f64, si64}), str}), frm({f32, f32, f32, f64, si64}))
+    MAKE_CASE(DTT, VTT, ONE({frm({f64, si64}), matf32.withShape(-1, 3), str}), frm({f64, si64, f32, f32, f32}))
 #undef DTT
 #undef VTT
 

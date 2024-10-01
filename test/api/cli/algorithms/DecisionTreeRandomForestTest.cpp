@@ -37,19 +37,15 @@ const std::string DATASET_DIR = "test/data/";
 const std::string WINE_DATA = DATASET_DIR + "wine/winequality-red-white.csv";
 // const std::string EEG_DATA = DATASET_DIR + "EEG.csv";
 
-void runDecisionTree(int testNr, const std::string &dataFilePath, double minAcc,
-                     int dt, double maxV) {
+void runDecisionTree(int testNr, const std::string &dataFilePath, double minAcc, int dt, double maxV) {
     const std::string scriptFileName =
-        ("test/api/cli/algorithms/decisionTreeRealData" +
-         std::to_string(testNr)) +
-        ".daphne";
+        ("test/api/cli/algorithms/decisionTreeRealData" + std::to_string(testNr)) + ".daphne";
     const std::string argData = "data=\"" + dataFilePath + "\"";
     const std::string argDt = "dt=" + std::to_string(dt);
     const std::string argMaxV = "maxV=" + std::to_string(maxV);
     std::stringstream out;
     std::stringstream err;
-    int status = runDaphne(out, err, scriptFileName.c_str(), argData.c_str(),
-                           argDt.c_str(), argMaxV.c_str());
+    int status = runDaphne(out, err, scriptFileName.c_str(), argData.c_str(), argDt.c_str(), argMaxV.c_str());
     CHECK(status == StatusCode::SUCCESS);
     double acc = std::stod(out.str());
     CHECK(acc >= minAcc);
@@ -84,23 +80,15 @@ void runDecisionTree(int testNr, const std::string &dataFilePath, double minAcc,
 //     randomness runDecisionTree(1, TITANIC_DATA, 0.793, 9, 0.6);
 // }
 
-TEST_CASE("decisionTree_Wine_MaxV1", TAG_ALGORITHMS) {
-    runDecisionTree(2, WINE_DATA, 0.989, 1, 1.0);
-}
+TEST_CASE("decisionTree_Wine_MaxV1", TAG_ALGORITHMS) { runDecisionTree(2, WINE_DATA, 0.989, 1, 1.0); }
 
 // Added in DAPHNE (wasn't present in SystemDS).
-TEST_CASE("decisionTree_Wine_MaxV05", TAG_ALGORITHMS) {
-    runDecisionTree(2, WINE_DATA, 0.988, 1, 0.5);
-}
+TEST_CASE("decisionTree_Wine_MaxV05", TAG_ALGORITHMS) { runDecisionTree(2, WINE_DATA, 0.988, 1, 0.5); }
 
-TEST_CASE("randomForestWine_MaxV1", TAG_ALGORITHMS) {
-    runDecisionTree(2, WINE_DATA, 0.989, 2, 1.0);
-}
+TEST_CASE("randomForestWine_MaxV1", TAG_ALGORITHMS) { runDecisionTree(2, WINE_DATA, 0.989, 2, 1.0); }
 
 // Added in DAPHNE (wasn't present in SystemDS).
-TEST_CASE("randomForestWine_MaxV05", TAG_ALGORITHMS) {
-    runDecisionTree(2, WINE_DATA, 0.988, 2, 0.5);
-}
+TEST_CASE("randomForestWine_MaxV05", TAG_ALGORITHMS) { runDecisionTree(2, WINE_DATA, 0.988, 2, 0.5); }
 
 TEST_CASE("decisionTree_WineReg_MaxV1", TAG_ALGORITHMS) {
     // for regression we compare R2 and use rss to optimize

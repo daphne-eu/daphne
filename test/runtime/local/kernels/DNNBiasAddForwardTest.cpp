@@ -23,16 +23,13 @@
 #include <catch.hpp>
 #include <tags.h>
 
-template <class DT>
-void checkBiasAddForward(const DT *input, const DT *bias, const DT *exp,
-                         DaphneContext *dctx) {
+template <class DT> void checkBiasAddForward(const DT *input, const DT *bias, const DT *exp, DaphneContext *dctx) {
     DT *res = nullptr;
     BiasAddForward<DT, DT>::apply(res, input, bias, dctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("bias_add_fwd", TAG_DNN, (DenseMatrix),
-                           (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("bias_add_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
@@ -41,10 +38,9 @@ TEMPLATE_PRODUCT_TEST_CASE("bias_add_fwd", TAG_DNN, (DenseMatrix),
                                       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
     auto bias = genGivenVals<DT>(3, {1, 2, 3});
 
-    auto result =
-        genGivenVals<DT>(2, {2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15,
+    auto result = genGivenVals<DT>(2, {2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15,
 
-                             2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15});
+                                       2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15});
 
     checkBiasAddForward(input, bias, result, dctx.get());
 

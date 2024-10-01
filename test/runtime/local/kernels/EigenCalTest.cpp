@@ -29,8 +29,7 @@
 
 #include <cstdint>
 
-template <class DT>
-void checkEigenCal(const DT *inMat, const DT *exp1, const DT *exp2) {
+template <class DT> void checkEigenCal(const DT *inMat, const DT *exp1, const DT *exp2) {
     DT *res1 = nullptr;
     DT *res2 = nullptr;
     eigenCal<DT, DT, DT>(res1, res2, inMat, nullptr);
@@ -40,8 +39,7 @@ void checkEigenCal(const DT *inMat, const DT *exp1, const DT *exp2) {
     DataObjectFactory::destroy(res2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("EigenCal", TAG_KERNELS, (DenseMatrix),
-                           (double, float)) {
+TEMPLATE_PRODUCT_TEST_CASE("EigenCal", TAG_KERNELS, (DenseMatrix), (double, float)) {
     using DT = TestType;
     auto m0 = genGivenVals<DT>(3, {504, 360, 180, 360, 360, 0, 180, 0, 720});
 

@@ -19,21 +19,17 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/Conv2DForward.h>
 
-template <class DT>
-void checkConv2DForward(const DT *in, const DT *filter, const DT *exp,
-                        DaphneContext *dctx) {
+template <class DT> void checkConv2DForward(const DT *in, const DT *filter, const DT *exp, DaphneContext *dctx) {
     DT *res = nullptr;
     size_t out_h;
     size_t out_w;
     auto bias = genGivenVals<DT>(1, {0});
-    Conv2DForward<DT, DT>::apply(res, out_h, out_w, in, filter, bias,
-                                 in->getNumRows(), 3, 3, 3, 2, 2, 2, 2, 1, 1,
+    Conv2DForward<DT, DT>::apply(res, out_h, out_w, in, filter, bias, in->getNumRows(), 3, 3, 3, 2, 2, 2, 2, 1, 1,
                                  dctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("conv_fwd_cpu", TAG_DNN, (DenseMatrix),
-                           (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("conv_fwd_cpu", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 

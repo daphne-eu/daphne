@@ -30,8 +30,7 @@
 #include <limits>
 
 TEST_CASE("ReadParquet, Frame", TAG_IO) {
-    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::F64,
-                              ValueTypeCode::F64, ValueTypeCode::F64};
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64};
     Frame *m = NULL;
 
     size_t numRows = 2;
@@ -58,8 +57,7 @@ TEST_CASE("ReadParquet, Frame", TAG_IO) {
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadParquet, DenseMatrix", TAG_IO, (DenseMatrix),
-                           (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadParquet, DenseMatrix", TAG_IO, (DenseMatrix), (double)) {
     using DT = TestType;
     DT *m = nullptr;
 

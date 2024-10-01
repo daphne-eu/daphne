@@ -46,9 +46,7 @@
 std::string readTextFile(const std::string &filePath);
 
 #ifndef NDEBUG
-template <class T> [[maybe_unused]] void LOG(T t) {
-    std::cout << t << std::endl;
-}
+template <class T> [[maybe_unused]] void LOG(T t) { std::cout << t << std::endl; }
 
 template <class T, class... OtherArgs> void LOG(T &&var, OtherArgs &&...args) {
     std::cout << std::forward<T>(var) << " ";
@@ -70,8 +68,7 @@ template <class T, class... OtherArgs> void LOG(T &&var, OtherArgs &&...args) {
  * normally.
  */
 template <typename... Args>
-int runProgram(std::stringstream &out, std::stringstream &err,
-               const char *execPath, Args... args) {
+int runProgram(std::stringstream &out, std::stringstream &err, const char *execPath, Args... args) {
     constexpr int READ = 0;
     constexpr int WRITE = 1;
     int linkOut[2]; // pipe ends for stdout
@@ -80,11 +77,9 @@ int runProgram(std::stringstream &out, std::stringstream &err,
 
     // Try to create the pipes.
     if (pipe(linkOut) == -1)
-        throw std::runtime_error("could not create pipe" +
-                                 std::to_string(errno));
+        throw std::runtime_error("could not create pipe" + std::to_string(errno));
     if (pipe(linkErr) == -1)
-        throw std::runtime_error("could not create pipe" +
-                                 std::to_string(errno));
+        throw std::runtime_error("could not create pipe" + std::to_string(errno));
 
     // Try to create the child process.
     pid_t p = fork();
@@ -152,9 +147,7 @@ int runProgram(std::stringstream &out, std::stringstream &err,
  * @return The process id of the child process.
  *
  */
-template <typename... Args>
-pid_t runProgramInBackground(int &out, int &err, const char *execPath,
-                             Args... args) {
+template <typename... Args> pid_t runProgramInBackground(int &out, int &err, const char *execPath, Args... args) {
 
     // Try to create the child process.
     pid_t p = fork();
@@ -195,10 +188,8 @@ pid_t runProgramInBackground(int &out, int &err, const char *execPath,
  * normally.
  */
 template <typename... Args>
-int runLIT(std::stringstream &out, std::stringstream &err, std::string dirPath,
-           Args... args) {
-    return runProgram(out, err, "/bin/python3", "python3",
-                      (dirPath + "run-lit.py").c_str(), "-v", dirPath.c_str(),
+int runLIT(std::stringstream &out, std::stringstream &err, std::string dirPath, Args... args) {
+    return runProgram(out, err, "/bin/python3", "python3", (dirPath + "run-lit.py").c_str(), "-v", dirPath.c_str(),
                       args...);
 }
 
@@ -214,8 +205,7 @@ int runLIT(std::stringstream &out, std::stringstream &err, std::string dirPath,
  * @return The status code returned by the process, or `-1` if it did not exit
  * normally.
  */
-template <typename... Args>
-int runDaphne(std::stringstream &out, std::stringstream &err, Args... args) {
+template <typename... Args> int runDaphne(std::stringstream &out, std::stringstream &err, Args... args) {
     return runProgram(out, err, "bin/daphne", "daphne", args...);
 }
 
@@ -235,8 +225,7 @@ int runDaphne(std::stringstream &out, std::stringstream &err, Args... args) {
  * normally.
  */
 template <typename... Args>
-int runDaphneLib(std::stringstream &out, std::stringstream &err,
-                 const char *scriptPath, Args... args) {
+int runDaphneLib(std::stringstream &out, std::stringstream &err, const char *scriptPath, Args... args) {
     return runProgram(out, err, "/bin/python3", "python3", scriptPath, args...);
 }
 
@@ -252,8 +241,7 @@ int runDaphneLib(std::stringstream &out, std::stringstream &err,
  * type `char *`. The last one does *not* need to be a null pointer.
  */
 template <typename... Args>
-void checkDaphneStatusCode(StatusCode exp, const std::string &scriptFilePath,
-                           Args... args) {
+void checkDaphneStatusCode(StatusCode exp, const std::string &scriptFilePath, Args... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
@@ -262,11 +250,9 @@ void checkDaphneStatusCode(StatusCode exp, const std::string &scriptFilePath,
 }
 
 template <typename... Args>
-void checkDaphneStatusCodeSimple(StatusCode exp, const std::string &dirPath,
-                                 const std::string &name, unsigned idx,
+void checkDaphneStatusCodeSimple(StatusCode exp, const std::string &dirPath, const std::string &name, unsigned idx,
                                  Args... args) {
-    checkDaphneStatusCode(
-        exp, dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
+    checkDaphneStatusCode(exp, dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
 }
 
 /**
@@ -281,8 +267,7 @@ void checkDaphneStatusCodeSimple(StatusCode exp, const std::string &dirPath,
  * utility function. Despite the variadic template, each element should be of
  * type `char *`. The last one does *not* need to be a null pointer.
  */
-template <typename... Args>
-void checkDaphneFails(const std::string &scriptFilePath, Args... args) {
+template <typename... Args> void checkDaphneFails(const std::string &scriptFilePath, Args... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
@@ -291,10 +276,8 @@ void checkDaphneFails(const std::string &scriptFilePath, Args... args) {
 }
 
 template <typename... Args>
-void checkDaphneFailsSimple(const std::string &dirPath, const std::string &name,
-                            unsigned idx, Args... args) {
-    checkDaphneFails(dirPath + name + '_' + std::to_string(idx) + ".daphne",
-                     args...);
+void checkDaphneFailsSimple(const std::string &dirPath, const std::string &name, unsigned idx, Args... args) {
+    checkDaphneFails(dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
 }
 
 /**
@@ -312,8 +295,7 @@ void checkDaphneFailsSimple(const std::string &dirPath, const std::string &name,
  * type `char *`. The last one does *not* need to be a null pointer.
  */
 template <typename... Args>
-void compareDaphneToStr(const std::string &exp,
-                        const std::string &scriptFilePath, Args... args) {
+void compareDaphneToStr(const std::string &exp, const std::string &scriptFilePath, Args... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
@@ -342,8 +324,7 @@ void compareDaphneToStr(const std::string &exp,
  * does *not* need to be a null pointer.
  */
 template <typename... Args>
-void compareDaphneLibToStr(const std::string &exp,
-                           const std::string &scriptFilePath, Args... args) {
+void compareDaphneLibToStr(const std::string &exp, const std::string &scriptFilePath, Args... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphneLib(out, err, scriptFilePath.c_str(), args...);
@@ -368,9 +349,7 @@ void compareDaphneLibToStr(const std::string &exp,
  * @param epsilon The relative error that is acceptable.
  */
 template <typename... Args>
-void compareDaphneRunsNumerically(std::stringstream &left,
-                                  std::stringstream &right,
-                                  const int ignore_lines,
+void compareDaphneRunsNumerically(std::stringstream &left, std::stringstream &right, const int ignore_lines,
                                   const long double epsilon) {
     std::string s_left;
     std::string s_right;
@@ -382,18 +361,16 @@ void compareDaphneRunsNumerically(std::stringstream &left,
     }
     bool correct_so_far = true;
 
-    while (std::getline(left, s_left, ' ') &&
-           std::getline(right, s_right, ' ') && correct_so_far) {
+    while (std::getline(left, s_left, ' ') && std::getline(right, s_right, ' ') && correct_so_far) {
         try {
             // Long double just to be sure
             f_left = std::stold(s_left);
             f_right = std::stold(s_right);
         } catch (std::invalid_argument const &) {
-            FAIL("The result does not have the right number of outputs.\nLeft="
-                 << left.str() << "\t Right=" << right.str());
+            FAIL("The result does not have the right number of outputs.\nLeft=" << left.str()
+                                                                                << "\t Right=" << right.str());
         }
-        correct_so_far =
-            std::norm(f_left - f_right) < epsilon * std::norm(f_left);
+        correct_so_far = std::norm(f_left - f_right) < epsilon * std::norm(f_left);
     }
     CHECK(correct_so_far == true);
 }
@@ -418,10 +395,8 @@ void compareDaphneRunsNumerically(std::stringstream &left,
  * type `char *`. The last one does *not* need to be a null pointer.
  */
 template <typename... Args>
-void compareDaphneToStringNumerically(const std::string &exp,
-                                      const std::string &scriptFilePath,
-                                      int ignore_lines, long double epsilon,
-                                      Args... args) {
+void compareDaphneToStringNumerically(const std::string &exp, const std::string &scriptFilePath, int ignore_lines,
+                                      long double epsilon, Args... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
@@ -448,10 +423,8 @@ void compareDaphneToStringNumerically(const std::string &exp,
  * type `char *`. The last one does *not* need to be a null pointer.
  */
 template <typename... Args>
-void compareDaphneToRef(const std::string &refFilePath,
-                        const std::string &scriptFilePath, Args... args) {
-    return compareDaphneToStr(readTextFile(refFilePath), scriptFilePath,
-                              args...);
+void compareDaphneToRef(const std::string &refFilePath, const std::string &scriptFilePath, Args... args) {
+    return compareDaphneToStr(readTextFile(refFilePath), scriptFilePath, args...);
 }
 
 /**
@@ -468,17 +441,14 @@ void compareDaphneToRef(const std::string &refFilePath,
  * does *not* need to be a null pointer.
  */
 template <typename... Args>
-void compareDaphneToDaphneLib(const std::string &pythonScriptFilePath,
-                              const std::string &daphneDSLScriptFilePath,
+void compareDaphneToDaphneLib(const std::string &pythonScriptFilePath, const std::string &daphneDSLScriptFilePath,
                               Args... args) {
     std::stringstream outDaphne;
     std::stringstream errDaphne;
     std::stringstream outDaphneLib;
     std::stringstream errDaphneLib;
-    int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib,
-                                       pythonScriptFilePath.c_str(), args...);
-    int statusDaphne = runDaphne(outDaphne, errDaphne,
-                                 daphneDSLScriptFilePath.c_str(), args...);
+    int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
+    int statusDaphne = runDaphne(outDaphne, errDaphne, daphneDSLScriptFilePath.c_str(), args...);
 
     // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
     // checks of out and err still run and provide useful messages. For err,
@@ -506,8 +476,7 @@ void compareDaphneToDaphneLib(const std::string &pythonScriptFilePath,
  * does *not* need to be a null pointer.
  */
 template <typename... Args>
-void compareDaphneToDaphneLibScalar(const std::string &pythonScriptFilePath,
-                                    const std::string &daphneDSLScriptFilePath,
+void compareDaphneToDaphneLibScalar(const std::string &pythonScriptFilePath, const std::string &daphneDSLScriptFilePath,
                                     Args... args) {
     std::stringstream outDaphne;
     std::stringstream errDaphne;
@@ -515,10 +484,8 @@ void compareDaphneToDaphneLibScalar(const std::string &pythonScriptFilePath,
     std::stringstream errDaphneLib;
     std::string resultDaphne, resultDaphneLib;
     float epsilon = 0.1;
-    int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib,
-                                       pythonScriptFilePath.c_str(), args...);
-    int statusDaphne = runDaphne(outDaphne, errDaphne, args...,
-                                 daphneDSLScriptFilePath.c_str());
+    int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
+    int statusDaphne = runDaphne(outDaphne, errDaphne, args..., daphneDSLScriptFilePath.c_str());
 
     // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
     // checks of out and err still run and provide useful messages. For err,
@@ -526,8 +493,7 @@ void compareDaphneToDaphneLibScalar(const std::string &pythonScriptFilePath,
     // output.
     CHECK(statusDaphne == StatusCode::SUCCESS);
     CHECK(statusDaphneLib == 0);
-    while (std::getline(outDaphneLib, resultDaphneLib) &&
-           std::getline(outDaphne, resultDaphne)) {
+    while (std::getline(outDaphneLib, resultDaphneLib) && std::getline(outDaphne, resultDaphne)) {
         CHECK(std::stof(resultDaphneLib) - std::stof(resultDaphne) <= epsilon);
     }
     CHECK(errDaphne.str() == "");
@@ -535,17 +501,13 @@ void compareDaphneToDaphneLibScalar(const std::string &pythonScriptFilePath,
 }
 
 template <typename... Args>
-void compareDaphneToRefSimple(const std::string &dirPath,
-                              const std::string &name, unsigned idx,
-                              Args... args) {
+void compareDaphneToRefSimple(const std::string &dirPath, const std::string &name, unsigned idx, Args... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
 }
 
 template <typename... Args>
-void compareDaphneToDaphneLibSimple(const std::string &dirPath,
-                                    const std::string &name, unsigned idx,
-                                    Args... args) {
+void compareDaphneToDaphneLibSimple(const std::string &dirPath, const std::string &name, unsigned idx, Args... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToDaphneLib(filePath + ".py", args..., filePath + ".daphne");
 }
@@ -568,17 +530,13 @@ void compareDaphneToDaphneLibSimple(const std::string &dirPath,
  * type `char *`. The last one does *not* need to be a null pointer.
  */
 template <typename... Args>
-void compareDaphneToSelfRef(const std::string &expScriptFilePath,
-                            const std::string &actScriptFilePath,
-                            Args... args) {
+void compareDaphneToSelfRef(const std::string &expScriptFilePath, const std::string &actScriptFilePath, Args... args) {
     std::stringstream expOut;
     std::stringstream expErr;
-    int expStatus =
-        runDaphne(expOut, expErr, args..., expScriptFilePath.c_str());
+    int expStatus = runDaphne(expOut, expErr, args..., expScriptFilePath.c_str());
     std::stringstream actOut;
     std::stringstream actErr;
-    int actStatus =
-        runDaphne(actOut, actErr, args..., actScriptFilePath.c_str());
+    int actStatus = runDaphne(actOut, actErr, args..., actScriptFilePath.c_str());
 
     // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
     // checks of out and err still run and provide useful messages.
@@ -588,12 +546,10 @@ void compareDaphneToSelfRef(const std::string &expScriptFilePath,
 }
 
 template <typename... Args>
-[[maybe_unused]] void compareDaphneToSelfRefSimple(const std::string &dirPath,
-                                                   const std::string &name,
-                                                   unsigned idx, Args... args) {
+[[maybe_unused]] void compareDaphneToSelfRefSimple(const std::string &dirPath, const std::string &name, unsigned idx,
+                                                   Args... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
-    compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne",
-                           args...);
+    compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
 }
 
 /**
@@ -609,18 +565,14 @@ template <typename... Args>
  * type `char *`. The last one does *not* need to be a null pointer.
  */
 template <typename... Args>
-void compareDaphneToSomeRefSimple(const std::string &dirPath,
-                                  const std::string &name, unsigned idx,
-                                  Args... args) {
+void compareDaphneToSomeRefSimple(const std::string &dirPath, const std::string &name, unsigned idx, Args... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     if (std::filesystem::exists(filePath + ".ref.daphne")) {
-        compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne",
-                               args...);
+        compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
     } else if (std::filesystem::exists(filePath + ".txt")) {
         compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
     } else {
-        throw std::runtime_error("Could not find any ref for file `" +
-                                 filePath + ".daphne`");
+        throw std::runtime_error("Could not find any ref for file `" + filePath + ".daphne`");
     }
 }
 

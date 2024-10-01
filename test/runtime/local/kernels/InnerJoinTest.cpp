@@ -33,8 +33,7 @@
 
 TEST_CASE("innerJoin", TAG_KERNELS) {
     auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(4, {1, 2, 3, 4});
-    auto lhsC1 =
-        genGivenVals<DenseMatrix<double>>(4, {11.0, 22.0, 33.0, 44.00});
+    auto lhsC1 = genGivenVals<DenseMatrix<double>>(4, {11.0, 22.0, 33.0, 44.00});
     std::vector<Structure *> lhsCols = {lhsC0, lhsC1};
     std::string lhsLabels[] = {"a", "b"};
     auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
@@ -80,6 +79,5 @@ TEST_CASE("innerJoin", TAG_KERNELS) {
     DataObjectFactory::destroy(lhsC0, lhsC1, lhs);
     DataObjectFactory::destroy(rhsC0, rhsC1, rhsC2, rhs);
     DataObjectFactory::destroy(res);
-    DataObjectFactory::destroy(resC0Exp, resC1Exp, resC2Exp, resC3Exp,
-                               resC4Exp);
+    DataObjectFactory::destroy(resC0Exp, resC1Exp, resC2Exp, resC3Exp, resC4Exp);
 }

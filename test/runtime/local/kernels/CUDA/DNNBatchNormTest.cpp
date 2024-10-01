@@ -20,17 +20,15 @@
 #include "runtime/local/kernels/CUDA/BatchNorm.h"
 
 template <class DT>
-void check(const DT *in, const DT *gamma, const DT *beta, const DT *ema_mean,
-           const DT *ema_var, const DT *exp, DaphneContext *dctx) {
+void check(const DT *in, const DT *gamma, const DT *beta, const DT *ema_mean, const DT *ema_var, const DT *exp,
+           DaphneContext *dctx) {
     DT *res = nullptr;
     typename DT::VT epsilon = 1e-5;
-    CUDA::BatchNorm::Forward<DT, DT>::apply(res, in, gamma, beta, ema_mean,
-                                            ema_var, epsilon, dctx);
+    CUDA::BatchNorm::Forward<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::BatchNorm::Forward", TAG_DNN,
-                           (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::BatchNorm::Forward", TAG_DNN, (DenseMatrix),
                            (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;

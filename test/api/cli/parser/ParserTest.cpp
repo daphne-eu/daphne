@@ -71,12 +71,10 @@ TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER) {
 
         // Print IR after SelectMatrixRepresentationsPass
         mlir::PassManager passManager(&context);
-        passManager.addNestedPass<mlir::func::FuncOp>(
-            mlir::daphne::createInferencePass());
+        passManager.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
         passManager.addPass(mlir::createCanonicalizerPass());
         passManager.addNestedPass<mlir::func::FuncOp>(
-            mlir::daphne::createSelectMatrixRepresentationsPass(
-                dctx->getUserConfig()));
+            mlir::daphne::createSelectMatrixRepresentationsPass(dctx->getUserConfig()));
 
         REQUIRE(failed(passManager.run(moduleOp)) == false);
 
@@ -89,8 +87,7 @@ TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER) {
     context.getOrLoadDialect<mlir::func::FuncDialect>();
     context.getOrLoadDialect<mlir::scf::SCFDialect>();
 
-    mlir::OwningOpRef<mlir::ModuleOp> module(
-        mlir::parseSourceString<mlir::ModuleOp>(daphneIrCode, &context));
+    mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(daphneIrCode, &context));
     REQUIRE(module);
 
     std::string newCode;

@@ -41,9 +41,7 @@ TEST_CASE("CreateFrame", TAG_KERNELS) {
 
     Frame *f = nullptr;
     Structure *colMats[] = {c0, c1, c2};
-    SECTION("without column labels") {
-        createFrame(f, colMats, numCols, nullptr, 0, nullptr);
-    }
+    SECTION("without column labels") { createFrame(f, colMats, numCols, nullptr, 0, nullptr); }
     SECTION("with column labels") {
         const char *labels[] = {"ab", "cde", "fghi"};
         createFrame(f, colMats, numCols, labels, numCols, nullptr);

@@ -29,8 +29,7 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("SliceCol", TAG_KERNELS, (DenseMatrix, Matrix),
-                           (double, int64_t, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("SliceCol", TAG_KERNELS, (DenseMatrix, Matrix), (double, int64_t, uint32_t)) {
     using DT = TestType;
 
     std::vector<typename DT::VT> vals = {
@@ -48,29 +47,24 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceCol", TAG_KERNELS, (DenseMatrix, Matrix),
     DataObjectFactory::destroy(arg, exp, res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("SliceCol - check throws", TAG_KERNELS,
-                           (DenseMatrix, Matrix), (double, int64_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("SliceCol - check throws", TAG_KERNELS, (DenseMatrix, Matrix), (double, int64_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(4, {
-                                       0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0,
-                                       3, 4, 5, 0, 6, 7, 0, 8, 0, 0, 9, 0,
+                                       0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 4, 5, 0, 6, 7, 0, 8, 0, 0, 9, 0,
                                    });
 
     DT *res = nullptr;
 
     SECTION("lowerIncl out of bounds - negative") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, -1, 3, nullptr)),
-                          std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, -1, 3, nullptr)), std::out_of_range);
     }
     SECTION("lowerIncl greater than upperExcl") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, 3, 2, nullptr)),
-                          std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, 3, 2, nullptr)), std::out_of_range);
     }
     SECTION("upperExcl out of bounds - too high") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, VT(1), VT(7.1), nullptr)),
-                          std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, VT(1), VT(7.1), nullptr)), std::out_of_range);
     }
 
     DataObjectFactory::destroy(arg);
@@ -112,20 +106,16 @@ TEMPLATE_TEST_CASE("SliceCol - check throws", TAG_KERNELS, (Frame)) {
     Frame *res = nullptr;
 
     SECTION("lowerIncl out of bounds - negative") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, -0.1, 3.0, nullptr)),
-                          std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, -0.1, 3.0, nullptr)), std::out_of_range);
     }
     SECTION("lowerIncl greater than upperExcl") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, 3, 2, nullptr)),
-                          std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, 3, 2, nullptr)), std::out_of_range);
     }
     SECTION("upperExcl out of bounds - too high") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, 1, 5, nullptr)),
-                          std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, 1, 5, nullptr)), std::out_of_range);
     }
     SECTION("upperExcl out of bounds - too high FP") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, 1.0, 5.1, nullptr)),
-                          std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, 1.0, 5.1, nullptr)), std::out_of_range);
     }
 
     delete[] labels1;

@@ -28,8 +28,7 @@
 #include <limits>
 #include <vector>
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG", TAG_IO, (DenseMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG", TAG_IO, (DenseMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -47,8 +46,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG", TAG_IO, (DenseMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG", TAG_IO, (DenseMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG", TAG_IO, (DenseMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -148,8 +146,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK", TAG_IO, (DenseMatrix), (double)) {
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS", TAG_IO, (DenseMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS", TAG_IO, (DenseMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -179,8 +176,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS", TAG_IO, (DenseMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK", TAG_IO, (DenseMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK", TAG_IO, (DenseMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -207,8 +203,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK", TAG_IO, (DenseMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS", TAG_IO, (DenseMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS", TAG_IO, (DenseMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -233,8 +228,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS", TAG_IO, (DenseMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -258,8 +252,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -284,8 +277,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG (CSR)", TAG_IO, (CSRMatrix),
-                           (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG (CSR)", TAG_IO, (CSRMatrix), (double)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -308,8 +300,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS (CSR)", TAG_IO, (CSRMatrix),
-                           (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS (CSR)", TAG_IO, (CSRMatrix), (double)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -334,8 +325,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK (CSR)", TAG_IO, (CSRMatrix),
-                           (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK (CSR)", TAG_IO, (CSRMatrix), (double)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -362,8 +352,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -393,8 +382,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -421,8 +409,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK (CSR)", TAG_IO, (CSRMatrix),
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS (CSR)", TAG_IO, (CSRMatrix),
-                           (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
     using DT = TestType;
     DT *m = nullptr;
 
@@ -536,8 +523,7 @@ TEST_CASE("WriteDaphne CRS (Frame)", TAG_IO) {
 
     for (size_t r = 0; r < numRows; r++)
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<double>(c)->get(r, 0) ==
-                  m->getColumn<double>(r)->get(c, 0));
+            CHECK(m->getColumn<double>(c)->get(r, 0) == m->getColumn<double>(r)->get(c, 0));
 
     DataObjectFactory::destroy(m);
 }
@@ -562,8 +548,7 @@ TEST_CASE("WriteDaphne CRK (Frame)", TAG_IO) {
     for (size_t r = 0; r < numRows; r++) {
         CHECK(m->getColumn<double>(r)->get(r, 0) == 0);
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<double>(c)->get(r, 0) ==
-                  -m->getColumn<double>(r)->get(c, 0));
+            CHECK(m->getColumn<double>(c)->get(r, 0) == -m->getColumn<double>(r)->get(c, 0));
     }
 
     DataObjectFactory::destroy(m);
@@ -618,8 +603,7 @@ TEST_CASE("WriteDaphne AIK (Frame)", TAG_IO) {
     for (size_t r = 0; r < numRows; r++) {
         CHECK(m->getColumn<int64_t>(r)->get(r, 0) == 0);
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<int64_t>(c)->get(r, 0) ==
-                  -m->getColumn<int64_t>(r)->get(c, 0));
+            CHECK(m->getColumn<int64_t>(c)->get(r, 0) == -m->getColumn<int64_t>(r)->get(c, 0));
     }
 
     DataObjectFactory::destroy(m);
@@ -644,8 +628,7 @@ TEST_CASE("WriteDaphne AIS (Frame)", TAG_IO) {
 
     for (size_t r = 0; r < numRows; r++)
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<int64_t>(c)->get(r, 0) ==
-                  m->getColumn<int64_t>(r)->get(c, 0));
+            CHECK(m->getColumn<int64_t>(c)->get(r, 0) == m->getColumn<int64_t>(r)->get(c, 0));
 
     DataObjectFactory::destroy(m);
 }

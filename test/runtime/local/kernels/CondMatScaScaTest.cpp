@@ -29,8 +29,7 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int64_t, double
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -40,15 +39,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES),
     DT *exp = nullptr;
 
     SECTION("example 1") {
-        argCond = genGivenVals<DT>(
-            3, {true, false, false, false, true, false, false, false, true});
+        argCond = genGivenVals<DT>(3, {true, false, false, false, true, false, false, false, true});
 
         argThen = VT(1.5);
 
         argElse = VT(-1.5);
 
-        exp = genGivenVals<DT>(3, {VT(1.5), argElse, argElse, argElse, VT(1.5),
-                                   argElse, argElse, argElse, VT(1.5)});
+        exp = genGivenVals<DT>(3, {VT(1.5), argElse, argElse, argElse, VT(1.5), argElse, argElse, argElse, VT(1.5)});
     }
 
     DT *res = nullptr;

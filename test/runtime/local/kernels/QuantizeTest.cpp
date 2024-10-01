@@ -26,8 +26,7 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("Quantization", TAG_KERNELS, (DenseMatrix, Matrix),
-                           (float)) {
+TEMPLATE_PRODUCT_TEST_CASE("Quantization", TAG_KERNELS, (DenseMatrix, Matrix), (float)) {
     using DT = TestType;
     using DTRes = typename DT::template WithValueType<uint8_t>;
 

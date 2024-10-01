@@ -21,25 +21,21 @@
 #include <runtime/local/kernels/CheckEqApprox.h>
 
 template <class DT>
-void checkBatchNorm2DBackward(const DT *in, const DT *dOut, const DT *gamma,
-                              const DT *mean, const DT *invVar, const DT *exp1,
-                              const DT *exp2, const DT *exp3,
-                              DaphneContext *dctx) {
+void checkBatchNorm2DBackward(const DT *in, const DT *dOut, const DT *gamma, const DT *mean, const DT *invVar,
+                              const DT *exp1, const DT *exp2, const DT *exp3, DaphneContext *dctx) {
     DT *dX = nullptr;
     DT *dGamma = nullptr;
     DT *dBeta = nullptr;
 
     typename DT::VT epsilon = 1e-5;
-    BatchNorm2DBackward<DT, DT>::apply(dX, dGamma, dBeta, mean, invVar, in,
-                                       dOut, gamma, epsilon, dctx);
+    BatchNorm2DBackward<DT, DT>::apply(dX, dGamma, dBeta, mean, invVar, in, dOut, gamma, epsilon, dctx);
 
     CHECK(checkEqApprox(dX, exp1, 1e-5, nullptr));
     CHECK(checkEqApprox(dGamma, exp2, 1e-4, nullptr));
     CHECK(checkEqApprox(dBeta, exp3, 1e-5, nullptr));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix),
-                           (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
@@ -53,20 +49,16 @@ TEMPLATE_PRODUCT_TEST_CASE("batch_norm_bwd", TAG_DNN, (DenseMatrix),
 
     auto gamma = genGivenVals<DT>(3, {1, 1, 1});
     auto mean = genGivenVals<DT>(3, {2.5, 6.5, 10.5});
-    auto invVar = genGivenVals<DT>(3, {1 / std::sqrt(1.25f + 1e-5f),
-                                       1 / std::sqrt(1.25f + 1e-5f),
-                                       1 / std::sqrt(1.25f + 1e-5f)});
-    auto res1 = genGivenVals<DT>(
-        2, {-1.0733e-05, -3.5777e-06, 3.5777e-06,  1.0733e-05,  -1.0733e-05,
-            -3.5777e-06, 3.5777e-06,  1.0733e-05,  -1.0733e-05, -3.5777e-06,
-            3.5777e-06,  1.0733e-05,  -1.0733e-05, -3.5777e-06, 3.5777e-06,
-            1.0733e-05,  -1.0733e-05, -3.5777e-06, 3.5777e-06,  1.0733e-05,
-            -1.0733e-05, -3.5777e-06, 3.5777e-06,  1.0733e-05});
+    auto invVar =
+        genGivenVals<DT>(3, {1 / std::sqrt(1.25f + 1e-5f), 1 / std::sqrt(1.25f + 1e-5f), 1 / std::sqrt(1.25f + 1e-5f)});
+    auto res1 = genGivenVals<DT>(2, {-1.0733e-05, -3.5777e-06, 3.5777e-06,  1.0733e-05,  -1.0733e-05, -3.5777e-06,
+                                     3.5777e-06,  1.0733e-05,  -1.0733e-05, -3.5777e-06, 3.5777e-06,  1.0733e-05,
+                                     -1.0733e-05, -3.5777e-06, 3.5777e-06,  1.0733e-05,  -1.0733e-05, -3.5777e-06,
+                                     3.5777e-06,  1.0733e-05,  -1.0733e-05, -3.5777e-06, 3.5777e-06,  1.0733e-05});
     auto res2 = genGivenVals<DT>(3, {8.9442, 8.9442, 8.9442});
     auto res3 = genGivenVals<DT>(3, {20, 52, 84});
 
-    checkBatchNorm2DBackward(in, dOut, gamma, mean, invVar, res1, res2, res3,
-                             dctx.get());
+    checkBatchNorm2DBackward(in, dOut, gamma, mean, invVar, res1, res2, res3, dctx.get());
 
     DataObjectFactory::destroy(in);
     DataObjectFactory::destroy(dOut);

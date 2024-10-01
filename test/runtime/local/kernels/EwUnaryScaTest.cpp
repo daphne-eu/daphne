@@ -29,33 +29,24 @@
 #define FP_VALUE_TYPES float, double
 #define VALUE_TYPES SI_VALUE_TYPES, FP_VALUE_TYPES
 
-template <UnaryOpCode opCode, typename VT>
-void checkEwUnarySca(const VT arg, const VT exp) {
+template <UnaryOpCode opCode, typename VT> void checkEwUnarySca(const VT arg, const VT exp) {
     CHECK(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr) == exp);
     CHECK(ewUnarySca<VT, VT>(opCode, arg, nullptr) == exp);
 }
 
 // decimals below are implicitely truncated if VALUE_TYPES is integer
 // generally avoid this for input arguments
-template <UnaryOpCode opCode, typename VT>
-void checkEwUnaryScaApprox(const VT arg, const VT exp) {
-    CHECK(
-        Approx(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr)).epsilon(1e-2) ==
-        exp);
-    CHECK(Approx(ewUnarySca<VT, VT>(opCode, arg, nullptr)).epsilon(1e-2) ==
-          exp);
+template <UnaryOpCode opCode, typename VT> void checkEwUnaryScaApprox(const VT arg, const VT exp) {
+    CHECK(Approx(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr)).epsilon(1e-2) == exp);
+    CHECK(Approx(ewUnarySca<VT, VT>(opCode, arg, nullptr)).epsilon(1e-2) == exp);
 }
 
-template <UnaryOpCode opCode, typename VT>
-void checkEwUnaryScaThrow(const VT arg) {
-    REQUIRE_THROWS_AS((EwUnarySca<opCode, VT, VT>::apply(arg, nullptr)),
-                      std::domain_error);
-    REQUIRE_THROWS_AS((ewUnarySca<VT, VT>(opCode, arg, nullptr)),
-                      std::domain_error);
+template <UnaryOpCode opCode, typename VT> void checkEwUnaryScaThrow(const VT arg) {
+    REQUIRE_THROWS_AS((EwUnarySca<opCode, VT, VT>::apply(arg, nullptr)), std::domain_error);
+    REQUIRE_THROWS_AS((ewUnarySca<VT, VT>(opCode, arg, nullptr)), std::domain_error);
 }
 
-template <UnaryOpCode opCode, typename VT>
-void checkEwUnaryScaNaN(const VT arg) {
+template <UnaryOpCode opCode, typename VT> void checkEwUnaryScaNaN(const VT arg) {
     VT res1 = EwUnarySca<opCode, VT, VT>::apply(arg, nullptr);
     VT res2 = ewUnarySca<VT, VT>(opCode, arg, nullptr);
     CHECK(res1 != res1);
@@ -82,8 +73,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("sign"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::SIGN, VT>(-123, -1);
 }
 
-TEMPLATE_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNELS,
-                   FP_VALUE_TYPES) {
+TEMPLATE_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNELS, FP_VALUE_TYPES) {
     using VT = TestType;
     checkEwUnarySca<UnaryOpCode::SIGN, VT>(0.3, 1);
     checkEwUnarySca<UnaryOpCode::SIGN, VT>(-0.3, -1);
@@ -91,12 +81,9 @@ TEMPLATE_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNELS,
     checkEwUnarySca<UnaryOpCode::SIGN, VT>(123.4, 1);
     checkEwUnarySca<UnaryOpCode::SIGN, VT>(-1.1, -1);
     checkEwUnarySca<UnaryOpCode::SIGN, VT>(-123.4, -1);
-    checkEwUnarySca<UnaryOpCode::SIGN, VT>(std::numeric_limits<VT>::infinity(),
-                                           1);
-    checkEwUnarySca<UnaryOpCode::SIGN, VT>(-std::numeric_limits<VT>::infinity(),
-                                           -1);
-    checkEwUnaryScaNaN<UnaryOpCode::SIGN, VT>(
-        std::numeric_limits<VT>::quiet_NaN());
+    checkEwUnarySca<UnaryOpCode::SIGN, VT>(std::numeric_limits<VT>::infinity(), 1);
+    checkEwUnarySca<UnaryOpCode::SIGN, VT>(-std::numeric_limits<VT>::infinity(), -1);
+    checkEwUnaryScaNaN<UnaryOpCode::SIGN, VT>(std::numeric_limits<VT>::quiet_NaN());
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, VALUE_TYPES) {
@@ -122,11 +109,9 @@ TEMPLATE_TEST_CASE(TEST_NAME("ln"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnaryScaThrow<UnaryOpCode::LN, VT>(-1);
 }
 
-TEMPLATE_TEST_CASE(TEST_NAME("ln, floating-point-specific"), TAG_KERNELS,
-                   FP_VALUE_TYPES) {
+TEMPLATE_TEST_CASE(TEST_NAME("ln, floating-point-specific"), TAG_KERNELS, FP_VALUE_TYPES) {
     using VT = TestType;
-    checkEwUnarySca<UnaryOpCode::LN, VT>(0,
-                                         -std::numeric_limits<VT>::infinity());
+    checkEwUnarySca<UnaryOpCode::LN, VT>(0, -std::numeric_limits<VT>::infinity());
 }
 
 // ****************************************************************************
@@ -211,8 +196,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("floor"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::FLOOR, VT>(-1, -1);
 }
 
-TEMPLATE_TEST_CASE(TEST_NAME("floor, floating-point-specific"), TAG_KERNELS,
-                   FP_VALUE_TYPES) {
+TEMPLATE_TEST_CASE(TEST_NAME("floor, floating-point-specific"), TAG_KERNELS, FP_VALUE_TYPES) {
     using VT = TestType;
     checkEwUnarySca<UnaryOpCode::FLOOR, VT>(0.3, 0);
     checkEwUnarySca<UnaryOpCode::FLOOR, VT>(-0.3, -1);
@@ -226,8 +210,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("ceil"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::CEIL, VT>(-1, -1);
 }
 
-TEMPLATE_TEST_CASE(TEST_NAME("ceil, floating-point-specific"), TAG_KERNELS,
-                   FP_VALUE_TYPES) {
+TEMPLATE_TEST_CASE(TEST_NAME("ceil, floating-point-specific"), TAG_KERNELS, FP_VALUE_TYPES) {
     using VT = TestType;
     checkEwUnarySca<UnaryOpCode::CEIL, VT>(0.3, 1);
     checkEwUnarySca<UnaryOpCode::CEIL, VT>(-0.3, 0);
@@ -241,8 +224,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("round"), TAG_KERNELS, VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::ROUND, VT>(-1, -1);
 }
 
-TEMPLATE_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERNELS,
-                   FP_VALUE_TYPES) {
+TEMPLATE_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERNELS, FP_VALUE_TYPES) {
     using VT = TestType;
     checkEwUnarySca<UnaryOpCode::ROUND, VT>(0.3, 0);
     checkEwUnarySca<UnaryOpCode::ROUND, VT>(-0.3, 0);
@@ -262,29 +244,23 @@ TEMPLATE_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, SI_VALUE_TYPES) {
     checkEwUnarySca<UnaryOpCode::ISNAN, VT>(0, 0);
 }
 
-TEMPLATE_TEST_CASE(TEST_NAME("isNan, floating-point-specific"), TAG_KERNELS,
-                   FP_VALUE_TYPES) {
+TEMPLATE_TEST_CASE(TEST_NAME("isNan, floating-point-specific"), TAG_KERNELS, FP_VALUE_TYPES) {
     using VT = TestType;
     checkEwUnarySca<UnaryOpCode::ISNAN, VT>(1, 0);
-    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(
-        std::numeric_limits<VT>::quiet_NaN(), 1);
-    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(std::numeric_limits<VT>::infinity(),
-                                            0);
-    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(
-        -std::numeric_limits<VT>::infinity(), 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(std::numeric_limits<VT>::quiet_NaN(), 1);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(std::numeric_limits<VT>::infinity(), 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(-std::numeric_limits<VT>::infinity(), 0);
     checkEwUnarySca<UnaryOpCode::ISNAN, VT>(99.9, 0);
     checkEwUnarySca<UnaryOpCode::ISNAN, VT>(-99.9, 0);
     checkEwUnarySca<UnaryOpCode::ISNAN, VT>(0, 0);
-    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(
-        std::numeric_limits<VT>::denorm_min(), 0);
+    checkEwUnarySca<UnaryOpCode::ISNAN, VT>(std::numeric_limits<VT>::denorm_min(), 0);
 }
 
 // ****************************************************************************
 // Invalid op-code
 // ****************************************************************************
 
-TEMPLATE_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS,
-                   VALUE_TYPES) {
+TEMPLATE_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, VALUE_TYPES) {
     using VT = TestType;
     CHECK_THROWS(ewUnarySca<VT, VT>(static_cast<UnaryOpCode>(999), 0, nullptr));
 }

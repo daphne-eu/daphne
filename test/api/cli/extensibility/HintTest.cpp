@@ -25,35 +25,32 @@
 
 const std::string dirPath = "test/api/cli/extensibility/";
 
-#define MAKE_SUCCESS_TEST_CASE(name, count)                                    \
-    TEST_CASE(name ", success", TAG_EXTENSIBILITY) {                           \
-        for (unsigned i = 1; i <= count; i++) {                                \
-            DYNAMIC_SECTION(name "_success_" << i << ".daphne") {              \
-                compareDaphneToRefSimple(dirPath, name "_success", i);         \
-            }                                                                  \
-        }                                                                      \
+#define MAKE_SUCCESS_TEST_CASE(name, count)                                                                            \
+    TEST_CASE(name ", success", TAG_EXTENSIBILITY) {                                                                   \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION(name "_success_" << i << ".daphne") {                                                      \
+                compareDaphneToRefSimple(dirPath, name "_success", i);                                                 \
+            }                                                                                                          \
+        }                                                                                                              \
     }
 
-#define MAKE_FAILURE_TEST_CASE(name, count)                                    \
-    TEST_CASE(name ", failure", TAG_EXTENSIBILITY) {                           \
-        for (unsigned i = 1; i <= count; i++) {                                \
-            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") {              \
-                checkDaphneFailsSimple(dirPath, name "_failure", i);           \
-            }                                                                  \
-        }                                                                      \
+#define MAKE_FAILURE_TEST_CASE(name, count)                                                                            \
+    TEST_CASE(name ", failure", TAG_EXTENSIBILITY) {                                                                   \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") {                                                      \
+                checkDaphneFailsSimple(dirPath, name "_failure", i);                                                   \
+            }                                                                                                          \
+        }                                                                                                              \
     }
 
-#define MAKE_IR_TEST_CASE(idx, kernelName)                                     \
-    TEST_CASE("hint_kernel_success_" #idx ".daphne, hint presence",            \
-              TAG_EXTENSIBILITY) {                                             \
-        std::stringstream out;                                                 \
-        std::stringstream err;                                                 \
-        int status = runDaphne(                                                \
-            out, err, "--explain", "parsing_simplified",                       \
-            (dirPath + "hint_kernel_success_" #idx ".daphne").c_str());        \
-        CHECK(status == StatusCode::SUCCESS);                                  \
-        CHECK_THAT(err.str(),                                                  \
-                   Catch::Contains("kernel_hint = \"" kernelName "\""));       \
+#define MAKE_IR_TEST_CASE(idx, kernelName)                                                                             \
+    TEST_CASE("hint_kernel_success_" #idx ".daphne, hint presence", TAG_EXTENSIBILITY) {                               \
+        std::stringstream out;                                                                                         \
+        std::stringstream err;                                                                                         \
+        int status = runDaphne(out, err, "--explain", "parsing_simplified",                                            \
+                               (dirPath + "hint_kernel_success_" #idx ".daphne").c_str());                             \
+        CHECK(status == StatusCode::SUCCESS);                                                                          \
+        CHECK_THAT(err.str(), Catch::Contains("kernel_hint = \"" kernelName "\""));                                    \
     }
 
 // Check if DAPHNE fails when expected.

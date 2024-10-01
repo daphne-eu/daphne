@@ -34,16 +34,14 @@
 #define VALUE_TYPES float, double, int32_t, int64_t
 
 template <class DT>
-void checkMatMul(const DT *lhs, const DT *rhs, const DT *exp, DCTX(dctx),
-                 bool transa = false, bool transb = false) {
+void checkMatMul(const DT *lhs, const DT *rhs, const DT *exp, DCTX(dctx), bool transa = false, bool transb = false) {
     DT *res = nullptr;
     matMul<DT, DT, DT>(res, lhs, rhs, transa, transb, dctx);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (CSRMatrix, DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (CSRMatrix, DATA_TYPES), (VALUE_TYPES)) {
     auto dctx = setupContextAndLogger();
 
     using DT = TestType;
@@ -142,12 +140,10 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (CSRMatrix, DATA_TYPES),
     checkMatMul(m6, v7, v8, dctx.get());
     checkMatMul(v5, v2, v6, dctx.get());
 
-    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, m6, v0, v1, v2, v3, v4,
-                               v5, v6, v7, v8);
+    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, m6, v0, v1, v2, v3, v4, v5, v6, v7, v8);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     auto dctx = setupContextAndLogger();
 
@@ -250,16 +246,14 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DATA_TYPES),
     checkMatMul(m3, m3, m5, dctx.get(), false, true);
     checkMatMul(v1, v7, v8, dctx.get(), true, true);
 
-    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5,
-                               v6);
+    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul after slicing", TAG_KERNELS "[new]",
-                           (DenseMatrix), (float, double, int32_t, int64_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul after slicing", TAG_KERNELS "[new]", (DenseMatrix),
+                           (float, double, int32_t, int64_t)) {
     using DT = TestType;
     auto dctx = setupContextAndLogger();
-    auto argMatrix = genGivenVals<DT>(
-        4, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    auto argMatrix = genGivenVals<DT>(4, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
     DT *resMatrix3x4 = nullptr;
     DT *resMatrix3x3 = nullptr;
     DT *resMatrix3x1 = nullptr;

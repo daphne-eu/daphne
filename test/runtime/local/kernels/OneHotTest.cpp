@@ -51,8 +51,7 @@ TEMPLATE_PRODUCT_TEST_CASE("OneHot", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
 
     SECTION("normal encoding") {
         info = genGivenVals<DenseMatrix<int64_t>>(1, {-1, 3, 2});
-        auto *exp = genGivenVals<DTRes>(
-            3, {-1, 1, 0, 0, 0, 1, -10, 0, 1, 0, 0, 1, 100, 0, 0, 1, 0, 1});
+        auto *exp = genGivenVals<DTRes>(3, {-1, 1, 0, 0, 0, 1, -10, 0, 1, 0, 0, 1, 100, 0, 0, 1, 0, 1});
 
         oneHot(res, arg, info, nullptr);
         CHECK(*res == *exp);

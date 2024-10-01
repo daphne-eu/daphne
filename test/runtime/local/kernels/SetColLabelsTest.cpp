@@ -31,11 +31,9 @@
 TEST_CASE("SetColLabels", TAG_KERNELS) {
     const size_t numCols = 3;
 
-    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::SI32,
-                              ValueTypeCode::UI8};
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::SI32, ValueTypeCode::UI8};
 
-    auto arg =
-        DataObjectFactory::create<Frame>(4, numCols, schema, nullptr, false);
+    auto arg = DataObjectFactory::create<Frame>(4, numCols, schema, nullptr, false);
     const char *labelsArg[numCols] = {"ab", "cde", "fghi"};
 
     Frame *res = nullptr;

@@ -27,8 +27,7 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.get()", TAG_DATASTRUCTURES,
-                           (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.get()", TAG_DATASTRUCTURES, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
     using DT = TestType;
 
     SECTION("empty matrix") {
@@ -117,8 +116,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.get()", TAG_DATASTRUCTURES,
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.get() on view", TAG_DATASTRUCTURES,
-                           (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.get() on view", TAG_DATASTRUCTURES, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
 
     auto m = genGivenVals<DT>(4, {
@@ -176,8 +174,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.get() on view", TAG_DATASTRUCTURES,
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.get() on view", TAG_DATASTRUCTURES,
-                           (CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.get() on view", TAG_DATASTRUCTURES, (CSRMatrix), (double, uint32_t)) {
     using DT = TestType;
 
     auto m = genGivenVals<DT>(4, {
@@ -216,8 +213,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.get() on view", TAG_DATASTRUCTURES,
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() for filling a matrix",
-                           TAG_DATASTRUCTURES, (DenseMatrix, CSRMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() for filling a matrix", TAG_DATASTRUCTURES, (DenseMatrix, CSRMatrix),
                            (double, uint32_t)) {
     using DT = TestType;
 
@@ -325,8 +321,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() for filling a matrix",
     DataObjectFactory::destroy(mExpEnd);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() for overwriting elements",
-                           TAG_DATASTRUCTURES, (DenseMatrix, CSRMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() for overwriting elements", TAG_DATASTRUCTURES, (DenseMatrix, CSRMatrix),
                            (double, uint32_t)) {
     using DT = TestType;
 
@@ -402,8 +397,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() for overwriting elements",
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() on view", TAG_DATASTRUCTURES,
-                           (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() on view", TAG_DATASTRUCTURES, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
 
     auto m = genGivenVals<DT>(4, {
@@ -511,8 +505,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() on view", TAG_DATASTRUCTURES,
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() on view", TAG_DATASTRUCTURES,
-                           (CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() on view", TAG_DATASTRUCTURES, (CSRMatrix), (double, uint32_t)) {
     using DT = TestType;
 
     auto m = genGivenVals<DT>(4,
@@ -569,8 +562,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.set() on view", TAG_DATASTRUCTURES,
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.append()", TAG_DATASTRUCTURES,
-                           (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.append()", TAG_DATASTRUCTURES, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
     using DT = TestType;
 
     auto m = genGivenVals<DT>(3,
@@ -711,8 +703,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.append()", TAG_DATASTRUCTURES,
     DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.append() on view", TAG_DATASTRUCTURES,
-                           (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.append() on view", TAG_DATASTRUCTURES, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
 
     auto m = DataObjectFactory::create<DT>(4, 5, false);
@@ -752,11 +743,10 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.append() on view", TAG_DATASTRUCTURES,
     view3->append(1, 4, 123);
     view3->finishAppend();
 
-    CHECK(*m == *genGivenVals<DT>(4, {
-                                         1,   2,   11,  22,  33,  3,   4,
-                                         44,  55,  66,  111, 222, 333, 444,
-                                         555, 666, 777, 888, 999, 123,
-                                     }));
+    CHECK(*m ==
+          *genGivenVals<DT>(4, {
+                                   1, 2, 11, 22, 33, 3, 4, 44, 55, 66, 111, 222, 333, 444, 555, 666, 777, 888, 999, 123,
+                               }));
 
     DataObjectFactory::destroy(m);
     DataObjectFactory::destroy(view1);
@@ -764,8 +754,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Matrix.append() on view", TAG_DATASTRUCTURES,
     DataObjectFactory::destroy(view3);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Matrix.append() on view", TAG_DATASTRUCTURES,
-                           (CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Matrix.append() on view", TAG_DATASTRUCTURES, (CSRMatrix), (double, uint32_t)) {
     using DT = TestType;
 
     auto m = DataObjectFactory::create<DT>(5, 3, 15, false);

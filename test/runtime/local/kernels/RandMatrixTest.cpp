@@ -31,8 +31,7 @@
 #define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES double, float, uint32_t, uint8_t
 
-TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     const size_t numRows = 100;
@@ -43,8 +42,7 @@ TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DATA_TYPES),
     for (double sparsity : {0.0, 0.1, 0.5, 0.9, 1.0}) {
         DYNAMIC_SECTION("sparsity = " << sparsity) {
             DT *m = nullptr;
-            randMatrix<DT, VT>(m, numRows, numCols, min, max, sparsity, -1,
-                               nullptr);
+            randMatrix<DT, VT>(m, numRows, numCols, min, max, sparsity, -1, nullptr);
 
             REQUIRE(m->getNumRows() == numRows);
             REQUIRE(m->getNumCols() == numCols);
@@ -60,8 +58,7 @@ TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DATA_TYPES),
                     }
                 }
 
-            const size_t numNonZerosExpected =
-                size_t(round(sparsity * numRows * numCols));
+            const size_t numNonZerosExpected = size_t(round(sparsity * numRows * numCols));
             CHECK(numNonZerosExpected == numNonZeros);
 
             DataObjectFactory::destroy(m);

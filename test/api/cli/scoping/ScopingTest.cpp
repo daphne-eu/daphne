@@ -27,20 +27,17 @@ const std::string dirPath = "test/api/cli/scoping/";
 
 TEST_CASE("block, success", TAG_SCOPING) {
     for (unsigned i = 1; i <= 3; i++) {
-        DYNAMIC_SECTION("block_success_" << i << ".daphne") {
-            compareDaphneToRefSimple(dirPath, "block_success", i);
-        }
+        DYNAMIC_SECTION("block_success_" << i << ".daphne") { compareDaphneToRefSimple(dirPath, "block_success", i); }
     }
 }
 
-#define MAKE_FAILURE_TEST_CASE(name, count)                                    \
-    TEST_CASE(name ", failure", TAG_SCOPING) {                                 \
-        for (unsigned i = 1; i <= count; i++) {                                \
-            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") {              \
-                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, \
-                                            name "_failure", i);               \
-            }                                                                  \
-        }                                                                      \
+#define MAKE_FAILURE_TEST_CASE(name, count)                                                                            \
+    TEST_CASE(name ", failure", TAG_SCOPING) {                                                                         \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") {                                                      \
+                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, name "_failure", i);                    \
+            }                                                                                                          \
+        }                                                                                                              \
     }
 
 MAKE_FAILURE_TEST_CASE("block", 2)

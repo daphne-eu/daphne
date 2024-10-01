@@ -33,8 +33,7 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
-TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
 
     auto m0 = genGivenVals<DT>(3, {
@@ -150,8 +149,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
     size_t numCols = 5;
     size_t numNonZeros = 5;
 
-    auto m0 = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,
-                                                       numNonZeros, true);
+    auto m0 = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, true);
     m0->set(1, 1, VT(11.));
     m0->set(2, 1, VT(21.));
     m0->set(2, 3, VT(23.));
@@ -161,14 +159,12 @@ TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
     DT *res = nullptr;
 
     SECTION("Normal on normal") {
-        auto m1 =
-            DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, 3, true);
+        auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, 3, true);
         m1->set(1, 0, VT(10.));
         m1->set(1, 2, VT(12.));
         m1->set(3, 0, VT(30.));
 
-        auto exp = DataObjectFactory::create<CSRMatrix<VT>>(
-            numRows, numCols * 2, 8, true);
+        auto exp = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols * 2, 8, true);
         exp->set(1, 1, VT(11.));
         exp->set(2, 1, VT(21.));
         exp->set(2, 3, VT(23.));
@@ -192,17 +188,14 @@ TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
         size_t upperBound = 3;
         size_t rowsTake = upperBound - lowerBound;
 
-        auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(m0, lowerBound,
-                                                           upperBound);
+        auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(m0, lowerBound, upperBound);
 
-        auto m2 = DataObjectFactory::create<CSRMatrix<VT>>(rowsTake, numCols, 3,
-                                                           true);
+        auto m2 = DataObjectFactory::create<CSRMatrix<VT>>(rowsTake, numCols, 3, true);
         m2->set(0, 0, VT(10.));
         m2->set(0, 2, VT(12.));
         m2->set(1, 1, VT(21.));
 
-        auto exp = DataObjectFactory::create<CSRMatrix<VT>>(
-            rowsTake, numCols * 2, 8, true);
+        auto exp = DataObjectFactory::create<CSRMatrix<VT>>(rowsTake, numCols * 2, 8, true);
         exp->set(1 - lowerBound, 1, VT(11.));
         exp->set(2 - lowerBound, 1, VT(21.));
         exp->set(2 - lowerBound, 3, VT(23.));
@@ -224,13 +217,10 @@ TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (CSRMatrix), (VALUE_TYPES)) {
         size_t lowerBound = 0;
         size_t upperBound = 2;
         size_t rowsTake = upperBound - lowerBound;
-        auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(m0, lowerBound,
-                                                           upperBound);
-        auto m2 = DataObjectFactory::create<CSRMatrix<VT>>(m0, upperBound,
-                                                           rowsTake * 2);
+        auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(m0, lowerBound, upperBound);
+        auto m2 = DataObjectFactory::create<CSRMatrix<VT>>(m0, upperBound, rowsTake * 2);
 
-        auto exp = DataObjectFactory::create<CSRMatrix<VT>>(
-            rowsTake, numCols * 2, numNonZeros, true);
+        auto exp = DataObjectFactory::create<CSRMatrix<VT>>(rowsTake, numCols * 2, numNonZeros, true);
         exp->set(1, 1, VT(11.));
 
         exp->set(2 - rowsTake, 1 + numCols, VT(21.));

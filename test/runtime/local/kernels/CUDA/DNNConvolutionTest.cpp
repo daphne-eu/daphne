@@ -19,19 +19,16 @@
 #include "runtime/local/datagen/GenGivenVals.h"
 #include "runtime/local/kernels/CUDA/Convolution.h"
 
-template <class DT>
-void check(const DT *in, const DT *filter, const DT *exp, DaphneContext *dctx) {
+template <class DT> void check(const DT *in, const DT *filter, const DT *exp, DaphneContext *dctx) {
     DT *res = nullptr;
     size_t out_h;
     size_t out_w;
-    CUDA::Convolution::Forward<DT, DT>::apply(res, out_h, out_w, in, filter,
-                                              nullptr, in->getNumRows(), 1, 3,
-                                              3, 2, 2, 1, 1, 0, 0, dctx);
+    CUDA::Convolution::Forward<DT, DT>::apply(res, out_h, out_w, in, filter, nullptr, in->getNumRows(), 1, 3, 3, 2, 2,
+                                              1, 1, 0, 0, dctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Convolution::Forward", TAG_DNN,
-                           (DenseMatrix),
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Convolution::Forward", TAG_DNN, (DenseMatrix),
                            (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;

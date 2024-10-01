@@ -37,8 +37,7 @@
 #define VALUE_TYPES double, uint32_t
 
 template <class DT, typename VT>
-void checkEwBinaryObjSca(BinaryOpCode opCode, const DT *lhs, const VT rhs,
-                         const DT *exp) {
+void checkEwBinaryObjSca(BinaryOpCode opCode, const DT *lhs, const VT rhs, const DT *exp) {
     DT *res = nullptr;
     ewBinaryObjSca<DT, DT, VT>(opCode, res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
@@ -49,22 +48,18 @@ void checkEwBinaryObjSca(BinaryOpCode opCode, const DT *lhs, const VT rhs,
 // Arithmetic
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
     auto m0 = genGivenVals<DT>(4, {
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                   });
     auto m1 = genGivenVals<DT>(4, {
-                                      1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                   });
     auto m2 = genGivenVals<DT>(4, {
-                                      2, 3, 1, 1, 2, 4, 1, 2, 1, 3, 1, 4,
-                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                      2, 3, 1, 1, 2, 4, 1, 2, 1, 3, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                                   });
 
     checkEwBinaryObjSca<DT, VT>(BinaryOpCode::ADD, m0, 0, m0);
@@ -79,16 +74,13 @@ TEMPLATE_TEST_CASE(TEST_NAME("add - Frame"), TAG_KERNELS, VALUE_TYPES) {
     using DTCol = DenseMatrix<VT>;
 
     auto m0 = genGivenVals<DTCol>(4, {
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto m1 = genGivenVals<DTCol>(4, {
-                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto m2 = genGivenVals<DTCol>(4, {
-                                         2, 3, 1, 1, 2, 4, 1, 2, 1, 3, 1, 4,
-                                         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                         2, 3, 1, 1, 2, 4, 1, 2, 1, 3, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                                      });
 
     Frame *f0 = nullptr;
@@ -105,22 +97,18 @@ TEMPLATE_TEST_CASE(TEST_NAME("add - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(f0, f1, f2, m0, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
     auto m0 = genGivenVals<DT>(4, {
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                   });
     auto m1 = genGivenVals<DT>(4, {
-                                      1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                   });
     auto m2 = genGivenVals<DT>(4, {
-                                      2, 4, 0, 0, 2, 6, 0, 2, 0, 4, 0, 6,
-                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      2, 4, 0, 0, 2, 6, 0, 2, 0, 4, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                   });
 
     checkEwBinaryObjSca<DT, VT>(BinaryOpCode::MUL, m0, 0, m0);
@@ -135,16 +123,13 @@ TEMPLATE_TEST_CASE(TEST_NAME("mul - Frame"), TAG_KERNELS, VALUE_TYPES) {
     using DTCol = DenseMatrix<VT>;
 
     auto m0 = genGivenVals<DTCol>(4, {
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto m1 = genGivenVals<DTCol>(4, {
-                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
     auto m2 = genGivenVals<DTCol>(4, {
-                                         2, 4, 0, 0, 2, 6, 0, 2, 0, 4, 0, 6,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         2, 4, 0, 0, 2, 6, 0, 2, 0, 4, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                      });
 
     Frame *f0 = nullptr;
@@ -161,8 +146,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("mul - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(f0, f1, f2, m0, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -203,8 +187,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("div - Frame"), TAG_KERNELS, VALUE_TYPES) {
 // Comparisons
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -240,8 +223,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("eq - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -270,8 +252,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("neq - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -300,8 +281,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("lt - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -330,8 +310,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("le - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -360,8 +339,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("gt - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -394,8 +372,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("ge - Frame"), TAG_KERNELS, VALUE_TYPES) {
 // Min/max
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -424,8 +401,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("min - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -458,8 +434,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("max - Frame"), TAG_KERNELS, VALUE_TYPES) {
 // Logical
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -527,8 +502,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("and - Frame"), TAG_KERNELS, VALUE_TYPES) {
     DataObjectFactory::destroy(arg, exp, m1, m2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or - Matrix"), TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or - Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -600,11 +574,9 @@ TEMPLATE_TEST_CASE(TEST_NAME("or - Frame"), TAG_KERNELS, VALUE_TYPES) {
 // Invalid op-code
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS,
-                           (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT *res = nullptr;
     auto arg = genGivenVals<DT>(1, {1});
-    CHECK_THROWS(ewBinaryObjSca<DT, DT, typename DT::VT>(
-        static_cast<BinaryOpCode>(999), res, arg, 1, nullptr));
+    CHECK_THROWS(ewBinaryObjSca<DT, DT, typename DT::VT>(static_cast<BinaryOpCode>(999), res, arg, 1, nullptr));
 }

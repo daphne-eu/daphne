@@ -26,8 +26,7 @@
 #include <tags.h>
 
 template <class DTRes>
-void checkFill(const typename DTRes::VT val, const size_t rows,
-               const size_t cols, DaphneContext *ctx) {
+void checkFill(const typename DTRes::VT val, const size_t rows, const size_t cols, DaphneContext *ctx) {
     DTRes *res = nullptr;
     DTRes *exp = nullptr;
     CUDA::Fill<DTRes, typename DTRes::VT>::apply(res, val, rows, cols, ctx);
@@ -39,16 +38,14 @@ void checkFill(const typename DTRes::VT val, const size_t rows,
     DataObjectFactory::destroy(exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix),
-                           (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
 
     checkFill<TestType>(0, 123, 456, dctx.get());
     checkFill<TestType>(123.45, 123, 456, dctx.get());
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix),
-                           (int64_t, uint8_t)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix), (int64_t, uint8_t)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
 
     checkFill<TestType>(0, 123, 456, dctx.get());

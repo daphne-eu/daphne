@@ -32,22 +32,17 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
-template <class DT>
-void checkReshape(const DT *arg, size_t numRows, size_t numCols,
-                  const DT *exp) {
+template <class DT> void checkReshape(const DT *arg, size_t numRows, size_t numCols, const DT *exp) {
     DT *res = nullptr;
     reshape<DT, DT>(res, arg, numRows, numCols, nullptr); // w/o template
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Reshape", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Reshape", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    using DTView =
-        typename std::conditional<std::is_same<DT, Matrix<VT>>::value,
-                                  DenseMatrix<VT>, DT>::type;
+    using DTView = typename std::conditional<std::is_same<DT, Matrix<VT>>::value, DenseMatrix<VT>, DT>::type;
 
     std::vector<typename DT::VT> vals = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     DT *arg = genGivenVals<DT>(1, vals); // 1x12
@@ -63,28 +58,25 @@ TEMPLATE_PRODUCT_TEST_CASE("Reshape", TAG_KERNELS, (DATA_TYPES),
         DataObjectFactory::destroy(exp);
     }
     SECTION("view 1") {
-        const DTView *initial = genGivenVals<DTView>(3, vals); // 3x4
-        const DT *view = static_cast<DT *>(
-            DataObjectFactory::create<DTView>(initial, 0, 3, 2, 4)); // 3x2
-        const DT *exp = genGivenVals<DT>(2, {2, 3, 6, 7, 10, 11});   // 2x3
+        const DTView *initial = genGivenVals<DTView>(3, vals);                                      // 3x4
+        const DT *view = static_cast<DT *>(DataObjectFactory::create<DTView>(initial, 0, 3, 2, 4)); // 3x2
+        const DT *exp = genGivenVals<DT>(2, {2, 3, 6, 7, 10, 11});                                  // 2x3
         checkReshape(view, 2, 3, exp);
 
         DataObjectFactory::destroy(exp, initial, view);
     }
     SECTION("view 2") {
-        const DTView *initial = genGivenVals<DTView>(2, vals); // 2x6
-        const DT *view = static_cast<DT *>(
-            DataObjectFactory::create<DTView>(initial, 1, 2, 0, 6)); // 1x6
-        const DT *exp = genGivenVals<DT>(3, {6, 7, 8, 9, 10, 11});   // 3x2
+        const DTView *initial = genGivenVals<DTView>(2, vals);                                      // 2x6
+        const DT *view = static_cast<DT *>(DataObjectFactory::create<DTView>(initial, 1, 2, 0, 6)); // 1x6
+        const DT *exp = genGivenVals<DT>(3, {6, 7, 8, 9, 10, 11});                                  // 3x2
         checkReshape(view, 3, 2, exp);
 
         DataObjectFactory::destroy(exp, initial, view);
     }
     SECTION("view 3") {
-        const DTView *initial = genGivenVals<DTView>(2, vals); // 2x6
-        const DT *view = static_cast<DT *>(
-            DataObjectFactory::create<DTView>(initial, 1, 2, 0, 4)); // 1x4
-        const DT *exp = genGivenVals<DT>(2, {6, 7, 8, 9});           // 2x2
+        const DTView *initial = genGivenVals<DTView>(2, vals);                                      // 2x6
+        const DT *view = static_cast<DT *>(DataObjectFactory::create<DTView>(initial, 1, 2, 0, 4)); // 1x4
+        const DT *exp = genGivenVals<DT>(2, {6, 7, 8, 9});                                          // 2x2
         checkReshape(view, 2, 2, exp);
 
         DataObjectFactory::destroy(exp, initial, view);

@@ -19,6 +19,4 @@
 #include "run_tests.h"
 #include <catch.hpp>
 
-TEST_CASE("Stop - check throws") {
-    REQUIRE_THROWS_AS((stop("Custom Message", nullptr)), std::runtime_error);
-}
+TEST_CASE("Stop - check throws") { REQUIRE_THROWS_AS((stop("Custom Message", nullptr)), std::runtime_error); }

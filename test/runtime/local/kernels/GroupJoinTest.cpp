@@ -44,12 +44,9 @@ TEST_CASE("GroupJoin", TAG_KERNELS) {
     auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
 
     // rhs is a kind of fact table.
-    auto rhsC0 =
-        genGivenVals<DenseMatrix<int64_t>>(10, {1, 1, 1, 3, 1, 3, 3, 1, 3, 3});
-    auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(
-        10, {42, 42, 42, 42, 42, 42, 42, 42, 42, 42});
-    auto rhsC2 = genGivenVals<DenseMatrix<double>>(
-        10, {10, 20, 30, 10, 20, 30, 10, 20, 30, 10});
+    auto rhsC0 = genGivenVals<DenseMatrix<int64_t>>(10, {1, 1, 1, 3, 1, 3, 3, 1, 3, 3});
+    auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(10, {42, 42, 42, 42, 42, 42, 42, 42, 42, 42});
+    auto rhsC2 = genGivenVals<DenseMatrix<double>>(10, {10, 20, 30, 10, 20, 30, 10, 20, 30, 10});
     std::vector<Structure *> rhsCols = {rhsC0, rhsC1, rhsC2};
     std::string rhsLabels[] = {"f.id", "f.bar", "f.agg"};
     auto rhs = DataObjectFactory::create<Frame>(rhsCols, rhsLabels);
@@ -81,17 +78,14 @@ TEST_CASE("GroupJoin", TAG_KERNELS) {
 #else
     auto resC0Fnd = res->getColumn<int64_t>(0);
     auto resC1Fnd = res->getColumn<double>(1);
-    const bool dataGood =
-        (
-            // the one order
-            resC0Fnd->get(0, 0) == 1 && resC0Fnd->get(1, 0) == 3 &&
-            resC1Fnd->get(0, 0) == 100 && resC1Fnd->get(1, 0) == 90 &&
-            lhsTid->get(0, 0) == 0 && lhsTid->get(1, 0) == 2) ||
-        (
-            // the other order
-            resC0Fnd->get(1, 0) == 1 && resC0Fnd->get(0, 0) == 3 &&
-            resC1Fnd->get(1, 0) == 100 && resC1Fnd->get(0, 0) == 90 &&
-            lhsTid->get(1, 0) == 0 && lhsTid->get(0, 0) == 2);
+    const bool dataGood = (
+                              // the one order
+                              resC0Fnd->get(0, 0) == 1 && resC0Fnd->get(1, 0) == 3 && resC1Fnd->get(0, 0) == 100 &&
+                              resC1Fnd->get(1, 0) == 90 && lhsTid->get(0, 0) == 0 && lhsTid->get(1, 0) == 2) ||
+                          (
+                              // the other order
+                              resC0Fnd->get(1, 0) == 1 && resC0Fnd->get(0, 0) == 3 && resC1Fnd->get(1, 0) == 100 &&
+                              resC1Fnd->get(0, 0) == 90 && lhsTid->get(1, 0) == 0 && lhsTid->get(0, 0) == 2);
     CHECK(dataGood);
 #endif
 }

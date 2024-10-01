@@ -28,15 +28,13 @@
 #include <vector>
 
 template <class DT>
-void checkMatMulCUDA(const DT *lhs, const DT *rhs, const DT *exp, bool transa,
-                     bool transb, DaphneContext *ctx) {
+void checkMatMulCUDA(const DT *lhs, const DT *rhs, const DT *exp, bool transa, bool transb, DaphneContext *ctx) {
     DT *res = nullptr;
     CUDA::matMul<DT, DT, DT>(res, lhs, rhs, transa, transb, ctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix),
-                           (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
     auto m0 = genGivenVals<DT>(3, {
@@ -127,8 +125,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix),
     DataObjectFactory::destroy(v4);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul Transposed", TAG_KERNELS,
-                           (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul Transposed", TAG_KERNELS, (DenseMatrix), (float, double)) {
     auto dctx = setupContextAndLogger();
     using DT = TestType;
     auto m0 = genGivenVals<DT>(3, {
@@ -227,6 +224,5 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul Transposed", TAG_KERNELS,
     checkMatMulCUDA(m2, v5, v6, true, false, dctx.get());
     checkMatMulCUDA(m3, m3, m5, false, true, dctx.get());
 
-    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5,
-                               v6);
+    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);
 }

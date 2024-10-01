@@ -36,8 +36,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTRes = TestType;
     using VT = typename DTRes::VT;
     using DTSel =
-        typename std::conditional<std::is_same<DTRes, Matrix<VT>>::value,
-                                  Matrix<int64_t>, DenseMatrix<int64_t>>::type;
+        typename std::conditional<std::is_same<DTRes, Matrix<VT>>::value, Matrix<int64_t>, DenseMatrix<int64_t>>::type;
 
     DTSel *ys = nullptr;
     DTSel *xs = nullptr;
@@ -62,8 +61,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
         resNumRows = -1;
         resNumCols = -1;
 
-        exp = genGivenVals<DTRes>(6, {0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0,
-                                      0, 0, 0, 0, 0, 0, 0, 6, 0, 3, 0, 0});
+        exp = genGivenVals<DTRes>(6, {0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 3, 0, 0});
     }
     SECTION("example 2: crop #rows") {
         ys = genGivenVals<DTSel>(4, {1, 4, 5, 4});

@@ -25,13 +25,11 @@
 
 const std::string dirPath = "test/api/cli/expressions/";
 
-#define MAKE_TEST_CASE(name, count)                                            \
-    TEST_CASE(name, TAG_CAST) {                                                \
-        for (unsigned i = 1; i <= count; i++) {                                \
-            DYNAMIC_SECTION(name "_" << i << ".daphne") {                      \
-                compareDaphneToRefSimple(dirPath, name, i);                    \
-            }                                                                  \
-        }                                                                      \
+#define MAKE_TEST_CASE(name, count)                                                                                    \
+    TEST_CASE(name, TAG_CAST) {                                                                                        \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") { compareDaphneToRefSimple(dirPath, name, i); }                \
+        }                                                                                                              \
     }
 MAKE_TEST_CASE("cast_obj_obj", 1)
 MAKE_TEST_CASE("cast_obj_sca", 1)

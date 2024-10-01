@@ -41,8 +41,7 @@ template <class DT> void checkSyrk(const DT *arg, DCTX(dctx)) {
     DataObjectFactory::destroy(resExp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Syrk", TAG_KERNELS, (DenseMatrix),
-                           (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("Syrk", TAG_KERNELS, (DenseMatrix), (float, double)) {
     using DT = TestType;
     auto dctx = setupContextAndLogger();
 

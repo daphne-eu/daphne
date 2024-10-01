@@ -32,25 +32,20 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, int64_t, uint32_t
 
-TEMPLATE_PRODUCT_TEST_CASE("FilterCol", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("FilterCol", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     using VTSel = int64_t;
     using DTSel = DenseMatrix<VTSel>;
-    using DTEmpty =
-        typename std::conditional<std::is_same<DT, Matrix<VT>>::value,
-                                  DenseMatrix<VT>, DT>::type;
+    using DTEmpty = typename std::conditional<std::is_same<DT, Matrix<VT>>::value, DenseMatrix<VT>, DT>::type;
 
-    auto arg = genGivenVals<DT>(
-        3, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    auto arg = genGivenVals<DT>(3, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
     DTSel *sel = nullptr;
     DT *exp = nullptr;
     SECTION("bit vector empty") {
         sel = genGivenVals<DTSel>(5, {0, 0, 0, 0, 0});
-        exp =
-            static_cast<DT *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
     }
     SECTION("bit vector contiguous 0") {
         sel = genGivenVals<DTSel>(5, {0, 0, 1, 1, 1});
@@ -66,8 +61,7 @@ TEMPLATE_PRODUCT_TEST_CASE("FilterCol", TAG_KERNELS, (DATA_TYPES),
     }
     SECTION("bit vector full") {
         sel = genGivenVals<DTSel>(5, {1, 1, 1, 1, 1});
-        exp = genGivenVals<DT>(
-            3, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+        exp = genGivenVals<DT>(3, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
     }
 
     DT *res = nullptr;

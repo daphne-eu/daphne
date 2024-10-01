@@ -39,8 +39,7 @@ void compareDaphneToDaphneOtherArgs(const std::string &scriptFilePath) {
     // `daphne --vec --select-matrix-repr $scriptFilePath` (vec, repr)
     std::stringstream outVR;
     std::stringstream errVR;
-    int statusVR = runDaphne(outVR, errVR, "--vec", "--select-matrix-repr",
-                             scriptFilePath.c_str());
+    int statusVR = runDaphne(outVR, errVR, "--vec", "--select-matrix-repr", scriptFilePath.c_str());
 
     // Check if all runs were successful.
     CHECK(statusNN == StatusCode::SUCCESS);
@@ -56,15 +55,12 @@ void compareDaphneToDaphneOtherArgs(const std::string &scriptFilePath) {
     CHECK(errNN.str() == errVR.str());
 }
 
-#define MAKE_TEST_CASE(name, count)                                            \
-    TEST_CASE(name, TAG_VECTORIZED) {                                          \
-        for (unsigned i = 1; i <= count; i++) {                                \
-            const std::string scriptFilePath =                                 \
-                dirPath + name + "_" + std::to_string(i) + ".daphne";          \
-            DYNAMIC_SECTION(scriptFilePath) {                                  \
-                compareDaphneToDaphneOtherArgs(scriptFilePath);                \
-            }                                                                  \
-        }                                                                      \
+#define MAKE_TEST_CASE(name, count)                                                                                    \
+    TEST_CASE(name, TAG_VECTORIZED) {                                                                                  \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            const std::string scriptFilePath = dirPath + name + "_" + std::to_string(i) + ".daphne";                   \
+            DYNAMIC_SECTION(scriptFilePath) { compareDaphneToDaphneOtherArgs(scriptFilePath); }                        \
+        }                                                                                                              \
     }
 
 MAKE_TEST_CASE("pipeline", 7)

@@ -29,19 +29,16 @@
 #define VALUE_TYPES double, float // TODO uint32_t
 
 template <class DT> void funAdd(DT ***outputs, Structure **inputs, DCTX(ctx)) {
-    ewBinaryMat(BinaryOpCode::ADD, *outputs[0],
-                reinterpret_cast<DT *>(inputs[0]),
-                reinterpret_cast<DT *>(inputs[1]), ctx);
+    ewBinaryMat(BinaryOpCode::ADD, *outputs[0], reinterpret_cast<DT *>(inputs[0]), reinterpret_cast<DT *>(inputs[1]),
+                ctx);
 }
 
 template <class DT> void funMul(DT ***outputs, Structure **inputs, DCTX(ctx)) {
-    ewBinaryMat(BinaryOpCode::MUL, *outputs[0],
-                reinterpret_cast<DT *>(inputs[0]),
-                reinterpret_cast<DT *>(inputs[1]), ctx);
+    ewBinaryMat(BinaryOpCode::MUL, *outputs[0], reinterpret_cast<DT *>(inputs[0]), reinterpret_cast<DT *>(inputs[1]),
+                ctx);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED,
-                           (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     auto dctx = setupContextAndLogger();
@@ -67,10 +64,9 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED,
 
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
     funcs.push_back(std::function<void(DT ***, Structure **, DCTX(ctx))>(
-        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(
-            reinterpret_cast<void *>(&funAdd<DT>))));
-    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows,
-                              outCols, splits, combines, dctx.get(), false);
+        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(reinterpret_cast<void *>(&funAdd<DT>))));
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(),
+                              false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, dctx.get()));
 
@@ -105,10 +101,9 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES),
 
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
     funcs.push_back(std::function<void(DT ***, Structure **, DCTX(ctx))>(
-        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(
-            reinterpret_cast<void *>(&funAdd<DT>))));
-    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows,
-                              outCols, splits, combines, dctx.get(), false);
+        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(reinterpret_cast<void *>(&funAdd<DT>))));
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(),
+                              false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, dctx.get()));
 
@@ -143,10 +138,9 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES),
 
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
     funcs.push_back(std::function<void(DT ***, Structure **, DCTX(ctx))>(
-        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(
-            reinterpret_cast<void *>(&funMul<DT>))));
-    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows,
-                              outCols, splits, combines, dctx.get(), false);
+        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(reinterpret_cast<void *>(&funMul<DT>))));
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(),
+                              false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, dctx.get()));
 

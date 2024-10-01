@@ -472,8 +472,7 @@ TEST_CASE("ReadMM CRS (Frame)", TAG_IO) {
 
     for (size_t r = 0; r < numRows; r++)
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<double>(c)->get(r, 0) ==
-                  m->getColumn<double>(r)->get(c, 0));
+            CHECK(m->getColumn<double>(c)->get(r, 0) == m->getColumn<double>(r)->get(c, 0));
 
     DataObjectFactory::destroy(m);
 }
@@ -496,8 +495,7 @@ TEST_CASE("ReadMM CRK (Frame)", TAG_IO) {
     for (size_t r = 0; r < numRows; r++) {
         CHECK(m->getColumn<double>(r)->get(r, 0) == 0);
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<double>(c)->get(r, 0) ==
-                  -m->getColumn<double>(r)->get(c, 0));
+            CHECK(m->getColumn<double>(c)->get(r, 0) == -m->getColumn<double>(r)->get(c, 0));
     }
 
     DataObjectFactory::destroy(m);
@@ -548,8 +546,7 @@ TEST_CASE("ReadMM AIK (Frame)", TAG_IO) {
     for (size_t r = 0; r < numRows; r++) {
         CHECK(m->getColumn<int64_t>(r)->get(r, 0) == 0);
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<int64_t>(c)->get(r, 0) ==
-                  -m->getColumn<int64_t>(r)->get(c, 0));
+            CHECK(m->getColumn<int64_t>(c)->get(r, 0) == -m->getColumn<int64_t>(r)->get(c, 0));
     }
 
     DataObjectFactory::destroy(m);
@@ -572,8 +569,7 @@ TEST_CASE("ReadMM AIS (Frame)", TAG_IO) {
 
     for (size_t r = 0; r < numRows; r++)
         for (size_t c = r + 1; c < numCols; c++)
-            CHECK(m->getColumn<int64_t>(c)->get(r, 0) ==
-                  m->getColumn<int64_t>(r)->get(c, 0));
+            CHECK(m->getColumn<int64_t>(c)->get(r, 0) == m->getColumn<int64_t>(r)->get(c, 0));
 
     DataObjectFactory::destroy(m);
 }

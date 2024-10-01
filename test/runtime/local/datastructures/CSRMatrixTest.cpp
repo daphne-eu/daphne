@@ -24,8 +24,7 @@
 
 #include <cstdint>
 
-TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES,
-                   ALL_VALUE_TYPES) {
+TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
     // No assertions in this test case. We just want to see if it runs without
     // crashing.
 
@@ -35,8 +34,7 @@ TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES,
     const size_t numCols = 2000;
     const size_t numNonZeros = 500;
 
-    CSRMatrix<ValueType> *m = DataObjectFactory::create<CSRMatrix<ValueType>>(
-        numRows, numCols, numNonZeros, false);
+    CSRMatrix<ValueType> *m = DataObjectFactory::create<CSRMatrix<ValueType>>(numRows, numCols, numNonZeros, false);
 
     ValueType *values = m->getValues();
     size_t *colIdxs = m->getColIdxs();
@@ -63,10 +61,8 @@ TEST_CASE("CSRMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
     const size_t numNonZeros = 3;
 
     CSRMatrix<ValueType> *mOrig =
-        DataObjectFactory::create<CSRMatrix<ValueType>>(
-            numRowsOrig, numColsOrig, numNonZeros, true);
-    CSRMatrix<ValueType> *mSub =
-        DataObjectFactory::create<CSRMatrix<ValueType>>(mOrig, 3, 5);
+        DataObjectFactory::create<CSRMatrix<ValueType>>(numRowsOrig, numColsOrig, numNonZeros, true);
+    CSRMatrix<ValueType> *mSub = DataObjectFactory::create<CSRMatrix<ValueType>>(mOrig, 3, 5);
 
     // Sub-matrix dimensions are as expected.
     CHECK(mSub->getNumRows() == 2);
@@ -78,8 +74,7 @@ TEST_CASE("CSRMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
 
     ValueType *rowOffsetsOrig = mOrig->getRowOffsets();
     ValueType *rowOffsetsSub = mSub->getRowOffsets();
-    CHECK((rowOffsetsSub >= rowOffsetsOrig &&
-           rowOffsetsSub <= rowOffsetsOrig + numRowsOrig));
+    CHECK((rowOffsetsSub >= rowOffsetsOrig && rowOffsetsSub <= rowOffsetsOrig + numRowsOrig));
     rowOffsetsSub[0] = 123;
     CHECK(rowOffsetsOrig[3] == 123);
 

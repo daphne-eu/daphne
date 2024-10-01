@@ -31,12 +31,10 @@
 TEST_CASE("SetColLabelsPrefix", TAG_KERNELS) {
     const size_t numCols = 3;
 
-    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::SI32,
-                              ValueTypeCode::UI8};
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::SI32, ValueTypeCode::UI8};
 
     const std::string labelsArg[numCols] = {"a", "b", "c"};
-    auto arg =
-        DataObjectFactory::create<Frame>(4, numCols, schema, labelsArg, false);
+    auto arg = DataObjectFactory::create<Frame>(4, numCols, schema, labelsArg, false);
 
     const std::string *labelsRes;
 

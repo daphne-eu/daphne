@@ -31,25 +31,20 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("FilterRow", TAG_KERNELS, (DenseMatrix, Matrix),
-                           (double, int64_t, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("FilterRow", TAG_KERNELS, (DenseMatrix, Matrix), (double, int64_t, uint32_t)) {
     using DT = TestType;
     using VTArg = typename DT::VT;
     using VTSel = int64_t;
     using DTSel = DenseMatrix<VTSel>;
-    using DTEmpty =
-        typename std::conditional<std::is_same<DT, Matrix<VTArg>>::value,
-                                  DenseMatrix<VTArg>, DT>::type;
+    using DTEmpty = typename std::conditional<std::is_same<DT, Matrix<VTArg>>::value, DenseMatrix<VTArg>, DT>::type;
 
-    auto arg = genGivenVals<DT>(
-        5, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    auto arg = genGivenVals<DT>(5, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
     DTSel *sel = nullptr;
     DT *exp = nullptr;
     SECTION("bit vector empty") {
         sel = genGivenVals<DTSel>(5, {0, 0, 0, 0, 0});
-        exp =
-            static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 3, false));
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 3, false));
     }
     SECTION("bit vector contiguous 0") {
         sel = genGivenVals<DTSel>(5, {0, 0, 1, 1, 1});
@@ -204,8 +199,8 @@ TEMPLATE_TEST_CASE("FilterRow - Frame", TAG_KERNELS, double, int64_t,
  * @brief Runs the filterRow-kernel with large random input data only to check
  * if it returns the expected number of rows and doesn't crash.
  */
-TEMPLATE_TEST_CASE("FilterRow (large input) - Frame", TAG_KERNELS, double,
-                   int64_t, uint32_t) { // NOLINT(cert-err58-cpp)
+TEMPLATE_TEST_CASE("FilterRow (large input) - Frame", TAG_KERNELS, double, int64_t,
+                   uint32_t) { // NOLINT(cert-err58-cpp)
     using VTSel = TestType;
     using DTSel = DenseMatrix<VTSel>;
 
@@ -224,8 +219,7 @@ TEMPLATE_TEST_CASE("FilterRow (large input) - Frame", TAG_KERNELS, double,
     // Randomly generate the selection with a share of 1s equal to selectivity.
     const double selectivity = 0.01;
     DTSel *sel = nullptr;
-    randMatrix<DTSel, VTSel>(sel, numRows, 1, VTSel(1), VTSel(1), selectivity,
-                             -1, nullptr);
+    randMatrix<DTSel, VTSel>(sel, numRows, 1, VTSel(1), VTSel(1), selectivity, -1, nullptr);
 
     Frame *res = nullptr;
     filterRow<Frame, Frame, VTSel>(res, arg, sel, nullptr);

@@ -33,8 +33,7 @@
 TEST_CASE("SemiJoin", TAG_KERNELS) {
     // lhs
     auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(4, {1, 2, 3, 4});
-    auto lhsC1 =
-        genGivenVals<DenseMatrix<double>>(4, {11.0, 22.0, 33.0, 44.00});
+    auto lhsC1 = genGivenVals<DenseMatrix<double>>(4, {11.0, 22.0, 33.0, 44.00});
     std::vector<Structure *> lhsCols = {lhsC0, lhsC1};
     std::string lhsLabels[] = {"a", "b"};
     auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
@@ -64,6 +63,5 @@ TEST_CASE("SemiJoin", TAG_KERNELS) {
     CHECK(*res == *expRes);
     CHECK(*lhsTid == *expTid);
 
-    DataObjectFactory::destroy(lhs, rhs, expRes, expTid, res, lhsTid, lhsC0,
-                               lhsC1, rhsC0, rhsC1, rhsC2, expResC0);
+    DataObjectFactory::destroy(lhs, rhs, expRes, expTid, res, lhsTid, lhsC0, lhsC1, rhsC0, rhsC1, rhsC2, expResC0);
 }

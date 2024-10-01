@@ -41,13 +41,11 @@ TEST_CASE("readSparse", TAG_IO) {
 #endif
 
 TEST_CASE("readFrameFromCSV", TAG_IO) {
-    compareDaphneToRef(dirPath + "testReadFrame.txt",
-                       dirPath + "testReadFrame.daphne");
+    compareDaphneToRef(dirPath + "testReadFrame.txt", dirPath + "testReadFrame.daphne");
 }
 
 TEST_CASE("readMatrixFromCSV", TAG_IO) {
-    compareDaphneToRef(dirPath + "testReadMatrix.txt",
-                       dirPath + "testReadMatrix.daphne");
+    compareDaphneToRef(dirPath + "testReadMatrix.txt", dirPath + "testReadMatrix.daphne");
 }
 
 // does not yet work!

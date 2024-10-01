@@ -27,20 +27,16 @@
 
 #define TYPES double, float, int64_t, int32_t, int8_t, uint64_t, uint8_t
 
-template <class DTRes, class DTArg>
-void checkMap(const DTArg *arg, const DTRes *exp, void *func) {
+template <class DTRes, class DTArg> void checkMap(const DTArg *arg, const DTRes *exp, void *func) {
     DTRes *res = nullptr;
     map(res, arg, func, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
 
-template <typename VTarg, typename VTres> VTres mult3func(VTarg arg) {
-    return static_cast<VTres>(arg) * 3;
-}
+template <typename VTarg, typename VTres> VTres mult3func(VTarg arg) { return static_cast<VTres>(arg) * 3; }
 
-template <template <typename VT> class DT, class VTarg, class VTres>
-void checkMult3Map() {
+template <template <typename VT> class DT, class VTarg, class VTres> void checkMult3Map() {
     using DTArg = DT<VTarg>;
     using DTRes = DT<VTres>;
 
@@ -103,8 +99,7 @@ void checkMult3Map() {
     DataObjectFactory::destroy(m1, m2, m3, mult3_res1, mult3_res2, mult3_res3);
 }
 
-template <template <typename VT> class DT, typename VTarg, typename VTres1,
-          typename... VTresN>
+template <template <typename VT> class DT, typename VTarg, typename VTres1, typename... VTresN>
 std::enable_if_t<(sizeof...(VTresN) > 0)> checkMult3Map() {
     checkMult3Map<DT, VTarg, VTres1>();
     checkMult3Map<DT, VTarg, VTresN...>();

@@ -28,26 +28,22 @@
 #define VALUE_TYPES int32_t, double
 
 template <typename DTArg, typename VTSel>
-void checkInsertCol(const DTArg *arg, const DTArg *ins, const VTSel lowerIncl,
-                    const VTSel upperExcl, const DTArg *exp) {
+void checkInsertCol(const DTArg *arg, const DTArg *ins, const VTSel lowerIncl, const VTSel upperExcl,
+                    const DTArg *exp) {
     DTArg *res = nullptr;
-    insertCol<DTArg, DTArg, VTSel>(res, arg, ins, lowerIncl, upperExcl,
-                                   nullptr);
+    insertCol<DTArg, DTArg, VTSel>(res, arg, ins, lowerIncl, upperExcl, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res, exp);
 }
 
 template <typename DTArg, typename VTSel>
-void checkInsertColThrow(const DTArg *arg, const DTArg *ins,
-                         const VTSel lowerIncl, const VTSel upperExcl) {
+void checkInsertColThrow(const DTArg *arg, const DTArg *ins, const VTSel lowerIncl, const VTSel upperExcl) {
     DTArg *res = nullptr;
-    REQUIRE_THROWS_AS((insertCol<DTArg, DTArg, VTSel>(res, arg, ins, lowerIncl,
-                                                      upperExcl, nullptr)),
+    REQUIRE_THROWS_AS((insertCol<DTArg, DTArg, VTSel>(res, arg, ins, lowerIncl, upperExcl, nullptr)),
                       std::out_of_range);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -154,8 +150,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DATA_TYPES),
 
     DataObjectFactory::destroy(arg, ins);
 }
-TEMPLATE_PRODUCT_TEST_CASE("InsertCol - FP specific", TAG_KERNELS, (DATA_TYPES),
-                           (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("InsertCol - FP specific", TAG_KERNELS, (DATA_TYPES), (double)) {
     using DT = TestType;
     using VT = typename DT::VT;
 

@@ -22,8 +22,7 @@
 
 #include <catch.hpp>
 
-TEMPLATE_PRODUCT_TEST_CASE("Sample", TAG_KERNELS, (DenseMatrix),
-                           (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Sample", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 

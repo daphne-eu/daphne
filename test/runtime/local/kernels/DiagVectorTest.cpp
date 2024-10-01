@@ -31,8 +31,7 @@
 #define DATA_TYPES CSRMatrix, DenseMatrix, Matrix
 #define VALUE_TYPES int32_t, double
 
-template <class DTRes, class DTArg>
-void checkDiagVector(const DTArg *arg, DTRes *&res, DTRes *exp) {
+template <class DTRes, class DTArg> void checkDiagVector(const DTArg *arg, DTRes *&res, DTRes *exp) {
     diagVector<DTRes, DTArg>(res, arg, nullptr);
     CHECK(*res == *exp);
 }
@@ -41,8 +40,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-normal", TAG_KERNELS, (DATA_TYPES),
                            (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
     using VT = typename DT::VT;
-    using DTRes = typename std::conditional<std::is_same<DT, Matrix<VT>>::value,
-                                            Matrix<VT>, DenseMatrix<VT>>::type;
+    using DTRes = typename std::conditional<std::is_same<DT, Matrix<VT>>::value, Matrix<VT>, DenseMatrix<VT>>::type;
 
     DT *arg = genGivenVals<DT>(3, {
                                       3,
@@ -63,13 +61,11 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-normal", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(arg, exp, res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("DiagVector-mixed-diagonal", TAG_KERNELS,
-                           (DATA_TYPES),
+TEMPLATE_PRODUCT_TEST_CASE("DiagVector-mixed-diagonal", TAG_KERNELS, (DATA_TYPES),
                            (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
     using VT = typename DT::VT;
-    using DTRes = typename std::conditional<std::is_same<DT, Matrix<VT>>::value,
-                                            Matrix<VT>, DenseMatrix<VT>>::type;
+    using DTRes = typename std::conditional<std::is_same<DT, Matrix<VT>>::value, Matrix<VT>, DenseMatrix<VT>>::type;
 
     DT *arg = genGivenVals<DT>(3, {
                                       1,
@@ -94,8 +90,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-null", TAG_KERNELS, (DATA_TYPES),
                            (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
     using VT = typename DT::VT;
-    using DTRes = typename std::conditional<std::is_same<DT, Matrix<VT>>::value,
-                                            Matrix<VT>, DenseMatrix<VT>>::type;
+    using DTRes = typename std::conditional<std::is_same<DT, Matrix<VT>>::value, Matrix<VT>, DenseMatrix<VT>>::type;
 
     DT *arg = genGivenVals<DT>(3, {
                                       3,

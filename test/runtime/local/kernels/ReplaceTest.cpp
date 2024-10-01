@@ -33,36 +33,27 @@
 #define VALUE_TYPES_SPECIAL_CASE double
 
 template <class DT>
-void checkReplace(DT *&outputMatrix, const DT *inputMatrix,
-                  typename DT::VT pattern, typename DT::VT replacement,
+void checkReplace(DT *&outputMatrix, const DT *inputMatrix, typename DT::VT pattern, typename DT::VT replacement,
                   DT *expected) {
-    replace<DT, DT, typename DT::VT>(outputMatrix, inputMatrix, pattern,
-                                     replacement, nullptr);
+    replace<DT, DT, typename DT::VT>(outputMatrix, inputMatrix, pattern, replacement, nullptr);
     CHECK(*outputMatrix == *expected);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     // inplace updates
 
-    auto initMatrix =
-        genGivenVals<DT>(4, {
-                                1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7,
-                                7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3,
-                            });
+    auto initMatrix = genGivenVals<DT>(4, {
+                                              1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3,
+                                          });
 
-    auto testMatrix1 =
-        genGivenVals<DT>(4, {
-                                7, 2, 3, 7, 7, 7, 7, 7, 2, 3, 7, 7,
-                                7, 7, 7, 2, 3, 7, 7, 7, 7, 7, 2, 3,
-                            });
+    auto testMatrix1 = genGivenVals<DT>(4, {
+                                               7, 2, 3, 7, 7, 7, 7, 7, 2, 3, 7, 7, 7, 7, 7, 2, 3, 7, 7, 7, 7, 7, 2, 3,
+                                           });
 
-    auto testMatrix2 =
-        genGivenVals<DT>(4, {
-                                7, 7, 3, 7, 7, 7, 7, 7, 7, 3, 7, 7,
-                                7, 7, 7, 7, 3, 7, 7, 7, 7, 7, 7, 3,
-                            });
+    auto testMatrix2 = genGivenVals<DT>(4, {
+                                               7, 7, 3, 7, 7, 7, 7, 7, 7, 3, 7, 7, 7, 7, 7, 7, 3, 7, 7, 7, 7, 7, 7, 3,
+                                           });
 
     checkReplace(initMatrix, initMatrix, 1, 7, testMatrix1);
     // should do nothing because there is no ones
@@ -71,16 +62,13 @@ TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES),
     checkReplace(initMatrix, initMatrix, 2, 7, testMatrix2);
 
     // update in a new copy
-    auto testMatrix3 =
-        genGivenVals<DT>(4, {
-                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-                            });
+    auto testMatrix3 = genGivenVals<DT>(4, {
+                                               7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                                           });
 
     auto testMatrix4 =
         genGivenVals<DT>(4, {
-                                7, 7, 10, 7, 7,  7, 7, 7, 7, 10, 7, 7,
-                                7, 7, 7,  7, 10, 7, 7, 7, 7, 7,  7, 10,
+                                7, 7, 10, 7, 7, 7, 7, 7, 7, 10, 7, 7, 7, 7, 7, 7, 10, 7, 7, 7, 7, 7, 7, 10,
                             });
 
     DT *outputMatrix = nullptr;
@@ -100,20 +88,16 @@ TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES),
     DataObjectFactory::destroy(outputMatrix2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Replace-nan", TAG_KERNELS, (DATA_TYPES),
-                           (VALUE_TYPES_SPECIAL_CASE)) {
+TEMPLATE_PRODUCT_TEST_CASE("Replace-nan", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES_SPECIAL_CASE)) {
     using DT = TestType;
     // inplace updates
 
-    auto initMatrix =
-        genGivenVals<DT>(4, {
-                                1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7,
-                                7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3,
-                            });
+    auto initMatrix = genGivenVals<DT>(4, {
+                                              1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3,
+                                          });
     auto testMatrix1 =
         genGivenVals<DT>(4, {
-                                1000, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7,
-                                7,    7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3,
+                                1000, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3, 7, 7, 7, 7, 1, 2, 3,
                             });
 
     initMatrix->set(0, 0, nan(""));
