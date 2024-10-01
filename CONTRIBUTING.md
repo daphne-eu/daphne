@@ -113,7 +113,8 @@ At the same time, this freedom comes with certain responsibilities, which are ro
 ### Code Style
 
 Before contributing, please make sure to run `clang-format` on your C++ (.h and
-.cpp) files.
+.cpp) files. The codebase is currently formatted with `clang-format` version
+`18.1.8`.
 We provide a `.clang-format` file at the root of the repository. Most text
 editors and IDEs will have some kind of integration for detecting that file
 and automatically applying `clang-format`. `git-clang-format` can be used to
