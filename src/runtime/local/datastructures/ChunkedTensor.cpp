@@ -16,20 +16,17 @@
 
 #include "ChunkedTensor.h"
 
-template<typename ValueType>
-void ChunkedTensor<ValueType>::printValue(std::ostream& os, ValueType val) const {
+template <typename ValueType> void ChunkedTensor<ValueType>::printValue(std::ostream &os, ValueType val) const {
     os << val;
 }
 
 // Convert to an integer to print uint8_t values as numbers
 // even if they fall into the range of special ASCII characters.
-template<>
-[[maybe_unused]] void ChunkedTensor<uint8_t>::printValue(std::ostream& os, uint8_t val) const {
+template <> [[maybe_unused]] void ChunkedTensor<uint8_t>::printValue(std::ostream &os, uint8_t val) const {
     os << static_cast<uint32_t>(val);
 }
 
-template<>
-[[maybe_unused]] void ChunkedTensor<int8_t>::printValue(std::ostream& os, int8_t val) const {
+template <> [[maybe_unused]] void ChunkedTensor<int8_t>::printValue(std::ostream &os, int8_t val) const {
     os << static_cast<int32_t>(val);
 }
 

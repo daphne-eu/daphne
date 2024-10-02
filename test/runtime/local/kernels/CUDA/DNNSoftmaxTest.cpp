@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-
 #include "run_tests.h"
 
 #include "runtime/local/datagen/GenGivenVals.h"
 #include "runtime/local/kernels/CUDA/Softmax.h"
 
-template<class DT>
-void check(const DT* in, const DT* exp, DaphneContext* dctx) {
-    DT* res = nullptr;
+template <class DT> void check(const DT *in, const DT *exp, DaphneContext *dctx) {
+    DT *res = nullptr;
     CUDA::Softmax::Forward<DT, DT>::apply(res, in, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(1e-6) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Softmax::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::NN::Softmax::Forward", TAG_DNN, (DenseMatrix),
+                           (float, double)) { // NOLINT(cert-err58-cpp)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
 
-    auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
+    auto input = genGivenVals<DT>(1, {-3, -2, -1, 0, 1, 2, 3, 4, 5});
 
-    // expected output when used with settings filter 2x2, stride 1x1, padding 0x0
-    auto result = genGivenVals<DT>(1, { 0.000212079, 0.00057649, 0.00156706, 0.00425972, 0.0115791, 0.0314753, 0.0855588,
-            0.232573, 0.632199});
+    // expected output when used with settings filter 2x2, stride 1x1, padding
+    // 0x0
+    auto result = genGivenVals<DT>(
+        1, {0.000212079, 0.00057649, 0.00156706, 0.00425972, 0.0115791, 0.0314753, 0.0855588, 0.232573, 0.632199});
 
     check(input, result, dctx.get());
 

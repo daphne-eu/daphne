@@ -26,25 +26,22 @@ namespace CUDA {
 // Struct for partial template specialization
 // ****************************************************************************
 
-    template<class DTRes, class DTArg>
-    struct Syrk {
-        static void apply(DTRes *&res, const DTArg *arg, DCTX(ctx));
-    };
+template <class DTRes, class DTArg> struct Syrk {
+    static void apply(DTRes *&res, const DTArg *arg, DCTX(ctx));
+};
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-    template<class DTRes, class DTArg>
-    void syrk(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
-        Syrk<DTRes, DTArg>::apply(res, arg, ctx);
-    }
+template <class DTRes, class DTArg> void syrk(DTRes *&res, const DTArg *arg, DCTX(ctx)) {
+    Syrk<DTRes, DTArg>::apply(res, arg, ctx);
+}
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
-    template<typename VTres, typename VTarg>
-    struct Syrk<DenseMatrix<VTres>, DenseMatrix<VTarg>> {
-        static void apply(DenseMatrix<VTres> *&res, const DenseMatrix<VTarg> *arg, DCTX(dctx));
-    };
-}
+template <typename VTres, typename VTarg> struct Syrk<DenseMatrix<VTres>, DenseMatrix<VTarg>> {
+    static void apply(DenseMatrix<VTres> *&res, const DenseMatrix<VTarg> *arg, DCTX(dctx));
+};
+} // namespace CUDA

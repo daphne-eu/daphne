@@ -23,8 +23,7 @@
 
 #include <cstring>
 
-template<typename VT>
-void typeOfSca(char *& res, const VT arg, DCTX(ctx)) {
+template <typename VT> void typeOfSca(char *&res, const VT arg, DCTX(ctx)) {
     const std::string typeName = ValueTypeUtils::cppNameFor<VT>;
     if (res == nullptr)
         res = new char[typeName.size() + 1];

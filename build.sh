@@ -59,6 +59,8 @@ function printHelp {
     echo "  --debug           Compile with support for debug mode"
     echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
     echo "  --mpi             Compile with support for MPI"
+    echo "  --hdfs            Compile with support for HDFS"
+    echo "  --io_uring        Compile with support for io_uring"
     echo "  --no-papi         Compile without support for PAPI"
 }
 
@@ -449,6 +451,8 @@ BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 BUILD_MPI="-DUSE_MPI=OFF"
+BUILD_HDFS="-DUSE_HDFS=OFF"
+BUILD_IO_URING="-DUSE_IO_URING=OFF"
 BUILD_PAPI="-DUSE_PAPI=ON"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
@@ -497,6 +501,14 @@ while [[ $# -gt 0 ]]; do
     --mpi)
         echo using MPI
         export BUILD_MPI="-DUSE_MPI=ON"
+        ;;
+    --hdfs)
+        echo using HDFS
+        export BUILD_HDFS="-DUSE_HDFS=ON"
+        ;;
+    --io-uring)
+        echo using io_uring
+        export BUILD_IO_URING="-DUSE_IO_URING=ON"
         ;;
     --no-papi)
         echo not using PAPI
@@ -733,7 +745,7 @@ if [ $WITH_DEPS -gt 0 ]; then
 
     if ! is_dependency_downloaded "${dep_openBlas[@]}"; then
         daphne_msg "Get OpenBlas version ${openBlasVersion}"
-        wget "https://github.com/xianyi/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}" \
+        wget "https://github.com/OpenMathLib/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}" \
             -qO "${cacheDir}/${openBlasZipName}"
         unzip -q "$cacheDir/$openBlasZipName" -d "$sourcePrefix"
         dependency_download_success "${dep_openBlas[@]}"
@@ -894,7 +906,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build Arrow again."
     fi
     #------------------------------------------------------------------------------
-    # spdlog
+    # #8.9 spdlog
     #------------------------------------------------------------------------------
     spdlogDirName="spdlog-$spdlogVersion"
     spdlogArtifactFileName=$spdlogDirName.tar.gz
@@ -915,7 +927,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build spdlog again."
     fi
     #------------------------------------------------------------------------------
-    # Eigen
+    # #8.10 Eigen
     #------------------------------------------------------------------------------
     eigenDirName="eigen-${eigenVersion}"
     if ! is_dependency_downloaded "eigen_v${eigenVersion}"; then
@@ -933,9 +945,38 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
       daphne_msg "No need to build eigen again."
     fi
+    #------------------------------------------------------------------------------
+    # #8.11 HAWQ (libhdfs3)
+    #------------------------------------------------------------------------------
+    hawqDirName="hawq-rel-v$hawqVersion"
+    hawqTarName="v${hawqVersion}.tar.gz"
+    hawqInstDirName=$installPrefix
+
+    if [ $BUILD_HDFS == "-DUSE_HDFS=ON" ]; then
+        if ! is_dependency_downloaded "hawq_v${hawqVersion}"; then
+              daphne_msg "Get HAWQ (libhdfs3) version ${hawqVersion}"
+              exit -1
+            wget "https://github.com/apache/hawq/archive/refs/tags/rel/${hawqTarName}" \
+                -qO "${cacheDir}/${hawqTarName}"
+            tar -xf "$cacheDir/$hawqTarName" -C "$sourcePrefix"
+            daphne_msg "Applying 0005-libhdfs3-remove-gtest-dep.patch"
+            patch -Np1 -i "${patchDir}/0005-libhdfs3-remove-gtest-dep.patch" -d "$sourcePrefix/$hawqDirName"
+            daphne_msg "Applying 0006-libhdfs3-add-cstdint-include.patch"
+            patch -Np1 -i "${patchDir}/0006-libhdfs3-add-cstdint-include.patch" -d "$sourcePrefix/$hawqDirName"
+            dependency_download_success "hawq_v${hawqVersion}"
+        fi
+        if ! is_dependency_installed "hawq_v${hawqVersion}"; then
+            cmake -G Ninja -S "$sourcePrefix/$hawqDirName/depends/libhdfs3" -B "${buildPrefix}/${hawqDirName}" \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$installPrefix"
+            cmake --build "${buildPrefix}/${hawqDirName}" --target install/strip
+            dependency_install_success "hawq_v${hawqVersion}"
+        else
+              daphne_msg "No need to build HAWQ (libhdfs3) again."
+        fi
+    fi
 
     #------------------------------------------------------------------------------
-    # #8.9 Build MLIR
+    # #8.12 Build MLIR
     #------------------------------------------------------------------------------
     # We rarely need to build MLIR/LLVM, only during the first build of the
     # prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
@@ -992,7 +1033,40 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build MLIR/LLVM again."
     fi
+    #------------------------------------------------------------------------------
+    # 8.14 Liburing
+    #------------------------------------------------------------------------------
+    liburingDirName="liburing-$liburingVersion"
+    liburingTarName="${liburingDirName}.tar.gz"
+    liburingInstDirName=$installPrefix
+    liburing_cc=$([ "$CC" = "" ] && echo "gcc" || echo "$CC")
+    liburing_cxx=$([ "$CXX" = "" ] && echo "g++" || echo "$CXX")
 
+    if [ $BUILD_IO_URING == "-DUSE_IO_URING=ON" ]; then
+        if ! is_dependency_downloaded "liburing_v${liburingVersion}"; then
+            daphne_msg "Get liburing version ${liburingVersion}"
+            wget "https://github.com/axboe/liburing/archive/refs/tags/${liburingTarName}" \
+                -qO "${cacheDir}/${liburingTarName}"
+            mkdir "$sourcePrefix/$liburingDirName"
+            tar -xf "$cacheDir/$liburingTarName" -C "$sourcePrefix/$liburingDirName" --strip-components=1
+            dependency_download_success "liburing_v${liburingVersion}"
+        fi
+        if ! is_dependency_installed "liburing_v${liburingVersion}"; then
+            cd "$sourcePrefix/$liburingDirName"
+            ./configure --cc="$liburing_cc" --cxx="$liburing_cxx" --prefix="$liburingInstDirName"
+            make -j"$(nproc)"
+            cp ./src/liburing.a "$installPrefix/lib/"
+            cp -r ./src/include/* "$installPrefix/include"
+            cd - > /dev/null
+            dependency_install_success "liburing_v${liburingVersion}"
+        else
+            daphne_msg "No need to build liburing again."
+        fi
+    fi
+
+    #------------------------------------------------------------------------------
+    # 8.14 Fetch bitstreams
+    #------------------------------------------------------------------------------
     if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
         FPGAOPENCL_BISTREAM_DIR="$projectRoot/src/runtime/local/kernels/FPGAOPENCL/bitstreams"
         FPGAOPENCL_BISTREAM_URL="https://github.com/daphne-eu/supplemental-binaries/raw/main/fpga_bitstreams/"
@@ -1016,7 +1090,7 @@ daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
-    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_PAPI
+    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_HDFS $BUILD_PAPI
 
 cmake --build "$daphneBuildDir" --target "$target"
 

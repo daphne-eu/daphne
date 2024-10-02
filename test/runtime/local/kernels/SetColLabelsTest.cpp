@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/SetColLabels.h>
@@ -30,18 +30,18 @@
 
 TEST_CASE("SetColLabels", TAG_KERNELS) {
     const size_t numCols = 3;
-    
+
     ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::SI32, ValueTypeCode::UI8};
-    
+
     auto arg = DataObjectFactory::create<Frame>(4, numCols, schema, nullptr, false);
-    const char * labelsArg[numCols] = {"ab", "cde", "fghi"};
-    
-    Frame * res = nullptr;
+    const char *labelsArg[numCols] = {"ab", "cde", "fghi"};
+
+    Frame *res = nullptr;
     setColLabels(res, arg, labelsArg, numCols, nullptr);
-    
-    const std::string * labelsRes = res->getLabels();
-    for(size_t i = 0; i < numCols; i++)
+
+    const std::string *labelsRes = res->getLabels();
+    for (size_t i = 0; i < numCols; i++)
         CHECK(labelsRes[i] == labelsArg[i]);
-    
+
     DataObjectFactory::destroy(arg, res);
 }

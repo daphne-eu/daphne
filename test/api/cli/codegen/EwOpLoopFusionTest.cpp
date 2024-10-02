@@ -26,16 +26,15 @@
 const std::string dirPath = "test/api/cli/codegen/";
 
 TEST_CASE("ewloopfusion", TAG_CODEGEN) {
-    std::string result =
-        "DenseMatrix(2x2, double)\n"
-        "8 8\n"
-        "8 8\n"
-        "DenseMatrix(2x2, double)\n"
-        "10 10\n"
-        "10 10\n"
-        "DenseMatrix(2x2, double)\n"
-        "9 9\n"
-        "9 9\n";
+    std::string result = "DenseMatrix(2x2, double)\n"
+                         "8 8\n"
+                         "8 8\n"
+                         "DenseMatrix(2x2, double)\n"
+                         "10 10\n"
+                         "10 10\n"
+                         "DenseMatrix(2x2, double)\n"
+                         "9 9\n"
+                         "9 9\n";
 
     compareDaphneToStr(result, dirPath + "fusion.daphne");
     compareDaphneToStr(result, dirPath + "fusion.daphne", "--mlir-codegen");

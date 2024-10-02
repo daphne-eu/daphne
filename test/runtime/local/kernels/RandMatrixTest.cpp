@@ -39,19 +39,19 @@ TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES
     const VT min = 100;
     const VT max = 200;
 
-    for(double sparsity : {0.0, 0.1, 0.5, 0.9, 1.0}) {
+    for (double sparsity : {0.0, 0.1, 0.5, 0.9, 1.0}) {
         DYNAMIC_SECTION("sparsity = " << sparsity) {
-            DT * m = nullptr;
+            DT *m = nullptr;
             randMatrix<DT, VT>(m, numRows, numCols, min, max, sparsity, -1, nullptr);
 
             REQUIRE(m->getNumRows() == numRows);
             REQUIRE(m->getNumCols() == numCols);
 
             size_t numNonZeros = 0;
-            for(size_t r = 0; r < numRows; r++)
-                for(size_t c = 0; c < numCols; c++) {
+            for (size_t r = 0; r < numRows; r++)
+                for (size_t c = 0; c < numCols; c++) {
                     const VT v = m->get(r, c);
-                    if(v) {
+                    if (v) {
                         CHECK(v >= min);
                         CHECK(v <= max);
                         numNonZeros++;
@@ -65,4 +65,3 @@ TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES
         }
     }
 }
-

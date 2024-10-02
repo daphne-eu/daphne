@@ -18,31 +18,28 @@
 #include "ir/daphneir/Passes.h"
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/IRMapping.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
 using namespace mlir;
 
 /**
  * @brief Replaces vectorized pipelines by distributed pipelines.
  */
-struct DistributePipelines : public OpConversionPattern<daphne::VectorizedPipelineOp>
-{
+struct DistributePipelines : public OpConversionPattern<daphne::VectorizedPipelineOp> {
     using OpConversionPattern::OpConversionPattern;
 
-    LogicalResult
-    matchAndRewrite(daphne::VectorizedPipelineOp op, OpAdaptor adaptor,
-                    ConversionPatternRewriter &rewriter) const override
-    {
+    LogicalResult matchAndRewrite(daphne::VectorizedPipelineOp op, OpAdaptor adaptor,
+                                  ConversionPatternRewriter &rewriter) const override {
         MLIRContext newContext;
         OpBuilder tempBuilder(&newContext);
         std::string funcName = "dist";
 
         auto &bodyBlock = op.getBody().front();
-        auto funcType = tempBuilder.getFunctionType(
-            bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
+        auto funcType =
+            tempBuilder.getFunctionType(bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
         auto funcOp = tempBuilder.create<func::FuncOp>(op.getLoc(), funcName, funcType);
 
         IRMapping mapper;
@@ -71,36 +68,31 @@ struct DistributePipelines : public OpConversionPattern<daphne::VectorizedPipeli
                 // Else add to input/splits array.
                 newInputs.push_back(op.getInputs()[idx]);
                 newSplits.push_back(op.getSplits()[idx]);
-            }            
+            }
         }
         funcOp.eraseArguments(eraseVector);
-        
+
         std::string s;
         llvm::raw_string_ostream stream(s);
         funcOp.print(stream);
         Value irStr = rewriter.create<daphne::ConstantOp>(op.getLoc(), stream.str());
 
-        rewriter.replaceOpWithNewOp<daphne::DistributedPipelineOp>(
-                op.getOperation(),
-                op.getOutputs().getTypes(), irStr, newInputs,
-                op.getOutRows(), op.getOutCols(), rewriter.getArrayAttr(newSplits), op.getCombines()
-        );
-        
+        rewriter.replaceOpWithNewOp<daphne::DistributedPipelineOp>(op.getOperation(), op.getOutputs().getTypes(), irStr,
+                                                                   newInputs, op.getOutRows(), op.getOutCols(),
+                                                                   rewriter.getArrayAttr(newSplits), op.getCombines());
+
         return success();
     }
 };
 
-struct DistributePipelinesPass
-    : public PassWrapper<DistributePipelinesPass, OperationPass<ModuleOp>>
-{
+struct DistributePipelinesPass : public PassWrapper<DistributePipelinesPass, OperationPass<ModuleOp>> {
     void runOnOperation() final;
 
     StringRef getArgument() const final { return "distribute-pipelines"; }
     StringRef getDescription() const final { return "TODO"; }
 };
 
-void DistributePipelinesPass::runOnOperation()
-{
+void DistributePipelinesPass::runOnOperation() {
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -110,11 +102,11 @@ void DistributePipelinesPass::runOnOperation()
     // TODO do we need all these?
     target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
-    target.addDynamicallyLegalOp<daphne::VectorizedPipelineOp>([](daphne::VectorizedPipelineOp op)
-    {
-        // TODO Carefully decide if this pipeline shall be distributed, e.g.,
-        // based on physical input size. For now, all pipelines are distributed
-        // (false means this pipeline is illegal and must be rewritten).
+    target.addDynamicallyLegalOp<daphne::VectorizedPipelineOp>([](daphne::VectorizedPipelineOp op) {
+        // TODO Carefully decide if this pipeline shall be distributed,
+        // e.g., based on physical input size. For now, all pipelines are
+        // distributed (false means this pipeline is illegal and must be
+        // rewritten).
         return false;
     });
 
@@ -124,7 +116,4 @@ void DistributePipelinesPass::runOnOperation()
         signalPassFailure();
 }
 
-std::unique_ptr<Pass> daphne::createDistributePipelinesPass()
-{
-    return std::make_unique<DistributePipelinesPass>();
-}
+std::unique_ptr<Pass> daphne::createDistributePipelinesPass() { return std::make_unique<DistributePipelinesPass>(); }

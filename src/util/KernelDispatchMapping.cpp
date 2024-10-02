@@ -16,26 +16,23 @@
 
 #include "KernelDispatchMapping.h"
 
-#include <mlir/IR/Location.h>
 #include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/Location.h>
 
 KernelDispatchMapping &KernelDispatchMapping::instance() {
     static KernelDispatchMapping INSTANCE;
     return INSTANCE;
 }
 
-int KernelDispatchMapping::registerKernel(std::string name,
-                                          mlir::Operation *op) {
+int KernelDispatchMapping::registerKernel(std::string name, mlir::Operation *op) {
     std::lock_guard<std::mutex> lg(m_dispatchMapping);
     int kId = kIdCounter++;
     if (auto flcLoc = llvm::dyn_cast<mlir::FileLineColLoc>(op->getLoc())) {
         auto fName = flcLoc.getFilename().str();
-        dispatchMapping[kId] = {name, fName, flcLoc.getLine(),
-                                  flcLoc.getColumn()};
+        dispatchMapping[kId] = {name, fName, flcLoc.getLine(), flcLoc.getColumn()};
         currentLoc = flcLoc;
     } else {
-        dispatchMapping[kId] = {name, currentLoc.getFilename().str(),
-                                  currentLoc.getLine(), currentLoc.getColumn()};
+        dispatchMapping[kId] = {name, currentLoc.getFilename().str(), currentLoc.getLine(), currentLoc.getColumn()};
     }
     return kId;
 }

@@ -15,11 +15,11 @@
  */
 
 #include "compiler/utils/CompilerUtils.h"
-#include <util/ErrorHandler.h>
-#include <util/KernelDispatchMapping.h>
-#include <compiler/utils/TypePrinting.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
+#include <compiler/utils/TypePrinting.h>
+#include <util/ErrorHandler.h>
+#include <util/KernelDispatchMapping.h>
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -29,683 +29,574 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/BuiltinDialect.h"
+#include "mlir/IR/IRMapping.h"
 #include "mlir/IR/Location.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/IR/IRMapping.h"
 
-#include <memory>
-#include <utility>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace mlir;
 
-namespace
-{
-    class KernelReplacement : public RewritePattern
-    {
-        // TODO This method is only required since MLIR does not seem to
-        // provide a means to get this information.
-        static size_t getNumODSOperands(Operation * op) {
-            if(llvm::isa<daphne::ThetaJoinOp>(op))
-                return 4;
-            if(llvm::isa<daphne::OrderOp>(op))
-                return 4;
-            if(llvm::isa<daphne::GroupOp>(op))
-                return 3;
-            if(llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
-                return 2;
-            if(llvm::isa<daphne::DistributedComputeOp, daphne::CreateListOp>(op))
-                return 1;
+namespace {
+class KernelReplacement : public RewritePattern {
+    // TODO This method is only required since MLIR does not seem to
+    // provide a means to get this information.
+    static size_t getNumODSOperands(Operation *op) {
+        if (llvm::isa<daphne::ThetaJoinOp>(op))
+            return 4;
+        if (llvm::isa<daphne::OrderOp>(op))
+            return 4;
+        if (llvm::isa<daphne::GroupOp>(op))
+            return 3;
+        if (llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
+            return 2;
+        if (llvm::isa<daphne::DistributedComputeOp, daphne::CreateListOp>(op))
+            return 1;
 
-            throw ErrorHandler::compilerError(
-                op, "RewriteToCallKernelOpPass",
-                "lowering to kernel call not yet supported for this variadic "
-                "operation: " +
-                    op->getName().getStringRef().str());
+        throw ErrorHandler::compilerError(op, "RewriteToCallKernelOpPass",
+                                          "lowering to kernel call not yet supported for this variadic "
+                                          "operation: " +
+                                              op->getName().getStringRef().str());
+    }
+
+    // TODO This method is only required since MLIR does not seem to
+    // provide a means to get this information. But, for instance, the
+    // isVariadic boolean array is automatically generated *within* the
+    // getODSOperandIndexAndLength method.
+    static std::tuple<unsigned, unsigned, bool> getODSOperandInfo(Operation *op, unsigned index) {
+        // TODO Simplify those by a macro.
+        if (auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
+            auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {true, true};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
         }
-
-        // TODO This method is only required since MLIR does not seem to
-        // provide a means to get this information. But, for instance, the
-        // isVariadic boolean array is automatically generated *within* the
-        // getODSOperandIndexAndLength method.
-        static std::tuple<unsigned, unsigned, bool> getODSOperandInfo(Operation * op, unsigned index) {
-            // TODO Simplify those by a macro.
-            if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
-                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {true, true};
-                return std::make_tuple(
-                        idxAndLen.first,
-                        idxAndLen.second,
-                        isVariadic[index]
-                );
-            }
-            if(auto concreteOp = llvm::dyn_cast<daphne::CreateListOp>(op)) {
-                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {true};
-                return std::make_tuple(
-                        idxAndLen.first,
-                        idxAndLen.second,
-                        isVariadic[index]
-                );
-            }
-            if(auto concreteOp = llvm::dyn_cast<daphne::SetColLabelsOp>(op)) {
-                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {false, true};
-                return std::make_tuple(
-                        idxAndLen.first,
-                        idxAndLen.second,
-                        isVariadic[index]
-                );
-            }
-            if(auto concreteOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
-                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {true};
-                return std::make_tuple(
-                    idxAndLen.first,
-                    idxAndLen.second,
-                    isVariadic[index]
-                );
-            }
-            if(auto concreteOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
-                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {false, true, true};
-                return std::make_tuple(
-                        idxAndLen.first,
-                        idxAndLen.second,
-                        isVariadic[index]
-                );
-            }
-            if(auto concreteOp = llvm::dyn_cast<daphne::ThetaJoinOp>(op)) {
-                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {false, false, true, true};
-                return std::make_tuple(
-                        idxAndLen.first,
-                        idxAndLen.second,
-                        isVariadic[index]
-                );
-            }
-            if(auto concreteOp = llvm::dyn_cast<daphne::OrderOp>(op)) {
-                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {false, true, true, false};
-                return std::make_tuple(
-                        idxAndLen.first,
-                        idxAndLen.second,
-                        isVariadic[index]
-                );
-            }
-            throw ErrorHandler::compilerError(
-                op, "RewriteToCallKernelOpPass",
-                "lowering to kernel call not yet supported for this variadic "
-                "operation: " +
-                    op->getName().getStringRef().str());
+        if (auto concreteOp = llvm::dyn_cast<daphne::CreateListOp>(op)) {
+            auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {true};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
         }
-
-        /**
-         * @brief The value of type `DaphneContext` to insert as the last
-         * argument to all kernel calls.
-         */
-        Value dctx;
-
-        const DaphneUserConfig & userConfig;
-        std::unordered_map<std::string, bool> & usedLibPaths;
-
-        mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
-            MLIRContext * mctx = t.getContext();
-            if(generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>())
-                return mlir::daphne::StructureType::get(mctx);
-            if(auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
-                return mt.withSameElementTypeAndRepr();
-            if(t.isa<mlir::daphne::FrameType>())
-                return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
-            if(auto lt = t.dyn_cast<mlir::daphne::ListType>())
-                return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
-            if(auto mrt = t.dyn_cast<mlir::MemRefType>())
-                // Remove any dimension information ({0, 0}), but retain the element type.
-                return mlir::MemRefType::get({0, 0}, mrt.getElementType());
-            return t;
+        if (auto concreteOp = llvm::dyn_cast<daphne::SetColLabelsOp>(op)) {
+            auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {false, true};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
         }
-
-    public:
-        /**
-         * Creates a new KernelReplacement rewrite pattern.
-         *
-         * @param mctx The MLIR context.
-         * @param dctx The DaphneContext to pass to the kernels.
-         * @param userConfig The user config.
-         * @param benefit
-         */
-        KernelReplacement(
-            MLIRContext * mctx,
-            Value dctx,
-            const DaphneUserConfig & userConfig,
-            std::unordered_map<std::string, bool> & usedLibPaths,
-            PatternBenefit benefit = 1
-        )
-        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx),
-        dctx(dctx), userConfig(userConfig), usedLibPaths(usedLibPaths)
-        {
+        if (auto concreteOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
+            auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {true};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
         }
+        if (auto concreteOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
+            auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {false, true, true};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
+        }
+        if (auto concreteOp = llvm::dyn_cast<daphne::ThetaJoinOp>(op)) {
+            auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {false, false, true, true};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
+        }
+        if (auto concreteOp = llvm::dyn_cast<daphne::OrderOp>(op)) {
+            auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {false, true, true, false};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
+        }
+        throw ErrorHandler::compilerError(op, "RewriteToCallKernelOpPass",
+                                          "lowering to kernel call not yet supported for this variadic "
+                                          "operation: " +
+                                              op->getName().getStringRef().str());
+    }
 
-        /**
-         * @brief Rewrites the given operation to a `CallKernelOp`.
-         * 
-         * This involves looking up a matching kernel from the kernel catalog based on the
-         * mnemonic, argument/result types, and backend (e.g., hardware accelerator) of the
-         * given operation. Variadic operands are also taken into account.
-         * 
-         * @param op The operation to rewrite.
-         * @param rewriter The rewriter.
-         * @result Always returns `mlir::success()` unless an exception is thrown.
-         */
-        LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
-            Location loc = op->getLoc();
+    /**
+     * @brief The value of type `DaphneContext` to insert as the last
+     * argument to all kernel calls.
+     */
+    Value dctx;
 
-            // The argument/result types of the given operation.
-            Operation::operand_type_range opArgTys = op->getOperandTypes();
-            Operation::result_type_range opResTys = op->getResultTypes();
+    const DaphneUserConfig &userConfig;
+    std::unordered_map<std::string, bool> &usedLibPaths;
 
-            // The argument/result types to use for kernel look-up.
-            std::vector<mlir::Type> lookupArgTys;
-            std::vector<mlir::Type> lookupResTys;
-            // Differences between op argument types and look-up argument types:
-            // - The look-up argument types summarize n occurrences of a variadic operand into
-            //   one variadic pack and one number of occurrences.
-            // - The look-up argument types omit most of the properties of the op argument types,
-            //   because those would complicate the search for matching kernels.
-            // Differences between op result types and look-up result types:
-            // - The look-up result types omit most of the properties of the op result types,
-            //   because those would complicate the search for matching kernels.
+    mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
+        MLIRContext *mctx = t.getContext();
+        if (generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>())
+            return mlir::daphne::StructureType::get(mctx);
+        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+            return mt.withSameElementTypeAndRepr();
+        if (t.isa<mlir::daphne::FrameType>())
+            return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
+        if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+            return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
+        if (auto mrt = t.dyn_cast<mlir::MemRefType>())
+            // Remove any dimension information ({0, 0}), but retain the element
+            // type.
+            return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+        return t;
+    }
 
-            // The operands to use for the CallKernelOp to be created. These may differ from
-            // the operands of the given operation, if it has a variadic operand.
-            std::vector<Value> kernelArgs;
+  public:
+    /**
+     * Creates a new KernelReplacement rewrite pattern.
+     *
+     * @param mctx The MLIR context.
+     * @param dctx The DaphneContext to pass to the kernels.
+     * @param userConfig The user config.
+     * @param benefit
+     */
+    KernelReplacement(MLIRContext *mctx, Value dctx, const DaphneUserConfig &userConfig,
+                      std::unordered_map<std::string, bool> &usedLibPaths, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx), dctx(dctx), userConfig(userConfig),
+          usedLibPaths(usedLibPaths) {}
 
-            // *****************************************************************************
-            // Prepare the kernel look-up and the creation of the CallKernelOp
-            // *****************************************************************************
-            // Determine the argument/result types for the kernel look-up as well as
-            // the arguments of the CallKernelOp to be created. Variadic operands are taken
-            // into account.
+    /**
+     * @brief Rewrites the given operation to a `CallKernelOp`.
+     *
+     * This involves looking up a matching kernel from the kernel catalog based
+     * on the mnemonic, argument/result types, and backend (e.g., hardware
+     * accelerator) of the given operation. Variadic operands are also taken
+     * into account.
+     *
+     * @param op The operation to rewrite.
+     * @param rewriter The rewriter.
+     * @result Always returns `mlir::success()` unless an exception is thrown.
+     */
+    LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
+        Location loc = op->getLoc();
 
-            // Find out if argument types shall the generalized from matrix/frame to the
-            // supertype structure.
-            // TODO Don't enumerate all ops, decide based on a trait.
-            const bool generalizeInputTypes =
-                llvm::isa<daphne::CreateFrameOp>(op) ||
-                llvm::isa<daphne::DistributedComputeOp>(op) ||
-                llvm::isa<daphne::NumCellsOp>(op) ||
-                llvm::isa<daphne::NumColsOp>(op) ||
-                llvm::isa<daphne::NumRowsOp>(op) ||
-                llvm::isa<daphne::IncRefOp>(op) ||
-                llvm::isa<daphne::DecRefOp>(op);
+        // The argument/result types of the given operation.
+        Operation::operand_type_range opArgTys = op->getOperandTypes();
+        Operation::result_type_range opResTys = op->getResultTypes();
 
-            // Append converted op result types to the look-up result types.
-            for(size_t i = 0; i < opResTys.size(); i++)
-                lookupResTys.push_back(adaptType(opResTys[i], false));
+        // The argument/result types to use for kernel look-up.
+        std::vector<mlir::Type> lookupArgTys;
+        std::vector<mlir::Type> lookupResTys;
+        // Differences between op argument types and look-up argument types:
+        // - The look-up argument types summarize n occurrences of a variadic
+        // operand into
+        //   one variadic pack and one number of occurrences.
+        // - The look-up argument types omit most of the properties of the op
+        // argument types,
+        //   because those would complicate the search for matching kernels.
+        // Differences between op result types and look-up result types:
+        // - The look-up result types omit most of the properties of the op
+        // result types,
+        //   because those would complicate the search for matching kernels.
 
-            // Append converted op argument types to the look-up argument types.
-            // Variadic operands, which can have an arbitrary number of occurrences, are
-            // treated specially.
-            if(
-                // TODO Unfortunately, one needs to know the exact N for
-                // AtLeastNOperands... There seems to be no simple way to
-                // detect if an operation has variadic ODS operands with any N.
-                op->hasTrait<OpTrait::VariadicOperands>() ||
-                op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>() ||
-                op->hasTrait<OpTrait::AtLeastNOperands<2>::Impl>()
-            ) {
-                // For operations with variadic ODS operands, we replace all
-                // occurrences of a variadic ODS operand by a single operand of
-                // type VariadicPack as well as an operand for the number of
-                // occurrences. All occurrences of the variadic ODS operand are
-                // stored in the VariadicPack.
-                // Note that a variadic ODS operand may have zero occurrences.
-                // In that case, there is no operand corresponding to the
-                // variadic ODS operand.
-                const size_t numODSOperands = getNumODSOperands(op);
-                for(size_t i = 0; i < numODSOperands; i++) {
-                    auto odsOpInfo = getODSOperandInfo(op, i);
-                    const unsigned idx = std::get<0>(odsOpInfo);
-                    const unsigned len = std::get<1>(odsOpInfo);
-                    const bool isVariadic = std::get<2>(odsOpInfo);
+        // The operands to use for the CallKernelOp to be created. These may
+        // differ from the operands of the given operation, if it has a variadic
+        // operand.
+        std::vector<Value> kernelArgs;
 
-                    // Determine the MLIR type of the current ODS operand.
-                    Type odsOperandTy;
-                    if(len > 0) {
-                        // If the current ODS operand has occurrences, then
-                        // we use the type of the first operand belonging to
-                        // the current ODS operand.
-                        odsOperandTy = opArgTys[idx];
-                    }
-                    else { // len == 0
-                        // If the current ODS operand does not have any occurrences
-                        // (e.g., a variadic ODS operand with zero concrete operands
-                        // provided), then we cannot derive the type of the
-                        // current ODS operand from any given operand. Instead,
-                        // we use a default type depending on which ODS operand of
-                        // which operation it is.
-                        // Note that we cannot simply omit the type, since the
-                        // underlying kernel expects an "empty list" (represented
-                        // in the DAPHNE compiler by an empty VariadicPack).
-                        if(llvm::dyn_cast<daphne::GroupOp>(op) && i == 2)
-                            // A GroupOp may have zero aggregation column names.
-                            odsOperandTy = daphne::StringType::get(rewriter.getContext());
-                        else
-                            throw std::runtime_error(
-                                "RewriteToCallKernelOpPass encountered a variadic ODS operand with zero occurrences, "
-                                "but does not know how to handle it: ODS operand " + std::to_string(i) +
-                                " of operation " + op->getName().getStringRef().str()
-                            );
-                    }
+        // *****************************************************************************
+        // Prepare the kernel look-up and the creation of the CallKernelOp
+        // *****************************************************************************
+        // Determine the argument/result types for the kernel look-up as well as
+        // the arguments of the CallKernelOp to be created. Variadic operands
+        // are taken into account.
 
-                    lookupArgTys.push_back(adaptType(odsOperandTy, generalizeInputTypes));
+        // Find out if argument types shall the generalized from matrix/frame to
+        // the supertype structure.
+        // TODO Don't enumerate all ops, decide based on a trait.
+        const bool generalizeInputTypes =
+            llvm::isa<daphne::CreateFrameOp>(op) || llvm::isa<daphne::DistributedComputeOp>(op) ||
+            llvm::isa<daphne::NumCellsOp>(op) || llvm::isa<daphne::NumColsOp>(op) || llvm::isa<daphne::NumRowsOp>(op) ||
+            llvm::isa<daphne::IncRefOp>(op) || llvm::isa<daphne::DecRefOp>(op);
 
-                    if(isVariadic) {
-                        // Variadic operand.
-                        lookupArgTys.push_back(rewriter.getIndexType());
-                        auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
-                                loc,
-                                daphne::VariadicPackType::get(
-                                        rewriter.getContext(),
-                                        odsOperandTy
-                                ),
-                                rewriter.getI64IntegerAttr(len)
-                        );
-                        for(int64_t k = 0; k < len; k++)
-                            rewriter.create<daphne::StoreVariadicPackOp>(
-                                    loc,
-                                    cvpOp,
-                                    op->getOperand(idx + k),
-                                    rewriter.getI64IntegerAttr(k)
-                            );
-                        kernelArgs.push_back(cvpOp);
-                        kernelArgs.push_back(rewriter.create<daphne::ConstantOp>(
-                                loc, rewriter.getIndexType(), rewriter.getIndexAttr(len)
-                        ));
-                    }
+        // Append converted op result types to the look-up result types.
+        for (size_t i = 0; i < opResTys.size(); i++)
+            lookupResTys.push_back(adaptType(opResTys[i], false));
+
+        // Append converted op argument types to the look-up argument types.
+        // Variadic operands, which can have an arbitrary number of occurrences,
+        // are treated specially.
+        if (
+            // TODO Unfortunately, one needs to know the exact N for
+            // AtLeastNOperands... There seems to be no simple way to
+            // detect if an operation has variadic ODS operands with any N.
+            op->hasTrait<OpTrait::VariadicOperands>() || op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>() ||
+            op->hasTrait<OpTrait::AtLeastNOperands<2>::Impl>()) {
+            // For operations with variadic ODS operands, we replace all
+            // occurrences of a variadic ODS operand by a single operand of
+            // type VariadicPack as well as an operand for the number of
+            // occurrences. All occurrences of the variadic ODS operand are
+            // stored in the VariadicPack.
+            // Note that a variadic ODS operand may have zero occurrences.
+            // In that case, there is no operand corresponding to the
+            // variadic ODS operand.
+            const size_t numODSOperands = getNumODSOperands(op);
+            for (size_t i = 0; i < numODSOperands; i++) {
+                auto odsOpInfo = getODSOperandInfo(op, i);
+                const unsigned idx = std::get<0>(odsOpInfo);
+                const unsigned len = std::get<1>(odsOpInfo);
+                const bool isVariadic = std::get<2>(odsOpInfo);
+
+                // Determine the MLIR type of the current ODS operand.
+                Type odsOperandTy;
+                if (len > 0) {
+                    // If the current ODS operand has occurrences, then
+                    // we use the type of the first operand belonging to
+                    // the current ODS operand.
+                    odsOperandTy = opArgTys[idx];
+                } else { // len == 0
+                    // If the current ODS operand does not have any occurrences
+                    // (e.g., a variadic ODS operand with zero concrete operands
+                    // provided), then we cannot derive the type of the
+                    // current ODS operand from any given operand. Instead,
+                    // we use a default type depending on which ODS operand of
+                    // which operation it is.
+                    // Note that we cannot simply omit the type, since the
+                    // underlying kernel expects an "empty list" (represented
+                    // in the DAPHNE compiler by an empty VariadicPack).
+                    if (llvm::dyn_cast<daphne::GroupOp>(op) && i == 2)
+                        // A GroupOp may have zero aggregation column names.
+                        odsOperandTy = daphne::StringType::get(rewriter.getContext());
                     else
-                        // Non-variadic operand.
-                        kernelArgs.push_back(op->getOperand(idx));
+                        throw std::runtime_error("RewriteToCallKernelOpPass encountered a variadic "
+                                                 "ODS operand with zero occurrences, "
+                                                 "but does not know how to handle it: ODS operand " +
+                                                 std::to_string(i) + " of operation " +
+                                                 op->getName().getStringRef().str());
+                }
+
+                lookupArgTys.push_back(adaptType(odsOperandTy, generalizeInputTypes));
+
+                if (isVariadic) {
+                    // Variadic operand.
+                    lookupArgTys.push_back(rewriter.getIndexType());
+                    auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                        loc, daphne::VariadicPackType::get(rewriter.getContext(), odsOperandTy),
+                        rewriter.getI64IntegerAttr(len));
+                    for (int64_t k = 0; k < len; k++)
+                        rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpOp, op->getOperand(idx + k),
+                                                                     rewriter.getI64IntegerAttr(k));
+                    kernelArgs.push_back(cvpOp);
+                    kernelArgs.push_back(
+                        rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(len)));
+                } else
+                    // Non-variadic operand.
+                    kernelArgs.push_back(op->getOperand(idx));
+            }
+        } else
+            // For operations without variadic operands, we simply append
+            // the type of each operand to the vector of types to use for
+            // kernel look-up, and pass all operands to the CallKernelOp as-is.
+            for (size_t i = 0; i < opArgTys.size(); i++) {
+                lookupArgTys.push_back(adaptType(opArgTys[i], generalizeInputTypes));
+                kernelArgs.push_back(op->getOperand(i));
+            }
+
+        if (auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
+            // GroupOp carries the aggregation functions to apply as an
+            // attribute. Since attributes do not automatically become
+            // inputs to the kernel call, we need to add them explicitly
+            // here.
+
+            ArrayAttr aggFuncs = groupOp.getAggFuncs();
+            const size_t numAggFuncs = aggFuncs.size();
+            const Type t = rewriter.getIntegerType(32, false);
+            auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                loc, daphne::VariadicPackType::get(rewriter.getContext(), t), rewriter.getI64IntegerAttr(numAggFuncs));
+            size_t k = 0;
+            for (Attribute aggFunc : aggFuncs.getValue())
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                    loc, cvpOp,
+                    rewriter.create<daphne::ConstantOp>(
+                        loc, t,
+                        rewriter.getIntegerAttr(
+                            t, static_cast<uint32_t>(aggFunc.dyn_cast<daphne::GroupEnumAttr>().getValue()))),
+                    rewriter.getI64IntegerAttr(k++));
+            kernelArgs.push_back(cvpOp);
+            kernelArgs.push_back(
+                rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(numAggFuncs)));
+        }
+
+        if (auto thetaJoinOp = llvm::dyn_cast<daphne::ThetaJoinOp>(op)) {
+            // ThetaJoinOp carries multiple CompareOperation as an
+            // attribute. Since attributes do not automatically become
+            // inputs to the kernel call, we need to add them explicitly
+            // here.
+
+            // get array of CompareOperations
+            ArrayAttr compareOperations = thetaJoinOp.getCmp();
+            const size_t numCompareOperations = compareOperations.size();
+            const Type t = rewriter.getIntegerType(32, false);
+            // create Variadic Pack
+            auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                loc, daphne::VariadicPackType::get(rewriter.getContext(), t),
+                rewriter.getI64IntegerAttr(numCompareOperations));
+            // fill variadic pack
+            size_t k = 0;
+            for (Attribute compareOperation : compareOperations.getValue())
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                    loc, cvpOp,
+                    rewriter.create<daphne::ConstantOp>(
+                        loc, t,
+                        rewriter.getIntegerAttr(
+                            t, static_cast<uint32_t>(
+                                   compareOperation.dyn_cast<daphne::CompareOperationAttr>().getValue()))),
+                    rewriter.getI64IntegerAttr(k++));
+            // add created variadic pack and size of this pack as
+            // new operands / parameters of the ThetaJoin-Kernel call
+            kernelArgs.push_back(cvpOp);
+            kernelArgs.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(),
+                                                                     rewriter.getIndexAttr(numCompareOperations)));
+        }
+
+        if (auto distCompOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
+            MLIRContext newContext; // TODO Reuse the existing context.
+            OpBuilder tempBuilder(&newContext);
+            std::string funcName = "dist";
+
+            auto &bodyBlock = distCompOp.getBody().front();
+            auto funcType =
+                tempBuilder.getFunctionType(bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
+            auto funcOp = tempBuilder.create<func::FuncOp>(loc, funcName, funcType);
+
+            IRMapping mapper;
+            distCompOp.getBody().cloneInto(&funcOp.getRegion(), mapper);
+
+            // write recompile region as string constant
+            std::string s;
+            llvm::raw_string_ostream stream(s);
+            funcOp.print(stream);
+
+            auto strTy = daphne::StringType::get(rewriter.getContext());
+            Value rewriteStr = rewriter.create<daphne::ConstantOp>(loc, strTy, rewriter.getStringAttr(stream.str()));
+            lookupArgTys.push_back(mlir::daphne::StringType::get(&newContext));
+            kernelArgs.push_back(rewriteStr);
+        }
+
+        // *****************************************************************************
+        // Look up a matching kernel from the kernel catalog.
+        // *****************************************************************************
+
+        const KernelCatalog &kc = userConfig.kernelCatalog;
+        const std::string opMnemonic = op->getName().stripDialect().data();
+        std::vector<KernelInfo> kernelInfos = kc.getKernelInfos(opMnemonic);
+
+        std::string libPath;
+        std::string kernelFuncName;
+        // TODO Don't hardcode the attribute name, put it in a central place.
+        if (op->hasAttr("kernel_hint")) {
+            // The operation has a kernel hint. Lower to the hinted kernel if
+            // possible.
+
+            // TODO Check if the attribute has the right type.
+            kernelFuncName = op->getAttrOfType<mlir::StringAttr>("kernel_hint").getValue().str();
+            bool found = false;
+            for (size_t i = 0; i < kernelInfos.size() && !found; i++) {
+                auto ki = kernelInfos[i];
+                if (ki.kernelFuncName == kernelFuncName) {
+                    libPath = ki.libPath;
+                    found = true;
                 }
             }
+            if (!found)
+                throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass",
+                                                  "no kernel found for operation `" + opMnemonic +
+                                                      "` with hinted name `" + kernelFuncName + "`");
+        } else {
+            // The operation does not have a kernel hint. Search for a kernel
+            // for this operation and the given result/argument types and
+            // backend.
+
+            if (kernelInfos.empty())
+                throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass",
+                                                  "no kernels registered for operation `" + opMnemonic + "`");
+
+            std::string backend;
+            if (op->hasAttr("cuda_device"))
+                backend = "CUDA";
+            else if (op->hasAttr("fpgaopencl_device"))
+                backend = "FPGAOPENCL";
             else
-                // For operations without variadic operands, we simply append
-                // the type of each operand to the vector of types to use for
-                // kernel look-up, and pass all operands to the CallKernelOp as-is.
-                for(size_t i = 0; i < opArgTys.size(); i++) {
-                    lookupArgTys.push_back(adaptType(opArgTys[i], generalizeInputTypes));
-                    kernelArgs.push_back(op->getOperand(i));
+                backend = "CPP";
+
+            const size_t numArgs = lookupArgTys.size();
+            const size_t numRess = lookupResTys.size();
+            int chosenKernelIdx = -1;
+            for (size_t i = 0; i < kernelInfos.size() && chosenKernelIdx == -1; i++) {
+                auto ki = kernelInfos[i];
+                if (ki.backend != backend)
+                    continue;
+                if (numArgs != ki.argTypes.size())
+                    continue;
+                if (numRess != ki.resTypes.size())
+                    continue;
+
+                bool mismatch = false;
+                for (size_t i = 0; i < numArgs && !mismatch; i++)
+                    if (lookupArgTys[i] != ki.argTypes[i])
+                        mismatch = true;
+                for (size_t i = 0; i < numRess && !mismatch; i++)
+                    if (lookupResTys[i] != ki.resTypes[i])
+                        mismatch = true;
+                if (!mismatch)
+                    chosenKernelIdx = i;
+            }
+            if (chosenKernelIdx == -1) {
+                std::stringstream s;
+                s << "no kernel for operation `" << opMnemonic << "` available for the required input types `(";
+                for (size_t i = 0; i < numArgs; i++) {
+                    s << lookupArgTys[i];
+                    if (i < numArgs - 1)
+                        s << ", ";
                 }
-
-            if(auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
-                // GroupOp carries the aggregation functions to apply as an
-                // attribute. Since attributes do not automatically become
-                // inputs to the kernel call, we need to add them explicitly
-                // here.
-
-                ArrayAttr aggFuncs = groupOp.getAggFuncs();
-                const size_t numAggFuncs = aggFuncs.size();
-                const Type t = rewriter.getIntegerType(32, false);
-                auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
-                        loc,
-                        daphne::VariadicPackType::get(rewriter.getContext(), t),
-                        rewriter.getI64IntegerAttr(numAggFuncs)
-                );
-                size_t k = 0;
-                for(Attribute aggFunc : aggFuncs.getValue())
-                    rewriter.create<daphne::StoreVariadicPackOp>(
-                            loc,
-                            cvpOp,
-                            rewriter.create<daphne::ConstantOp>(
-                                    loc,
-                                    t,
-                                    rewriter.getIntegerAttr(
-                                            t,
-                                            static_cast<uint32_t>(
-                                                    aggFunc.dyn_cast<daphne::GroupEnumAttr>().getValue()
-                                            )
-                                    )
-                            ),
-                            rewriter.getI64IntegerAttr(k++)
-                    );
-                kernelArgs.push_back(cvpOp);
-                kernelArgs.push_back(rewriter.create<daphne::ConstantOp>(
-                        loc, rewriter.getIndexType(), rewriter.getIndexAttr(numAggFuncs))
-                );
-            }
-            
-            if(auto thetaJoinOp = llvm::dyn_cast<daphne::ThetaJoinOp>(op)) {
-                // ThetaJoinOp carries multiple CompareOperation as an
-                // attribute. Since attributes do not automatically become
-                // inputs to the kernel call, we need to add them explicitly
-                // here.
-
-                // get array of CompareOperations
-                ArrayAttr compareOperations = thetaJoinOp.getCmp();
-                const size_t numCompareOperations = compareOperations.size();
-                const Type t = rewriter.getIntegerType(32, false);
-                // create Variadic Pack
-                auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
-                        loc,
-                        daphne::VariadicPackType::get(rewriter.getContext(), t),
-                        rewriter.getI64IntegerAttr(numCompareOperations)
-                );
-                // fill variadic pack
-                size_t k = 0;
-                for(Attribute compareOperation : compareOperations.getValue())
-                    rewriter.create<daphne::StoreVariadicPackOp>(
-                            loc,
-                            cvpOp,
-                            rewriter.create<daphne::ConstantOp>(
-                                    loc,
-                                    t,
-                                    rewriter.getIntegerAttr(
-                                            t,
-                                            static_cast<uint32_t>(
-                                                    compareOperation.dyn_cast<daphne::CompareOperationAttr>().getValue()
-                                            )
-                                    )
-                            ),
-                            rewriter.getI64IntegerAttr(k++)
-                    );
-                // add created variadic pack and size of this pack as
-                // new operands / parameters of the ThetaJoin-Kernel call
-                kernelArgs.push_back(cvpOp);
-                kernelArgs.push_back(rewriter.create<daphne::ConstantOp>(
-                        loc, rewriter.getIndexType(), rewriter.getIndexAttr(numCompareOperations))
-                );
-            }
-
-            if(auto distCompOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
-                MLIRContext newContext; // TODO Reuse the existing context.
-                OpBuilder tempBuilder(&newContext);
-                std::string funcName = "dist";
-
-                auto &bodyBlock = distCompOp.getBody().front();
-                auto funcType = tempBuilder.getFunctionType(
-                    bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
-                auto funcOp = tempBuilder.create<func::FuncOp>(loc, funcName, funcType);
-
-                IRMapping mapper;
-                distCompOp.getBody().cloneInto(&funcOp.getRegion(), mapper);
-
-                // write recompile region as string constant
-                std::string s;
-                llvm::raw_string_ostream stream(s);
-                funcOp.print(stream);
-
-                auto strTy = daphne::StringType::get(rewriter.getContext());
-                Value
-                    rewriteStr = rewriter.create<daphne::ConstantOp>(loc, strTy, rewriter.getStringAttr(stream.str()));
-                lookupArgTys.push_back(mlir::daphne::StringType::get(&newContext));
-                kernelArgs.push_back(rewriteStr);
-            }
-
-            // *****************************************************************************
-            // Look up a matching kernel from the kernel catalog.
-            // *****************************************************************************
-
-            const KernelCatalog & kc = userConfig.kernelCatalog;
-            const std::string opMnemonic = op->getName().stripDialect().data();
-            std::vector<KernelInfo> kernelInfos = kc.getKernelInfos(opMnemonic);
-
-            std::string libPath;
-            std::string kernelFuncName;
-            // TODO Don't hardcode the attribute name, put it in a central place.
-            if(op->hasAttr("kernel_hint")) {
-                // The operation has a kernel hint. Lower to the hinted kernel if possible.
-
-                // TODO Check if the attribute has the right type.
-                kernelFuncName = op->getAttrOfType<mlir::StringAttr>("kernel_hint").getValue().str();
-                bool found = false;
-                for(size_t i = 0; i < kernelInfos.size() && !found; i++) {
-                    auto ki = kernelInfos[i];
-                    if(ki.kernelFuncName == kernelFuncName) {
-                        libPath = ki.libPath;
-                        found = true;
-                    }
+                s << +")` and output types `(";
+                for (size_t i = 0; i < numRess; i++) {
+                    s << lookupResTys[i];
+                    if (i < numRess - 1)
+                        s << ", ";
                 }
-                if(!found)
-                    throw ErrorHandler::compilerError(
-                        loc,
-                        "RewriteToCallKernelOpPass",
-                        "no kernel found for operation `" + opMnemonic +
-                        "` with hinted name `" + kernelFuncName + "`"
-                    );
+                s << ")` for backend `" << backend << "`, registered kernels for this op:" << std::endl;
+                kc.dump(opMnemonic, s);
+                throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass", s.str());
             }
-            else {
-                // The operation does not have a kernel hint. Search for a kernel
-                // for this operation and the given result/argument types and backend.
-
-                if(kernelInfos.empty())
-                    throw ErrorHandler::compilerError(
-                        loc,
-                        "RewriteToCallKernelOpPass",
-                        "no kernels registered for operation `" + opMnemonic + "`"
-                    );
-
-                std::string backend;
-                if(op->hasAttr("cuda_device"))
-                    backend = "CUDA";
-                else if(op->hasAttr("fpgaopencl_device"))
-                    backend = "FPGAOPENCL";
-                else
-                    backend = "CPP";
-
-                const size_t numArgs = lookupArgTys.size();
-                const size_t numRess = lookupResTys.size();
-                int chosenKernelIdx = -1;
-                for(size_t i = 0; i < kernelInfos.size() && chosenKernelIdx == -1; i++) {
-                    auto ki = kernelInfos[i];
-                    if(ki.backend != backend)
-                        continue;
-                    if(numArgs != ki.argTypes.size())
-                        continue;
-                    if(numRess != ki.resTypes.size())
-                        continue;
-
-                    bool mismatch = false;
-                    for(size_t i = 0; i < numArgs && !mismatch; i++)
-                        if(lookupArgTys[i] != ki.argTypes[i])
-                            mismatch = true;
-                    for(size_t i = 0; i < numRess && !mismatch; i++)
-                        if(lookupResTys[i] != ki.resTypes[i])
-                            mismatch = true;
-                    if(!mismatch)
-                        chosenKernelIdx = i;
-                }
-                if(chosenKernelIdx == -1) {
-                    std::stringstream s;
-                    s << "no kernel for operation `" << opMnemonic
-                        << "` available for the required input types `(";
-                    for(size_t i = 0; i < numArgs; i++) {
-                        s << lookupArgTys[i];
-                        if(i < numArgs - 1)
-                            s << ", ";
-                    }
-                    s << + ")` and output types `(";
-                    for(size_t i = 0; i < numRess; i++) {
-                        s << lookupResTys[i];
-                        if(i < numRess - 1)
-                            s << ", ";
-                    }
-                    s << ")` for backend `" << backend << "`, registered kernels for this op:" << std::endl;
-                    kc.dump(opMnemonic, s);
-                    throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass", s.str());
-                }
-                KernelInfo chosenKI = kernelInfos[chosenKernelIdx];
-                libPath = chosenKI.libPath;
-                kernelFuncName = chosenKI.kernelFuncName;
-            }
-
-            // *****************************************************************************
-            // Add kernel id and DAPHNE context as arguments
-            // *****************************************************************************
-
-            auto kId = rewriter.create<mlir::arith::ConstantOp>(
-                loc, rewriter.getI32IntegerAttr(
-                         KernelDispatchMapping::instance().registerKernel(
-                             kernelFuncName, op)));
-
-            // NOTE: kId has to be added before CreateDaphneContextOp because
-            // there is an assumption that the CTX is the last argument
-            // (LowerToLLVMPass.cpp::623,702). This means the kId is expected to
-            // be the second to last argument.
-            kernelArgs.push_back(kId);
-
-            // Inject the current DaphneContext as the last input parameter to
-            // all kernel calls, unless it's a CreateDaphneContextOp.
-            if(!llvm::isa<daphne::CreateDaphneContextOp>(op))
-                kernelArgs.push_back(dctx);
-
-            // *****************************************************************************
-            // Create the CallKernelOp
-            // *****************************************************************************
-            
-            // Mark the shared library the chosen kernel comes from as used. This means we
-            // will link this library into the JIT-compiled program later.
-            usedLibPaths.at(libPath) = true;
-
-            // Create a CallKernelOp for the kernel function to call and return success().
-            auto kernel = rewriter.create<daphne::CallKernelOp>(
-                    loc,
-                    kernelFuncName,
-                    kernelArgs,
-                    opResTys
-            );
-            rewriter.replaceOp(op, kernel.getResults());
-            return success();
-        }
-    };
-    
-    class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::DistributedPipelineOp> {
-        Value dctx;
-        const DaphneUserConfig & userConfig;
-        std::unordered_map<std::string, bool> & usedLibPaths;
-        
-    public:
-        using OpConversionPattern::OpConversionPattern;
-        DistributedPipelineKernelReplacement(
-            MLIRContext * mctx,
-            Value dctx,
-            const DaphneUserConfig & userConfig,
-            std::unordered_map<std::string, bool> & usedLibPaths,
-            PatternBenefit benefit = 2
-        )
-        : OpConversionPattern(mctx, benefit),
-        dctx(dctx), userConfig(userConfig), usedLibPaths(usedLibPaths)
-        {
+            KernelInfo chosenKI = kernelInfos[chosenKernelIdx];
+            libPath = chosenKI.libPath;
+            kernelFuncName = chosenKI.kernelFuncName;
         }
 
-        LogicalResult matchAndRewrite(daphne::DistributedPipelineOp op, OpAdaptor adaptor,
-                                      ConversionPatternRewriter &rewriter) const override
-        {
-            size_t numOutputs = op.getOutputs().size();
-            size_t numInputs = op.getInputs().size();
-                     
-            
-            std::stringstream callee;
-            callee << "_distributedPipeline"; // kernel name
-            callee << "__DenseMatrix_double_variadic" // outputs
-                << "__size_t" // numOutputs
-                << "__Structure_variadic" // inputs
-                << "__size_t" // numInputs
-                << "__int64_t" // outRows
-                << "__int64_t" // outCols
-                << "__int64_t" // splits
-                << "__int64_t" // combines
-                << "__char"; // irCode
-            
-            MLIRContext* mctx = rewriter.getContext();
-            
-            Location loc = op.getLoc();
-            Type vptObj = daphne::VariadicPackType::get(mctx, daphne::MatrixType::get(mctx, rewriter.getF64Type()));
-            Type vptSize = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, false));
-            Type vptInt64 = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, true));
-            
-            // Variadic pack for inputs.
-            auto cvpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptObj, rewriter.getI64IntegerAttr(numInputs));
-            for(size_t i = 0; i < numInputs; i++)
-                rewriter.create<daphne::StoreVariadicPackOp>(
-                        loc, cvpInputs, op.getInputs()[i], rewriter.getI64IntegerAttr(i)
-                );
-            // Constants for #inputs.
-            auto coNumInputs = rewriter.create<daphne::ConstantOp>(loc, numInputs);
-            [[maybe_unused]] auto coNumOutputs = rewriter.create<daphne::ConstantOp>(loc, numOutputs);
-            // Variadic pack for out_rows.
-            auto cvpOutRows = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getI64IntegerAttr(numOutputs));
-            for(size_t i = 0; i < numOutputs; i++)
-                rewriter.create<daphne::StoreVariadicPackOp>(
-                        loc, cvpOutRows, op.getOutRows()[i], rewriter.getI64IntegerAttr(i)
-                );
-            // Variadic pack for out_cols.
-            auto cvpOutCols = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getI64IntegerAttr(numOutputs));
-            for(size_t i = 0; i < numOutputs; i++)
-                rewriter.create<daphne::StoreVariadicPackOp>(
-                        loc, cvpOutCols, op.getOutCols()[i], rewriter.getI64IntegerAttr(i)
-                );
-            // Variadic pack for splits.
-            auto cvpSplits = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getI64IntegerAttr(numInputs));
-            for(size_t i = 0; i < numInputs; i++)
-                rewriter.create<daphne::StoreVariadicPackOp>(
-                        loc,
-                        cvpSplits,
-                        rewriter.create<daphne::ConstantOp>(
-                                loc, static_cast<int64_t>(op.getSplits()[i].dyn_cast<daphne::VectorSplitAttr>().getValue())
-                        ),
-                        rewriter.getI64IntegerAttr(i)
-                );
-            // Variadic pack for combines.
-            auto cvpCombines = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getI64IntegerAttr(numOutputs));
-            for(size_t i = 0; i < numOutputs; i++)
-                rewriter.create<daphne::StoreVariadicPackOp>(
-                        loc,
-                        cvpCombines,
-                        rewriter.create<daphne::ConstantOp>(
-                                loc, static_cast<int64_t>(op.getCombines()[i].dyn_cast<daphne::VectorCombineAttr>().getValue())
-                        ),
-                        rewriter.getI64IntegerAttr(i)
-                );
-            
-            // Create CallKernelOp.
-            std::vector<Value> newOperands = {
-                cvpInputs, coNumInputs, cvpOutRows, cvpOutCols, cvpSplits, cvpCombines, op.getIr(), dctx
-            };
-            auto cko = rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(
-                    op.getOperation(),
-                    callee.str(),
-                    newOperands,
-                    op.getOutputs().getTypes()
-            );
-            // TODO Use ATTR_HASVARIADICRESULTS from LowerToLLVMPass.cpp.
-            cko->setAttr("hasVariadicResults", rewriter.getBoolAttr(true));
-      
-            return success();
-        }
-    };
+        // *****************************************************************************
+        // Add kernel id and DAPHNE context as arguments
+        // *****************************************************************************
 
-    struct RewriteToCallKernelOpPass
-    : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<func::FuncOp>>
-    {
-        const DaphneUserConfig& userConfig;
-        std::unordered_map<std::string, bool> & usedLibPaths;
+        auto kId = rewriter.create<mlir::arith::ConstantOp>(
+            loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(kernelFuncName, op)));
 
-        explicit RewriteToCallKernelOpPass(
-            const DaphneUserConfig& cfg, std::unordered_map<std::string, bool> & usedLibPaths
-        ) : userConfig(cfg), usedLibPaths(usedLibPaths) {}
+        // NOTE: kId has to be added before CreateDaphneContextOp because
+        // there is an assumption that the CTX is the last argument
+        // (LowerToLLVMPass.cpp::623,702). This means the kId is expected to
+        // be the second to last argument.
+        kernelArgs.push_back(kId);
 
-        void runOnOperation() final;
-    };
-}
+        // Inject the current DaphneContext as the last input parameter to
+        // all kernel calls, unless it's a CreateDaphneContextOp.
+        if (!llvm::isa<daphne::CreateDaphneContextOp>(op))
+            kernelArgs.push_back(dctx);
 
-void RewriteToCallKernelOpPass::runOnOperation()
-{
+        // *****************************************************************************
+        // Create the CallKernelOp
+        // *****************************************************************************
+
+        // Mark the shared library the chosen kernel comes from as used. This
+        // means we will link this library into the JIT-compiled program later.
+        usedLibPaths.at(libPath) = true;
+
+        // Create a CallKernelOp for the kernel function to call and return
+        // success().
+        auto kernel = rewriter.create<daphne::CallKernelOp>(loc, kernelFuncName, kernelArgs, opResTys);
+        rewriter.replaceOp(op, kernel.getResults());
+        return success();
+    }
+};
+
+class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::DistributedPipelineOp> {
+    Value dctx;
+    const DaphneUserConfig &userConfig;
+    std::unordered_map<std::string, bool> &usedLibPaths;
+
+  public:
+    using OpConversionPattern::OpConversionPattern;
+    DistributedPipelineKernelReplacement(MLIRContext *mctx, Value dctx, const DaphneUserConfig &userConfig,
+                                         std::unordered_map<std::string, bool> &usedLibPaths,
+                                         PatternBenefit benefit = 2)
+        : OpConversionPattern(mctx, benefit), dctx(dctx), userConfig(userConfig), usedLibPaths(usedLibPaths) {}
+
+    LogicalResult matchAndRewrite(daphne::DistributedPipelineOp op, OpAdaptor adaptor,
+                                  ConversionPatternRewriter &rewriter) const override {
+        size_t numOutputs = op.getOutputs().size();
+        size_t numInputs = op.getInputs().size();
+
+        std::stringstream callee;
+        callee << "_distributedPipeline";         // kernel name
+        callee << "__DenseMatrix_double_variadic" // outputs
+               << "__size_t"                      // numOutputs
+               << "__Structure_variadic"          // inputs
+               << "__size_t"                      // numInputs
+               << "__int64_t"                     // outRows
+               << "__int64_t"                     // outCols
+               << "__int64_t"                     // splits
+               << "__int64_t"                     // combines
+               << "__char";                       // irCode
+
+        MLIRContext *mctx = rewriter.getContext();
+
+        Location loc = op.getLoc();
+        Type vptObj = daphne::VariadicPackType::get(mctx, daphne::MatrixType::get(mctx, rewriter.getF64Type()));
+        Type vptSize = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, false));
+        Type vptInt64 = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, true));
+
+        // Variadic pack for inputs.
+        auto cvpInputs =
+            rewriter.create<daphne::CreateVariadicPackOp>(loc, vptObj, rewriter.getI64IntegerAttr(numInputs));
+        for (size_t i = 0; i < numInputs; i++)
+            rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpInputs, op.getInputs()[i],
+                                                         rewriter.getI64IntegerAttr(i));
+        // Constants for #inputs.
+        auto coNumInputs = rewriter.create<daphne::ConstantOp>(loc, numInputs);
+        [[maybe_unused]] auto coNumOutputs = rewriter.create<daphne::ConstantOp>(loc, numOutputs);
+        // Variadic pack for out_rows.
+        auto cvpOutRows =
+            rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getI64IntegerAttr(numOutputs));
+        for (size_t i = 0; i < numOutputs; i++)
+            rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpOutRows, op.getOutRows()[i],
+                                                         rewriter.getI64IntegerAttr(i));
+        // Variadic pack for out_cols.
+        auto cvpOutCols =
+            rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getI64IntegerAttr(numOutputs));
+        for (size_t i = 0; i < numOutputs; i++)
+            rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpOutCols, op.getOutCols()[i],
+                                                         rewriter.getI64IntegerAttr(i));
+        // Variadic pack for splits.
+        auto cvpSplits =
+            rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getI64IntegerAttr(numInputs));
+        for (size_t i = 0; i < numInputs; i++)
+            rewriter.create<daphne::StoreVariadicPackOp>(
+                loc, cvpSplits,
+                rewriter.create<daphne::ConstantOp>(
+                    loc, static_cast<int64_t>(op.getSplits()[i].dyn_cast<daphne::VectorSplitAttr>().getValue())),
+                rewriter.getI64IntegerAttr(i));
+        // Variadic pack for combines.
+        auto cvpCombines =
+            rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getI64IntegerAttr(numOutputs));
+        for (size_t i = 0; i < numOutputs; i++)
+            rewriter.create<daphne::StoreVariadicPackOp>(
+                loc, cvpCombines,
+                rewriter.create<daphne::ConstantOp>(
+                    loc, static_cast<int64_t>(op.getCombines()[i].dyn_cast<daphne::VectorCombineAttr>().getValue())),
+                rewriter.getI64IntegerAttr(i));
+
+        // Create CallKernelOp.
+        std::vector<Value> newOperands = {cvpInputs, coNumInputs, cvpOutRows, cvpOutCols,
+                                          cvpSplits, cvpCombines, op.getIr(), dctx};
+        auto cko = rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(op.getOperation(), callee.str(), newOperands,
+                                                                     op.getOutputs().getTypes());
+        // TODO Use ATTR_HASVARIADICRESULTS from LowerToLLVMPass.cpp.
+        cko->setAttr("hasVariadicResults", rewriter.getBoolAttr(true));
+
+        return success();
+    }
+};
+
+struct RewriteToCallKernelOpPass : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<func::FuncOp>> {
+    const DaphneUserConfig &userConfig;
+    std::unordered_map<std::string, bool> &usedLibPaths;
+
+    explicit RewriteToCallKernelOpPass(const DaphneUserConfig &cfg, std::unordered_map<std::string, bool> &usedLibPaths)
+        : userConfig(cfg), usedLibPaths(usedLibPaths) {}
+
+    void runOnOperation() final;
+};
+} // namespace
+
+void RewriteToCallKernelOpPass::runOnOperation() {
     func::FuncOp func = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -713,47 +604,29 @@ void RewriteToCallKernelOpPass::runOnOperation()
     // Specification of (il)legal dialects/operations. All DaphneIR operations
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
-    target.addLegalDialect<mlir::AffineDialect, LLVM::LLVMDialect,
-                           scf::SCFDialect, memref::MemRefDialect,
-                           mlir::linalg::LinalgDialect,
-                           mlir::arith::ArithDialect, mlir::BuiltinDialect>();
+    target.addLegalDialect<mlir::AffineDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect,
+                           mlir::linalg::LinalgDialect, mlir::arith::ArithDialect, mlir::BuiltinDialect>();
 
     target.addLegalOp<ModuleOp, func::FuncOp, func::CallOp, func::ReturnOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
-    target.addLegalOp<
-            daphne::ConstantOp,
-            daphne::ReturnOp,
-            daphne::CallKernelOp,
-            daphne::CreateVariadicPackOp,
-            daphne::StoreVariadicPackOp,
-            daphne::VectorizedPipelineOp,
-            scf::ForOp,
-            memref::LoadOp,
-            daphne::GenericCallOp,
-            daphne::MapOp
-    >();
-    target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
-        return op.isTrivialCast() || op.isRemovePropertyCast();
-    });
+    target.addLegalOp<daphne::ConstantOp, daphne::ReturnOp, daphne::CallKernelOp, daphne::CreateVariadicPackOp,
+                      daphne::StoreVariadicPackOp, daphne::VectorizedPipelineOp, scf::ForOp, memref::LoadOp,
+                      daphne::GenericCallOp, daphne::MapOp>();
+    target.addDynamicallyLegalOp<daphne::CastOp>(
+        [](daphne::CastOp op) { return op.isTrivialCast() || op.isRemovePropertyCast(); });
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = CompilerUtils::getDaphneContext(func);
-    func->walk([&](daphne::VectorizedPipelineOp vpo)
-    {
-      vpo.getCtxMutable().assign(dctx);
-    });
+    func->walk([&](daphne::VectorizedPipelineOp vpo) { vpo.getCtxMutable().assign(dctx); });
 
     // Apply conversion to CallKernelOps.
-    patterns.insert<
-            KernelReplacement,
-            DistributedPipelineKernelReplacement
-    >(&getContext(), dctx, userConfig, usedLibPaths);
+    patterns.insert<KernelReplacement, DistributedPipelineKernelReplacement>(&getContext(), dctx, userConfig,
+                                                                             usedLibPaths);
     if (failed(applyPartialConversion(func, target, std::move(patterns))))
         signalPassFailure();
-
 }
 
-std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg, std::unordered_map<std::string, bool> & usedLibPaths)
-{
+std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(const DaphneUserConfig &cfg,
+                                                              std::unordered_map<std::string, bool> &usedLibPaths) {
     return std::make_unique<RewriteToCallKernelOpPass>(cfg, usedLibPaths);
 }

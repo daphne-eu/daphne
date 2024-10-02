@@ -22,31 +22,23 @@
 #include <runtime/local/kernels/RandMatrix.h>
 #include <runtime/local/vectorized/MTWrapper.h>
 
-#include <tags.h>
 #include <catch.hpp>
+#include <tags.h>
 
 #define DATA_TYPES DenseMatrix
-#define VALUE_TYPES double, float //TODO uint32_t
+#define VALUE_TYPES double, float // TODO uint32_t
 
-template<class DT>
-void funAdd(DT*** outputs, Structure** inputs, DCTX(ctx)) {
-    ewBinaryMat(BinaryOpCode::ADD,
-        *outputs[0],
-        reinterpret_cast<DT*>(inputs[0]),
-        reinterpret_cast<DT*>(inputs[1]),
-        ctx);
+template <class DT> void funAdd(DT ***outputs, Structure **inputs, DCTX(ctx)) {
+    ewBinaryMat(BinaryOpCode::ADD, *outputs[0], reinterpret_cast<DT *>(inputs[0]), reinterpret_cast<DT *>(inputs[1]),
+                ctx);
 }
 
-template<class DT>
-void funMul(DT*** outputs, Structure** inputs, DCTX(ctx)) {
-    ewBinaryMat(BinaryOpCode::MUL,
-        *outputs[0],
-        reinterpret_cast<DT*>(inputs[0]),
-        reinterpret_cast<DT*>(inputs[1]),
-        ctx);
+template <class DT> void funMul(DT ***outputs, Structure **inputs, DCTX(ctx)) {
+    ewBinaryMat(BinaryOpCode::MUL, *outputs[0], reinterpret_cast<DT *>(inputs[0]), reinterpret_cast<DT *>(inputs[1]),
+                ctx);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)){
+TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     auto dctx = setupContextAndLogger();
@@ -58,7 +50,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     randMatrix<DT, VT>(m2, 1234, 10, 0.0, 1.0, 1.0, 3, dctx.get());
 
     DT *r1 = nullptr, *r2 = nullptr;
-    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, dctx.get()); //single-threaded
+    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2,
+                            dctx.get()); // single-threaded
 
     auto wrapper = std::make_unique<MTWrapper<DT>>(1, dctx.get());
     DT **outputs[] = {&r2};
@@ -70,9 +63,10 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     VectorCombine combines[] = {VectorCombine::ROWS};
 
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
-    funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **, 
-            DCTX(ctx))>(reinterpret_cast<void*>(&funAdd<DT>))));
-    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(), false);
+    funcs.push_back(std::function<void(DT ***, Structure **, DCTX(ctx))>(
+        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(reinterpret_cast<void *>(&funAdd<DT>))));
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(),
+                              false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, dctx.get()));
 
@@ -82,7 +76,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     DataObjectFactory::destroy(r2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES),
+                           (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
     using VT = typename DT::VT;
     auto dctx = setupContextAndLogger();
@@ -92,7 +87,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     randMatrix<DT, VT>(m2, 1234, 10, 0.0, 1.0, 1.0, 3, dctx.get());
 
     DT *r1 = nullptr, *r2 = nullptr;
-    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, dctx.get()); //single-threaded
+    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2,
+                            dctx.get()); // single-threaded
 
     auto wrapper = std::make_unique<MTWrapper<DT>>(1, dctx.get());
     DT **outputs[] = {&r2};
@@ -104,9 +100,10 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     VectorCombine combines[] = {VectorCombine::ROWS};
 
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
-    funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **,
-            DCTX(ctx))>(reinterpret_cast<void*>(&funAdd<DT>))));
-    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(), false);
+    funcs.push_back(std::function<void(DT ***, Structure **, DCTX(ctx))>(
+        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(reinterpret_cast<void *>(&funAdd<DT>))));
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(),
+                              false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, dctx.get()));
 
@@ -116,7 +113,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     DataObjectFactory::destroy(r2);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
+TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES),
+                           (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
     using VT = typename DT::VT;
     auto dctx = setupContextAndLogger();
@@ -126,7 +124,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     randMatrix<DT, VT>(m2, 1234, 10, 0.0, 1.0, 1.0, 3, dctx.get());
 
     DT *r1 = nullptr, *r2 = nullptr;
-    ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2, dctx.get()); //single-threaded
+    ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2,
+                            dctx.get()); // single-threaded
 
     auto wrapper = std::make_unique<MTWrapper<DT>>(1, dctx.get());
     DT **outputs[] = {&r2};
@@ -138,9 +137,10 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     VectorCombine combines[] = {VectorCombine::ROWS};
 
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
-    funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **,
-            DCTX(ctx))>(reinterpret_cast<void*>(&funMul<DT>))));
-    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(), false);
+    funcs.push_back(std::function<void(DT ***, Structure **, DCTX(ctx))>(
+        reinterpret_cast<void (*)(DT ***, Structure **, DCTX(ctx))>(reinterpret_cast<void *>(&funMul<DT>))));
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, dctx.get(),
+                              false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, dctx.get()));
 

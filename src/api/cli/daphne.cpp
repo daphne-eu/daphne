@@ -16,6 +16,4 @@
 
 #include <api/internal/daphne_internal.h>
 
-int main(int argc, const char** argv) {
-    return mainInternal(argc, argv, nullptr);
-}
+int main(int argc, const char **argv) { return mainInternal(argc, argv, nullptr); }

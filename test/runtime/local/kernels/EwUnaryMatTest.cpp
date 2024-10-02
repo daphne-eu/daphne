@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include <runtime/local/kernels/CheckEq.h>
-#include <runtime/local/kernels/CheckEqApprox.h>
+#include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
+#include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/EwUnaryMat.h>
-#include <runtime/local/datagen/GenGivenVals.h>
 
 #include <tags.h>
 
@@ -34,25 +34,23 @@
 #define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES int32_t, double
 
-template<typename DTRes, typename DTArg>
-void checkEwUnaryMat(UnaryOpCode opCode, const DTArg * arg, const DTRes * exp) {
-    DTRes * res = nullptr;
+template <typename DTRes, typename DTArg> void checkEwUnaryMat(UnaryOpCode opCode, const DTArg *arg, const DTRes *exp) {
+    DTRes *res = nullptr;
     ewUnaryMat<DTRes, DTArg>(opCode, res, arg, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
 
-template<typename DTRes, typename DTArg>
-void checkEwUnaryMatApprox(UnaryOpCode opCode, const DTArg * arg, const DTRes * exp) {
-    DTRes * res = nullptr;
+template <typename DTRes, typename DTArg>
+void checkEwUnaryMatApprox(UnaryOpCode opCode, const DTArg *arg, const DTRes *exp) {
+    DTRes *res = nullptr;
     ewUnaryMat<DTRes, DTArg>(opCode, res, arg, nullptr);
     CHECK(checkEqApprox(res, exp, 1e-2, nullptr));
     DataObjectFactory::destroy(res);
 }
 
-template<typename DTArg>
-void checkEwUnaryMatThrow(UnaryOpCode opCode, const DTArg * arg) {
-    DTArg * res = nullptr;
+template <typename DTArg> void checkEwUnaryMatThrow(UnaryOpCode opCode, const DTArg *arg) {
+    DTArg *res = nullptr;
     REQUIRE_THROWS_AS((ewUnaryMat<DTArg, DTArg>(opCode, res, arg, nullptr)), std::domain_error);
     DataObjectFactory::destroy(res);
 }
@@ -65,16 +63,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("abs"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        1,
-        1,
-    });
+                                       0,
+                                       1,
+                                       1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::ABS, arg, exp);
 
@@ -86,14 +84,22 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(2, {
-        0, 1, -1,
-        10, -10, VT(1.4),
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                       10,
+                                       -10,
+                                       VT(1.4),
+                                   });
 
     auto exp = genGivenVals<DT>(2, {
-        0, 1, -1,
-        1, -1, 1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                       1,
+                                       -1,
+                                       1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::SIGN, arg, exp);
 
@@ -105,14 +111,14 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNE
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(2, {
-        std::numeric_limits<VT>::infinity(),
-        - std::numeric_limits<VT>::infinity(),
-    });
+                                       std::numeric_limits<VT>::infinity(),
+                                       -std::numeric_limits<VT>::infinity(),
+                                   });
 
     auto exp = genGivenVals<DT>(2, {
-        1,
-        -1,
-    });
+                                       1,
+                                       -1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::SIGN, arg, exp);
 
@@ -123,16 +129,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        16,
-    });
+                                       0,
+                                       1,
+                                       16,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        1,
-        4,
-    });
+                                       0,
+                                       1,
+                                       4,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::SQRT, arg, exp);
 
@@ -143,10 +149,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sqrt, check domain_error"), TAG_KERNELS, (
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     checkEwUnaryMatThrow(UnaryOpCode::SQRT, arg);
 
@@ -158,16 +164,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("exp"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        -1,
-        3,
-    });
+                                       0,
+                                       -1,
+                                       3,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        1,
-        VT(0.367),
-        VT(20.085),
-    });
+                                       1,
+                                       VT(0.367),
+                                       VT(20.085),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::EXP, arg, exp);
 
@@ -179,16 +185,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln"), TAG_KERNELS, (DATA_TYPES), (VALUE_TY
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        1,
-        3,
-        8,
-    });
+                                       1,
+                                       3,
+                                       8,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        VT(1.098),
-        VT(2.079),
-    });
+                                       0,
+                                       VT(1.098),
+                                       VT(2.079),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::LN, arg, exp);
 
@@ -199,10 +205,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ln, check domain_error"), TAG_KERNELS, (DA
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     checkEwUnaryMatThrow(UnaryOpCode::LN, arg);
 
@@ -218,16 +224,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sin"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        VT(0.841),
-        VT(-0.841),
-    });
+                                       0,
+                                       VT(0.841),
+                                       VT(-0.841),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::SIN, arg, exp);
 
@@ -239,16 +245,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cos"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        1,
-        VT(0.54),
-        VT(0.54),
-    });
+                                       1,
+                                       VT(0.54),
+                                       VT(0.54),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::COS, arg, exp);
 
@@ -260,16 +266,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tan"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        VT(1.557),
-        VT(-1.557),
-    });
+                                       0,
+                                       VT(1.557),
+                                       VT(-1.557),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::TAN, arg, exp);
 
@@ -281,16 +287,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        VT(1.57),
-        VT(-1.57),
-    });
+                                       0,
+                                       VT(1.57),
+                                       VT(-1.57),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::ASIN, arg, exp);
 
@@ -301,10 +307,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("asin, check domain_error"), TAG_KERNELS, (
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -2,
-    });
+                                       0,
+                                       1,
+                                       -2,
+                                   });
 
     checkEwUnaryMatThrow(UnaryOpCode::ASIN, arg);
 
@@ -316,16 +322,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        VT(1.57),
-        0,
-        VT(3.141),
-    });
+                                       VT(1.57),
+                                       0,
+                                       VT(3.141),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::ACOS, arg, exp);
 
@@ -336,10 +342,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("acos, check domain_error"), TAG_KERNELS, (
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -2,
-    });
+                                       0,
+                                       1,
+                                       -2,
+                                   });
 
     checkEwUnaryMatThrow(UnaryOpCode::ACOS, arg);
 
@@ -351,16 +357,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("atan"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        VT(0.785),
-        VT(-0.785),
-    });
+                                       0,
+                                       VT(0.785),
+                                       VT(-0.785),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::ATAN, arg, exp);
 
@@ -372,16 +378,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sinh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        VT(1.175),
-        VT(-1.175),
-    });
+                                       0,
+                                       VT(1.175),
+                                       VT(-1.175),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::SINH, arg, exp);
 
@@ -393,16 +399,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("cosh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        1,
-        VT(1.543),
-        VT(1.543),
-    });
+                                       1,
+                                       VT(1.543),
+                                       VT(1.543),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::COSH, arg, exp);
 
@@ -414,16 +420,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("tanh"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        VT(0.761),
-        VT(-0.761),
-    });
+                                       0,
+                                       VT(0.761),
+                                       VT(-0.761),
+                                   });
 
     checkEwUnaryMatApprox(UnaryOpCode::TANH, arg, exp);
 
@@ -438,16 +444,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor"), TAG_KERNELS, (DATA_TYPES), (VALUE
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::FLOOR, arg, exp);
 
@@ -458,14 +464,18 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("floor, floating-point-specific"), TAG_KERN
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(2, {
-        0.3, -0.3,
-        0.9, -0.9,
-    });
+                                       0.3,
+                                       -0.3,
+                                       0.9,
+                                       -0.9,
+                                   });
 
     auto exp = genGivenVals<DT>(2, {
-        0, -1,
-        0, -1,
-    });
+                                       0,
+                                       -1,
+                                       0,
+                                       -1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::FLOOR, arg, exp);
 
@@ -476,16 +486,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::CEIL, arg, exp);
 
@@ -496,14 +506,18 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ceil, floating-point-specific"), TAG_KERNE
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(2, {
-        0.3, -0.3,
-        1.1, -1.9,
-    });
+                                       0.3,
+                                       -0.3,
+                                       1.1,
+                                       -1.9,
+                                   });
 
     auto exp = genGivenVals<DT>(2, {
-        1, -0.0,
-        2, -1,
-    });
+                                       1,
+                                       -0.0,
+                                       2,
+                                       -1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::CEIL, arg, exp);
 
@@ -514,16 +528,16 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round"), TAG_KERNELS, (DATA_TYPES), (VALUE
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     auto exp = genGivenVals<DT>(3, {
-        0,
-        1,
-        -1,
-    });
+                                       0,
+                                       1,
+                                       -1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::ROUND, arg, exp);
 
@@ -534,14 +548,18 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("round, floating-point-specific"), TAG_KERN
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(2, {
-        0.3, -0.3,
-        0.5, -0.5,
-    });
+                                       0.3,
+                                       -0.3,
+                                       0.5,
+                                       -0.5,
+                                   });
 
     auto exp = genGivenVals<DT>(2, {
-        0, -0.0,
-        1, -1,
-    });
+                                       0,
+                                       -0.0,
+                                       1,
+                                       -1,
+                                   });
 
     checkEwUnaryMat(UnaryOpCode::ROUND, arg, exp);
 
@@ -556,18 +574,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan"), TAG_KERNELS, (DATA_TYPES), (int32
     using DT = TestType;
 
     auto arg = genGivenVals<DT>(4, {
-        1,
-        0,
-        99,
-        -99, 
-    });
+                                       1,
+                                       0,
+                                       99,
+                                       -99,
+                                   });
 
-    auto exp = genGivenVals<DT>(4, {
-        0,
-        0,
-        0,
-        0
-    });
+    auto exp = genGivenVals<DT>(4, {0, 0, 0, 0});
 
     checkEwUnaryMat(UnaryOpCode::ISNAN, arg, exp);
 
@@ -578,29 +591,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan, floating-point specific"), TAG_KERN
     using DT = TestType;
     using VT = typename DT::VT;
 
-    auto arg = genGivenVals<DT>(9, {
-        1,
-        std::numeric_limits<VT>::quiet_NaN(),
-        0,
-        std::numeric_limits<VT>::infinity(),
-        -std::numeric_limits<VT>::infinity(), 
-        99.9,
-        -99.9,
-        std::numeric_limits<VT>::quiet_NaN(),
-        std::numeric_limits<VT>::denorm_min()
-    });
+    auto arg = genGivenVals<DT>(9, {1, std::numeric_limits<VT>::quiet_NaN(), 0, std::numeric_limits<VT>::infinity(),
+                                    -std::numeric_limits<VT>::infinity(), 99.9, -99.9,
+                                    std::numeric_limits<VT>::quiet_NaN(), std::numeric_limits<VT>::denorm_min()});
 
-    auto exp = genGivenVals<DT>(9, {
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0
-    });
+    auto exp = genGivenVals<DT>(9, {0, 1, 0, 0, 0, 0, 0, 1, 0});
 
     checkEwUnaryMat(UnaryOpCode::ISNAN, arg, exp);
 
@@ -655,9 +650,9 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Lower, string data"), TAG_KERNELS, (DenseM
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto arg = genGivenVals<DT>(1, {1});
-    DT * exp = nullptr;
+    DT *exp = nullptr;
     CHECK_THROWS(ewUnaryMat<DT, DT>(static_cast<UnaryOpCode>(999), exp, arg, nullptr));
 
     DataObjectFactory::destroy(arg);

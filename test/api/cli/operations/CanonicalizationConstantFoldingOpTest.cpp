@@ -15,16 +15,15 @@
  */
 
 #include <api/cli/Utils.h>
-#include <tags.h>
 #include <string>
-
+#include <tags.h>
 
 const std::string dirPath = "test/api/cli/operations/";
 
-void compareDaphneParsingSimplifiedToRef(const std::string & refFilePath, const std::string & scriptFilePath) {
+void compareDaphneParsingSimplifiedToRef(const std::string &refFilePath, const std::string &scriptFilePath) {
     std::stringstream out;
     std::stringstream err;
-	const std::string exp = readTextFile(refFilePath);
+    const std::string exp = readTextFile(refFilePath);
     int status = runDaphne(out, err, "--explain=parsing_simplified", scriptFilePath.c_str());
     CHECK(status == StatusCode::SUCCESS);
     CHECK(err.str() == exp);

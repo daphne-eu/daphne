@@ -1,7 +1,6 @@
 #ifndef SRC_RUNTIME_LOCAL_FPGAOPENCL_KERNEL_UTILS_H
 #define SRC_RUNTIME_LOCAL_FPGAOPENCL_KERNEL_UTILS_H
 
-
 #include "AOCLUtils/aocl_utils.h"
 #include "CL/opencl.h"
 

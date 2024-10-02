@@ -18,8 +18,7 @@
 
 #include "CSRMatrix.h"
 
-template<typename ValueType>
-size_t CSRMatrix<ValueType>::serialize(std::vector<char> &buf) const {
+template <typename ValueType> size_t CSRMatrix<ValueType>::serialize(std::vector<char> &buf) const {
     return DaphneSerializer<CSRMatrix<ValueType>>::serialize(this, buf);
 }
 

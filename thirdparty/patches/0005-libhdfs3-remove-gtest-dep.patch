@@ -1,0 +1,28 @@
+diff --git a/depends/libhdfs3/CMake/Platform.cmake b/depends/libhdfs3/CMake/Platform.cmake
+index ea00fa3f..55fbf646 100644
+--- a/depends/libhdfs3/CMake/Platform.cmake
++++ b/depends/libhdfs3/CMake/Platform.cmake
+@@ -16,7 +16,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
+     STRING(REGEX MATCHALL "[0-9]+" GCC_COMPILER_VERSION ${GCC_COMPILER_VERSION})
+     
+     LIST(GET GCC_COMPILER_VERSION 0 GCC_COMPILER_VERSION_MAJOR)
+-    LIST(GET GCC_COMPILER_VERSION 1 GCC_COMPILER_VERSION_MINOR)
++    LIST(GET GCC_COMPILER_VERSION 0 GCC_COMPILER_VERSION_MINOR)
+     
+     SET(GCC_COMPILER_VERSION_MAJOR ${GCC_COMPILER_VERSION_MAJOR} CACHE INTERNAL "gcc major version")
+     SET(GCC_COMPILER_VERSION_MINOR ${GCC_COMPILER_VERSION_MINOR} CACHE INTERNAL "gcc minor version")
+diff --git a/depends/libhdfs3/CMakeLists.txt b/depends/libhdfs3/CMakeLists.txt
+index f49e68dc..b96603d2 100644
+--- a/depends/libhdfs3/CMakeLists.txt
++++ b/depends/libhdfs3/CMakeLists.txt
+@@ -22,8 +22,8 @@ FIND_PACKAGE(LibXml2 REQUIRED)
+ FIND_PACKAGE(Protobuf REQUIRED)
+ FIND_PACKAGE(KERBEROS REQUIRED)
+ FIND_PACKAGE(GSasl REQUIRED)
+-FIND_PACKAGE(GoogleTest REQUIRED)
+-INCLUDE_DIRECTORIES(${GoogleTest_INCLUDE_DIR})
++#FIND_PACKAGE(GoogleTest REQUIRED)
++#INCLUDE_DIRECTORIES(${GoogleTest_INCLUDE_DIR})
+ LINK_LIBRARIES(${GoogleTest_LIBRARIES})
+ 
+ IF(OS_LINUX)

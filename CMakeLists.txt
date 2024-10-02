@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25.2)
 
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
@@ -29,7 +29,7 @@ project(daphne-prototype LANGUAGES CXX C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -118,6 +118,8 @@ check_language(CUDA)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
     if(${CMAKE_COMPILER_IS_GNUCXX})
         set(GCC_EXPECTED_VERSION 11.3.0)
@@ -137,7 +139,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_definitions(-DUSE_CUDA)
     message(STATUS "Note: disabled CUSPARSE_DEPRECATED in main CMakeLists.txt")
     add_definitions(-DDISABLE_CUSPARSE_DEPRECATED)
-    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD 20)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     message(STATUS  "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
     if(DEFINED ENV{CUDAHOSTCXX})
@@ -168,6 +170,42 @@ if(USE_FPGAOPENCL)
 	message(STATUS "cmake: using FPGA")
 	add_definitions(-DUSE_FPGAOPENCL)
 endif()
+
+
+# HDFS library
+# look through provided CMAKE_PREFIX_PATHs
+option(USE_HDFS "Whether to activate compilation of HDSF support" OFF)
+if(USE_HDFS)
+    foreach(path ${CMAKE_PREFIX_PATH})
+        if(NOT DEFINED HDFS_LIB_FOUND)
+            set(HDFS_LIB_LOCATION ${path}/hdfs)
+            if(EXISTS ${HDFS_LIB_LOCATION})
+                set(HDFS_LIB_FOUND TRUE)
+            else()
+                unset(HDFS_LIB_LOCATION)
+                unset(HDFS_LIB_FOUND)
+            endif()
+        endif()
+    endforeach(path)
+
+    # fallback if not using CMAKE_PREFIX_PATH (e.g., system/container install)
+    if(NOT DEFINED CMAKE_PREFIX_PATH OR NOT DEFINED HDFS_LIB_FOUND)
+        set(HDFS_LIB_LOCATION /usr/local/include/hdfs)
+        if(EXISTS ${HDFS_LIB_LOCATION})
+            set(HDFS_LIB_FOUND TRUE)
+        else()
+            unset(HDFS_LIB_LOCATION)
+        endif()
+    endif()
+
+    include_directories(${PROJECT_SOURCE_DIR} ${HDFS_LIB_LOCATION})
+    find_library(hdfs3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+    message(STATUS "HDFS_LIB_FOUND: ${HDFS_LIB_FOUND}")
+    if(DEFINED HDFS_LIB_FOUND)
+        add_definitions(-DUSE_HDFS)
+    endif()
+endif()
+
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 

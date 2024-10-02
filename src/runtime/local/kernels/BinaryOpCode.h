@@ -22,20 +22,20 @@
 
 enum class BinaryOpCode {
     // Arithmetic.
-    ADD,  // addition
-    SUB,  // subtraction
-    MUL,  // multiplication
-    DIV,  // division
-    POW,  // to the power of
-    MOD,  // modulus
-    LOG,  // logarithm
+    ADD, // addition
+    SUB, // subtraction
+    MUL, // multiplication
+    DIV, // division
+    POW, // to the power of
+    MOD, // modulus
+    LOG, // logarithm
     // Comparisons.
-    EQ,   // equal
-    NEQ,  // not equal
-    LT,   // less than
-    LE,   // less equal
-    GT,   // greater than
-    GE,   // greater equal
+    EQ,  // equal
+    NEQ, // not equal
+    LT,  // less than
+    LE,  // less equal
+    GT,  // greater than
+    GE,  // greater equal
     // Min/max.
     MIN,
     MAX,
@@ -67,8 +67,7 @@ static std::string_view binary_op_codes[] = {
     // Bitwise.
     "BITWISE_AND",
     // Strings.
-    "CONCAT"
-};
+    "CONCAT"};
 
 // ****************************************************************************
 // Specification which binary ops should be supported on which value types
@@ -83,52 +82,53 @@ static std::string_view binary_op_codes[] = {
  * @tparam VTRhs The right-hand-side argument value type.
  * @tparam op The binary operation.
  */
-template<BinaryOpCode op, typename VTRes, typename VTLhs, typename VTRhs>
+template <BinaryOpCode op, typename VTRes, typename VTLhs, typename VTRhs>
 static constexpr bool supportsBinaryOp = false;
 
 // Macros for concisely specifying which binary operations should be
 // supported on which value types.
 
-// Generates code specifying that the binary operation `Op` should be supported on
-// the value type `VT` (for the result and the two arguments, for simplicity).
-#define SUPPORT(Op, VT) \
-    template<> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VT, VT, VT> = true;
+// Generates code specifying that the binary operation `Op` should be supported
+// on the value type `VT` (for the result and the two arguments, for
+// simplicity).
+#define SUPPORT(Op, VT) template <> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VT, VT, VT> = true;
 
 // Generates code specifying that the binary operation `Op` should be supported on
 // the value types `VTLhs` and `VTRhs` with result `VTRes`.
 #define SUPPORT_RLR(Op, VTRes, VTLhs, VTRhs) \
     template<> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VTRes, VTLhs, VTRhs> = true;
 
-// Generates code specifying that all binary operations of a certain category should be
-// supported on the given value type `VT` (for the result and the two arguments, for simplicity).
-#define SUPPORT_ARITHMETIC(VT) \
-    /* Arithmetic. */ \
-    SUPPORT(ADD, VT) \
-    SUPPORT(SUB, VT) \
-    SUPPORT(MUL, VT) \
-    SUPPORT(DIV, VT) \
-    SUPPORT(POW, VT) \
-    SUPPORT(MOD, VT) \
+// Generates code specifying that all binary operations of a certain category
+// should be supported on the given value type `VT` (for the result and the two
+// arguments, for simplicity).
+#define SUPPORT_ARITHMETIC(VT)                                                                                         \
+    /* Arithmetic. */                                                                                                  \
+    SUPPORT(ADD, VT)                                                                                                   \
+    SUPPORT(SUB, VT)                                                                                                   \
+    SUPPORT(MUL, VT)                                                                                                   \
+    SUPPORT(DIV, VT)                                                                                                   \
+    SUPPORT(POW, VT)                                                                                                   \
+    SUPPORT(MOD, VT)                                                                                                   \
     SUPPORT(LOG, VT)
-#define SUPPORT_EQUALITY(VT) \
-    /* Comparisons. */ \
-    SUPPORT(EQ , VT) \
+#define SUPPORT_EQUALITY(VT)                                                                                           \
+    /* Comparisons. */                                                                                                 \
+    SUPPORT(EQ, VT)                                                                                                    \
     SUPPORT(NEQ, VT)
-#define SUPPORT_COMPARISONS(VT) \
-    /* Comparisons. */ \
-    SUPPORT(LT, VT) \
-    SUPPORT(LE, VT) \
-    SUPPORT(GT, VT) \
-    SUPPORT(GE, VT) \
-    /* Min/max. */ \
-    SUPPORT(MIN, VT) \
+#define SUPPORT_COMPARISONS(VT)                                                                                        \
+    /* Comparisons. */                                                                                                 \
+    SUPPORT(LT, VT)                                                                                                    \
+    SUPPORT(LE, VT)                                                                                                    \
+    SUPPORT(GT, VT)                                                                                                    \
+    SUPPORT(GE, VT)                                                                                                    \
+    /* Min/max. */                                                                                                     \
+    SUPPORT(MIN, VT)                                                                                                   \
     SUPPORT(MAX, VT)
-#define SUPPORT_LOGICAL(VT) \
-    /* Logical. */ \
-    SUPPORT(AND, VT) \
-    SUPPORT(OR , VT)
-#define SUPPORT_BITWISE(VT) \
-    /* Bitwise. */ \
+#define SUPPORT_LOGICAL(VT)                                                                                            \
+    /* Logical. */                                                                                                     \
+    SUPPORT(AND, VT)                                                                                                   \
+    SUPPORT(OR, VT)
+#define SUPPORT_BITWISE(VT)                                                                                            \
+    /* Bitwise. */                                                                                                     \
     SUPPORT(BITWISE_AND, VT)
 
 // Generates code specifying that all binary operations of a certain category should be
@@ -148,19 +148,19 @@ static constexpr bool supportsBinaryOp = false;
     /*  it always return std::string*/ \
     SUPPORT_RLR(CONCAT, VTRes, VTArg, VTArg)
 
-// Generates code specifying that all binary operations typically supported on a certain
-// category of value types should be supported on the given value type `VT`
-// (for the result and the two arguments, for simplicity).
-#define SUPPORT_NUMERIC_FP(VT) \
-    SUPPORT_ARITHMETIC(VT) \
-    SUPPORT_EQUALITY(VT) \
-    SUPPORT_COMPARISONS(VT) \
+// Generates code specifying that all binary operations typically supported on a
+// certain category of value types should be supported on the given value type
+// `VT` (for the result and the two arguments, for simplicity).
+#define SUPPORT_NUMERIC_FP(VT)                                                                                         \
+    SUPPORT_ARITHMETIC(VT)                                                                                             \
+    SUPPORT_EQUALITY(VT)                                                                                               \
+    SUPPORT_COMPARISONS(VT)                                                                                            \
     SUPPORT_LOGICAL(VT)
-#define SUPPORT_NUMERIC_INT(VT) \
-    SUPPORT_ARITHMETIC(VT) \
-    SUPPORT_EQUALITY(VT) \
-    SUPPORT_COMPARISONS(VT) \
-    SUPPORT_LOGICAL(VT) \
+#define SUPPORT_NUMERIC_INT(VT)                                                                                        \
+    SUPPORT_ARITHMETIC(VT)                                                                                             \
+    SUPPORT_EQUALITY(VT)                                                                                               \
+    SUPPORT_COMPARISONS(VT)                                                                                            \
+    SUPPORT_LOGICAL(VT)                                                                                                \
     SUPPORT_BITWISE(VT)
 
 // Concise specification of which binary operations should be supported on

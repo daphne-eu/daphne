@@ -23,8 +23,6 @@
 // Convenience function
 // ****************************************************************************
 
-void destroyDaphneContext(const DaphneContext * ctx) {
-    delete ctx;
-}
+void destroyDaphneContext(const DaphneContext *ctx) { delete ctx; }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_DESTROYDAPHNECONTEXT_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_DESTROYDAPHNECONTEXT_H

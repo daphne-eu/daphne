@@ -15,13 +15,13 @@
  */
 
 #include <ir/daphneir/Daphne.h>
+#include <parser/CancelingErrorListener.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
-#include <parser/CancelingErrorListener.h>
 
-#include "antlr4-runtime.h"
 #include "DaphneDSLGrammarLexer.h"
 #include "DaphneDSLGrammarParser.h"
+#include "antlr4-runtime.h"
 
 #include <mlir/IR/Block.h>
 #include <mlir/IR/Builders.h>
@@ -29,17 +29,18 @@
 
 #include <istream>
 
-void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) {
+void DaphneDSLParser::parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) {
     CancelingErrorListener errorListener;
-    // TODO: we could remove `sourceName` arg and instead use location from module for filename
+    // TODO: we could remove `sourceName` arg and instead use location from
+    // module for filename
     auto module = llvm::cast<mlir::ModuleOp>(builder.getBlock()->getParentOp());
 
     // Create a single "main"-function and insert DaphneIR operations into it.
-    auto * funcBlock = new mlir::Block();
+    auto *funcBlock = new mlir::Block();
     {
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(funcBlock, funcBlock->begin());
-        
+
         // Run ANTLR-based DaphneDSL parser.
         antlr4::ANTLRInputStream input(stream);
         input.name = sourceName;
@@ -53,21 +54,18 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         parser.removeErrorListeners();
         parser.addErrorListener(&errorListener);
 
-        DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
+        DaphneDSLGrammarParser::ScriptContext *ctx = parser.script();
         DaphneDSLVisitor visitor(module, builder, args, sourceName, userConf);
         visitor.visitScript(ctx);
 
         mlir::Location loc = mlir::FileLineColLoc::get(builder.getStringAttr(sourceName), 0, 0);
-        if(!builder.getBlock()->empty()) {
+        if (!builder.getBlock()->empty()) {
             loc = builder.getBlock()->back().getLoc();
         }
         builder.create<mlir::daphne::ReturnOp>(loc);
     }
-    auto * terminator = funcBlock->getTerminator();
-    auto funcType = builder.getFunctionType(
-        funcBlock->getArgumentTypes(),
-        terminator->getOperandTypes()
-    );
+    auto *terminator = funcBlock->getTerminator();
+    auto funcType = builder.getFunctionType(funcBlock->getArgumentTypes(), terminator->getOperandTypes());
     auto loc = mlir::FileLineColLoc::get(builder.getStringAttr(sourceName), 0, 0);
     auto func = builder.create<mlir::func::FuncOp>(loc, "main", funcType);
     func.push_back(funcBlock);

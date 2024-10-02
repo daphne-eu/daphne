@@ -1,6 +1,6 @@
 #pragma once
 
 class IContext {
-public:
+  public:
     virtual void destroy() = 0;
 };

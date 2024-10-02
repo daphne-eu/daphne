@@ -24,8 +24,8 @@
 // ****************************************************************************
 
 namespace FPGAOPENCL {
-    static void createFPGAContext(DCTX(ctx)) {
-        // ToDo: one context per device
-        ctx->fpga_contexts.emplace_back(FPGAContext::createFpgaContext(0));
-    }
+static void createFPGAContext(DCTX(ctx)) {
+    // ToDo: one context per device
+    ctx->fpga_contexts.emplace_back(FPGAContext::createFpgaContext(0));
 }
+} // namespace FPGAOPENCL

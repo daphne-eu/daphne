@@ -22,7 +22,7 @@
 #include <spdlog/spdlog.h>
 
 class WorkerCPU : public Worker {
-    std::vector<TaskQueue*> _q;
+    std::vector<TaskQueue *> _q;
     std::vector<int> _physical_ids;
     std::vector<int> _unique_threads;
     std::array<bool, 256> eofWorkers;
@@ -34,14 +34,15 @@ class WorkerCPU : public Worker {
     int _queueMode;
     int _stealLogic;
     bool _pinWorkers;
-public:
+
+  public:
     // ToDo: remove compile-time verbose parameter and use logger
-    WorkerCPU(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads,
-            DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
-            int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) : Worker(dctx), _q(deques),
-            _physical_ids(physical_ids), _unique_threads(unique_threads),
-            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues),
-            _queueMode(queueMode), _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
+    WorkerCPU(std::vector<TaskQueue *> deques, std::vector<int> physical_ids, std::vector<int> unique_threads,
+              DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
+              int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0)
+        : Worker(dctx), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads), _verbose(verbose),
+          _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode),
+          _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPU::run, this);
     }
@@ -59,89 +60,91 @@ public:
 
         int currentDomain = _physical_ids[_threadID];
         int targetQueue = _threadID;
-        if( _queueMode == 0 ) {
+        if (_queueMode == 0) {
             targetQueue = 0;
-        } else if ( _queueMode == 1) {
+        } else if (_queueMode == 1) {
             targetQueue = currentDomain;
-        } else if ( _queueMode == 2) {
+        } else if (_queueMode == 2) {
             targetQueue = _threadID;
         } else {
             ctx->logger->error("WorkerCPU: queue not found");
         }
         int startingQueue = targetQueue;
 
-        Task* t = _q[targetQueue]->dequeueTask();
+        Task *t = _q[targetQueue]->dequeueTask();
 
-        while( !isEOF(t) ) {
-            //execute self-contained task
-            if( _verbose )
+        while (!isEOF(t)) {
+            // execute self-contained task
+            if (_verbose)
                 ctx->logger->trace("WorkerCPU: executing task.");
             t->execute(_fid, _batchSize);
             delete t;
-            //get next tasks (blocking)
+            // get next tasks (blocking)
             t = _q[targetQueue]->dequeueTask();
         }
 
-        // All tasks from own queue have completed. Now stealing from other queues.
+        // All tasks from own queue have completed. Now stealing from other
+        // queues.
 
-        if( _numQueues > 1 ) {
-            if( _stealLogic == 0) {
+        if (_numQueues > 1) {
+            if (_stealLogic == 0) {
                 // Stealing in sequential order
 
-                targetQueue = (targetQueue+1)%_numQueues;
+                targetQueue = (targetQueue + 1) % _numQueues;
 
-                while ( targetQueue != startingQueue ) {
+                while (targetQueue != startingQueue) {
                     t = _q[targetQueue]->dequeueTask();
-                    if( isEOF(t) ) {
-                        targetQueue = (targetQueue+1)%_numQueues;
+                    if (isEOF(t)) {
+                        targetQueue = (targetQueue + 1) % _numQueues;
                     } else {
                         t->execute(_fid, _batchSize);
                         delete t;
                     }
                 }
-            } else if ( _stealLogic == 1) {
+            } else if (_stealLogic == 1) {
                 // Stealing in sequential order from same domain first
-                if ( _queueMode == 2 ) {
-                    targetQueue = (targetQueue+1)%_numQueues;
+                if (_queueMode == 2) {
+                    targetQueue = (targetQueue + 1) % _numQueues;
 
-                    while ( targetQueue != startingQueue ) {
-                        if ( _physical_ids[targetQueue] == currentDomain ){
+                    while (targetQueue != startingQueue) {
+                        if (_physical_ids[targetQueue] == currentDomain) {
                             t = _q[targetQueue]->dequeueTask();
-                            if( isEOF(t) ) {
-                                targetQueue = (targetQueue+1)%_numQueues;
+                            if (isEOF(t)) {
+                                targetQueue = (targetQueue + 1) % _numQueues;
                             } else {
                                 t->execute(_fid, _batchSize);
                                 delete t;
                             }
                         } else {
-                            targetQueue = (targetQueue+1)%_numQueues;
+                            targetQueue = (targetQueue + 1) % _numQueues;
                         }
                     }
                 }
 
                 // No more tasks on this domain, now switching to other domain
 
-                targetQueue = (targetQueue+1)%_numQueues;
+                targetQueue = (targetQueue + 1) % _numQueues;
 
-                while ( targetQueue != startingQueue ) {
+                while (targetQueue != startingQueue) {
                     t = _q[targetQueue]->dequeueTask();
-                    if( isEOF(t) ) {
-                        targetQueue = (targetQueue+1)%_numQueues;
+                    if (isEOF(t)) {
+                        targetQueue = (targetQueue + 1) % _numQueues;
                     } else {
                         t->execute(_fid, _batchSize);
                         delete t;
                     }
                 }
-            } else if( _stealLogic == 2) {
+            } else if (_stealLogic == 2) {
                 // stealing from random workers until all workers EOF
 
                 eofWorkers.fill(false);
-                while( std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < _numQueues ) {
+                while (std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < _numQueues) {
                     targetQueue = rand() % _numQueues;
-                    if( eofWorkers[targetQueue] == false ) {
+                    if (eofWorkers[targetQueue] == false) {
                         t = _q[targetQueue]->dequeueTask();
-                        //std::cout << "Execute task stolen from: " << targetQueue << std::endl;
-                        if( isEOF(t) ) {
+                        // std::cout << "Execute task stolen from: " <<
+                        // targetQueue << std::endl;
+                        if (isEOF(t)) {
                             eofWorkers[targetQueue] = true;
                         } else {
                             t->execute(_fid, _batchSize);
@@ -150,23 +153,23 @@ public:
                     }
                 }
 
-            } else if ( _stealLogic == 3) {
+            } else if (_stealLogic == 3) {
                 // stealing from random workers from same socket first
                 int queuesThisDomain = 0;
                 eofWorkers.fill(false);
 
-                for( int i=0; i<_numQueues; i++ ) {
-                    if( _physical_ids[i] == currentDomain ) {
+                for (int i = 0; i < _numQueues; i++) {
+                    if (_physical_ids[i] == currentDomain) {
                         queuesThisDomain++;
                     }
                 }
-                if ( _queueMode == 2 ) {
-                    while( std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < queuesThisDomain ) {
+                if (_queueMode == 2) {
+                    while (std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < queuesThisDomain) {
                         targetQueue = rand() % _numQueues;
-                        if( _physical_ids[targetQueue] == currentDomain) {
-                            if( eofWorkers[targetQueue] == false ) {
+                        if (_physical_ids[targetQueue] == currentDomain) {
+                            if (eofWorkers[targetQueue] == false) {
                                 t = _q[targetQueue]->dequeueTask();
-                                if( isEOF(t) ) {
+                                if (isEOF(t)) {
                                     eofWorkers[targetQueue] = true;
                                 } else {
                                     t->execute(_fid, _batchSize);
@@ -177,15 +180,17 @@ public:
                     }
                 }
 
-                // all workers on same domain are EOF, now also allowing stealing from other domain
-                // This could also be done by keeping a list of EOF workers on the other domain
+                // all workers on same domain are EOF, now also allowing
+                // stealing from other domain This could also be done by keeping
+                // a list of EOF workers on the other domain
 
-                while ( std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < _numQueues ) {
+                while (std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < _numQueues) {
                     targetQueue = rand() % _numQueues;
-                    // no need to check if they are on the other domain, because otherwise they would be EOF anyway
-                    if( eofWorkers[targetQueue] == false ) {
+                    // no need to check if they are on the other domain, because
+                    // otherwise they would be EOF anyway
+                    if (eofWorkers[targetQueue] == false) {
                         t = _q[targetQueue]->dequeueTask();
-                        if( isEOF(t) ) {
+                        if (isEOF(t)) {
                             eofWorkers[targetQueue] = true;
                         } else {
                             t->execute(_fid, _batchSize);
@@ -197,7 +202,7 @@ public:
         }
 
         // No more tasks available anywhere
-        if( _verbose )
+        if (_verbose)
             ctx->logger->debug("WorkerCPU: received EOF, finalized.");
     }
 };

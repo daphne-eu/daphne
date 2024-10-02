@@ -108,20 +108,18 @@ IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
 
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_BASE
-ubuntuVersion=20.04
 
 #------------------------------------------------------------------------------
 # Images for DAPHNE development (CUDA)
 #------------------------------------------------------------------------------
 DAPHNE_TARGET=daphne-dev
-CUDA_TAG=${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}
+CUDA_TAG=${cudaVersion}-cudnn-devel-ubuntu${ubuntuVersion}
 BASE_IMAGE=nvidia/cuda:$CUDA_TAG
 DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
 
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_CUDA
-ubuntuVersion=20.04
 
 #-----------------------------------------------------------------------------
 # Images for DAPHNE development (OneAPI)
@@ -149,7 +147,7 @@ $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_${ARCH}_BASE
 # Images for running DAPHNE (CUDA)
 #------------------------------------------------------------------------------
 DAPHNE_TARGET=daphne
-CUDA_TAG=${cudaVersion}-cudnn8-runtime-ubuntu${ubuntuVersion}
+CUDA_TAG=${cudaVersion}-cudnn-runtime-ubuntu${ubuntuVersion}
 DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 BASE_IMAGE=daphneeu/daphne-dev

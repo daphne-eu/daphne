@@ -17,15 +17,16 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/List.h>
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-void remove(List<DT> *& resList, DT *& elem, const List<DT> * argList, size_t idx, DCTX(ctx)) {
+template <class DT> void remove(List<DT> *&resList, DT *&elem, const List<DT> *argList, size_t idx, DCTX(ctx)) {
     resList = DataObjectFactory::create<List<DT>>(argList);
     elem = const_cast<DT *>(resList->remove(idx));
 }

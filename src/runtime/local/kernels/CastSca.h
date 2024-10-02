@@ -30,12 +30,11 @@
 
 /**
  * @brief Casts the given scalar to another type.
- * 
+ *
  * @param arg The value to cast.
  * @return The casted value.
  */
-template<typename VTRes, typename VTArg>
-struct CastSca {
+template <typename VTRes, typename VTArg> struct CastSca {
     static VTRes apply(VTArg arg, DCTX(ctx)) {
         // Default implementation.
         return static_cast<VTRes>(arg);
@@ -46,8 +45,7 @@ struct CastSca {
 // Convenience function
 // ****************************************************************************
 
-template<typename VTRes, typename VTArg>
-VTRes castSca(VTArg arg, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> VTRes castSca(VTArg arg, DCTX(ctx)) {
     return CastSca<VTRes, VTArg>::apply(arg, ctx);
 }
 
@@ -59,12 +57,11 @@ VTRes castSca(VTArg arg, DCTX(ctx)) {
 // string <- any type
 // ----------------------------------------------------------------------------
 
-template<typename VTArg>
-struct CastSca<const char *, VTArg> {
-    static const char * apply(VTArg arg, DCTX(ctx)) {
+template <typename VTArg> struct CastSca<const char *, VTArg> {
+    static const char *apply(VTArg arg, DCTX(ctx)) {
         std::string str = std::to_string(arg).c_str();
         const size_t len = str.length();
-        char * res = new char[len + 1]();
+        char *res = new char[len + 1]();
         strncpy(res, str.c_str(), len);
         res[len] = 0;
         return res;
@@ -121,4 +118,4 @@ struct CastSca<VTRes, FixedStr16> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CASTSCA_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_CASTSCA_H

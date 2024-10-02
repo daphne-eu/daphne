@@ -27,17 +27,16 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes>
-struct ReceiveFromNumpy {
-    static void apply(DTRes *& res, uint32_t upper, uint32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) = delete;
+template <class DTRes> struct ReceiveFromNumpy {
+    static void apply(DTRes *&res, uint32_t upper, uint32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes>
-void receiveFromNumpy(DTRes *& res, uint32_t upper, int32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
+template <class DTRes>
+void receiveFromNumpy(DTRes *&res, uint32_t upper, int32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
     ReceiveFromNumpy<DTRes>::apply(res, upper, lower, rows, cols, ctx);
 }
 
@@ -50,24 +49,17 @@ void receiveFromNumpy(DTRes *& res, uint32_t upper, int32_t lower, int64_t rows,
 // ----------------------------------------------------------------------------
 
 // TODO Should we make this a central utility?
-template<typename VT>
-struct NoOpDeleter {
-    void operator()(VT* p) {
+template <typename VT> struct NoOpDeleter {
+    void operator()(VT *p) {
         // Don't delete p because the memory comes from numpy.
     }
 };
 
-template<typename VT>
-struct ReceiveFromNumpy<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, uint32_t upper, uint32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
+template <typename VT> struct ReceiveFromNumpy<DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *&res, uint32_t upper, uint32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
         res = DataObjectFactory::create<DenseMatrix<VT>>(
-                rows, cols,
-                std::shared_ptr<VT[]>(
-                        (VT*)(((uint64_t)upper << 32) | lower),
-                        NoOpDeleter<VT>()
-                )
-        );
+            rows, cols, std::shared_ptr<VT[]>((VT *)(((uint64_t)upper << 32) | lower), NoOpDeleter<VT>()));
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H

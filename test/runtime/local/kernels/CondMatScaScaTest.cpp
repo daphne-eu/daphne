@@ -33,30 +33,22 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALU
     using DT = TestType;
     using VT = typename DT::VT;
 
-    DT * argCond = nullptr;
+    DT *argCond = nullptr;
     VT argThen;
     VT argElse;
-    DT * exp = nullptr;
+    DT *exp = nullptr;
 
     SECTION("example 1") {
-        argCond = genGivenVals<DT>(3, {
-            true, false, false,
-            false, true, false,
-            false, false, true
-        });
+        argCond = genGivenVals<DT>(3, {true, false, false, false, true, false, false, false, true});
 
         argThen = VT(1.5);
 
         argElse = VT(-1.5);
 
-        exp = genGivenVals<DT>(3, {
-            VT(1.5), argElse, argElse,
-            argElse, VT(1.5), argElse,
-            argElse, argElse, VT(1.5)
-        });
+        exp = genGivenVals<DT>(3, {VT(1.5), argElse, argElse, argElse, VT(1.5), argElse, argElse, argElse, VT(1.5)});
     }
 
-    DT * res = nullptr;
+    DT *res = nullptr;
     condMatScaSca(res, argCond, argThen, argElse, nullptr);
 
     CHECK(*res == *exp);

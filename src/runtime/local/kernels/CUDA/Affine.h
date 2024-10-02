@@ -21,8 +21,7 @@
 #include "runtime/local/datastructures/DenseMatrix.h"
 
 namespace CUDA::NN::Affine {
-    template<typename DTRes, typename DTArg>
-    struct Forward {
-        static void apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx));
-    };
-}
+template <typename DTRes, typename DTArg> struct Forward {
+    static void apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx));
+};
+} // namespace CUDA::NN::Affine

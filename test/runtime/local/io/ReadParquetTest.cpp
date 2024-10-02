@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <runtime/local/datastructures/Frame.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/ReadParquet.h>
 
 #include <tags.h>
@@ -30,56 +30,56 @@
 #include <limits>
 
 TEST_CASE("ReadParquet, Frame", TAG_IO) {
-  ValueTypeCode schema[] = { ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64 };
-  Frame *m = NULL;
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64};
+    Frame *m = NULL;
 
-  size_t numRows = 2;
-  size_t numCols = 4;
+    size_t numRows = 2;
+    size_t numCols = 4;
 
-  const char filename[] = "./test/runtime/local/io/ReadParquet1.parquet";
-  const char *fn = &filename[0];
+    const char filename[] = "./test/runtime/local/io/ReadParquet1.parquet";
+    const char *fn = &filename[0];
 
-  readParquet(m, fn, numRows, numCols, schema);
+    readParquet(m, fn, numRows, numCols, schema);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->getColumn<double>(0)->get(0, 0) == -0.1);
-  CHECK(m->getColumn<double>(1)->get(0, 0) == -0.2);
-  CHECK(m->getColumn<double>(2)->get(0, 0) == 0.1);
-  CHECK(m->getColumn<double>(3)->get(0, 0) == 0.2);
+    CHECK(m->getColumn<double>(0)->get(0, 0) == -0.1);
+    CHECK(m->getColumn<double>(1)->get(0, 0) == -0.2);
+    CHECK(m->getColumn<double>(2)->get(0, 0) == 0.1);
+    CHECK(m->getColumn<double>(3)->get(0, 0) == 0.2);
 
-  CHECK(m->getColumn<double>(0)->get(1, 0) == 3.14);
-  CHECK(m->getColumn<double>(1)->get(1, 0) == 5.41);
-  CHECK(m->getColumn<double>(2)->get(1, 0) == 6.22216);
-  CHECK(m->getColumn<double>(3)->get(1, 0) == 5);
+    CHECK(m->getColumn<double>(0)->get(1, 0) == 3.14);
+    CHECK(m->getColumn<double>(1)->get(1, 0) == 5.41);
+    CHECK(m->getColumn<double>(2)->get(1, 0) == 6.22216);
+    CHECK(m->getColumn<double>(3)->get(1, 0) == 5);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("ReadParquet, DenseMatrix", TAG_IO, (DenseMatrix), (double)) {
-  using DT = TestType;
-  DT *m = nullptr;
+    using DT = TestType;
+    DT *m = nullptr;
 
-  size_t numRows = 2;
-  size_t numCols = 4;
+    size_t numRows = 2;
+    size_t numCols = 4;
 
-  char filename[] = "./test/runtime/local/io/ReadParquet1.parquet";
+    char filename[] = "./test/runtime/local/io/ReadParquet1.parquet";
 
-  readParquet(m, filename, numRows, numCols);
+    readParquet(m, filename, numRows, numCols);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->get(0, 0) == -0.1);
-  CHECK(m->get(0, 1) == -0.2);
-  CHECK(m->get(0, 2) == 0.1);
-  CHECK(m->get(0, 3) == 0.2);
+    CHECK(m->get(0, 0) == -0.1);
+    CHECK(m->get(0, 1) == -0.2);
+    CHECK(m->get(0, 2) == 0.1);
+    CHECK(m->get(0, 3) == 0.2);
 
-  CHECK(m->get(1, 0) == 3.14);
-  CHECK(m->get(1, 1) == 5.41);
-  CHECK(m->get(1, 2) == 6.22216);
-  CHECK(m->get(1, 3) == 5);
+    CHECK(m->get(1, 0) == 3.14);
+    CHECK(m->get(1, 1) == 5.41);
+    CHECK(m->get(1, 2) == 6.22216);
+    CHECK(m->get(1, 3) == 5);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
