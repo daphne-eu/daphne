@@ -1530,17 +1530,7 @@ mlir::LogicalResult mlir::daphne::EwMinusOp::canonicalize(
 mlir::LogicalResult mlir::daphne::RepresentationHintOp::canonicalize(
     RepresentationHintOp op, mlir::PatternRewriter &rewriter)
 {
-
     auto inputType = op.getMatrix().getType().dyn_cast<daphne::MatrixType>();
-    if (!inputType || inputType.getElementType().isa<daphne::UnknownType>()) {
-        return mlir::failure();
-    }
-
-    auto repHintAttr = op->getAttrOfType<mlir::IntegerAttr>("representation_hint");
-    if (!repHintAttr) {
-        return mlir::failure();
-    }
-
     auto desiredRepresentation = op->getResultTypes()[0].dyn_cast<daphne::MatrixType>().getRepresentation();
 
     if (inputType.getRepresentation() != desiredRepresentation) 

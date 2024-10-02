@@ -22,6 +22,7 @@
 #include <runtime/local/io/FileMetaData.h>
 
 #include "antlr4-runtime.h"
+#include "util/ErrorHandler.h"
 
 #include <algorithm>
 #include <sstream>
@@ -1045,22 +1046,19 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value matrix = args[0];
 
-        int32_t representationHintValue = (func == "CSR") ? 1 : 0;
-
         auto inputMatrixType = matrix.getType().dyn_cast<mlir::daphne::MatrixType>();
         if (!inputMatrixType) {
-            emitError(loc, "Input must be a matrix type");
-            return nullptr;
+            throw ErrorHandler::compilerError(loc, "DSLBuiltins", "Input must be a matrix type");
         }
 
-        mlir::daphne::MatrixRepresentation desiredRepresentation =
-            (representationHintValue == 0) ? mlir::daphne::MatrixRepresentation::Dense
-                                        : mlir::daphne::MatrixRepresentation::Sparse;
+        mlir::daphne::MatrixRepresentation desiredRepresentation = 
+            (func == "CSR") ? mlir::daphne::MatrixRepresentation::Sparse 
+                        : mlir::daphne::MatrixRepresentation::Dense;
+
         auto resultType = inputMatrixType.withRepresentation(desiredRepresentation);
         
-
         return static_cast<mlir::Value>(builder.create<mlir::daphne::RepresentationHintOp>(
-            loc, resultType, matrix, builder.getI32IntegerAttr(representationHintValue)));
+            loc, resultType, matrix));
     }
 
     // ********************************************************************

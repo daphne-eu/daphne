@@ -730,38 +730,3 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
         op->getResult(i).setType(types[i]);
     }
 }
-
-std::vector<Type> mlir::daphne::RepresentationHintOp::inferTypes() {
-    auto inputType = getMatrix().getType().dyn_cast<daphne::MatrixType>();
-    if (!inputType) {
-        throw ErrorHandler::compilerError(
-            getLoc(), "InferTypesOpInterface",
-            "input must be a MatrixType"
-        );
-    }
-
-    auto repHintAttr = this->getOperation()->getAttrOfType<mlir::IntegerAttr>("representation_hint");
-    if (!repHintAttr) {
-        throw ErrorHandler::compilerError(
-            getLoc(), "InferTypesOpInterface",
-            "missing 'representation_hint' attribute"
-        );
-    }
-    int32_t repHint = repHintAttr.getInt();
-
-    mlir::daphne::MatrixRepresentation desiredRepresentation;
-    if (repHint == 0) {
-        desiredRepresentation = mlir::daphne::MatrixRepresentation::Dense;
-    } else if (repHint == 1) {
-        desiredRepresentation = mlir::daphne::MatrixRepresentation::Sparse;
-    } else {
-        throw ErrorHandler::compilerError(
-            getLoc(), "InferTypesOpInterface",
-            "invalid 'representation_hint' value; expected 0 (Sparse) or 1 (Dense)"
-        );
-    }
-
-    auto newMatrixType = inputType.withRepresentation(desiredRepresentation);
-
-    return {newMatrixType};
-}
