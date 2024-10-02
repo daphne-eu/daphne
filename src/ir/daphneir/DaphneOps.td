@@ -1652,6 +1652,25 @@ def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
     }];
 }
 
+def Daphne_RepresentationHintOp : Daphne_Op<"representationHint", 
+    [DeclareOpInterfaceMethods<InferTypesOpInterface>]> {
+
+  let summary = "Provides a hint to change the matrix representation (Dense or Sparse)";
+  
+  let description = [{
+    This operation provides a hint to change the representation of a matrix between Dense and Sparse
+    based on the provided `representation_hint` operand. 
+  }];
+  
+  // Arguments: input matrix and the representation hint (0 = Dense, 1 = Sparse)
+  let arguments = (ins AnyTypeOf<[Matrix]>:$matrix, I32Attr:$representation_hint);
+  
+  // Result: output matrix with potentially new representation
+  let results = (outs AnyTypeOf<[Matrix]>:$result);
+
+  let hasCanonicalizeMethod = 1;
+}
+
 // ****************************************************************************
 // Old operations
 // ****************************************************************************

@@ -22,7 +22,6 @@
 #include <mlir/IR/Operation.h>
 #include <mlir/Pass/Pass.h>
 
-#include <stdexcept>
 #include <memory>
 
 using namespace mlir;

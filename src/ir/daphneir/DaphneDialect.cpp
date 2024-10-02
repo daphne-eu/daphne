@@ -15,11 +15,13 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <cstdint>
 #include <util/ErrorHandler.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <ir/daphneir/DaphneOpsEnums.cpp.inc>
 
+#include "mlir/IR/Attributes.h"
 #include "mlir/Support/LogicalResult.h"
 #define GET_OP_CLASSES
 #include <ir/daphneir/DaphneOps.cpp.inc>
@@ -1508,7 +1510,6 @@ mlir::LogicalResult mlir::daphne::RenameOp::canonicalize(
     return mlir::success();
 }
 
-
 /**
  * @brief Replaces `--a` by `a` (`a` scalar).
  *
@@ -1524,4 +1525,34 @@ mlir::LogicalResult mlir::daphne::EwMinusOp::canonicalize(
         return mlir::success();
     }
     return mlir::failure();
+}
+
+mlir::LogicalResult mlir::daphne::RepresentationHintOp::canonicalize(
+    RepresentationHintOp op, mlir::PatternRewriter &rewriter)
+{
+
+    auto inputType = op.getMatrix().getType().dyn_cast<daphne::MatrixType>();
+    if (!inputType || inputType.getElementType().isa<daphne::UnknownType>()) {
+        return mlir::failure();
+    }
+
+    auto repHintAttr = op->getAttrOfType<mlir::IntegerAttr>("representation_hint");
+    if (!repHintAttr) {
+        return mlir::failure();
+    }
+
+    auto desiredRepresentation = op->getResultTypes()[0].dyn_cast<daphne::MatrixType>().getRepresentation();
+
+    if (inputType.getRepresentation() != desiredRepresentation) 
+    {
+        auto resMat = op.getMatrix();
+        resMat.setType(inputType.withRepresentation(desiredRepresentation));
+        rewriter.replaceAllUsesWith(op.getMatrix(), resMat);
+    }
+    else
+    {
+        rewriter.replaceOp(op, op.getMatrix());
+    }
+    
+    return mlir::success();
 }

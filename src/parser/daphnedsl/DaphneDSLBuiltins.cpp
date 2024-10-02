@@ -16,6 +16,7 @@
 
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
+#include <mlir/IR/Value.h>
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/FileMetaData.h>
@@ -1038,6 +1039,28 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 utils.matrixOf(builder.getIntegerType(8, false)),
                 arg, min, max
         ));
+    }
+
+    if (func == "Dense" || func == "CSR") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+        mlir::Value matrix = args[0];
+
+        int32_t representationHintValue = (func == "CSR") ? 1 : 0;
+
+        auto inputMatrixType = matrix.getType().dyn_cast<mlir::daphne::MatrixType>();
+        if (!inputMatrixType) {
+            emitError(loc, "Input must be a matrix type");
+            return nullptr;
+        }
+
+        mlir::daphne::MatrixRepresentation desiredRepresentation =
+            (representationHintValue == 0) ? mlir::daphne::MatrixRepresentation::Dense
+                                        : mlir::daphne::MatrixRepresentation::Sparse;
+        auto resultType = inputMatrixType.withRepresentation(desiredRepresentation);
+        
+
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::RepresentationHintOp>(
+            loc, resultType, matrix, builder.getI32IntegerAttr(representationHintValue)));
     }
 
     // ********************************************************************
