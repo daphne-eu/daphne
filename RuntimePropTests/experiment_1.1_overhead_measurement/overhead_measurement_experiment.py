@@ -3,18 +3,49 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
+import re
+from collections import defaultdict
 
-def run_daphne_command(command):
-    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    output = result.stdout
-    
-    for line in output.splitlines():
-        if line.startswith("{"):
-            timing_info = json.loads(line)
-            return timing_info
-    
-    raise ValueError("No JSON found in the command output")
+def run_daphne_timing(command, iterations=1):
+    execution_command = ["bin/daphne","--timing"]
+    execution_command.extend(command)
+    accumulated_timings = defaultdict(float)
 
+    for _ in range(iterations):
+        result = subprocess.run(execution_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        output = result.stdout
+        
+        for line in output.splitlines():
+            if line.startswith("{"):
+                timing_info = json.loads(line)
+
+                for key, value in timing_info.items():
+                    accumulated_timings[key] += value
+                break
+        else:
+            raise ValueError("No JSON found in the command output")
+
+    averaged_timings = {key: value / iterations for key, value in accumulated_timings.items()}
+
+    return averaged_timings
+    
+def run_daphne_statistics(command, iterations=1):
+    pattern = re.compile(r"\[info\]:\s+\d+\s+(_recordProperties.*)\s+(\d+\.\d+)")
+    execution_command = ["bin/daphne","--statistics"]
+    execution_command.extend(command)
+    propertyRecordingTimes = []
+    for _ in range(iterations):
+        result = subprocess.run(execution_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        output = result.stdout
+        for line in output.splitlines():
+            match = pattern.search(line)
+            if match:
+                time = float(match.group(2))
+                propertyRecordingTimes.append(time)
+    
+    propertyRecordingTimes_avg = sum(propertyRecordingTimes)/iterations
+    return propertyRecordingTimes_avg
+    
 def plot_timing_comparison(without_property_data, with_property_data, save_path="overhead_measurement_experiment_bar_plot.png"):
     labels = ['Startup', 'Parsing', 'Compilation', 'Execution']
 
@@ -29,7 +60,7 @@ def plot_timing_comparison(without_property_data, with_property_data, save_path=
         with_property_data['startup_seconds'],
         with_property_data['parsing_seconds'],
         with_property_data['compilation_seconds'],
-        with_property_data['execution_seconds']
+        with_property_data['execution_seconds'],
     ]
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -63,8 +94,7 @@ def plot_timing_comparison(without_property_data, with_property_data, save_path=
 
 def plot_stacked_timing_comparison(without_property_data, with_property_data, save_path="overhead_measurement_experiment_stacked_plot.png"):
     labels = ['Estimated Props.', 'Measured Props.']
-    phases = ['startup_seconds', 'parsing_seconds', 'compilation_seconds', 'execution_seconds']
-    phase_colors = ['skyblue', 'lightgreen', 'orange', 'lightcoral']
+    phase_colors = ['skyblue', 'lightgreen', 'orange', 'lightcoral', 'lightred']
 
     without_property_times = [
         without_property_data['startup_seconds'],
@@ -77,13 +107,14 @@ def plot_stacked_timing_comparison(without_property_data, with_property_data, sa
         with_property_data['startup_seconds'],
         with_property_data['parsing_seconds'],
         with_property_data['compilation_seconds'],
-        with_property_data['execution_seconds']
+        with_property_data['execution_seconds'],
+        with_property_data['propertyRecording_kernel_seconds']
     ]
 
     index = np.arange(2)
     bar_width = 0.35
 
-    fig, ax = plt.subplots(figsize=(8, 10))
+    fig, ax = plt.subplots(figsize=(8, 12))
 
     ax.bar(index[0], without_property_times[0], bar_width, label='Startup', color=phase_colors[0])
     ax.bar(index[0], without_property_times[1], bar_width, bottom=without_property_times[0], label='Parsing', color=phase_colors[1])
@@ -94,6 +125,7 @@ def plot_stacked_timing_comparison(without_property_data, with_property_data, sa
     ax.bar(index[1], with_property_times[1], bar_width, bottom=with_property_times[0], color=phase_colors[1])
     ax.bar(index[1], with_property_times[2], bar_width, bottom=np.add(with_property_times[0], with_property_times[1]), color=phase_colors[2])
     ax.bar(index[1], with_property_times[3], bar_width, bottom=np.add(np.add(with_property_times[0], with_property_times[1]), with_property_times[2]), color=phase_colors[3])
+    ax.bar(index[1], with_property_times[4], bar_width, bottom=np.add(np.add(np.add(with_property_times[0], with_property_times[1]), with_property_times[2]), with_property_times[3]), label='Property Recording Kernel',color=phase_colors[4])
 
     ax.set_xlabel('Execution Mode')
     ax.set_ylabel('Time (seconds)')
@@ -109,16 +141,20 @@ def plot_stacked_timing_comparison(without_property_data, with_property_data, sa
     plt.tight_layout()
     plt.savefig(save_path)
 
-
 def main():
-    without_property_cmd= ["bin/daphne","--timing", "RuntimePropTests/experiment_1.1_overhead_measurement/overhead_measurement_experiment.daphne"]
-    with_property_cmd= ["bin/daphne","--timing", "--enable_property_recording", "RuntimePropTests/experiment_1.1_overhead_measurement/overhead_measurement_experiment.daphne"]
+    without_property_cmd= ["RuntimePropTests/experiment_1.1_overhead_measurement/overhead_measurement_experiment.daphne"]
+    with_property_cmd= ["--enable_property_recording", "RuntimePropTests/experiment_1.1_overhead_measurement/overhead_measurement_experiment.daphne"]
 
     print("Running without property recording...")
-    without_property_data = run_daphne_command(without_property_cmd)
+    without_property_data = run_daphne_timing(without_property_cmd)
+    print(without_property_data)
 
     print("Running with property recording...")
-    with_property_data = run_daphne_command(with_property_cmd)
+    with_property_data = run_daphne_timing(with_property_cmd)
+    with_property_data_propertyRecording = run_daphne_statistics(with_property_cmd)
+    with_property_data['propertyRecording_kernel_seconds'] = with_property_data_propertyRecording
+    with_property_data['execution_seconds'] -= with_property_data['propertyRecording_kernel_seconds']
+    print(with_property_data)
 
     plot_stacked_timing_comparison(without_property_data, with_property_data)
 
