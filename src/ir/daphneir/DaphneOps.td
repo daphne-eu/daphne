@@ -874,7 +874,7 @@ def Daphne_ReplaceOp : Daphne_Op<"replace", [
 }
 
 def Daphne_CTableOp : Daphne_Op<"ctable", [
-    DataTypeMat, /* TODO debatable */ ValueTypeFromThirdArg,
+    DataTypeMat, ValueTypeFromThirdArg,
     DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
     let arguments = (ins MatrixOrU:$lhs, MatrixOrU:$rhs, NumScalar:$weight, SI64:$resNumRows, SI64:$resNumCols);

@@ -1279,18 +1279,13 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
                 // If one of them is unknown, we abort the rewrite (but this is not an error).
                 // The type may become known later, this rewrite will be triggered again.
                 return mlir::failure();
-            else {
+            else
                 // If both types are known, but different, this is an error.
                 // TODO We could try to cast the types.
-                std::stringstream s;
-                // TODO todo technical for DaphneDSL user
-                // s << "the then/else-values of CondOp must have the same value type ("
-                //     << thenValTy << " vs. " << elseValTy << ')';
-                s << "the then/else-values of CondOp must have the same value type";
-                throw std::runtime_error(CompilerUtils::errorMsg(
-                        op.getLoc().dyn_cast<mlir::FileLineColLoc>(), s.str()
-                ));
-            }
+                throw std::runtime_error(
+                        "the then/else-values of CondOp must have the same type if "
+                        "the condition is a scalar 1"
+                );
         }
             
         {

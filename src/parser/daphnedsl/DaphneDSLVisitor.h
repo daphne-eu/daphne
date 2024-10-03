@@ -106,15 +106,12 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @brief Tries to find a matching UDF based on the arguments provided
      * @param functionName Name of the UDF
      * @param args Arguments passed to the UDF
-     * @param loc The location of the call to the function
      * @return `FuncOp` of the matched UDF or `std::nullopt` if no UDF with the provided 
      *  name exists
      * @throws `std::runtime_error` if a UDF with the name exists but no matching 
      *  version was found
      */
-    std::optional<mlir::func::FuncOp> findMatchingUDF(
-        const std::string &functionName, const std::vector<mlir::Value> &args, mlir::Location loc
-    ) const;
+    std::optional<mlir::func::FuncOp> findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const;
 
     /**
      * @brief Tries to find a unary (i.e. single param) UDF based on the argument type
@@ -180,8 +177,6 @@ public:
     antlrcpp::Any visitFunctionArgs(DaphneDSLGrammarParser::FunctionArgsContext *ctx) override;
 
     antlrcpp::Any visitFunctionArg(DaphneDSLGrammarParser::FunctionArgContext *ctx) override;
-
-    antlrcpp::Any visitFunctionRetTypes(DaphneDSLGrammarParser::FunctionRetTypesContext *ctx) override;
 
     antlrcpp::Any visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) override;
 

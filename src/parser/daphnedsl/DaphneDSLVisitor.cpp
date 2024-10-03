@@ -15,7 +15,6 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
-#include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
@@ -471,20 +470,9 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     for(auto it = owUnion.begin(); it != owUnion.end(); it++) {
         mlir::Value valThen = symbolTable.get(*it, owThen).value;
         mlir::Value valElse = symbolTable.get(*it, owElse).value;
-        mlir::Type tyThen = valThen.getType();
-        mlir::Type tyElse = valElse.getType();
-        // TODO These checks should happen after type inference.
-        if(CompilerUtils::notEqualUnknownAware(tyThen, tyElse)) {
+        if(valThen.getType() != valElse.getType())
             // TODO We could try to cast the types.
-            // TODO Use DaphneDSL types (not MLIR types) in error message.
-            // TODO Adapt to the case of no else-branch in DaphneDSL.
-            // TODO The variable name may be ambiguous (two vars mapped to the same value).
-            std::stringstream s;
-            s << "type of variable `" << symbolTable.getSymbol(valThen, owThen)
-                << "` after if-statement is ambiguous, could be either " << tyThen
-                << " (then-branch) or " << tyElse << " (else-branch)";
-            throw std::runtime_error(CompilerUtils::errorMsg(loc.dyn_cast<mlir::FileLineColLoc>(), s.str()));
-        }
+            throw std::runtime_error("type mismatch");
         resultsThen.push_back(valThen);
         resultsElse.push_back(valElse);
     }
@@ -783,10 +771,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::Iden
         return symbolTable.get(var).value;
     }
     catch(std::runtime_error &) {
-        throw std::runtime_error(CompilerUtils::errorMsg(
-                utils.getLoc(ctx->start).dyn_cast<mlir::FileLineColLoc>(),
-                "variable `" + var + "` referenced before assignment"
-        ));
+        throw std::runtime_error("variable " + var + " referenced before assignment");
     }
 }
 
@@ -814,9 +799,7 @@ bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type par
         ));
 }
 
-std::optional<mlir::func::FuncOp> DaphneDSLVisitor::findMatchingUDF(
-    const std::string &functionName, const std::vector<mlir::Value> &args, mlir::Location loc
-) const {
+std::optional<mlir::func::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const {
     // search user defined functions
     auto range = functionsSymbolMap.equal_range(functionName);
     // TODO: find not only a matching version, but the `most` specialized
@@ -844,34 +827,7 @@ std::optional<mlir::func::FuncOp> DaphneDSLVisitor::findMatchingUDF(
     // UDF with the provided name exists, but no version matches the argument types
     if (range.second != range.first) {
         // FIXME: disallow user-defined function with same name as builtins, otherwise this would be wrong behaviour
-        std::stringstream s;
-        s << "no definition of function `" << functionName << "` for argument types (";
-        for(size_t i = 0; i < args.size(); i++) {
-            s << args[i].getType();
-            if(i < args.size() - 1)
-                s << ", ";
-        }
-        // TODO for each available option, also say why it is not applicable (which type isn't compatible).
-        // TODO for each available option, also say where it is defined,
-        s << "), available options: ";
-        const size_t numOptions = functionsSymbolMap.count(functionName);
-        size_t i = 0;
-        for (auto it = range.first; it != range.second; ++it, ++i) {
-            s << functionName << '(';
-            auto userDefinedFunc = it->second;
-            auto funcTy = userDefinedFunc.getFunctionType();
-            for(size_t k = 0; k < funcTy.getNumInputs(); k++) {
-                s << funcTy.getInput(k);
-                if(k < funcTy.getNumInputs() - 1)
-                    s << ", ";
-            }
-            s << ')';
-            if(i < numOptions - 1)
-                s << ", ";
-        }
-        throw std::runtime_error(CompilerUtils::errorMsg(
-                loc.dyn_cast<mlir::FileLineColLoc>(), s.str()
-        ));
+        throw std::runtime_error("No function definition of `" + functionName + "` found with matching types");
     }
 
     // UDF with the provided name does not exist
@@ -960,22 +916,16 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     for(unsigned i = 0; i < ctx->expr().size(); i++)
         args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
 
-    auto maybeUDF = findMatchingUDF(func, args_vec, loc);
+    auto maybeUDF = findMatchingUDF(func, args_vec);
 
     if (maybeUDF) {
-        auto funcTy = maybeUDF->getFunctionType();
-        auto co = builder
+        // TODO: variable results
+        return builder
             .create<mlir::daphne::GenericCallOp>(loc,
                 maybeUDF->getSymName(),
                 args_vec,
-                funcTy.getResults());
-        if(funcTy.getNumResults() > 1)
-            return co.getResults();
-        else
-            // If the UDF has no return values, the value returned here
-            // is invalid. But that seems to be okay, since it is never
-            // used as a mlir::Value in that case.
-            return co.getResult(0);
+                maybeUDF->getFunctionType().getResults())
+            .getResult(0);
     }
 
     // Create DaphneIR operation for the built-in function.
@@ -1065,8 +1015,6 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
             //std::vector<mlir::Type> colTypes(numCols, vt);
             //resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
         }
-        else if(argTy.isa<mlir::daphne::UnknownType>())
-            resType = utils.unknownType;
         else
             resType = vt;
     }
@@ -1685,13 +1633,13 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
         handleAssignmentPart(std::get<0>(it), nullptr, symbolTable, blockArg);
     }
 
-    std::vector<mlir::Type> returnTypes;
+    mlir::Type returnType;
     mlir::func::FuncOp functionOperation;
-    if(ctx->retTys) {
+    if(ctx->retTy) {
         // early creation of FuncOp for recursion
-        returnTypes = visit(ctx->retTys).as<std::vector<mlir::Type>>();
+        returnType = utils.typeOrError(visit(ctx->retTy));
         functionOperation = createUserDefinedFuncOp(loc,
-            builder.getFunctionType(funcArgTypes, returnTypes),
+            builder.getFunctionType(funcArgTypes, {returnType}),
             functionName);
     }
 
@@ -1705,38 +1653,16 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
         builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));
     }
 
-    auto terminator = funcBlock->getTerminator();
-    auto returnOpTypes = terminator->getOperandTypes();
+    auto returnOpTypes = funcBlock->getTerminator()->getOperandTypes();
     if(!functionOperation) {
         // late creation if no return types defined
         functionOperation = createUserDefinedFuncOp(loc,
             builder.getFunctionType(funcArgTypes, returnOpTypes),
             functionName);
     }
-    else {
-        // TODO try this out
-        if(returnOpTypes.size() != returnTypes.size()) {
-            std::stringstream s;
-            s << "function `" << functionName << "` returns a different number of "
-                << "values than specified in the definition (" << returnOpTypes.size()
-                << " vs. " << returnTypes.size() << ')';
-            throw std::runtime_error(CompilerUtils::errorMsg(
-                    terminator->getLoc().dyn_cast<mlir::FileLineColLoc>(), s.str()
-            ));
-        }
-        for(size_t i = 0; i < returnTypes.size(); i++)
-            // TODO These checks should happen after type inference.
-            if(CompilerUtils::notEqualUnknownAware(returnOpTypes[i], returnTypes[i])) {
-                std::stringstream s;
-                s << "function `" << functionName
-                    << "` returns a different type for return value #"
-                    << i << " than specified in the definition ("
-                    << returnOpTypes[i] << " vs. " << returnTypes[i] << ')';
-                throw std::runtime_error(CompilerUtils::errorMsg(
-                        // TODO Use the location of the i-th argument of the ReturnOp (more precise).
-                        terminator->getLoc().dyn_cast<mlir::FileLineColLoc>(), s.str()
-                ));
-            }
+    else if(returnOpTypes != mlir::TypeRange({returnType})) {
+        throw std::runtime_error(
+            "Function `" + functionName + "` returns different type than specified in the definition");
     }
     functionOperation.getBody().push_front(funcBlock);
 
@@ -1771,13 +1697,6 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionArg(DaphneDSLGrammarParser::Functio
         ty = utils.typeOrError(visitFuncTypeDef(ctx->ty));
     }
     return std::make_pair(ctx->var->getText(), ty);
-}
-
-antlrcpp::Any DaphneDSLVisitor::visitFunctionRetTypes(DaphneDSLGrammarParser::FunctionRetTypesContext *ctx) {
-    std::vector<mlir::Type> retTys;
-    for(auto ftdCtx : ctx->funcTypeDef())
-        retTys.push_back(visitFuncTypeDef(ftdCtx).as<mlir::Type>());
-    return retTys;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) {

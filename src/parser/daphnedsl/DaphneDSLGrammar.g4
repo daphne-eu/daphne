@@ -65,7 +65,7 @@ forStatement:
 
 // TODO: variable tuple returns
 functionStatement:
-	KW_DEF name=IDENTIFIER '(' args=functionArgs? ')' ('->' retTys=functionRetTypes)? bodyStmt=blockStatement;
+	KW_DEF name=IDENTIFIER '(' args=functionArgs? ')' ('->' retTy=funcTypeDef)? bodyStmt=blockStatement;
 
 returnStatement:
     KW_RETURN ( expr ( ',' expr )* )? ';';
@@ -73,8 +73,6 @@ returnStatement:
 functionArgs: functionArg (',' functionArg)* ','?;
 
 functionArg: var=IDENTIFIER (':' ty=funcTypeDef)?;
-
-functionRetTypes: funcTypeDef (',' funcTypeDef)*;
 
 funcTypeDef: (dataTy=DATA_TYPE ('<' elTy=VALUE_TYPE '>')? | scalarTy=VALUE_TYPE);
 
