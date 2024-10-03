@@ -19,6 +19,9 @@
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/kernels/CUDA/HostUtils.h"
 
+#include <fmt/core.h>
+#include <fmt/ranges.h>
+
 #include <iostream>
 #include <map>
 #include <memory>

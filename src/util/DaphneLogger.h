@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/core.h>
 #include <spdlog/common.h>
 
 #include <api/cli/DaphneUserConfig.h>

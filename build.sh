@@ -659,7 +659,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.1 Antlr4 (parser)
+    # Antlr4 (parser)
     #------------------------------------------------------------------------------
     antlrJarName="antlr-${antlrVersion}-complete.jar"
     antlrCppRuntimeDirName="antlr4-cpp-runtime-${antlrVersion}-source"
@@ -711,7 +711,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.2 catch2 (unit test framework)
+    # catch2 (unit test framework)
     #------------------------------------------------------------------------------
     # Download catch2 release zip (if necessary), and unpack the single header file
     # (if necessary).
@@ -736,7 +736,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.3 OpenBLAS (basic linear algebra subprograms)
+    # OpenBLAS (basic linear algebra subprograms)
     #------------------------------------------------------------------------------
     openBlasDirName="OpenBLAS-$openBlasVersion"
     openBlasZipName="${openBlasDirName}.zip"
@@ -762,7 +762,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.4 nlohmann/json (library for JSON parsing)
+    # nlohmann/json (library for JSON parsing)
     #------------------------------------------------------------------------------
     nlohmannjsonDirName=nlohmannjson
     nlohmannjsonSingleHeaderName=json.hpp
@@ -779,7 +779,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.5 abseil (compiled separately to apply a patch)
+    # abseil (compiled separately to apply a patch)
     #------------------------------------------------------------------------------
     abslPath=$sourcePrefix/abseil-cpp
     if [ $(arch) == 'armv64'  ] || [ $(arch) == 'aarch64' ]; then
@@ -807,7 +807,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.6 MPI (Default is MPI library is OpenMPI but cut can be any)
+    # MPI (Default is MPI library is OpenMPI but cut can be any)
     #------------------------------------------------------------------------------
     MPIZipName=openmpi-$openMPIVersion.tar.gz
     MPIInstDirName=$installPrefix
@@ -831,7 +831,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build OpenMPI again"
     fi
     #------------------------------------------------------------------------------
-    # #8.7 gRPC
+    # gRPC
     #------------------------------------------------------------------------------
     grpcDirName="grpc"
     grpcInstDir=$installPrefix
@@ -870,7 +870,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build GRPC again."
     fi
     #------------------------------------------------------------------------------
-    # #8.8 Arrow / Parquet
+    # Arrow / Parquet
     #------------------------------------------------------------------------------
     arrowDirName="apache-arrow-$arrowVersion"
     arrowArtifactFileName=$arrowDirName.tar.gz
@@ -906,28 +906,48 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build Arrow again."
     fi
     #------------------------------------------------------------------------------
-    # #8.9 spdlog
+    # fmt
+    #------------------------------------------------------------------------------
+    fmtDirName="fmt-$fmtVersion"
+    fmtArtifactFileName=$fmtDirName.zip
+    if ! is_dependency_downloaded "fmt_v${fmtVersion}"; then
+        rm -rf "${sourcePrefix:?}/${fmtDirName}"
+        wget "https://github.com/fmtlib/fmt/releases/download/${fmtVersion}/$fmtArtifactFileName" -qO  "$cacheDir/$fmtArtifactFileName"
+        unzip -q "$cacheDir/$fmtArtifactFileName" -d "$sourcePrefix"
+        dependency_download_success "fmt_v${fmtVersion}"
+    fi
+    if ! is_dependency_installed "fmt_v${fmtVersion}"; then
+        cmake -G Ninja -S "${sourcePrefix}/${fmtDirName}" -B "${buildPrefix}/${fmtDirName}" \
+            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DFMT_MASTER_PROJECT=OFF
+        cmake --build "${buildPrefix}/${fmtDirName}" --target install/strip
+        dependency_install_success "fmt_v${fmtVersion}"
+    else
+        daphne_msg "No need to build fmt again."
+    fi
+    #------------------------------------------------------------------------------
+    # spdlog
     #------------------------------------------------------------------------------
     spdlogDirName="spdlog-$spdlogVersion"
     spdlogArtifactFileName=$spdlogDirName.tar.gz
     if ! is_dependency_downloaded "spdlog_v${spdlogVersion}"; then
         rm -rf "${sourcePrefix:?}/${spdlogDirName}"
-        wget "https://github.com/gabime/spdlog/archive/refs/tags/v$spdlogVersion.tar.gz" -qO \
+        # changed URL scheme due to  temporarily use tip of main branch (2024-10-03)
+#        wget "https://github.com/gabime/spdlog/archive/refs/tags/v$spdlogVersion.tar.gz" -qO \
+        wget https://github.com/gabime/spdlog/archive/$spdlogVersion.tar.gz -qO \
             "$cacheDir/$spdlogArtifactFileName"
         tar xzf "$cacheDir/$spdlogArtifactFileName" --directory="$sourcePrefix"
         dependency_download_success "spdlog_v${spdlogVersion}"
     fi
-
     if ! is_dependency_installed "spdlog_v${spdlogVersion}"; then
         cmake -G Ninja -S "${sourcePrefix}/${spdlogDirName}" -B "${buildPrefix}/${spdlogDirName}" \
-            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+            -DSPDLOG_FMT_EXTERNAL=ON -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
         cmake --build "${buildPrefix}/${spdlogDirName}" --target install/strip
         dependency_install_success "spdlog_v${spdlogVersion}"
     else
         daphne_msg "No need to build spdlog again."
     fi
     #------------------------------------------------------------------------------
-    # #8.10 Eigen
+    # Eigen
     #------------------------------------------------------------------------------
     eigenDirName="eigen-${eigenVersion}"
     if ! is_dependency_downloaded "eigen_v${eigenVersion}"; then
@@ -946,7 +966,7 @@ if [ $WITH_DEPS -gt 0 ]; then
       daphne_msg "No need to build eigen again."
     fi
     #------------------------------------------------------------------------------
-    # #8.11 HAWQ (libhdfs3)
+    # HAWQ (libhdfs3)
     #------------------------------------------------------------------------------
     hawqDirName="hawq-rel-v$hawqVersion"
     hawqTarName="v${hawqVersion}.tar.gz"
@@ -976,7 +996,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.12 Build MLIR
+    # Build MLIR
     #------------------------------------------------------------------------------
     # We rarely need to build MLIR/LLVM, only during the first build of the
     # prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
@@ -1034,7 +1054,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build MLIR/LLVM again."
     fi
     #------------------------------------------------------------------------------
-    # 8.14 Liburing
+    # Liburing
     #------------------------------------------------------------------------------
     liburingDirName="liburing-$liburingVersion"
     liburingTarName="${liburingDirName}.tar.gz"
@@ -1063,9 +1083,8 @@ if [ $WITH_DEPS -gt 0 ]; then
             daphne_msg "No need to build liburing again."
         fi
     fi
-
     #------------------------------------------------------------------------------
-    # 8.14 Fetch bitstreams
+    # Fetch bitstreams
     #------------------------------------------------------------------------------
     if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
         FPGAOPENCL_BISTREAM_DIR="$projectRoot/src/runtime/local/kernels/FPGAOPENCL/bitstreams"
