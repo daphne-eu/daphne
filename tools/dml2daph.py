@@ -13,6 +13,7 @@ import os
 # Global variables
 # -------------------------------------------------------------------------
 
+# TODO Why is this not in the Context?
 # TODO: Get parameter types of imported functions dynamically
 # Global variable storing the data types of the function parameters (only needed for imported functions)
 param_types = {
@@ -24,11 +25,14 @@ param_types = {
 }
 class Context:
     def __init__(self):
+        # TODO Rename to then_assigns.
         self.if_assigns = set()         # Stores variables assigned inside if-block
         self.else_assigns = set()       # Stores variables assigned inside else-block
-        self.already_assigned = set()   # Stores variables that have been already been assigned
+        self.already_assigned = set()   # Stores variables that have already been assigned
+        # TODO Rename to in_thenBody.
         self.in_ifBody = False          # Flag needed for special handling of variables that are initialized inside if-else-block
         self.in_elseBody = False        # Flag needed for special handling of variables that are initialized inside if-else-block
+        # TODO data_types valid only for the current function? Is it reset before each function?
         self.data_types = dict()        # Stores each variables current data type
         self.current_function = ""      # Specifies the current function (a script can contain multiple functions)
         self.function_names = []        # Stores the names of all the functions that are defined inside this script
@@ -102,6 +106,7 @@ class Translator(DmlVisitor):
     def matrix_function(self, arguments):
         args, exprs = self.reorder_args(arguments, [None, "rows", "cols"])
         
+        # TODO Why?
         if args[1] == "0":
             args[1] = "1"
         if args[2] == "0":
@@ -158,6 +163,7 @@ class Translator(DmlVisitor):
         args, exprs = self.reorder_args(arguments, [None])
         function_call = f"{args[0]}"
         
+        # TODO Don't create individual prints, or if so, make them not end with newline.
         split_str = function_call.split("+")
         transformed_strs = []
         for part in split_str:
@@ -221,6 +227,8 @@ class Translator(DmlVisitor):
         
         return function_call, dtype
                 
+    # TODO DaphneDSL has no toString() function, don't create it here.
+    # Don't delay treatment to print(), can cause problems.
     # toString() is handled in print_function
     def toString_function(self, arguments):
         args, exprs = self.reorder_args(arguments, [None])
@@ -457,6 +465,7 @@ class Translator(DmlVisitor):
     def colIndexMin_function(self, arguments):
         args, exprs = self.reorder_args(arguments, [None])
         function_call = f"idxMin({args[0]}, 1)"
+        # TODO "si64"?
         dtype = "s64"
         
         return function_call, dtype
@@ -464,6 +473,7 @@ class Translator(DmlVisitor):
     def rowIndexMin_function(self, arguments):
         args, exprs = self.reorder_args(arguments, [None])
         function_call = f"idxMin({args[0]}, 0)"
+        # TODO "si64"?
         dtype = "s64"
         
         return function_call, dtype
@@ -489,6 +499,8 @@ class Translator(DmlVisitor):
     
     # Function for indenting the code
     def indent(self, code, level):
+        # TODO Maybe indent with mutliple spaces.
+        # TODO Repeated splitting and joining could be inefficient.
         indentation = "\t" * level
         lines = code.split("\n")
         indented_lines = [indentation + line if i > 0 else line for i, line in enumerate(lines)]
@@ -511,6 +523,7 @@ class Translator(DmlVisitor):
         elif dtype == "bool":
             return "false"
         elif dtype == "str":
+            # TODO DaphneDSL string literals require double quotes ".
             return "''"
         elif self.isMatrix(dtype):
             value_type = self.getValueType(dtype)
@@ -534,11 +547,13 @@ class Translator(DmlVisitor):
             vtype_left = self.getValueType(dtype_left)
             vtype_right = self.getValueType(dtype_right)
             
+            # TODO What about other value types (maybe ok from DML).
             if vtype_left == "f64" or vtype_right == "f64":
                 return "matrix<f64>"
             else:
                 return vtype_left
         elif not self.isMatrix(dtype_left) and not self.isMatrix(dtype_right):
+            # TODO What about other value types (maybe ok from DML).
             if dtype_left == "f64" or dtype_right == "f64":
                 return "f64"
             else:
@@ -693,6 +708,7 @@ class Translator(DmlVisitor):
             converted_arg_list = []
             for arg in arg_list:
                 param_type = param_types[function_name][i]
+                # TODO Simplify: if param_type in [...] then cast to that type.
                 if param_type == "si64":
                     converted_arg_list.append("as.si64(" + arg + ")")
                 elif param_type == "f64":
@@ -849,6 +865,10 @@ class Translator(DmlVisitor):
 
     # Identify exact Statement-Type and call responsible function
     def visitStatement(self, ctx: DmlParser.StatementContext):
+        # TODO ImportStatement
+        # TODO PathStatement
+        # TODO IfdefAssignmentStatement
+        # TODO BlockStatement
         if isinstance(ctx, DmlParser.AssignmentStatementContext):
             return self.visitAssignmentStatement(ctx)
         elif isinstance(ctx, DmlParser.FunctionCallAssignmentStatementContext):
@@ -872,6 +892,7 @@ class Translator(DmlVisitor):
         
     # Identify exact Expression-Type and call responsible function
     def visitExpression(self, ctx: DmlParser.ExpressionContext):
+        # TODO Anything missing?
         if isinstance(ctx, DmlParser.AddSubExpressionContext):
             return self.visitAddSubExpression(ctx)
         elif isinstance(ctx, DmlParser.DataIdExpressionContext):
@@ -936,6 +957,7 @@ class Translator(DmlVisitor):
             return_value = self.visitTypedArgNoAssign(param, False)
             return_type = self.context.return_types[self.context.current_function][i]
             
+            # TODO Simplify: if return_type in [...] then cast to that type.
             if return_type == "si64":
                 output_names.append("as.si64(" + return_value + ")")
             elif return_type == "f64":
@@ -973,6 +995,7 @@ class Translator(DmlVisitor):
         return translated_function
         
     # Retrieve input parameters
+    # TODO Are additional params like "types" compatible with the ANTLR generated code?
     def visitTypedArgAssign(self, ctx: DmlParser.TypedArgAssignContext, types=False):
         param_type = self.visitMl_type(ctx.ml_type())
         param_name = ctx.ID().getText()
@@ -983,6 +1006,7 @@ class Translator(DmlVisitor):
         # Return the parameter (optionally with initial value)
         if ctx.paramVal is not None:
             param_val = self.visitExpression(ctx.paramVal)
+            # TODO Shouldn't such conversions be handled by float literal translation?
             if param_val == "NaN" or param_val == "Inf":
                 param_val = param_val.lower()
             translated_param = f"{param_name}:{param_type} /*= {param_val}*/"
@@ -996,11 +1020,13 @@ class Translator(DmlVisitor):
         return translated_param
 
     # Retrieve output parameters
+    # TODO Are additional params like "types" compatible with the ANTLR generated code?
     def visitTypedArgNoAssign(self, ctx: DmlParser.TypedArgNoAssignContext, types):
         param_type = self.visitMl_type(ctx.ml_type())
         param_name = ctx.ID().getText()
         
         # Return either type or name (depending on specified parameter "types")
+        # TODO No format string needed.
         translated_param = f"{param_type}" if types else f"{param_name}"
         
         return translated_param
@@ -1009,15 +1035,19 @@ class Translator(DmlVisitor):
     def visitMl_type(self, ctx:DmlParser.Ml_typeContext):
         if ctx.dataType() is not None: # i.e. "Matrix[Double] X"
             data_type = self.visitDataType(ctx.dataType())
+            # TODO Shouldn't this be visitValueType()?
             value_type = self.visitDataType(ctx.valueType())
             translated_type = f"{data_type}<{value_type}>"
         else: # i.e. "Double X"
+            # TODO Shouldn't this be visitValueType()?
             value_type = self.visitDataType(ctx.valueType())
+            # TODO No need for format string.
             translated_type = f"{value_type}"
             
         return translated_type
     
     # Retrieve DataType
+    # TODO What about a visitValueType()?
     def visitDataType(self, ctx: DmlParser.DataTypeContext):
         dtype = ctx.getText().lower()
         if dtype == "integer":
@@ -1038,7 +1068,12 @@ class Translator(DmlVisitor):
         return data_identifier
 
     # Return data identifier or data type
+    # TODO Are additional params like "types" compatible with the ANTLR generated code?
     def visitDataIdentifier(self, ctx: DmlParser.DataIdentifierContext, type=False):
+        # TODO This seems to be tailored to DML's IndexedExpression, also support
+        # SimpleDataIdentifierExpression, CommandlineParamExpression, CommandlinePositionExpression.
+
+        # TODO Why is the full text used here, why not further parse the kinds of expressions?
         identifier = ctx.getText()
         
         matrix_name = ""
@@ -1050,11 +1085,13 @@ class Translator(DmlVisitor):
             first_bracket = identifier.index("[")
             last_bracket = identifier.rindex("]")
             
+            # TODO I think by that custom parsing, the matrix_name could end with whitespaces.
             matrix_name = identifier[:first_bracket]
             indices = identifier[first_bracket + 1:last_bracket]
             rest = identifier[last_bracket + 1:]
 
             # Split the indices based on the last comma
+            # TODO This is dangerous, nested expressions could contains commas.
             last_comma = indices.rindex(",") if "," in indices else -1
             if last_comma == -1:
                 index = indices
@@ -1105,7 +1142,9 @@ class Translator(DmlVisitor):
                             col_index = col_index + " - 1"
                 
                 # Construct the identifier
+                # TODO I think we can safely omit the rest.
                 identifier = f"{matrix_name}[{row_index}, {col_index}]{rest}"
+        # TODO else: raise error?
 
         # Return the datatype instead of the string if type is true
         if type:
@@ -1113,6 +1152,7 @@ class Translator(DmlVisitor):
             if is_slice:
                 return self.context.data_types.get(matrix_name) # i.e. matrix<f64>
             else:
+                # TODO In DaphneDSL (and DML), single-element access yields a 1x1 matrix.
                 return self.getValueType(self.context.data_types.get(matrix_name)) # i.e. f64
         else:
             return identifier
@@ -1177,6 +1217,7 @@ class Translator(DmlVisitor):
         if self.isMatrix(left_dtype) and not self.isMatrix(right_dtype):
             dtype = left_dtype
         elif not self.isMatrix(left_dtype) and self.isMatrix(right_dtype):
+            # TODO Support scalar-matrix comparison in DaphneDSL and remove this workaround.
             # i.e. 0 < matrix is not allowed => translate to matrix > 0
             if op == ">":
                 op = "<"
@@ -1186,6 +1227,7 @@ class Translator(DmlVisitor):
                 op = "<="
             elif op == "<=":
                 op = ">="
+            # TODO "==" and "!=": swap operands, but retain operator.
                 
             translated_expression = f"{right} {op} {left}"
             dtype = right_dtype
@@ -1202,6 +1244,7 @@ class Translator(DmlVisitor):
         
         # Construct the unary expression
         try:
+            # TODO Can this ever make sense?
             num = float(operand)
             if op == "-":
                 num = 0.0-num
@@ -1220,6 +1263,7 @@ class Translator(DmlVisitor):
         # Get the operator
         op = ctx.op.text
         
+        # TODO Hardcode "&&", since 2x "&" is just a coincidence.
         # Construct the expression (Daphne: "&&", Dml: "&")
         translated_expression = f"{left} {op}{op} {right}"
         
@@ -1234,6 +1278,7 @@ class Translator(DmlVisitor):
         # Get the operator
         op = ctx.op.text
 
+        # TODO Hardcode "&&", since 2x "&" is just a coincidence.
         # Construct translated expression
         translated_expression = f"{left} {op}{op} {right}"
         
@@ -1271,7 +1316,9 @@ class Translator(DmlVisitor):
 
         # Translate mod and integer division
         if op == "%/%":
+            # TODO round() to floor().
             translated_expression = f"round({left} / {right})"
+        # TODO Mention operator here, to be on the safe side.
         else:
             translated_expression = f"{left} % {right}"
         
@@ -1284,6 +1331,7 @@ class Translator(DmlVisitor):
         
         # Change from scientific notation to decimal values
         num = float(const)
+        # TODO Is 20 digits always enough?
         num = "{:.20f}".format(num)
         
         num = num.rstrip("0")
@@ -1291,6 +1339,7 @@ class Translator(DmlVisitor):
         if num[-1] == ".":
             num += "0"
         
+        # TODO No format string required.
         return f"{num}"
         
     # Integer constant
@@ -1298,6 +1347,7 @@ class Translator(DmlVisitor):
         # Get the integer constant
         const = ctx.INT().getText()
         
+        # TODO No format string required.
         return f"{const}"
     
     # Boolean constant
@@ -1313,6 +1363,7 @@ class Translator(DmlVisitor):
         # Get the string constant
         dml_string = ctx.STRING().getText()
         
+        # TODO Convert ' to ", since DML allows both, but DaphneDSL doesn't.
         return dml_string
         
     # Input parameters for a function
@@ -1320,6 +1371,7 @@ class Translator(DmlVisitor):
         param_name = ctx.paramName.text if ctx.paramName is not None else None
         param_val = self.visitExpression(ctx.expression())
         
+        # TODO Such conversions should be done centrally for float parsing.
         if param_val == "NaN" or param_val == "Inf":
             param_val = param_val.lower()
         
@@ -1334,6 +1386,7 @@ class Translator(DmlVisitor):
         target = self.visitDataIdentifier(ctx.dataIdentifier())
         source = self.visitExpression(ctx.expression())
         
+        # TODO Such conversions should be done centrally for float parsing.
         if source == "NaN" or source == "Inf":
             source = source.lower()
             
@@ -1348,6 +1401,7 @@ class Translator(DmlVisitor):
         dtype = self.inferType(source, ctx.expression())
         
         if "[" in target and "]" in target:
+            # TODO More generally, convert scalars to matrices.
             if dtype == "si64":
                 return f"{target} = as.matrix({source}.0);"
             
@@ -1371,6 +1425,7 @@ class Translator(DmlVisitor):
         source = self.visitExpression(ctx.expression())
 
         # Create the assignment statement (turn a += b into a = a + b)
+        # TODO Use "=" instead of op[1].
         assignment = f"{target} {op[1]} {target} {op[0]} {source};"
 
         return assignment
@@ -1391,6 +1446,7 @@ class Translator(DmlVisitor):
         body = [self.visitStatement(stmt) for stmt in ctx.statement()]
         body_string = "\n".join(body)
         
+        # TODO The params are not supported in DaphneDSL at all.
         # Construct the translated for-loop
         translated_for_loop = f"for({iter_var} in {iterable_pred}{params_string})" + " {\n"
         translated_for_loop += self.indent(f"\t{body_string}", 1)
@@ -1414,6 +1470,7 @@ class Translator(DmlVisitor):
         body = [self.visitStatement(stmt) for stmt in ctx.statement()]
         body_string = "\n".join(body)
         
+        # TODO The params are not supported in DaphneDSL at all.
         # Construct the translated for-loop
         translated_for_loop = f"for({iter_var} in {iterable_pred}{params_string})" + " {\n"
         translated_for_loop += self.indent(f"\t{body_string}", 1)
@@ -1436,6 +1493,10 @@ class Translator(DmlVisitor):
         else_body_statements = [self.visitStatement(stmt) for stmt in ctx.elseBody]
         self.context.in_elseBody = False
         
+        # TODO I think that doesn't work for nested if-statements, which would require arbitrary levels of
+        # TODO I think the point is not which variables get assigned in common in then/else, but which are used
+        # again later.
+        # if_assignes, else_assigns, etc.
         # Initialize variables that are only initialized inside the if-else-block
         common_assigns = self.context.if_assigns.intersection(self.context.else_assigns)
         common_assigns -= self.context.already_assigned
