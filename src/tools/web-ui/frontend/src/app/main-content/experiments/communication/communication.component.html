@@ -1,0 +1,164 @@
+<div class="tab-pane fade show active">
+    <div class="container">
+        <div class="row">
+            <div class="col-6">
+                <div class="container">
+                    <form (submit)="onSubmit()">
+                        <div class="row">
+                            <div class="col">
+                            </div>
+                        </div>
+                        <div class="mt-4 row">
+                            <div class="col">
+                                <label>Execution mode:</label>
+                                <select class="form-select" name="execution-type" aria-label="Execution Mode" disabled>                                
+                                    <option selected>Distributed execution</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4 row">
+                            <div class="col">
+                                <label>Deployment:</label>
+                                <select class="form-select" name="cluster" aria-label="Cluster" [(ngModel)]="cluster">                                
+                                    <option [value]="Cluster.local_machine">Local</option>
+                                    <option [value]="Cluster.vega" selected>Vega</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4 row" *ngIf="cluster == Cluster.vega">
+                            <div class="col-4 d-flex">
+                                <label for="exampleInputEmail1">Vega HPC 2FA:</label>
+                            </div>
+                            <div class="col-8 d-flex">
+                                <input type="text" class="form-control" name="vega_token" aria-describedby="token" autocomplete="off" placeholder="Number" [(ngModel)]="vega_token" required pattern="\d{6}">
+                            </div>
+                        </div>
+                        <div class="mt-4 row">
+                            <div class="col d-flex" >
+                                <label for="customRange" class="form-label">
+                                    Workers: 
+                                    <b>
+                                    {{ numberOfNodes }}
+                                    </b>
+                                </label>                                
+                            </div>
+                        </div>
+                        <div class="mt-4 row">
+                            <div class="col">
+                                <label>Distributed backend:</label>
+                                <select class="form-select" name="execution-type" aria-label="Execution Mode" [(ngModel)]="distributed_backend">                                
+                                    <option [value]="DistributedBackend.sync_grpc">gRPC</option>
+                                    <option [value]="DistributedBackend.mpi">MPI</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4 row">
+                            <div class="col">
+                                <label class="col col-form-label">Select execution algorithm:</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="algoRadioOptions" id="algoRadio1"
+                                        [value]="Algorithm.connected_components" [(ngModel)]="selectedAlgorithm" checked>
+                                    <label class="form-check-label" for="algoRadio1">Connected
+                                        Components</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="algoRadioOptions" id="algoRadio2" disabled>
+                                    <label class="form-check-label" for="algoRadio2">PageRank</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="algoRadioOptions" id="algoRadio3" disabled>
+                                    <label class="form-check-label" for="algoRadio3">Principal
+                                        Component Analysis</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="mt-4 row">
+                                    <div class="col">
+                                        <label for="inputSize" *ngIf="selectedAlgorithm !== Algorithm.pageRank">Input:</label>
+                                        <label for="inputSize" *ngIf="selectedAlgorithm === Algorithm.pageRank">Iterations:</label>
+                                        <select class="form-select" id="inputSize" aria-label="Input size" [(ngModel)]="inputSize" name="inputSize"
+                                        *ngIf="selectedAlgorithm === Algorithm.connected_components">
+                                            <option value="small" [defaultSelected]="true">Small - Amazon</option>
+                                            <option value="medium" disabled>Medium - Amazon x 10</option>
+                                            <option value="large" disabled>Large Amazon x 30</option>
+                                        </select>
+                                        <select class="form-select" id="inputSize" aria-label="Input size" [(ngModel)]="inputSize" name="inputSize"
+                                        *ngIf="selectedAlgorithm === Algorithm.pageRank">
+                                            <option value="small" [defaultSelected]="true">30</option>
+                                            <option value="medium">50</option>
+                                            <option value="large">100</option>
+                                        </select>
+                                        <select class="form-select" id="inputSize" aria-label="Input size" [(ngModel)]="inputSize" name="inputSize"
+                                        *ngIf="selectedAlgorithm === Algorithm.PCA">
+                                            <option value="small" [defaultSelected]="true">Small - wine</option>
+                                            <option value="medium">Large - Cifer 10</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-5 row">
+                            <div class="col">
+                                <button type="submit" class="btn btn-success" *ngIf="!running_daphne">Launch
+                                    workload</button>
+                                <button type="button" class="btn btn-danger" *ngIf="running_daphne" (click)="killDaphne()">Kill
+                                    workload</button>
+                            </div>
+                            <div class="col d-flex justify-content-start">
+                                <div class="alert alert-success" role="alert" *ngIf="show_success_alert">
+                                    Job completed
+                                </div>
+                                <div class="alert alert-danger" role="alert" *ngIf="show_canceled_alert">
+                                    Job canceled
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="col-6">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="output-tab" data-bs-toggle="tab" data-bs-target="#output"
+                            type="button" role="tab" aria-controls="output" aria-selected="true" (click)="selected_output_panel = 'output-panel'"
+                            [class.active] = "selected_output_panel === 'output-panel'"
+                            >
+                            Terminal output</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph"
+                            type="button" role="tab" aria-controls="graph" aria-selected="false" (click)="selected_output_panel = 'aggregate-statistics-panel'"
+                            [class.active] = "selected_output_panel === 'aggregate-statistics-panel'"
+                            >
+                            Aggregate statistics</button>
+                    </li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div class="tab-pane" id="output" role="tabpanel" aria-labelledby="output-tab" [ngClass]="{'active': selected_output_panel === 'output-panel'}">
+                        <div class="row mt-4"  >
+                            <div class="col" >
+                                <app-output-panel [text]="result_output"></app-output-panel>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="graph" role="tabpanel" aria-labelledby="graph-tab" [ngClass]="{'active': selected_output_panel === 'aggregate-statistics-panel'}">
+                        <div class="row mt-4" >
+                            <div class="col">
+                                <app-aggregate-statistics-panel [text]="agg_statistics"></app-aggregate-statistics-panel>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,15 @@
+
+.output-panel{
+    box-shadow: 2px 2px 5px;
+    border-radius: 5px;
+    background-color: #000;
+    color: #fff;
+    padding: 10px;
+    height: 400px;
+    overflow: scroll;
+}
+pre{
+    font-size: 1rem !important;
+    white-space: pre-wrap !important;
+    overflow-x: hidden; 
+}
