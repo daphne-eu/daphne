@@ -187,12 +187,12 @@ template <typename VTRes, typename VTArg> class CastObj<DenseMatrix<VTRes>, Dens
             // Since DenseMatrix implementation is backed by
             // a single dense array of values, we can simply
             // perform cast in one loop over that array.
-            for(size_t idx = 0; idx < numCols*numRows; idx++)
+            for (size_t idx = 0; idx < numCols * numRows; idx++)
                 resVals[idx] = castSca<VTRes, VTArg>(argVals[idx], nullptr);
         else
             // res and arg might be views into a larger DenseMatrix.
-            for(size_t r = 0; r < numRows; r++) {
-                for(size_t c = 0; c < numCols; c++)
+            for (size_t r = 0; r < numRows; r++) {
+                for (size_t c = 0; c < numCols; c++)
                     resVals[c] = castSca<VTRes, VTArg>(argVals[c], nullptr);
                 resVals += res->getRowSkip();
                 argVals += arg->getRowSkip();

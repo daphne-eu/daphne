@@ -127,44 +127,45 @@ template <typename VT> struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
 // DenseMatrix <- DenseMatrix<string>
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTArg>
-void oneHotString(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+template <typename VTRes, typename VTArg>
+void oneHotString(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *arg, const DenseMatrix<int64_t> *info,
+                  DCTX(ctx)) {
     const size_t numRows = arg->getNumRows();
     const size_t numColsArg = arg->getNumCols();
     const size_t rowSkipArg = arg->getRowSkip();
     auto recode_result = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numColsArg, false);
-    
-    VTRes * valuesRes = recode_result->getValues();
-    const VTArg * valuesArg = arg->getValues();
+
+    VTRes *valuesRes = recode_result->getValues();
+    const VTArg *valuesArg = arg->getValues();
 
     // Recode arg with string elements to a dense matrix based on indices without ordering
-    for(size_t cArg = 0; cArg < numColsArg; cArg++){
+    for (size_t cArg = 0; cArg < numColsArg; cArg++) {
         std::unordered_map<VTArg, size_t> firstIndexMap;
-        for(size_t r = 0; r < numRows; r++){
+        for (size_t r = 0; r < numRows; r++) {
             size_t value_index = (rowSkipArg * r) + cArg;
-            if (firstIndexMap.find(valuesArg[value_index]) == firstIndexMap.end()){
+            if (firstIndexMap.find(valuesArg[value_index]) == firstIndexMap.end()) {
                 firstIndexMap[valuesArg[value_index]] = firstIndexMap.size();
             }
             valuesRes[value_index] = VTRes(firstIndexMap[valuesArg[value_index]]);
         }
     }
 
-    //call oneHot with recoded matrix as arg
+    // call oneHot with recoded matrix as arg
     oneHot(res, recode_result, info, ctx);
 
     DataObjectFactory::destroy(recode_result);
 }
 
-template<typename VT>
-struct OneHot<DenseMatrix<VT>, DenseMatrix<std::string>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<std::string> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+template <typename VT> struct OneHot<DenseMatrix<VT>, DenseMatrix<std::string>> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<std::string> *arg, const DenseMatrix<int64_t> *info,
+                      DCTX(ctx)) {
         oneHotString<VT, std::string>(res, arg, info, ctx);
     }
 };
 
-template<typename VT>
-struct OneHot<DenseMatrix<VT>, DenseMatrix<FixedStr16>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<FixedStr16> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+template <typename VT> struct OneHot<DenseMatrix<VT>, DenseMatrix<FixedStr16>> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<FixedStr16> *arg, const DenseMatrix<int64_t> *info,
+                      DCTX(ctx)) {
         oneHotString<VT, FixedStr16>(res, arg, info, ctx);
     }
 };

@@ -78,7 +78,7 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
         AllocationDescriptorHost myHostAllocInfo;
         alloc_shared_values();
 
-        if(zero)
+        if (zero)
             std::fill(values.get(), values.get() + maxNumRows * numCols, ValueTypeUtils::defaultValue<ValueType>);
         new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
     }
@@ -123,8 +123,8 @@ DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, const DenseM
 }
 
 template <typename ValueType>
-auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor *alloc_desc,
-                                               const Range *range) -> std::tuple<bool, size_t, ValueType *> {
+auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor *alloc_desc, const Range *range)
+    -> std::tuple<bool, size_t, ValueType *> {
     // If no range information is provided we assume the full range that this
     // matrix covers
     if (range == nullptr || *range == Range(*this)) {

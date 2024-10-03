@@ -123,9 +123,9 @@ template <UnaryOpCode op, typename VTRes, typename VTArg> static constexpr bool 
     /* Comparison */                                                                                                   \
     SUPPORT(ISNAN, VT)
 
-#define SUPPORT_STRING(VT) \
-    /* String */ \
-    SUPPORT(UPPER, VT) \
+#define SUPPORT_STRING(VT)                                                                                             \
+    /* String */                                                                                                       \
+    SUPPORT(UPPER, VT)                                                                                                 \
     SUPPORT(LOWER, VT)
 // Concise specification of which unary operations should be supported on
 // which value types.

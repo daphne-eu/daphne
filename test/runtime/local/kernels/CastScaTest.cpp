@@ -66,5 +66,4 @@ TEST_CASE("castSca, actual casts strings to numbers", TAG_KERNELS) {
     CHECK(castSca<double, FixedStr16>("0.0", nullptr) == 0.0);
     CHECK(castSca<long, FixedStr16>("922337203685477", nullptr) == 922337203685477);
     CHECK(castSca<long, FixedStr16>("-92233720368547", nullptr) == -92233720368547);
-
 }

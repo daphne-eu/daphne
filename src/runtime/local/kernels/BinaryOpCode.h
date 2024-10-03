@@ -95,8 +95,8 @@ static constexpr bool supportsBinaryOp = false;
 
 // Generates code specifying that the binary operation `Op` should be supported on
 // the value types `VTLhs` and `VTRhs` with result `VTRes`.
-#define SUPPORT_RLR(Op, VTRes, VTLhs, VTRhs) \
-    template<> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VTRes, VTLhs, VTRhs> = true;
+#define SUPPORT_RLR(Op, VTRes, VTLhs, VTRhs)                                                                           \
+    template <> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VTRes, VTLhs, VTRhs> = true;
 
 // Generates code specifying that all binary operations of a certain category
 // should be supported on the given value type `VT` (for the result and the two
@@ -134,18 +134,18 @@ static constexpr bool supportsBinaryOp = false;
 // Generates code specifying that all binary operations of a certain category should be
 // supported on the given argument value type `VTArg` (for the left and right-hand-side
 // arguments, for simplicity) and the given result value type `VTRes`.
-#define SUPPORT_COMPARISONS_RA(VTRes, VTArg) \
-    /* string Comparisons operations. */ \
-    SUPPORT_RLR(LT, VTRes, VTArg, VTArg) \
+#define SUPPORT_COMPARISONS_RA(VTRes, VTArg)                                                                           \
+    /* string Comparisons operations. */                                                                               \
+    SUPPORT_RLR(LT, VTRes, VTArg, VTArg)                                                                               \
     SUPPORT_RLR(GT, VTRes, VTArg, VTArg)
-#define SUPPORT_EQUALITY_RA(VTRes, VTArg) \
-    /* string Comparisons operations. */ \
-    SUPPORT_RLR(EQ, VTRes, VTArg, VTArg) \
+#define SUPPORT_EQUALITY_RA(VTRes, VTArg)                                                                              \
+    /* string Comparisons operations. */                                                                               \
+    SUPPORT_RLR(EQ, VTRes, VTArg, VTArg)                                                                               \
     SUPPORT_RLR(NEQ, VTRes, VTArg, VTArg)
-#define SUPPORT_STRING_RA(VTRes, VTArg) \
-    /* string concatenation operations. */ \
-    /*  Since the result may not fit in FixedStr16,*/ \
-    /*  it always return std::string*/ \
+#define SUPPORT_STRING_RA(VTRes, VTArg)                                                                                \
+    /* string concatenation operations. */                                                                             \
+    /*  Since the result may not fit in FixedStr16,*/                                                                  \
+    /*  it always return std::string*/                                                                                 \
     SUPPORT_RLR(CONCAT, VTRes, VTArg, VTArg)
 
 // Generates code specifying that all binary operations typically supported on a

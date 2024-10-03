@@ -119,23 +119,41 @@ TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)
 
 TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
     using DT = TestType;
-    using VT = typename DT::VT;;
-    
-    DT * m = nullptr;
-    DT * mt = nullptr;
-    
+    using VT = typename DT::VT;
+    ;
+
+    DT *m = nullptr;
+    DT *mt = nullptr;
+
     m = genGivenVals<DT>(3, {
-    VT("1"),  VT("a"),  VT("3"),  VT("4"),
-    VT("5"),  VT("ab"),  VT("7"),  VT("8"),
-    VT("9"), VT("abc"), VT("11"), VT("12"),
-    });
+                                VT("1"),
+                                VT("a"),
+                                VT("3"),
+                                VT("4"),
+                                VT("5"),
+                                VT("ab"),
+                                VT("7"),
+                                VT("8"),
+                                VT("9"),
+                                VT("abc"),
+                                VT("11"),
+                                VT("12"),
+                            });
     mt = genGivenVals<DT>(4, {
-        VT("1"), VT("5"),  VT("9"),
-        VT("a"), VT("ab"), VT("abc"),
-        VT("3"), VT("7"), VT("11"),
-        VT("4"), VT("8"), VT("12"),
-    });
-    
+                                 VT("1"),
+                                 VT("5"),
+                                 VT("9"),
+                                 VT("a"),
+                                 VT("ab"),
+                                 VT("abc"),
+                                 VT("3"),
+                                 VT("7"),
+                                 VT("11"),
+                                 VT("4"),
+                                 VT("8"),
+                                 VT("12"),
+                             });
+
     checkTranspose(m, mt);
 
     DataObjectFactory::destroy(m);

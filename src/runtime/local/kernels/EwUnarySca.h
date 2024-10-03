@@ -155,15 +155,13 @@ template <typename TRes, typename TArg> TRes ewUnarySca(UnaryOpCode opCode, TArg
         }                                                                                                              \
     };
 
-#define MAKE_EW_UNARY_STRING_TRANSFORM(opCode, expr) \
-    template<> \
-    struct EwUnarySca<opCode, std::string, std::string> { \
-        inline static std::string apply(std::string arg, DCTX(ctx)) { \
-            std::string new_string = arg; \
-            std::transform(new_string.begin(), new_string.end(), new_string.begin(), \
-                           static_cast<int(*)(int)>(expr)); \
-            return new_string; \
-        } \
+#define MAKE_EW_UNARY_STRING_TRANSFORM(opCode, expr)                                                                   \
+    template <> struct EwUnarySca<opCode, std::string, std::string> {                                                  \
+        inline static std::string apply(std::string arg, DCTX(ctx)) {                                                  \
+            std::string new_string = arg;                                                                              \
+            std::transform(new_string.begin(), new_string.end(), new_string.begin(), static_cast<int (*)(int)>(expr)); \
+            return new_string;                                                                                         \
+        }                                                                                                              \
     };
 
 // One such line for each unary function to support.

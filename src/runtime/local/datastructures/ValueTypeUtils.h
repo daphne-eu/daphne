@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/FixedSizeStringValueType.h>
+#include <runtime/local/datastructures/ValueTypeCode.h>
 
 #include <iostream>
 #include <string>
@@ -30,8 +30,7 @@
 // changes to the list of supported data types local.
 #define ALL_VALUE_TYPES int8_t, int32_t, int64_t, uint8_t, uint32_t, uint64_t, float, double
 
-#define ALL_STRING_VALUE_TYPES \
-        std::string, FixedStr16
+#define ALL_STRING_VALUE_TYPES std::string, FixedStr16
 
 struct ValueTypeUtils {
 
@@ -40,7 +39,7 @@ struct ValueTypeUtils {
     static void printValue(std::ostream &os, ValueTypeCode type, const void *array, size_t pos);
 
     template <typename ValueType> static const ValueTypeCode codeFor;
-    
+
     template <typename ValueType> static const ValueType defaultValue;
 
     template <typename ValueType> static const std::string cppNameFor;
@@ -83,14 +82,14 @@ template <> const std::string ValueTypeUtils::irNameFor<uint64_t>;
 template <> const std::string ValueTypeUtils::irNameFor<float>;
 template <> const std::string ValueTypeUtils::irNameFor<double>;
 
-template<> const int8_t ValueTypeUtils::defaultValue<int8_t>;
-template<> const int32_t ValueTypeUtils::defaultValue<int32_t>;
-template<> const int64_t ValueTypeUtils::defaultValue<int64_t>;
-template<> const uint8_t ValueTypeUtils::defaultValue<uint8_t>;
-template<> const uint32_t ValueTypeUtils::defaultValue<uint32_t>;
-template<> const uint64_t ValueTypeUtils::defaultValue<uint64_t>;
-template<> const float ValueTypeUtils::defaultValue<float>;
-template<> const double ValueTypeUtils::defaultValue<double>;
-template<> const std::string ValueTypeUtils::defaultValue<std::string>;
-template<> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16>;
-template<> const char * ValueTypeUtils::defaultValue<const char *>;
+template <> const int8_t ValueTypeUtils::defaultValue<int8_t>;
+template <> const int32_t ValueTypeUtils::defaultValue<int32_t>;
+template <> const int64_t ValueTypeUtils::defaultValue<int64_t>;
+template <> const uint8_t ValueTypeUtils::defaultValue<uint8_t>;
+template <> const uint32_t ValueTypeUtils::defaultValue<uint32_t>;
+template <> const uint64_t ValueTypeUtils::defaultValue<uint64_t>;
+template <> const float ValueTypeUtils::defaultValue<float>;
+template <> const double ValueTypeUtils::defaultValue<double>;
+template <> const std::string ValueTypeUtils::defaultValue<std::string>;
+template <> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16>;
+template <> const char *ValueTypeUtils::defaultValue<const char *>;

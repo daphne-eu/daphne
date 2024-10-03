@@ -16,28 +16,26 @@
 
 #pragma once
 
-#include <iostream> 
+#include <iostream>
 #include <stdexcept>
 
-#include <cstddef>
 #include <algorithm>
+#include <cstddef>
 #include <cstring>
 
+#include <string.h>
 #include <string>
 #include <vector>
-#include <string.h>
 
 struct FixedStr16 {
     static const std::size_t N = 16;
     char buffer[N];
 
     // Default constructor
-    FixedStr16() {
-        std::fill(buffer, buffer + N, '\0');
-    }
+    FixedStr16() { std::fill(buffer, buffer + N, '\0'); }
 
     // Constructor from a C-style string
-    FixedStr16(const char* str) {
+    FixedStr16(const char *str) {
         size_t len = std::strlen(str);
         if (len > N) {
             throw std::length_error("string exceeds fixed buffer size");
@@ -47,12 +45,10 @@ struct FixedStr16 {
     }
 
     // Copy constructor
-    FixedStr16(const FixedStr16& other) {
-        std::copy(other.buffer, other.buffer + N, buffer);
-    }
+    FixedStr16(const FixedStr16 &other) { std::copy(other.buffer, other.buffer + N, buffer); }
 
     // Constructor from a std::string
-    FixedStr16(const std::string& other) {
+    FixedStr16(const std::string &other) {
         size_t len = other.size();
         if (len > N) {
             throw std::length_error("string exceeds fixed buffer size");
@@ -62,7 +58,7 @@ struct FixedStr16 {
     }
 
     // Assignment operator
-    FixedStr16& operator=(const FixedStr16& other) {
+    FixedStr16 &operator=(const FixedStr16 &other) {
         if (this != &other) {
             std::copy(other.buffer, other.buffer + N, buffer);
         }
@@ -70,58 +66,42 @@ struct FixedStr16 {
     }
 
     // Overriding the equality operator
-    bool operator==(const FixedStr16& other) const {
-        return std::equal(buffer, buffer + N, other.buffer);
-    }
+    bool operator==(const FixedStr16 &other) const { return std::equal(buffer, buffer + N, other.buffer); }
 
-    bool operator==(const char* str) const {
-        return std::strncmp(buffer, str, sizeof(buffer)) == 0;
-    }
+    bool operator==(const char *str) const { return std::strncmp(buffer, str, sizeof(buffer)) == 0; }
 
     // Overriding the inequality operator
-    bool operator!=(const FixedStr16& other) const {
-        return !(std::equal(buffer, buffer + N, other.buffer));
-    }
+    bool operator!=(const FixedStr16 &other) const { return !(std::equal(buffer, buffer + N, other.buffer)); }
 
-    bool operator!=(const char* str) const {
-        return !(std::strncmp(buffer, str, sizeof(buffer)) == 0);
-    }
+    bool operator!=(const char *str) const { return !(std::strncmp(buffer, str, sizeof(buffer)) == 0); }
 
     // Overriding the Less than operator
-    bool operator<(const FixedStr16& other) const {
-        return std::strncmp(buffer, other.buffer, N) < 0;
-    }
+    bool operator<(const FixedStr16 &other) const { return std::strncmp(buffer, other.buffer, N) < 0; }
 
     // Overriding the Greater than operator
-    bool operator>(const FixedStr16& other) const {
-        return std::strncmp(buffer, other.buffer, N) > 0;
-    }
+    bool operator>(const FixedStr16 &other) const { return std::strncmp(buffer, other.buffer, N) > 0; }
 
     // Concatenation operator
-    friend std::string operator+(const FixedStr16& lhs, const FixedStr16& rhs) {
+    friend std::string operator+(const FixedStr16 &lhs, const FixedStr16 &rhs) {
         std::string result(lhs.buffer);
         result.append(rhs.buffer);
         return result;
     }
 
     // Serialization function
-    void serialize(std::vector<char>& outBuffer) const {
-        outBuffer.insert(outBuffer.end(), buffer, buffer + N);
-    }
+    void serialize(std::vector<char> &outBuffer) const { outBuffer.insert(outBuffer.end(), buffer, buffer + N); }
 
     // Overload the output stream operator
-    friend std::ostream& operator<<(std::ostream& os, const FixedStr16& fs) {
+    friend std::ostream &operator<<(std::ostream &os, const FixedStr16 &fs) {
         os.write(fs.buffer, N);
         return os;
     }
 
     // Size method
-    size_t size() const {
-        return std::strlen(buffer);
-    }
+    size_t size() const { return std::strlen(buffer); }
 
     // Method to set the string
-    void set(const char* str) {
+    void set(const char *str) {
         size_t len = std::strlen(str);
         if (len > N) {
             throw std::length_error("string exceeds fixed buffer size");
@@ -131,14 +111,10 @@ struct FixedStr16 {
     }
 
     // C-string method for compatibility
-    std::string to_string() const {
-        return std::string(buffer, size());
-    }
+    std::string to_string() const { return std::string(buffer, size()); }
 
     // Compare method similar to std::string::compare
-    int compare(const FixedStr16& other) const {
-        return std::strncmp(buffer, other.buffer, N);
-    }
+    int compare(const FixedStr16 &other) const { return std::strncmp(buffer, other.buffer, N); }
 
     // Convert to lowercase
     FixedStr16 lower() const {
@@ -155,13 +131,12 @@ struct FixedStr16 {
     }
 };
 
-// Specialize std::hash for FixedStr16 this is nessary to use FixedStr16 as a key in std::unordered_map 
+// Specialize std::hash for FixedStr16 this is nessary to use FixedStr16 as a key in std::unordered_map
 namespace std {
-    template <>
-    struct hash<FixedStr16> {
-        std::size_t operator()(const FixedStr16& key) const {
-            // Compute the hash of the fixed-size buffer
-            return std::hash<std::string>()(std::string(key.buffer, key.N));
-        }
-    };
-}
+template <> struct hash<FixedStr16> {
+    std::size_t operator()(const FixedStr16 &key) const {
+        // Compute the hash of the fixed-size buffer
+        return std::hash<std::string>()(std::string(key.buffer, key.N));
+    }
+};
+} // namespace std

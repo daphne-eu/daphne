@@ -20,8 +20,8 @@
 #include <stdexcept>
 #include <string>
 
-#include <spdlog/spdlog.h>
 #include <runtime/local/io/File.h>
+#include <spdlog/spdlog.h>
 
 // Conversion of std::string.
 
@@ -82,7 +82,7 @@ inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
  * continues reading until the closing quote is found, handling embedded quotes and newline characters
  * as necessary.
  *
- * @param file Pointer to the file object from which the CSV data is being read. The file's `line` 
+ * @param file Pointer to the file object from which the CSV data is being read. The file's `line`
  *             attribute is expected to contain the current line being processed.
  * @param start_pos The starting position within the current line to begin reading the column. This
  *                  function may move beyond the current line if the field contains a multiline string.
@@ -90,48 +90,41 @@ inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
  * @param delim The delimiter character separating columns (e.g., a comma `,`).
  * @return The position pointing to the character immediately before the next column in the line.
  */
-inline size_t setCString(struct File *file, size_t start_pos, std::string *res, const char delim){
+inline size_t setCString(struct File *file, size_t start_pos, std::string *res, const char delim) {
     size_t pos = 0;
-    const char * str = file->line + start_pos;
+    const char *str = file->line + start_pos;
     bool is_multiLine = (str[0] == '"');
-    if(is_multiLine)
-      pos++;
+    if (is_multiLine)
+        pos++;
 
     int is_not_end = 1;
-    while (is_not_end && str[pos])
-    {
-      is_not_end -= (!is_multiLine && str[pos] == delim);
-      is_not_end -= (!is_multiLine && str[pos] == '\n');
-      is_not_end -= (!is_multiLine && str[pos] == '\r');
+    while (is_not_end && str[pos]) {
+        is_not_end -= (!is_multiLine && str[pos] == delim);
+        is_not_end -= (!is_multiLine && str[pos] == '\n');
+        is_not_end -= (!is_multiLine && str[pos] == '\r');
 
-      is_not_end -= (is_multiLine && str[pos] == '"' && str[pos + 1] != '"');
-      if (!is_not_end)
-        break;
-      if(is_multiLine && str[pos] == '"' && str[pos + 1] == '"')
-      {
-        res->append("\"\"");
-        pos += 2;
-      }
-      else if(is_multiLine && str[pos] == '\\' && str[pos + 1] == '"')
-      {
-        res->append("\\\"");
-        pos += 2;
-      }
-      else if(is_multiLine && (str[pos] == '\n' || str[pos] == '\r'))
-      {
-        res->push_back('\n');
-        getFileLine(file);
-        str = file->line;
-        pos = 0;
-      }
-      else{
-        res->push_back(str[pos]);
-        pos++;
-      }
+        is_not_end -= (is_multiLine && str[pos] == '"' && str[pos + 1] != '"');
+        if (!is_not_end)
+            break;
+        if (is_multiLine && str[pos] == '"' && str[pos + 1] == '"') {
+            res->append("\"\"");
+            pos += 2;
+        } else if (is_multiLine && str[pos] == '\\' && str[pos + 1] == '"') {
+            res->append("\\\"");
+            pos += 2;
+        } else if (is_multiLine && (str[pos] == '\n' || str[pos] == '\r')) {
+            res->push_back('\n');
+            getFileLine(file);
+            str = file->line;
+            pos = 0;
+        } else {
+            res->push_back(str[pos]);
+            pos++;
+        }
     }
-    
-    if(is_multiLine)
-      pos++;
+
+    if (is_multiLine)
+        pos++;
 
     return pos;
 }

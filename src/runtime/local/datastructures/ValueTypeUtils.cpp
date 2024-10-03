@@ -113,17 +113,17 @@ template <> const std::string ValueTypeUtils::irNameFor<uint64_t> = "ui64";
 template <> const std::string ValueTypeUtils::irNameFor<float> = "f32";
 template <> const std::string ValueTypeUtils::irNameFor<double> = "f64";
 
-template<> const int8_t ValueTypeUtils::defaultValue<int8_t>     = 0;
-template<> const int32_t ValueTypeUtils::defaultValue<int32_t>   = 0;
-template<> const int64_t ValueTypeUtils::defaultValue<int64_t>   = 0;
-template<> const uint8_t ValueTypeUtils::defaultValue<uint8_t>   = 0;
-template<> const uint32_t ValueTypeUtils::defaultValue<uint32_t> = 0;
-template<> const uint64_t ValueTypeUtils::defaultValue<uint64_t> = 0;
-template<> const float ValueTypeUtils::defaultValue<float>   = 0;
-template<> const double ValueTypeUtils::defaultValue<double> = 0;
-template<> const bool ValueTypeUtils::defaultValue<bool> = false;
-template<> const std::string ValueTypeUtils::defaultValue<std::string> = std::string("");
-template<> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16> = FixedStr16();
+template <> const int8_t ValueTypeUtils::defaultValue<int8_t> = 0;
+template <> const int32_t ValueTypeUtils::defaultValue<int32_t> = 0;
+template <> const int64_t ValueTypeUtils::defaultValue<int64_t> = 0;
+template <> const uint8_t ValueTypeUtils::defaultValue<uint8_t> = 0;
+template <> const uint32_t ValueTypeUtils::defaultValue<uint32_t> = 0;
+template <> const uint64_t ValueTypeUtils::defaultValue<uint64_t> = 0;
+template <> const float ValueTypeUtils::defaultValue<float> = 0;
+template <> const double ValueTypeUtils::defaultValue<double> = 0;
+template <> const bool ValueTypeUtils::defaultValue<bool> = false;
+template <> const std::string ValueTypeUtils::defaultValue<std::string> = std::string("");
+template <> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16> = FixedStr16();
 
 const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
     switch (type) {

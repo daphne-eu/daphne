@@ -125,25 +125,21 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
             const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
             const size_t endPosExcl = pos(rowIdx, colIdx);
 
-            if(startPosIncl < endPosExcl)
+            if (startPosIncl < endPosExcl)
                 std::fill(values.get() + startPosIncl, values.get() + endPosExcl,
                           ValueTypeUtils::defaultValue<ValueType>);
-        }
-        else {
+        } else {
             auto v = values.get() + lastAppendedRowIdx * rowSkip;
-            std::fill(v + lastAppendedColIdx + 1, v + numCols,
-                      ValueTypeUtils::defaultValue<ValueType>);
-            
+            std::fill(v + lastAppendedColIdx + 1, v + numCols, ValueTypeUtils::defaultValue<ValueType>);
+
             v += rowSkip;
 
-            for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
-                std::fill(v, v + numCols,
-                          ValueTypeUtils::defaultValue<ValueType>);
+            for (size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
+                std::fill(v, v + numCols, ValueTypeUtils::defaultValue<ValueType>);
                 v += rowSkip;
             }
-            if(colIdx)
-                std::fill(v, v + colIdx - 1,
-                          ValueTypeUtils::defaultValue<ValueType>);
+            if (colIdx)
+                std::fill(v, v + colIdx - 1, ValueTypeUtils::defaultValue<ValueType>);
         }
     }
 
@@ -178,8 +174,8 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      * allocation to a range) 3: ValueType* - the pointer to the actual data
      */
 
-    auto getValuesInternal(const IAllocationDescriptor *alloc_desc = nullptr,
-                           const Range *range = nullptr) -> std::tuple<bool, size_t, ValueType *>;
+    auto getValuesInternal(const IAllocationDescriptor *alloc_desc = nullptr, const Range *range = nullptr)
+        -> std::tuple<bool, size_t, ValueType *>;
 
     [[nodiscard]] size_t offset() const { return this->row_offset * rowSkip + this->col_offset; }
 
@@ -334,7 +330,7 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
 
         if (valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
             return true;
-        
+
         for (size_t r = 0; r < numRows; ++r) {
             for (size_t c = 0; c < numCols; ++c) {
                 if (*(valuesLhs + c) != *(valuesRhs + c))
@@ -406,7 +402,7 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
     using Matrix<const char *>::numCols;
 
     size_t rowSkip;
-    std::shared_ptr<const char *[]> values{};
+    std::shared_ptr<const char *[]> values {};
     std::shared_ptr<CharBuf> strBuf;
 
     std::shared_ptr<const char *> cuda_ptr{};
@@ -526,7 +522,9 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
 
     std::shared_ptr<const char *[]> getValuesSharedPtr() const { return values; }
 
-    const char *get(size_t rowIdx, size_t colIdx) const override { return getValues()[pos(rowIdx, colIdx, false)]; }
+    const char *get(size_t rowIdx, size_t colIdx) const override {
+        return getValues()[pos(rowIdx, colIdx, false)];
+    }
 
     void set(size_t rowIdx, size_t colIdx, const char *value) override {
         auto vals = getValues();

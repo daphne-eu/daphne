@@ -85,10 +85,10 @@ TEMPLATE_PRODUCT_TEST_CASE("Recode", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VAL
     using VTArg = typename DTArg::VT;
     using DTRes = DenseMatrix<int64_t>;
     using DTDict = DenseMatrix<VTArg>;
-    
-    DTArg * arg = nullptr;
-    DTRes * expRes = nullptr;
-    DTArg * expDict = nullptr;
+
+    DTArg *arg = nullptr;
+    DTRes *expRes = nullptr;
+    DTArg *expDict = nullptr;
 
     SECTION("empty arg, non-order-preserving recoding") {
         arg = DataObjectFactory::create<DTArg>(0, 1, false);
@@ -103,13 +103,15 @@ TEMPLATE_PRODUCT_TEST_CASE("Recode", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VAL
         checkRecode(arg, true, expRes, expDict);
     }
     SECTION("non-empty arg, non-order-preserving recoding") {
-        arg = genGivenVals<DTArg>(8, {VTArg("abc"), VTArg("ab"), VTArg("abcde"), VTArg("ab"), VTArg("ab"), VTArg("a"), VTArg("abcd"), VTArg("abcde")});
+        arg = genGivenVals<DTArg>(8, {VTArg("abc"), VTArg("ab"), VTArg("abcde"), VTArg("ab"), VTArg("ab"), VTArg("a"),
+                                      VTArg("abcd"), VTArg("abcde")});
         expRes = genGivenVals<DTRes>(8, {0, 1, 2, 1, 1, 3, 4, 2});
         expDict = genGivenVals<DTDict>(5, {VTArg("abc"), VTArg("ab"), VTArg("abcde"), VTArg("a"), VTArg("abcd")});
         checkRecode(arg, false, expRes, expDict);
     }
     SECTION("non-empty arg, order-preserving recoding") {
-        arg = genGivenVals<DTArg>(8, {VTArg("abc"), VTArg("ab"), VTArg("abcde"), VTArg("ab"), VTArg("ab"), VTArg("a"), VTArg("abcd"), VTArg("abcde")});
+        arg = genGivenVals<DTArg>(8, {VTArg("abc"), VTArg("ab"), VTArg("abcde"), VTArg("ab"), VTArg("ab"), VTArg("a"),
+                                      VTArg("abcd"), VTArg("abcde")});
         expRes = genGivenVals<DTRes>(8, {2, 1, 4, 1, 1, 0, 3, 4});
         expDict = genGivenVals<DTDict>(5, {VTArg("a"), VTArg("ab"), VTArg("abc"), VTArg("abcd"), VTArg("abcde")});
         checkRecode(arg, true, expRes, expDict);
