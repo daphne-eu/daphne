@@ -15,16 +15,19 @@
 # Specifies how to generate the file "kernels.cpp" (which resides in the build
 # directory) as the basis for the pre-compiled kernels library.
 
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
     add_custom_command(
-            OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
+            OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json
             COMMAND python3 ARGS genKernelInst.py kernels.json
-                    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp CUDA
+                    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json CUDA
             MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
             DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
@@ -32,14 +35,18 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
+            ${PREFIX}/../../instrumentation/KernelInstrumentation.cpp
             ${PREFIX}/../../context/CUDAContext.cpp
             ${PREFIX}/CreateCUDAContext.cpp
+            ${PREFIX}/AggAll.cu
             ${PREFIX}/AggCol.cu
+            ${PREFIX}/AggRow.cu
             ${PREFIX}/Activation.cpp
             ${PREFIX}/Affine.cpp
             ${PREFIX}/BatchNorm.cpp
             ${PREFIX}/BiasAdd.cpp
             ${PREFIX}/Convolution.cpp
+            ${PREFIX}/DeviceUtils.cuh
             ${PREFIX}/Fill.cu
             ${PREFIX}/Pooling.cpp
             ${PREFIX}/Softmax.cpp
@@ -56,7 +63,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
-        )
+    )
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
@@ -71,8 +78,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 endif()
 
 add_custom_command(
-        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
-        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp CPP
+        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp ${PROJECT_SOURCE_DIR}/lib/catalog.json
+        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp ${PROJECT_SOURCE_DIR}/lib/catalog.json CPP
         MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
         DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
@@ -86,6 +93,7 @@ set(HEADERS_cpp_kernels
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/instrumentation/KernelInstrumentation.cpp
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CreateDaphneContext.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp
@@ -111,6 +119,15 @@ endif()
 list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared)
 
-find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+if(USE_PAPI)
+    find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+endif()
 
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB})
+find_library(HWLOC_LIB NAMES libhwloc.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+
+if(USE_HDFS)
+        target_include_directories(AllKernels PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/hdfs)
+        find_library(LIBHDFS3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+endif()
+
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})

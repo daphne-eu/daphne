@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
 
 #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 
@@ -22,10 +23,8 @@
 #include <catch.hpp>
 
 TEST_CASE("CreateCUDAContext", TAG_KERNELS) {
-    DaphneUserConfig user_config{};
-    const size_t deviceID = 0; //ToDo: multi device support
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-    CUDA::createCUDAContext(dctx.get());
-    auto p = CUDAContext::get(dctx.get(), deviceID)->getDeviceProperties();
+    auto dctx = setupContextAndLogger();
+    const size_t deviceID = 0;
+    auto p = dctx->getCUDAContext(deviceID);
     CHECK(p);
 }

@@ -17,10 +17,11 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLParser.h>
 #include <parser/sql/SQLVisitor.h>
+#include <util/ErrorHandler.h>
 
-#include "antlr4-runtime.h"
 #include "SQLGrammarLexer.h"
 #include "SQLGrammarParser.h"
+#include "antlr4-runtime.h"
 
 #include <mlir/IR/Block.h>
 #include <mlir/IR/Builders.h>
@@ -31,11 +32,11 @@
 #include <istream>
 #include <parser/CancelingErrorListener.h>
 
-void SQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
-    view = arg;
-}
+void SQLParser::setView(std::unordered_map<std::string, mlir::Value> arg) { view = arg; }
 
-mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName){
+void SQLParser::setSqlOp(mlir::daphne::SqlOp sqlOp) { this->sqlOp = sqlOp; }
+
+mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) {
     CancelingErrorListener errorListener;
     auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
     {
@@ -48,24 +49,22 @@ mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream 
         SQLGrammarParser parser(&tokens);
         // TODO: evaluate if overloading error handler makes sense
         parser.setErrorHandler(errorStrategy);
-        SQLGrammarParser::SqlContext * ctx = parser.sql();
-        SQLVisitor visitor(builder, view);
+        SQLGrammarParser::SqlContext *ctx = parser.sql();
+        SQLVisitor visitor(builder, view, sqlOp);
         antlrcpp::Any a;
         try {
             a = visitor.visitSql(ctx);
-        }
-        catch (std::runtime_error& re) {
-            spdlog::error("Caught std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
-            throw;
+        } catch (std::runtime_error &re) {
+            throw ErrorHandler::rethrowError("SQLParser", re.what());
         }
 
-        if(a.is<mlir::Value>()){
-          return a.as<mlir::Value>();
+        if (a.is<mlir::Value>()) {
+            return a.as<mlir::Value>();
         }
         throw std::runtime_error("expected a mlir::Value");
     }
 }
 
-void SQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName){
+void SQLParser::parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) {
     parseStreamFrame(builder, stream, sourceName);
 }

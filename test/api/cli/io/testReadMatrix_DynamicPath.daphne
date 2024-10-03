@@ -1,0 +1,5 @@
+# Test dynamic computation of string path -> does not yet work!
+i = 1;
+filename = "test/api/cli/io/ReadCsv" + i + ".csv";
+m = readMatrix(filename);
+print(m);

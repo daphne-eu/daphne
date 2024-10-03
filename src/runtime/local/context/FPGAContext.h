@@ -16,53 +16,47 @@
 
 #pragma once
 
-//#include <api/cli/DaphneUserConfig.h>
 #include "IContext.h"
-//#include <runtime/local/kernels/CUDA/HostUtils.h>
-//#include <cublasLt.h>
 #include <AOCLUtils/aocl_utils.h>
 #include <CL/opencl.h>
-#include <cassert>
 #include <iostream>
 #include <memory>
+#include <spdlog/spdlog.h>
 
 class FPGAContext : public IContext {
     int device_id = -1;
     size_t mem_budget = 0;
 
-
     explicit FPGAContext(int id) : device_id(id) {
-	    //std::cout<<"fpga context constructor"<<std::endl; 
-	    }
-public:
+        // std::cout<<"fpga context constructor"<<std::endl;
+    }
+
+  public:
     cl_uint numPlatforms = 0;
     cl_platform_id *platforms = NULL;
     cl_uint maxDevices = 4;
-    cl_device_id devices[4];//maxDevices];
+    cl_device_id devices[4]; // maxDevices];
     cl_uint numDevices = 0;
     cl_context context = NULL;
 
-
-
-
-
     FPGAContext() = delete;
-    FPGAContext(const FPGAContext&) = delete;
-    FPGAContext& operator=(const FPGAContext&) = delete;
+    FPGAContext(const FPGAContext &) = delete;
+    FPGAContext &operator=(const FPGAContext &) = delete;
     ~FPGAContext() = default;
 
     void destroy() override;
     static std::unique_ptr<IContext> createFpgaContext(int id);
 
-//    [[nodiscard]] cublasHandle_t getCublasHandle() const { return cublas_handle; }
-//    [[nodiscard]] cusparseHandle_t getCusparseHandle() const { return cusparse_handle; }
+    //    [[nodiscard]] cublasHandle_t getCublasHandle() const { return
+    //    cublas_handle; }
+    //    [[nodiscard]] cusparseHandle_t getCusparseHandle() const { return
+    //    cusparse_handle; }
 
-  //  [[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
+    //  [[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return
+    //  &device_properties; }
 
+    //    size_t getMemBudget() { return mem_budget; }
 
-//    size_t getMemBudget() { return mem_budget; }
-
-
-private:
+  private:
     void init();
 };

@@ -18,30 +18,26 @@
 #include "ir/daphneir/Passes.h"
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
 #include <memory>
 #include <utility>
 
 using namespace mlir;
 
-namespace
-{
-struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
-{
+namespace {
+struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable> {
     using OpInterfaceConversionPattern::OpInterfaceConversionPattern;
 
-    LogicalResult
-    matchAndRewrite(daphne::Distributable op, ArrayRef<Value> operands,
-                    ConversionPatternRewriter &rewriter) const override
-    {
+    LogicalResult matchAndRewrite(daphne::Distributable op, ArrayRef<Value> operands,
+                                  ConversionPatternRewriter &rewriter) const override {
         std::vector<Value> distributedInputs;
         for (auto zipIt : llvm::zip(operands, op.getOperandDistrPrimitives())) {
             Value operand = std::get<0>(zipIt);
             bool isBroadcast = std::get<1>(zipIt);
-            if (operand.getType().isa<daphne::HandleType>())
+            if (llvm::isa<daphne::HandleType>(operand.getType()))
                 // The operand is already distributed/broadcasted, we can
                 // directly use it.
                 // TODO Check if it is distributed the way we need it here
@@ -56,7 +52,7 @@ struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
             else {
                 // The operands need to be distributed/broadcasted first.
                 Type t = daphne::HandleType::get(getContext(), operand.getType());
-                if(isBroadcast)
+                if (isBroadcast)
                     distributedInputs.push_back(rewriter.create<daphne::BroadcastOp>(op->getLoc(), t, operand));
                 else
                     distributedInputs.push_back(rewriter.create<daphne::DistributeOp>(op->getLoc(), t, operand));
@@ -69,21 +65,19 @@ struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
     }
 };
 
-struct DistributeComputationsPass
-    : public PassWrapper<DistributeComputationsPass, OperationPass<ModuleOp>>
-{
+struct DistributeComputationsPass : public PassWrapper<DistributeComputationsPass, OperationPass<ModuleOp>> {
     void runOnOperation() final;
+
+    StringRef getArgument() const final { return "distribute-computation"; }
+    StringRef getDescription() const final { return "TODO"; }
 };
+} // namespace
+
+bool onlyMatrixOperands(Operation *op) {
+    return llvm::all_of(op->getOperandTypes(), [](Type t) { return llvm::isa<daphne::MatrixType>(t); });
 }
 
-bool onlyMatrixOperands(Operation * op) {
-    return llvm::all_of(op->getOperandTypes(), [](Type t) {
-        return t.isa<daphne::MatrixType>();
-    });
-}
-
-void DistributeComputationsPass::runOnOperation()
-{
+void DistributeComputationsPass::runOnOperation() {
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -92,17 +86,16 @@ void DistributeComputationsPass::runOnOperation()
     ConversionTarget target(getContext());
     target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
-    target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op)
-    {
+    target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op) {
         // An operation is legal (does not need to be replaced), if ...
         return
-                // ... it is not distributable
-                !llvm::isa<daphne::Distributable>(op) ||
-                // ... it is inside some distributed computation already
-                op->getParentOfType<daphne::DistributedComputeOp>() ||
-                // ... not all of its operands are matrices
-                // TODO Support distributing frames and scalars.
-                !onlyMatrixOperands(op);
+            // ... it is not distributable
+            !llvm::isa<daphne::Distributable>(op) ||
+            // ... it is inside some distributed computation already
+            op->getParentOfType<daphne::DistributedComputeOp>() ||
+            // ... not all of its operands are matrices
+            // TODO Support distributing frames and scalars.
+            !onlyMatrixOperands(op);
     });
 
     patterns.add<Distribute>(&getContext());
@@ -111,7 +104,6 @@ void DistributeComputationsPass::runOnOperation()
         signalPassFailure();
 }
 
-std::unique_ptr<Pass> daphne::createDistributeComputationsPass()
-{
+std::unique_ptr<Pass> daphne::createDistributeComputationsPass() {
     return std::make_unique<DistributeComputationsPass>();
 }

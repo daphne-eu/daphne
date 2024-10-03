@@ -17,10 +17,12 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-#include <cstddef>
-#include <cstdio>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
+
+#include <cstddef>
+#include <cstdio>
 #include <string>
 
 template <class DTArg> struct IsSymmetric {
@@ -31,19 +33,21 @@ template <class DTArg> struct IsSymmetric {
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg> bool isSymmetric(const DTArg *arg, DCTX(ctx)) {
-    return IsSymmetric<DTArg>::apply(arg, ctx);
-}
+template <class DTArg> bool isSymmetric(const DTArg *arg, DCTX(ctx)) { return IsSymmetric<DTArg>::apply(arg, ctx); }
 
 // ****************************************************************************
 // (Partial) template specializations for different DataTypes
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// Bool <- DenseMatrix
+// ----------------------------------------------------------------------------
+
 /**
  * @brief Checks for symmetrie of a `DenseMatrix`.
  *
  * Checks for symmetrie in a DenseMatrix. Returning early if a check failes, or
- * the matrix is not square. Singular matrixes are considered square. 
+ * the matrix is not square. Singular matrixes are considered square.
  */
 
 template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
@@ -56,7 +60,7 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
         }
 
         // singular matrix is considered symmetric.
-        if (numRows <= 1 || numCols <= 1) {
+        if (numRows <= 1) {
             return true;
         }
 
@@ -76,6 +80,10 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// Bool <- CSRMatrix
+// ----------------------------------------------------------------------------
+
 template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
     static bool apply(const CSRMatrix<VT> *arg, DCTX(ctx)) {
 
@@ -91,15 +99,16 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
             return true;
         }
 
-        std::vector<size_t> positions(numRows, -1); // indexes of the column index array.
+        std::vector<size_t> positions(numRows,
+                                      -1); // indexes of the column index array.
 
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
 
-            const VT* rowA = arg->getValues(rowIdx);
-            const size_t* colIdxsA = arg->getColIdxs(rowIdx);
+            const VT *rowA = arg->getValues(rowIdx);
+            const size_t *colIdxsA = arg->getColIdxs(rowIdx);
             const size_t numNonZerosA = arg->getNumNonZeros(rowIdx);
 
-            for (size_t idx = 0;  idx < numNonZerosA; idx++) {
+            for (size_t idx = 0; idx < numNonZerosA; idx++) {
                 const size_t colIdxA = colIdxsA[idx];
 
                 if (colIdxA <= rowIdx) { // Exit early if diagonal element or before.
@@ -110,8 +119,8 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
                 VT valA = rowA[idx];
 
                 // B references the transposed element to compare for symmetry.
-                const VT* rowB = arg->getValues(colIdxA);
-                const size_t* colIdxsB = arg->getColIdxs(colIdxA);
+                const VT *rowB = arg->getValues(colIdxA);
+                const size_t *colIdxsB = arg->getColIdxs(colIdxA);
                 const size_t numNonZerosB = arg->getNumNonZeros(colIdxA);
 
                 positions[colIdxA]++; // colIdxA is rowIdxB
@@ -124,18 +133,43 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
                 const size_t colIdxB = colIdxsB[posB];
                 VT valB = rowB[posB];
 
-
-                if( colIdxB != rowIdx || valA != valB) { // Indexes or values differ, not sym.
+                if (colIdxB != rowIdx || valA != valB) { // Indexes or values differ, not sym.
                     return false;
                 }
             }
 
             const size_t rowLastPos = positions[rowIdx];
 
-            if (rowLastPos == static_cast<size_t>(-1) && numNonZerosA != 0) { // Not all elements of this row were iterated over, not sym!
+            if (rowLastPos == static_cast<size_t>(-1) && numNonZerosA != 0) { // Not all elements of this row were
+                                                                              // iterated over, not sym!
                 return false;
             }
         }
+        return true;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Bool <- Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct IsSymmetric<Matrix<VT>> {
+    static bool apply(const Matrix<VT> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (numRows != numCols)
+            throw std::runtime_error("isSymmetric: Provided matrix is not square.");
+
+        // singular matrix is considered symmetric.
+        if (numRows <= 1)
+            return true;
+
+        for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx)
+            for (size_t colIdx = rowIdx + 1; colIdx < numCols; ++colIdx)
+                if (arg->get(rowIdx, colIdx) != arg->get(colIdx, rowIdx))
+                    return false;
+
         return true;
     }
 };

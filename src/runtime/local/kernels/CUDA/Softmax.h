@@ -16,22 +16,20 @@
 
 #pragma once
 
+#include "HostUtils.h"
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
-#include "HostUtils.h"
 
 #include <limits>
 #include <random>
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
 namespace CUDA::Softmax {
-    template<typename DTRes, typename DTArg>
-    struct Forward {
-        static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
-    };
-}
+template <typename DTRes, typename DTArg> struct Forward {
+    static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
+};
+} // namespace CUDA::Softmax

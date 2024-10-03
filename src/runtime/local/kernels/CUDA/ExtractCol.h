@@ -20,28 +20,25 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <cassert>
 #include <cstddef>
 #include <string>
 
 namespace CUDA {
-    template<class DTRes, class DTArg, class DTSel>
-    struct ExtractCol {
-        static void apply(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) = delete;
-    };
+template <class DTRes, class DTArg, class DTSel> struct ExtractCol {
+    static void apply(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) = delete;
+};
 
-    template<class DTRes, class DTArg, class DTSel>
-    struct ExtractCol<DenseMatrix<DTRes>, DenseMatrix<DTArg>, DenseMatrix<DTSel>> {
-        static void
-        apply(DenseMatrix<DTRes> *&res, const DenseMatrix<DTArg> *arg, const DenseMatrix<DTSel> *sel, DCTX(ctx));
-    };
-
+template <class DTRes, class DTArg, class DTSel>
+struct ExtractCol<DenseMatrix<DTRes>, DenseMatrix<DTArg>, DenseMatrix<DTSel>> {
+    static void apply(DenseMatrix<DTRes> *&res, const DenseMatrix<DTArg> *arg, const DenseMatrix<DTSel> *sel,
+                      DCTX(ctx));
+};
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-    template<class DTRes, class DTArg, class DTSel>
-    void extractCol(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) {
-        ExtractCol<DTRes, DTArg, DTSel>::apply(res, arg, sel, ctx);
-    }
+template <class DTRes, class DTArg, class DTSel>
+void extractCol(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) {
+    ExtractCol<DTRes, DTArg, DTSel>::apply(res, arg, sel, ctx);
 }
+} // namespace CUDA

@@ -20,13 +20,21 @@
 # FIXME: use DaphneIrExecutor target instead
 set(SOURCES 
         WorkerImpl.cpp 
-        WorkerImplGRPC.cpp
+        WorkerImplGRPCAsync.cpp
+        WorkerImplGRPCSync.cpp
         ../../../compiler/execution/DaphneIrExecutor.cpp)
 
 #source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+
+if(USE_HDFS)
+        find_library(LIBHDFS3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+else()
+        set(LIBHDFS3 "")
+endif()
+
 set(LIBS
         ${dialect_libs}
         ${conversion_libs}
@@ -38,10 +46,13 @@ set(LIBS
         IO        
         CallData
         Proto
+        DaphneCatalogParser
+        ${LIBHDFS3}
         DaphneMetaDataParser
         Arrow::arrow_shared
         Parquet::parquet_shared
-        )
+        DaphneConfigParser
+        Util)
 
 add_library(WorkerImpl ${SOURCES})
 #llvm_update_compile_flags(WorkerImpl)

@@ -1,0 +1,12 @@
+DenseMatrix(2x2, double)
+1 1
+1 1
+DenseMatrix(2x2, double)
+1 1
+1 1
+DenseMatrix(2x2, double)
+1 1
+1 1
+DenseMatrix(2x2, double)
+2 2
+2 2

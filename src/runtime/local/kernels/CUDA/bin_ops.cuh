@@ -94,9 +94,9 @@ struct SumOp {
 		return a + b;
 	}
 
-	__device__  __forceinline__ static T exec(T const & a, T const & b) {
-		return a + b;
-	}
+    __device__  __forceinline__ static T exec(T const & a, volatile T const & b) {
+        return a + b;
+    }
 
 	__device__  __forceinline__ static T init() {
 		return SumNeutralElement<T>::get();
@@ -130,7 +130,7 @@ struct MinOp {
 		return a < b ? a : b;
 	}
 
-	__device__  __forceinline__ static T exec(T const & a, T const & b) {
+	__device__  __forceinline__ static T exec(T const & a, T volatile const & b) {
 		return a < b ? a : b;
 	}
 
@@ -145,7 +145,7 @@ struct MinOp<double> {
 		return fmin(a, b);
 	}
 
-	__device__  __forceinline__ static double exec(double const & a, double const & b) {
+	__device__  __forceinline__ static double exec(double const & a, volatile double const & b) {
 		return fmin(a, b);
 	}
 
@@ -160,7 +160,7 @@ struct MinOp<float> {
 		return fminf(a, b);
 	}
 
-    __device__  __forceinline__ static float exec(float const & a, float const & b) {
+    __device__  __forceinline__ static float exec(float const & a, volatile float const & b) {
         return fminf(a, b);
     }
 
@@ -174,18 +174,26 @@ struct MinOp<float> {
  */
 template<typename T>
 struct MaxOp {
-	__device__  __forceinline__ T operator()(T a, T b) const;
-	__device__  __forceinline__ static T exec(const T& a, const T& b);
-	__device__  __forceinline__ static T init();
+    __device__  __forceinline__ T operator()(T a, T b) const {
+        return max(a, b);
+    }
+
+    __device__  __forceinline__ static T exec(const T& a, volatile const T& b) {
+        return max(a, b);
+    }
+
+    __device__  __forceinline__ static T init() {
+        return MaxNeutralElement<T>::get();
+    }
 };
 
 template<>
 struct MaxOp<double> {
-    __device__ __forceinline__ double operator()(double a, double b) const {
+    __device__  __forceinline__ double operator()(double a, double b) const {
         return fmax(a, b);
     }
 
-    __device__  __forceinline__ static double exec(const double& a, const double& b) {
+    __device__  __forceinline__ static double exec(const double& a, volatile const double& b) {
         return fmax(a, b);
     }
 
@@ -196,32 +204,17 @@ struct MaxOp<double> {
 
 template<>
 struct MaxOp<float> {
-	__device__ __forceinline__ float operator()(float a, float b) const {
+	__device__  __forceinline__ float operator()(float a, float b) const {
 		return fmaxf(a, b);
 	}
 
-	__device__  __forceinline__ static float exec(const float& a, const float& b) {
+	__device__  __forceinline__ static float exec(const float& a, volatile const float& b) {
 		return fmaxf(a, b);
 	}
 
 	__device__  __forceinline__ static float init() {
 		return MaxNeutralElement<float>::get();
 	}
-};
-
-template<>
-struct MaxOp<int64_t> {
-    __device__ __forceinline__ int64_t operator()(int64_t a, int64_t b) const {
-        return max(a, b);
-    }
-
-    __device__  __forceinline__ static int64_t exec(const int64_t& a, const int64_t& b) {
-        return max(a, b);
-    }
-
-    __device__  __forceinline__ static int64_t init() {
-        return MaxNeutralElement<int64_t>::get();
-    }
 };
 
 /**
@@ -270,7 +263,7 @@ struct DivOp {
 template<typename T>
 struct MeanOp {
 	const long _size; ///< Number of elements by which to divide to calculate mean
-	__device__ __forceinline__ MeanOp(long size) :
+	__device__  __forceinline__ MeanOp(long size) :
 			_size(size) {
 	}
 	__device__  __forceinline__ T operator()(T total) const {
@@ -293,5 +286,19 @@ struct PowOp {
 
     __device__  __forceinline__ static T init() {
         return ProdNeutralElement<T>::get();
+    }
+};
+
+/**
+ * Relational operators
+ */
+template<typename T>
+struct NeqOp {
+    __device__  __forceinline__ bool operator()(T a, T b) const {
+        return a != b;
+    }
+
+    __device__  __forceinline__ static bool exec(T const & a, T const & b) {
+        return a + b;
     }
 };

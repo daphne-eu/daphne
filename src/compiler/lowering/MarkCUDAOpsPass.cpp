@@ -24,110 +24,111 @@
 using namespace mlir;
 
 struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func::FuncOp>> {
-    
+
     /**
      * @brief User configuration influencing the rewrite pass
      */
-    const DaphneUserConfig& cfg;
+    const DaphneUserConfig &cfg;
     size_t available_gpu_mem{};
     size_t total_gpu_mem{};
     size_t mem_budget;
-    
-    explicit MarkCUDAOpsPass(const DaphneUserConfig& cfg) : cfg(cfg) {
+    std::shared_ptr<spdlog::logger> logger;
+
+    explicit MarkCUDAOpsPass(const DaphneUserConfig &cfg) : cfg(cfg) {
         // ToDo: use context and per device mem info
         cudaMemGetInfo(&available_gpu_mem, &total_gpu_mem);
         mem_budget = std::floor(0.9 * static_cast<double>(total_gpu_mem));
+        logger = spdlog::get("compiler::cuda");
     }
-    
+
     void runOnOperation() final;
-    
-    void addCUDAOpsToVectorizedPipeline(OpBuilder& builder, daphne::VectorizedPipelineOp& pipelineOp) const {
-        
-        auto& pipeline = pipelineOp.getBody().front().getOperations();
+
+    void addCUDAOpsToVectorizedPipeline(OpBuilder &builder, daphne::VectorizedPipelineOp &pipelineOp) const {
+
+        auto &pipeline = pipelineOp.getBody().front().getOperations();
         bool build_cuda_pipeline;
-        
-        // add CUDA ops if at least one (cuda_fuse_any) or all (!cuda_fuse_any) ops would be supported
-        if(cfg.cuda_fuse_any) {
-            bool pipeline_has_supported_cuda_ops = llvm::any_of(pipeline, [&](Operation& o) {
-                return llvm::isa<daphne::ReturnOp>(o) || checkUseCUDA(&o);
-            });
+
+        // add CUDA ops if at least one (cuda_fuse_any) or all (!cuda_fuse_any)
+        // ops would be supported
+        if (cfg.cuda_fuse_any) {
+            bool pipeline_has_supported_cuda_ops = llvm::any_of(
+                pipeline, [&](Operation &o) { return llvm::isa<daphne::ReturnOp>(o) || checkUseCUDA(&o); });
             build_cuda_pipeline = pipeline_has_supported_cuda_ops;
-        }
-        else {
-            bool pipeline_has_unsupported_cuda_ops = llvm::any_of(pipeline, [&](Operation& o) {
+        } else {
+            bool pipeline_has_unsupported_cuda_ops = llvm::any_of(pipeline, [&](Operation &o) {
                 if (!llvm::isa<daphne::ReturnOp>(o)) {
                     bool out = checkUseCUDA(&o);
-                    spdlog::get("compiler::cuda")->trace("checking pipeline op for cuda: {}: {}",
-                            o.getName().getStringRef().str(), out);
+                    logger->trace("checking pipeline op for cuda: {}: {}", o.getName().getStringRef().str(), out);
                     return !out;
-                }
-                else return false;
+                } else
+                    return false;
             });
             build_cuda_pipeline = !pipeline_has_unsupported_cuda_ops;
         }
-        
-        // clone body region into cuda region if there's a cuda supported op in body
-        if(build_cuda_pipeline) {
+
+        // clone body region into cuda region if there's a cuda supported op in
+        // body
+        if (build_cuda_pipeline) {
             PatternRewriter::InsertionGuard insertGuard(builder);
             IRMapping mapper;
             pipelineOp.getBody().cloneInto(&pipelineOp.getCuda(), mapper);
-            for (auto &op: pipelineOp.getCuda().front().getOperations()) {
+            for (auto &op : pipelineOp.getCuda().front().getOperations()) {
                 bool isMat = CompilerUtils::isMatrixComputation(&op);
                 if (op.hasTrait<mlir::OpTrait::CUDASupport>() && isMat)
                     op.setAttr("cuda_device", builder.getI32IntegerAttr(0));
             }
         }
     }
-    
-    bool fitsInMemory(mlir::Operation* op) const {
+
+    bool fitsInMemory(mlir::Operation *op) const {
         auto opSize = 0ul;
-        for(auto operand : op->getOperands()) {
+        for (auto operand : op->getOperands()) {
             auto type = operand.getType();
-            if(auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+            if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
-                if(rows < 0 || cols < 0) {
-                    spdlog::get("compiler::cuda")->warn("Warning: Ignoring unknown dimension in max mem check of {}"
-                            "dims are: {}x{}\nsetting unknowns to 1 for this test", op->getName().getStringRef().str(),
-                            rows, cols);
-                    if(rows < 0)
+                if (rows < 0 || cols < 0) {
+                    logger->warn("Ignoring unknown dimension in max mem check of {}"
+                                 "dims are: {}x{}\nsetting unknowns to 1 for this test",
+                                 op->getName().getStringRef().str(), rows, cols);
+                    if (rows < 0)
                         rows = 1;
-                    if(cols < 0)
+                    if (cols < 0)
                         cols = 1;
                 }
                 opSize += rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
         auto inSize = opSize;
-        spdlog::get("compiler::cuda")->trace("op in size: {} kb", opSize / 1024);
-        for(auto result : op->getResults()) {
+        logger->trace("op in size: {} kb", opSize / 1024);
+        for (auto result : op->getResults()) {
             auto type = result.getType();
-            if(auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+            if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
                 opSize += t.getNumRows() * t.getNumCols() * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
-        spdlog::get("compiler::cuda")->debug("op out size: {} kb\ntotal op size: {} mb", (opSize-inSize) / 1024,
-                opSize / 1048576);
+        logger->debug("op out size: {} kb\ntotal op size: {} mb", (opSize - inSize) / 1024, opSize / 1048576);
 
-        if(opSize < mem_budget)
+        if (opSize < mem_budget)
             return true;
         else
             return false;
     }
-    
+
     // ToDo: requirements should be set per operator in tablegen
-    static bool hasReqMinDims(mlir::Operation* op) {
-        auto checkDims = [op](const mlir::Type& type) -> bool {
-            if(auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+    bool hasReqMinDims(mlir::Operation *op) const {
+        auto checkDims = [this, op](const mlir::Type &type) -> bool {
+            if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
-                if(rows < 0 || cols < 0) {
-                    spdlog::get("compiler::cuda")->warn("Warning: Ignoring unknown dimension in min input size check of "
-                            "{} dims are: {}x{}\nsetting unknowns to 256 for this test", op->getName().getStringRef().str(),
-                            rows, cols);
-                    if(rows < 0)
+                if (rows < 0 || cols < 0) {
+                    logger->warn("Ignoring unknown dimension in min input size "
+                                 "check of {} dims are: {}x{}\nsetting "
+                                 "unknowns to 256 for this test",
+                                 op->getName().getStringRef().str(), rows, cols);
+                    if (rows < 0)
                         rows = 256;
-                    if(cols < 0)
+                    if (cols < 0)
                         cols = 256;
                 }
                 return (rows > 255 || cols > 255);
@@ -136,50 +137,50 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
         };
 
         bool ret = false;
-        for(auto type : op->getOperandTypes()) {
-            if((ret = checkDims(type)))
+        for (auto type : op->getOperandTypes()) {
+            if ((ret = checkDims(type)))
                 break;
         }
 
-        if(!ret) {
-            for (auto type: op->getResultTypes()) {
-                if((ret = checkDims(type)))
+        if (!ret) {
+            for (auto type : op->getResultTypes()) {
+                if ((ret = checkDims(type)))
                     break;
             }
         }
         return ret;
     }
-    
-    bool checkUseCUDA(Operation* op) const {
-        spdlog::get("compiler::cuda")->trace("checkUseCUDA: {}", op->getName().getStringRef().str());
+
+    bool checkUseCUDA(Operation *op) const {
+        logger->trace("checkUseCUDA: {}", op->getName().getStringRef().str());
         bool use_cuda = op->hasTrait<mlir::OpTrait::CUDASupport>();
-        spdlog::get("compiler::cuda")->trace("{} CUDA supported={}", op->getName().getStringRef().str(), use_cuda);
+        logger->trace("{} CUDA supported={}", op->getName().getStringRef().str(), use_cuda);
         use_cuda = use_cuda && CompilerUtils::isMatrixComputation(op);
-        spdlog::get("compiler::cuda")->trace("{} isMatrixComputation={}", op->getName().getStringRef().str(), use_cuda);
-        use_cuda = use_cuda && hasReqMinDims(op);
-        spdlog::get("compiler::cuda")->trace("{} hasMinInputDims={}", op->getName().getStringRef().str(), use_cuda);
-        use_cuda = use_cuda && fitsInMemory(op);
-        spdlog::get("compiler::cuda")->trace("{} fitsInMem={}", op->getName().getStringRef().str(), use_cuda);
+        logger->trace("{} isMatrixComputation={}", op->getName().getStringRef().str(), use_cuda);
+        if (!cfg.force_cuda) {
+            use_cuda = use_cuda && hasReqMinDims(op);
+            logger->trace("{} hasMinInputDims={}", op->getName().getStringRef().str(), use_cuda);
+            use_cuda = use_cuda && fitsInMemory(op);
+            logger->trace("{} fitsInMem={}", op->getName().getStringRef().str(), use_cuda);
+        }
         return use_cuda;
     }
 };
 
 void MarkCUDAOpsPass::runOnOperation() {
-    getOperation()->walk([&](Operation* op) {
-        spdlog::get("compiler::cuda")->debug("MarkCUDAOpsPass: {} parent: {}", op->getName().getStringRef().str(),
-                op->getParentOp()->getName().getStringRef().str());
+    getOperation()->walk([&](Operation *op) {
+        logger->debug("MarkCUDAOpsPass: {} parent: {}", op->getName().getStringRef().str(),
+                      op->getParentOp()->getName().getStringRef().str());
         OpBuilder builder(op);
         // handle vectorizedPipelineOps
-        if (auto constOp = llvm::dyn_cast<daphne::ConstantOp>(op))
-        {
+        if (auto constOp = llvm::dyn_cast<daphne::ConstantOp>(op)) {
             WalkResult::advance();
             return;
-        }
-        else if (auto pipelineOp = llvm::dyn_cast<daphne::VectorizedPipelineOp>(op))
+        } else if (auto pipelineOp = llvm::dyn_cast<daphne::VectorizedPipelineOp>(op))
             addCUDAOpsToVectorizedPipeline(builder, pipelineOp);
         else {
-            if((!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op)) ||
-                 llvm::isa<daphne::CreateCUDAContextOp>(op)) {
+            if ((!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op)) ||
+                llvm::isa<daphne::CreateCUDAContextOp>(op)) {
                 op->setAttr("cuda_device", builder.getI32IntegerAttr(0));
             }
         }
@@ -187,7 +188,7 @@ void MarkCUDAOpsPass::runOnOperation() {
     });
 }
 
-std::unique_ptr<Pass> daphne::createMarkCUDAOpsPass(const DaphneUserConfig& cfg) {
+std::unique_ptr<Pass> daphne::createMarkCUDAOpsPass(const DaphneUserConfig &cfg) {
     return std::make_unique<MarkCUDAOpsPass>(cfg);
 }
 

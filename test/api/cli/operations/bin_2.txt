@@ -1,0 +1,38 @@
+DenseMatrix(7x1, int64_t)
+0
+0
+0
+1
+1
+2
+2
+DenseMatrix(7x1, int64_t)
+0
+0
+0
+1
+1
+2
+2
+DenseMatrix(7x1, int64_t)
+0
+0
+0
+1
+1
+2
+2
+DenseMatrix(3x1, double)
+nan
+2
+0
+DenseMatrix(5x1, double)
+0
+nan
+1
+nan
+2
+DenseMatrix(3x1, int64_t)
+0
+0
+0

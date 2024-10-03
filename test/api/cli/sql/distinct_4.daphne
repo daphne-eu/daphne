@@ -1,0 +1,11 @@
+# DISTINCT with aggregation.
+
+f = createFrame(
+    [  0,  1,  2,  2,  3,  3,  6,  3,  8,  2],
+    "a");
+
+registerView("f", f);
+
+res = sql("SELECT DISTINCT SUM(f.a) FROM f;");
+
+print(res);

@@ -1,0 +1,5 @@
+// Compare precompiled kernel with codegen generated for the AggAllOp.
+
+X = fill(1.0, 10, 10);
+a = sum(X);
+print(a);

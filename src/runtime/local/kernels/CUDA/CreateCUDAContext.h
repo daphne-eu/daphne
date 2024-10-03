@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/context/CUDAContext.h"
+#include "runtime/local/context/DaphneContext.h"
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
 namespace CUDA {
-    void createCUDAContext(DCTX(ctx));
+void createCUDAContext(DCTX(ctx));
 }

@@ -25,32 +25,35 @@
 
 const std::string dirPath = "test/api/cli/operations/";
 
-#define MAKE_TEST_CASE(name, count) \
-    TEST_CASE(name, TAG_OPERATIONS) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                compareDaphneToRefSimple(dirPath, name, i); \
-            } \
-        } \
+#define MAKE_TEST_CASE(name, count)                                                                                    \
+    TEST_CASE(name, TAG_OPERATIONS) {                                                                                  \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") { compareDaphneToRefSimple(dirPath, name, i); }                \
+        }                                                                                                              \
     }
 
 MAKE_TEST_CASE("aggMax", 1)
 MAKE_TEST_CASE("aggMin", 1)
+MAKE_TEST_CASE("bin", 2)
 MAKE_TEST_CASE("cbind", 1)
 MAKE_TEST_CASE("createFrame", 1)
 MAKE_TEST_CASE("ctable", 1)
 MAKE_TEST_CASE("gemv", 1)
 MAKE_TEST_CASE("idxMax", 1)
 MAKE_TEST_CASE("idxMin", 1)
+MAKE_TEST_CASE("isNan", 1)
 MAKE_TEST_CASE("mean", 1)
 MAKE_TEST_CASE("operator_at", 2)
-MAKE_TEST_CASE("operator_minus", 1)
+MAKE_TEST_CASE("operator_eq", 2)
+MAKE_TEST_CASE("operator_minus", 4)
 MAKE_TEST_CASE("operator_plus", 2)
 MAKE_TEST_CASE("operator_slash", 1)
 MAKE_TEST_CASE("operator_times", 1)
+MAKE_TEST_CASE("order", 1)
 MAKE_TEST_CASE("rbind", 1)
+MAKE_TEST_CASE("recode", 3)
 MAKE_TEST_CASE("replace", 1)
-MAKE_TEST_CASE("seq", 1)
+MAKE_TEST_CASE("seq", 2)
 MAKE_TEST_CASE("solve", 1)
 MAKE_TEST_CASE("sqrt", 1)
 MAKE_TEST_CASE("sum", 1)

@@ -38,7 +38,7 @@
 # R        column vector holding avg_res, ss_avg_res, and R2
 # ------------------------------------------------------------------------------
 
-def lmPredictStats(yhat:matrix<f64>, ytest:matrix<f64>, lm:bool)
+def lmPredictStats(yhat:matrix<f64>, ytest:matrix<f64>, lm:bool, verbose:bool)
 {
   y_residual = ytest - yhat;
   avg_res = sum(y_residual) / nrow(ytest);
@@ -49,12 +49,14 @@ def lmPredictStats(yhat:matrix<f64>, ytest:matrix<f64>, lm:bool)
     R2 = 1 - ss_res / (sum(ytest^2) - nrow(ytest) * (sum(ytest)/nrow(ytest))^2);
   else
     R2 = sum((yhat - mean(ytest))^2) / sum((ytest - mean(ytest))^2);
-  print("\nAccuracy:" +
-        "\n--sum(ytest) = " + sum(ytest) +
-        "\n--sum(yhat) = " + sum(yhat) +
-        "\n--AVG_RES_Y: " + avg_res +
-        "\n--SS_AVG_RES_Y: " + ss_avg_res +
-        "\n--R2: " + R2 );
+  if(verbose) {
+    print("\nAccuracy:" +
+          "\n--sum(ytest) = " + sum(ytest) +
+          "\n--sum(yhat) = " + sum(yhat) +
+          "\n--AVG_RES_Y: " + avg_res +
+          "\n--SS_AVG_RES_Y: " + ss_avg_res +
+          "\n--R2: " + R2 );
+  }
   R = rbind(rbind(as.matrix(avg_res), as.matrix(ss_avg_res)), as.matrix(R2));
 
   return R;

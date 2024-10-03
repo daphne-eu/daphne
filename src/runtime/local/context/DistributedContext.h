@@ -18,27 +18,33 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #ifdef USE_MPI
-    #include <runtime/distributed/worker/MPIHelper.h>
-#endif 
-#include <vector>
+#include <runtime/distributed/worker/MPIHelper.h>
+#endif
 #include <cstdlib>
-#include <string>
-#include <stdexcept>
+#include <grpcpp/grpcpp.h>
 #include <memory>
-
+#include <runtime/distributed/proto/worker.grpc.pb.h>
+#include <runtime/distributed/proto/worker.pb.h>
+#include <stdexcept>
+#include <string>
+#include <vector>
 // TODO: Separate implementation in a .cpp file?
 class DistributedContext final : public IContext {
-private:
+  private:
     std::vector<std::string> workers;
-public:
+
+  public:
+    std::map<std::string, std::unique_ptr<distributed::Worker::Stub>> stubs;
     DistributedContext(const DaphneUserConfig &cfg) {
 
-        if (cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_GRPC) {
-            // TODO: Get the list of distributed workers from daphne user config/cli arguments and
-            // keep environmental variables optional.
+        if (cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_GRPC_ASYNC ||
+            cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+            // TODO: Get the list of distributed workers from daphne user
+            // config/cli arguments and keep environmental variables optional.
             auto envVar = std::getenv("DISTRIBUTED_WORKERS");
             if (envVar == nullptr) {
-                throw std::runtime_error("--distributed execution is set with gRPC but EV DISTRIBUTED_WORKERS is empty");
+                throw std::runtime_error("--distributed execution is set with gRPC but EV "
+                                         "DISTRIBUTED_WORKERS is empty");
             }
 
             std::string workersStr(envVar);
@@ -50,13 +56,21 @@ public:
                 workersStr.erase(0, pos + delimiter.size());
             }
             workers.push_back(workersStr);
+            for (auto workerAddr : workers) {
+                grpc::ChannelArguments ch_args;
+                ch_args.SetMaxSendMessageSize(-1);
+                ch_args.SetMaxReceiveMessageSize(-1);
+                auto channel = grpc::CreateCustomChannel(workerAddr, grpc::InsecureChannelCredentials(), ch_args);
+                auto stub = distributed::Worker::NewStub(channel);
+                stubs[workerAddr] = std::move(stub);
+            }
         } else if (cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
 #ifdef USE_MPI
             // Exclude Coordinator
             size_t worldSize = MPIHelper::getCommSize();
-            // We use strings for the addresses for consistency with other frameworks (e.g. gRPC)
-            // Exclude coordinator
-            for (size_t i = 1; i < worldSize; i++) 
+            // We use strings for the addresses for consistency with other
+            // frameworks (e.g. gRPC) Exclude coordinator
+            for (size_t i = 1; i < worldSize; i++)
                 workers.push_back(std::to_string(i));
 #endif
         }
@@ -72,9 +86,9 @@ public:
         // Clean up
     };
 
-    static DistributedContext* get(DaphneContext *ctx) { return dynamic_cast<DistributedContext*>(ctx->getDistributedContext()); };
-
-    std::vector<std::string> getWorkers(){
-        return workers;
+    static DistributedContext *get(DaphneContext *ctx) {
+        return dynamic_cast<DistributedContext *>(ctx->getDistributedContext());
     };
+
+    std::vector<std::string> getWorkers() { return workers; };
 };

@@ -26,16 +26,14 @@ using namespace mlir;
 /**
  * @brief Inserts profiling tracepoints
  */
-struct ProfilingPass: public PassWrapper<ProfilingPass, OperationPass<func::FuncOp>>
-{
+struct ProfilingPass : public PassWrapper<ProfilingPass, OperationPass<func::FuncOp>> {
     explicit ProfilingPass() {}
     void runOnOperation() final;
 };
 
-void ProfilingPass::runOnOperation()
-{
+void ProfilingPass::runOnOperation() {
     func::FuncOp f = getOperation();
-    Block & b = f.getBody().front();
+    Block &b = f.getBody().front();
 
     OpBuilder builder(&b, b.begin());
     Location loc = builder.getUnknownLoc();
@@ -45,7 +43,4 @@ void ProfilingPass::runOnOperation()
     builder.create<daphne::StopProfilingOp>(loc);
 }
 
-std::unique_ptr<Pass> daphne::createProfilingPass()
-{
-    return std::make_unique<ProfilingPass>();
-}
+std::unique_ptr<Pass> daphne::createProfilingPass() { return std::make_unique<ProfilingPass>(); }

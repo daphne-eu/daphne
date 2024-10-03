@@ -25,16 +25,14 @@ DaphneLibResult daphneLibRes;
 /**
  * @brief Returns the result of a DaphneLib invocation.
  */
-extern "C" DaphneLibResult getResult() {
-    return daphneLibRes;
-}
+extern "C" DaphneLibResult getResult() { return daphneLibRes; }
 
 /**
- * @brief Invokes DAPHNE with the specified DaphneDSL script and certain default arguments.
+ * @brief Invokes DAPHNE with the specified DaphneDSL script and path to lib
+ * dir.
  */
-extern "C" int daphne(const char* scriptPath) {
-    // Assumes that python3 is invoked from the DAPHNE root directory.
-    const char * argv[] = {"daphne", "--libdir", "lib", scriptPath};
+extern "C" int daphne(const char *libDirPath, const char *scriptPath) {
+    const char *argv[] = {"daphne", "--libdir", libDirPath, scriptPath};
     int argc = 4;
 
     return mainInternal(argc, argv, &daphneLibRes);

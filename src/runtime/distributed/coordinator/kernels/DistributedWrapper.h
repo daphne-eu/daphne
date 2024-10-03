@@ -26,56 +26,49 @@
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #ifdef USE_MPI
-    #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #endif
 
-
-#include <mlir/InitAllDialects.h>
-#include <mlir/IR/AsmState.h>
-#include <mlir/Parser/Parser.h>
 #include <llvm/Support/SourceMgr.h>
+#include <mlir/IR/AsmState.h>
 #include <mlir/IR/BuiltinTypes.h>
+#include <mlir/InitAllDialects.h>
+#include <mlir/Parser/Parser.h>
+#include <stdexcept>
 #include <vector>
 
-using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
+using mlir::daphne::VectorSplit;
 
-template <class DT>
-class DistributedWrapper {
-private:
+template <class DT> class DistributedWrapper {
+  private:
     DCTX(_dctx);
 
-protected:
+  protected:
     bool isBroadcast(mlir::daphne::VectorSplit splitMethod, const Structure *input) {
         return splitMethod == VectorSplit::NONE || (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1);
     }
-public:
+
+  public:
     DistributedWrapper(DCTX(dctx)) : _dctx(dctx) {
-        //TODO start workers from here instead of manually (e.g. resource manager) ? 
-
+        // TODO start workers from here instead of manually (e.g. resource
+        // manager) ?
     }
-    ~DistributedWrapper() = default; //TODO Terminate workers (e.g. with gRPC, resource manager, etc.)
+    ~DistributedWrapper() = default; // TODO Terminate workers (e.g. with gRPC,
+                                     // resource manager, etc.)
 
-    void execute(const char *mlirCode,
-                 DT ***res,
-                 const Structure **inputs,
-                 size_t numInputs,
-                 size_t numOutputs,
-                 int64_t *outRows,
-                 int64_t *outCols,
-                 VectorSplit *splits,
-                 VectorCombine *combines)                 
-    {        
+    void execute(const char *mlirCode, DT ***res, const Structure **inputs, size_t numInputs, size_t numOutputs,
+                 int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines) {
         auto ctx = DistributedContext::get(_dctx);
         auto workers = ctx->getWorkers();
-        
-        // Backend Implementation 
+
+        // Backend Implementation
         // gRPC hard-coded selection
-        const auto allocation_type=_dctx->getUserConfig().distributedBackEndSetup;
-        //std::cout<<"Distributed wrapper " <<std::endl;
-        // output allocation for row-wise combine
-        for(size_t i = 0; i < numOutputs; ++i) {
-            if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
+        const auto allocation_type = _dctx->getUserConfig().distributedBackEndSetup;
+        // std::cout<<"Distributed wrapper " <<std::endl;
+        //  output allocation for row-wise combine
+        for (size_t i = 0; i < numOutputs; ++i) {
+            if (*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
                 // TODO we know result is only DenseMatrix<double> for now,
                 // but in the future this will change to support other DataTypes
@@ -83,116 +76,128 @@ public:
             }
         }
 
-        // Currently an input might appear twice in the inputs array of a pipeline.
-        // E.g. an input is needed both "Distributed/Scattered" and "Broadcasted".
-        // This might cause conflicts regarding the meta data of an object since 
-        // we need to represent multiple different "DataPlacements" (ways of how the data is distributed).
-        // A solution would be to support multiple meta data for a single Structure, each one representing
-        // a different way data is placed.
-        // @pdamme suggested that if an input is appearing multiple times in the input pipeline, 
-        // we can probably solve this by applying a more "aggressive" pipelining and removing duplicate inputs.
-        // For now we support only unique inputs.
+        // Currently an input might appear twice in the inputs array of a
+        // pipeline. E.g. an input is needed both "Distributed/Scattered" and
+        // "Broadcasted". This might cause conflicts regarding the meta data of
+        // an object since we need to represent multiple different
+        // "DataPlacements" (ways of how the data is distributed). A solution
+        // would be to support multiple meta data for a single Structure, each
+        // one representing a different way data is placed.
+        // @pdamme suggested that if an input is appearing multiple times in the
+        // input pipeline, we can probably solve this by applying a more
+        // "aggressive" pipelining and removing duplicate inputs. For now we
+        // support only unique inputs.
         std::vector<const Structure *> vec;
         for (size_t i = 0; i < numInputs; i++)
             vec.push_back(inputs[i]);
         sort(vec.begin(), vec.end());
         const bool hasDuplicates = std::adjacent_find(vec.begin(), vec.end()) != vec.end();
-        if(hasDuplicates)
-            throw std::runtime_error("Distributed runtime only supports unique inputs for now (no duplicate inputs in a pipeline)");
-        
+        if (hasDuplicates)
+            throw std::runtime_error("Distributed runtime only supports unique inputs for now (no "
+                                     "duplicate inputs in a pipeline)");
+
         // Parse mlir code fragment to determin pipeline inputs/outputs
         auto inputTypes = getPipelineInputTypes(mlirCode);
         std::vector<bool> scalars;
-        for(auto t : inputTypes)
-        {
-            scalars.push_back(t!=INPUT_TYPE::Matrix);
+        for (auto t : inputTypes) {
+            scalars.push_back(t != INPUT_TYPE::Matrix);
         }
-        // Distribute and broadcast inputs        
-        // Each primitive sends information to workers and changes the Structures' metadata information 
+        // Distribute and broadcast inputs
+        // Each primitive sends information to workers and changes the
+        // Structures' metadata information
         for (auto i = 0u; i < numInputs; ++i) {
             // if already placed on workers, skip
-            // TODO maybe this is not enough. We might also need to check if data resides in the specific way we need to.
-            // (i.e. rows/cols splitted accordingly). If it does then we can skip.
-            if (isBroadcast(splits[i], inputs[i])){
+            // TODO maybe this is not enough. We might also need to check if
+            // data resides in the specific way we need to. (i.e. rows/cols
+            // splitted accordingly). If it does then we can skip.
+            if (isBroadcast(splits[i], inputs[i])) {
                 auto type = inputTypes.at(i);
-                if (type==INPUT_TYPE::Matrix) {
-                        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
-#ifdef USE_MPI           
-                            broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], false, _dctx);
+                if (type == INPUT_TYPE::Matrix) {
+                    if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
+#ifdef USE_MPI
+                        broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], false, _dctx);
 #endif
-                        }
-                        else { 
-                             broadcast<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], false, _dctx);
-                        }
-                }
-                else {
-                        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
-#ifdef USE_MPI 
-                             broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], true, _dctx);
+                    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], false, _dctx);
+                    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], false, _dctx);
+                    }
+                } else {
+                    if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
+#ifdef USE_MPI
+                        broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], true, _dctx);
 #endif
-                        }
-                        else {
-                            broadcast<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], true, _dctx);
-                        }
+                    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], true, _dctx);
+                    } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+                        broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], true, _dctx);
+                    }
                 }
-            }
-            else {
-                assert(splits[i] == VectorSplit::ROWS && "only row split supported for now");
-                // std::cout << i << " distr: " << inputs[i]->getNumRows() << " x " << inputs[i]->getNumCols() << std::endl;
-                if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
-#ifdef USE_MPI 
-                        distribute<ALLOCATION_TYPE::DIST_MPI>(inputs[i], _dctx);
+            } else {
+                if (splits[i] != VectorSplit::ROWS)
+                    throw std::runtime_error("DistributedWrapper: only row "
+                                             "split is currently supported");
+                // std::cout << i << " distr: " << inputs[i]->getNumRows() << "
+                // x " << inputs[i]->getNumCols() << std::endl;
+                if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
+#ifdef USE_MPI
+                    distribute<ALLOCATION_TYPE::DIST_MPI>(inputs[i], _dctx);
 #endif
+                } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+                    distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(inputs[i], _dctx);
+                } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+                    distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC>(inputs[i], _dctx);
                 }
-                else {
-                        distribute<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], _dctx);       
-                }        
             }
         }
 
-        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
-#ifdef USE_MPI   
-            distributedCompute<ALLOCATION_TYPE::DIST_MPI>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
-#endif        
-         }
-        else {
-            distributedCompute<ALLOCATION_TYPE::DIST_GRPC>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);   
+        if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
+#ifdef USE_MPI
+            distributedCompute<ALLOCATION_TYPE::DIST_MPI>(res, numOutputs, inputs, numInputs, mlirCode, combines,
+                                                          _dctx);
+#endif
+        } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+            distributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(res, numOutputs, inputs, numInputs, mlirCode, combines,
+                                                                 _dctx);
+        } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+            distributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC>(res, numOutputs, inputs, numInputs, mlirCode, combines,
+                                                                _dctx);
         }
-        //handle my part as coordinator we currently exclude the coordinator
+        // handle my part as coordinator we currently exclude the coordinator
         /*if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
         {
             bool isScalar=true;
-            MPICoordinator::handleCoordinationPart<DT>(res, numOutputs, inputs, numInputs, mlirCode, scalars , combines, _dctx);
+            MPICoordinator::handleCoordinationPart<DT>(res, numOutputs, inputs,
+        numInputs, mlirCode, scalars , combines, _dctx);
         }*/
 
         // Collect
-        for (size_t o = 0; o < numOutputs; o++){
-            assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
-#ifdef USE_MPI 
-                distributedCollect<ALLOCATION_TYPE::DIST_MPI>(*res[o], _dctx);      
+        for (size_t o = 0; o < numOutputs; o++) {
+            if (allocation_type == ALLOCATION_TYPE::DIST_MPI) {
+#ifdef USE_MPI
+                distributedCollect<ALLOCATION_TYPE::DIST_MPI>(*res[o], combines[o], _dctx);
 #endif
+            } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_ASYNC) {
+                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC>(*res[o], combines[o], _dctx);
+            } else if (allocation_type == ALLOCATION_TYPE::DIST_GRPC_SYNC) {
+                distributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC>(*res[o], combines[o], _dctx);
             }
-            else {
-                 distributedCollect<ALLOCATION_TYPE::DIST_GRPC>(*res[o], _dctx);
-            }
-        }      
+        }
     }
 
-private:
+  private:
     enum INPUT_TYPE {
         Matrix,
         Double,
         // TOOD add more
     };
-    std::vector<INPUT_TYPE> getPipelineInputTypes(const char *mlirCode)
-    {
-        // is it safe to pass null for mlir::DaphneContext? 
+    std::vector<INPUT_TYPE> getPipelineInputTypes(const char *mlirCode) {
+        // is it safe to pass null for mlir::DaphneContext?
         // Fixme: is it ok to allow unregistered dialects?
         mlir::MLIRContext ctx;
         ctx.getOrLoadDialect<mlir::func::FuncDialect>();
         ctx.allowUnregisteredDialects();
-        //std::cout<<mlirCode<<std::endl;
+        // std::cout<<mlirCode<<std::endl;
         mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
         if (!module) {
             auto message = "DistributedWrapper: Failed to parse source string.\n";
@@ -201,11 +206,12 @@ private:
         auto *distOp = module->lookupSymbol("dist");
         mlir::func::FuncOp distFunc;
         if (!(distFunc = llvm::dyn_cast_or_null<mlir::func::FuncOp>(distOp))) {
-            auto message = "DistributedWrapper: MLIR fragment has to contain `dist` FuncOp\n";
+            auto message = "DistributedWrapper: MLIR fragment has to contain "
+                           "`dist` FuncOp\n";
             throw std::runtime_error(message);
         }
         auto distFuncTy = distFunc.getFunctionType();
-        
+
         // TODO passing a vector<mlir::Type> seems to causes problems...
         // Use enum as work around for now but consider returning mlir::Type
         std::vector<INPUT_TYPE> inputTypes;
@@ -221,4 +227,4 @@ private:
     }
 };
 
-#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDWRAPPER_H
+#endif // SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDWRAPPER_H

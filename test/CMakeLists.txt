@@ -20,22 +20,29 @@ set(TEST_SOURCES
         run_tests.cpp
 
         api/cli/algorithms/AlgorithmsTest.cpp
+        api/cli/algorithms/DecisionTreeRandomForestTest.cpp
         api/cli/config/ConfigTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
         api/cli/expressions/CastTest.cpp
         api/cli/expressions/CondTest.cpp
+        api/cli/expressions/FrameLiteralTest.cpp
         api/cli/expressions/MatrixLiteralTest.cpp
+        api/cli/extensibility/ExtensionTest.cpp
+        api/cli/extensibility/HintTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/io/ReadTest.cpp
+        api/cli/io/WriteTest.cpp
         api/cli/import/ImportTest.cpp
         api/cli/indexing/IndexingTest.cpp
         api/cli/inference/InferenceTest.cpp
         api/cli/io/ReadTest.cpp
+        api/cli/lists/ListsTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
+        api/cli/operations/TypeOfTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/parser/MetaDataParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
@@ -47,83 +54,113 @@ set(TEST_SOURCES
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/vectorized/VectorizedPipelineTest.cpp
         api/cli/Utils.cpp
-    
+
         api/python/DaphneLibTest.cpp
-        
+
+        api/cli/codegen/EwBinaryScalarTest.cpp
+        api/cli/codegen/MatMulTest.cpp
+        api/cli/codegen/EwOpLoopFusionTest.cpp
+        api/cli/codegen/AggAllTest.cpp
+        api/cli/codegen/MapOpTest.cpp
+        codegen/CodegenTest.cpp
+        codegen/MatMulAccuracyTest.cpp
+
         ir/daphneir/InferTypesTest.cpp
-        
+        api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
+
         parser/config/ConfigParserTest.cpp
-    
+
         runtime/distributed/worker/WorkerTest.cpp
-    
+
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
+        runtime/local/datastructures/TensorTest.cpp
 
         runtime/local/io/ReadCsvTest.cpp
-	runtime/local/io/ReadParquetTest.cpp
-	runtime/local/io/ReadMMTest.cpp
-	runtime/local/io/WriteDaphneTest.cpp
-	runtime/local/io/ReadDaphneTest.cpp
+        runtime/local/io/ReadParquetTest.cpp
+        runtime/local/io/ReadMMTest.cpp
+        runtime/local/io/WriteDaphneTest.cpp
+        runtime/local/io/ReadDaphneTest.cpp
         runtime/local/io/DaphneSerializerTest.cpp
 
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggCumTest.cpp
         runtime/local/kernels/AggRowTest.cpp
+        runtime/local/kernels/BinTest.cpp
         runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
         runtime/local/kernels/CastObjScaTest.cpp
         runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
+        runtime/local/kernels/CheckEqApproxTest.cpp
         runtime/local/kernels/ColBindTest.cpp
+        runtime/local/kernels/CondMatMatMatTest.cpp
+        runtime/local/kernels/CondMatMatScaTest.cpp
+        runtime/local/kernels/CondMatScaMatTest.cpp
+        runtime/local/kernels/CondMatScaScaTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/CTableTest.cpp
         runtime/local/kernels/DiagMatrixTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
-        runtime/local/kernels/DNNPoolingTest.cpp
+        runtime/local/kernels/DNNPoolingTestForward.cpp
+        runtime/local/kernels/DNNConv2DBackwardTest.cpp
+        runtime/local/kernels/DNNConv2DForwardTest.cpp
+        runtime/local/kernels/DNNBatchNorm2DForwardTest.cpp
+        runtime/local/kernels/DNNBatchNorm2DBackwardTest.cpp
+        runtime/local/kernels/DNNBiasAddForwardTest.cpp
+        runtime/local/kernels/DNNPoolingBackwardTest.cpp
         runtime/local/kernels/EigenCalTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryObjScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
+        runtime/local/kernels/EwUnaryMatTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp
+        runtime/local/kernels/FillTest.cpp
         runtime/local/kernels/FilterColTest.cpp
         runtime/local/kernels/FilterRowTest.cpp
         runtime/local/kernels/GroupJoinTest.cpp
         runtime/local/kernels/GroupTest.cpp
         runtime/local/kernels/HasSpecialValueTest.cpp
         runtime/local/kernels/InnerJoinTest.cpp
+        runtime/local/kernels/InsertColTest.cpp
+        runtime/local/kernels/InsertRowTest.cpp
         runtime/local/kernels/IsSymmetricTest.cpp
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MapTest.cpp
         runtime/local/kernels/MatMulTest.cpp
+        runtime/local/kernels/OneHotTest.cpp
         runtime/local/kernels/OrderTest.cpp
         runtime/local/kernels/OuterBinaryTest.cpp
         runtime/local/kernels/QuantizeTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/ReadTest.cpp
+        runtime/local/kernels/RecodeTest.cpp
         runtime/local/kernels/ReplaceTest.cpp
         runtime/local/kernels/ReshapeTest.cpp
         runtime/local/kernels/ReverseTest.cpp
         runtime/local/kernels/RowBindTest.cpp
         runtime/local/kernels/SampleTest.cpp
+        runtime/local/kernels/SemiJoinTest.cpp
         runtime/local/kernels/SeqTest.cpp
         runtime/local/kernels/SetColLabelsTest.cpp
         runtime/local/kernels/SetColLabelsPrefixTest.cpp
         runtime/local/kernels/SliceColTest.cpp
         runtime/local/kernels/SliceRowTest.cpp
         runtime/local/kernels/SolveTest.cpp
+        runtime/local/kernels/StopTest.cpp
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/ThetaJoinTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
+        
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
-        runtime/local/kernels/CheckEqApproxTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )
@@ -133,16 +170,16 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             runtime/local/kernels/CUDA/FillTest.cpp
             runtime/local/kernels/CUDA/MatMulTest.cpp
             runtime/local/kernels/CUDA_ContextTest.cpp
-            runtime/local/kernels/DNNActivationTest.cpp
-            runtime/local/kernels/DNNAffineTest.cpp
-            runtime/local/kernels/DNNBatchNormTest.cpp
-            runtime/local/kernels/DNNConvolutionTest.cpp
-            runtime/local/kernels/DNNSoftmaxTest.cpp)
+            runtime/local/kernels/CUDA/DNNActivationTest.cpp
+            runtime/local/kernels/CUDA/DNNAffineTest.cpp
+            runtime/local/kernels/CUDA/DNNBatchNormTest.cpp
+            runtime/local/kernels/CUDA/DNNConvolutionTest.cpp
+            runtime/local/kernels/CUDA/DNNSoftmaxTest.cpp)
 endif()
 
 add_executable(run_tests ${TEST_SOURCES})
 set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_dependencies(run_tests daphne daphnelib DistributedWorker)
+add_dependencies(run_tests daphne daphnelib DistributedWorker daphne-opt)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto DaphneConfigParser

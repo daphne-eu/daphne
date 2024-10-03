@@ -1,0 +1,14 @@
+// Order a matrix by three columns.
+
+// This test case was added to test the correct treatment of
+// the non-variadic last parameter (returnIdxs) after two
+// longer variadic parameters (colIdxs, ascs). There used to
+// be a bug that was only triggered when an unproblematic (res1)
+// and a problematic (res2) use were combined in the same
+// DaphneDSL script.
+
+X = reshape(seq(1, 6, 1), 2, 3);
+res1 = order(X, 0, 1,    false, false,        false);
+res2 = order(X, 0, 1, 2, false, false, false, false);
+print(res1);
+print(res2);

@@ -1,8 +1,16 @@
 {
+    "matmul_vec_size_bits": 0,
+    "matmul_tile": false,
+    "matmul_use_fixed_tile_sizes": true,
+    "matmul_fixed_tile_sizes": [4, 4, 4, 4, 4],
+    "matmul_unroll_factor": 1,
+    "matmul_unroll_jam_factor": 4,
+    "matmul_num_vec_registers": 16,
     "use_cuda": false,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
     "cuda_fuse_any": false,
+    "use_mlir_codegen": false,
     "vectorized_single_queue": false,
     "debug_llvm": false,
     "explain_kernels": false,
@@ -11,37 +19,57 @@
     "explain_parsing_simplified": false,
     "explain_property_inference": false,
     "explain_sql": false,
+    "explain_select_matrix_repr": false,
     "explain_type_adaptation": false,
     "explain_vectorized": false,
     "explain_obj_ref_mgnt": false,
+    "explain_mlir_codegen": false,
     "taskPartitioningScheme": "STATIC",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
-    "library_paths": [],
+    "useHdfs": false,
+    "hdfsAddress": "",
+    "hdfsUsername": "",
+    "libdir": "{exedir}/../lib",
     "daphnedsl_import_paths": {},
+    "force_cuda": false,
     "logging": [
-        { "log-level-limit": "OFF" },
-        {
-            "comment": "ToDo: multiple sinks and loggers could be configurable here",
-            "name": "default",
-            "level": "INFO",
-            "filename": "daphne-output.txt",
-            "format": "[%H:%M:%S] [%n] [%^---%L---%$] %v"
-        },
+        { "log-level-limit": "ERROR" },
         {
             "comment": "This configuration controls logging in the GPU compiler pass only",
             "name": "compiler::cuda",
-            "level": "TRACE",
+            "level": "DEBUG",
             "filename": "compiler-trace-cuda.txt",
             "format": "%^[%L %n]:%$ %v"
         },
         {
             "comment": "general runtime CUDA debug log",
             "name": "runtime::cuda",
-            "level": "DEBUG",
+            "level": "INFO",
             "filename": "compiler-debug-cuda.txt",
             "format": "%^[%L %n]:%$ %v"
+        },
+        {
+            "comment": "DAPHNE compiler logs",
+            "name": "compiler",
+            "level": "INFO",
+            "filename": "",
+            "format": "%^[%n %L]:%$ %v"
+        },
+        {
+            "comment": "DAPHNE default",
+            "name": "default",
+            "level": "INFO",
+            "filename": "",
+            "format": "%^[%n %L]:%$ %v"
+        },
+        {
+            "comment": "DAPHNE default",
+            "name": "parser",
+            "level": "INFO",
+            "filename": "",
+            "format": "%^[%n %L]:%$ %v"
         }
-
-    ]
+    ],
+    "sparsity_threshold": 0.25
 }

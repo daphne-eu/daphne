@@ -27,7 +27,7 @@ Please write clean markdown code to ensure a proper parsing by the tools used to
 ### Links
 
 * With `[<link-name>](<link-url/path>)` you can link to other files in the repo
-* Write links to other markdown files or source code files/diretories so that they work locally / in the github repository
+* Write links to other markdown files or source code files/directories so that they work locally / in the github repository
 * Do not use relative links like `../BuildingDaphne.md`
 * Always use absolute paths relative to the repo root like `/doc/development/BuildingDaphne.md`
 * The Links/URLs will be altered in order to work on the rendered HTML page as well

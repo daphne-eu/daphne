@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 
 #include <stdexcept>
 
@@ -30,17 +31,16 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg, typename VTSel>
-struct FilterCol {
-    static void apply(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) = delete;
+template <class DTRes, class DTArg, typename VTSel> struct FilterCol {
+    static void apply(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg, typename VTSel>
-void filterCol(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+template <class DTRes, class DTArg, typename VTSel>
+void filterCol(DTRes *&res, const DTArg *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
     FilterCol<DTRes, DTArg, VTSel>::apply(res, arg, sel, ctx);
 }
 
@@ -52,31 +52,30 @@ void filterCol(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel, 
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT, typename VTSel>
-struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+template <typename VT, typename VTSel> struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
-        if(sel->getNumRows() != numColsArg)
+        if (sel->getNumRows() != numColsArg)
             throw std::runtime_error("sel must have exactly one entry (row) for each column in arg");
-        if(sel->getNumCols() != 1)
+        if (sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
         size_t numColsRes = 0;
-        for(size_t c = 0; c < numColsArg; c++)
+        for (size_t c = 0; c < numColsArg; c++)
             numColsRes += sel->get(c, 0);
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
 
-        const VT * valuesArg = arg->getValues();
-        VT * valuesRes = res->getValues();
+        const VT *valuesArg = arg->getValues();
+        VT *valuesRes = res->getValues();
         const size_t rowSkipArg = arg->getRowSkip();
         const size_t rowSkipRes = res->getRowSkip();
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t ca = 0, cr = 0; ca < numColsArg; ca++)
-                if(sel->get(ca, 0))
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t ca = 0, cr = 0; ca < numColsArg; ca++)
+                if (sel->get(ca, 0))
                     valuesRes[cr++] = valuesArg[ca];
             valuesArg += rowSkipArg;
             valuesRes += rowSkipRes;
@@ -84,4 +83,35 @@ struct FilterCol<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_FILTERCOL_H
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT, typename VTSel> struct FilterCol<Matrix<VT>, Matrix<VT>, VTSel> {
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, const Matrix<VTSel> *sel, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+
+        if (sel->getNumRows() != numColsArg)
+            throw std::runtime_error("sel must have exactly one entry (row) for each column in arg");
+        if (sel->getNumCols() != 1)
+            throw std::runtime_error("sel must be a single-column matrix");
+
+        size_t numColsRes = 0;
+        for (size_t c = 0; c < numColsArg; ++c)
+            numColsRes += sel->get(c, 0);
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
+
+        res->prepareAppend();
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t cArg = 0, cRes = 0; cArg < numColsArg; ++cArg)
+                if (sel->get(cArg, 0))
+                    res->append(r, cRes++, arg->get(r, cArg));
+        }
+        res->finishAppend();
+    }
+};
+
+#endif // SRC_RUNTIME_LOCAL_KERNELS_FILTERCOL_H

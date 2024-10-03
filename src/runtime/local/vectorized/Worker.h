@@ -18,42 +18,44 @@
 
 #include <runtime/local/vectorized/Tasks.h>
 
-#include <thread>
-#include <sched.h>
 #include <numeric>
+#include <sched.h>
+#include <thread>
 
 class Worker {
-protected:
+  protected:
     std::unique_ptr<std::thread> t;
 
-    // Worker only used as derived class, which starts the thread after the class has been constructed (order matters).
-    Worker() : t() {}
-public:
-    // Worker is move only due to std::thread. Therefore, we delete the copy constructor and the assignment operator.
-    Worker(const Worker&) = delete;
-    Worker& operator=(const Worker&) = delete;
+    DCTX(ctx);
+
+    // Worker only used as derived class, which starts the thread after the
+    // class has been constructed (order matters).
+    explicit Worker(DCTX(dctx)) : t(), ctx(dctx) {}
+
+  public:
+    // Worker is move only due to std::thread. Therefore, we delete the copy
+    // constructor and the assignment operator.
+    Worker(const Worker &) = delete;
+    Worker &operator=(const Worker &) = delete;
 
     // move constructor
-    Worker(Worker&& obj)  noexcept : t(std::move(obj.t)) {}
+    Worker(Worker &&obj) noexcept : t(std::move(obj.t)), ctx(obj.ctx) {}
 
     // move assignment operator
-    Worker& operator=(Worker&& obj)  noexcept {
-        if(t->joinable())
+    Worker &operator=(Worker &&obj) noexcept {
+        if (t->joinable())
             t->join();
         t = std::move(obj.t);
+        ctx = obj.ctx;
         return *this;
     }
 
     virtual ~Worker() {
-        if(t->joinable())
+        if (t->joinable())
             t->join();
     };
 
-    void join() {
-        t->join();
-    }
+    void join() { t->join(); }
     virtual void run() = 0;
-    static bool isEOF(Task* t) {
-        return dynamic_cast<EOFTask*>(t);
-    }
+    static bool isEOF(Task *t) { return dynamic_cast<EOFTask *>(t); }
 };

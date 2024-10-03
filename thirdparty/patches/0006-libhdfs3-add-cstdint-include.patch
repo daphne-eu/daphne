@@ -1,0 +1,40 @@
+--- hawq-rel-v3.0.0.0/depends/libhdfs3/src/rpc/RpcServerInfo.h.orig	2024-09-11 15:11:43.190472355 +0200
++++ hawq-rel-v3.0.0.0/depends/libhdfs3/src/rpc/RpcServerInfo.h	2024-09-09 16:00:30.659750184 +0200
+@@ -24,6 +24,7 @@
+ 
+ #include "Hash.h"
+ 
++#include <cstdint>
+ #include <string>
+ #include <sstream>
+ 
+--- hawq-rel-v3.0.0.0/depends/libhdfs3/src/server/DatanodeInfo.h.orig	2024-09-12 18:02:36.241330171 +0200
++++ hawq-rel-v3.0.0.0/depends/libhdfs3/src/server/DatanodeInfo.h	2024-09-09 16:00:30.668750292 +0200
+@@ -22,6 +22,7 @@
+ #ifndef _HDFS_LIBHDFS3_SERVER_DATANODEINFO_H_
+ #define _HDFS_LIBHDFS3_SERVER_DATANODEINFO_H_
+ 
++#include <cstdint>
+ #include <string>
+ #include <sstream>
+ 
+--- hawq-rel-v3.0.0.0/depends/libhdfs3/src/client/Permission.h.orig	2024-09-12 18:03:12.371739127 +0200
++++ hawq-rel-v3.0.0.0/depends/libhdfs3/src/client/Permission.h	2024-09-09 16:00:30.672750340 +0200
+@@ -22,6 +22,7 @@
+ #ifndef _HDFS_LIBHDFS3_CLIENT_PERMISSION_H_
+ #define _HDFS_LIBHDFS3_CLIENT_PERMISSION_H_
+ 
++#include <cstdint>
+ #include <string>
+ 
+ namespace Hdfs {
+--- hawq-rel-v3.0.0.0/depends/libhdfs3/src/common/FileWrapper.h.orig	2024-09-12 18:03:30.748947136 +0200
++++ hawq-rel-v3.0.0.0/depends/libhdfs3/src/common/FileWrapper.h	2024-09-09 16:00:30.664750244 +0200
+@@ -22,6 +22,7 @@
+ #ifndef _HDFS_LIBHDFS3_COMMON_FILEWRAPPER_H_
+ #define _HDFS_LIBHDFS3_COMMON_FILEWRAPPER_H_
+ 
++#include <cstdint>
+ #include <string>
+ #include <cassert>
+ #include <cstdio>

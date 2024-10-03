@@ -1,0 +1,10 @@
+# Binning on empty matrices.
+
+# (0x0) arg.
+print(bin(fill(123, 0, 0), 42, 100, 200));
+
+# (0xn) arg.
+print(bin(fill(123, 0, 3), 42, 100, 200));
+
+# (mx0) arg.
+print(bin(fill(123, 3, 0), 42, 100, 200));

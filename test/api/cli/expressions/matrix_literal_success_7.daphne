@@ -1,0 +1,26 @@
+// Proper casting to most general type
+// sorted by decreasing generality
+
+doubleMat = [8.0, 7.0f, 6u, 5, as.ui32(4), as.si32(3), as.ui8(2), as.si8(1), false](1,);
+floatMat = [7.0f, 6u, 5, as.ui32(4), as.si32(3), as.ui8(2), as.si8(1), false](1,);
+
+uint64Mat = [6u, 5, as.ui32(4), as.si32(3), as.ui8(2), as.si8(1), false](1,);
+int64Mat = [5, as.ui32(4), as.si32(3), as.ui8(2), as.si8(1), false](1,);
+
+uint32Mat = [as.ui32(4), as.si32(3), as.ui8(2), as.si8(1), false](1,);
+int32Mat = [as.si32(3), as.ui8(2), as.si8(1), false](1,);
+
+uint8Mat = [as.ui8(2), as.si8(1), false](1,);
+int8Mat = [as.si8(1), false](1,);
+
+boolMat = [as.bool(1==1), false](1,);
+
+print(doubleMat);
+print(floatMat);
+print(uint64Mat);
+print(int64Mat);
+print(uint32Mat);
+print(int32Mat);
+print(uint8Mat);
+print(int8Mat);
+print(boolMat);

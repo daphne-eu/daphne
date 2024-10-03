@@ -1,0 +1,2 @@
+// decimal point cannot be followed by digit separator
+print(1.'0);

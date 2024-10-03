@@ -16,129 +16,104 @@
 
 #pragma once
 
+#include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
-#include <cublas_v2.h>
-#include <cusparse_v2.h>
 #include <cudnn.h>
 #include <cusolverDn.h>
+#include <cusparse_v2.h>
 
 #include <iostream>
 #include <memory>
 
-#define CHECK_CUDART(call)                                                   \
-  do {                                                                    \
-    cudaError_t status = call;                                            \
-    if (status != cudaSuccess) {                                          \
-      std::cout << "(CUDART) returned: " << cudaGetErrorString(status);   \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
-        std::abort();       \
-    }                                                                     \
-  } while (0)
-
-#define CHECK_CUBLAS(call)                                                   \
-  do {                                                                    \
-    cublasStatus_t status = call;                                         \
-    if (status != CUBLAS_STATUS_SUCCESS) {                                \
-      std::cout << "(CUBLAS) returned " << status;                          \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
-    }                                                                     \
-  } while (0)
-
-#define CHECK_CUSPARSE(call)                                                 \
-    do {                                                                      \
-        cusparseStatus_t status = call;                                        \
-        if (status != CUSPARSE_STATUS_SUCCESS) {                                \
-            std::cout << "(CUSPARSE) returned " << status;                       \
-            std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__   \
-            << "())" << std::endl;                                                 \
-        }                                                                           \
+#define CHECK_CUDART(call)                                                                                             \
+    do {                                                                                                               \
+        cudaError_t status = call;                                                                                     \
+        if (status != cudaSuccess) {                                                                                   \
+            throw std::runtime_error(fmt::format("(CUDART) returned: {} ({}:{}:{}())", cudaGetErrorString(status),     \
+                                                 __FILE__, __LINE__, __func__));                                       \
+        }                                                                                                              \
     } while (0)
 
-#define CHECK_CUDNN(call)                                                  \
-  do {                                                                    \
-    cudnnStatus_t status = call;                                          \
-    if (status != CUDNN_STATUS_SUCCESS) {                                 \
-      std::cerr << "(CUDNN) returned " <<  cudnnGetErrorString(status);   \
-      std::cerr << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
-    }                                                                     \
-  } while (0)
+#define CHECK_CUBLAS(call)                                                                                             \
+    do {                                                                                                               \
+        cublasStatus_t status = call;                                                                                  \
+        if (status != CUBLAS_STATUS_SUCCESS) {                                                                         \
+            throw std::runtime_error(                                                                                  \
+                fmt::format("(CUBLAS) returned: {} ({}:{}:{}())", status, __FILE__, __LINE__, __func__));              \
+        }                                                                                                              \
+    } while (0)
 
-#define CHECK_CUSOLVER(call)                                                   \
-  do {                                                                    \
-    cusolverStatus_t status = call;                                         \
-    if (status != CUSOLVER_STATUS_SUCCESS) {                                \
-      std::cout << "(CUSOLVER) returned " << status;                          \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
-    }                                                                     \
-  } while (0)
+#define CHECK_CUSPARSE(call)                                                                                           \
+    do {                                                                                                               \
+        cusparseStatus_t status = call;                                                                                \
+        if (status != CUSPARSE_STATUS_SUCCESS) {                                                                       \
+            throw std::runtime_error(                                                                                  \
+                fmt::format("(CUSPARSE) returned: {} ({}:{}:{}())", status, __FILE__, __LINE__, __func__));            \
+        }                                                                                                              \
+    } while (0)
+
+#define CHECK_CUDNN(call)                                                                                              \
+    do {                                                                                                               \
+        cudnnStatus_t status = call;                                                                                   \
+        if (status != CUDNN_STATUS_SUCCESS) {                                                                          \
+            throw std::runtime_error(                                                                                  \
+                fmt::format("(CUDNN) returned: {} ({}:{}:{}())", status, __FILE__, __LINE__, __func__));               \
+        }                                                                                                              \
+    } while (0)
+
+#define CHECK_CUSOLVER(call)                                                                                           \
+    do {                                                                                                               \
+        cusolverStatus_t status = call;                                                                                \
+        if (status != CUSOLVER_STATUS_SUCCESS) {                                                                       \
+            throw std::runtime_error(                                                                                  \
+                fmt::format("(CUSOLVER) returned: {} ({}:{}:{}())", status, __FILE__, __LINE__, __func__));            \
+        }                                                                                                              \
+    } while (0)
 
 #include <string_view>
 
-template <typename T>
-static constexpr auto type_name() noexcept {
+template <typename T> static constexpr auto type_name() noexcept {
     std::string_view name, prefix, suffix;
 #ifdef __clang__
     name = __PRETTY_FUNCTION__;
-  prefix = "auto type_name() [T = ";
-  suffix = "]";
+    prefix = "auto type_name() [T = ";
+    suffix = "]";
 #elif defined(__GNUC__)
     name = __PRETTY_FUNCTION__;
     prefix = "constexpr auto type_name() [with T = ";
     suffix = "]";
 #elif defined(_MSC_VER)
     name = __FUNCSIG__;
-  prefix = "auto __cdecl type_name<";
-  suffix = ">(void) noexcept";
+    prefix = "auto __cdecl type_name<";
+    suffix = ">(void) noexcept";
 #endif
     name.remove_prefix(prefix.size());
     name.remove_suffix(suffix.size());
     return name;
 }
 
-template<typename T>
-struct CudaDeleter {
-    void operator()(T* dev_ptr) const { del(dev_ptr); };
-    static void del(T* dev_ptr) {
-//#ifndef NDEBUG
-//        std::ios state(nullptr);
-//        state.copyfmt(std::cout);
-//        std::cout << "calling cudaFree on dev_ptr: " << dev_ptr << std::endl;
-//        std::cout << "addressof dev_ptr in cudaFree: " << &dev_ptr << std::endl;
-//#endif
-        cudaFree(reinterpret_cast<void*>(dev_ptr));
-//#ifndef NDEBUG
-//        size_t available; size_t total;
-//        cudaMemGetInfo(&available, &total);
-//        std::cout << "Available mem: " << (available / (1048576)) << "Mb" << std::endl;
-//        std::cout.copyfmt(state);
-//#endif
-    }
+template <typename T> struct CudaDeleter {
+    void operator()(T *dev_ptr) const { del(dev_ptr); };
+    static void del(T *dev_ptr) { cudaFree(reinterpret_cast<void *>(dev_ptr)); }
 };
 
-template<typename T>
-void cuda_deleter(T* dev_ptr) { CudaDeleter<T>::del(dev_ptr); }
+template <typename T> void cuda_deleter(T *dev_ptr) { CudaDeleter<T>::del(dev_ptr); }
 
-template<typename T>
-using CudaUniquePtr [[maybe_unused]] = std::unique_ptr<T, decltype(&cuda_deleter<T>)>;
+template <typename T> using CudaUniquePtr [[maybe_unused]] = std::unique_ptr<T, decltype(&cuda_deleter<T>)>;
 
-#ifndef NDEBUG
-template<typename T>
-void debugPrintCUDABuffer(std::string_view title, const T* data, size_t num_items) {
-    std::vector<T> tmp(num_items);
-    CHECK_CUDART(cudaMemcpy(tmp.data(), data, num_items * sizeof(T), cudaMemcpyDeviceToHost));
-    std::cerr << title << ":\n";
-    for(auto i = 0u; i < num_items; ++i)
-        std::cerr << tmp[i] << " ";
-    std::cerr << "\n";
-}
-#endif
+static inline uint32_t divup(unsigned n, unsigned div) { return (n + div - 1) / div; }
 
-static inline uint32_t divup(unsigned n, unsigned div)
-{
-    return (n + div - 1) / div;
+template <typename VT> struct smem_calc /*: std::unary_function<int, int> */ {
+    int operator()(int i) const { return sizeof(VT) * i; }
+};
+
+static uint32_t nextPow2(uint32_t x) {
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return ++x;
 }

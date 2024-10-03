@@ -19,6 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
@@ -26,17 +27,15 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-struct AggCum {
-    static void apply(AggOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
+template <class DTRes, class DTArg> struct AggCum {
+    static void apply(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void aggCum(AggOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void aggCum(AggOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     AggCum<DTRes, DTArg>::apply(opCode, res, arg, ctx);
 }
 
@@ -48,38 +47,69 @@ void aggCum(AggOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) {
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTArg>
-struct AggCum<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, DCTX(ctx)) {
-        if(!AggOpCodeUtils::isPureBinaryReduction(opCode))
-            throw std::runtime_error("the aggregation function used in aggCum must be a pure binary reduction");
+template <typename VTRes, typename VTArg> struct AggCum<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *arg, DCTX(ctx)) {
+        if (!AggOpCodeUtils::isPureBinaryReduction(opCode))
+            throw std::runtime_error("the aggregation function used in aggCum "
+                                     "must be a pure binary reduction");
 
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
-        
-        const VTArg * valuesArg = arg->getValues();
-        VTRes * valuesResPrv = res->getValues();
-        VTRes * valuesResCur = valuesResPrv;
-        
-        EwBinaryScaFuncPtr<VTRes, VTRes, VTArg> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTArg>(
-                AggOpCodeUtils::getBinaryOpCode(opCode)
-        );
+
+        const VTArg *valuesArg = arg->getValues();
+        VTRes *valuesResPrv = res->getValues();
+        VTRes *valuesResCur = valuesResPrv;
+
+        EwBinaryScaFuncPtr<VTRes, VTRes, VTArg> func =
+            getEwBinaryScaFuncPtr<VTRes, VTRes, VTArg>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
         // First row: copy from arg to res.
-        for(size_t c = 0; c < numCols; c++)
+        for (size_t c = 0; c < numCols; c++)
             valuesResCur[c] = valuesArg[c];
         valuesArg += arg->getRowSkip();
         valuesResCur += res->getRowSkip();
         // Remaining rows: calculate from previous res row and current arg row.
-        for(size_t r = 1; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++)
+        for (size_t r = 1; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++)
                 valuesResCur[c] = func(valuesResPrv[c], valuesArg[c], ctx);
             valuesArg += arg->getRowSkip();
             valuesResPrv += res->getRowSkip();
             valuesResCur += res->getRowSkip();
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VTRes, typename VTArg> struct AggCum<Matrix<VTRes>, Matrix<VTArg>> {
+    static void apply(AggOpCode opCode, Matrix<VTRes> *&res, const Matrix<VTArg> *arg, DCTX(ctx)) {
+        if (!AggOpCodeUtils::isPureBinaryReduction(opCode))
+            throw std::runtime_error("AggCum: the aggregation function must be "
+                                     "a pure binary reduction");
+
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+
+        EwBinaryScaFuncPtr<VTRes, VTRes, VTArg> func =
+            getEwBinaryScaFuncPtr<VTRes, VTRes, VTArg>(AggOpCodeUtils::getBinaryOpCode(opCode));
+
+        // First row: copy from arg to res.
+        res->prepareAppend();
+        for (size_t c = 0; c < numCols; ++c)
+            res->append(0, c, arg->get(0, c));
+        res->finishAppend();
+
+        // Remaining rows: calculate from previous res row and current arg row.
+        for (size_t r = 1; r < numRows; ++r)
+            for (size_t c = 0; c < numCols; ++c)
+                res->set(r, c, func(res->get(r - 1, c), arg->get(r, c), ctx));
     }
 };

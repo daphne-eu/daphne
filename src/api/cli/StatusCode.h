@@ -19,7 +19,7 @@
 
 /**
  * @brief Possible status codes returned by the command line interface.
- * 
+ *
  * Note that this is deliberately not an `enum class`, because we frequently
  * need to use it as an integer.
  */
@@ -30,4 +30,4 @@ enum StatusCode {
     EXECUTION_ERROR,
 };
 
-#endif //SRC_API_CLI_STATUSCODE_H
+#endif // SRC_API_CLI_STATUSCODE_H

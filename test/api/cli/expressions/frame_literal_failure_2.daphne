@@ -1,0 +1,2 @@
+// label is not a string
+print({0 : [1, 2, 3]});

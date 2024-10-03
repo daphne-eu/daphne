@@ -1,0 +1,8 @@
+def increment(x) {
+    return x + 1;
+}
+
+X = fill(3.8, 5, 5);
+new_X = increment(X);
+
+print(new_X);

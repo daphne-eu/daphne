@@ -1,0 +1,14 @@
+// Copy-on-write vs. while-loops, for scalars.
+
+A = 1;
+B = A;
+# A and B are the same.
+
+i = 1;
+while(i <= 3) {
+    print(A);
+    B = B + 1; # change to B must not affect A
+    i = i + 1;
+}
+
+print(B);

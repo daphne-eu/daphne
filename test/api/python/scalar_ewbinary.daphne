@@ -1,0 +1,8 @@
+s1 = 2.2;
+s2 = 3.3;
+
+print(pow(s1, s2));
+print(log(s1, s2));
+print(mod(s1, s2));
+print(min(s1, s2));
+print(max(s1, s2));

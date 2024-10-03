@@ -16,26 +16,24 @@
 
 #pragma once
 
+#include "HostUtils.h"
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
-#include "HostUtils.h"
 
 #include <limits>
 #include <random>
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
 namespace CUDA::Convolution {
 
-    template<typename DTRes, typename DTArg>
-    struct Forward {
-        static void apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data, const DTArg *filter,
-                const DTArg *bias, size_t batch_size, size_t num_channels, size_t img_h, size_t img_w,
-                size_t filter_h, size_t filter_w, size_t stride_h, size_t stride_w, size_t pad_h, size_t pad_w,
-                DCTX(dctx));
-    };
-}
+template <typename DTRes, typename DTArg> struct Forward {
+    static void apply(DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data, const DTArg *filter,
+                      const DTArg *bias, size_t batch_size, size_t num_channels, size_t img_h, size_t img_w,
+                      size_t filter_h, size_t filter_w, size_t stride_h, size_t stride_w, size_t pad_h, size_t pad_w,
+                      DCTX(dctx));
+};
+} // namespace CUDA::Convolution

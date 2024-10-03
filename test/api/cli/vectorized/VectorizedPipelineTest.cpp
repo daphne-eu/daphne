@@ -30,39 +30,37 @@ void compareDaphneToDaphneOtherArgs(const std::string &scriptFilePath) {
     std::stringstream outNN;
     std::stringstream errNN;
     int statusNN = runDaphne(outNN, errNN, scriptFilePath.c_str());
-    
+
     // `daphne --vec $scriptFilePath` (vec, no repr)
     std::stringstream outVN;
     std::stringstream errVN;
     int statusVN = runDaphne(outVN, errVN, "--vec", scriptFilePath.c_str());
-    
+
     // `daphne --vec --select-matrix-repr $scriptFilePath` (vec, repr)
     std::stringstream outVR;
     std::stringstream errVR;
     int statusVR = runDaphne(outVR, errVR, "--vec", "--select-matrix-repr", scriptFilePath.c_str());
-    
+
     // Check if all runs were successful.
     CHECK(statusNN == StatusCode::SUCCESS);
     CHECK(statusVN == StatusCode::SUCCESS);
     CHECK(statusVR == StatusCode::SUCCESS);
-    
+
     // Check if all runs yielded the same output on stdout.
     CHECK(generalizeDataTypes(outNN.str()) == generalizeDataTypes(outVN.str()));
     CHECK(generalizeDataTypes(outNN.str()) == generalizeDataTypes(outVR.str()));
-    
+
     // Check if all runs yielded the same output on stderr.
     CHECK(errNN.str() == errVN.str());
     CHECK(errNN.str() == errVR.str());
 }
 
-#define MAKE_TEST_CASE(name, count) \
-    TEST_CASE(name, TAG_VECTORIZED) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            const std::string scriptFilePath = dirPath + name + "_" + std::to_string(i) + ".daphne"; \
-            DYNAMIC_SECTION(scriptFilePath) { \
-                compareDaphneToDaphneOtherArgs(scriptFilePath); \
-            } \
-        } \
+#define MAKE_TEST_CASE(name, count)                                                                                    \
+    TEST_CASE(name, TAG_VECTORIZED) {                                                                                  \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            const std::string scriptFilePath = dirPath + name + "_" + std::to_string(i) + ".daphne";                   \
+            DYNAMIC_SECTION(scriptFilePath) { compareDaphneToDaphneOtherArgs(scriptFilePath); }                        \
+        }                                                                                                              \
     }
 
-MAKE_TEST_CASE("pipeline", 6)
+MAKE_TEST_CASE("pipeline", 7)

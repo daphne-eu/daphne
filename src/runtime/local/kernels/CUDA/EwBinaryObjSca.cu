@@ -46,38 +46,50 @@ namespace CUDA {
 
         auto N = res->getNumItems();
 
+        SumOp<VT> sumOp;
+        CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, SumOp<VT>>, 0, 0));
+        gridSize = (N + blockSize - 1) / blockSize;
+
         // ToDo: use templates instead of this if-else madness
         if (opCode == BinaryOpCode::ADD) {
-            SumOp<VT> op;
-            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, SumOp<VT>>, 0, 0));
-            gridSize = (N + blockSize - 1) / blockSize;
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, sumOp);
+        }
+        else if (opCode == BinaryOpCode::MUL) {
+            ProductOp<VT> op;
             ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
         else if (opCode == BinaryOpCode::DIV) {
             DivOp<VT> op;
-            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));
-            gridSize = (N + blockSize - 1) / blockSize;
             ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
         else if (opCode == BinaryOpCode::POW) {
             PowOp<VT> op;
-            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));
-            gridSize = (N + blockSize - 1) / blockSize;
             ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
         else if (opCode == BinaryOpCode::SUB) {
             MinusOp<VT> op;
-            CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));
-            gridSize = (N + blockSize - 1) / blockSize;
             ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
-
+        else if (opCode == BinaryOpCode::MAX) {
+            MaxOp<VT> op;
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
+        }
+        else if (opCode == BinaryOpCode::MIN) {
+            MinOp<VT> op;
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
+        }
+        else if (opCode == BinaryOpCode::NEQ) {
+            NeqOp<VT> op;
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
+        }
         else {
-            std::cerr << "opCode=" << static_cast<uint32_t>(opCode) << std::endl;
-            throw std::runtime_error("unknown operator for EwBinaryObjSca");
+            throw std::runtime_error(fmt::format("Unknown opCode {} for EwBinaryObjSca", static_cast<uint32_t>(opCode)));
         }
     }
     template struct EwBinaryObjSca<DenseMatrix<double>, DenseMatrix<double>, double>;
     template struct EwBinaryObjSca<DenseMatrix<float>, DenseMatrix<float>, float>;
     template struct EwBinaryObjSca<DenseMatrix<int64_t>, DenseMatrix<int64_t>, int64_t>;
+    template struct EwBinaryObjSca<DenseMatrix<int32_t>, DenseMatrix<int32_t>, int32_t>;
+    template struct EwBinaryObjSca<DenseMatrix<uint32_t>, DenseMatrix<uint32_t>, uint32_t>;
+    template struct EwBinaryObjSca<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, uint64_t>;
 }

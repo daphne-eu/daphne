@@ -24,27 +24,25 @@
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
-#include <cassert>
 #include <cstddef>
 #include <string>
 
 namespace CUDA {
-    template<class DTRes, class DTLhs, class DTRhs>
-    struct EwBinaryMat {
-        static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) = delete;
-    };
+template <class DTRes, class DTLhs, class DTRhs> struct EwBinaryMat {
+    static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) = delete;
+};
 
-    template<typename VTres, typename VTlhs, typename VTrhs>
-    struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
-        static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs,
-                          const DenseMatrix<VTrhs> *rhs, DCTX(ctx));
-    };
+template <typename VTres, typename VTlhs, typename VTrhs>
+struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs,
+                      const DenseMatrix<VTrhs> *rhs, DCTX(ctx));
+};
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-    template<class DTRes, class DTLhs, class DTRhs>
-    void ewBinaryMat(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
-        EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
-    }
+template <class DTRes, class DTLhs, class DTRhs>
+void ewBinaryMat(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
+    EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
+} // namespace CUDA

@@ -1,0 +1,5 @@
+# Test the seq() built-in function with optional inc.
+print(seq(1, 5));
+print(seq(1.1, 5.1));
+print(seq(5, 1));
+print(seq(5.1, 1.1));

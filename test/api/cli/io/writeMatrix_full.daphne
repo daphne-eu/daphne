@@ -1,0 +1,4 @@
+// Write an entire small matrix to the file $outPath.
+
+X = reshape(seq(1, 6, 1), 3, 2);
+write(X, $outPath);

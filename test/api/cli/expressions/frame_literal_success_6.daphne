@@ -1,0 +1,8 @@
+// Row-major frame literals with other value types
+
+testFrame = {["int32 Col", "uint32 Col", "int8 Col", "uint8 Col"],
+            [as.si32(1), as.ui32(1), true, true],
+            [as.ui8(2), as.ui8(2), as.si8(2), as.ui8(2)],
+            [as.si8(3), as.si8(3), as.si8(3), as.si8(3)]};
+
+print(testFrame);

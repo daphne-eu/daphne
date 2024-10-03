@@ -30,24 +30,24 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabelsPrefix(Frame *& res, const Frame * arg, const char * prefix, DCTX(ctx)) {
+void setColLabelsPrefix(Frame *&res, const Frame *arg, const char *prefix, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
-    const std::string * oldLabels = arg->getLabels();
-    std::string * newLabels = new std::string[numCols];
-    
-    for(size_t i = 0; i < numCols; i++)
+    const std::string *oldLabels = arg->getLabels();
+    std::string *newLabels = new std::string[numCols];
+
+    for (size_t i = 0; i < numCols; i++)
         newLabels[i] = LabelUtils::setPrefix(prefix, oldLabels[i]);
-    
+
     // Create a view on the input frame (zero-copy) and modify the column
     // labels of the view.
     auto colIdxs = new size_t[numCols];
-    for(size_t c = 0; c < numCols; c++)
+    for (size_t c = 0; c < numCols; c++)
         colIdxs[c] = c;
     res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), numCols, colIdxs);
     delete[] colIdxs;
     res->setLabels(newLabels);
-    
+
     delete[] newLabels;
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SETCOLLABELSPREFIX_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_SETCOLLABELSPREFIX_H

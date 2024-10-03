@@ -1,0 +1,9 @@
+X = fill(3.8, 5, 5);
+Y = fill(1.0, 5, 5);
+
+for (i in 1:$param) {
+    intermediate = X + Y;
+    X = intermediate + 1;
+}
+
+print(X);

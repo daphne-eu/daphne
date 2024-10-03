@@ -1,0 +1,9 @@
+X = fill(3.8, 5, 5);
+
+for (i in 1:5) {
+    for (j in 1:10) {
+        X = X + 1;
+    }
+}
+
+print(X);

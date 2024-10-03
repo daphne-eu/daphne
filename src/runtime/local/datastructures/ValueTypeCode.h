@@ -21,18 +21,23 @@
 
 /**
  * @brief A run-time representation for value types.
- * 
+ *
  * Each of these represents one value type from DaphneIR and the underlying
  * C++ type to use. A `ValueTypeCode` is meant to be used in situations when
  * the value type cannot be known at compile-time.
  */
 enum class ValueTypeCode : uint8_t {
-    SI8, SI32, SI64, // signed integers (intX_t)
-    UI8, UI32, UI64, // unsigned integers (uintx_t)
-    F32, F64, // floating point (float, double)
+    SI8,
+    SI32,
+    SI64, // signed integers (intX_t)
+    UI8,
+    UI32,
+    UI64, // unsigned integers (uintx_t)
+    F32,
+    F64,     // floating point (float, double)
     INVALID, // only for JSON enum conversion
     // TODO Support bool as well, but poses some challenges (e.g. sizeof).
-//    UI1 // boolean (bool)
+    //    UI1 // boolean (bool)
 };
 
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_VALUETYPECODE_H
+#endif // SRC_RUNTIME_LOCAL_DATASTRUCTURES_VALUETYPECODE_H

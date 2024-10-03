@@ -6,3 +6,8 @@ m = rand(2, 3, 100.0, 200.0, 1.0, -1);
 print(m);
 print(m + m);
 print(t(m));
+
+m2 = rand(2, 3, 100.0, 200.0, 0.01, -1);
+print(m2);
+print(m2 + m2);
+print(t(m2));

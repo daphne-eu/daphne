@@ -6,6 +6,9 @@ build_*/
 /lib
 /tmp
 
+# runtime dump
+**/*.ll
+
 # documentation build output
 doc_build/
 
@@ -25,7 +28,29 @@ __pycache__/
 .idea/
 .clion.source.upload.marker
 
-tmpdaphne.daphne
+# local test/dev scripts
+/tmpdaphne.daphne
+/*.daphne
+/*.mlir
+/*.log
+
+# cuda compiler
+compiler-debug-cuda.txt
+compiler-trace-cuda.txt
+
+# tags file
+tags
+tags.lock
+tags.temp
+
+# clangd cache
+.cache/
+
+# gdb
+.gdb_history
+
+# compile commands
+compile_commands.json
 
 # release scripts output
 /artifacts

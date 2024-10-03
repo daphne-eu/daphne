@@ -23,37 +23,36 @@
 
 #include <catch.hpp>
 
+#include <type_traits>
 #include <vector>
 
 #include <cstdint>
 
 #define TEST_NAME(opName) "OuterBinary (" opName ")"
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, Matrix
 #define VALUE_TYPES double, int32_t
 
 // ****************************************************************************
 // Helpers
 // ****************************************************************************
 
-template<class DT>
-void checkOuterBinary(BinaryOpCode opCode, const DT * lhs, const DT * rhs, const DT * exp) {
-    DT * res = nullptr;
+template <class DT> void checkOuterBinary(BinaryOpCode opCode, const DT *lhs, const DT *rhs, const DT *exp) {
+    DT *res = nullptr;
     outerBinary<DT, DT, DT>(opCode, res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
 }
 
-template<class DT>
-void helper(BinaryOpCode opCode, std::vector<typename DT::VT> lhsVals, std::vector<typename DT::VT> rhsVals, std::vector<typename DT::VT> resVals) {
-    if(resVals.size() != lhsVals.size() * rhsVals.size())
-        throw std::runtime_error(
-                "the number of elements in resVals must be the product "
-                "of the numbers of elements in lhsVals and rhsVals"
-        );
+template <class DT>
+void helper(BinaryOpCode opCode, std::vector<typename DT::VT> lhsVals, std::vector<typename DT::VT> rhsVals,
+            std::vector<typename DT::VT> resVals) {
+    if (resVals.size() != lhsVals.size() * rhsVals.size())
+        throw std::runtime_error("the number of elements in resVals must be the product "
+                                 "of the numbers of elements in lhsVals and rhsVals");
 
     auto lhs = genGivenVals<DT>(lhsVals.size(), lhsVals);
     auto rhs = genGivenVals<DT>(1, rhsVals);
     auto exp = genGivenVals<DT>(resVals.size(), resVals);
-    
+
     checkOuterBinary(opCode, lhs, rhs, exp);
 
     DataObjectFactory::destroy(lhs, rhs, exp);
@@ -65,36 +64,47 @@ void helper(BinaryOpCode opCode, std::vector<typename DT::VT> lhsVals, std::vect
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("valid shapes"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
+    using VT = typename DT::VT;
+    using DTEmpty = typename std::conditional<std::is_same<DT, Matrix<VT>>::value, DenseMatrix<VT>, DT>::type;
 
-    DT * lhs = nullptr;
-    DT * rhs = nullptr;
-    DT * exp = nullptr;
+    DT *lhs = nullptr;
+    DT *rhs = nullptr;
+    DT *exp = nullptr;
 
     SECTION("0x1 op 1x0") {
-        lhs = DataObjectFactory::create<DT>(0, 1, false);
-        rhs = DataObjectFactory::create<DT>(1, 0, false);
-        exp = DataObjectFactory::create<DT>(0, 0, false);
+        lhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 1, false));
+        rhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(1, 0, false));
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 0, false));
     }
     SECTION("0x1 op 1xn") {
-        lhs = DataObjectFactory::create<DT>(0, 1, false);
+        lhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 1, false));
         rhs = genGivenVals<DT>(1, {4, 5, 6, 7});
-        exp = DataObjectFactory::create<DT>(0, 4, false);
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 4, false));
     }
     SECTION("mx1 op 1x0") {
         lhs = genGivenVals<DT>(3, {1, 2, 3});
-        rhs = DataObjectFactory::create<DT>(1, 0, false);
-        exp = DataObjectFactory::create<DT>(3, 0, false);
+        rhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(1, 0, false));
+        exp = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
     }
     SECTION("mx1 op 1xn") {
         lhs = genGivenVals<DT>(3, {1, 2, 3});
         rhs = genGivenVals<DT>(1, {4, 5, 6, 7});
         exp = genGivenVals<DT>(3, {
-            5, 6, 7,  8,
-            6, 7, 8,  9,
-            7, 8, 9, 10,
-        });
+                                      5,
+                                      6,
+                                      7,
+                                      8,
+                                      6,
+                                      7,
+                                      8,
+                                      9,
+                                      7,
+                                      8,
+                                      9,
+                                      10,
+                                  });
     }
-    
+
     checkOuterBinary(BinaryOpCode::ADD, lhs, rhs, exp);
 
     DataObjectFactory::destroy(lhs, rhs, exp);
@@ -102,31 +112,33 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("valid shapes"), TAG_KERNELS, (DATA_TYPES),
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("invalid shapes"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
+    using VT = typename DT::VT;
+    using DTEmpty = typename std::conditional<std::is_same<DT, Matrix<VT>>::value, DenseMatrix<VT>, DT>::type;
 
-    DT * lhs = nullptr;
-    DT * rhs = nullptr;
+    DT *lhs = nullptr;
+    DT *rhs = nullptr;
 
     SECTION("mx0 op 1xn") {
-        lhs = DataObjectFactory::create<DT>(3, 0, false);
+        lhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(3, 0, false));
         rhs = genGivenVals<DT>(1, {0, 0, 0, 0});
     }
     SECTION("mx1 op 0xn") {
         lhs = genGivenVals<DT>(3, {0, 0, 0});
-        rhs = DataObjectFactory::create<DT>(0, 4, false);
+        rhs = static_cast<DT *>(DataObjectFactory::create<DTEmpty>(0, 4, false));
     }
     SECTION("mx2 op 1xn") {
-        lhs = genGivenVals<DT>(3, {0, 0,  0, 0,  0, 0});
+        lhs = genGivenVals<DT>(3, {0, 0, 0, 0, 0, 0});
         rhs = genGivenVals<DT>(1, {0, 0, 0, 0});
     }
     SECTION("mx1 op 2xn") {
         lhs = genGivenVals<DT>(3, {0, 0, 0});
-        rhs = genGivenVals<DT>(2, {0, 0, 0, 0,  0, 0, 0, 0});
+        rhs = genGivenVals<DT>(2, {0, 0, 0, 0, 0, 0, 0, 0});
     }
-    
-    DT * res = nullptr;
+
+    DT *res = nullptr;
     CHECK_THROWS(outerBinary<DT, DT, DT>(BinaryOpCode::ADD, res, lhs, rhs, nullptr));
     DataObjectFactory::destroy(lhs, rhs);
-    if(res)
+    if (res)
         DataObjectFactory::destroy(res);
 }
 
@@ -224,7 +236,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DATA_TYPES), (VALUE_TY
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    DT * res = nullptr;
+    DT *res = nullptr;
     auto m = genGivenVals<DT>(1, {1});
     CHECK_THROWS(outerBinary<DT, DT, DT>(static_cast<BinaryOpCode>(999), res, m, m, nullptr));
 }

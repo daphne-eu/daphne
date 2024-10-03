@@ -12,19 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25.2)
 
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
 
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "Using ccache")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
 project(daphne-prototype LANGUAGES CXX C)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -O0")
+
+set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g -O3")
+
 # silence a warning about DEPFILE path transformations (used in LLVM)
 cmake_policy(SET CMP0116 OLD)
 
@@ -94,12 +106,20 @@ if(USE_MPI)
 endif()    
 ##########
 
+###### PAPI
+if(USE_PAPI)
+    add_definitions(-DUSE_PAPI)
+endif()
+##########
+
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
 include(CheckLanguage)
 check_language(CUDA)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
     if(${CMAKE_COMPILER_IS_GNUCXX})
         set(GCC_EXPECTED_VERSION 11.3.0)
@@ -117,7 +137,9 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(CMAKE_CUDA_ARCHITECTURES  OFF)
     cmake_policy(SET CMP0104 NEW)
     add_definitions(-DUSE_CUDA)
-    set(CMAKE_CUDA_STANDARD 17)
+    message(STATUS "Note: disabled CUSPARSE_DEPRECATED in main CMakeLists.txt")
+    add_definitions(-DDISABLE_CUSPARSE_DEPRECATED)
+    set(CMAKE_CUDA_STANDARD 20)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     message(STATUS  "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
     if(DEFINED ENV{CUDAHOSTCXX})
@@ -125,6 +147,12 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     endif()
 endif()
 
+find_program(LLD_PROGRAM lld)
+if(LLD_PROGRAM)
+    message(STATUS "Using lld")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-ld=lld")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld")
+endif()
 
 find_package(Arrow REQUIRED)
 find_package(Parquet REQUIRED)
@@ -142,6 +170,42 @@ if(USE_FPGAOPENCL)
 	message(STATUS "cmake: using FPGA")
 	add_definitions(-DUSE_FPGAOPENCL)
 endif()
+
+
+# HDFS library
+# look through provided CMAKE_PREFIX_PATHs
+option(USE_HDFS "Whether to activate compilation of HDSF support" OFF)
+if(USE_HDFS)
+    foreach(path ${CMAKE_PREFIX_PATH})
+        if(NOT DEFINED HDFS_LIB_FOUND)
+            set(HDFS_LIB_LOCATION ${path}/hdfs)
+            if(EXISTS ${HDFS_LIB_LOCATION})
+                set(HDFS_LIB_FOUND TRUE)
+            else()
+                unset(HDFS_LIB_LOCATION)
+                unset(HDFS_LIB_FOUND)
+            endif()
+        endif()
+    endforeach(path)
+
+    # fallback if not using CMAKE_PREFIX_PATH (e.g., system/container install)
+    if(NOT DEFINED CMAKE_PREFIX_PATH OR NOT DEFINED HDFS_LIB_FOUND)
+        set(HDFS_LIB_LOCATION /usr/local/include/hdfs)
+        if(EXISTS ${HDFS_LIB_LOCATION})
+            set(HDFS_LIB_FOUND TRUE)
+        else()
+            unset(HDFS_LIB_LOCATION)
+        endif()
+    endif()
+
+    include_directories(${PROJECT_SOURCE_DIR} ${HDFS_LIB_LOCATION})
+    find_library(hdfs3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+    message(STATUS "HDFS_LIB_FOUND: ${HDFS_LIB_FOUND}")
+    if(DEFINED HDFS_LIB_FOUND)
+        add_definitions(-DUSE_HDFS)
+    endif()
+endif()
+
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -166,6 +230,7 @@ add_subdirectory(src/compiler/inference)
 add_subdirectory(src/compiler/lowering)
 add_subdirectory(src/compiler/utils)
 add_subdirectory(src/parser)
+add_subdirectory(src/parser/catalog)
 add_subdirectory(src/parser/config)
 add_subdirectory(src/parser/metadata)
 add_subdirectory(src/runtime/distributed/proto)
@@ -180,4 +245,5 @@ add_subdirectory(src/util)
 
 add_dependencies(CompilerUtils MLIRDaphneTransformsIncGen)
 
+add_subdirectory(daphne-opt)
 add_subdirectory(test)

@@ -1,0 +1,4 @@
+// A for-loop with many iterations.
+
+for(i in 1:500_000)
+    print(i);

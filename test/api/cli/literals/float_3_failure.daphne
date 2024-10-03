@@ -1,0 +1,2 @@
+// leading zeros are disallowed
+print(01.0);

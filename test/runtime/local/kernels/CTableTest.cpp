@@ -15,30 +15,39 @@
  */
 
 #include <runtime/local/datagen/GenGivenVals.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CTable.h>
 #include <runtime/local/kernels/CheckEq.h>
 
 #include <tags.h>
+
 #include <catch.hpp>
+
+#include <type_traits>
 #include <vector>
+
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int64_t, int32_t, double)) {
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define VALUE_TYPES int64_t, int32_t, double
+
+TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTRes = TestType;
     using VT = typename DTRes::VT;
+    using DTSel =
+        typename std::conditional<std::is_same<DTRes, Matrix<VT>>::value, Matrix<int64_t>, DenseMatrix<int64_t>>::type;
 
-    DenseMatrix<int64_t> * ys = nullptr;
-    DenseMatrix<int64_t> * xs = nullptr;
+    DTSel *ys = nullptr;
+    DTSel *xs = nullptr;
     VT weight;
     int64_t resNumRows;
     int64_t resNumCols;
-    DTRes * exp = nullptr;
-    
+    DTRes *exp = nullptr;
+
     SECTION("example 1") {
-        ys = genGivenVals<DenseMatrix<int64_t>>(1, {0});
-        xs = genGivenVals<DenseMatrix<int64_t>>(1, {0});
+        ys = genGivenVals<DTSel>(1, {0});
+        xs = genGivenVals<DTSel>(1, {0});
         weight = 3;
         resNumRows = -1;
         resNumCols = -1;
@@ -46,85 +55,90 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int
         exp = genGivenVals<DTRes>(1, {3});
     }
     SECTION("example 2: automatic shape") {
-        ys = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
-        xs = genGivenVals<DenseMatrix<int64_t>>(4, {2, 3, 1, 3});
+        ys = genGivenVals<DTSel>(4, {1, 4, 5, 4});
+        xs = genGivenVals<DTSel>(4, {2, 3, 1, 3});
         weight = 3;
         resNumRows = -1;
         resNumCols = -1;
 
-        exp = genGivenVals<DTRes>(6, {
-            0, 0, 0, 0,
-            0, 0, 3, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 6,
-            0, 3, 0, 0
-        });
+        exp = genGivenVals<DTRes>(6, {0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 3, 0, 0});
     }
     SECTION("example 2: crop #rows") {
-        ys = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
-        xs = genGivenVals<DenseMatrix<int64_t>>(4, {2, 3, 1, 3});
+        ys = genGivenVals<DTSel>(4, {1, 4, 5, 4});
+        xs = genGivenVals<DTSel>(4, {2, 3, 1, 3});
         weight = 3;
         resNumRows = 4;
         resNumCols = -1;
 
         exp = genGivenVals<DTRes>(4, {
-            0, 0, 0, 0,
-            0, 0, 3, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-        });
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         3,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                     });
     }
     SECTION("example 2: crop #cols") {
-        ys = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
-        xs = genGivenVals<DenseMatrix<int64_t>>(4, {2, 3, 1, 3});
+        ys = genGivenVals<DTSel>(4, {1, 4, 5, 4});
+        xs = genGivenVals<DTSel>(4, {2, 3, 1, 3});
         weight = 3;
         resNumRows = -1;
         resNumCols = 3;
 
         exp = genGivenVals<DTRes>(6, {
-            0, 0, 0,
-            0, 0, 3,
-            0, 0, 0,
-            0, 0, 0,
-            0, 0, 0,
-            0, 3, 0,
-        });
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         3,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         3,
+                                         0,
+                                     });
     }
     SECTION("example 2: crop both") {
-        ys = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
-        xs = genGivenVals<DenseMatrix<int64_t>>(4, {2, 3, 1, 3});
+        ys = genGivenVals<DTSel>(4, {1, 4, 5, 4});
+        xs = genGivenVals<DTSel>(4, {2, 3, 1, 3});
         weight = 3;
         resNumRows = 4;
         resNumCols = 3;
 
-        exp = genGivenVals<DTRes>(4, {
-            0, 0, 0,
-            0, 0, 3,
-            0, 0, 0,
-            0, 0, 0
-        });
+        exp = genGivenVals<DTRes>(4, {0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0});
     }
     SECTION("example 3: more items than cells") {
-        ys = genGivenVals<DenseMatrix<int64_t>>(12, {0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2});
-        xs = genGivenVals<DenseMatrix<int64_t>>(12, {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1});
+        ys = genGivenVals<DTSel>(12, {0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2});
+        xs = genGivenVals<DTSel>(12, {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1});
         weight = 3;
         resNumRows = -1;
         resNumCols = -1;
 
-        exp = genGivenVals<DTRes>(3, {
-            6, 6,
-            6, 6,
-            6, 6
-        });
+        exp = genGivenVals<DTRes>(3, {6, 6, 6, 6, 6, 6});
     }
-    
-    DTRes * res = nullptr;
+
+    DTRes *res = nullptr;
     ctable(res, ys, xs, weight, resNumRows, resNumCols, nullptr);
     CHECK(*res == *exp);
 
-    DataObjectFactory::destroy(ys);
-    DataObjectFactory::destroy(xs);
-    DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(ys, xs, exp, res);
 }

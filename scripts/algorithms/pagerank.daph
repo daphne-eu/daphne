@@ -1,0 +1,74 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications Copyright 2023 The DAPHNE Consortium
+#
+#-------------------------------------------------------------
+
+verbose = true;
+t0 = now();
+
+# G: N x M, p: M x 1, e: N x 1: u: 1 x M
+# M = as.si64($M);
+# N = as.si64($N);
+
+# G = rand(M, N, 1.0, 1.0, 0.000314159, 42);
+G = readMatrix($G);
+M = nrow(G);
+N = ncol(G);
+# p = rand(M, 1, 1.0, 1.0, 1.0, 43);
+p = fill(1.0, M, 1);
+# e = rand(N, 1, 1.0, 1.0, 1.0, 44);
+# u = rand(1, M, 1.0, 1.0, 1.0, 45);
+
+alpha = $alpha;
+max_iteration = as.si64($maxiter);
+iter = 0;
+t1 = now();
+
+for (iter in 1:max_iteration) {
+  ti0 = now();
+  sumP = fill(sum(p), nrow(p), 1);
+  p = (G @ p) * alpha + (sumP) * (1.0 - alpha);
+  ti1 = now();
+  if( verbose ) {
+    print("PageRank: #iter = ",0,0); print(iter, 0, 0);
+    print(",   #duration[ms]: ", 0, 0);
+    print((ti1 - ti0)*10.0^(-6));
+  }
+}
+
+#print(t(p));
+t2 = now();
+
+# write vertex assignment
+writeMatrix(p, "pr-out.csv");
+t3 = now();
+
+
+// Print elapsed times in seconds.
+print("\n------------------------------");
+print("load time[s]: ", 0, 0);
+print((t1 - t0)*10.0^(-9)); // initialization
+print("algo time[s]: ", 0, 0);
+print((t2 - t1)*10.0^(-9)); // core algorithm
+print("write time[s]: ", 0, 0);
+print((t3 - t2)*10.0^(-9)); // write results
+print("total time[s]: ", 0, 0);
+print((t3-t0)*10.0^(-9)); // total

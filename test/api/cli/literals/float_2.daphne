@@ -1,2 +1,6 @@
-// small positive
-print(123.456);
+// zero
+
+print(0.0);
+print(0.0f);
+print(-0.0);
+print(-0.0f);

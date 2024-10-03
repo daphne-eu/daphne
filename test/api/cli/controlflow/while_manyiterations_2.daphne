@@ -1,0 +1,8 @@
+// A while-loop with many iterations, containing a variadic op.
+
+i = 1;
+while(i <= 500_000) {
+    f = createFrame(as.matrix(i));
+    print(f);
+    i = i + 1;
+}

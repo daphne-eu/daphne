@@ -26,6 +26,7 @@ set(LIBS
         DaphneDSLParser
         DaphneIrExecutor
         DaphneConfigParser
+        DaphneCatalogParser
         DaphneMetaDataParser
         Util
         WorkerImpl

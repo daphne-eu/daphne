@@ -30,19 +30,20 @@
 // Convenience function
 // ****************************************************************************
 
-void createFrame(Frame *& res, Structure ** colMats, size_t numColMats, const char ** labels, size_t numLabels, DCTX(ctx)) {
+void createFrame(Frame *&res, Structure **colMats, size_t numColMats, const char **labels, size_t numLabels,
+                 DCTX(ctx)) {
     std::vector<Structure *> colMatsVec;
-    for(size_t c = 0; c < numColMats; c++)
+    for (size_t c = 0; c < numColMats; c++)
         colMatsVec.push_back(colMats[c]);
-    
-    std::string * labelsStr = numLabels ? new std::string[numLabels] : nullptr;
-    for(size_t c = 0; c < numLabels; c++)
+
+    std::string *labelsStr = numLabels ? new std::string[numLabels] : nullptr;
+    for (size_t c = 0; c < numLabels; c++)
         labelsStr[c] = labels[c];
-    
+
     res = DataObjectFactory::create<Frame>(colMatsVec, labelsStr);
-    
-    if(numLabels)
+
+    if (numLabels)
         delete[] labelsStr;
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CREATEFRAME_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_CREATEFRAME_H

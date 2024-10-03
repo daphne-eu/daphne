@@ -1,0 +1,7 @@
+def add_to_one(x) {
+    return 1 + x;
+}
+
+X = 10;
+ret = add_to_one(X);
+print(ret);

@@ -20,9 +20,12 @@ add_library(DataStructures
         DenseMatrix.cpp
         CSRMatrix.cpp
         Frame.cpp
+        Structure.cpp
         IAllocationDescriptor.h
         MetaDataObject.h
         MetaDataObject.cpp
+        ChunkedTensor.cpp
+        ContiguousTensor.cpp
         ValueTypeUtils.cpp)
 
 target_link_libraries(DataStructures PUBLIC Proto)

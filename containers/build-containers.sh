@@ -31,6 +31,9 @@ if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
   ARCH=ARMV8
 fi
 
+# read needed software versions (e.g., CUDA version,...)
+source ../software-package-versions.txt
+
 #on some installations docker can only be run with sudo
 USE_SUDO=
 #USE_SUDO=sudo
@@ -53,6 +56,7 @@ function build_daphne() {
         --build-arg NUM_CORES="$(nproc)" --build-arg TIMESTAMP="$TIMESTAMP_DATE" \
         --build-arg GIT_HASH="$(curl -s https://api.github.com/repos/$GH_USER/$GIT_REPO/branches/$GIT_BRANCH | \
                 jq --raw-output '.commit["sha"]' -)" \
+        --build-arg CMAKE_VERSION="${cmakeVersion}" \
         --build-arg BASE_IMAGE="$BASE_IMAGE" --build-arg FINAL_BASE_IMAGE="$FINAL_BASE_IMAGE"  \
         --build-arg DAPHNE_REPO=$DAPHNE_REPO_URL --build-arg DAPHNE_BRANCH=$GIT_BRANCH \
         --build-arg CREATION_DATE="$TIMESTAMP_RFC3339" --build-arg DAPHNE_BUILD_FLAGS="$DAPHNE_BUILD_FLAGS" \
@@ -64,7 +68,7 @@ function build_daphne() {
 #------------------------------------------------------------------------------
 
 ## testing:
-#BASE_IMAGE=ubuntu:20.04
+#BASE_IMAGE=ubuntu:${ubuntuVersion}
 #DAPHNE_TAG=$TIMESTAMP_DATE
 #DAPHNE_TARGET=build-cmake
 #IMAGE_REPO=local/build-cmake
@@ -78,7 +82,7 @@ function build_daphne() {
 #DAPHNE_REPO_URL="https://github.com/$GH_USER/$GIT_REPO.git"
 
 DAPHNE_TARGET=daphne-deps
-BASE_IMAGE=ubuntu:20.04
+BASE_IMAGE=ubuntu:${ubuntuVersion}
 DAPHNE_TAG=$TIMESTAMP_DATE_${ARCH}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 #bulid deps stage
@@ -98,28 +102,30 @@ DAPHNE_REPO_URL="https://github.com/$GH_USER/$GIT_REPO.git"
 # Images for DAPHNE development (BASE)
 #------------------------------------------------------------------------------
 DAPHNE_TARGET=daphne-dev
-BASE_IMAGE=ubuntu:20.04
-DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04
+BASE_IMAGE=ubuntu:${ubuntuVersion}
+DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu${ubuntuVersion}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
+
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_BASE
 
 #------------------------------------------------------------------------------
 # Images for DAPHNE development (CUDA)
 #------------------------------------------------------------------------------
 DAPHNE_TARGET=daphne-dev
-CUDA_TAG=12.1.1-cudnn8-devel-ubuntu20.04
+CUDA_TAG=${cudaVersion}-cudnn-devel-ubuntu${ubuntuVersion}
 BASE_IMAGE=nvidia/cuda:$CUDA_TAG
 DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
+
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_CUDA
 
 #-----------------------------------------------------------------------------
 # Images for DAPHNE development (OneAPI)
 #------------------------------------------------------------------------------
 #DAPHNE_TARGET=daphne-dev
-#ONEAPI_TAG=2023.1.0-devel-ubuntu20.04
+#ONEAPI_TAG=2023.1.0-devel-ubuntu${ubuntuVersion}
 #BASE_IMAGE=intel/oneapi:$ONEAPI_TAG
 #DAPHNE_TAG=${TIMESTAMP_DATE}_${ONEAPI_TAG}
 #IMAGE_REPO=daphneeu/$DAPHNE_TARGET
@@ -130,8 +136,8 @@ $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_
 #------------------------------------------------------------------------------
 DAPHNE_TARGET=daphne
 BASE_IMAGE=daphneeu/daphne-deps
-FINAL_BASE_IMAGE=ubuntu:20.04
-DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04
+FINAL_BASE_IMAGE=ubuntu:${ubuntuVersion}
+DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu${ubuntuVersion}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 DAPHNE_BUILD_FLAGS="--mpi"
 build_daphne
@@ -141,7 +147,7 @@ $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_${ARCH}_BASE
 # Images for running DAPHNE (CUDA)
 #------------------------------------------------------------------------------
 DAPHNE_TARGET=daphne
-CUDA_TAG=12.1.1-cudnn8-runtime-ubuntu20.04
+CUDA_TAG=${cudaVersion}-cudnn-runtime-ubuntu${ubuntuVersion}
 DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 BASE_IMAGE=daphneeu/daphne-dev
@@ -149,4 +155,5 @@ FINAL_BASE_IMAGE=nvidia/cuda:$CUDA_TAG
 DAPHNE_BUILD_FLAGS="--mpi --cuda"
 build_daphne
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_${ARCH}_CUDA
+
 set +e

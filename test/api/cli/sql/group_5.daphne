@@ -1,0 +1,10 @@
+// Group with and without aggregation in the same DaphneDSL script.
+
+f = createFrame([1, 2, 3, 2], "a");
+registerView("f", f);
+
+res1 = sql("SELECT f.a FROM f GROUP BY f.a;");
+print(res1);
+
+res2 = sql("SELECT sum(f.a) FROM f GROUP BY f.a;");
+print(res2);

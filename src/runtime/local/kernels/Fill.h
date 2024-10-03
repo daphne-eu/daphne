@@ -19,24 +19,21 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-
-#include <cassert>
+#include <runtime/local/datastructures/Matrix.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, typename VTArg>
-struct Fill {
-    static void apply(DTRes *& res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) = delete;
+template <class DTRes, typename VTArg> struct Fill {
+    static void apply(DTRes *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, typename VTArg>
-void fill(DTRes *& res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+template <class DTRes, typename VTArg> void fill(DTRes *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
     Fill<DTRes, VTArg>::apply(res, arg, numRows, numCols, ctx);
 }
 
@@ -48,17 +45,35 @@ void fill(DTRes *& res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct Fill<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *& res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+template <typename VT> struct Fill<DenseMatrix<VT>, VT> {
+    static void apply(DenseMatrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
 
-        if(arg != 0) {
+        if (arg != 0) {
             VT *valuesRes = res->getValues();
-            for(auto i = 0ul; i < res->getNumItems(); ++i)
+            for (auto i = 0ul; i < res->getNumItems(); ++i)
                 valuesRes[i] = arg;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct Fill<Matrix<VT>, VT> {
+    static void apply(Matrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
+
+        if (arg != 0) {
+            res->prepareAppend();
+            for (size_t r = 0; r < numRows; ++r)
+                for (size_t c = 0; c < numCols; ++c)
+                    res->append(r, c, arg);
+            res->finishAppend();
         }
     }
 };

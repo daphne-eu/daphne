@@ -16,38 +16,42 @@
 
 #pragma once
 
-#include "DataPlacement.h"
+struct DataPlacement;
+
+#include "IAllocationDescriptor.h"
 #include "Range.h"
 
 #include <algorithm>
 #include <array>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 /**
- * @brief The MetaDataObject class contains meta data of a data structure (Frame, Matrix)
+ * @brief The MetaDataObject class contains meta data of a data structure
+ * (Frame, Matrix)
  *
- * The MetaDataObject holds a vector of data placements (separated by type) and a vector of IDs of
- * data placements that all hold the current/latest version of the contained data.
- * Additionaly, this class contains methods to access/manipulate the contained information.
+ * The MetaDataObject holds a vector of data placements (separated by type) and
+ * a vector of IDs of data placements that all hold the current/latest version
+ * of the contained data. Additionaly, this class contains methods to
+ * access/manipulate the contained information.
  */
 class MetaDataObject {
-    std::array<std::vector<std::unique_ptr<DataPlacement>>,
-            static_cast<size_t>(ALLOCATION_TYPE::NUM_ALLOC_TYPES)> data_placements;
+    std::array<std::vector<std::unique_ptr<DataPlacement>>, static_cast<size_t>(ALLOCATION_TYPE::NUM_ALLOC_TYPES)>
+        data_placements;
     std::vector<size_t> latest_version;
 
-public:
+  public:
     DataPlacement *addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r = nullptr);
     const DataPlacement *findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const;
     [[nodiscard]] DataPlacement *getDataPlacementByID(size_t id) const;
-    [[nodiscard]] DataPlacement *getDataPlacementByLocation(const std::string& location) const;
-    [[nodiscard]] auto getDataPlacementByType(ALLOCATION_TYPE type) const ->
-            const std::vector<std::unique_ptr<DataPlacement>>*;
+    [[nodiscard]] DataPlacement *getDataPlacementByLocation(const std::string &location) const;
+    [[nodiscard]] auto
+    getDataPlacementByType(ALLOCATION_TYPE type) const -> const std::vector<std::unique_ptr<DataPlacement>> *;
     void updateRangeDataPlacementByID(size_t id, Range *r);
 
     [[nodiscard]] bool isLatestVersion(size_t placement) const;
     void addLatest(size_t id);
     void setLatest(size_t id);
     [[nodiscard]] auto getLatest() const -> std::vector<size_t>;
-
 };

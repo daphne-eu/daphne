@@ -24,7 +24,6 @@
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
-#include <cassert>
 #include <cstddef>
 #include <string>
 
@@ -35,19 +34,18 @@ namespace CUDA {
 // Struct for partial template specialization
 // ****************************************************************************
 
-    template<class DTRes, class DTLhs, typename VTRhs>
-    struct EwBinaryObjSca {
-        static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) = delete;
-    };
+template <class DTRes, class DTLhs, typename VTRhs> struct EwBinaryObjSca {
+    static void apply(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, VTRhs rhs, DCTX(ctx)) = delete;
+};
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-    template<class DTRes, class DTLhs, typename VTRhs>
-    void ewBinaryObjSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
-        EwBinaryObjSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
-    }
+template <class DTRes, class DTLhs, typename VTRhs>
+void ewBinaryObjSca(BinaryOpCode opCode, DTRes *&res, const DTLhs *lhs, VTRhs rhs, DCTX(ctx)) {
+    EwBinaryObjSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
+}
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -57,8 +55,7 @@ namespace CUDA {
 // DenseMatrix <- DenseMatrix, scalar
 // ----------------------------------------------------------------------------
 
-    template<typename VT>
-    struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
-        static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, VT rhs, DCTX(ctx));
-    };
-}
+template <typename VT> struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *&res, const DenseMatrix<VT> *lhs, VT rhs, DCTX(ctx));
+};
+} // namespace CUDA

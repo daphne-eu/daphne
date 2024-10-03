@@ -185,3 +185,35 @@ For instance, the following kernels represent some interesting cases:
 
 Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.
 Please have a look at test cases for existing kernel implementations in [test/runtime/local/kernels](/test/runtime/local/kernels) (surely, these could still be improved).
+
+
+### Error Handling
+
+It is recommended to exceptions such as `throw std::runtime_error` in a kernel
+in case the code runs into an unresolvable issue. We catch these exceptions in
+our surrounding code to the kernel and provide, whenever possible, additional
+information about the source of the error in the DaphneDSL script.
+
+
+### Experimental Kernels
+
+As an alternative to implementing a new kernel that is directly integrated into
+DAPHNE, one can also work on kernel implementations using the [kernel catalog](doc/Extensions.md).
+These should reside in [experimental/op/](src/runtime/local/kernels/experimental/op/) where `op` is
+the mnemonic of the DaphneIR operation that the kernel is implementing.
+
+Experimental kernels are not directly integrated into DAPHNE and are neither
+compiled nor executed by default. They can be used to test new ideas and
+provide an easier way of prototyping kernel implementations. One can easily
+test multiple different implementations of the same DAPHNE kernel using a
+single DaphneDSL script which calls all the kernel implementations.
+
+There are less restrictions put on experimental kernels than on built-in
+kernels, e.g., they are not tested as part of the CI pipeline. You are also
+free to introduce new dependencies that are handled by the accompanying
+`Makefile` or build script. Testing and dependency management will have to be
+resolved before the experimental kernel is integrated into DAPHNE as a built-in
+kernel.
+
+Check out [Extensions.md](doc/Extensions.md) for more information on how to
+implement experimental kernels.

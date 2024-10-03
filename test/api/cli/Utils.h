@@ -18,6 +18,8 @@
 #define TEST_API_CLI_UTILS_H
 
 #include <api/cli/StatusCode.h>
+#include <cerrno>
+#include <complex>
 #include <runtime/distributed/worker/WorkerImpl.h>
 
 #include <catch.hpp>
@@ -28,28 +30,25 @@
 
 #include <grpcpp/server.h>
 
-#include <memory>
+#include <filesystem>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <filesystem>
 
 /**
  * @brief Reads the entire contents of a plain text file into a string.
- * 
+ *
  * Not intended to be used with large files.
- * 
+ *
  * @param filePath The path to the file to be read.
  * @return A string containing the entire contents of the file.
  */
-std::string readTextFile(const std::string & filePath);
+std::string readTextFile(const std::string &filePath);
 
 #ifndef NDEBUG
-template<class T>
-[[maybe_unused]] void LOG(T t) { std::cout << t << std::endl; }
+template <class T> [[maybe_unused]] void LOG(T t) { std::cout << t << std::endl; }
 
-template<class T, class... OtherArgs>
-void LOG(T&& var, OtherArgs&&... args) {
+template <class T, class... OtherArgs> void LOG(T &&var, OtherArgs &&...args) {
     std::cout << std::forward<T>(var) << " ";
     LOG(std::forward<OtherArgs>(args)...);
 }
@@ -58,7 +57,7 @@ void LOG(T&& var, OtherArgs&&... args) {
 /**
  * @brief Executes the specified program with the given arguments and captures
  * `stdout`, `stderr`, and the status code.
- * 
+ *
  * @param out The stream where to direct the program's standard output.
  * @param err The stream where to direct the program's standard error.
  * @param execPath The path to the executable.
@@ -68,39 +67,43 @@ void LOG(T&& var, OtherArgs&&... args) {
  * @return The status code returned by the process, or `-1` if it did not exit
  * normally.
  */
-template<typename... Args>
-int runProgram(std::stringstream & out, std::stringstream & err, const char * execPath, Args ... args) {
+template <typename... Args>
+int runProgram(std::stringstream &out, std::stringstream &err, const char *execPath, Args... args) {
+    constexpr int READ = 0;
+    constexpr int WRITE = 1;
     int linkOut[2]; // pipe ends for stdout
     int linkErr[2]; // pipe ends for stderr
     char buf[1024]; // internal buffer for reading from the pipes
-    
+
     // Try to create the pipes.
-    if(pipe(linkOut) == -1)
-        throw std::runtime_error("could not create pipe");
-    if(pipe(linkErr) == -1)
-        throw std::runtime_error("could not create pipe");
-    
+    if (pipe(linkOut) == -1)
+        throw std::runtime_error("could not create pipe" + std::to_string(errno));
+    if (pipe(linkErr) == -1)
+        throw std::runtime_error("could not create pipe" + std::to_string(errno));
+
     // Try to create the child process.
     pid_t p = fork();
-    
-    if(p == -1)
+
+    if (p == -1)
         throw std::runtime_error("could not create child process");
-    else if(p) { // parent
+    else if (p) { // parent
         // Close write end of pipes.
-        close(linkOut[1]);
-        close(linkErr[1]);
-        
+        close(linkOut[WRITE]);
+        close(linkErr[WRITE]);
+
         // Read data from stdout and stderr of the child from the pipes.
         ssize_t numBytes;
-        while((numBytes = read(linkOut[0], buf, sizeof(buf))))
+        while ((numBytes = read(linkOut[READ], buf, sizeof(buf))))
             out.write(buf, numBytes);
-        while((numBytes = read(linkErr[0], buf, sizeof(buf))))
+        while ((numBytes = read(linkErr[READ], buf, sizeof(buf))))
             err.write(buf, numBytes);
 
+        close(linkOut[READ]);
+        close(linkErr[READ]);
         // Wait for child's termination.
         int status;
         waitpid(p, &status, 0);
-        if(status != 0) {
+        if (status != 0) {
 #ifndef NDEBUG
             std::cout << "stdout: " << out.str() << std::endl;
             std::cout << "stderr: " << err.str() << std::endl;
@@ -109,27 +112,32 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
 #endif
         }
         return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-    }
-    else { // child
+    } else { // child
         // Redirect stdout and stderr to the pipe.
-        dup2(linkOut[1], STDOUT_FILENO);
-        dup2(linkErr[1], STDERR_FILENO);
-        close(linkOut[0]);
-        close(linkOut[1]);
-        close(linkErr[0]);
-        close(linkErr[1]);
-        
+        dup2(linkOut[WRITE], STDOUT_FILENO);
+        dup2(linkErr[WRITE], STDERR_FILENO);
+        close(linkOut[READ]);
+        close(linkOut[WRITE]);
+        close(linkErr[READ]);
+        close(linkErr[WRITE]);
+
         // Execute other program.
-        execl(execPath, args..., static_cast<char *>(nullptr));
-        
+        // If execPath is a path (contains "/") use execl, otherwise use execlp.
+        // We need this to support "mpirun" for the MPI test cases.
+        if (std::string(execPath).find("/") != std::string::npos)
+            execl(execPath, args..., static_cast<char *>(nullptr));
+        else
+            execlp(execPath, args..., static_cast<char *>(nullptr));
+
         // execl does not return, unless it failed.
         throw std::runtime_error("could not execute the program");
     }
 }
 
 /**
- * @brief Executes the specified program with the given arguments in the background.
- *  
+ * @brief Executes the specified program with the given arguments in the
+ * background.
+ *
  * @param out The file descriptor where to redirect standard output.
  * @param err The file descriptor where to redirect standard error.
  * @param execPath The path to the executable.
@@ -137,37 +145,58 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
  * element should be of type `char *`. The first one should be the name of the
  * program itself. The last one does *not* need to be a null pointer.
  * @return The process id of the child process.
- * 
+ *
  */
-template<typename... Args>
-pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ... args) {        
-    
+template <typename... Args> pid_t runProgramInBackground(int &out, int &err, const char *execPath, Args... args) {
+
     // Try to create the child process.
     pid_t p = fork();
-    
-    if(p == -1)
+
+    if (p == -1)
         throw std::runtime_error("could not create child process");
-    else if(p) { // parent        
+    else if (p) { // parent
         // Return pid
         return p;
-    }
-    else { // child
+    } else { // child
         // Redirect stdout and stderr to the pipe.
         dup2(out, STDOUT_FILENO);
         dup2(err, STDERR_FILENO);
         // Execute other program.
         execl(execPath, args..., static_cast<char *>(nullptr));
-        
+
         // execl does not return, unless it failed.
         throw std::runtime_error("could not execute the program");
     }
 }
 
+/**
+ * @brief Executes the "run-lit.py" Python script in a directory and
+ * captures `stdout`, `stderr`, and the status code.
+ *
+ * "run-lit.py" is required to run the LLVM tool llvm-lit in order to
+ * test "*.mlir" files in the directoy using the llvm-lit command RUN:
+ * in each file.
+ *
+ * @param out The stream where to direct the program's standard output.
+ * @param err The stream where to direct the program's standard error.
+ * @param dirPath The path to the directory containing the "run-lit.py" script
+ * and the "*.mlir" test cases.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ * @return The status code returned by the process, or `-1` if it did not exit
+ * normally.
+ */
+template <typename... Args>
+int runLIT(std::stringstream &out, std::stringstream &err, std::string dirPath, Args... args) {
+    return runProgram(out, err, "/bin/python3", "python3", (dirPath + "run-lit.py").c_str(), "-v", dirPath.c_str(),
+                      args...);
+}
 
 /**
  * @brief Executes DAPHNE's command line interface with the given arguments and
  * captures `stdout`, `stderr`, and the status code.
- * 
+ *
  * @param out The stream where to direct the program's standard output.
  * @param err The stream where to direct the program's standard error.
  * @param args The arguments including the script file. Despite the variadic
@@ -176,17 +205,16 @@ pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ...
  * @return The status code returned by the process, or `-1` if it did not exit
  * normally.
  */
-template<typename... Args>
-int runDaphne(std::stringstream & out, std::stringstream & err, Args ... args) {
+template <typename... Args> int runDaphne(std::stringstream &out, std::stringstream &err, Args... args) {
     return runProgram(out, err, "bin/daphne", "daphne", args...);
 }
 
 /**
  * @brief Executes the given Python script with the `python3` interpreter and
  * captures `stdout`, `stderr`, and the status code.
- * 
+ *
  * Typically the Python script will use DaphneLib, the Python API of DAPHNE.
- * 
+ *
  * @param out The stream where to direct the program's standard output.
  * @param err The stream where to direct the program's standard error.
  * @param scriptPath The path to the Python script file to execute.
@@ -196,15 +224,15 @@ int runDaphne(std::stringstream & out, std::stringstream & err, Args ... args) {
  * @return The status code returned by the process, or `-1` if it did not exit
  * normally.
  */
-template<typename... Args>
-int runDaphneLib(std::stringstream & out, std::stringstream & err, const char * scriptPath, Args ... args) {
+template <typename... Args>
+int runDaphneLib(std::stringstream &out, std::stringstream &err, const char *scriptPath, Args... args) {
     return runProgram(out, err, "/bin/python3", "python3", scriptPath, args...);
 }
 
 /**
  * @brief Checks whether executing the given DaphneDSL script with the command
- * line interface of the DAPHNE Prototype returns the given status code.
- * 
+ * line interface of DAPHNE returns the given status code.
+ *
  * @param exp The expected status code.
  * @param scriptFilePath The path to the DaphneDSL script file to execute.
  * @param args The arguments to pass in addition to the script's path. Note
@@ -212,8 +240,8 @@ int runDaphneLib(std::stringstream & out, std::stringstream & err, const char * 
  * utility function. Despite the variadic template, each element should be of
  * type `char *`. The last one does *not* need to be a null pointer.
  */
-template<typename... Args>
-void checkDaphneStatusCode(StatusCode exp, const std::string & scriptFilePath, Args ... args) {
+template <typename... Args>
+void checkDaphneStatusCode(StatusCode exp, const std::string &scriptFilePath, Args... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
@@ -221,25 +249,25 @@ void checkDaphneStatusCode(StatusCode exp, const std::string & scriptFilePath, A
     CHECK(status == exp);
 }
 
-template<typename... Args>
-void checkDaphneStatusCodeSimple(StatusCode exp, const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+template <typename... Args>
+void checkDaphneStatusCodeSimple(StatusCode exp, const std::string &dirPath, const std::string &name, unsigned idx,
+                                 Args... args) {
     checkDaphneStatusCode(exp, dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
 }
 
 /**
  * @brief Checks whether executing the given DaphneDSL script with the command
- * line interface of the DAPHNE Prototype fails.
- * 
+ * line interface of DAPHNE fails.
+ *
  * This is the case when the return code is not `StatusCode::SUCCESS`.
- * 
+ *
  * @param scriptFilePath The path to the DaphneDSL script file to execute.
  * @param args The arguments to pass in addition to the script's path. Note
  * that script arguments must be passed via the `--args` option for this
  * utility function. Despite the variadic template, each element should be of
  * type `char *`. The last one does *not* need to be a null pointer.
  */
-template<typename... Args>
-void checkDaphneFails(const std::string & scriptFilePath, Args ... args) {
+template <typename... Args> void checkDaphneFails(const std::string &scriptFilePath, Args... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
@@ -247,28 +275,27 @@ void checkDaphneFails(const std::string & scriptFilePath, Args ... args) {
     CHECK(status != StatusCode::SUCCESS);
 }
 
-template<typename... Args>
-void checkDaphneFailsSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+template <typename... Args>
+void checkDaphneFailsSimple(const std::string &dirPath, const std::string &name, unsigned idx, Args... args) {
     checkDaphneFails(dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
 }
 
 /**
  * @brief Compares the standard output of executing the given DaphneDSL script
- * with the command line interface of the DAPHNE Prototype to a reference text.
- * 
+ * with the command line interface of DAPHNE to a reference text.
+ *
  * Also checks that the status code indicates a successful execution and that
  * nothing was printed to standard error.
- * 
+ *
  * @param exp The expected output on stdout.
  * @param scriptFilePath The path to the DaphneDSL script file to execute.
- * output.
  * @param args The arguments to pass in addition to the script's path. Note
  * that script arguments must be passed via the `--args` option for this
  * utility function. Despite the variadic template, each element should be of
  * type `char *`. The last one does *not* need to be a null pointer.
  */
-template<typename... Args>
-void compareDaphneToStr(const std::string & exp, const std::string & scriptFilePath, Args ... args) {
+template <typename... Args>
+void compareDaphneToStr(const std::string &exp, const std::string &scriptFilePath, Args... args) {
     std::stringstream out;
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
@@ -283,13 +310,110 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
 }
 
 /**
- * @brief Compares the standard output of executing the given DaphneDSL script
- * with the command line interface of the DAPHNE Prototype to a reference text
- * file.
- * 
+ * @brief Compares the standard output of executing the given Python/DaphneLib
+ * script to a reference text.
+ *
  * Also checks that the status code indicates a successful execution and that
  * nothing was printed to standard error.
- * 
+ *
+ * @param exp The expected output on stdout.
+ * @param scriptFilePath The path to the Python/DaphneLib script file to
+ * execute.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ */
+template <typename... Args>
+void compareDaphneLibToStr(const std::string &exp, const std::string &scriptFilePath, Args... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphneLib(out, err, scriptFilePath.c_str(), args...);
+
+    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
+    // checks of out and err still run and provide useful messages. For err,
+    // don't check empty(), because then catch2 doesn't display the error
+    // output.
+    CHECK(status == StatusCode::SUCCESS);
+    CHECK(out.str() == exp);
+    CHECK(err.str() == "");
+}
+
+/**
+ * @brief Checks if the numerical values in the standard output of the two given
+ * DaphneDSL script runs are within a relative distance to a reference text.
+ *
+ * @param left The output from a runDaphne().
+ * @param right The output from a runDaphne().
+ * @param ignore_lines How many lines in the beginning of the DaphneDSL output
+ * do contain numerical values to compare.
+ * @param epsilon The relative error that is acceptable.
+ */
+template <typename... Args>
+void compareDaphneRunsNumerically(std::stringstream &left, std::stringstream &right, const int ignore_lines,
+                                  const long double epsilon) {
+    std::string s_left;
+    std::string s_right;
+    float f_left{0};
+    float f_right{0};
+    for (auto i = 0; i != ignore_lines; i++) {
+        std::getline(left, s_left);
+        std::getline(right, s_right);
+    }
+    bool correct_so_far = true;
+
+    while (std::getline(left, s_left, ' ') && std::getline(right, s_right, ' ') && correct_so_far) {
+        try {
+            // Long double just to be sure
+            f_left = std::stold(s_left);
+            f_right = std::stold(s_right);
+        } catch (std::invalid_argument const &) {
+            FAIL("The result does not have the right number of outputs.\nLeft=" << left.str()
+                                                                                << "\t Right=" << right.str());
+        }
+        correct_so_far = std::norm(f_left - f_right) < epsilon * std::norm(f_left);
+    }
+    CHECK(correct_so_far == true);
+}
+
+/**
+ * @brief Checks if the numerical values in the standard output of the given
+ * DaphneDSL script run with the command line interface of DAPHNE
+ * are within a relative distance to a reference text.
+ *
+ * Also checks that the status code indicates a successful execution and that
+ * nothing was printed to standard error.
+ *
+ * @param exp The expected output on stdout.
+ * @param scriptFilePath The path to the DaphneDSL script file to execute.
+ * output.
+ * @param ignore_lines How many lines in the beginning of the DaphneDSL output
+ * do contain numerical values to compare.
+ * @param epsilon The relative error that is acceptable.
+ * @param args The arguments to pass in addition to the script's path. Note
+ * that script arguments must be passed via the `--args` option for this
+ * utility function. Despite the variadic template, each element should be of
+ * type `char *`. The last one does *not* need to be a null pointer.
+ */
+template <typename... Args>
+void compareDaphneToStringNumerically(const std::string &exp, const std::string &scriptFilePath, int ignore_lines,
+                                      long double epsilon, Args... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphne(out, err, args..., scriptFilePath.c_str());
+    CHECK(status == StatusCode::SUCCESS);
+    std::stringstream exp_ss(exp);
+    compareDaphneRunsNumerically(exp_ss, out, ignore_lines, epsilon);
+    CHECK(err.str() == "");
+}
+
+/**
+ * @brief Compares the standard output of executing the given DaphneDSL script
+ * with the command line interface of DAPHNE to a reference text
+ * file.
+ *
+ * Also checks that the status code indicates a successful execution and that
+ * nothing was printed to standard error.
+ *
  * @param refFilePath The path to the plain text file containing the reference
  * @param scriptFilePath The path to the DaphneDSL script file to execute.
  * output.
@@ -298,33 +422,34 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
  * utility function. Despite the variadic template, each element should be of
  * type `char *`. The last one does *not* need to be a null pointer.
  */
-template<typename... Args>
-void compareDaphneToRef(const std::string & refFilePath, const std::string & scriptFilePath, Args ... args) {
+template <typename... Args>
+void compareDaphneToRef(const std::string &refFilePath, const std::string &scriptFilePath, Args... args) {
     return compareDaphneToStr(readTextFile(refFilePath), scriptFilePath, args...);
 }
 
 /**
  * @brief Compares the standard output of the given DaphneDSL script with that
  * of the given Python/DaphneLib script.
- * 
+ *
  * Also checks that the status codes indicate a successful execution for both
  * and that nothing was printed to standard error.
- * 
+ *
  * @param pythonScriptFilePath
  * @param daphneDSLScriptFilePath
  * @param args The arguments to pass in addition to the scripts' path. Despite
  * the variadic template, each element should be of type `char *`. The last one
  * does *not* need to be a null pointer.
  */
-template<typename... Args>
-void compareDaphneToDaphneLib(const std::string & pythonScriptFilePath, const std::string & daphneDSLScriptFilePath, Args ... args) {
+template <typename... Args>
+void compareDaphneToDaphneLib(const std::string &pythonScriptFilePath, const std::string &daphneDSLScriptFilePath,
+                              Args... args) {
     std::stringstream outDaphne;
     std::stringstream errDaphne;
     std::stringstream outDaphneLib;
     std::stringstream errDaphneLib;
     int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
-    int statusDaphne = runDaphne(outDaphne, errDaphne, args..., daphneDSLScriptFilePath.c_str());
-    
+    int statusDaphne = runDaphne(outDaphne, errDaphne, daphneDSLScriptFilePath.c_str(), args...);
+
     // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
     // checks of out and err still run and provide useful messages. For err,
     // don't check empty(), because then catch2 doesn't display the error
@@ -340,18 +465,19 @@ void compareDaphneToDaphneLib(const std::string & pythonScriptFilePath, const st
  * @brief Approximate floating point comparison of each line in the standard
  * output of the given DaphneDSL script with that of the given Python/DaphneLib
  * script.
- * 
+ *
  * Also checks that the status codes indicate a successful execution for both
  * and that nothing was printed to standard error.
- * 
+ *
  * @param pythonScriptFilePath
  * @param daphneDSLScriptFilePath
  * @param args The arguments to pass in addition to the scripts' path. Despite
  * the variadic template, each element should be of type `char *`. The last one
  * does *not* need to be a null pointer.
  */
-template<typename... Args>
-void compareDaphneToDaphneLibScalar(const std::string & pythonScriptFilePath, const std::string & daphneDSLScriptFilePath, Args ... args) {
+template <typename... Args>
+void compareDaphneToDaphneLibScalar(const std::string &pythonScriptFilePath, const std::string &daphneDSLScriptFilePath,
+                                    Args... args) {
     std::stringstream outDaphne;
     std::stringstream errDaphne;
     std::stringstream outDaphneLib;
@@ -360,49 +486,51 @@ void compareDaphneToDaphneLibScalar(const std::string & pythonScriptFilePath, co
     float epsilon = 0.1;
     int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
     int statusDaphne = runDaphne(outDaphne, errDaphne, args..., daphneDSLScriptFilePath.c_str());
-    
+
     // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
     // checks of out and err still run and provide useful messages. For err,
     // don't check empty(), because then catch2 doesn't display the error
     // output.
     CHECK(statusDaphne == StatusCode::SUCCESS);
     CHECK(statusDaphneLib == 0);
-    while(std::getline(outDaphneLib, resultDaphneLib) && std::getline(outDaphne, resultDaphne)) {
+    while (std::getline(outDaphneLib, resultDaphneLib) && std::getline(outDaphne, resultDaphne)) {
         CHECK(std::stof(resultDaphneLib) - std::stof(resultDaphne) <= epsilon);
     }
     CHECK(errDaphne.str() == "");
     CHECK(errDaphneLib.str() == "");
 }
 
-template<typename... Args>
-void compareDaphneToRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+template <typename... Args>
+void compareDaphneToRefSimple(const std::string &dirPath, const std::string &name, unsigned idx, Args... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
-    compareDaphneToRef(filePath + ".txt",  filePath + ".daphne", args...);
+    compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
 }
 
-template<typename... Args>
-void compareDaphneToDaphneLibSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+template <typename... Args>
+void compareDaphneToDaphneLibSimple(const std::string &dirPath, const std::string &name, unsigned idx, Args... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToDaphneLib(filePath + ".py", args..., filePath + ".daphne");
 }
 
 /**
  * @brief Compares the standard output of executing a given DaphneDSL script
- * with the command line interface of the DAPHNE Prototype, to a (simpler) DaphneDSL
+ * with the command line interface of DAPHNE, to a (simpler) DaphneDSL
  * script defining the expected behaviour.
  *
  * Also checks that the status code indicates a successful execution and that
  * nothing was printed to standard error.
  *
- * @param expScriptFilePath The path to the DaphneDSL script with expected behaviour.
- * @param actScriptFilePath The path to the DaphneDSL script to check with actual behaviour.
+ * @param expScriptFilePath The path to the DaphneDSL script with expected
+ * behaviour.
+ * @param actScriptFilePath The path to the DaphneDSL script to check with
+ * actual behaviour.
  * @param args The arguments to pass in addition to the script's path. Note
  * that script arguments must be passed via the `--args` option for this
  * utility function. Despite the variadic template, each element should be of
  * type `char *`. The last one does *not* need to be a null pointer.
  */
-template<typename... Args>
-void compareDaphneToSelfRef(const std::string &expScriptFilePath, const std::string &actScriptFilePath, Args ... args) {
+template <typename... Args>
+void compareDaphneToSelfRef(const std::string &expScriptFilePath, const std::string &actScriptFilePath, Args... args) {
     std::stringstream expOut;
     std::stringstream expErr;
     int expStatus = runDaphne(expOut, expErr, args..., expScriptFilePath.c_str());
@@ -417,8 +545,9 @@ void compareDaphneToSelfRef(const std::string &expScriptFilePath, const std::str
     CHECK(expErr.str() == actErr.str());
 }
 
-template<typename... Args>
-[[maybe_unused]] void compareDaphneToSelfRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+template <typename... Args>
+[[maybe_unused]] void compareDaphneToSelfRefSimple(const std::string &dirPath, const std::string &name, unsigned idx,
+                                                   Args... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
 }
@@ -426,7 +555,7 @@ template<typename... Args>
 /**
  * @brief Compares the standard output of executing a given DaphneDSL script
  * with a reference script or text file, based on which file is found.
- * 
+ *
  * @param dirPath
  * @param name
  * @param idx
@@ -435,20 +564,17 @@ template<typename... Args>
  * utility function. Despite the variadic template, each element should be of
  * type `char *`. The last one does *not* need to be a null pointer.
  */
-template<typename... Args>
-void compareDaphneToSomeRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+template <typename... Args>
+void compareDaphneToSomeRefSimple(const std::string &dirPath, const std::string &name, unsigned idx, Args... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     if (std::filesystem::exists(filePath + ".ref.daphne")) {
         compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
-    }
-    else if (std::filesystem::exists(filePath + ".txt")) {
+    } else if (std::filesystem::exists(filePath + ".txt")) {
         compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
-    }
-    else {
+    } else {
         throw std::runtime_error("Could not find any ref for file `" + filePath + ".daphne`");
     }
 }
-
 
 // TODO Ideally, we shouldn't need that. There should be a way to print data
 // objects without technical information such as their physical data
@@ -456,13 +582,13 @@ void compareDaphneToSomeRefSimple(const std::string & dirPath, const std::string
 /**
  * @brief Replaces all occurrences of "DenseMatrix" and "CSRMatrix" in the
  * given string by "<SomeMatrix>".
- * 
+ *
  * Can be used to prepare the outputs of a DaphneDSL script with two different
  * sets of arguments for string comparison.
- * 
- * @param str 
+ *
+ * @param str
  * @return
  */
-std::string generalizeDataTypes(const std::string& str);
+std::string generalizeDataTypes(const std::string &str);
 
-#endif //TEST_API_CLI_UTILS_H
+#endif // TEST_API_CLI_UTILS_H

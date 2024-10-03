@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/MatMul.h>
-#include <runtime/local/kernels/Transpose.h>
 #include <runtime/local/kernels/Solve.h>
+#include <runtime/local/kernels/Transpose.h>
 
 #include <tags.h>
 
@@ -27,12 +28,12 @@
 
 #include <vector>
 
-template<class DT>
-void checkSolve(const DT* lhs, const DT* rhs, const DT * exp) {
+template <class DT> void checkSolve(const DT *lhs, const DT *rhs, const DT *exp, DCTX(dctx)) {
     DT *res = nullptr;
-    solve<DT, DT, DT>(res, lhs, rhs, nullptr);
+    solve<DT, DT, DT>(res, lhs, rhs, dctx);
     // instead of CHECK(*res == * exp), we use the below approximate comparison
-    // because otherwise the float results do not exactly match, while double does
+    // because otherwise the float results do not exactly match, while double
+    // does
     CHECK(res->getNumRows() == exp->getNumRows());
     CHECK(res->getNumCols() == exp->getNumCols());
     CHECK(checkEqApprox(res, exp, 1e-6, nullptr));
@@ -40,30 +41,23 @@ void checkSolve(const DT* lhs, const DT* rhs, const DT * exp) {
 
 TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix), (float, double)) {
     using DT = TestType;
-    
-    auto X = genGivenVals<DT>(7, {
-        1, 4, 5,
-        3, 7, 1,
-        2, 3, 5,
-        9, 8, 1,
-        1, 2, 3,
-        5, 1, 9,
-        2, 3, 1
-    });
+    auto dctx = setupContextAndLogger();
+
+    auto X = genGivenVals<DT>(7, {1, 4, 5, 3, 7, 1, 2, 3, 5, 9, 8, 1, 1, 2, 3, 5, 1, 9, 2, 3, 1});
     auto w = genGivenVals<DT>(3, {
-        1,
-        2,
-        3,
-    });
+                                     1,
+                                     2,
+                                     3,
+                                 });
 
     DT *y = nullptr, *tX = nullptr, *A = nullptr, *b = nullptr;
-    matMul(y, X, w, false, false, nullptr);
-    transpose<DT, DT>(tX, X, nullptr);
-    matMul(A, tX, X, false, false, nullptr);
-    matMul(b, tX, y, false, false, nullptr);
+    matMul(y, X, w, false, false, dctx.get());
+    transpose<DT, DT>(tX, X, dctx.get());
+    matMul(A, tX, X, false, false, dctx.get());
+    matMul(b, tX, y, false, false, dctx.get());
 
     // check solve A x = b for x
-    checkSolve(A, b, w);
+    checkSolve(A, b, w, dctx.get());
 
     DataObjectFactory::destroy(X);
     DataObjectFactory::destroy(w);

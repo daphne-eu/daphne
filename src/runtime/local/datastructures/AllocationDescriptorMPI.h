@@ -17,58 +17,51 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H
 
-#include <runtime/local/datastructures/Structure.h>
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/Structure.h>
 
-#include <runtime/local/datastructures/DistributedAllocationHelpers.h>
 #include <memory>
+#include <runtime/local/datastructures/DistributedAllocationHelpers.h>
 
 class AllocationDescriptorMPI : public IAllocationDescriptor {
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_MPI;
     int processRankID;
-    DaphneContext* ctx;
+    DaphneContext *ctx;
     DistributedData distributedData;
     std::shared_ptr<std::byte> data;
 
-public:
-    AllocationDescriptorMPI() {} ;
-    AllocationDescriptorMPI(int id,
-                            DaphneContext* ctx, 
-                            DistributedData data) :  processRankID(id), ctx(ctx), distributedData(data) {} ;
+  public:
+    AllocationDescriptorMPI(){};
+    AllocationDescriptorMPI(int id, DaphneContext *ctx, DistributedData data)
+        : processRankID(id), ctx(ctx), distributedData(data){};
 
-    ~AllocationDescriptorMPI() override {};
+    ~AllocationDescriptorMPI() override{};
 
-    [[nodiscard]] ALLOCATION_TYPE getType() const override 
-    { return type; };
-    
-    std::string getLocation() const override {
-        return std::to_string(processRankID); 
-    };
-    
-    void createAllocation(size_t size, bool zero) override {} ;
-    std::shared_ptr<std::byte> getData() override {return nullptr;} ;
+    [[nodiscard]] ALLOCATION_TYPE getType() const override { return type; };
 
-    bool operator==(const IAllocationDescriptor* other) const override {
-        if(getType() == other->getType())
-            return(getLocation() == dynamic_cast<const AllocationDescriptorMPI *>(other)->getLocation());
+    std::string getLocation() const override { return std::to_string(processRankID); };
+
+    void createAllocation(size_t size, bool zero) override {};
+    std::shared_ptr<std::byte> getData() override { return nullptr; };
+
+    bool operator==(const IAllocationDescriptor *other) const override {
+        if (getType() == other->getType())
+            return (getLocation() == dynamic_cast<const AllocationDescriptorMPI *>(other)->getLocation());
         return false;
-    } ;
+    };
 
     [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorMPI>(*this);
     }
-    
+
     void transferTo(std::byte *src, size_t size) override { /* TODO */ };
     void transferFrom(std::byte *src, size_t size) override { /* TODO */ };
 
-    const DistributedIndex getDistributedIndex()
-    { return distributedData.ix; }    
-    const DistributedData getDistributedData()
-    { return distributedData; }
-    void updateDistributedData(DistributedData data_)
-    { distributedData = data_; }
-    int getRank()
-    { return processRankID; }
+    const DistributedIndex getDistributedIndex() { return distributedData.ix; }
+    const DistributedData getDistributedData() { return distributedData; }
+    void updateDistributedData(DistributedData data_) { distributedData = data_; }
+    int getRank() { return processRankID; }
 };
 
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H
+#endif // SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H

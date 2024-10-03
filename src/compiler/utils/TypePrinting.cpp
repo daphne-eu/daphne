@@ -22,7 +22,7 @@
 #include <ostream>
 #include <string>
 
-std::ostream & operator<<(std::ostream & os, mlir::Type t) {
+std::ostream &operator<<(std::ostream &os, mlir::Type t) {
     std::string s;
     llvm::raw_string_ostream rsos(s);
     t.print(rsos);

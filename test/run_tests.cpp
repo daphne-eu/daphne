@@ -17,25 +17,27 @@
 #define CATCH_CONFIG_MAIN // make catch2 generate a main-function
 #include <catch.hpp>
 
-#include <api/cli/DaphneUserConfig.h>
-#include "runtime/local/kernels/CreateDaphneContext.h"
-#ifdef USE_CUDA
-    #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
-#endif
-
 #include "run_tests.h"
 
-std::unique_ptr<DaphneContext> setupContextAndLogger() {
-//    ToDo: Setting precompiled log level here as passing user config at runtime is not supported in our test suite
-    auto loglevel = spdlog::level::off;
-    user_config.log_level_limit = loglevel;
-    user_config.loggers.push_back(LogConfig({"default", "daphne-tests.txt", static_cast<int>(loglevel),
-            "\">>>>>>>>> %H:%M:%S %z %v\""}));
-    if(not logger)
-        logger = std::make_unique<DaphneLogger>(user_config);
+#include "runtime/local/kernels/CreateDaphneContext.h"
+#include <api/cli/DaphneUserConfig.h>
+#ifdef USE_CUDA
+#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
+#endif
 
-    DaphneContext* dctx_;
-    createDaphneContext(dctx_, reinterpret_cast<uint64_t>(&user_config));
+#include "spdlog/cfg/env.h"
+
+std::unique_ptr<DaphneContext> setupContextAndLogger() {
+    if (not logger) {
+        logger = std::make_unique<DaphneLogger>(user_config);
+        user_config.log_ptr->registerLoggers();
+        spdlog::cfg::load_env_levels();
+    }
+
+    DaphneContext *dctx_;
+    createDaphneContext(dctx_, reinterpret_cast<uint64_t>(&user_config), reinterpret_cast<uint64_t>(&dispatchMapping),
+                        reinterpret_cast<uint64_t>(&Statistics::instance()),
+                        reinterpret_cast<uint64_t>(&StringRefCounter::instance()));
 
 #ifdef USE_CUDA
     CUDA::createCUDAContext(dctx_);

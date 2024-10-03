@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/Transpose.h>
 
@@ -26,65 +26,93 @@
 
 #include <cstdint>
 
-template<class DT>
-void checkTranspose(const DT * arg, const DT * exp) {
-    DT * res = nullptr;
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
+#define VALUE_TYPES double, uint32_t
+
+template <class DT> void checkTranspose(const DT *arg, const DT *exp) {
+    DT *res = nullptr;
     transpose<DT, DT>(res, arg, nullptr);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    
-    DT * m = nullptr;
-    DT * mt = nullptr;
-    
+
+    DT *m = nullptr;
+    DT *mt = nullptr;
+
     SECTION("fully populated matrix") {
         m = genGivenVals<DT>(3, {
-            1,  2,  3,  4,
-            5,  6,  7,  8,
-            9, 10, 11, 12,
-        });
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                    5,
+                                    6,
+                                    7,
+                                    8,
+                                    9,
+                                    10,
+                                    11,
+                                    12,
+                                });
         mt = genGivenVals<DT>(4, {
-            1, 5,  9,
-            2, 6, 10,
-            3, 7, 11,
-            4, 8, 12,
-        });
+                                     1,
+                                     5,
+                                     9,
+                                     2,
+                                     6,
+                                     10,
+                                     3,
+                                     7,
+                                     11,
+                                     4,
+                                     8,
+                                     12,
+                                 });
     }
     SECTION("sparse matrix") {
-        m = genGivenVals<DT>(5, {
-            0, 0, 0, 0, 0, 0,
-            0, 0, 3, 0, 0, 0,
-            0, 0, 0, 0, 4, 0,
-            0, 0, 0, 0, 0, 0,
-            5, 0, 0, 0, 6, 0,
-        });
-        mt = genGivenVals<DT>(6, {
-            0, 0, 0, 0, 5,
-            0, 0, 0, 0, 0,
-            0, 3, 0, 0, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 4, 0, 6,
-            0, 0, 0, 0, 0,
-        });
+        m = genGivenVals<DT>(
+            5, {
+                   0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 6, 0,
+               });
+        mt = genGivenVals<DT>(
+            6, {
+                   0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 6, 0, 0, 0, 0, 0,
+               });
     }
     SECTION("empty matrix") {
         m = genGivenVals<DT>(3, {
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-        });
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                });
         mt = genGivenVals<DT>(4, {
-            0, 0, 0,
-            0, 0, 0,
-            0, 0, 0,
-            0, 0, 0,
-        });
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                 });
     }
 
     checkTranspose(m, mt);
 
-    DataObjectFactory::destroy(m);
-    DataObjectFactory::destroy(mt);
+    DataObjectFactory::destroy(m, mt);
 }

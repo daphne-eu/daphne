@@ -1,0 +1,13 @@
+# Recoding an empty matrix (non-order-preserving and order-preserving).
+
+X = fill(123.45, 0, 1);
+
+codes, dict = recode(X, false);
+print(codes);
+print(dict);
+
+print("");
+
+codes, dict = recode(X, true);
+print(codes);
+print(dict);
