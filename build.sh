@@ -969,14 +969,14 @@ if [ $WITH_DEPS -gt 0 ]; then
     # HAWQ (libhdfs3)
     #------------------------------------------------------------------------------
     hawqDirName="hawq-rel-v$hawqVersion"
-    hawqTarName="v${hawqVersion}.tar.gz"
+    hawqDlTarName="v${hawqVersion}.tar.gz"
+    hawqTarName="${hawqDirName}.tar.gz"
     hawqInstDirName=$installPrefix
 
     if [ $BUILD_HDFS == "-DUSE_HDFS=ON" ]; then
         if ! is_dependency_downloaded "hawq_v${hawqVersion}"; then
-              daphne_msg "Get HAWQ (libhdfs3) version ${hawqVersion}"
-              exit -1
-            wget "https://github.com/apache/hawq/archive/refs/tags/rel/${hawqTarName}" \
+            daphne_msg "Get HAWQ (libhdfs3) version ${hawqVersion}"
+            wget "https://github.com/apache/hawq/archive/refs/tags/rel/${hawqDlTarName}" \
                 -qO "${cacheDir}/${hawqTarName}"
             tar -xf "$cacheDir/$hawqTarName" -C "$sourcePrefix"
             daphne_msg "Applying 0005-libhdfs3-remove-gtest-dep.patch"
