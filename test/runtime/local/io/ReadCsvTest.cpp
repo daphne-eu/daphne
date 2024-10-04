@@ -192,6 +192,40 @@ TEST_CASE("ReadCsv, frame of uint8s", TAG_IO) {
     DataObjectFactory::destroy(m);
 }
 
+TEST_CASE("ReadCsv, frame of uint8s and strings", TAG_IO) {
+    ValueTypeCode schema[] = {ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::STR};
+    Frame *m = NULL;
+
+    size_t numRows = 4;
+    size_t numCols = 3;
+
+    char filename[] = "./test/runtime/local/io/ReadCsv5.csv";
+    char delim = ',';
+
+    readCsv(m, filename, numRows, numCols, delim, schema);
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+
+    CHECK(m->getColumn<uint8_t>(0)->get(0, 0) == 1);
+    CHECK(m->getColumn<uint8_t>(0)->get(1, 0) == 2);
+    CHECK(m->getColumn<uint8_t>(0)->get(2, 0) == 3);
+    CHECK(m->getColumn<uint8_t>(0)->get(3, 0) == 4);
+
+    /* File contains negative numbers. Expect cast to positive */
+    CHECK(m->getColumn<uint8_t>(1)->get(0, 0) == 255);
+    CHECK(m->getColumn<uint8_t>(1)->get(1, 0) == 254);
+    CHECK(m->getColumn<uint8_t>(1)->get(2, 0) == 253);
+    CHECK(m->getColumn<uint8_t>(1)->get(3, 0) == 252);
+
+    CHECK(m->getColumn<std::string>(2)->get(0, 0) == "");
+    CHECK(m->getColumn<std::string>(2)->get(1, 0) == "");
+    CHECK(m->getColumn<std::string>(2)->get(2, 0) == "multi-line,");
+    CHECK(m->getColumn<std::string>(2)->get(3, 0) == "simple string");
+
+    DataObjectFactory::destroy(m);
+}
+
 TEST_CASE("ReadCsv, col + row ignore", TAG_IO) {
     ValueTypeCode schema[] = {ValueTypeCode::UI8, ValueTypeCode::UI8};
     Frame *m = NULL;

@@ -1,0 +1,54 @@
+{
+    "numRows": 4,
+    "numCols": 3,
+    "schema": [
+        {
+            "label": "",
+            "valueType": "si8"
+        },
+        {
+            "label": "",
+            "valueType": "ui8"
+        },
+        {
+            "label": "",
+            "valueType": "str"
+        },
+        {
+            "label": "",
+            "valueType": "si8"
+        },
+        {
+            "label": "",
+            "valueType": "ui8"
+        },
+        {
+            "label": "",
+            "valueType": "str"
+        },
+        {
+            "label": "",
+            "valueType": "si8"
+        },
+        {
+            "label": "",
+            "valueType": "ui8"
+        },
+        {
+            "label": "",
+            "valueType": "str"
+        },
+        {
+            "label": "",
+            "valueType": "si8"
+        },
+        {
+            "label": "",
+            "valueType": "ui8"
+        },
+        {
+            "label": "",
+            "valueType": "str"
+        }
+    ]
+}

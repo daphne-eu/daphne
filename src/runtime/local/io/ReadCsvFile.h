@@ -323,6 +323,7 @@ template <> struct ReadCsvFile<Frame> {
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
 
             size_t pos = 0;
+            std::string val_str;
             while (1) {
                 switch (colTypes[col]) {
                 case ValueTypeCode::SI8:
@@ -364,6 +365,16 @@ template <> struct ReadCsvFile<Frame> {
                     double val_f64;
                     convertCstr(file->line + pos, &val_f64);
                     reinterpret_cast<double *>(rawCols[col])[row] = val_f64;
+                    break;
+                case ValueTypeCode::STR:
+                    val_str = "";
+                    pos = setCString(file, pos, &val_str, delim);
+                    reinterpret_cast<std::string *>(rawCols[col])[row] = val_str;
+                    break;
+                case ValueTypeCode::FIXEDSTR16:
+                    val_str = "";
+                    pos = setCString(file, pos, &val_str, delim);
+                    reinterpret_cast<FixedStr16 *>(rawCols[col])[row] = FixedStr16(val_str);
                     break;
                 default:
                     throw std::runtime_error("ReadCsvFile::apply: unknown value type code");
