@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/AllocationDescriptorHost.h>
 #include <runtime/local/io/DaphneSerializer.h>
 
+#include <fmt/core.h>
 #include <spdlog/spdlog.h>
 
 #include <sstream>

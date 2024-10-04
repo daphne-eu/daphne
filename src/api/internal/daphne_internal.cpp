@@ -15,10 +15,11 @@
  */
 
 #include "runtime/local/datastructures/IAllocationDescriptor.h"
-#include <vector>
+
 #ifdef USE_MPI
 #include "runtime/distributed/worker/MPIWorker.h"
 #endif
+
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <api/cli/DaphneUserConfig.h>
 #include <api/cli/StatusCode.h>
@@ -49,7 +50,6 @@
 
 #include <csetjmp>
 #include <csignal>
-#include <cstdlib>
 #include <cstring>
 #include <execinfo.h>
 
@@ -97,8 +97,7 @@ void handleSignals(int signal) {
 }
 
 void logErrorDaphneLibAware(DaphneLibResult *daphneLibRes, std::string msg) {
-    if (daphneLibRes != nullptr) // For DaphneLib (Python API), error message is
-                                 // handled later in script.py.
+    if (daphneLibRes != nullptr) // For DaphneLib (Python API), error message is handled later in script.py.
         daphneLibRes->error_message = msg;
     else
         spdlog::error(msg);
@@ -108,8 +107,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     using clock = std::chrono::high_resolution_clock;
     clock::time_point tpBeg = clock::now();
 
-    // install signal handler to catch information from shared libraries (for
-    // exception handling)
+    // install signal handler to catch information from shared libraries (for exception handling)
     std::signal(SIGABRT, handleSignals);
     std::signal(SIGSEGV, handleSignals);
 
@@ -383,8 +381,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     if (matmul_fixed_tile_sizes.size() > 0) {
         user_config.matmul_use_fixed_tile_sizes = true;
         user_config.matmul_fixed_tile_sizes = matmul_fixed_tile_sizes;
-        // Specifying a fixed tile size will be interpreted as wanting to use
-        // tiling.
+        // Specifying a fixed tile size will be interpreted as wanting to use tiling.
         user_config.matmul_tile = true;
     }
     user_config.use_mlir_hybrid_codegen = performHybridCodegen;
@@ -399,9 +396,8 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
 
     // only overwrite with non-defaults
     if (numberOfThreads != 0) {
-        spdlog::trace("Overwriting config file supplied numberOfThreads={} "
-                      "with command line argument --num-threads={}",
-                      user_config.numberOfThreads, numberOfThreads);
+        spdlog::trace("Overwriting config file supplied numberOfThreads={} with command line argument --num-threads={}",
+                      user_config.numberOfThreads, static_cast<int>(numberOfThreads));
         user_config.numberOfThreads = numberOfThreads;
     }
 
