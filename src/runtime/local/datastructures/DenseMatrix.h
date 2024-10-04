@@ -174,8 +174,8 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
      * allocation to a range) 3: ValueType* - the pointer to the actual data
      */
 
-    auto getValuesInternal(const IAllocationDescriptor *alloc_desc = nullptr, const Range *range = nullptr)
-        -> std::tuple<bool, size_t, ValueType *>;
+    auto getValuesInternal(const IAllocationDescriptor *alloc_desc = nullptr,
+                           const Range *range = nullptr) -> std::tuple<bool, size_t, ValueType *>;
 
     [[nodiscard]] size_t offset() const { return this->row_offset * rowSkip + this->col_offset; }
 
@@ -402,7 +402,7 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
     using Matrix<const char *>::numCols;
 
     size_t rowSkip;
-    std::shared_ptr<const char *[]> values {};
+    std::shared_ptr<const char *[]> values{};
     std::shared_ptr<CharBuf> strBuf;
 
     std::shared_ptr<const char *> cuda_ptr{};
@@ -522,9 +522,7 @@ template <> class DenseMatrix<const char *> : public Matrix<const char *> {
 
     std::shared_ptr<const char *[]> getValuesSharedPtr() const { return values; }
 
-    const char *get(size_t rowIdx, size_t colIdx) const override {
-        return getValues()[pos(rowIdx, colIdx, false)];
-    }
+    const char *get(size_t rowIdx, size_t colIdx) const override { return getValues()[pos(rowIdx, colIdx, false)]; }
 
     void set(size_t rowIdx, size_t colIdx, const char *value) override {
         auto vals = getValues();

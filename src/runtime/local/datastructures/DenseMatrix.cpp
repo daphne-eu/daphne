@@ -123,8 +123,8 @@ DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, const DenseM
 }
 
 template <typename ValueType>
-auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor *alloc_desc, const Range *range)
-    -> std::tuple<bool, size_t, ValueType *> {
+auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor *alloc_desc,
+                                               const Range *range) -> std::tuple<bool, size_t, ValueType *> {
     // If no range information is provided we assume the full range that this
     // matrix covers
     if (range == nullptr || *range == Range(*this)) {
