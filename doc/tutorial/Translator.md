@@ -1,5 +1,5 @@
 <!--
-Copyright 2021 The DAPHNE Consortium
+Copyright 2024 The DAPHNE Consortium
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,54 +14,53 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Dml-to-DaphneDSL Translator
+# `dml2daph`: Translator from DML to DaphneDSL
 
-SystemDS has a variety of builtin dml scripts. This translator aims to convert a given dml script to an equivalent daphneDSL script. Related to issue: [dml2daphnedsl](/issues/529)
+[Apache SystemDS](https://github.com/apache/systemds) offers a variety of data science primitives as built-in functions written in DML (SystemDS's R-inspired domain-specific language). `dml2daphnedsl` is a translator tool that aims to convert a given DML script to an equivalent DaphneDSL script.
 
-## Running the translator
+## Running the Translator
 
-The translator can be found in `tools/dml2daph.py`.  In order to run the script the path to the `.dml` file has to be provided as an argument. Converting "shortestPath.dml" to daphneDSL would look like this:
+The translator can be found in `tools/dml2daph.py`. In order to run the script the path to the `.dml` file has to be provided as an argument. For instance, converting `shortestPath.dml` to DaphneDSL would look like this:
 
-```cpp
-python3 dml2daph.py ../thirdparty/systemds/scripts/builtin/shortestPath.dml
+```bash
+python3 dml2daph.py path/to/systemds/scripts/builtin/shortestPath.dml
 ```
 
 The translated script can then be found in `tools/translated_files/shortestPath.daph`.
 
-The Lexer, Parser and Visitor are already provided in `tools/`. In order to newly create them, dml's grammar file `Dml.g4` is needed. The files can then be created using the following command:
+## Regenerating the Translator
 
-```cpp
+`dml2daph` is based on ANTLR. The ANTLR-generated lexer, parser, and visitor are already provided in `tools/`. In order to newly create them, DML's grammar file `Dml.g4` is needed. The files can then be created using the following command:
+
+```bash
 antlr4 -Dlanguage=Python3 -visitor Dml.g4
 ```
 
 ## Tests
 
-The tests can be found in `tools/tests/`. Each test folder contains a python script as well as `.dml` and `.daphne` files needed for calling the scripts.
+The tests for `dml2daph` can be found in `tools/tests/`. Each test folder contains a Python script as well as `.dml` and `.daphne` files needed for calling the scripts.
 
-Running the test for shortestPath in `tools/tests/test_shortestPath` would look like this:
+Running the test for shortest path in `tools/tests/test_shortestPath` would look like this:
 
-```cpp
+```bash
 python3 test_shortestPath.py
 ```
 
-After running the tests the folders `data` and `output` are created. The `data` folder contains the input matrices. The `output` folder contains the output matrices for both the dml script and the translated daphneDSL script.
+After running the tests the folders `tools/data` and `tools/output` are created. The `data` folder contains the input matrices. The `output` folder contains the output matrices for both the DML script and the translated DaphneDSL script.
 
 ### Implemented Tests
 
-* sigmoid
-* shortestPath
-* dbscan
-* lm
+* `sigmoid`
+* `shortestPath`
+* `dbscan`
+* `lm`
 
-## Todo
+## Known Limitations
 
-The translator works for a variety of dml scripts, but it is still missing certain functionalities.
+The translator works for a variety of DML scripts, but it is still missing certain functionalities.
 
-### Not Yet Implemented
-
-* visitImportStatement()
-    * can be implemented similar to handleImplicitImport()
+* `visitImportStatement()`: Could be implemented similar to `handleImplicitImport()`
 * dynamically retrieving parameter types and return types of imported functions
-* extend mappings from native dml functions to equivalent functions in daphne
+* extend mappings from native DML functions to equivalent functions in DaphneDSL
 * extend type conversion
-
+* ...
