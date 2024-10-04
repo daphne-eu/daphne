@@ -143,7 +143,7 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
                     // not using spdlog::get() here as loggers are most likely
                     // not configured yet
                     spdlog::error(key2);
-                    spdlog::error(val2);
+                    spdlog::error(static_cast<std::string>(key2));
                 }
             }
         }

@@ -23,8 +23,16 @@
 #include <cusolverDn.h>
 #include <cusparse_v2.h>
 
+#include <fmt/format.h>
+
 #include <iostream>
 #include <memory>
+
+static auto format_as(cudaError_t e) { return fmt::underlying(e); }
+static auto format_as(cublasStatus_t e) { return fmt::underlying(e); }
+static auto format_as(cudnnStatus_t e) { return fmt::underlying(e); }
+static auto format_as(cusparseStatus_t e) { return fmt::underlying(e); }
+static auto format_as(cusolverStatus_t e) { return fmt::underlying(e); }
 
 #define CHECK_CUDART(call)                                                                                             \
     do {                                                                                                               \

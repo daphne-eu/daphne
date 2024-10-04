@@ -112,6 +112,9 @@ if(USE_PAPI)
 endif()
 ##########
 
+find_package(fmt)
+add_definitions(-DSPDLOG_FMT_EXTERNAL)
+
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
 include(CheckLanguage)
 check_language(CUDA)
