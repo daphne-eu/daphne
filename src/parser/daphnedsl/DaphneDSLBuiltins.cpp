@@ -1195,7 +1195,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value arg = args[0];
         mlir::Value info = args[1];
-        return static_cast<mlir::Value>(builder.create<OneHotOp>(loc, arg.getType(), arg, info));
+        mlir::Type arg_type = arg.getType();
+        if (arg_type.dyn_cast<mlir::daphne::MatrixType>().getElementType().isa<mlir::daphne::StringType>()) {
+            return static_cast<mlir::Value>(
+                builder.create<OneHotOp>(loc, utils.matrixOf(builder.getIntegerType(64, true)), arg, info));
+        } else {
+            return static_cast<mlir::Value>(builder.create<OneHotOp>(loc, arg.getType(), arg, info));
+        }
     }
     if (func == "recode") {
         checkNumArgsExact(loc, func, numArgs, 2);

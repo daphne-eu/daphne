@@ -292,7 +292,11 @@ std::vector<Type> daphne::ExtractOp::inferTypes() {
 
 std::vector<Type> daphne::OneHotOp::inferTypes() {
     Type srcType = getArg().getType();
-    return {srcType.dyn_cast<daphne::MatrixType>().withSameElementType()};
+    Builder builder(getContext());
+    if (srcType.dyn_cast<daphne::MatrixType>().getElementType().isa<mlir::daphne::StringType>())
+        return {srcType.dyn_cast<daphne::MatrixType>().withElementType(builder.getIntegerType(64, false))};
+    else
+        return {srcType.dyn_cast<daphne::MatrixType>().withSameElementType()};
 }
 
 std::vector<Type> daphne::GenericCallOp::inferTypes() {
