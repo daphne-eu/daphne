@@ -1,0 +1,491 @@
+input
+X
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+
+neither row nor col
+X00_01[, ]
+DenseMatrix(10x6, std::string)
+b b b b b b
+b b b b b b
+b b b b b b
+b b b b b b
+b b b b b b
+b b b b b b
+b b b b b b
+b b b b b b
+b b b b b b
+b b b b b b
+
+only row
+Xr0_01[0, ]
+DenseMatrix(10x6, std::string)
+c c c c c c
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xr0_02[4, ]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+d d d d d d
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xr0_04[:, ]
+DenseMatrix(10x6, std::string)
+e e e e e e
+e e e e e e
+e e e e e e
+e e e e e e
+e e e e e e
+e e e e e e
+e e e e e e
+e e e e e e
+e e e e e e
+e e e e e e
+Xr0_05[0:, ]
+DenseMatrix(10x6, std::string)
+f f f f f f
+f f f f f f
+f f f f f f
+f f f f f f
+f f f f f f
+f f f f f f
+f f f f f f
+f f f f f f
+f f f f f f
+f f f f f f
+Xr0_07[9:, ]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+g g g g g g
+Xr0_08[:0, ]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xr0_09[:4, ]
+DenseMatrix(10x6, std::string)
+i i i i i i
+i i i i i i
+i i i i i i
+i i i i i i
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xr0_11[4:4, ]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xr0_12[4:5, ]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+k k k k k k
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xr0_13[0:9, ]
+DenseMatrix(10x6, std::string)
+l l l l l l
+l l l l l l
+l l l l l l
+l l l l l l
+l l l l l l
+l l l l l l
+l l l l l l
+l l l l l l
+l l l l l l
+a a a a a a
+
+only col
+X0c_01[, 0]
+DenseMatrix(10x6, std::string)
+m a a a a a
+m a a a a a
+m a a a a a
+m a a a a a
+m a a a a a
+m a a a a a
+m a a a a a
+m a a a a a
+m a a a a a
+m a a a a a
+X0c_02[, 2]
+DenseMatrix(10x6, std::string)
+a a n a a a
+a a n a a a
+a a n a a a
+a a n a a a
+a a n a a a
+a a n a a a
+a a n a a a
+a a n a a a
+a a n a a a
+a a n a a a
+X0c_03[, 5]
+DenseMatrix(10x6, std::string)
+a a a a a o
+a a a a a o
+a a a a a o
+a a a a a o
+a a a a a o
+a a a a a o
+a a a a a o
+a a a a a o
+a a a a a o
+a a a a a o
+X0c_04[, :]
+DenseMatrix(10x6, std::string)
+p p p p p p
+p p p p p p
+p p p p p p
+p p p p p p
+p p p p p p
+p p p p p p
+p p p p p p
+p p p p p p
+p p p p p p
+p p p p p p
+X0c_05[, 0:]
+DenseMatrix(10x6, std::string)
+q q q q q q
+q q q q q q
+q q q q q q
+q q q q q q
+q q q q q q
+q q q q q q
+q q q q q q
+q q q q q q
+q q q q q q
+q q q q q q
+X0c_06[, 2:]
+DenseMatrix(10x6, std::string)
+a a r r r r
+a a r r r r
+a a r r r r
+a a r r r r
+a a r r r r
+a a r r r r
+a a r r r r
+a a r r r r
+a a r r r r
+a a r r r r
+X0c_07[, 5:]
+DenseMatrix(10x6, std::string)
+a a a a a s
+a a a a a s
+a a a a a s
+a a a a a s
+a a a a a s
+a a a a a s
+a a a a a s
+a a a a a s
+a a a a a s
+a a a a a s
+X0c_08[, :0]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+X0c_09[, :2]
+DenseMatrix(10x6, std::string)
+u u a a a a
+u u a a a a
+u u a a a a
+u u a a a a
+u u a a a a
+u u a a a a
+u u a a a a
+u u a a a a
+u u a a a a
+u u a a a a
+X0c_10[, :5]
+DenseMatrix(10x6, std::string)
+v v v v v a
+v v v v v a
+v v v v v a
+v v v v v a
+v v v v v a
+v v v v v a
+v v v v v a
+v v v v v a
+v v v v v a
+v v v v v a
+X0c_11[, 2:2]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+X0c_12[, 2:3]
+DenseMatrix(10x6, std::string)
+a a x a a a
+a a x a a a
+a a x a a a
+a a x a a a
+a a x a a a
+a a x a a a
+a a x a a a
+a a x a a a
+a a x a a a
+a a x a a a
+X0c_13[, 0:5]
+DenseMatrix(10x6, std::string)
+y y y y y a
+y y y y y a
+y y y y y a
+y y y y y a
+y y y y y a
+y y y y y a
+y y y y y a
+y y y y y a
+y y y y y a
+y y y y y a
+
+row and col - corresponding variants
+Xrc_01[0, 0]
+DenseMatrix(10x6, std::string)
+z a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xrc_02[4, 2]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a A a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xrc_03[9, 5]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a B
+Xrc_04[:, :]
+DenseMatrix(10x6, std::string)
+C C C C C C
+C C C C C C
+C C C C C C
+C C C C C C
+C C C C C C
+C C C C C C
+C C C C C C
+C C C C C C
+C C C C C C
+C C C C C C
+Xrc_05[0:, 0:]
+DenseMatrix(10x6, std::string)
+D D D D D D
+D D D D D D
+D D D D D D
+D D D D D D
+D D D D D D
+D D D D D D
+D D D D D D
+D D D D D D
+D D D D D D
+D D D D D D
+Xrc_06[4:, 2:]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a E E E E
+a a E E E E
+a a E E E E
+a a E E E E
+a a E E E E
+a a E E E E
+Xrc_07[9:, 5:]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a F
+Xrc_08[:0, :0]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xrc_09[:4, :2]
+DenseMatrix(10x6, std::string)
+H H a a a a
+H H a a a a
+H H a a a a
+H H a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xrc_10[:9, :5]
+DenseMatrix(10x6, std::string)
+I I I I I a
+I I I I I a
+I I I I I a
+I I I I I a
+I I I I I a
+I I I I I a
+I I I I I a
+I I I I I a
+I I I I I a
+a a a a a a
+Xrc_11[4:4, 2:2]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xrc_12[4:5, 2:3]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a K a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xrc_13[0:9, 0:5]
+DenseMatrix(10x6, std::string)
+L L L L L a
+L L L L L a
+L L L L L a
+L L L L L a
+L L L L L a
+L L L L L a
+L L L L L a
+L L L L L a
+L L L L L a
+a a a a a a
+
+row and col - some mixed variants
+Xrc_14[4, 2:3]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a M a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+Xrc_15[4:5, 2]
+DenseMatrix(10x6, std::string)
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a N a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
+a a a a a a
