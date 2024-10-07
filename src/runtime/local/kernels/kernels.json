@@ -3788,6 +3788,10 @@
             [
                 ["DenseMatrix", "int64_t"],
                 ["DenseMatrix", "int64_t"]
+            ],
+            [
+                ["DenseMatrix", "std::string"],
+                ["DenseMatrix", "std::string"]
             ]
         ]
     },
@@ -4299,6 +4303,10 @@
                     [
                         ["DenseMatrix", "size_t"],
                         ["DenseMatrix", "size_t"]
+                    ],
+                    [
+                        ["DenseMatrix", "std::string"],
+                        ["DenseMatrix", "std::string"]
                     ]
                 ]
             },
