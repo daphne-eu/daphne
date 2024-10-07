@@ -1,0 +1,13 @@
+// test recode on a matrix of strings.
+
+X = fill("a", 10, 1);
+X[2, 0] = fill("b", 1, 1);
+X [5:, 0] = fill("c", 5, 1);
+codes, dict = recode(X, false);
+
+print("input matrix");
+print(X);
+print("dict");
+print(dict);
+print("codes");
+print(codes);

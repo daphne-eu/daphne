@@ -3490,6 +3490,11 @@
                 ["DenseMatrix", "int64_t"],
                 ["DenseMatrix", "int64_t"],
                 ["DenseMatrix", "int64_t"]
+            ],
+            [
+                ["DenseMatrix", "int64_t"],
+                ["DenseMatrix", "std::string"],
+                ["DenseMatrix", "std::string"]
             ]
         ]
     },

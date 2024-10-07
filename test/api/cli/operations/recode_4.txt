@@ -1,0 +1,29 @@
+input matrix
+DenseMatrix(10x1, std::string)
+a
+a
+b
+a
+a
+c
+c
+c
+c
+c
+dict
+DenseMatrix(3x1, std::string)
+a
+b
+c
+codes
+DenseMatrix(10x1, int64_t)
+0
+0
+1
+0
+0
+2
+2
+2
+2
+2
