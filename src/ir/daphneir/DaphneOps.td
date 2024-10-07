@@ -265,6 +265,13 @@ def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", NumScalar, [ValueTypeFromArgsFP
 
 def Daphne_EwIsNanOp : Daphne_EwUnaryOp<"ewIsnan", NumScalar, [ValueTypeFromFirstArg]>;
 
+// ----------------------------------------------------------------------------
+// String Operators
+// ----------------------------------------------------------------------------
+
+def Daphne_EwLowerOp : Daphne_EwUnaryOp<"ewLower", StrScalar, [ValueTypeFromFirstArg]>;
+def Daphne_EwUpperOp : Daphne_EwUnaryOp<"ewUpper", StrScalar, [ValueTypeFromFirstArg]>;
+
 // ****************************************************************************
 // Elementwise binary
 // ****************************************************************************
