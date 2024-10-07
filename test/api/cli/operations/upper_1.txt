@@ -1,0 +1,16 @@
+input matrix
+DenseMatrix(4x2, std::string)
+abCD abCD
+abCD abCD
+abCD abCD
+abCD abCD
+result
+DenseMatrix(4x2, std::string)
+ABCD ABCD
+ABCD ABCD
+ABCD ABCD
+ABCD ABCD
+input string
+ABCDefg
+result
+ABCDEFG

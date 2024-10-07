@@ -4367,6 +4367,10 @@
             [
                 ["DenseMatrix", "int64_t"],
                 ["DenseMatrix", "int64_t"]
+            ],
+            [
+                ["DenseMatrix", "std::string"],
+                ["DenseMatrix", "std::string"]
             ]
         ],
         "opCodes": [
@@ -4388,7 +4392,9 @@
             "SINH",
             "COSH",
             "TANH",
-            "ISNAN"
+            "ISNAN",
+            "LOWER",
+            "UPPER"
         ]
     },
     {
@@ -4420,7 +4426,8 @@
         "instantiations": [
             ["double", "double"],
             ["float", "float"],
-            ["int64_t", "int64_t"]
+            ["int64_t", "int64_t"],
+            ["const char *", "const char *"]
         ],
         "opCodes": [
             "MINUS",
@@ -4441,7 +4448,9 @@
             "SINH",
             "COSH",
             "TANH",
-            "ISNAN"
+            "ISNAN",
+            "LOWER",
+            "UPPER"
         ]
     },
     {

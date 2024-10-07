@@ -503,6 +503,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
 
     if (func == "isNan")
         return createUnaryOp<EwIsNanOp>(loc, func, args);
+    // --------------------------------------------------------------------
+    // String Operators
+    // --------------------------------------------------------------------
+    if (func == "lower")
+        return createUnaryOp<EwLowerOp>(loc, func, args);
+    if (func == "upper")
+        return createUnaryOp<EwUpperOp>(loc, func, args);
 
     // ********************************************************************
     // Elementwise binary
