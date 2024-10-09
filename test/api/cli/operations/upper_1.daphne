@@ -1,0 +1,17 @@
+// test element-wise unary operation upper.
+
+// matrix of strings.
+A = fill("abCD", 4, 2);
+
+print("input matrix");
+print(A);
+print("result");
+print(upper(A));
+
+// array of characters.
+B = "ABCDefg";
+
+print("input string");
+print(B);
+print("result");
+print(upper(B));

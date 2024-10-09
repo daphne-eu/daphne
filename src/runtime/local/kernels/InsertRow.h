@@ -119,18 +119,18 @@ template <typename VT, typename VTSel> struct InsertRow<DenseMatrix<VT>, DenseMa
 
         // TODO Can be simplified/more efficient in certain cases.
         for (size_t r = 0; r < rowLowerIncl_Size; r++) {
-            memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
+            std::copy(valuesArg, valuesArg + numColsArg, valuesRes);
             valuesRes += rowSkipRes;
             valuesArg += rowSkipArg;
         }
         for (size_t r = rowLowerIncl_Size; r < rowUpperExcl_Size; r++) {
-            memcpy(valuesRes, valuesIns, numColsArg * sizeof(VT));
+            std::copy(valuesIns, valuesIns + numColsArg, valuesRes);
             valuesRes += rowSkipRes;
             valuesIns += rowSkipIns;
         }
         valuesArg += rowSkipArg * numRowsIns; // skip rows in arg
         for (size_t r = rowUpperExcl_Size; r < numRowsArg; r++) {
-            memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
+            std::copy(valuesArg, valuesArg + numColsArg, valuesRes);
             valuesRes += rowSkipRes;
             valuesArg += rowSkipArg;
         }
