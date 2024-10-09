@@ -18,8 +18,8 @@
 
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/CUDA/MatMul.h>
+#include <runtime/local/kernels/CheckEq.h>
 
 #include <tags.h>
 
@@ -27,9 +27,9 @@
 
 #include <vector>
 
-template<class DT>
-void checkMatMulCUDA(const DT * lhs, const DT * rhs, const DT * exp, bool transa, bool transb, DaphneContext* ctx) {
-    DT* res = nullptr;
+template <class DT>
+void checkMatMulCUDA(const DT *lhs, const DT *rhs, const DT *exp, bool transa, bool transb, DaphneContext *ctx) {
+    DT *res = nullptr;
     CUDA::matMul<DT, DT, DT>(res, lhs, rhs, transa, transb, ctx);
     CHECK(*res == *exp);
 }
@@ -38,59 +38,69 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, d
     auto dctx = setupContextAndLogger();
     using DT = TestType;
     auto m0 = genGivenVals<DT>(3, {
-        0, 0, 0,
-        0, 0, 0,
-        0, 0, 0,
-    });
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                  });
     auto m1 = genGivenVals<DT>(3, {
-        1, 2, 3,
-        3, 1, 2,
-        2, 3, 1,
-    });
+                                      1,
+                                      2,
+                                      3,
+                                      3,
+                                      1,
+                                      2,
+                                      2,
+                                      3,
+                                      1,
+                                  });
     auto m2 = genGivenVals<DT>(3, {
-        13, 13, 10,
-        10, 13, 13,
-        13, 10, 13,
-    });
+                                      13,
+                                      13,
+                                      10,
+                                      10,
+                                      13,
+                                      13,
+                                      13,
+                                      10,
+                                      13,
+                                  });
     auto m3 = genGivenVals<DT>(2, {
-        1, 0, 3, 0,
-        0, 0, 2, 0,
-    });
+                                      1,
+                                      0,
+                                      3,
+                                      0,
+                                      0,
+                                      0,
+                                      2,
+                                      0,
+                                  });
     auto m4 = genGivenVals<DT>(4, {
-        0, 1,
-        2, 0,
-        1, 1,
-        0, 0,
-    });
+                                      0,
+                                      1,
+                                      2,
+                                      0,
+                                      1,
+                                      1,
+                                      0,
+                                      0,
+                                  });
     auto m5 = genGivenVals<DT>(2, {
-        3, 4,
-        2, 2,
-    });
-    auto v0 = genGivenVals<DT>(3, {
-        0,
-        0,
-        0
-    });
-    auto v1 = genGivenVals<DT>(3, {
-        1,
-        1,
-        1
-    });
-    auto v2 = genGivenVals<DT>(3, {
-        1,
-        2,
-        3
-    });
-    auto v3 = genGivenVals<DT>(3, {
-        6,
-        6,
-        6
-    });
-    auto v4 = genGivenVals<DT>(3, {
-        14,
-        11,
-        11
-    });
+                                      3,
+                                      4,
+                                      2,
+                                      2,
+                                  });
+    auto v0 = genGivenVals<DT>(3, {0, 0, 0});
+    auto v1 = genGivenVals<DT>(3, {1, 1, 1});
+    auto v2 = genGivenVals<DT>(3, {1, 2, 3});
+    auto v3 = genGivenVals<DT>(3, {6, 6, 6});
+    auto v4 = genGivenVals<DT>(3, {14, 11, 11});
 
     checkMatMulCUDA(m0, m0, m0, false, false, dctx.get());
     checkMatMulCUDA(m1, m1, m2, false, false, dctx.get());
@@ -119,72 +129,93 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul Transposed", TAG_KERNELS, (DenseMatrix)
     auto dctx = setupContextAndLogger();
     using DT = TestType;
     auto m0 = genGivenVals<DT>(3, {
-            1, 2, 3,
-            3, 1, 2,
-            2, 3, 1,
-    });
+                                      1,
+                                      2,
+                                      3,
+                                      3,
+                                      1,
+                                      2,
+                                      2,
+                                      3,
+                                      1,
+                                  });
     auto m1 = genGivenVals<DT>(3, {
-            13, 10, 13,
-            13, 13, 10,
-            10, 13, 13,
-    });
+                                      13,
+                                      10,
+                                      13,
+                                      13,
+                                      13,
+                                      10,
+                                      10,
+                                      13,
+                                      13,
+                                  });
     auto m2 = genGivenVals<DT>(2, {
-            1, 0, 3, 0,
-            0, 0, 2, 0,
-    });
+                                      1,
+                                      0,
+                                      3,
+                                      0,
+                                      0,
+                                      0,
+                                      2,
+                                      0,
+                                  });
     auto m3 = genGivenVals<DT>(4, {
-            0, 1,
-            2, 0,
-            1, 1,
-            0, 0,
-    });
+                                      0,
+                                      1,
+                                      2,
+                                      0,
+                                      1,
+                                      1,
+                                      0,
+                                      0,
+                                  });
     auto m4 = genGivenVals<DT>(4, {
-            0, 2, 1, 0,
-            0, 0, 0, 0,
-            2, 6, 5, 0,
-            0, 0, 0, 0,
-    });
+                                      0,
+                                      2,
+                                      1,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      2,
+                                      6,
+                                      5,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                  });
     auto m5 = genGivenVals<DT>(4, {
-            1, 0, 1, 0,
-            0, 4, 2, 0,
-            1, 2, 2, 0,
-            0, 0, 0, 0,
-    });
-    auto v0 = genGivenVals<DT>(3, {
-            1,
-            1,
-            1
-    });
-    auto v1 = genGivenVals<DT>(3, {
-            1,
-            2,
-            3
-    });
-    auto v2 = genGivenVals<DT>(3, {
-            13,
-            13,
-            10
-    });
-    auto v3 = genGivenVals<DT>(4, {
-            1,
-            1,
-            1,
-            1
-    });
-    auto v4 = genGivenVals<DT>(2, {
-            3,
-            2
-    });
+                                      1,
+                                      0,
+                                      1,
+                                      0,
+                                      0,
+                                      4,
+                                      2,
+                                      0,
+                                      1,
+                                      2,
+                                      2,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                  });
+    auto v0 = genGivenVals<DT>(3, {1, 1, 1});
+    auto v1 = genGivenVals<DT>(3, {1, 2, 3});
+    auto v2 = genGivenVals<DT>(3, {13, 13, 10});
+    auto v3 = genGivenVals<DT>(4, {1, 1, 1, 1});
+    auto v4 = genGivenVals<DT>(2, {3, 2});
     auto v5 = genGivenVals<DT>(2, {
-            1,
-            1,
-    });
-    auto v6 = genGivenVals<DT>(4, {
-            1,
-            0,
-            5,
-            0
-    });
+                                      1,
+                                      1,
+                                  });
+    auto v6 = genGivenVals<DT>(4, {1, 0, 5, 0});
 
     checkMatMulCUDA(m0, m0, m1, true, true, dctx.get());
     checkMatMulCUDA(m2, m3, m4, true, true, dctx.get());
@@ -192,7 +223,6 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul Transposed", TAG_KERNELS, (DenseMatrix)
     checkMatMulCUDA(m3, v3, v4, true, false, dctx.get());
     checkMatMulCUDA(m2, v5, v6, true, false, dctx.get());
     checkMatMulCUDA(m3, m3, m5, false, true, dctx.get());
-
 
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);
 }

@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "tags.h"
+#include <catch.hpp>
+
 #include <runtime/local/context/DaphneContext.h>
 
 static DaphneUserConfig user_config{};

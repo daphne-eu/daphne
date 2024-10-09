@@ -53,4 +53,4 @@
 #define TAG_VECTORIZED "[vectorized]"
 #define TAG_DAPHNELIB "[daphnelib]"
 
-#endif //TEST_TAGS_H
+#endif // TEST_TAGS_H

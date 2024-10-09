@@ -73,9 +73,9 @@ if [ $BUILD_DAPHNE -gt 0 ]; then
 fi
 
 # Preparations for running DaphneLib (Python API) tests and MLIR codegen tests (LLVM LIT)
-export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/:/usr/lib/llvm-10/build/utils/lit/"
+export PYTHONPATH="$PYTHONPATH:$PWD/src/api/python/:/usr/lib/llvm-10/build/utils/lit/:/usr/lib/llvm-18/build/utils/lit/"
 export DAPHNELIB_DIR_PATH=$PWD/lib
-export PATH=$PWD/bin:/usr/lib/llvm-10/bin:$PATH
+export PATH=$PWD/bin:/usr/lib/llvm-10/bin:/usr/lib/llvm-18/bin:$PATH
 export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH
 
 # Silence TensorFlow warnings in DaphneLib test cases.

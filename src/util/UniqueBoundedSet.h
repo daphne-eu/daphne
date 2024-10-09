@@ -24,8 +24,8 @@
 #include <set>
 
 template <typename QT> class UniqueBoundedSet : std::set<QT> {
-public:
-  UniqueBoundedSet(size_t K) : K(K){};
+  public:
+    UniqueBoundedSet(size_t K) : K(K){};
 
     /**
      * @brief Inserts into the set until K unique values are contained.
@@ -45,7 +45,8 @@ public:
      * @brief Will remove the biggest value from the set.
      */
     void pop() {
-        if (std::set<QT>::empty()) return;
+        if (std::set<QT>::empty())
+            return;
 
         // erase doesnt support reverse it, so move it back once.
         auto it = std::set<QT>::end();
@@ -61,13 +62,9 @@ public:
         return *it;
     }
 
-    size_t size(){
-        return std::set<QT>::size();
-    };
+    size_t size() { return std::set<QT>::size(); };
 
-
-
-private:
+  private:
     size_t K;
 };
 

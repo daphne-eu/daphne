@@ -22,43 +22,44 @@
 #include <nlohmannjson/json.hpp>
 
 #include <algorithm>
-#include <iterator>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
 
-KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext * mctx) {
-    // Initialize the mapping from C++ type name strings to MLIR types for parsing.
+KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
+    // Initialize the mapping from C++ type name strings to MLIR types for
+    // parsing.
 
     mlir::OpBuilder builder(mctx);
 
     // Scalars and matrices.
-    std::vector<mlir::Type> scalarTypes = {
-        builder.getF64Type(),
-        builder.getF32Type(),
-        builder.getIntegerType(64, true),
-        builder.getIntegerType(32, true),
-        builder.getIntegerType(8, true),
-        builder.getIntegerType(64, false),
-        builder.getIntegerType(32, false),
-        builder.getIntegerType(8, false),
-        builder.getI1Type(),
-        builder.getIndexType(),
-        mlir::daphne::StringType::get(mctx)
-    };
-    for(mlir::Type st : scalarTypes) {
+    std::vector<mlir::Type> scalarTypes = {builder.getF64Type(),
+                                           builder.getF32Type(),
+                                           builder.getIntegerType(64, true),
+                                           builder.getIntegerType(32, true),
+                                           builder.getIntegerType(8, true),
+                                           builder.getIntegerType(64, false),
+                                           builder.getIntegerType(32, false),
+                                           builder.getIntegerType(8, false),
+                                           builder.getI1Type(),
+                                           builder.getIndexType(),
+                                           mlir::daphne::StringType::get(mctx)};
+    for (mlir::Type st : scalarTypes) {
         // Scalar type.
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(st), st);
 
         // Matrix type for DenseMatrix.
-        // TODO This should have withRepresentation(mlir::daphne::MatrixRepresentation::Dense).
+        // TODO This should have
+        // withRepresentation(mlir::daphne::MatrixRepresentation::Dense).
         mlir::Type mtDense = mlir::daphne::MatrixType::get(mctx, st);
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtDense), mtDense);
         // Matrix type for CSRMatrix.
-        mlir::Type mtCSR = mlir::daphne::MatrixType::get(mctx, st).withRepresentation(mlir::daphne::MatrixRepresentation::Sparse);
+        mlir::Type mtCSR =
+            mlir::daphne::MatrixType::get(mctx, st).withRepresentation(mlir::daphne::MatrixRepresentation::Sparse);
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtCSR), mtCSR);
 
         // List type for list of DenseMatrix.
@@ -69,9 +70,10 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext * mctx) {
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(ltCSR), ltCSR);
 
         // MemRef type.
-        if(!st.isa<mlir::daphne::StringType>()) {
-            // DAPHNE's StringType is not supported as the element type of a MemRef.
-            // The dimensions of the MemRef are irrelevant here, so we use {0, 0}.
+        if (!st.isa<mlir::daphne::StringType>()) {
+            // DAPHNE's StringType is not supported as the element type of a
+            // MemRef. The dimensions of the MemRef are irrelevant here, so we
+            // use {0, 0}.
             mlir::Type mrt = mlir::MemRefType::get({0, 0}, st);
             typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mrt), mrt);
         }
@@ -83,46 +85,42 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext * mctx) {
         mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)}),
         mlir::daphne::DaphneContextType::get(mctx),
     };
-    for(mlir::Type t : otherTypes) {
+    for (mlir::Type t : otherTypes) {
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(t), t);
     }
 }
 
-void KernelCatalogParser::mapTypes(
-    const std::vector<std::string> & in,
-    std::vector<mlir::Type> & out,
-    const std::string & word,
-    const std::string & kernelFuncName,
-    const std::string & opMnemonic,
-    const std::string & backend
-) const {
-    for(size_t i = 0; i < in.size(); i++) {
+void KernelCatalogParser::mapTypes(const std::vector<std::string> &in, std::vector<mlir::Type> &out,
+                                   const std::string &word, const std::string &kernelFuncName,
+                                   const std::string &opMnemonic, const std::string &backend) const {
+    for (size_t i = 0; i < in.size(); i++) {
         const std::string name = in[i];
         auto it = typeMap.find(name);
-        if(it != typeMap.end())
+        if (it != typeMap.end())
             out.push_back(it->second);
         else {
             std::stringstream s;
-            s << "KernelCatalogParser: error while parsing " + word + " types of kernel `"
-                << kernelFuncName << "` for operation `" << opMnemonic << "` (backend `"
-                << backend << "`): unknown type for " << word << " #" << i << ": `" << name << '`';
+            s << "KernelCatalogParser: error while parsing " + word + " types of kernel `" << kernelFuncName
+              << "` for operation `" << opMnemonic << "` (backend `" << backend << "`): unknown type for " << word
+              << " #" << i << ": `" << name << '`';
             throw std::runtime_error(s.str());
         }
     }
 }
 
-void KernelCatalogParser::parseKernelCatalog(const std::string & filePath, KernelCatalog & kc) const {
+void KernelCatalogParser::parseKernelCatalog(const std::string &filePath, KernelCatalog &kc) const {
     std::filesystem::path dirPath = std::filesystem::path(filePath).parent_path();
     try {
         std::ifstream kernelsConfigFile(filePath);
-        if(!kernelsConfigFile.good())
+        if (!kernelsConfigFile.good())
             throw std::runtime_error("could not open file for reading");
         nlohmann::json kernelsConfigData = nlohmann::json::parse(kernelsConfigFile);
-        for(auto kernelData : kernelsConfigData) {
+        for (auto kernelData : kernelsConfigData) {
             const std::string opMnemonic = kernelData["opMnemonic"].get<std::string>();
             // TODO Remove this workaround.
-            // Skip these two problematic operations, which return multiple results in the wrong way.
-            if(opMnemonic == "Avg_Forward" || opMnemonic == "Max_Forward")
+            // Skip these two problematic operations, which return multiple
+            // results in the wrong way.
+            if (opMnemonic == "Avg_Forward" || opMnemonic == "Max_Forward")
                 continue;
             const std::string kernelFuncName = kernelData["kernelFuncName"].get<std::string>();
             const std::string backend = kernelData["backend"].get<std::string>();
@@ -133,8 +131,7 @@ void KernelCatalogParser::parseKernelCatalog(const std::string & filePath, Kerne
             mapTypes(kernelData["argTypes"], argTypes, "argument", kernelFuncName, opMnemonic, backend);
             kc.registerKernel(opMnemonic, KernelInfo(kernelFuncName, resTypes, argTypes, backend, libPath));
         }
-    }
-    catch(std::exception& e) {
+    } catch (std::exception &e) {
         throw std::runtime_error("error while parsing kernel catalog file `" + filePath + "`: " + e.what());
     }
 }

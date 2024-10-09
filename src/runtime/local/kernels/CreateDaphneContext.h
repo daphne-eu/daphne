@@ -25,4 +25,4 @@
 // Convenience function
 // ****************************************************************************
 void createDaphneContext(DaphneContext *&res, uint64_t configPtr, uint64_t dispatchMappingPtr, uint64_t statisticsPtr,
-        uint64_t stringRefCountPtr);
+                         uint64_t stringRefCountPtr);

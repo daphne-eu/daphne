@@ -25,9 +25,7 @@
 
 const std::string dirPath = "test/api/cli/codegen/";
 
-void test_binary_lowering(const std::string op,
-                          const std::string kernel_call,
-                          const std::string lowering,
+void test_binary_lowering(const std::string op, const std::string kernel_call, const std::string lowering,
                           const std::string result) {
     std::stringstream out;
     std::stringstream err;
@@ -50,17 +48,11 @@ void test_binary_lowering(const std::string op,
     CHECK(out.str() == result);
 }
 
-TEST_CASE("ewBinaryAddScalar", TAG_CODEGEN) {
-    test_binary_lowering("add", "llvm.call @_ewAdd__", "llvm.add", "3\n");
-}
+TEST_CASE("ewBinaryAddScalar", TAG_CODEGEN) { test_binary_lowering("add", "llvm.call @_ewAdd__", "llvm.add", "3\n"); }
 
-TEST_CASE("ewBinarySubScalar", TAG_CODEGEN) {
-    test_binary_lowering("sub", "llvm.call @_ewSub__", "llvm.sub", "-1\n");
-}
+TEST_CASE("ewBinarySubScalar", TAG_CODEGEN) { test_binary_lowering("sub", "llvm.call @_ewSub__", "llvm.sub", "-1\n"); }
 
-TEST_CASE("ewBinaryMulScalar", TAG_CODEGEN) {
-    test_binary_lowering("mul", "llvm.call @_ewMul__", "llvm.mul", "2\n");
-}
+TEST_CASE("ewBinaryMulScalar", TAG_CODEGEN) { test_binary_lowering("mul", "llvm.call @_ewMul__", "llvm.mul", "2\n"); }
 
 TEST_CASE("ewBinaryDivScalar", TAG_CODEGEN) {
     test_binary_lowering("div", "llvm.call @_ewDiv__", "llvm.fdiv", "1.5\n");

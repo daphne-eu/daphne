@@ -25,24 +25,24 @@
 // Conversion of std::string.
 
 inline void convertStr(std::string const &x, double *v) {
-  try {
-    *v = stod(x);
-  } catch (const std::invalid_argument &) {
-    *v = std::numeric_limits<double>::quiet_NaN();
-  }
+    try {
+        *v = stod(x);
+    } catch (const std::invalid_argument &) {
+        *v = std::numeric_limits<double>::quiet_NaN();
+    }
 }
 inline void convertStr(std::string const &x, float *v) {
-  try {
-    *v = stof(x);
-  }
-  catch (const std::invalid_argument &) {
-    *v = std::numeric_limits<float>::quiet_NaN();
-  }
-  catch (const std::out_of_range& e) {
-      // handling subnormal values (too small)
-      *v = std::numeric_limits<float>::min();
-      spdlog::warn("setting subnormal float value {} to std::numeric_limits<float>::min() -> {}", x, std::numeric_limits<float>::min());
-  }
+    try {
+        *v = stof(x);
+    } catch (const std::invalid_argument &) {
+        *v = std::numeric_limits<float>::quiet_NaN();
+    } catch (const std::out_of_range &e) {
+        // handling subnormal values (too small)
+        *v = std::numeric_limits<float>::min();
+        spdlog::warn("setting subnormal float value {} to "
+                     "std::numeric_limits<float>::min() -> {}",
+                     x, std::numeric_limits<float>::min());
+    }
 }
 inline void convertStr(std::string const &x, int8_t *v) { *v = stoi(x); }
 inline void convertStr(std::string const &x, int32_t *v) { *v = stoi(x); }
@@ -53,22 +53,21 @@ inline void convertStr(std::string const &x, uint64_t *v) { *v = stoi(x); }
 
 // Conversion of char *.
 
-inline void convertCstr(const char * x, double *v) {
-  char * end;
-  *v = strtod(x, &end);
-  if(x == end)
-    *v = std::numeric_limits<double>::quiet_NaN();
+inline void convertCstr(const char *x, double *v) {
+    char *end;
+    *v = strtod(x, &end);
+    if (x == end)
+        *v = std::numeric_limits<double>::quiet_NaN();
 }
-inline void convertCstr(const char * x, float *v) {
-  char * end;
-  *v = strtof(x, &end);
-  if(x == end)
-    *v = std::numeric_limits<float>::quiet_NaN();
+inline void convertCstr(const char *x, float *v) {
+    char *end;
+    *v = strtof(x, &end);
+    if (x == end)
+        *v = std::numeric_limits<float>::quiet_NaN();
 }
-inline void convertCstr(const char * x, int8_t *v) { *v = atoi(x); }
-inline void convertCstr(const char * x, int32_t *v) { *v = atoi(x); }
-inline void convertCstr(const char * x, int64_t *v) { *v = atoi(x); }
-inline void convertCstr(const char * x, uint8_t *v) { *v = atoi(x); }
-inline void convertCstr(const char * x, uint32_t *v) { *v = atoi(x); }
-inline void convertCstr(const char * x, uint64_t *v) { *v = atoi(x); }
-
+inline void convertCstr(const char *x, int8_t *v) { *v = atoi(x); }
+inline void convertCstr(const char *x, int32_t *v) { *v = atoi(x); }
+inline void convertCstr(const char *x, int64_t *v) { *v = atoi(x); }
+inline void convertCstr(const char *x, uint8_t *v) { *v = atoi(x); }
+inline void convertCstr(const char *x, uint32_t *v) { *v = atoi(x); }
+inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }

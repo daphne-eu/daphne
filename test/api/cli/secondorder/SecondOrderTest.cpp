@@ -25,22 +25,20 @@
 
 const std::string dirPath = "test/api/cli/secondorder/";
 
-#define MAKE_TEST_CASE(name, count) \
-    TEST_CASE(name, TAG_SECONDORDER) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                compareDaphneToRefSimple(dirPath, name, i); \
-            } \
-        } \
+#define MAKE_TEST_CASE(name, count)                                                                                    \
+    TEST_CASE(name, TAG_SECONDORDER) {                                                                                 \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") { compareDaphneToRefSimple(dirPath, name, i); }                \
+        }                                                                                                              \
     }
 
-#define MAKE_FAILURE_TEST_CASE(name, count) \
-    TEST_CASE(name ", failure", TAG_SECONDORDER) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { \
-                checkDaphneFailsSimple(dirPath, name "_failure", i); \
-            } \
-        } \
+#define MAKE_FAILURE_TEST_CASE(name, count)                                                                            \
+    TEST_CASE(name ", failure", TAG_SECONDORDER) {                                                                     \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") {                                                      \
+                checkDaphneFailsSimple(dirPath, name "_failure", i);                                                   \
+            }                                                                                                          \
+        }                                                                                                              \
     }
 
 MAKE_TEST_CASE("map", 3)

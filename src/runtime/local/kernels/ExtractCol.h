@@ -32,9 +32,8 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg, class DTSel>
-struct ExtractCol {
-    static void apply(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) = delete;
+template <class DTRes, class DTArg, class DTSel> struct ExtractCol {
+    static void apply(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,8 +44,8 @@ struct ExtractCol {
 // with the rest of the code and DaphneIR (even though int64_t also makes
 // sense), but currently, it would be too hard to get a matrix of size_t via
 // DaphneDSL, since we do not have value type casts yet.
-template<class DTRes, class DTArg, class DTSel>
-void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) {
+template <class DTRes, class DTArg, class DTSel>
+void extractCol(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) {
     ExtractCol<DTRes, DTArg, DTSel>::apply(res, arg, sel, ctx);
 }
 
@@ -55,12 +54,13 @@ void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) {
 // ****************************************************************************
 
 // index boundaries are verified later for performance
-#define VALIDATE_ARGS(numColsSel) \
-    if(numColsSel != 1) { \
-        std::ostringstream errMsg; \
-        errMsg << "invalid argument passed to ExtractCol: column selection must be given as column matrix but has '" \
-            << numColsSel << "' columns instead of one"; \
-        throw std::runtime_error(errMsg.str()); \
+#define VALIDATE_ARGS(numColsSel)                                                                                      \
+    if (numColsSel != 1) {                                                                                             \
+        std::ostringstream errMsg;                                                                                     \
+        errMsg << "invalid argument passed to ExtractCol: column selection "                                           \
+                  "must be given as column matrix but has '"                                                           \
+               << numColsSel << "' columns instead of one";                                                            \
+        throw std::runtime_error(errMsg.str());                                                                        \
     }
 
 // ****************************************************************************
@@ -71,13 +71,15 @@ void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) {
 // DenseMatrix <- DenseMatrix, DenseMatrix (positions)
 // ----------------------------------------------------------------------------
 
-template<typename VTArg, typename VTSel>
+template <typename VTArg, typename VTSel>
 struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
-    static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg, const DenseMatrix<VTSel> *sel,
+                      DCTX(ctx)) {
         VALIDATE_ARGS(sel->getNumCols());
 
-        // left as VTSel to enable more boundary validation, converted to size_t later
-        const VTSel * VTcolIdxs = sel->getValues();
+        // left as VTSel to enable more boundary validation, converted to size_t
+        // later
+        const VTSel *VTcolIdxs = sel->getValues();
         const size_t numColsRes = sel->getNumRows();
         const size_t numRows = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
@@ -85,20 +87,22 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, numColsRes, false);
 
-        const VTArg * valuesArg = arg->getValues();
-        VTArg * valuesRes = res->getValues();
-        
+        const VTArg *valuesArg = arg->getValues();
+        VTArg *valuesRes = res->getValues();
+
         const size_t rowSkipArg = arg->getRowSkip();
         const size_t rowSkipRes = res->getRowSkip();
-        
+
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numColsRes; c++) {
                 const VTSel VTcolIdx = VTcolIdxs[c];
                 const size_t colIdx = static_cast<const size_t>(VTcolIdx);
                 if (VTcolIdx < 0 || numColsArg <= colIdx) {
                     std::ostringstream errMsg;
-                    errMsg << "invalid argument '" << VTcolIdx << "' passed to ExtractCol: out of bounds "
-                        "for dense matrix with column boundaries '[0, " << numColsArg << ")'";
+                    errMsg << "invalid argument '" << VTcolIdx
+                           << "' passed to ExtractCol: out of bounds "
+                              "for dense matrix with column boundaries '[0, "
+                           << numColsArg << ")'";
                     throw std::out_of_range(errMsg.str());
                 }
 
@@ -114,15 +118,14 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
 // Frame <- Frame, String (column label)
 // ----------------------------------------------------------------------------
 
-template<>
-struct ExtractCol<Frame, Frame, char> {
-    static void apply(Frame *& res, const Frame * arg, const char * sel, DCTX(ctx)) {
+template <> struct ExtractCol<Frame, Frame, char> {
+    static void apply(Frame *&res, const Frame *arg, const char *sel, DCTX(ctx)) {
         std::string delimiter = ".";
         const std::string colName = std::string(sel);
         const std::string frameName = colName.substr(0, colName.find(delimiter));
         const std::string colLabel = colName.substr(colName.find(delimiter) + delimiter.length(), colName.length());
-        if (colLabel.compare("*") ==0) {
-            const std::string * labels = arg->getLabels();
+        if (colLabel.compare("*") == 0) {
+            const std::string *labels = arg->getLabels();
             const size_t numLabels = arg->getNumCols();
             std::vector<size_t> extractLabelIdxs;
             for (size_t i = 0; i < numLabels; i++) {
@@ -131,23 +134,23 @@ struct ExtractCol<Frame, Frame, char> {
                     extractLabelIdxs.push_back(arg->getColumnIdx(labels[i]));
                 }
             }
-            res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), extractLabelIdxs.size(), extractLabelIdxs.data());
+            res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), extractLabelIdxs.size(),
+                                                   extractLabelIdxs.data());
         } else {
             size_t colIdx = arg->getColumnIdx(sel);
             res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
         }
-        
     }
 };
 
-template< typename VTSel >
-struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
-    static void apply(Frame *& res, const Frame * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+template <typename VTSel> struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
+    static void apply(Frame *&res, const Frame *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
         VALIDATE_ARGS(sel->getNumCols());
 
-        // left as VTSel to enable more boundary validation, converted to size_t later
-        const VTSel * VTvaluesSel = sel->getValues();
-        const size_t* colIdxs = reinterpret_cast<const size_t*>(VTvaluesSel);
+        // left as VTSel to enable more boundary validation, converted to size_t
+        // later
+        const VTSel *VTvaluesSel = sel->getValues();
+        const size_t *colIdxs = reinterpret_cast<const size_t *>(VTvaluesSel);
         const size_t numColsRes = sel->getNumRows();
         const size_t numRowsRes = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
@@ -155,8 +158,10 @@ struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
             const VTSel VTcolIdx = VTvaluesSel[c];
             if (VTcolIdx < 0 || numColsArg <= colIdxs[c]) {
                 std::ostringstream errMsg;
-                errMsg << "invalid argument '" << VTcolIdx << "' passed to ExtractCol: ouf of bounds "
-                    "for frame with column boundaries '[0, " << numColsArg << ")'";
+                errMsg << "invalid argument '" << VTcolIdx
+                       << "' passed to ExtractCol: ouf of bounds "
+                          "for frame with column boundaries '[0, "
+                       << numColsArg << ")'";
                 throw std::out_of_range(errMsg.str());
             }
         }
@@ -168,9 +173,8 @@ struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
 // Matrix <- Matrix, Matrix (positions)
 // ----------------------------------------------------------------------------
 
-template<typename VTArg, typename VTSel>
-struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
-    static void apply(Matrix<VTArg> *& res, const Matrix<VTArg> * arg, const Matrix<VTSel> * sel, DCTX(ctx)) {
+template <typename VTArg, typename VTSel> struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
+    static void apply(Matrix<VTArg> *&res, const Matrix<VTArg> *arg, const Matrix<VTSel> *sel, DCTX(ctx)) {
         VALIDATE_ARGS(sel->getNumCols());
 
         const size_t numColsRes = sel->getNumRows();
@@ -187,8 +191,10 @@ struct ExtractCol<Matrix<VTArg>, Matrix<VTArg>, Matrix<VTSel>> {
                 const size_t colIdx = static_cast<const size_t>(VTcolIdx);
                 if (VTcolIdx < 0 || numColsArg <= colIdx) {
                     std::ostringstream errMsg;
-                    errMsg << "invalid argument '" << VTcolIdx << "' passed to ExtractCol: out of bounds "
-                        "for dense matrix with column boundaries '[0, " << numColsArg << ")'";
+                    errMsg << "invalid argument '" << VTcolIdx
+                           << "' passed to ExtractCol: out of bounds "
+                              "for dense matrix with column boundaries '[0, "
+                           << numColsArg << ")'";
                     throw std::out_of_range(errMsg.str());
                 }
                 res->append(r, c, arg->get(r, colIdx));

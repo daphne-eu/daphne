@@ -16,18 +16,17 @@
 
 #pragma once
 
+#include "HostUtils.h"
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
-#include "HostUtils.h"
 
 namespace CUDA::NN::Activation {
-    struct ReLU {
-        static inline cudnnActivationMode_t getActivationType() { return CUDNN_ACTIVATION_RELU; }
-    };
+struct ReLU {
+    static inline cudnnActivationMode_t getActivationType() { return CUDNN_ACTIVATION_RELU; }
+};
 
-    template<typename OP, typename DTRes, typename DTArg>
-    struct Forward {
-        static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
-    };
-}
+template <typename OP, typename DTRes, typename DTArg> struct Forward {
+    static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
+};
+} // namespace CUDA::NN::Activation

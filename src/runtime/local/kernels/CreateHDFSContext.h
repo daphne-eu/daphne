@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The DAPHNE Consortium
+ * Copyright 2021 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 #pragma once
 
-#include <runtime/local/context/DaphneContext.h>
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/context/HDFSContext.h"
 
-#include <string_view>
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
 
-inline bool stringEq(const char *lhs, const char *rhs, DCTX(ctx)) {
-    return std::string_view(lhs) == std::string_view(rhs);
-}
+static void createHDFSContext(DCTX(ctx)) { ctx->hdfs_context = HDFSContext::createHDFSContext(ctx->config); }

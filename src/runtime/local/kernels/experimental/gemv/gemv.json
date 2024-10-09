@@ -1,0 +1,10 @@
+[
+    {
+        "opMnemonic": "gemv",
+        "kernelFuncName": "spmv_simd_parallel_omp",
+        "resTypes": ["DenseMatrix<double>"],
+        "argTypes": ["CSRMatrix<double>", "DenseMatrix<double>"],
+        "backend": "CPP",
+        "libPath": "gemv.so"
+    }
+]

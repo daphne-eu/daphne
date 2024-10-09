@@ -31,7 +31,7 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 
 **Importing data from other Python libraries:**
 
-- **`from_numpy`**`(mat: np.array, shared_memory=True, verbose=False) -> Matrix`
+- **`from_numpy`**`(mat: np.array, shared_memory=True, verbose=False, return_shape=False) -> Matrix`
 - **`from_pandas`**`(df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame`
 - **`from_tensorflow`**`(tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False) -> Matrix`
 - **`from_pytorch`**`(tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False) -> Matrix`
@@ -62,7 +62,7 @@ In the following, we describe only the latter.
 
 ### `Matrix` API Reference
 
-**Matrix dimensions:**
+**Matrix meta data:**
 
 - **`ncol`**`()`
 - **`nrow`**`()`
@@ -174,7 +174,7 @@ In the following, we describe only the latter.
 
 ### `Frame` API Reference
 
-**Frame dimensions:**
+**Frame meta data:**
 
 - **`nrow`**`()`
 - **`ncol`**`()`

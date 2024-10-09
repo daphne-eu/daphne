@@ -28,17 +28,16 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTCond, class VTThen, class VTElse>
-struct CondMatScaSca {
-    static void apply(DTRes *& res, const DTCond * cond, VTThen thenVal, VTElse elseVal, DCTX(ctx)) = delete;
+template <class DTRes, class DTCond, class VTThen, class VTElse> struct CondMatScaSca {
+    static void apply(DTRes *&res, const DTCond *cond, VTThen thenVal, VTElse elseVal, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTCond, class VTThen, class VTElse>
-void condMatScaSca(DTRes *& res, const DTCond * cond, VTThen thenVal, VTElse elseVal, DCTX(ctx)) {
+template <class DTRes, class DTCond, class VTThen, class VTElse>
+void condMatScaSca(DTRes *&res, const DTCond *cond, VTThen thenVal, VTElse elseVal, DCTX(ctx)) {
     CondMatScaSca<DTRes, DTCond, VTThen, VTElse>::apply(res, cond, thenVal, elseVal, ctx);
 }
 
@@ -50,28 +49,22 @@ void condMatScaSca(DTRes *& res, const DTCond * cond, VTThen thenVal, VTElse els
 // DenseMatrix <- DenseMatrix, scalar, scalar
 // ----------------------------------------------------------------------------
 
-template<typename VTVal, typename VTCond>
-struct CondMatScaSca<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, VTVal> {
-    static void apply(
-        DenseMatrix<VTVal> *& res,
-        const DenseMatrix<VTCond> * cond,
-        VTVal thenVal,
-        VTVal elseVal,
-        DCTX(ctx)
-    ) {
+template <typename VTVal, typename VTCond> struct CondMatScaSca<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, VTVal> {
+    static void apply(DenseMatrix<VTVal> *&res, const DenseMatrix<VTCond> *cond, VTVal thenVal, VTVal elseVal,
+                      DCTX(ctx)) {
         const size_t numRows = cond->getNumRows();
         const size_t numCols = cond->getNumCols();
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
 
-        VTVal * valuesRes = res->getValues();
-        const VTCond * valuesCond = cond->getValues();
+        VTVal *valuesRes = res->getValues();
+        const VTCond *valuesCond = cond->getValues();
         const size_t rowSkipRes = res->getRowSkip();
         const size_t rowSkipCond = cond->getRowSkip();
 
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++)
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++)
                 valuesRes[c] = static_cast<bool>(valuesCond[c]) ? thenVal : elseVal;
             valuesRes += rowSkipRes;
             valuesCond += rowSkipCond;
@@ -83,15 +76,8 @@ struct CondMatScaSca<DenseMatrix<VTVal>, DenseMatrix<VTCond>, VTVal, VTVal> {
 // Matrix <- Matrix, scalar, scalar
 // ----------------------------------------------------------------------------
 
-template<typename VTVal, typename VTCond>
-struct CondMatScaSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, VTVal> {
-    static void apply(
-        Matrix<VTVal> *& res,
-        const Matrix<VTCond> * cond,
-        VTVal thenVal,
-        VTVal elseVal,
-        DCTX(ctx)
-    ) {
+template <typename VTVal, typename VTCond> struct CondMatScaSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, VTVal> {
+    static void apply(Matrix<VTVal> *&res, const Matrix<VTCond> *cond, VTVal thenVal, VTVal elseVal, DCTX(ctx)) {
         const size_t numRows = cond->getNumRows();
         const size_t numCols = cond->getNumCols();
 
@@ -106,4 +92,4 @@ struct CondMatScaSca<Matrix<VTVal>, Matrix<VTCond>, VTVal, VTVal> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CONDMATSCASCA_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_CONDMATSCASCA_H

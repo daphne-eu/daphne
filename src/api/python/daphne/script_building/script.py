@@ -96,6 +96,14 @@ class DaphneDSLScript:
         
         #os.environ['OPENBLAS_NUM_THREADS'] = '1'
         res = DaphneLib.daphne(ctypes.c_char_p(str.encode(PROTOTYPE_PATH)), ctypes.c_char_p(str.encode(temp_out_path)))
+        if res != 0:
+            # Error message with DSL code line.
+            error_message = DaphneLib.getResult().error_message.decode("utf-8")
+            # Remove DSL code line from error message.
+            # index_code_line = error_message.find("Source file ->") - 29
+            # error_message = error_message[:index_code_line]
+            
+            raise RuntimeError(f"Error in DaphneDSL script: {error_message}")
         #os.environ['OPENBLAS_NUM_THREADS'] = '32'
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:

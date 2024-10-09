@@ -16,19 +16,19 @@
 
 #include "run_tests.h"
 
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
 #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
-#include <runtime/local/kernels/Fill.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CUDA/Fill.h>
+#include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/Fill.h>
 
-#include <tags.h>
 #include <catch.hpp>
+#include <tags.h>
 
-template<class DTRes>
-void checkFill(const typename DTRes::VT val, const size_t rows, const size_t cols, DaphneContext* ctx) {
-    DTRes* res = nullptr;
-    DTRes* exp = nullptr;
+template <class DTRes>
+void checkFill(const typename DTRes::VT val, const size_t rows, const size_t cols, DaphneContext *ctx) {
+    DTRes *res = nullptr;
+    DTRes *exp = nullptr;
     CUDA::Fill<DTRes, typename DTRes::VT>::apply(res, val, rows, cols, ctx);
     fill<DTRes, typename DTRes::VT>(exp, val, rows, cols, ctx);
 

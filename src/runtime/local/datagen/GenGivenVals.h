@@ -32,9 +32,9 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
-struct GenGivenVals {
-    static DT * generate(size_t numRows, const std::vector<typename DT::VT> & elements, size_t minNumNonZeros = 0) = delete;
+template <class DT> struct GenGivenVals {
+    static DT *generate(size_t numRows, const std::vector<typename DT::VT> &elements,
+                        size_t minNumNonZeros = 0) = delete;
 };
 
 // ****************************************************************************
@@ -44,17 +44,17 @@ struct GenGivenVals {
 /**
  * @brief A very simple data generator which populates a matrix with the
  * elements of the given `std::vector`.
- * 
+ *
  * Meant only for small matrices, mainly as a utility for testing and
  * debugging. Note that it can easily be used with an initializer list as
  * follows:
- * 
+ *
  * ```c++
  * // Generates the matrix  3 1 4
  * //                       1 5 9
  * auto m = genGivenVals<DenseMatrix<double>>(2, {3, 1, 4, 1, 5, 9});
  * ```
- * 
+ *
  * @param numRows The number of rows.
  * @param elements The data elements to populate the matrix with. Their number
  * must be divisible by `numRows`.
@@ -63,8 +63,8 @@ struct GenGivenVals {
  * @return A matrix of the specified data type `DT` containing the provided
  * data elements.
  */
-template<class DT>
-DT * genGivenVals(size_t numRows, const std::vector<typename DT::VT> & elements, size_t minNumNonZeros = 0) {
+template <class DT>
+DT *genGivenVals(size_t numRows, const std::vector<typename DT::VT> &elements, size_t minNumNonZeros = 0) {
     return GenGivenVals<DT>::generate(numRows, elements, minNumNonZeros);
 }
 
@@ -81,22 +81,20 @@ DT * genGivenVals(size_t numRows, const std::vector<typename DT::VT> & elements,
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct GenGivenVals<DenseMatrix<VT>> {
-    static DenseMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
-        if(numRows == 0)
+template <typename VT> struct GenGivenVals<DenseMatrix<VT>> {
+    static DenseMatrix<VT> *generate(size_t numRows, const std::vector<VT> &elements, size_t minNumNonZeros = 0) {
+        if (numRows == 0)
             // We could return a 0x0 matrix, but this is often not what we want.
-            // In many (test) cases, we want a 0xm matrix, but the number of columns
-            // cannot be inferred if there are no elements. In such cases, callers
-            // should rather construct a 0xm matrix via DataObjectFactory::create().
+            // In many (test) cases, we want a 0xm matrix, but the number of
+            // columns cannot be inferred if there are no elements. In such
+            // cases, callers should rather construct a 0xm matrix via
+            // DataObjectFactory::create().
             throw std::runtime_error("genGivenVals(): numRows must not be zero");
 
         const size_t numCells = elements.size();
-        if(numCells % numRows)
-            throw std::runtime_error(
-                    "genGivenVals(): the number of given data elements must be "
-                    "divisible by given number of rows"
-            );
+        if (numCells % numRows)
+            throw std::runtime_error("genGivenVals(): the number of given data elements must be "
+                                     "divisible by given number of rows");
         const size_t numCols = numCells / numRows;
         auto res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         memcpy(res->getValues(), elements.data(), numCells * sizeof(VT));
@@ -104,17 +102,18 @@ struct GenGivenVals<DenseMatrix<VT>> {
     }
 };
 
-template<>
-struct GenGivenVals<DenseMatrix<const char*>> {
-    static DenseMatrix<const char*> * generate(size_t numRows, const std::vector<const char*> & elements, size_t minNumNonZeros = 0) {
+template <> struct GenGivenVals<DenseMatrix<const char *>> {
+    static DenseMatrix<const char *> *generate(size_t numRows, const std::vector<const char *> &elements,
+                                               size_t minNumNonZeros = 0) {
         const size_t numCells = elements.size();
         if (numCells % numRows != 0)
-            throw std::runtime_error("genGivenVals: number of given data elements must be divisible by given number of rows");
+            throw std::runtime_error("genGivenVals: number of given data elements must be divisible "
+                                     "by given number of rows");
         const size_t numCols = numCells / numRows;
-        auto res = DataObjectFactory::create<DenseMatrix<const char*>>(numRows, numCols, false);
+        auto res = DataObjectFactory::create<DenseMatrix<const char *>>(numRows, numCols, false);
         res->prepareAppend();
-        for(size_t r = 0; r < numRows; r++)
-            for(size_t c = 0; c < numCols; c++)
+        for (size_t r = 0; r < numRows; r++)
+            for (size_t c = 0; c < numCols; c++)
                 res->append(r, c, elements[r * res->getRowSkip() + c]);
         res->finishAppend();
         return res;
@@ -125,33 +124,34 @@ struct GenGivenVals<DenseMatrix<const char*>> {
 // CSRMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct GenGivenVals<CSRMatrix<VT>> {
-    static CSRMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
+template <typename VT> struct GenGivenVals<CSRMatrix<VT>> {
+    static CSRMatrix<VT> *generate(size_t numRows, const std::vector<VT> &elements, size_t minNumNonZeros = 0) {
         const size_t numCells = elements.size();
         if (numCells % numRows != 0)
-            throw std::runtime_error("genGivenVals: number of given data elements must be divisible by given number of rows");
+            throw std::runtime_error("genGivenVals: number of given data elements must be divisible "
+                                     "by given number of rows");
         const size_t numCols = numCells / numRows;
         size_t numNonZeros = 0;
-        for(VT v : elements)
-            if(v != VT(0))
+        for (VT v : elements)
+            if (v != VT(0))
                 numNonZeros++;
-        auto res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, std::max(numNonZeros, minNumNonZeros), false);
-        VT * values = res->getValues();
-        size_t * colIdxs = res->getColIdxs();
-        size_t * rowOffsets = res->getRowOffsets();
+        auto res =
+            DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, std::max(numNonZeros, minNumNonZeros), false);
+        VT *values = res->getValues();
+        size_t *colIdxs = res->getColIdxs();
+        size_t *rowOffsets = res->getRowOffsets();
         size_t pos = 0;
         size_t colIdx = 0;
         size_t rowIdx = 0;
         rowOffsets[0] = 0;
-        for(VT v : elements) {
-            if(v != VT(0)) {
+        for (VT v : elements) {
+            if (v != VT(0)) {
                 values[pos] = v;
                 colIdxs[pos] = colIdx;
                 pos++;
             }
             colIdx++;
-            if(colIdx == numCols) {
+            if (colIdx == numCols) {
                 colIdx = 0;
                 rowOffsets[rowIdx++ + 1] = pos;
             }
@@ -164,12 +164,12 @@ struct GenGivenVals<CSRMatrix<VT>> {
 // Matrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct GenGivenVals<Matrix<VT>> {
-    static Matrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
-        // this is to simplify generating test matrices for the "Matrix" kernel specializations
+template <typename VT> struct GenGivenVals<Matrix<VT>> {
+    static Matrix<VT> *generate(size_t numRows, const std::vector<VT> &elements, size_t minNumNonZeros = 0) {
+        // this is to simplify generating test matrices for the "Matrix" kernel
+        // specializations
         return GenGivenVals<DenseMatrix<VT>>::generate(numRows, elements, minNumNonZeros);
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_DATAGEN_GENGIVENVALS_H
+#endif // SRC_RUNTIME_LOCAL_DATAGEN_GENGIVENVALS_H

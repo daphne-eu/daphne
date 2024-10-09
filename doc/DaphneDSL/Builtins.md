@@ -35,7 +35,7 @@ We use the following notation (deviating from the DaphneDSL function syntax):
 DaphneDSL's built-in functions can be categorized as follows:
 
 - Data generation
-- Matrix/frame dimensions
+- Matrix/frame meta data
 - Elementwise unary
 - Elementwise binary
 - Outer binary (generalized outer product)
@@ -69,7 +69,8 @@ DaphneDSL's built-in functions can be categorized as follows:
 - **`rand`**`(numRows:size, numCols:size, min:scalar, max:scalar, sparsity:double, seed:si64)`
 
     Generates a *(`numRows` x `numCols`)* matrix of random values.
-    The values are drawn uniformly from the range *[`min`, `max`]* (both inclusive).
+    The values are drawn uniformly from the range *[`min`, `max`]* (both inclusive). A value of zero in the `min` parameter
+    will be ignored, as the insertion of zeros in the output is controlled by the `sparsity` parameter.
     The `sparsity` can be chosen between `0.0` (all zeros) and `1.0` (all non-zeros).
     The `seed` can be set to `-1` (randomly chooses a seed), or be provided explicitly to enable reproducible random values.
   
@@ -85,9 +86,15 @@ DaphneDSL's built-in functions can be categorized as follows:
     Note that `from` may be greater than `to`, and `inc` may be negative.
     The scalar `inc` is an optional argument and defaults to `1`.
 
-## Matrix/frame dimensions
+## Matrix/frame meta data
 
-The following built-in functions allow to find out the shape/dimensions of matrices and frames.
+The following built-in functions allow to find out meta data of matrices and frames.
+
+- **`typeOf`**`(arg:scalar/matrix/frame)`
+
+    Returns a string with the data type of `arg`, which can be a scalar, matrix, or a frame containing mixed value types.
+    For matrices and frames, this includes their dimensions and value type or value type per column in the case of frames.
+    Value types are named after their C++ representation.
 
 - **`nrow`**`(arg:matrix/frame)`
 

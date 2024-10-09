@@ -21,24 +21,26 @@
 #include <string>
 
 const std::string dirPath = "test/api/cli/import/";
-const char* configFilePath = "test/api/cli/import/UserConfig.json";
+const char *configFilePath = "test/api/cli/import/UserConfig.json";
 
-#define MAKE_SUCCESS_TEST_CASE(name, count) \
-    TEST_CASE(name ", success", TAG_CONFIG) {\
-        for(unsigned i = 1; i <= (count); i++) {\
-            DYNAMIC_SECTION(name "_success_" << i << ".daphne") {\
-                compareDaphneToRefSimple(dirPath, name "_success", i,  std::string("--config=").append(configFilePath).c_str());\
-            }\
-        }\
+#define MAKE_SUCCESS_TEST_CASE(name, count)                                                                            \
+    TEST_CASE(name ", success", TAG_CONFIG) {                                                                          \
+        for (unsigned i = 1; i <= (count); i++) {                                                                      \
+            DYNAMIC_SECTION(name "_success_" << i << ".daphne") {                                                      \
+                compareDaphneToRefSimple(dirPath, name "_success", i,                                                  \
+                                         std::string("--config=").append(configFilePath).c_str());                     \
+            }                                                                                                          \
+        }                                                                                                              \
     }
 
-#define MAKE_FAILURE_TEST_CASE(name, count) \
-    TEST_CASE(name ", failure", TAG_IMPORT) { \
-        for(unsigned i = 1; i <= (count); i++) { \
-            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { \
-                checkDaphneFailsSimple(dirPath, name "_failure", i, std::string("--config=").append(configFilePath).c_str());\
-            } \
-        } \
+#define MAKE_FAILURE_TEST_CASE(name, count)                                                                            \
+    TEST_CASE(name ", failure", TAG_IMPORT) {                                                                          \
+        for (unsigned i = 1; i <= (count); i++) {                                                                      \
+            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") {                                                      \
+                checkDaphneFailsSimple(dirPath, name "_failure", i,                                                    \
+                                       std::string("--config=").append(configFilePath).c_str());                       \
+            }                                                                                                          \
+        }                                                                                                              \
     }
 
 MAKE_SUCCESS_TEST_CASE("import", 5)

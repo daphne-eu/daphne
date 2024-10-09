@@ -19,32 +19,34 @@
 
 namespace CUDA::Softmax {
 
-    template<typename DTRes, typename DTArg>
-    void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
-        const size_t deviceID = 0; //ToDo: multi device support
-        auto ctx = CUDAContext::get(dctx, deviceID);
-        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
-        
-        using VT = typename DTRes::VT;
-        int n = data->getNumRows();
-        int d = data->getNumCols();
-        const VT blend_alpha = 1;
-        const VT blend_beta = 0;
-        const VT* d_input = data->getValues(&alloc_desc);
+template <typename DTRes, typename DTArg>
+void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
+    const size_t deviceID = 0; // ToDo: multi device support
+    auto ctx = CUDAContext::get(dctx, deviceID);
+    AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
+    using VT = typename DTRes::VT;
+    int n = data->getNumRows();
+    int d = data->getNumCols();
+    const VT blend_alpha = 1;
+    const VT blend_beta = 0;
+    const VT *d_input = data->getValues(&alloc_desc);
 
-        if (res == nullptr) {
-            res = DataObjectFactory::create<DTRes>(n,d, false, &alloc_desc);
-        }
-        VT* d_res = res->getValues(&alloc_desc);
+    CHECK_CUDNN(
+        cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
+    CHECK_CUDNN(
+        cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
 
-        CHECK_CUDNN(cudnnSoftmaxForward(ctx->getCUDNNHandle(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
-                &blend_alpha, ctx->src_tensor_desc, d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
+    if (res == nullptr) {
+        res = DataObjectFactory::create<DTRes>(n, d, false, &alloc_desc);
     }
+    VT *d_res = res->getValues(&alloc_desc);
 
-    template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
+    CHECK_CUDNN(cudnnSoftmaxForward(ctx->getCUDNNHandle(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
+                                    &blend_alpha, ctx->src_tensor_desc, d_input, &blend_beta, ctx->dst_tensor_desc,
+                                    d_res));
 }
 
+template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
+template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
+} // namespace CUDA::Softmax
