@@ -320,23 +320,20 @@ std::vector<double> daphne::EwMulOp::inferSparsity() {
      */
     auto lhs = getLhs().getType().dyn_cast<daphne::MatrixType>();
     double lhsSparsity = 0.0;
-    if (lhs) {
-        lhsSparsity = lhs.getSparsity();
-    } else {
-        lhsSparsity = -1.0;
-    }
+    lhsSparsity = lhs.getSparsity();
 
     auto rhs = getRhs().getType().dyn_cast<daphne::MatrixType>();
     double rhsSparsity = 0.0;
-    if (rhs) {
-        rhsSparsity = rhs.getSparsity();
-    } else {
-        rhsSparsity = -1.0;
-    }
+    rhsSparsity = rhs.getSparsity();
 
-    if ((lhsSparsity == -1.0 && rhsSparsity == -1.0) || (lhsSparsity == -1.0 && rhsSparsity != 0.0) || (lhsSparsity != 0.0 && rhsSparsity == -1.0)) {
+    if (lhsSparsity == -1.0) {
+        return {rhsSparsity};
+    } else if (rhsSparsity == -1.0) {
+        return{lhsSparsity};
+    } else if (lhsSparsity == -1.0 && rhsSparsity == -1.0) {
         return {-1.0};
     }
+
     return {lhsSparsity * rhsSparsity};
 }
 
@@ -573,7 +570,7 @@ std::vector<double> daphne::EwNeqOp::inferSparsity() {
         return {-1.0};
     } else if (lhsSparsity == 0.0 && rhsSparsity == 0.0) {
         return {0.0};
-    } else if ((lhsSparsity == 1.0 && rhsSparsity == 0.0) || (lhsSparsity == 0.0 && rhsSparsity == 1.0)) {
+    } else if ((lhsSparsity == 1.0 && rhsSparsity == 0.0) || (lhsSparsity == 0.0 && rhsSparsity == 1.0) || (lhsSparsity == 1.0 && rhsSparsity == 1.0)) {
         return {1.0};
     }
     return {-1.0};
@@ -933,6 +930,25 @@ std::vector<double> daphne::RowBindOp::inferSparsity() {
 
     return {(lhsSparsity * lhsCells + rhsSparsity * rhsCells) / (lhsCells + rhsCells)};
 }
+
+// ----------------------------------------------------------------------------
+// Row/column-wise aggregation
+// ----------------------------------------------------------------------------
+
+std::vector<double> daphne::RowAggMaxOp::inferSparsity() {
+    auto argTy = getArg().getType().dyn_cast<daphne::MatrixType>();
+    auto rows = argTy.getNumRows();
+    auto columns = argTy.getNumCols();
+    auto sparsity = argTy.getSparsity();
+
+    if (sparsity == -1.0) {
+        return {-1.0};
+    } else if (sparsity * (rows * columns) < columns) {
+        return {0.0};
+    }
+    return {1.0};
+}
+
 
 // --------------------------------------------------------------------
 // Other
