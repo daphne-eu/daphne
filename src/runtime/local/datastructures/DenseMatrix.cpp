@@ -341,4 +341,3 @@ template class DenseMatrix<unsigned char>;
 template class DenseMatrix<unsigned int>;
 template class DenseMatrix<unsigned long>;
 template class DenseMatrix<bool>;
-template class DenseMatrix<const char *>;
