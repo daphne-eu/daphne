@@ -79,9 +79,13 @@ That is, please try your best to make a good-quality contribution and we will he
    Please choose an expressive title and provide a short description of your changes.
    Feel free to mark your pull request "WIP: " or "Draft: " in the title.
    Note that you can add more commits to your pull request after you created it.
-7. You **receive feedback** on your proposed contribution.
+   Ideally, the changes in the PR contain only the changes you made for that PR,
+   e.g, by rebasing your branch on top of the target branch. This makes it easier for others to
+   review your PR.
+7. [Resolve any open conflicts](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/addressing-merge-conflicts/about-merge-conflicts) to the target branch of the PR.
+8. You **receive feedback** on your proposed contribution.
    You may be asked to apply certain changes, or we might apply straightforward adjustments ourselves before the integration.
-8. If it looks good (potentially after some help), **your contribution becomes a part of DAPHNE**.
+9. If it looks good (potentially after some help), **your contribution becomes a part of DAPHNE**.
 
 ### Experienced DAPHNE Contributors (Collaborators)
 
