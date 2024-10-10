@@ -33,7 +33,7 @@
 
 using namespace mlir;
 
-namespace {
+namespace file_local {
 
 /**
  * @brief Checks if the function is untyped, i.e., if at least one of the inputs
@@ -413,7 +413,7 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
     StringRef getArgument() const final { return "specialize-generic-funcs"; }
     StringRef getDescription() const final { return "TODO"; }
 };
-} // namespace
+} // namespace file_local
 
 /**
  * @brief Generate and call specialized functions from template definitions and
@@ -433,7 +433,7 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
  * Finally we delete all the template functions such that the MLIR code can be
  * verified for correct input and output types.
  */
-void SpecializeGenericFunctionsPass::runOnOperation() {
+void file_local::SpecializeGenericFunctionsPass::runOnOperation() {
     auto module = getOperation();
 
     module.walk([&](func::FuncOp funcOp) { functions.insert({funcOp.getSymName().str(), funcOp}); });
@@ -469,5 +469,5 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
 }
 
 std::unique_ptr<Pass> daphne::createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg) {
-    return std::make_unique<SpecializeGenericFunctionsPass>(cfg);
+    return std::make_unique<file_local::SpecializeGenericFunctionsPass>(cfg);
 }

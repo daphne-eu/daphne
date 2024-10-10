@@ -28,7 +28,7 @@
 
 using namespace mlir;
 
-namespace {
+namespace file_local {
 /**
  * @brief Recursive function checking if the given value is transitively
  * dependant on the operation `op`.
@@ -182,9 +182,9 @@ void movePipelineInterleavedOperations(Block::iterator pipelinePosition,
 struct VectorizeComputationsPass : public PassWrapper<VectorizeComputationsPass, OperationPass<func::FuncOp>> {
     void runOnOperation() final;
 };
-} // namespace
+} // namespace file_local
 
-void VectorizeComputationsPass::runOnOperation() {
+void file_local::VectorizeComputationsPass::runOnOperation() {
     auto func = getOperation();
     // TODO: fuse pipelines that have the matching inputs, even if no output of
     // the one pipeline is used by the other.
@@ -405,5 +405,5 @@ void VectorizeComputationsPass::runOnOperation() {
 }
 
 std::unique_ptr<Pass> daphne::createVectorizeComputationsPass() {
-    return std::make_unique<VectorizeComputationsPass>();
+    return std::make_unique<file_local::VectorizeComputationsPass>();
 }

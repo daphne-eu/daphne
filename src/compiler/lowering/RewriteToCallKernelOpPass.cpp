@@ -37,7 +37,6 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -504,6 +503,7 @@ class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::
 
   public:
     using OpConversionPattern::OpConversionPattern;
+
     DistributedPipelineKernelReplacement(MLIRContext *mctx, Value dctx, const DaphneUserConfig &userConfig,
                                          std::unordered_map<std::string, bool> &usedLibPaths,
                                          PatternBenefit benefit = 2)
@@ -584,7 +584,9 @@ class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::
         return success();
     }
 };
+} // namespace
 
+namespace file_local {
 struct RewriteToCallKernelOpPass : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<func::FuncOp>> {
     const DaphneUserConfig &userConfig;
     std::unordered_map<std::string, bool> &usedLibPaths;
@@ -594,9 +596,9 @@ struct RewriteToCallKernelOpPass : public PassWrapper<RewriteToCallKernelOpPass,
 
     void runOnOperation() final;
 };
-} // namespace
+} // namespace file_local
 
-void RewriteToCallKernelOpPass::runOnOperation() {
+void file_local::RewriteToCallKernelOpPass::runOnOperation() {
     func::FuncOp func = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -628,5 +630,5 @@ void RewriteToCallKernelOpPass::runOnOperation() {
 
 std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(const DaphneUserConfig &cfg,
                                                               std::unordered_map<std::string, bool> &usedLibPaths) {
-    return std::make_unique<RewriteToCallKernelOpPass>(cfg, usedLibPaths);
+    return std::make_unique<file_local::RewriteToCallKernelOpPass>(cfg, usedLibPaths);
 }

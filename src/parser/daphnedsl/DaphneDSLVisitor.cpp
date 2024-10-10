@@ -1278,40 +1278,43 @@ antlrcpp::Any DaphneDSLVisitor::visitCondExpr(DaphneDSLGrammarParser::CondExprCo
         valueOrErrorOnVisit(ctx->elseExpr)));
 }
 
+// convenience function
+template <typename VT, typename T>
+static void fillRes(std::shared_ptr<VT[]> &constValues, std::vector<int64_t> &nonConstValsIdx, int64_t i,
+                    std::pair<bool, T> constValue) {
+    // currently supported types for matrix literals support conversions
+    // to (most general) array's value type. if unsigned integers are
+    // added, this can lead to conflicts
+    if (constValue.first)
+        constValues.get()[i] =
+            constValue.second; // FIXME: consider casting to unsigned char here suggested by clang tidy
+    else {
+        constValues.get()[i] = 0;
+        nonConstValsIdx.emplace_back(i);
+    }
+}
+
 template <typename VT>
 mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, const std::vector<mlir::Value> &values,
                                                        const std::vector<mlir::Type> &valueTypes, mlir::Type matrixVt) {
-    std::shared_ptr<VT[]> constValues = std::shared_ptr<VT[]>(new VT[values.size()]);
+    auto constValues = std::make_shared<VT[]>(values.size());
     std::vector<int64_t> nonConstValsIdx;
-
-    // convenience function
-    auto fillRes = [&constValues, &nonConstValsIdx](int64_t i, std::pair<bool, auto> constValue) {
-        if (constValue.first) {
-            // currently supported types for matrix literals support conversions
-            // to (most general) array's value type. if unsigned integers are
-            // added, this can lead to conflicts
-            constValues.get()[i] = constValue.second;
-        } else {
-            constValues.get()[i] = 0;
-            nonConstValsIdx.emplace_back(i);
-        }
-    };
 
     for (int64_t i = 0; i < static_cast<int64_t>(values.size()); ++i) {
         mlir::Value currentValue = values[i];
         mlir::Type currentType = valueTypes[i];
 
-        if (mlir::IntegerType valueIntType = currentType.dyn_cast<mlir::IntegerType>()) {
+        if (auto valueIntType = currentType.dyn_cast<mlir::IntegerType>()) {
             if (currentType.isSignedInteger()) {
                 switch (valueIntType.getWidth()) {
                 case 64:
-                    fillRes(i, CompilerUtils::isConstant<int64_t>(currentValue));
+                    fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<int64_t>(currentValue));
                     break;
                 case 32:
-                    fillRes(i, CompilerUtils::isConstant<int32_t>(currentValue));
+                    fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<int32_t>(currentValue));
                     break;
                 case 8:
-                    fillRes(i, CompilerUtils::isConstant<int8_t>(currentValue));
+                    fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<int8_t>(currentValue));
                     break;
                 default:
                     throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
@@ -1319,26 +1322,26 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, const
             } else if (currentType.isUnsignedInteger()) {
                 switch (valueIntType.getWidth()) {
                 case 64:
-                    fillRes(i, CompilerUtils::isConstant<uint64_t>(currentValue));
+                    fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<uint64_t>(currentValue));
                     break;
                 case 32:
-                    fillRes(i, CompilerUtils::isConstant<uint32_t>(currentValue));
+                    fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<uint32_t>(currentValue));
                     break;
                 case 8:
-                    fillRes(i, CompilerUtils::isConstant<uint8_t>(currentValue));
+                    fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<uint8_t>(currentValue));
                     break;
                 default:
                     throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
                 }
             } else if (currentType.isSignlessInteger(1))
-                fillRes(i, CompilerUtils::isConstant<bool>(currentValue));
+                fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<bool>(currentValue));
             else
                 throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
 
         } else if (currentType.isF64())
-            fillRes(i, CompilerUtils::isConstant<double>(currentValue));
+            fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<double>(currentValue));
         else if (currentType.isF32())
-            fillRes(i, CompilerUtils::isConstant<float>(currentValue));
+            fillRes(constValues, nonConstValsIdx, i, CompilerUtils::isConstant<float>(currentValue));
         else {
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
         }

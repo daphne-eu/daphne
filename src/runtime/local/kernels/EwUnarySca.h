@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H
-#define SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
+#include <runtime/local/kernels/SupportedUnaryOpCodes.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 
 #include <limits>
@@ -182,5 +182,3 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::ISNAN, std::isnan(arg));
 #undef MAKE_EW_UNARY_SCA_CLOSED_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA
-
-#endif // SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H

@@ -200,7 +200,7 @@ using DivOpLowering = BinaryOpLowering<mlir::daphne::EwDivOp, mlir::arith::DivSI
 using PowOpLowering = BinaryOpLowering<mlir::daphne::EwPowOp, mlir::math::PowFOp, mlir::math::PowFOp>;
 // clang-format on
 
-namespace {
+namespace file_local {
 /**
  * @brief This pass lowers element-wise operations to affine loop
  * structures and arithmetic operations.
@@ -223,7 +223,7 @@ struct EwOpLoweringPass : public mlir::PassWrapper<EwOpLoweringPass, mlir::Opera
                "structures and arithmetic operations.";
     }
 };
-} // end anonymous namespace
+} // namespace file_local
 
 void populateLowerEwOpConversionPatterns(mlir::LLVMTypeConverter &typeConverter, mlir::RewritePatternSet &patterns) {
     // clang-format off
@@ -238,7 +238,7 @@ void populateLowerEwOpConversionPatterns(mlir::LLVMTypeConverter &typeConverter,
     // clang-format on
 }
 
-void EwOpLoweringPass::runOnOperation() {
+void file_local::EwOpLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
@@ -286,4 +286,6 @@ void EwOpLoweringPass::runOnOperation() {
         signalPassFailure();
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createEwOpLoweringPass() { return std::make_unique<EwOpLoweringPass>(); }
+std::unique_ptr<mlir::Pass> mlir::daphne::createEwOpLoweringPass() {
+    return std::make_unique<file_local::EwOpLoweringPass>();
+}

@@ -27,7 +27,7 @@
 
 using namespace mlir;
 
-namespace {
+namespace file_local {
 struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable> {
     using OpInterfaceConversionPattern::OpInterfaceConversionPattern;
 
@@ -71,13 +71,13 @@ struct DistributeComputationsPass : public PassWrapper<DistributeComputationsPas
     StringRef getArgument() const final { return "distribute-computation"; }
     StringRef getDescription() const final { return "TODO"; }
 };
-} // namespace
+} // namespace file_local
 
 bool onlyMatrixOperands(Operation *op) {
     return llvm::all_of(op->getOperandTypes(), [](Type t) { return llvm::isa<daphne::MatrixType>(t); });
 }
 
-void DistributeComputationsPass::runOnOperation() {
+void file_local::DistributeComputationsPass::runOnOperation() {
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -105,5 +105,5 @@ void DistributeComputationsPass::runOnOperation() {
 }
 
 std::unique_ptr<Pass> daphne::createDistributeComputationsPass() {
-    return std::make_unique<DistributeComputationsPass>();
+    return std::make_unique<file_local::DistributeComputationsPass>();
 }

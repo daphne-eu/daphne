@@ -33,7 +33,7 @@
 
 using namespace mlir;
 
-namespace {
+namespace file_local {
 
 std::unordered_map<std::string, mlir::Value> tables;
 struct SqlReplacement : public RewritePattern {
@@ -81,9 +81,9 @@ struct RewriteSqlOpPass : public PassWrapper<RewriteSqlOpPass, OperationPass<Mod
     StringRef getArgument() const final { return "rewrite-sqlop"; }
     StringRef getDescription() const final { return "TODO"; }
 };
-} // namespace
+} // namespace file_local
 
-void RewriteSqlOpPass::runOnOperation() {
+void file_local::RewriteSqlOpPass::runOnOperation() {
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -98,4 +98,4 @@ void RewriteSqlOpPass::runOnOperation() {
         signalPassFailure();
 }
 
-std::unique_ptr<Pass> daphne::createRewriteSqlOpPass() { return std::make_unique<RewriteSqlOpPass>(); }
+std::unique_ptr<Pass> daphne::createRewriteSqlOpPass() { return std::make_unique<file_local::RewriteSqlOpPass>(); }

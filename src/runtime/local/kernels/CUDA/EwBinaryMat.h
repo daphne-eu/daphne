@@ -22,7 +22,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
-#include <runtime/local/kernels/EwBinarySca.h>
 
 #include <cstddef>
 #include <string>
