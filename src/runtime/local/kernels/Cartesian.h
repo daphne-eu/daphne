@@ -30,7 +30,7 @@ void cartesianSet(ValueTypeCode vtcType, Frame *&res, const Frame *arg, const in
     }
 }
 
-void cartesian(Frame *&res, const Frame *lhs, const Frame *rhs, DCTX(ctx)) {
+inline void cartesian(Frame *&res, const Frame *lhs, const Frame *rhs, DCTX(ctx)) {
     const size_t numRowRhs = rhs->getNumRows();
     const size_t numRowLhs = lhs->getNumRows();
     const size_t totalRows = numRowRhs * numRowLhs;

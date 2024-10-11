@@ -73,7 +73,7 @@ bool innerJoinProbeIf(
 // Convenience function
 // ****************************************************************************
 
-void innerJoin(
+inline void innerJoin(
     // results
     Frame *&res,
     // input frames

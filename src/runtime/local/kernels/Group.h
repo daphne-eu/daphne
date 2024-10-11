@@ -117,7 +117,7 @@ template <typename VTRes, typename VTArg> struct ColumnGroupAgg {
     }
 };
 
-std::string myStringifyGroupEnum(mlir::daphne::GroupEnum val) {
+inline std::string myStringifyGroupEnum(mlir::daphne::GroupEnum val) {
     using mlir::daphne::GroupEnum;
     switch (val) {
     case GroupEnum::COUNT:
