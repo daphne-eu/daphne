@@ -1468,7 +1468,6 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
         colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<float>(loc, values, valueTypes, valueType);
     else if (valueType.isa<mlir::daphne::StringType>())
         colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<std::string>(loc, values, valueTypes, valueType);
-    
     else {
         throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
     }
