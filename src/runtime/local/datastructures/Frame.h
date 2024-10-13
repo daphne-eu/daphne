@@ -141,8 +141,9 @@ class Frame : public Structure {
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
             if (this->schema[i] == ValueTypeCode::STR)
-                this->columns[i] = std::shared_ptr<ColByteType>(
-                    reinterpret_cast<ColByteType *>(new std::string[maxNumRows]), std::default_delete<ColByteType[]>());
+                this->columns[i] =
+                    std::shared_ptr<ColByteType>(reinterpret_cast<ColByteType *>(new std::string[maxNumRows]),
+                                                 [](ColByteType *p) { delete[] reinterpret_cast<std::string *>(p); });
             else
                 this->columns[i] =
                     std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc], std::default_delete<ColByteType[]>());

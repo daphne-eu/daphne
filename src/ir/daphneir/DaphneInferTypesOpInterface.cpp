@@ -341,6 +341,8 @@ mlir::Type mlirTypeForCode(ValueTypeCode type, Builder builder) {
         return builder.getF32Type();
     case ValueTypeCode::F64:
         return builder.getF64Type();
+    case ValueTypeCode::STR:
+        return builder.getType<mlir::daphne::StringType>();
     default:
         throw std::runtime_error("mlirTypeForCode: unknown value type code");
     }
@@ -361,10 +363,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
         if (p.first) {
             FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
             mlir::Type valType;
-            if (fmd.schema[0] == ValueTypeCode::STR)
-                valType = mlir::daphne::StringType::get(getContext());
-            else
-                valType = mlirTypeForCode(fmd.schema[0], builder);
+            valType = mlirTypeForCode(fmd.schema[0], builder);
             return {mlir::daphne::MatrixType::get(getContext(), valType)};
         } else {
             return {mlir::daphne::MatrixType::get(getContext(), daphne::UnknownType::get(getContext()))};

@@ -79,6 +79,9 @@ void ValueTypeUtils::printValue(std::ostream &os, ValueTypeCode type, const void
     case ValueTypeCode::F64:
         os << reinterpret_cast<const double *>(array)[pos];
         break;
+    case ValueTypeCode::STR:
+        os << reinterpret_cast<const std::string *>(array)[pos];
+        break;
     default:
         throw std::runtime_error("ValueTypeUtils::printValue: unknown value type code");
     }
@@ -148,6 +151,8 @@ const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
         return cppNameFor<float>;
     case ValueTypeCode::F64:
         return cppNameFor<double>;
+    case ValueTypeCode::STR:
+        return cppNameFor<std::string>;
     default:
         throw std::runtime_error("ValueTypeUtils::cppNameForCode: unknown value type code");
     }
