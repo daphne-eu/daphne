@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <algorithm>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -104,148 +103,6 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                                      std::to_string(numRowsLhs) + " x " + std::to_string(numColsLhs) +
                                      ") and rhs has shape (" + std::to_string(numRowsRhs) + " x " +
                                      std::to_string(numColsRhs) + ")");
-        }
-    }
-};
-
-// ----------------------------------------------------------------------------
-// DenseMatrix <- CSRMatrix, CSRMatrix
-// ----------------------------------------------------------------------------
-
-template<typename VT>
-struct EwBinaryMat<DenseMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-
-        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols()) {
-            throw std::runtime_error("EwBinaryMat(DenseMatrix <- CSRMatrix, CSRMatrix) - lhs and rhs must have the same dimensions.");
-        }
-
-        if (res == nullptr) {
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        }
-
-        VT * valuesRes = res->getValues();
-
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
-
-        std::fill(valuesRes, valuesRes + numRows * numCols, VT(0));
-
-        switch(opCode) {
-            case BinaryOpCode::ADD: {
-                for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-                    size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
-                    size_t nnzRowRhs = rhs->getNumNonZeros(rowIdx);
-
-                    const VT* valuesRowLhs = lhs->getValues(rowIdx);
-                    const size_t* colIdxsRowLhs = lhs->getColIdxs(rowIdx);
-
-                    const VT* valuesRowRhs = rhs->getValues(rowIdx);
-                    const size_t* colIdxsRowRhs = rhs->getColIdxs(rowIdx);
-
-                    size_t posLhs = 0, posRhs = 0;
-
-                    while (posLhs < nnzRowLhs || posRhs < nnzRowRhs) {
-                        if (posLhs < nnzRowLhs && (posRhs >= nnzRowRhs || colIdxsRowLhs[posLhs] < colIdxsRowRhs[posRhs])) {
-                            // Only lhs has a value in this column
-                            valuesRes[rowIdx * numCols + colIdxsRowLhs[posLhs]] = func(valuesRowLhs[posLhs], VT(0), ctx);
-                            posLhs++;
-                        }
-                        else if (posRhs < nnzRowRhs && (posLhs >= nnzRowLhs || colIdxsRowRhs[posRhs] < colIdxsRowLhs[posLhs])) {
-                            // Only rhs has a value in this column
-                            valuesRes[rowIdx * numCols + colIdxsRowRhs[posRhs]] = func(VT(0), valuesRowRhs[posRhs], ctx);
-                            posRhs++;
-                        }
-                        else {
-                            // Both lhs and rhs have values in this column
-                            valuesRes[rowIdx * numCols + colIdxsRowLhs[posLhs]] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
-                            posLhs++;
-                            posRhs++;
-                        }
-                    }
-                }
-                break;
-            }
-            default:
-                throw std::runtime_error("EwBinaryMat(DenseMatrix <- CSRMatrix, CSRMatrix) - unsupported BinaryOpCode");
-        }
-    }
-};
-
-
-// ----------------------------------------------------------------------------
-// DenseMatrix <- CSRMatrix, DenseMatrix
-// ----------------------------------------------------------------------------
-
-template<typename VT>
-struct EwBinaryMat<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-        
-        if((numRows != rhs->getNumRows() && rhs->getNumRows() != 1) || (numCols != rhs->getNumCols() && rhs->getNumCols() != 1))
-            throw std::runtime_error("EwBinaryMat(Dense) - lhs and rhs must have the same dimensions (or broadcast)");
-        
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        
-        VT * valuesRes = res->getValues();
-        
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
-        
-        switch(opCode) {
-            case BinaryOpCode::ADD: { // Add operation
-                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-                    auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
-                    for(size_t colIdx = 0; colIdx < numCols; colIdx++) {
-                        auto lhsVal = lhs->get(rowIdx, colIdx);
-                        auto rhsVal = rhs->get(rhsRow, colIdx);
-                        valuesRes[rowIdx * numCols + colIdx] = func(lhsVal, rhsVal, ctx);
-                    }
-                }
-                break;
-            }
-            default:
-                throw std::runtime_error("EwBinaryMat(Dense) - unsupported BinaryOpCode");
-        }
-    }
-};
-
-// ----------------------------------------------------------------------------
-// DenseMatrix <- DenseMatrix, CSRMatrix
-// ----------------------------------------------------------------------------
-
-template<typename VT>
-struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-
-        if((numRows != rhs->getNumRows() && rhs->getNumRows() != 1) || (numCols != rhs->getNumCols() && rhs->getNumCols() != 1))
-            throw std::runtime_error("EwBinaryMat(Dense) - lhs and rhs must have the same dimensions (or broadcast)");
-
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-
-        VT * valuesRes = res->getValues();
-
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
-
-        switch(opCode) {
-            case BinaryOpCode::ADD: { // Add operation
-                for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-                    auto lhsRow = (lhs->getNumRows() == 1 ? 0 : rowIdx);
-                    for(size_t colIdx = 0; colIdx < numCols; colIdx++) {
-                        auto lhsVal = lhs->get(lhsRow, colIdx);
-                        auto rhsVal = rhs->get(rowIdx, colIdx);
-                        valuesRes[rowIdx * numCols + colIdx] = func(lhsVal, rhsVal, ctx);
-                    }
-                }
-                break;
-            }
-            default:
-                throw std::runtime_error("EwBinaryMat(Dense) - unsupported BinaryOpCode");
         }
     }
 };
@@ -410,9 +267,6 @@ template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMat
         case BinaryOpCode::MUL: // intersect
             maxNnz = lhs->getNumNonZeros();
             break;
-        case BinaryOpCode::ADD:
-            maxNnz = lhs->getNumNonZeros() + rhs->getNumNonZeros();
-            break;
         default:
             throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
         }
@@ -421,7 +275,6 @@ template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMat
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNnz, false);
 
         size_t *rowOffsetsRes = res->getRowOffsets();
-        rowOffsetsRes[0] = 0;
 
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
 
@@ -447,13 +300,17 @@ template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMat
                             colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                             posRes++;
                         }
-                        colIdxRhs++;
                     }
                     rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes;
                 } else
                     // empty row in result
                     rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx];
             }
+            break;
+        }
+        default:
+            throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
+        }
 
         // TODO Update number of non-zeros in result in the end.
     }

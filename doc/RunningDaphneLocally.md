@@ -80,6 +80,14 @@ Note that some of the more specific options are described in the documentation p
 
     Turns on the automatic selection of a suitable matrix representation (currently dense or sparse (CSR)). *Experimental feature.*
 
+- **`--enable_property_recording`**
+
+    Enables recording of certain properties (currently only sparsity) from all matrix result objects in the Intermediate Representation (IR). The recorded properties are saved in a JSON file named properties.json located in the root directory of Daphne.
+
+- **`--enable_property_insert`** and **`--properties_file_path=<path/to/propertiesFile>`**
+
+    Allows the insertion of previously recorded properties into operations with matrix results from a JSON file. By default, the file used is properties.json in the Daphne root directory. Optionally, a different file can be specified using the `--properties_file_path` argument.
+
 ## Return Codes
 
 If `daphne` terminates normally, one of the following status codes is returned:

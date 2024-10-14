@@ -30,7 +30,6 @@ set(TEST_SOURCES
         api/cli/expressions/MatrixLiteralTest.cpp
         api/cli/extensibility/ExtensionTest.cpp
         api/cli/extensibility/HintTest.cpp
-        api/cli/extensibility/RepHintOpTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/io/ReadTest.cpp
