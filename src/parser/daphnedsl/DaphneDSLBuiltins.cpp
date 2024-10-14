@@ -1042,25 +1042,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         ));
     }
 
-    if (func == "Dense" || func == "CSR") {
-        checkNumArgsExact(loc, func, numArgs, 1);
-        mlir::Value matrix = args[0];
-
-        auto inputMatrixType = matrix.getType().dyn_cast<mlir::daphne::MatrixType>();
-        if (!inputMatrixType) {
-            throw ErrorHandler::compilerError(loc, "DSLBuiltins", "Input must be a matrix type");
-        }
-
-        mlir::daphne::MatrixRepresentation desiredRepresentation = 
-            (func == "CSR") ? mlir::daphne::MatrixRepresentation::Sparse 
-                        : mlir::daphne::MatrixRepresentation::Dense;
-
-        auto resultType = inputMatrixType.withRepresentation(desiredRepresentation);
-        
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::RepresentationHintOp>(
-            loc, resultType, matrix));
-    }
-
     // ********************************************************************
     // Input/output
     // ********************************************************************

@@ -1526,23 +1526,3 @@ mlir::LogicalResult mlir::daphne::EwMinusOp::canonicalize(
     }
     return mlir::failure();
 }
-
-mlir::LogicalResult mlir::daphne::RepresentationHintOp::canonicalize(
-    RepresentationHintOp op, mlir::PatternRewriter &rewriter)
-{
-    auto inputType = op.getMatrix().getType().dyn_cast<daphne::MatrixType>();
-    auto desiredRepresentation = op->getResultTypes()[0].dyn_cast<daphne::MatrixType>().getRepresentation();
-
-    if (inputType.getRepresentation() != desiredRepresentation) 
-    {
-        auto resMat = op.getMatrix();
-        resMat.setType(inputType.withRepresentation(desiredRepresentation));
-        rewriter.replaceAllUsesWith(op.getMatrix(), resMat);
-    }
-    else
-    {
-        rewriter.replaceOp(op, op.getMatrix());
-    }
-    
-    return mlir::success();
-}

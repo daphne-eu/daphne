@@ -1,3 +1,0 @@
-DenseMatrix(2x2, int64_t)
-0 8
-10 2
