@@ -76,6 +76,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms CUDA::cudart CUDA::cublasLt CUDA::cublas
             CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver Util MLIRDaphneInference fmt::fmt)
     set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+    set_property(TARGET CUDAKernels PROPERTY CUDA_ARCHITECTURES all)
 endif()
 
 execute_process(
