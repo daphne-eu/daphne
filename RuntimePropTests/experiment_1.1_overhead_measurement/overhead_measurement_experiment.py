@@ -6,7 +6,7 @@ import numpy as np
 import re
 from collections import defaultdict
 
-def run_daphne_timing(command, iterations=1):
+def run_daphne_timing(command, iterations=10):
     execution_command = ["bin/daphne","--timing"]
     execution_command.extend(command)
     accumulated_timings = defaultdict(float)

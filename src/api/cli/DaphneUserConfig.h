@@ -78,6 +78,7 @@ struct DaphneUserConfig {
     bool statistics = false;
     bool enable_property_recording = false;
     bool enable_property_insert = false;
+    std::string properties_file_path = "properties.json";
 
     bool force_cuda = false;
 

@@ -391,6 +391,12 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         "enable_property_insert", cat(daphneOptions),
         desc("inserts runtime properties from properties.json of previous run."));
 
+    static opt<std::string> properties_file_path(
+        "properties_file_path", cat(daphneOptions),
+        llvm::cl::desc("Path to the Properties File in JSON for the Property insert."),
+        llvm::cl::init("properties.json")
+    );
+
     static opt<bool> enableProfiling (
             "enable-profiling", cat(daphneOptions),
             desc("Enable profiling support")
@@ -466,6 +472,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         user_config.matmul_tile = true;
     }
     user_config.use_mlir_hybrid_codegen = performHybridCodegen;
+    
 
     if(!libDir.getValue().empty())
         user_config.libdir = libDir.getValue();
@@ -538,6 +545,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.statistics = enableStatistics;
     user_config.enable_property_recording = enablePropertyRecording;
     user_config.enable_property_insert = enablePropertyInsert;
+
+    if (user_config.enable_property_insert)
+        user_config.properties_file_path = properties_file_path.getValue();
 
     if(user_config.use_distributed && distributedBackEndSetup==ALLOCATION_TYPE::DIST_MPI)
     {

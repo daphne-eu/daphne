@@ -26,6 +26,7 @@
     "explain_mlir_codegen": false,
     "enable_property_recording": false,
     "enable_property_insert": false,
+    "properties_file_path": "properties.json",
     "taskPartitioningScheme": "STATIC",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,

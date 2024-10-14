@@ -76,7 +76,7 @@ class Statistics {
     using KernelStats =
         std::vector<std::tuple<int, std::chrono::duration<double>>>;
 
-    static constexpr int MAX_STATS_COUNT = 10;
+    static constexpr int MAX_STATS_COUNT = 100;
     std::mutex m_times;
     KernelStats kernelExecutionTimes;
     std::unordered_map<int, Time> startTimes;

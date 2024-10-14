@@ -1,5 +1,5 @@
-X = readMatrix("overhead_measuring_matrix1.csv");
-Y = readMatrix("overhead_measuring_matrix2.csv");
+X = rand(10000,10000,0,10,0.8,42);
+Y = rand(10000,10000,0,10,0.8,42);
 
 Z = X + Y;
 res = sqrt(Z);

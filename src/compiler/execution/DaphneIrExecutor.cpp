@@ -137,7 +137,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     if(userConfig_.enable_property_insert)
     {
-        pm.addPass(mlir::daphne::createInsertPropertiesPass("properties.json"));
+        pm.addPass(mlir::daphne::createInsertPropertiesPass(userConfig_.properties_file_path));
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
     }

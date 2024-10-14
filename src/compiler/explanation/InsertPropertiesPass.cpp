@@ -34,6 +34,7 @@ struct PropertyEntry {
     }
 };
 
+
 class InsertPropertiesPass : public PassWrapper<InsertPropertiesPass, OperationPass<func::FuncOp>> {
 public:
     InsertPropertiesPass(const std::string &jsonFile) : jsonFile(jsonFile) {}
@@ -81,9 +82,11 @@ public:
                         if (res.getType().isa<daphne::MatrixType>()) 
                         {
                             auto mt = res.getType().dyn_cast<daphne::MatrixType>();
+                            double sparsity = value.get<double>();
                             if (mt)
                             {
-                                if (llvm::isa<scf::ForOp>(op) || llvm::isa<scf::WhileOp>(op) || llvm::isa<scf::IfOp>(op)) 
+                                if ((llvm::isa<scf::ForOp>(op) || llvm::isa<scf::WhileOp>(op) || llvm::isa<scf::IfOp>(op))
+                                    && sparsity < 1.0)
                                 {
                                     // Create the CastOp for the current loop result
                                     builder.setInsertionPointAfter(op);
@@ -115,7 +118,7 @@ public:
                 return WalkResult::advance();
 
             // Skip specific ops that should not be processed
-            else if (isa<daphne::RecordPropertiesOp>(op) || op->hasAttr("daphne.value_ids"))
+            if (isa<daphne::RecordPropertiesOp>(op) || op->hasAttr("daphne.value_ids"))
                 return WalkResult::advance();
 
             if (auto castOp = dyn_cast<daphne::CastOp>(op)) {
@@ -130,7 +133,7 @@ public:
                 return WalkResult::skip();
             }
 
-            else if (auto funcOp = llvm::dyn_cast<func::FuncOp>(op)) {
+            if (auto funcOp = llvm::dyn_cast<func::FuncOp>(op)) {
             // Check if this is the @main function or a UDF
                 if (funcOp.getName() == "main") {
                     return WalkResult::advance();
@@ -162,10 +165,9 @@ public:
             */
 
             // Process all other operations that output matrix types
-            else {
-                insertRecordedProperties(op);
-                return WalkResult::advance();
-            }
+            insertRecordedProperties(op);
+            return WalkResult::advance();
+            
         });
 
         if (propertyIndex < properties.size()) {
@@ -177,6 +179,6 @@ private:
     std::string jsonFile;
 };
 
-std::unique_ptr<Pass> daphne::createInsertPropertiesPass(const std::string jsonFile) {
+std::unique_ptr<Pass> mlir::daphne::createInsertPropertiesPass(const std::string jsonFile) {
     return std::make_unique<InsertPropertiesPass>(jsonFile);
 }
