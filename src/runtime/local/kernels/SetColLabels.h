@@ -30,26 +30,25 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabels(Frame *& res, const Frame * arg, const char ** labels, size_t numLabels, DCTX(ctx)) {
+inline void setColLabels(Frame *&res, const Frame *arg, const char **labels, size_t numLabels, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
-    if(numLabels != numCols)
-        throw std::runtime_error(
-                "the number of given labels does not match the number of columns of the given frame"
-        );
-    std::string * labelsStr = new std::string[numCols];
-    for(size_t c = 0; c < numCols; c++)
+    if (numLabels != numCols)
+        throw std::runtime_error("the number of given labels does not match "
+                                 "the number of columns of the given frame");
+    std::string *labelsStr = new std::string[numCols];
+    for (size_t c = 0; c < numCols; c++)
         labelsStr[c] = labels[c];
-    
+
     // Create a view on the input frame (zero-copy) and modify the column
     // labels of the view.
     auto colIdxs = new size_t[numCols];
-    for(size_t c = 0; c < numCols; c++)
+    for (size_t c = 0; c < numCols; c++)
         colIdxs[c] = c;
     res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), numCols, colIdxs);
     delete[] colIdxs;
     res->setLabels(labelsStr);
-    
+
     delete[] labelsStr;
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SETCOLLABELS_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_SETCOLLABELS_H

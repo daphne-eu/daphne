@@ -24,6 +24,12 @@ a shallow function that can be called from the JIT-compiled user program. An
 input JSON-file specifies which kernel shall be instantiated with which
 template arguments.
 
+Kernels are sorted in descending order by the number of template
+instantiations. The top N kernels are generated in separate files, while the
+rest are generated in a single file. This is done so that kernels with large
+amounts of code are compiled in parallel while the remaining kernels are short
+enough to be compiled in a single file.
+
 Furthermore, a JSON file is generated that contains information about the
 pre-compiled kernels. This file is used to populate the kernel catalog at
 system start-up.
@@ -38,6 +44,8 @@ system start-up.
 import io
 import json
 import sys
+from typing import List, Tuple
+from pathlib import Path
 
 INDENT = 4 * " "
 DEFAULT_NEWRESPARAM = "res"
@@ -267,6 +275,65 @@ def printHelp():
     print("Usage: python3 {} INPUT_SPEC_FILE OUTPUT_CPP_FILE OUTPUT_CATALOG_FILE API".format(sys.argv[0]))
     print(__doc__)
 
+def getDefaultHeaders() -> str:
+    return "#include <stdexcept>\n" \
+        "#include <util/ErrorHandler.h>\n" \
+        "#include <runtime/local/context/DaphneContext.h>\n" \
+        "#include <runtime/local/instrumentation/KernelInstrumentation.h>\n"
+
+def codegenKernelInfos(kernelInfos, catalog_entries) -> Tuple[bool, str]:
+    ops_inst_str: str = ""
+    header_str: str = getDefaultHeaders()
+    didGenerateCode = False
+
+    for kernelInfo in kernelInfos:
+        kernelTemplateInfo = kernelInfo["kernelTemplate"]
+        if "api" in kernelInfo:
+            for api in kernelInfo["api"]:
+                for name in api["name"]:
+                    # print("Processing API: " + name)
+                    # print("  OpName: " + kernelTemplateInfo["opName"])
+                    # print("  Instantiations: " + str(api["instantiations"]))
+                    # if "opCodes" in api:
+                    #     print("  opCodes: " + str(api["opCodes"]))
+                    if name == API:
+                        # Comment reporting the kernel name.
+                        ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+                        ops_inst_str += INDENT + "// {}\n".format(kernelTemplateInfo["opName"])
+                        ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+
+                        # Include for the required header.
+                        if API != "CPP":
+                            header_str = header_str + "#include <runtime/local/kernels/{}/{}>\n".format(API, kernelTemplateInfo["header"])
+                        else:
+                            header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
+
+                        outBuf = io.StringIO()
+                        for instantiation in api["instantiations"]:
+                            generateKernelInstantiation(kernelTemplateInfo, instantiation,
+                                                        api.get("opCodes", None), outBuf, catalog_entries, API)
+                        ops_inst_str += outBuf.getvalue()
+                        didGenerateCode = True
+        else:
+            if API == "CPP":
+                # Comment reporting the kernel name.
+                ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+                ops_inst_str += INDENT + "// {}\n".format(kernelTemplateInfo["opName"])
+                ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+
+                # Include for the required header.
+                header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
+                # One function per instantiation of the kernel.
+                opCodes = kernelInfo.get("opCodes", None)
+                outBuf = io.StringIO()
+                for instantiation in kernelInfo["instantiations"]:
+                    generateKernelInstantiation(kernelTemplateInfo, instantiation, opCodes, outBuf, catalog_entries, API)
+                ops_inst_str += outBuf.getvalue()
+                didGenerateCode = True
+
+    file = header_str + '\nextern \"C\" {\n' + ops_inst_str + "}\n"
+    return didGenerateCode, file
+
 
 if __name__ == "__main__":
     if len(sys.argv) == 2 and (sys.argv[1] == "-h" or sys.argv[1] == "--help"):
@@ -277,76 +344,40 @@ if __name__ == "__main__":
         print()
         printHelp()
         sys.exit(1)
+
     # Parse arguments.
     inSpecPath = sys.argv[1]
     outCppPath = sys.argv[2]
     outCatalogPath = sys.argv[3]
     API = sys.argv[4]
-    ops_inst_str = ""
-    header_str = ""
+    cppCodegen: List[str] = []
     catalog_entries = []
 
     # Load the specification (which kernel template shall be instantiated
     # with which template arguments) from a JSON-file.
     with open(inSpecPath, "r") as inFile:
-        kernelsInfo = json.load(inFile)
+        kernelInfos = json.load(inFile)
 
-        for kernelInfo in kernelsInfo:
-            kernelTemplateInfo = kernelInfo["kernelTemplate"]
-            if "api" in kernelInfo:
-                for api in kernelInfo["api"]:
-                    for name in api["name"]:
-                        # print("Processing API: " + name)
-                        # print("  OpName: " + kernelTemplateInfo["opName"])
-                        # print("  Instantiations: " + str(api["instantiations"]))
-                        # if "opCodes" in api:
-                        #     print("  opCodes: " + str(api["opCodes"]))
-                        if name == API:
-                            # Comment reporting the kernel name.
-                            ops_inst_str += INDENT + "// {}\n".format("-" * 76)
-                            ops_inst_str += INDENT + "// {}\n".format(kernelTemplateInfo["opName"])
-                            ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+        for kernelInfo in kernelInfos:
+            didGenerateCode, file = codegenKernelInfos([kernelInfo], catalog_entries)
+            if didGenerateCode:
+                cppCodegen.append(file)
 
-                            # Include for the required header.
-                            if API != "CPP":
-                                header_str = header_str + "#include <runtime/local/kernels/{}/{}>\n".format(API, kernelTemplateInfo["header"])
-                            else:
-                                header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
+    cppFiles = []
+    # Write the generated C++ code to separate files.
+    for idx, file in enumerate(cppCodegen):
+        fileName = outCppPath + "_" + str(idx) + ".cpp"
+        cppFiles.append(fileName)
+        with open(fileName, "w") as outFile:
+            outFile.write(file)
 
-                            outBuf = io.StringIO()
-                            for instantiation in api["instantiations"]:
-                                generateKernelInstantiation(kernelTemplateInfo, instantiation,
-                                                            api.get("opCodes", None), outBuf, catalog_entries, API)
-                            ops_inst_str += outBuf.getvalue()
-            else:
-                if API == "CPP":
-                    # Comment reporting the kernel name.
-                    ops_inst_str += INDENT + "// {}\n".format("-" * 76)
-                    ops_inst_str += INDENT + "// {}\n".format(kernelTemplateInfo["opName"])
-                    ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+    # Store kernel catalog info as JSON.
 
-                    # Include for the required header.
-                    header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
-                    # One function per instantiation of the kernel.
-                    opCodes = kernelInfo.get("opCodes", None)
-                    outBuf = io.StringIO()
-                    for instantiation in kernelInfo["instantiations"]:
-                        generateKernelInstantiation(kernelTemplateInfo, instantiation, opCodes, outBuf, catalog_entries, API)
-                    ops_inst_str += outBuf.getvalue()
-
-
-    # Store the C++ code of the kernel instantiations in a CPP-file.
-    with open(outCppPath, "w") as outFile:
-        outFile.write("// This file was generated by {}. Don't edit manually!\n\n".format(sys.argv[0]))
-        outFile.write("#include <runtime/local/context/DaphneContext.h>\n")
-        outFile.write("#include <stdexcept>\n")
-        outFile.write("#include <util/ErrorHandler.h>\n")
-        outFile.write("#include <runtime/local/instrumentation/KernelInstrumentation.h>\n")
-        outFile.write(header_str)
-        outFile.write("\nextern \"C\" {\n")
-        outFile.write(ops_inst_str)
-        outFile.write("}\n")
-
-    # Store the information on the kernels in a JSON-file.
-    with open(outCatalogPath, "w") as outCatalog:
+    catalogFile = Path(outCatalogPath)
+    catalogFile.parent.mkdir(exist_ok=True, parents=True)
+    with catalogFile.open('w') as outCatalog:
+        print("writing catalog to " + outCatalogPath)
         outCatalog.write(json.dumps(catalog_entries, indent=2))
+
+    #  Lists all generated *.cpp files.
+    #  print(cppFiles)

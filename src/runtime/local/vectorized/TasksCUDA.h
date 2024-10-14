@@ -18,23 +18,24 @@
 
 #include "Tasks.h"
 
-template<class DT>
-class CompiledPipelineTaskCUDA : public CompiledPipelineTaskBase<DT> {};
+template <class DT> class CompiledPipelineTaskCUDA : public CompiledPipelineTaskBase<DT> {};
 
-template<typename VT>
+template <typename VT>
 class CompiledPipelineTaskCUDA<DenseMatrix<VT>> : public CompiledPipelineTaskBase<DenseMatrix<VT>> {
     std::mutex &_resLock;
     DenseMatrix<VT> ***_res;
     using CompiledPipelineTaskBase<DenseMatrix<VT>>::_data;
-public:
-    CompiledPipelineTaskCUDA(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock, DenseMatrix<VT> ***res)
-            : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
-    
+
+  public:
+    CompiledPipelineTaskCUDA(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock,
+                             DenseMatrix<VT> ***res)
+        : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
+
     void execute(uint32_t fid, uint32_t batchSize) override;
 
     uint64_t getTaskSize() override;
 
-private:
-    void accumulateOutputs(std::vector<DenseMatrix<VT>*>& localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
-            uint64_t rowStart, uint64_t rowEnd);
+  private:
+    void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
+                           uint64_t rowStart, uint64_t rowEnd);
 };

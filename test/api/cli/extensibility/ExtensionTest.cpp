@@ -42,9 +42,9 @@ TEST_CASE("extension_kernel", TAG_EXTENSIBILITY) {
     // DAPHNE development environment. It would also work with make, but make
     // would create an additional dependency.
     status = runProgram(out, err, "ninja", "ninja", "-C", extDir.c_str());
-    if(status) {
-        // We don't expect any specifc output from ninja, but only if ninja failed,
-        // we want to see what it printed to stdout and stderr.
+    if (status) {
+        // We don't expect any specifc output from ninja, but only if ninja
+        // failed, we want to see what it printed to stdout and stderr.
         CHECK(out.str() == "");
         CHECK(err.str() == "");
     }
@@ -57,12 +57,8 @@ TEST_CASE("extension_kernel", TAG_EXTENSIBILITY) {
     // Run a DaphneDSL script which uses a kernel from the extension through a
     // kernel hint. The extension is registered with DAPHNE at run-time. DAPHNE
     // itself is not re-built or anything.
-    compareDaphneToStr(
-        "hello from mySumAll\n2\n",
-        std::string(dirPath + "extension_kernel_usage.daphne").c_str(),
-        "--kernel-ext",
-        std::string(dirPath + "kernel_extension_test/myKernels.json").c_str()
-    );
+    compareDaphneToStr("hello from mySumAll\n2\n", std::string(dirPath + "extension_kernel_usage.daphne").c_str(),
+                       "--kernel-ext", std::string(dirPath + "kernel_extension_test/myKernels.json").c_str());
 
     // Clear the streams.
     out.clear();
@@ -71,12 +67,13 @@ TEST_CASE("extension_kernel", TAG_EXTENSIBILITY) {
     // *************************************************************************
     // Clean the build of the custom kernel extension.
     // *************************************************************************
-    // Such that the next invocation of this test case needs to build the extension
-    // again, thereby testing again if the extension can be built successfully.
+    // Such that the next invocation of this test case needs to build the
+    // extension again, thereby testing again if the extension can be built
+    // successfully.
     status = runProgram(out, err, "ninja", "ninja", "-C", extDir.c_str(), "-t", "clean");
-    if(status) {
-        // We don't expect any specifc output from ninja, but only if ninja failed,
-        // we want to see what it printed to stdout and stderr.
+    if (status) {
+        // We don't expect any specifc output from ninja, but only if ninja
+        // failed, we want to see what it printed to stdout and stderr.
         CHECK(out.str() == "");
         CHECK(err.str() == "");
     }

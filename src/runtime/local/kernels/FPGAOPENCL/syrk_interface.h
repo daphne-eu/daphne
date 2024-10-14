@@ -5,5 +5,3 @@
 extern int syrk(const float *A, float *C, const int OUTERMOST_I, const int OUTERMOST_K, DCTX(ctx));
 
 #endif
-
-

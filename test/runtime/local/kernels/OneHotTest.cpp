@@ -33,23 +33,25 @@ TEMPLATE_PRODUCT_TEST_CASE("OneHot", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using VT = typename DTArg::VT;
     using DTRes = DTArg;
-    
-    auto * arg = genGivenVals<DTArg>(3, {
-        -1,  0, 1,
-        -10, 1, VT(1.5),
-        100, 2, 1,
-    });
 
-    DenseMatrix<int64_t> * info = nullptr;
-    DTRes * res = nullptr;
+    auto *arg = genGivenVals<DTArg>(3, {
+                                           -1,
+                                           0,
+                                           1,
+                                           -10,
+                                           1,
+                                           VT(1.5),
+                                           100,
+                                           2,
+                                           1,
+                                       });
+
+    DenseMatrix<int64_t> *info = nullptr;
+    DTRes *res = nullptr;
 
     SECTION("normal encoding") {
         info = genGivenVals<DenseMatrix<int64_t>>(1, {-1, 3, 2});
-        auto * exp = genGivenVals<DTRes>(3, {
-            -1,  1, 0, 0, 0, 1,
-            -10, 0, 1, 0, 0, 1,
-            100, 0, 0, 1, 0, 1
-        });
+        auto *exp = genGivenVals<DTRes>(3, {-1, 1, 0, 0, 0, 1, -10, 0, 1, 0, 0, 1, 100, 0, 0, 1, 0, 1});
 
         oneHot(res, arg, info, nullptr);
         CHECK(*res == *exp);
@@ -58,11 +60,7 @@ TEMPLATE_PRODUCT_TEST_CASE("OneHot", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     }
     SECTION("normal encoding - skip columns") {
         info = genGivenVals<DenseMatrix<int64_t>>(1, {0, 0, 3});
-        auto * exp = genGivenVals<DTRes>(3, {
-            0, 1, 0,
-            0, 1, 0,
-            0, 1, 0
-        });
+        auto *exp = genGivenVals<DTRes>(3, {0, 1, 0, 0, 1, 0, 0, 1, 0});
 
         oneHot(res, arg, info, nullptr);
         CHECK(*res == *exp);
@@ -85,7 +83,8 @@ TEMPLATE_PRODUCT_TEST_CASE("OneHot", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
         info = genGivenVals<DenseMatrix<int64_t>>(1, {0, 0, 0});
         REQUIRE_THROWS_AS(oneHot(res, arg, info, nullptr), std::runtime_error);
     }
-    SECTION("negative example - not enough space reserved (0 <= info value < arg value)") {
+    SECTION("negative example - not enough space reserved (0 <= info value < "
+            "arg value)") {
         info = genGivenVals<DenseMatrix<int64_t>>(1, {-1, 2, 2});
         REQUIRE_THROWS_AS(oneHot(res, arg, info, nullptr), std::out_of_range);
     }

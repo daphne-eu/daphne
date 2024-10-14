@@ -22,8 +22,8 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
-#include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/kernels/EwUnarySca.h>
+#include <runtime/local/kernels/UnaryOpCode.h>
 
 #include <cstddef>
 
@@ -31,17 +31,15 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-struct EwUnaryMat {
-    static void apply(UnaryOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
+template <class DTRes, class DTArg> struct EwUnaryMat {
+    static void apply(UnaryOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void ewUnaryMat(UnaryOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) {
+template <class DTRes, class DTArg> void ewUnaryMat(UnaryOpCode opCode, DTRes *&res, const DTArg *arg, DCTX(ctx)) {
     EwUnaryMat<DTRes, DTArg>::apply(opCode, res, arg, ctx);
 }
 
@@ -52,22 +50,22 @@ void ewUnaryMat(UnaryOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) 
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
-template<typename VT>
-struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(UnaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
+
+template <typename VT> struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        
-        if(res == nullptr)
+
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        
-        const VT * valuesArg = arg->getValues();
-        VT * valuesRes = res->getValues();
-        
+
+        const VT *valuesArg = arg->getValues();
+        VT *valuesRes = res->getValues();
+
         EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
-        
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++)
+
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++)
                 valuesRes[c] = func(valuesArg[c], ctx);
             valuesArg += arg->getRowSkip();
             valuesRes += res->getRowSkip();
@@ -185,46 +183,8 @@ struct EwUnaryMat<CSRMatrix<VT>, DenseMatrix<VT>> {
         const size_t numCols = arg->getNumCols();
         size_t numNonZeros = 0;
 
-        // Calculate the number of non-zeros in the result matrix
-        for (size_t i = 0; i < numRows * numCols; i++) {
-            if (arg->getValues()[i] != 0) {
-                numNonZeros++;
-            }
-        }
-
-        if (res == nullptr) {
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
-        }
-
-        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
-
-        size_t* rowOffsetsRes = res->getRowOffsets();
-        VT* valuesRes = res->getValues();
-        size_t* colIdxsRes = res->getColIdxs();
-
-        rowOffsetsRes[0] = 0;
-        size_t posRes = 0;
-
-        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-            for (size_t colIdx = 0; colIdx < numCols; colIdx++) {
-                VT value = func(arg->get(rowIdx, colIdx), ctx);
-                if (value != 0) {
-                    valuesRes[posRes] = value;
-                    colIdxsRes[posRes] = colIdx;
-                    posRes++;
-                }
-            }
-            rowOffsetsRes[rowIdx + 1] = posRes;
-        }
-    }
-};
-
-// ----------------------------------------------------------------------------
-// Matrix <- Matrix
-// ----------------------------------------------------------------------------
-template<typename VT>
-struct EwUnaryMat<Matrix<VT>, Matrix<VT>> {
-    static void apply(UnaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * arg, DCTX(ctx)) {
+template <typename VT> struct EwUnaryMat<Matrix<VT>, Matrix<VT>> {
+    static void apply(UnaryOpCode opCode, Matrix<VT> *&res, const Matrix<VT> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
@@ -241,4 +201,4 @@ struct EwUnaryMat<Matrix<VT>, Matrix<VT>> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYMAT_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_EWUNARYMAT_H

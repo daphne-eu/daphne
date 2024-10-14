@@ -27,22 +27,20 @@ namespace CUDA {
 // Struct for partial template specialization
 // ****************************************************************************
 
-    template<class DTRes, class DTLhs, class DTRhs>
-    struct Solve {
-        static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) = delete;
-    };
+template <class DTRes, class DTLhs, class DTRhs> struct Solve {
+    static void apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) = delete;
+};
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-    template<class DTRes, class DTLhs, class DTRhs>
-    void solve(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
-        Solve<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
-    }
-
-    template<typename VT>
-    struct Solve<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
-        static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *lhs, const DenseMatrix<VT> *rhs, DCTX(ctx));
-    };
+template <class DTRes, class DTLhs, class DTRhs>
+void solve(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, DCTX(ctx)) {
+    Solve<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
 }
+
+template <typename VT> struct Solve<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *lhs, const DenseMatrix<VT> *rhs, DCTX(ctx));
+};
+} // namespace CUDA

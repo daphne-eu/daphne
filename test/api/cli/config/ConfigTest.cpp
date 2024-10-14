@@ -25,37 +25,26 @@
 
 TEST_CASE("config success", TAG_CONFIG) {
     // Providing the following example config files as --config must succeed.
-    for(const char * configFilePath : {
-        "UserConfig.json",
-                
-        "test/parser/config/configFiles/UserConfig1.json",
-        "test/parser/config/configFiles/UserConfig4.json",
-        "test/parser/config/configFiles/UserConfig7.json"
-    }) {
+    for (const char *configFilePath :
+         {"UserConfig.json",
+
+          "test/parser/config/configFiles/UserConfig1.json", "test/parser/config/configFiles/UserConfig4.json",
+          "test/parser/config/configFiles/UserConfig7.json"}) {
         DYNAMIC_SECTION(configFilePath) {
-            checkDaphneStatusCode(
-                    StatusCode::SUCCESS,
-                    "test/api/cli/config/empty.daphne", "--config", configFilePath
-            );
+            checkDaphneStatusCode(StatusCode::SUCCESS, "test/api/cli/config/empty.daphne", "--config", configFilePath);
         }
     }
 }
 
 TEST_CASE("config failure", TAG_CONFIG) {
     // Providing the following example config files as --config must fail.
-    for(const char * configFilePath : {
-        "test/parser/config/configFiles/UserConfig2.json",
-        "test/parser/config/configFiles/UserConfig3.txt",
-        "test/parser/config/configFiles/UserConfig5.json",
-        "test/parser/config/configFiles/UserConfig6.json",
-        "test/parser/config/configFiles/UserConfig8.json",
-        "test/parser/config/configFiles/UserConfig9.json"
-    }) {
+    for (const char *configFilePath :
+         {"test/parser/config/configFiles/UserConfig2.json", "test/parser/config/configFiles/UserConfig3.txt",
+          "test/parser/config/configFiles/UserConfig5.json", "test/parser/config/configFiles/UserConfig6.json",
+          "test/parser/config/configFiles/UserConfig8.json", "test/parser/config/configFiles/UserConfig9.json"}) {
         DYNAMIC_SECTION(configFilePath) {
-            checkDaphneStatusCode(
-                    StatusCode::PARSER_ERROR,
-                    "test/api/cli/config/empty.daphne", "--config", configFilePath
-            );
+            checkDaphneStatusCode(StatusCode::PARSER_ERROR, "test/api/cli/config/empty.daphne", "--config",
+                                  configFilePath);
         }
     }
 }

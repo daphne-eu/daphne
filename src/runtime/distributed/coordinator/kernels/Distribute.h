@@ -16,18 +16,18 @@
 
 #pragma once
 
+#include <runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h>
 #include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h>
 
-#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 
 #ifdef USE_MPI
-    #include <runtime/distributed/worker/MPIHelper.h>
-#endif 
+#include <runtime/distributed/worker/MPIHelper.h>
+#endif
 
 #include <cstddef>
 #include <stdexcept>
@@ -36,8 +36,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<ALLOCATION_TYPE AT, class DT>
-struct Distribute {
+template <ALLOCATION_TYPE AT, class DT> struct Distribute {
     static void apply(DT *mat, DCTX(dctx)) = delete;
 };
 
@@ -45,12 +44,7 @@ struct Distribute {
 // Convenience function
 // ****************************************************************************
 
-template<ALLOCATION_TYPE AT, class DT>
-void distribute(DT *mat, DCTX(dctx))
-{
-    Distribute<AT, DT>::apply(mat, dctx);
-}
-
+template <ALLOCATION_TYPE AT, class DT> void distribute(DT *mat, DCTX(dctx)) { Distribute<AT, DT>::apply(mat, dctx); }
 
 // ****************************************************************************
 // (Partial) template specializations for different distributed backends
@@ -60,53 +54,50 @@ void distribute(DT *mat, DCTX(dctx))
 // ----------------------------------------------------------------------------
 // MPI
 // ----------------------------------------------------------------------------
-template<class DT>
-struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
-{
+template <class DT> struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT> {
     static void apply(DT *mat, DCTX(dctx)) {
         std::vector<char> dataToSend;
-        std::vector<int> targetGroup;  
+        std::vector<int> targetGroup;
 
-        LoadPartitioningDistributed<DT, AllocationDescriptorMPI> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);        
-        
-        while (partioner.HasNextChunk()){
+        LoadPartitioningDistributed<DT, AllocationDescriptorMPI> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);
+
+        while (partioner.HasNextChunk()) {
             DataPlacement *dp = partioner.GetNextChunk();
-            auto rank = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getRank();
-            
-            if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            auto rank = dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).getRank();
+
+            if (dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
-            
+
             auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
-            
+
             // Minimum chunk size
-            auto min_chunk_size = dctx->config.max_distributed_serialization_chunk_size < DaphneSerializer<DT>::length(slicedMat) ? 
-                        dctx->config.max_distributed_serialization_chunk_size : 
-                        DaphneSerializer<DT>::length(slicedMat);
+            auto min_chunk_size =
+                dctx->config.max_distributed_serialization_chunk_size < DaphneSerializer<DT>::length(slicedMat)
+                    ? dctx->config.max_distributed_serialization_chunk_size
+                    : DaphneSerializer<DT>::length(slicedMat);
             MPIHelper::initiateStreaming(rank, min_chunk_size);
             auto serializer = DaphneSerializerChunks<DT>(slicedMat, min_chunk_size);
-            for (auto it = serializer.begin(); it != serializer.end(); ++it){
+            for (auto it = serializer.begin(); it != serializer.end(); ++it) {
                 MPIHelper::sendData(it->first, it->second->data(), rank);
             }
-            targetGroup.push_back(rank);     
+            targetGroup.push_back(rank);
             DataObjectFactory::destroy(slicedMat);
         }
-        for(size_t i=0;i<targetGroup.size();i++)
-        {
-            int rank=targetGroup.at(i);
-            if (rank==COORDINATOR)
+        for (size_t i = 0; i < targetGroup.size(); i++) {
+            int rank = targetGroup.at(i);
+            if (rank == COORDINATOR)
                 continue;
-            
+
             WorkerImpl::StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
             std::string address = std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
-            auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-            data.identifier = dataAcknowledgement.identifier ;
+            auto data = dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).getDistributedData();
+            data.identifier = dataAcknowledgement.identifier;
             data.numRows = dataAcknowledgement.numRows;
             data.numCols = dataAcknowledgement.numCols;
             data.isPlacedAtWorker = true;
-            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+            dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).updateDistributedData(data);
         }
-
     }
 };
 #endif
@@ -115,71 +106,68 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
 // Asynchronous GRPC
 // ----------------------------------------------------------------------------
 
-template<class DT>
-struct Distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
-{
+template <class DT> struct Distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT> {
     static void apply(DT *mat, DCTX(dctx)) {
         struct StoredInfo {
             size_t dp_id;
-        }; 
+        };
         DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller(dctx);
-            
+
         if (mat == nullptr)
             throw std::runtime_error("Distribute gRPC: mat must not be a nullptr");
-        
+
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);
-        
-        while (partioner.HasNextChunk()){ 
+
+        while (partioner.HasNextChunk()) {
             auto dp = partioner.GetNextChunk();
             // Skip if already placed at workers
-            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
             distributed::Data protoMsg;
 
             std::vector<char> buffer;
-            
+
             auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
 
-            StoredInfo storedInfo({dp->dp_id}); 
+            StoredInfo storedInfo({dp->dp_id});
 
-            auto address = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation();
+            auto address = dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getLocation();
 
             caller.asyncStoreCall(address, storedInfo);
             // Minimum chunk size
-            auto min_chunk_size = dctx->config.max_distributed_serialization_chunk_size < DaphneSerializer<DT>::length(mat) ? 
-                        dctx->config.max_distributed_serialization_chunk_size : 
-                        DaphneSerializer<DT>::length(mat);
+            auto min_chunk_size =
+                dctx->config.max_distributed_serialization_chunk_size < DaphneSerializer<DT>::length(mat)
+                    ? dctx->config.max_distributed_serialization_chunk_size
+                    : DaphneSerializer<DT>::length(mat);
 
             protoMsg.set_bytes(&min_chunk_size, sizeof(size_t));
             caller.sendDataStream(address, protoMsg);
 
             auto serializer = DaphneSerializerChunks<DT>(slicedMat, min_chunk_size);
-            for (auto it = serializer.begin(); it != serializer.end(); ++it){                
+            for (auto it = serializer.begin(); it != serializer.end(); ++it) {
                 protoMsg.set_bytes(it->second->data(), it->first);
                 caller.sendDataStream(address, protoMsg);
             }
             DataObjectFactory::destroy(slicedMat);
-        }                
+        }
         caller.writesDone();
-                       
 
-        // get results       
-        while (!caller.isQueueEmpty()){
+        // get results
+        while (!caller.isQueueEmpty()) {
             auto response = caller.getNextResult();
             auto dp_id = response.storedInfo.dp_id;
-            
-            auto storedData = response.result;            
+
+            auto storedData = response.result;
 
             auto dp = mat->getMetaDataObject()->getDataPlacementByID(dp_id);
-            
-            auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+
+            auto data = dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getDistributedData();
             data.identifier = storedData.identifier();
             data.numRows = storedData.num_rows();
             data.numCols = storedData.num_cols();
             data.isPlacedAtWorker = true;
-            dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);            
+            dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).updateDistributedData(data);
         }
-
     }
 };
 
@@ -187,44 +175,40 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
 // Synchronous GRPC
 // ----------------------------------------------------------------------------
 
-template<class DT>
-struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
-{
+template <class DT> struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT> {
     static void apply(DT *mat, DCTX(dctx)) {
         auto ctx = DistributedContext::get(dctx);
         auto workers = ctx->getWorkers();
-        
+
         if (mat == nullptr)
             throw std::runtime_error("Distribute gRPC: mat must not be a nullptr");
-        
+
         std::vector<std::thread> threads_vector;
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);
-        while (partioner.HasNextChunk()){ 
+        while (partioner.HasNextChunk()) {
             auto dp = partioner.GetNextChunk();
             // Skip if already placed at workers
-            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
 
-
             std::vector<char> buffer;
-            
-            
-            auto workerAddr = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation();
-            std::thread t([=, &mat]()
-            {
+
+            auto workerAddr = dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getLocation();
+            std::thread t([=, &mat]() {
                 auto stub = ctx->stubs[workerAddr].get();
 
                 distributed::StoredData storedData;
                 grpc::ClientContext grpc_ctx;
 
-                auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);            
-                auto serializer = DaphneSerializerChunks<DT>(slicedMat, dctx->config.max_distributed_serialization_chunk_size);
-                
+                auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
+                auto serializer =
+                    DaphneSerializerChunks<DT>(slicedMat, dctx->config.max_distributed_serialization_chunk_size);
+
                 distributed::Data protoMsg;
 
                 // Send chunks
                 auto writer = stub->Store(&grpc_ctx, &storedData);
-                for (auto it = serializer.begin(); it != serializer.end(); ++it){                
+                for (auto it = serializer.begin(); it != serializer.end(); ++it) {
                     protoMsg.set_bytes(it->second->data(), it->first);
                     writer->Write(protoMsg);
                 }
@@ -238,10 +222,10 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
                 newData.numRows = storedData.num_rows();
                 newData.numCols = storedData.num_cols();
                 newData.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(newData);
+                dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).updateDistributedData(newData);
                 DataObjectFactory::destroy(slicedMat);
             });
-            threads_vector.push_back(move(t));            
+            threads_vector.push_back(move(t));
         }
         for (auto &thread : threads_vector)
             thread.join();

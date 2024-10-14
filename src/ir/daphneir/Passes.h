@@ -29,18 +29,15 @@
 #include <unordered_map>
 
 namespace mlir::daphne {
-    struct InferenceConfig {
-        InferenceConfig(bool partialInferenceAllowed,
-                        bool typeInference,
-                        bool shapeInference,
-                        bool frameLabelInference,
-                        bool sparsityInference);
-        bool partialInferenceAllowed;
-        bool typeInference;
-        bool shapeInference;
-        bool frameLabelInference;
-        bool sparsityInference;
-    };
+struct InferenceConfig {
+    InferenceConfig(bool partialInferenceAllowed, bool typeInference, bool shapeInference, bool frameLabelInference,
+                    bool sparsityInference);
+    bool partialInferenceAllowed;
+    bool typeInference;
+    bool shapeInference;
+    bool frameLabelInference;
+    bool sparsityInference;
+};
 
     // alphabetically sorted list of passes
     std::unique_ptr<Pass> createAdaptTypesToKernelsPass();
@@ -77,15 +74,15 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
 #ifdef USE_CUDA
-    std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg);
+std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
 #endif
 
 #ifdef USE_FPGAOPENCL
-    std::unique_ptr<Pass> createMarkFPGAOPENCLOpsPass(const DaphneUserConfig& cfg);
+std::unique_ptr<Pass> createMarkFPGAOPENCLOpsPass(const DaphneUserConfig &cfg);
 #endif
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"
 } // namespace mlir::daphne
 
-#endif //SRC_IR_DAPHNEIR_PASSES_H
+#endif // SRC_IR_DAPHNEIR_PASSES_H

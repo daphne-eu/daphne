@@ -17,21 +17,20 @@
 #pragma once
 
 #include <cstddef>
-#include <vector>
 #include <cstdlib>
 #include <stdexcept>
+#include <vector>
 
 #include <runtime/local/datastructures/Structure.h>
 
-template<typename ValueType>
-class Tensor : public Structure {
-    public:
+template <typename ValueType> class Tensor : public Structure {
+  public:
     size_t rank;
     std::vector<size_t> tensor_shape;
     size_t total_element_count;
 
-    protected:
-    Tensor(const std::vector<size_t>& tensor_shape)
+  protected:
+    Tensor(const std::vector<size_t> &tensor_shape)
         : Structure(tensor_shape.size() >= 1 ? tensor_shape[0] : 0, tensor_shape.size() >= 2 ? tensor_shape[1] : 0),
           rank(tensor_shape.size()), tensor_shape(tensor_shape) {
         if (rank > 0) {
@@ -50,27 +49,23 @@ class Tensor : public Structure {
         total_element_count = numRows * numCols;
     };
 
-    virtual ~Tensor() {};
+    virtual ~Tensor(){};
 
-    public:
+  public:
+    virtual size_t getNumDims() const override { return rank; }
 
-    virtual size_t getNumDims() const override {
-        return rank;
-    }
-    
     // These pure virtual functions are only well defined for a ND-tensor in the
-    // case of N=2. Which dimension is addressed via row and column id is ambiguous
-    // for larger N.
-    // Use the provided tryDice() function instead.
-    virtual Tensor* sliceRow(size_t rl, size_t ru) const override {
+    // case of N=2. Which dimension is addressed via row and column id is
+    // ambiguous for larger N. Use the provided tryDice() function instead.
+    virtual Tensor *sliceRow(size_t rl, size_t ru) const override {
         throw std::runtime_error("Tensor::sliceRow() is not supported (yet)");
     }
 
-    virtual Tensor* sliceCol(size_t cl, size_t cu) const override {
+    virtual Tensor *sliceCol(size_t cl, size_t cu) const override {
         throw std::runtime_error("Tensor::sliceCol() is not supported (yet)");
     }
 
-    virtual Tensor* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
+    virtual Tensor *slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
         throw std::runtime_error("Tensor::slice() is not supported (yet)");
     }
 };

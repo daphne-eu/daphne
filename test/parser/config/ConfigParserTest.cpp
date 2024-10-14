@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
- 
+
 #include <tags.h>
 
 #include <catch.hpp>
@@ -24,88 +24,77 @@
 
 const std::string dirPath = "test/parser/config/configFiles/";
 
-TEST_CASE("Proper config file from daphne root directory")
-{
+TEST_CASE("Proper config file from daphne root directory") {
     const std::string configFile = "UserConfig.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_NOTHROW(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-
-TEST_CASE("Missing config file", TAG_PARSER)
-{
+TEST_CASE("Missing config file", TAG_PARSER) {
     const std::string configFile = "-";
     REQUIRE_THROWS(ConfigParser::fileExists(configFile));
 }
 
-TEST_CASE("Empty config file", TAG_PARSER)
-{
+TEST_CASE("Empty config file", TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig1.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_NOTHROW(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-TEST_CASE("Wrong JSON format in the config file", TAG_PARSER)
-{
+TEST_CASE("Wrong JSON format in the config file", TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig2.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_THROWS(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-TEST_CASE("Wrong format of config file", TAG_PARSER)
-{
+TEST_CASE("Wrong format of config file", TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig3.txt";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_THROWS(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-
-TEST_CASE("Config file that contains only some keys", TAG_PARSER)
-{
+TEST_CASE("Config file that contains only some keys", TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig4.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_NOTHROW(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-TEST_CASE("Unknown key in the config file", TAG_PARSER)
-{
+TEST_CASE("Unknown key in the config file", TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig5.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_THROWS(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-TEST_CASE("The unknown value of param in the config file", TAG_PARSER)
-{
+TEST_CASE("The unknown value of param in the config file", TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig6.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_THROWS(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-TEST_CASE("An adequate enum value set in the config file", TAG_PARSER)
-{
+TEST_CASE("An adequate enum value set in the config file", TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig7.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_NOTHROW(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-TEST_CASE("An unknown enum value set in the config file", TAG_PARSER)
-{
+TEST_CASE("An unknown enum value set in the config file", TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig8.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_THROWS(ConfigParser::readUserConfig(configFile, userConfig));
 }
 
-TEST_CASE("Integer set as enum value instead of the name of the enum value in string format in the config file", TAG_PARSER)
-{
+TEST_CASE("Integer set as enum value instead of the name of the enum value in "
+          "string format in the config file",
+          TAG_PARSER) {
     const std::string configFile = dirPath + "UserConfig9.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));

@@ -26,17 +26,15 @@
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
-template<class DTRes>
-struct MatrixConstant {
-    static void apply(DTRes *& res, uint64_t matrixAddr, DCTX(ctx)) = delete;
+template <class DTRes> struct MatrixConstant {
+    static void apply(DTRes *&res, uint64_t matrixAddr, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes>
-void matrixConstant(DTRes *& res, uint64_t matrixAddr, DCTX(ctx)) { 
+template <class DTRes> void matrixConstant(DTRes *&res, uint64_t matrixAddr, DCTX(ctx)) {
     MatrixConstant<DTRes>::apply(res, matrixAddr, ctx);
 }
 
@@ -48,33 +46,33 @@ void matrixConstant(DTRes *& res, uint64_t matrixAddr, DCTX(ctx)) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct MatrixConstant<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, uint64_t matrixAddr, DCTX(ctx)) {
+template <typename VT> struct MatrixConstant<DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *&res, uint64_t matrixAddr, DCTX(ctx)) {
         // We create a copy of the DenseMatrix backing the matrix literal.
         // This is important since the matrix literal may be used inside a loop
-        // with multiple iterations or inside a function with multiple invocations.
-        // If we handed out the original DenseMatrix, it would be freed by DAPHNE's
-        // garbage collection by the end of the loop's/function's body.
+        // with multiple iterations or inside a function with multiple
+        // invocations. If we handed out the original DenseMatrix, it would be
+        // freed by DAPHNE's garbage collection by the end of the
+        // loop's/function's body.
 
-        // TODO Currently, the original DenseMatrix objects created by the parser
-        // are never freed, which is a memory leak. However, since matrix literals
-        // should be used only for tiny matrices, the problem is not significant.
-        // They will be freed automatically at the end of the DAPHNE process.
-        // However, in long-running distributed workers these matrix objects might
-        // pile up over time.
+        // TODO Currently, the original DenseMatrix objects created by the
+        // parser are never freed, which is a memory leak. However, since matrix
+        // literals should be used only for tiny matrices, the problem is not
+        // significant. They will be freed automatically at the end of the
+        // DAPHNE process. However, in long-running distributed workers these
+        // matrix objects might pile up over time.
 
-        DenseMatrix<VT> * orig = reinterpret_cast<DenseMatrix<VT>*>(matrixAddr);
+        DenseMatrix<VT> *orig = reinterpret_cast<DenseMatrix<VT> *>(matrixAddr);
         const size_t numRows = orig->getNumRows();
         const size_t numCols = orig->getNumCols();
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        
-        const VT * valuesOrig = orig->getValues();
-        VT * valuesRes = res->getValues();
+
+        const VT *valuesOrig = orig->getValues();
+        VT *valuesRes = res->getValues();
 
         memcpy(valuesRes, valuesOrig, numRows * numCols * sizeof(VT));
     }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MATRIXCONSTANT_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_MATRIXCONSTANT_H

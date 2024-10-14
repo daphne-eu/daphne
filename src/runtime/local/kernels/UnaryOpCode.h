@@ -64,8 +64,7 @@ static std::string_view unary_op_codes[] = {
     // Rounding.
     "FLOOR", "CEIL", "ROUND",
     // Comparison.
-    "ISNAN"
-};
+    "ISNAN"};
 
 // ****************************************************************************
 // Specification which unary ops should be supported on which value types
@@ -79,43 +78,42 @@ static std::string_view unary_op_codes[] = {
  * @tparam VTRes The result value type.
  * @tparam VTArg The argument value type.
  */
-template<UnaryOpCode op, typename VTRes, typename VTArg>
-static constexpr bool supportsUnaryOp = false;
+template <UnaryOpCode op, typename VTRes, typename VTArg> static constexpr bool supportsUnaryOp = false;
 
 // Macros for concisely specifying which unary operations should be
 // supported on which value types.
 
-// Generates code specifying that the unary operation `Op` should be supported on
-// the value type `VT` (for both the result and the argument, for simplicity).
-#define SUPPORT(Op, VT) \
-    template<> constexpr bool supportsUnaryOp<UnaryOpCode::Op, VT, VT> = true;
+// Generates code specifying that the unary operation `Op` should be supported
+// on the value type `VT` (for both the result and the argument, for
+// simplicity).
+#define SUPPORT(Op, VT) template <> constexpr bool supportsUnaryOp<UnaryOpCode::Op, VT, VT> = true;
 
 // Generates code specifying that all unary operations typically supported on
 // numeric value types should be supported on the given value type `VT`
 // (for both the result and the argument, for simplicity).
-#define SUPPORT_NUMERIC(VT) \
-    /* Arithmetic/general math. */ \
-    SUPPORT(MINUS, VT) \
-    SUPPORT(ABS  , VT) \
-    SUPPORT(SIGN , VT) \
-    SUPPORT(SQRT , VT) \
-    SUPPORT(EXP  , VT) \
-    SUPPORT(LN   , VT) \
-    /* Trigonometric/hyperbolic. */ \
-    SUPPORT(SIN , VT) \
-    SUPPORT(COS , VT) \
-    SUPPORT(TAN , VT) \
-    SUPPORT(ASIN, VT) \
-    SUPPORT(ACOS, VT) \
-    SUPPORT(ATAN, VT) \
-    SUPPORT(SINH, VT) \
-    SUPPORT(COSH, VT) \
-    SUPPORT(TANH, VT) \
-    /* Rounding. */ \
-    SUPPORT(FLOOR, VT) \
-    SUPPORT(CEIL , VT) \
-    SUPPORT(ROUND, VT) \
-    /* Comparison */ \
+#define SUPPORT_NUMERIC(VT)                                                                                            \
+    /* Arithmetic/general math. */                                                                                     \
+    SUPPORT(MINUS, VT)                                                                                                 \
+    SUPPORT(ABS, VT)                                                                                                   \
+    SUPPORT(SIGN, VT)                                                                                                  \
+    SUPPORT(SQRT, VT)                                                                                                  \
+    SUPPORT(EXP, VT)                                                                                                   \
+    SUPPORT(LN, VT)                                                                                                    \
+    /* Trigonometric/hyperbolic. */                                                                                    \
+    SUPPORT(SIN, VT)                                                                                                   \
+    SUPPORT(COS, VT)                                                                                                   \
+    SUPPORT(TAN, VT)                                                                                                   \
+    SUPPORT(ASIN, VT)                                                                                                  \
+    SUPPORT(ACOS, VT)                                                                                                  \
+    SUPPORT(ATAN, VT)                                                                                                  \
+    SUPPORT(SINH, VT)                                                                                                  \
+    SUPPORT(COSH, VT)                                                                                                  \
+    SUPPORT(TANH, VT)                                                                                                  \
+    /* Rounding. */                                                                                                    \
+    SUPPORT(FLOOR, VT)                                                                                                 \
+    SUPPORT(CEIL, VT)                                                                                                  \
+    SUPPORT(ROUND, VT)                                                                                                 \
+    /* Comparison */                                                                                                   \
     SUPPORT(ISNAN, VT)
 
 // Concise specification of which unary operations should be supported on
@@ -133,4 +131,4 @@ SUPPORT_NUMERIC(uint8_t)
 #undef SUPPORT
 #undef SUPPORT_NUMERIC
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H

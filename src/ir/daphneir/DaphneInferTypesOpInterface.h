@@ -30,11 +30,11 @@
 // interface instead of using traits.
 
 namespace mlir::OpTrait {
-    
+
 // ============================================================================
 // Traits determining data type and value type separately
 // ============================================================================
-    
+
 // ----------------------------------------------------------------------------
 // Data type
 // ----------------------------------------------------------------------------
@@ -42,54 +42,49 @@ namespace mlir::OpTrait {
 /**
  * @brief The data type (of the single result) is always the same as the data
  * type of the first argument.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class DataTypeFromFirstArg : public TraitBase<ConcreteOp, DataTypeFromFirstArg> {};
+template <class ConcreteOp> class DataTypeFromFirstArg : public TraitBase<ConcreteOp, DataTypeFromFirstArg> {};
 
 /**
  * @brief The data type (of the single result) is the most general of the data
  * types of all arguments.
- * 
+ *
  * In that context, `Frame` is more general than `Matrix` is more general than
  * scalar. In other words:
  * - If any argument is of `Frame` data type, the result will be a `Frame`.
  * - Otherwise, if any argument is of `Matrix` data type, the result will be a
  *   `Matrix`.
  * - Otherwise, the result will be a scalar.
- * 
+ *
  * If the type of any argument is unknown, the type of the result is unknown.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class DataTypeFromArgs : public TraitBase<ConcreteOp, DataTypeFromArgs> {};
+template <class ConcreteOp> class DataTypeFromArgs : public TraitBase<ConcreteOp, DataTypeFromArgs> {};
 
 /**
  * @brief The data type (of the single result) is always scalar.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class DataTypeSca : public TraitBase<ConcreteOp, DataTypeSca> {};
+template <class ConcreteOp> class DataTypeSca : public TraitBase<ConcreteOp, DataTypeSca> {};
 
 /**
  * @brief The data type (of the single result) is always `Matrix`.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class DataTypeMat : public TraitBase<ConcreteOp, DataTypeMat> {};
+template <class ConcreteOp> class DataTypeMat : public TraitBase<ConcreteOp, DataTypeMat> {};
 
 /**
  * @brief The data type (of the single result) is always `Frame`.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class DataTypeFrm : public TraitBase<ConcreteOp, DataTypeFrm> {};
-    
+template <class ConcreteOp> class DataTypeFrm : public TraitBase<ConcreteOp, DataTypeFrm> {};
+
 // ----------------------------------------------------------------------------
 // Value type
 // ----------------------------------------------------------------------------
@@ -100,39 +95,36 @@ class DataTypeFrm : public TraitBase<ConcreteOp, DataTypeFrm> {};
  *
  * Like ValueTypeFromArgs, but if any argument is of string value type, then
  * the result value type is si64.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class ValueTypeCmp : public TraitBase<ConcreteOp, ValueTypeCmp> {};
+template <class ConcreteOp> class ValueTypeCmp : public TraitBase<ConcreteOp, ValueTypeCmp> {};
 
 /**
  * @brief The value type (of the single result) is always the same as the value
  * type of the first argument.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class ValueTypeFromFirstArg : public TraitBase<ConcreteOp, ValueTypeFromFirstArg> {};
+template <class ConcreteOp> class ValueTypeFromFirstArg : public TraitBase<ConcreteOp, ValueTypeFromFirstArg> {};
 
 // TODO Merge this trait with ValueTypeFromFirstArg into a parametric trait
 // ValueTypeFromArg<N>, see #487.
 /**
  * @brief The value type (of the single result) is always the same as the value
  * type of the third argument.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class ValueTypeFromThirdArg : public TraitBase<ConcreteOp, ValueTypeFromThirdArg> {};
+template <class ConcreteOp> class ValueTypeFromThirdArg : public TraitBase<ConcreteOp, ValueTypeFromThirdArg> {};
 
 /**
  * @brief The value type (of the single result) is the most general of the
  * value types of all arguments.
- * 
+ *
  * If the result data type is `Frame`, the most general value type is
  * determined for each column separately.
- * 
+ *
  * In that context:
  * - `str` is the most general value type.
  * - Floating-point types are more general than integer types.
@@ -141,7 +133,7 @@ class ValueTypeFromThirdArg : public TraitBase<ConcreteOp, ValueTypeFromThirdArg
  * - The unsigned integer type of a certain bit width is more general than the
  *   signed integer type of the same bit width.
  * - `bool` is treated as an unsigned integer of 1 bit.
- * 
+ *
  * Examples:
  * - [argument value types...] -> result value type
  * - [`str`, `si64`] -> `str`
@@ -149,41 +141,38 @@ class ValueTypeFromThirdArg : public TraitBase<ConcreteOp, ValueTypeFromThirdArg
  * - [`f64`, `f32`] -> `f64`
  * - [`ui64`, `si32`] -> `ui64`
  * - [`ui64`, `si64`] -> `ui64`
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class ValueTypeFromArgs : public TraitBase<ConcreteOp, ValueTypeFromArgs> {};
+template <class ConcreteOp> class ValueTypeFromArgs : public TraitBase<ConcreteOp, ValueTypeFromArgs> {};
 
 /**
  * @brief Like `ValueTypeFromArgs`, but if the outcome is not a floating-point
  * type, it is replaced by the most general floating-point type.
- * 
+ *
  * If the data type of the single result is `Frame`, this replacement is
  * applied for each column value type separately.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class ValueTypeFromArgsFP : public TraitBase<ConcreteOp, ValueTypeFromArgsFP> {};
+template <class ConcreteOp> class ValueTypeFromArgsFP : public TraitBase<ConcreteOp, ValueTypeFromArgsFP> {};
 
 /**
  * @brief Like `ValueTypeFromArgs`, but if the outcome is not an integer
  * type, it is replaced by the most general integer type.
- * 
+ *
  * If the data type of the single result is `Frame`, this replacement is
  * applied for each column value type separately.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class ValueTypeFromArgsInt : public TraitBase<ConcreteOp, ValueTypeFromArgsInt> {};
+template <class ConcreteOp> class ValueTypeFromArgsInt : public TraitBase<ConcreteOp, ValueTypeFromArgsInt> {};
 
 /**
  * @brief The value type (of the single result) reflects a horizontal
  * concatenation of the first two arguments, i.e., column types are
  * concatenated.
- * 
+ *
  * If the data type of the single result is `Frame`, then:
  * - the column value types are obtained by concatenating the column value
  *   types of the first two arguments
@@ -194,30 +183,26 @@ class ValueTypeFromArgsInt : public TraitBase<ConcreteOp, ValueTypeFromArgsInt> 
  * Otherwise:
  * - this trait falls back to `ValueTypeFromArgs` limited to the first two
  *   arguments
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class ValueTypesConcat : public TraitBase<ConcreteOp, ValueTypesConcat> {};
+template <class ConcreteOp> class ValueTypesConcat : public TraitBase<ConcreteOp, ValueTypesConcat> {};
 
 /**
  * @brief The value type (of the single result) is `SI64`.
  */
-template<class ConcreteOp>
-class ValueTypeSI64 : public TraitBase<ConcreteOp, ValueTypeSI64> {};
+template <class ConcreteOp> class ValueTypeSI64 : public TraitBase<ConcreteOp, ValueTypeSI64> {};
 
 /**
  * @brief The value type (of the single result) is `Size`.
  */
-template<class ConcreteOp>
-class ValueTypeSize : public TraitBase<ConcreteOp, ValueTypeSize> {};
+template <class ConcreteOp> class ValueTypeSize : public TraitBase<ConcreteOp, ValueTypeSize> {};
 
 /**
  * @brief The value type (of the single result) is `String`.
  */
-template<class ConcreteOp>
-class ValueTypeStr : public TraitBase<ConcreteOp, ValueTypeStr> {};
-    
+template <class ConcreteOp> class ValueTypeStr : public TraitBase<ConcreteOp, ValueTypeStr> {};
+
 // ============================================================================
 // Traits determining data type and value type together
 // ============================================================================
@@ -225,13 +210,12 @@ class ValueTypeStr : public TraitBase<ConcreteOp, ValueTypeStr> {};
 /**
  * @brief The data type and value type (of the single result) are always the
  * same as the data type and value type of the first argument.
- * 
+ *
  * Assumes that the operation has always exactly one result.
  */
-template<class ConcreteOp>
-class TypeFromFirstArg : public TraitBase<ConcreteOp, TypeFromFirstArg> {};
+template <class ConcreteOp> class TypeFromFirstArg : public TraitBase<ConcreteOp, TypeFromFirstArg> {};
 
-}
+} // namespace mlir::OpTrait
 
 // ****************************************************************************
 // Type inference interface
@@ -248,29 +232,29 @@ namespace mlir::daphne {
 namespace mlir::daphne {
 /**
  * @brief Tries to infer the type of all results of the given operation.
- * 
+ *
  * If any type inference traits are attached to the given operation, these are
  * applied to infer the result type. If the operation implements the type
  * inference interface, that implementation is invoked. If the types cannot be
  * infered based on the available information, or if the operation does not
  * have any relevant traits or interfaces, `mlir::daphne::UnknownType` will be
  * returned.
- * 
+ *
  * @param op The operation whose results' types shall be infered.
  * @return A vector of `Type`s. The i-th pair in this vector represents the
  * type of the i-th result of the given operation. A value of
  * `mlir::daphne::UnknownType` indicates that this type is not known (yet).
  */
-std::vector<mlir::Type> tryInferType(mlir::Operation* op);
+std::vector<mlir::Type> tryInferType(mlir::Operation *op);
 
 /**
  * @brief Infers and sets the types of all results of the given operation.
- * 
+ *
  * @param op The operation whose results' types shall be infered and set.
  * @param partialInferenceAllowed If `true`, unknown will be allowed as an
  * infered type; if `false`, infering unknown will throw an exception.
-*/
-void setInferedTypes(mlir::Operation* op, bool partialInferenceAllowed = true);
-}
+ */
+void setInferedTypes(mlir::Operation *op, bool partialInferenceAllowed = true);
+} // namespace mlir::daphne
 
 #endif // SRC_IR_DAPHNEIR_DAPHNEINFERTYPESOPINTERFACE_H

@@ -19,16 +19,15 @@
 
 #include "WorkerImpl.h"
 
+#include "runtime/distributed/proto/worker.grpc.pb.h"
+#include "runtime/distributed/proto/worker.pb.h"
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server_builder.h>
-#include "runtime/distributed/proto/worker.pb.h"
-#include "runtime/distributed/proto/worker.grpc.pb.h"
 
 #include <runtime/local/io/DaphneSerializer.h>
 
-class WorkerImplGRPCSync : public WorkerImpl, public distributed::Worker::Service
-{
-private:
+class WorkerImplGRPCSync : public WorkerImpl, public distributed::Worker::Service {
+  private:
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::Server> server;
     // Store in chunks
@@ -36,21 +35,23 @@ private:
     std::unique_ptr<DaphneDeserializerChunks<Structure>::Iterator> deserializerIter;
     Structure *mat;
 
-public:
-    explicit WorkerImplGRPCSync(const std::string& addr, DaphneUserConfig& _cfg);
+  public:
+    explicit WorkerImplGRPCSync(const std::string &addr, DaphneUserConfig &_cfg);
     void Wait() override;
-    grpc::Status Store(::grpc::ServerContext *context,
-                         ::grpc::ServerReader<::distributed::Data>* reader,
-                         ::distributed::StoredData *response) override;
-    grpc::Status Compute(::grpc::ServerContext *context,
-                         const ::distributed::Task *request,
+#if USE_HDFS
+    grpc::Status WriteHDFS(::grpc::ServerContext *context, const ::distributed::HDFSWriteInfo *request,
+                           ::distributed::Empty *response) override;
+    grpc::Status ReadHDFS(::grpc::ServerContext *context, const ::distributed::HDFSFile *request,
+                          ::distributed::StoredData *response) override;
+#endif
+    grpc::Status Store(::grpc::ServerContext *context, ::grpc::ServerReader<::distributed::Data> *reader,
+                       ::distributed::StoredData *response) override;
+    grpc::Status Compute(::grpc::ServerContext *context, const ::distributed::Task *request,
                          ::distributed::ComputeResult *response) override;
-    grpc::Status Transfer(::grpc::ServerContext *context,
-                          const ::distributed::StoredData *request,
-                         ::distributed::Data *response) override;
+    grpc::Status Transfer(::grpc::ServerContext *context, const ::distributed::StoredData *request,
+                          ::distributed::Data *response) override;
 
-    template<class DT>
-    DT* CreateMatrix(const ::distributed::Data *mat);
+    template <class DT> DT *CreateMatrix(const ::distributed::Data *mat);
 };
 
-#endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPCSYNC_H
+#endif // SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPCSYNC_H

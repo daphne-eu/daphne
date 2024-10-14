@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include <util/KernelDispatchMapping.h>
@@ -30,24 +46,16 @@ struct OperatorStatistics {
         return *this;
     }
 
-    OperatorStatistics operator+(OperatorStatistics &rhs) noexcept {
-        return *this += rhs;
-    }
+    OperatorStatistics operator+(OperatorStatistics &rhs) noexcept { return *this += rhs; }
 
-    constexpr bool operator<(const OperatorStatistics &os) noexcept {
-        return std::tie(total) < std::tie(os.total);
-    }
+    constexpr bool operator<(const OperatorStatistics &os) noexcept { return std::tie(total) < std::tie(os.total); }
 
-    constexpr bool operator<=(const OperatorStatistics &os) noexcept {
-        return std::tie(total) <= std::tie(os.total);
-    }
+    constexpr bool operator<=(const OperatorStatistics &os) noexcept { return std::tie(total) <= std::tie(os.total); }
 
-    friend std::ostream &operator<<(std::ostream &os,
-                                    const OperatorStatistics &opStats);
+    friend std::ostream &operator<<(std::ostream &os, const OperatorStatistics &opStats);
 };
 
-inline std::ostream &operator<<(std::ostream &os,
-                                const OperatorStatistics &opStats) {
+inline std::ostream &operator<<(std::ostream &os, const OperatorStatistics &opStats) {
     return os << "Name: " << opStats.kdmInfo.kernelName << "\n"
               << "Total: " << opStats.total << "\n"
               << "Count: " << opStats.count << "\n";
@@ -73,16 +81,14 @@ inline std::ostream &operator<<(std::ostream &os,
 class Statistics {
   private:
     using Time = std::chrono::time_point<std::chrono::high_resolution_clock>;
-    using KernelStats =
-        std::vector<std::tuple<int, std::chrono::duration<double>>>;
+    using KernelStats = std::vector<std::tuple<int, std::chrono::duration<double>>>;
 
     static constexpr int MAX_STATS_COUNT = 100;
     std::mutex m_times;
     KernelStats kernelExecutionTimes;
     std::unordered_map<int, Time> startTimes;
 
-    std::vector<OperatorStatistics>
-    processStatisticsPerOperator(KernelDispatchMapping &kdm);
+    std::vector<OperatorStatistics> processStatisticsPerOperator(KernelDispatchMapping &kdm);
 
   public:
     static Statistics &instance();

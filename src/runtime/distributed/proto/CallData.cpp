@@ -17,47 +17,37 @@
 #include "CallData.h"
 
 void StoreCallData::Proceed(bool ok) {
-    if (status_ == CREATE)
-    {
+    if (status_ == CREATE) {
         // Make this instance progress to the PROCESS state.
         status_ = PROCESS;
 
         service_->RequestStore(&ctx_, &stream_, cq_, cq_, this);
         worker->PrepareStoreGRPC();
-    }
-    else if (status_ == PROCESS)
-    {
+    } else if (status_ == PROCESS) {
         if (ok) {
             stream_.Read(&data, this);
             grpc::Status status = worker->StoreGRPC(&ctx_, &data, &storedData);
             if (!status.ok())
-                throw std::runtime_error("Error while receiving/storing partial data");            
-        }
-        else {
+                throw std::runtime_error("Error while receiving/storing partial data");
+        } else {
             new StoreCallData(worker, scq_, cq_);
             status_ = FINISH;
 
             stream_.Finish(storedData, grpc::Status::OK, this);
         }
-    }
-    else
-    {
+    } else {
         GPR_ASSERT(status_ == FINISH);
         delete this;
     }
 }
 
 void ComputeCallData::Proceed(bool ok) {
-    if (status_ == CREATE)
-    {
+    if (status_ == CREATE) {
         // Make this instance progress to the PROCESS state.
         status_ = PROCESS;
 
-        service_->RequestCompute(&ctx_, &task, &responder_, cq_, cq_,
-                                    this);
-    }
-    else if (status_ == PROCESS)
-    {
+        service_->RequestCompute(&ctx_, &task, &responder_, cq_, cq_, this);
+    } else if (status_ == PROCESS) {
         if (!ok)
             delete this;
         status_ = FINISH;
@@ -67,25 +57,19 @@ void ComputeCallData::Proceed(bool ok) {
         grpc::Status status = worker->ComputeGRPC(&ctx_, &task, &result);
 
         responder_.Finish(result, status, this);
-    }
-    else
-    {
+    } else {
         GPR_ASSERT(status_ == FINISH);
         delete this;
     }
 }
 
 void TransferCallData::Proceed(bool ok) {
-    if (status_ == CREATE)
-    {
+    if (status_ == CREATE) {
         // Make this instance progress to the PROCESS state.
         status_ = PROCESS;
 
-        service_->RequestTransfer(&ctx_, &storedData, &responder_, cq_, cq_,
-                                    this);
-    }
-    else if (status_ == PROCESS)
-    {
+        service_->RequestTransfer(&ctx_, &storedData, &responder_, cq_, cq_, this);
+    } else if (status_ == PROCESS) {
         if (!ok)
             delete this;
         status_ = FINISH;
@@ -95,14 +79,11 @@ void TransferCallData::Proceed(bool ok) {
         grpc::Status status = worker->TransferGRPC(&ctx_, &storedData, &data);
 
         responder_.Finish(data, status, this);
-    }
-    else
-    {
+    } else {
         GPR_ASSERT(status_ == FINISH);
         delete this;
     }
 }
-
 
 // void FreeMemCallData::Proceed() {
 //     if (status_ == CREATE)
@@ -119,7 +100,8 @@ void TransferCallData::Proceed(bool ok) {
 
 //         new FreeMemCallData(worker, cq_);
 
-//         grpc::Status status = worker->FreeMem(&ctx_, &storedData, &emptyMessage);
+//         grpc::Status status = worker->FreeMem(&ctx_, &storedData,
+//         &emptyMessage);
 
 //         responder_.Finish(emptyMessage, status, this);
 //     }

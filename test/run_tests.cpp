@@ -19,16 +19,16 @@
 
 #include "run_tests.h"
 
-#include <api/cli/DaphneUserConfig.h>
 #include "runtime/local/kernels/CreateDaphneContext.h"
+#include <api/cli/DaphneUserConfig.h>
 #ifdef USE_CUDA
-    #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
+#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 #endif
 
 #include "spdlog/cfg/env.h"
 
 std::unique_ptr<DaphneContext> setupContextAndLogger() {
-    if(not logger) {
+    if (not logger) {
         logger = std::make_unique<DaphneLogger>(user_config);
         user_config.log_ptr->registerLoggers();
         spdlog::cfg::load_env_levels();

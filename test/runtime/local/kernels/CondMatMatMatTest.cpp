@@ -33,35 +33,19 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALU
     using DT = TestType;
     using VT = typename DT::VT;
 
-    DT * argCond = nullptr;
-    DT * argThen = nullptr;
-    DT * argElse = nullptr;
-    DT * exp = nullptr;
+    DT *argCond = nullptr;
+    DT *argThen = nullptr;
+    DT *argElse = nullptr;
+    DT *exp = nullptr;
 
     SECTION("example 1") {
-        argCond = genGivenVals<DT>(3, {
-            true, false, false,
-            false, true, false,
-            false, false, true
-        });
-        argThen = genGivenVals<DT>(3, {
-            VT(1.5), 2, 3,
-            4,       5, 6,
-            7,       8, 9
-        });
-        argElse = genGivenVals<DT>(3, {
-            -1,       -2, -3,
-            VT(-4.5), -5, -6,
-            -7,       -8, -9
-        });
-        exp = genGivenVals<DT>(3, {
-            VT(1.5),  -2, -3,
-            VT(-4.5),  5, -6,
-            -7,       -8,  9
-        });
+        argCond = genGivenVals<DT>(3, {true, false, false, false, true, false, false, false, true});
+        argThen = genGivenVals<DT>(3, {VT(1.5), 2, 3, 4, 5, 6, 7, 8, 9});
+        argElse = genGivenVals<DT>(3, {-1, -2, -3, VT(-4.5), -5, -6, -7, -8, -9});
+        exp = genGivenVals<DT>(3, {VT(1.5), -2, -3, VT(-4.5), 5, -6, -7, -8, 9});
     }
 
-    DT * res = nullptr;
+    DT *res = nullptr;
     condMatMatMat(res, argCond, argThen, argElse, nullptr);
 
     CHECK(*res == *exp);
@@ -73,49 +57,25 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("invalid shape"), TAG_KERNELS, (DATA_TYPES)
     using DT = TestType;
     using VT = typename DT::VT;
 
-    DT * argCond = genGivenVals<DT>(3, {
-        true, false, false,
-        false, true, false,
-        false, false, true
-    });
-    
-    DT * argThen = nullptr;
-    DT * argElse = nullptr;
+    DT *argCond = genGivenVals<DT>(3, {true, false, false, false, true, false, false, false, true});
+
+    DT *argThen = nullptr;
+    DT *argElse = nullptr;
 
     SECTION("then matrix too small") {
-        argThen = genGivenVals<DT>(2, {
-            VT(1.5), 2, 3,
-            4,       5, 6
-        });
-        argElse = genGivenVals<DT>(3, {
-            -1,       -2, -3,
-            VT(-4.5), -5, -6,
-            -7,       -8, -9
-        });
+        argThen = genGivenVals<DT>(2, {VT(1.5), 2, 3, 4, 5, 6});
+        argElse = genGivenVals<DT>(3, {-1, -2, -3, VT(-4.5), -5, -6, -7, -8, -9});
     }
     SECTION("else matrix too small") {
-        argThen = genGivenVals<DT>(3, {
-            VT(1.5), 2, 3,
-            4,       5, 6,
-            7,       8, 9
-        });
-        argElse = genGivenVals<DT>(2, {
-            -1,       -2, -3,
-            VT(-4.5), -5, -6
-        });
+        argThen = genGivenVals<DT>(3, {VT(1.5), 2, 3, 4, 5, 6, 7, 8, 9});
+        argElse = genGivenVals<DT>(2, {-1, -2, -3, VT(-4.5), -5, -6});
     }
     SECTION("then/else matrices too small") {
-        argThen = genGivenVals<DT>(2, {
-            VT(1.5), 2, 3,
-            4,       5, 6
-        });
-        argElse = genGivenVals<DT>(2, {
-            -1,       -2, -3,
-            VT(-4.5), -5, -6
-        });
+        argThen = genGivenVals<DT>(2, {VT(1.5), 2, 3, 4, 5, 6});
+        argElse = genGivenVals<DT>(2, {-1, -2, -3, VT(-4.5), -5, -6});
     }
 
-    DT * res = nullptr;
+    DT *res = nullptr;
 
     REQUIRE_THROWS_AS(condMatMatMat(res, argCond, argThen, argElse, nullptr), std::runtime_error);
 

@@ -17,8 +17,8 @@
 #ifndef SRC_IR_DAPHNEIR_DAPHNEDISTRIBUTABLEOPINTERFACE_H
 #define SRC_IR_DAPHNEIR_DAPHNEDISTRIBUTABLEOPINTERFACE_H
 
-#include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/OpDefinition.h"
 
 namespace mlir {
 namespace daphne {

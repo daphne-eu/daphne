@@ -17,8 +17,8 @@
 #ifndef SRC_IR_DAPHNEIR_DAPHNEINFERSHAPEOPINTERFACE_H
 #define SRC_IR_DAPHNEIR_DAPHNEINFERSHAPEOPINTERFACE_H
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 // ****************************************************************************
 // Shape inference traits
@@ -35,72 +35,54 @@ namespace mlir::OpTrait {
 // ============================================================================
 // Traits determining #rows or #cols separately
 // ============================================================================
-    
-// Constant one.
-    
-template<class ConcreteOp>
-class OneRow: public TraitBase<ConcreteOp, OneRow> {};
 
-template<class ConcreteOp>
-class OneCol: public TraitBase<ConcreteOp, OneCol> {};
-    
+// Constant one.
+
+template <class ConcreteOp> class OneRow : public TraitBase<ConcreteOp, OneRow> {};
+
+template <class ConcreteOp> class OneCol : public TraitBase<ConcreteOp, OneCol> {};
+
 // Same as i-th scalar argument.
-    
-template<size_t i>
-struct NumRowsFromIthScalar {
-    template<class ConcreteOp>
-    class Impl: public TraitBase<ConcreteOp, Impl> {};
+
+template <size_t i> struct NumRowsFromIthScalar {
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
-template<size_t i>
-struct NumColsFromIthScalar {
-    template<class ConcreteOp>
-    class Impl: public TraitBase<ConcreteOp, Impl> {};
+template <size_t i> struct NumColsFromIthScalar {
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 // Same as i-th argument's same dimension.
 
-template<size_t i>
-struct NumRowsFromIthArg {
-    template<class ConcreteOp>
-    class Impl: public TraitBase<ConcreteOp, Impl> {};
+template <size_t i> struct NumRowsFromIthArg {
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
-template<size_t i>
-struct NumColsFromIthArg {
-    template<class ConcreteOp>
-    class Impl: public TraitBase<ConcreteOp, Impl> {};
+template <size_t i> struct NumColsFromIthArg {
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 // Same as i-th argument's other dimension.
 
-template<size_t i>
-struct NumRowsFromIthArgNumCols {
-    template<class ConcreteOp>
-    class Impl: public TraitBase<ConcreteOp, Impl> {};
+template <size_t i> struct NumRowsFromIthArgNumCols {
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
-template<size_t i>
-struct NumColsFromIthArgNumRows {
-    template<class ConcreteOp>
-    class Impl: public TraitBase<ConcreteOp, Impl> {};
+template <size_t i> struct NumColsFromIthArgNumRows {
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 // Same as all inputs' same dimension (they must all be the same).
 
-template<class ConcreteOp>
-class NumRowsFromAllArgs: public TraitBase<ConcreteOp, NumRowsFromAllArgs> {};
+template <class ConcreteOp> class NumRowsFromAllArgs : public TraitBase<ConcreteOp, NumRowsFromAllArgs> {};
 
-template<class ConcreteOp>
-class NumColsFromAllArgs: public TraitBase<ConcreteOp, NumColsFromAllArgs> {};
+template <class ConcreteOp> class NumColsFromAllArgs : public TraitBase<ConcreteOp, NumColsFromAllArgs> {};
 
 // Sum of all inputs' same dimension.
 
-template<class ConcreteOp>
-class NumRowsFromSumOfAllArgs: public TraitBase<ConcreteOp, NumRowsFromSumOfAllArgs> {};
+template <class ConcreteOp> class NumRowsFromSumOfAllArgs : public TraitBase<ConcreteOp, NumRowsFromSumOfAllArgs> {};
 
-template<class ConcreteOp>
-class NumColsFromSumOfAllArgs: public TraitBase<ConcreteOp, NumColsFromSumOfAllArgs> {};
+template <class ConcreteOp> class NumColsFromSumOfAllArgs : public TraitBase<ConcreteOp, NumColsFromSumOfAllArgs> {};
 
 // ============================================================================
 // Traits determining #rows and #cols together
@@ -108,18 +90,15 @@ class NumColsFromSumOfAllArgs: public TraitBase<ConcreteOp, NumColsFromSumOfAllA
 
 // Same shape as i-th argument.
 
-template<size_t i>
-struct ShapeFromIthArg {
-    template<class ConcreteOp>
-    class Impl: public TraitBase<ConcreteOp, Impl> {};
+template <size_t i> struct ShapeFromIthArg {
+    template <class ConcreteOp> class Impl : public TraitBase<ConcreteOp, Impl> {};
 };
 
 // Broadcast-aware shape of elementwise binary operations.
 
-template<class ConcreteOp>
-class ShapeEwBinary: public TraitBase<ConcreteOp, ShapeEwBinary> {};
+template <class ConcreteOp> class ShapeEwBinary : public TraitBase<ConcreteOp, ShapeEwBinary> {};
 
-}
+} // namespace mlir::OpTrait
 
 // ****************************************************************************
 // Shape inference interfaces
@@ -136,21 +115,21 @@ namespace mlir::daphne {
 namespace mlir::daphne {
 /**
  * @brief Tries to infer the shapes of all results of the given operation.
- * 
+ *
  * If any shape inference traits are attached to the given operation, these are
  * applied to infer the result shape. If the operation implements any shape
  * inference interface, that implementation is invoked. If the shapes cannot be
  * infered based on the available information, or if the operation does not
  * have any relevant traits or interfaces, -1 will be returned for all
  * dimensions.
- * 
+ *
  * @param op The operation whose results' shapes shall be infered.
  * @return A vector of pairs of (number of rows, number of columns). The i-th
  * pair in this vector represents the shape of the i-th result of the given
  * operation. A value of -1 for any of the numbers of rows or columns indicates
  * that this number is not known (yet).
  */
-std::vector<std::pair<ssize_t, ssize_t>> tryInferShape(mlir::Operation* op);
-}
+std::vector<std::pair<ssize_t, ssize_t>> tryInferShape(mlir::Operation *op);
+} // namespace mlir::daphne
 
 #endif // SRC_IR_DAPHNEIR_DAPHNEINFERSHAPEOPINTERFACE_H

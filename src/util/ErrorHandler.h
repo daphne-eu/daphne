@@ -47,8 +47,7 @@ struct ErrorHandler {
      * KernelDispatchMapping::registerKernel. Is passed to all kernel calls.
      * \param kdm KernelDispatchMapping instance held by the DaphneContext.
      */
-    static std::runtime_error runtimeError(int kId, std::string msg,
-                                           KernelDispatchMapping *kdm);
+    static std::runtime_error runtimeError(int kId, std::string msg, KernelDispatchMapping *kdm);
 
     /*
      * To be used during compilation, emits the passed msg and provides
@@ -59,9 +58,7 @@ struct ErrorHandler {
      * failed.
      * \param msg User-facing error message.
      */
-    static std::runtime_error compilerError(mlir::Location loc,
-                                            const std::string &action,
-                                            const std::string &msg);
+    static std::runtime_error compilerError(mlir::Location loc, const std::string &action, const std::string &msg);
 
     /*
      * To be used during compilation, emits the passed msg and provides
@@ -72,9 +69,7 @@ struct ErrorHandler {
      * failed.
      * \param msg User-facing error message.
      */
-    static std::runtime_error compilerError(mlir::Operation *op,
-                                            const std::string &action,
-                                            const std::string &msg);
+    static std::runtime_error compilerError(mlir::Operation *op, const std::string &action, const std::string &msg);
 
     /*
      * To be used when catching an exception and rethrowing the exception.
@@ -85,8 +80,7 @@ struct ErrorHandler {
      * \param msg Recommended to reuse the message from the caught exception,
      * but additional information can be added to the string.
      */
-    static std::runtime_error rethrowError(const std::string &action,
-                                           const std::string &msg);
+    static std::runtime_error rethrowError(const std::string &action, const std::string &msg);
 
     /*
      * Creates an std::runtime_error instance with a header, an error message,
@@ -114,9 +108,8 @@ struct ErrorHandler {
      *       |
      *       |
      */
-    static std::runtime_error makeError(std::string header, std::string msg,
-                                 std::string file, unsigned int line,
-                                 unsigned int col);
+    static std::runtime_error makeError(std::string header, std::string msg, std::string file, unsigned int line,
+                                        unsigned int col);
 
     /*
      * Writes the current module IR to the file "module_fail.log" on disk.

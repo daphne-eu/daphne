@@ -55,10 +55,6 @@ def RewriteSqlOpPass : Pass<"rewrite-sqlop", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
 }
 
-def WhileLoopInvariantCodeMotionPass : Pass<"while-loop-invariant-code-motion", "::mlir::func::FuncOp"> {
-    let constructor = "mlir::daphne::createWhileLoopInvariantCodeMotionPass()";
-}
-
 def AggAllLoweringPass : Pass<"lower-agg", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createAggAllOpLoweringPass()";
 }

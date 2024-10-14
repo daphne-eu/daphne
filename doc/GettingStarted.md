@@ -233,6 +233,7 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 | java (e.g. openjdk)                  | 11 (1.7 should be fine)      |                                                                                                                                         |
 | jq                                   |                              | json commandline processor used in docker image generation scripts.                                                                     |
 | libpfm4-dev                          | 4.10                         | This dependency is needed for profiling support [DAPHNE-#479]                                                                           |
+| gRPC                                 | 1.38.0                       |                                                                                                                                         |
 | libssl-dev                           | 1.1.1                        | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
 | lld                                  | 10.0.0                       |                                                                                                                                         |
 | llvm-10-tools                        | 10, 15, 18                   | `apt` provides up to `llvm-10-tools` for Ubuntu 20.04 whereas 22.04 / 24.04 require a newer version such as `llvm-15-tools`.            |

@@ -33,39 +33,20 @@
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/ArrayRef.h"
 
-mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc,
-                              mlir::PatternRewriter &rewriter);
+mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc, mlir::PatternRewriter &rewriter);
 
-void insertMemRefDealloc(mlir::Value memref, mlir::Location loc,
-                         mlir::PatternRewriter &rewriter);
+void insertMemRefDealloc(mlir::Value memref, mlir::Location loc, mlir::PatternRewriter &rewriter);
 
-void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
-                         mlir::Location loc, mlir::ArrayRef<int64_t> shape,
-                         mlir::MLIRContext *ctx, mlir::Value memRef,
-                         mlir::Type elemType);
+void affineFillMemRef(mlir::Value value, mlir::ConversionPatternRewriter &rewriter, mlir::Location loc,
+                      mlir::ArrayRef<int64_t> shape, mlir::MLIRContext *ctx, mlir::Value memRef);
 
-void affineFillMemRefInt(mlir::Value value,
-                         mlir::ConversionPatternRewriter &rewriter,
-                         mlir::Location loc, mlir::ArrayRef<int64_t> shape,
-                         mlir::MLIRContext *ctx, mlir::Value memRef);
+mlir::Value convertMemRefToDenseMatrix(mlir::Location, mlir::ConversionPatternRewriter &, mlir::Value memRef,
+                                       mlir::Type);
 
-void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
-                      mlir::Location loc, mlir::ArrayRef<int64_t> shape,
-                      mlir::MLIRContext *ctx, mlir::Value memRef,
-                      mlir::Type elemType);
+llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
+                                                       mlir::ValueRange inputs, mlir::Location loc);
 
-mlir::Value convertMemRefToDenseMatrix(mlir::Location,
-                                       mlir::ConversionPatternRewriter &,
-                                       mlir::Value memRef, mlir::Type);
-
-llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder,
-                                                       mlir::Type type,
-                                                       mlir::ValueRange inputs,
-                                                       mlir::Location loc);
-
-llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder,
-                                                     mlir::Type type,
-                                                     mlir::ValueRange inputs,
+llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
                                                      mlir::Location loc);
 
 mlir::Type convertFloat(mlir::FloatType floatType);

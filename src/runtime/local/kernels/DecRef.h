@@ -24,24 +24,19 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTArg>
-struct DecRef {
-    static void apply(const DTArg * arg, DCTX(ctx)) = delete;
+template <class DTArg> struct DecRef {
+    static void apply(const DTArg *arg, DCTX(ctx)) = delete;
 };
 
-template<>
-struct DecRef<Structure> {
-    static void apply(const Structure* arg, DCTX(ctx)) {
-        DataObjectFactory::destroy(arg);
-    }
+template <> struct DecRef<Structure> {
+    static void apply(const Structure *arg, DCTX(ctx)) { DataObjectFactory::destroy(arg); }
 };
 
-template<>
-struct DecRef<char> {
-    static void apply(const char* arg, DCTX(ctx)) {
+template <> struct DecRef<char> {
+    static void apply(const char *arg, DCTX(ctx)) {
         // Decrease the reference counter. If it became zero, delete the string.
-        if(!ctx->stringRefCount.dec(arg)) {
-            delete [] arg;
+        if (!ctx->stringRefCount.dec(arg)) {
+            delete[] arg;
         }
     }
 };
@@ -50,8 +45,4 @@ struct DecRef<char> {
 // Convenience function
 // ****************************************************************************
 
-template<class DTArg>
-void decRef(const DTArg * arg, DCTX(ctx)) {
-    DecRef<DTArg>::apply(arg, ctx);
-}
-
+template <class DTArg> void decRef(const DTArg *arg, DCTX(ctx)) { DecRef<DTArg>::apply(arg, ctx); }
