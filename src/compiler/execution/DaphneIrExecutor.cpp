@@ -278,11 +278,11 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createModOpLoweringPass());
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
-    
+
     // pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgNamedOpConversionPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgGeneralizationPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createConvertLinalgToAffineLoopsPass());
-    
+
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createAffineScalarReplacementPass());
     pm.addPass(mlir::createLowerAffinePass());
     mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;

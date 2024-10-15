@@ -50,17 +50,16 @@
 
 using namespace mlir;
 
-template <class UnaryOp, class IOp, class FOp>
-struct UnaryOpLowering : public mlir::OpConversionPattern<UnaryOp> {
-public:
+template <class UnaryOp, class IOp, class FOp> struct UnaryOpLowering : public mlir::OpConversionPattern<UnaryOp> {
+  public:
     using OpAdaptor = typename mlir::OpConversionPattern<UnaryOp>::OpAdaptor;
     UnaryOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
         : mlir::OpConversionPattern<UnaryOp>(typeConverter, ctx) {
         this->setDebugName("EwDaphneOpsLowering");
     }
 
-    mlir::LogicalResult matchAndRewriteScalarVal(
-        UnaryOp op, OpAdaptor adaptor, mlir::ConversionPatternRewriter &rewriter) const {
+    mlir::LogicalResult matchAndRewriteScalarVal(UnaryOp op, OpAdaptor adaptor,
+                                                 mlir::ConversionPatternRewriter &rewriter) const {
 
         mlir::Value arg = op.getArg();
         mlir::Type argType = arg.getType();
@@ -73,10 +72,8 @@ public:
         return mlir::success();
     }
 
-
-    mlir::LogicalResult matchAndRewrite(
-        UnaryOp op, OpAdaptor adaptor,
-        mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult matchAndRewrite(UnaryOp op, OpAdaptor adaptor,
+                                        mlir::ConversionPatternRewriter &rewriter) const override {
 
         mlir::Location loc = op->getLoc();
         mlir::daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<mlir::daphne::MatrixType>();
@@ -90,39 +87,29 @@ public:
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
 
-        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc,
-            mlir::MemRefType::get({numRows, numCols}, matrixElementType),
-            adaptor.getArg()
-        );
+        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+            loc, mlir::MemRefType::get({numRows, numCols}, matrixElementType), adaptor.getArg());
 
-        Value resMemref = rewriter.create<mlir::memref::AllocOp>(loc,
-            mlir::MemRefType::get({numRows, numCols}, matrixElementType)
-        );
+        Value resMemref =
+            rewriter.create<mlir::memref::AllocOp>(loc, mlir::MemRefType::get({numRows, numCols}, matrixElementType));
 
-        SmallVector<AffineMap, 2> indexMaps = {
-            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
-            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())
-        };
-        SmallVector<utils::IteratorType, 2> iterTypes = {
-            utils::IteratorType::parallel,
-            utils::IteratorType::parallel
-        };
+        SmallVector<AffineMap, 2> indexMaps = {AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
+                                               AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())};
+        SmallVector<utils::IteratorType, 2> iterTypes = {utils::IteratorType::parallel, utils::IteratorType::parallel};
 
         rewriter.create<linalg::GenericOp>(loc,
-            /*Output Type*/ TypeRange{},
-            /*Inputs*/  ValueRange{argMemref},
-            /*Outputs*/ ValueRange{resMemref},
-            indexMaps,
-            iterTypes,
-            /*GenericOp body*/
-            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg){
-                auto mappedArg = llvm::isa<mlir::IntegerType>(matrixElementType)
-                        ? OpBuilderNested.create<IOp>(locNested, arg[0]).getResult()
-                        : OpBuilderNested.create<FOp>(locNested, arg[0]).getResult();
+                                           /*Output Type*/ TypeRange{},
+                                           /*Inputs*/ ValueRange{argMemref},
+                                           /*Outputs*/ ValueRange{resMemref}, indexMaps, iterTypes,
+                                           /*GenericOp body*/
+                                           [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+                                               auto mappedArg =
+                                                   llvm::isa<mlir::IntegerType>(matrixElementType)
+                                                       ? OpBuilderNested.create<IOp>(locNested, arg[0]).getResult()
+                                                       : OpBuilderNested.create<FOp>(locNested, arg[0]).getResult();
 
-                OpBuilderNested.create<linalg::YieldOp>(locNested, mappedArg);
-            }
-        );
+                                               OpBuilderNested.create<linalg::YieldOp>(locNested, mappedArg);
+                                           });
 
         auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
 
@@ -134,7 +121,7 @@ public:
 
 template <class BinaryOp, class IOp, class FOp>
 class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
-public:
+  public:
     using OpAdaptor = typename mlir::OpConversionPattern<BinaryOp>::OpAdaptor;
 
   public:
@@ -302,9 +289,8 @@ using AndOpLowering     = BinaryOpLowering<daphne::EwAndOp,     arith::AndIOp,  
 using OrOpLowering      = BinaryOpLowering<daphne::EwOrOp,      arith::OrIOp,       arith::OrIOp>;  // - " -
 // clang-format on
 
-
 // ****************************************************************************
-// UnaryOp specializations 
+// UnaryOp specializations
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
@@ -312,16 +298,16 @@ using OrOpLowering      = BinaryOpLowering<daphne::EwOrOp,      arith::OrIOp,   
 // ----------------------------------------------------------------------------
 
 struct AbsOpLowering : public mlir::OpConversionPattern<daphne::EwAbsOp> {
-public:
+  public:
     using OpAdaptor = typename mlir::OpConversionPattern<daphne::EwAbsOp>::OpAdaptor;
 
     explicit AbsOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
-            : mlir::OpConversionPattern<daphne::EwAbsOp>(typeConverter, ctx) {
+        : mlir::OpConversionPattern<daphne::EwAbsOp>(typeConverter, ctx) {
         this->setDebugName("EwDaphneOpsLowering");
     }
 
-    mlir::LogicalResult matchAndRewriteScalarVal(
-        daphne::EwAbsOp op, OpAdaptor adaptor, mlir::ConversionPatternRewriter &rewriter) const {
+    mlir::LogicalResult matchAndRewriteScalarVal(daphne::EwAbsOp op, OpAdaptor adaptor,
+                                                 mlir::ConversionPatternRewriter &rewriter) const {
 
         mlir::Location loc = op.getLoc();
         mlir::Value mappedArg = op.getArg();
@@ -329,17 +315,11 @@ public:
 
         if (llvm::isa<mlir::IntegerType>(resType)) {
             // math::AbsIOp expects a signless Integer
-            mappedArg = this->typeConverter->materializeTargetConversion(rewriter, loc,
-                rewriter.getIntegerType(resType.getIntOrFloatBitWidth()),
-                ValueRange{mappedArg}
-            );
+            mappedArg = this->typeConverter->materializeTargetConversion(
+                rewriter, loc, rewriter.getIntegerType(resType.getIntOrFloatBitWidth()), ValueRange{mappedArg});
             mappedArg = rewriter.create<math::AbsIOp>(loc, mappedArg).getResult();
-            mappedArg = this->typeConverter->materializeTargetConversion(rewriter, loc,
-                resType,
-                ValueRange{mappedArg}
-            );
-        }
-        else if (llvm::isa<mlir::FloatType>(resType)) {
+            mappedArg = this->typeConverter->materializeTargetConversion(rewriter, loc, resType, ValueRange{mappedArg});
+        } else if (llvm::isa<mlir::FloatType>(resType)) {
             mappedArg = rewriter.create<math::AbsFOp>(loc, mappedArg).getResult();
         }
         rewriter.replaceOp(op, mappedArg);
@@ -347,8 +327,8 @@ public:
         return mlir::success();
     }
 
-    mlir::LogicalResult
-    matchAndRewrite(daphne::EwAbsOp op, OpAdaptor adaptor, mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult matchAndRewrite(daphne::EwAbsOp op, OpAdaptor adaptor,
+                                        mlir::ConversionPatternRewriter &rewriter) const override {
 
         mlir::Location loc = op->getLoc();
         mlir::daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<mlir::daphne::MatrixType>();
@@ -362,48 +342,34 @@ public:
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
 
-        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc,
-            mlir::MemRefType::get({numRows, numCols}, matrixElementType),
-            adaptor.getArg()
-        );
+        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+            loc, mlir::MemRefType::get({numRows, numCols}, matrixElementType), adaptor.getArg());
 
-        Value resMemref = rewriter.create<mlir::memref::AllocOp>(loc,
-            mlir::MemRefType::get({numRows, numCols}, matrixElementType)
-        );
+        Value resMemref =
+            rewriter.create<mlir::memref::AllocOp>(loc, mlir::MemRefType::get({numRows, numCols}, matrixElementType));
 
-        SmallVector<AffineMap, 2> indexMaps = {
-            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
-            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())
-        };
+        SmallVector<AffineMap, 2> indexMaps = {AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
+                                               AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())};
         SmallVector<utils::IteratorType, 2> iterTypes = {utils::IteratorType::parallel, utils::IteratorType::parallel};
-        rewriter.create<linalg::GenericOp>(loc,
-            TypeRange{},
-            ValueRange{argMemref},
-            ValueRange{resMemref},
-            indexMaps,
-            iterTypes,
-            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg){
+        rewriter.create<linalg::GenericOp>(
+            loc, TypeRange{}, ValueRange{argMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
+            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
                 mlir::Value mappedArg = arg[0];
 
                 if (llvm::isa<mlir::IntegerType>(matrixElementType)) {
                     // math::AbsIOp expects a signless Integer
-                    mappedArg = this->typeConverter->materializeTargetConversion(rewriter, loc,
-                        rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()),
-                        ValueRange{mappedArg}
-                    );
+                    mappedArg = this->typeConverter->materializeTargetConversion(
+                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()),
+                        ValueRange{mappedArg});
                     mappedArg = OpBuilderNested.create<math::AbsIOp>(locNested, mappedArg).getResult();
-                    mappedArg = this->typeConverter->materializeTargetConversion(rewriter, loc,
-                        matrixElementType,
-                        ValueRange{mappedArg}
-                    );
-                }
-                else if (llvm::isa<mlir::FloatType>(matrixElementType)) {
+                    mappedArg = this->typeConverter->materializeTargetConversion(rewriter, loc, matrixElementType,
+                                                                                 ValueRange{mappedArg});
+                } else if (llvm::isa<mlir::FloatType>(matrixElementType)) {
                     mappedArg = OpBuilderNested.create<math::AbsFOp>(locNested, mappedArg).getResult();
                 }
 
                 rewriter.create<linalg::YieldOp>(locNested, mappedArg);
-            }
-        );
+            });
         auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
         rewriter.replaceOp(op, resDenseMatrix);
 
@@ -412,7 +378,7 @@ public:
 };
 
 // ****************************************************************************
-// BinaryOp specializations 
+// BinaryOp specializations
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
@@ -420,21 +386,23 @@ public:
 // ----------------------------------------------------------------------------
 
 struct PowOpLowering : public mlir::OpConversionPattern<daphne::EwPowOp> {
-public:
+  public:
     using OpAdaptor = typename mlir::OpConversionPattern<daphne::EwPowOp>::OpAdaptor;
 
     explicit PowOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
-            : mlir::OpConversionPattern<daphne::EwPowOp>(typeConverter, ctx) {
+        : mlir::OpConversionPattern<daphne::EwPowOp>(typeConverter, ctx) {
         this->setDebugName("EwDaphneOpsLowering");
     }
 
-    mlir::LogicalResult
-    matchAndRewrite(daphne::EwPowOp op, OpAdaptor adaptor, mlir::ConversionPatternRewriter &rewriter) const override {
+    mlir::LogicalResult matchAndRewrite(daphne::EwPowOp op, OpAdaptor adaptor,
+                                        mlir::ConversionPatternRewriter &rewriter) const override {
 
         mlir::Location loc = op->getLoc();
-        
-        mlir::daphne::MatrixType lhsMatrixType = adaptor.getLhs().getType().template dyn_cast<mlir::daphne::MatrixType>();
-        mlir::daphne::MatrixType rhsMatrixType = adaptor.getRhs().getType().template dyn_cast<mlir::daphne::MatrixType>();
+
+        mlir::daphne::MatrixType lhsMatrixType =
+            adaptor.getLhs().getType().template dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType rhsMatrixType =
+            adaptor.getRhs().getType().template dyn_cast<mlir::daphne::MatrixType>();
         mlir::Type lhsMatrixElementType = lhsMatrixType.getElementType();
         mlir::Type rhsMatrixElementType = rhsMatrixType.getElementType();
         ssize_t numRows = lhsMatrixType.getNumRows();
@@ -446,70 +414,49 @@ public:
         mlir::Type resMatrixElementType;
         if (!llvm::isa<mlir::IntegerType>(lhsMatrixElementType)) {
             resMatrixElementType = lhsMatrixElementType;
-        }
-        else if (!llvm::isa<mlir::IntegerType>(rhsMatrixElementType)) {
+        } else if (!llvm::isa<mlir::IntegerType>(rhsMatrixElementType)) {
             resMatrixElementType = rhsMatrixElementType;
-        }
-        else {
+        } else {
             resMatrixElementType = lhsMatrixElementType;
         }
 
-        mlir::Value lhsMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc,
-            mlir::MemRefType::get({numRows, numCols}, resMatrixElementType),
-            adaptor.getLhs()
-        );
-        mlir::Value rhsMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc,
-            mlir::MemRefType::get({numRows, numCols}, resMatrixElementType),
-            adaptor.getRhs()
-        );
-        Value resMemref = rewriter.create<mlir::memref::AllocOp>(loc,
-            mlir::MemRefType::get({numRows, numCols}, resMatrixElementType)
-        );
+        mlir::Value lhsMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+            loc, mlir::MemRefType::get({numRows, numCols}, resMatrixElementType), adaptor.getLhs());
+        mlir::Value rhsMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+            loc, mlir::MemRefType::get({numRows, numCols}, resMatrixElementType), adaptor.getRhs());
+        Value resMemref = rewriter.create<mlir::memref::AllocOp>(
+            loc, mlir::MemRefType::get({numRows, numCols}, resMatrixElementType));
 
-        SmallVector<AffineMap, 3> indexMaps = {
-            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
-            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
-            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())
-        };
+        SmallVector<AffineMap, 3> indexMaps = {AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
+                                               AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
+                                               AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())};
         SmallVector<utils::IteratorType, 2> iterTypes = {utils::IteratorType::parallel, utils::IteratorType::parallel};
-        rewriter.create<linalg::GenericOp>(loc,
-            TypeRange{},
-            ValueRange{lhsMemref, rhsMemref},
-            ValueRange{resMemref},
-            indexMaps,
-            iterTypes,
-            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg){
+        rewriter.create<linalg::GenericOp>(
+            loc, TypeRange{}, ValueRange{lhsMemref, rhsMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
+            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
                 mlir::Value resValue;
                 // The integer specializations of PowOp expect signless Integers
                 if (llvm::isa<mlir::IntegerType>(resMatrixElementType)) {
-                    mlir::Value lhsCasted = this->typeConverter->materializeTargetConversion(rewriter, loc,
-                        rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()),
-                        ValueRange{arg[0]}
-                    );
-                    mlir::Value rhsCasted = this->typeConverter->materializeTargetConversion(rewriter, loc,
-                        rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()),
-                        ValueRange{arg[1]}
-                    );
+                    mlir::Value lhsCasted = this->typeConverter->materializeTargetConversion(
+                        rewriter, loc, rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()),
+                        ValueRange{arg[0]});
+                    mlir::Value rhsCasted = this->typeConverter->materializeTargetConversion(
+                        rewriter, loc, rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()),
+                        ValueRange{arg[1]});
                     resValue = OpBuilderNested.create<math::IPowIOp>(locNested, lhsCasted, rhsCasted).getResult();
-                    resValue = this->typeConverter->materializeTargetConversion(rewriter, loc,
-                        resMatrixElementType,
-                        ValueRange{resValue}
-                    );
-                }
-                else if (llvm::isa<mlir::IntegerType>(rhsMatrixElementType)) {
-                    mlir::Value rhsCasted = this->typeConverter->materializeTargetConversion(rewriter, loc,
-                        rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()),
-                        ValueRange{arg[1]}
-                    );
+                    resValue = this->typeConverter->materializeTargetConversion(rewriter, loc, resMatrixElementType,
+                                                                                ValueRange{resValue});
+                } else if (llvm::isa<mlir::IntegerType>(rhsMatrixElementType)) {
+                    mlir::Value rhsCasted = this->typeConverter->materializeTargetConversion(
+                        rewriter, loc, rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()),
+                        ValueRange{arg[1]});
                     resValue = OpBuilderNested.create<math::FPowIOp>(locNested, arg[0], rhsCasted).getResult();
-                }
-                else {
+                } else {
                     resValue = OpBuilderNested.create<math::PowFOp>(locNested, arg[0], arg[1]).getResult();
                 }
 
                 rewriter.create<linalg::YieldOp>(locNested, resValue);
-            }
-        );
+            });
 
         auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
         rewriter.replaceOp(op, resDenseMatrix);
@@ -530,9 +477,8 @@ struct EwOpLoweringPass : public mlir::PassWrapper<EwOpLoweringPass, mlir::Opera
     explicit EwOpLoweringPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                        mlir::memref::MemRefDialect, mlir::linalg::LinalgDialect,
-                        mlir::daphne::DaphneDialect, mlir::math::MathDialect,
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect,
+                        mlir::linalg::LinalgDialect, mlir::daphne::DaphneDialect, mlir::math::MathDialect,
                         mlir::arith::ArithDialect>();
     }
     void runOnOperation() final;
@@ -587,11 +533,9 @@ void EwOpLoweringPass::runOnOperation() {
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
-    target.addLegalDialect<mlir::arith::ArithDialect,
-                           mlir::memref::MemRefDialect, mlir::AffineDialect,
-                           mlir::LLVM::LLVMDialect, mlir::daphne::DaphneDialect,
-                           mlir::BuiltinDialect, mlir::math::MathDialect,
-                           mlir::linalg::LinalgDialect>();
+    target.addLegalDialect<mlir::arith::ArithDialect, mlir::memref::MemRefDialect, mlir::AffineDialect,
+                           mlir::LLVM::LLVMDialect, mlir::daphne::DaphneDialect, mlir::BuiltinDialect,
+                           mlir::math::MathDialect, mlir::linalg::LinalgDialect>();
 
     // target.addDynamicallyLegalOp<mlir::daphne::EwSqrtOp, mlir::daphne::EwAbsOp>(
     //     [](Operation *op) {
@@ -628,15 +572,13 @@ void EwOpLoweringPass::runOnOperation() {
 
     target.addIllegalOp<
         // UnaryOps
-        daphne::EwAbsOp, daphne::EwSqrtOp, daphne::EwExpOp, daphne::EwLnOp,
-        daphne::EwSinOp, daphne::EwCosOp, /*daphne::EwTanOp,
-        daphne::EwAsinOp, daphne::EwAcosOp, daphne::EwAtanOp,
-        daphne::EwSinhOp, daphne::EwCoshOp, daphne::EwTanhOp, */
+        daphne::EwAbsOp, daphne::EwSqrtOp, daphne::EwExpOp, daphne::EwLnOp, daphne::EwSinOp,
+        daphne::EwCosOp, /*daphne::EwTanOp,
+daphne::EwAsinOp, daphne::EwAcosOp, daphne::EwAtanOp,
+daphne::EwSinhOp, daphne::EwCoshOp, daphne::EwTanhOp, */
         daphne::EwFloorOp, daphne::EwCeilOp, daphne::EwRoundOp,
         // BinaryOps
-        daphne::EwAddOp, daphne::EwSubOp,
-        daphne::EwMulOp, daphne::EwDivOp,
-        daphne::EwPowOp>();
+        daphne::EwAddOp, daphne::EwSubOp, daphne::EwMulOp, daphne::EwDivOp, daphne::EwPowOp>();
 
     populateLowerEwOpConversionPatterns(typeConverter, patterns);
 

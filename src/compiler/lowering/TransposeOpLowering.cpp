@@ -18,8 +18,6 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/StringRef.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
@@ -53,15 +51,17 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/StringRef.h"
 
 using namespace mlir;
 
 class TransposeOpLowering : public OpConversionPattern<daphne::TransposeOp> {
-public:
+  public:
     using OpConversionPattern::OpConversionPattern;
 
     explicit TransposeOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
-            : mlir::OpConversionPattern<daphne::TransposeOp>(typeConverter, ctx, PatternBenefit(1)) {
+        : mlir::OpConversionPattern<daphne::TransposeOp>(typeConverter, ctx, PatternBenefit(1)) {
         this->setDebugName("TransposeOpLowering");
     }
 
@@ -75,7 +75,7 @@ public:
      * @return mlir::success if Transpose has been replaced, else mlir::failure.
      */
     LogicalResult matchAndRewrite(daphne::TransposeOp op, OpAdaptor adaptor,
-                                    ConversionPatternRewriter &rewriter) const override {
+                                  ConversionPatternRewriter &rewriter) const override {
 
         mlir::Location loc = op->getLoc();
 
@@ -84,19 +84,16 @@ public:
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
 
-        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(loc,
-            mlir::MemRefType::get({numRows, numCols}, matrixElementType),
-            adaptor.getArg()
-        );
+        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
+            loc, mlir::MemRefType::get({numRows, numCols}, matrixElementType), adaptor.getArg());
 
-        Value resMemref = rewriter.create<mlir::memref::AllocOp>(loc,
-            mlir::MemRefType::get({numCols, numRows}, matrixElementType)
-        );
+        Value resMemref =
+            rewriter.create<mlir::memref::AllocOp>(loc, mlir::MemRefType::get({numCols, numRows}, matrixElementType));
 
-        auto permutation = rewriter.getDenseI64ArrayAttr({1, 0});
+        auto permutation = rewriter.getDenseI64ArrayAttr({1, 0}); // AffineMap::getPermutationMap ?
         rewriter.create<linalg::TransposeOp>(loc, argMemref, resMemref, permutation);
         auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
-        
+
         rewriter.replaceOp(op, resDenseMatrix);
 
         return success();
@@ -112,8 +109,7 @@ namespace {
  * This rewrite may enable loop fusion of the produced affine loops by
  * running the loop fusion pass.
  */
-struct TransposeLoweringPass : public mlir::PassWrapper<TransposeLoweringPass,
-                                                    mlir::OperationPass<mlir::ModuleOp>> {
+struct TransposeLoweringPass : public mlir::PassWrapper<TransposeLoweringPass, mlir::OperationPass<mlir::ModuleOp>> {
     explicit TransposeLoweringPass() {}
 
     StringRef getArgument() const final { return "lower-transpose"; }
@@ -124,13 +120,12 @@ struct TransposeLoweringPass : public mlir::PassWrapper<TransposeLoweringPass,
     }
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect,
-                        mlir::linalg::LinalgDialect,
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::linalg::LinalgDialect,
                         mlir::memref::MemRefDialect>();
     }
     void runOnOperation() final;
-    };
-}
+};
+} // namespace
 
 void TransposeLoweringPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());

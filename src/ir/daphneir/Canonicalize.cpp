@@ -496,14 +496,12 @@ mlir::LogicalResult mlir::daphne::ConvertMemRefToDenseMatrix::canonicalize(mlir:
 /**
  * @brief Replaces `floor(a)` with `a` if `a` is an integer
  * or a matrix of integers.
- * 
+ *
  * @param op
  * @param rewriter
  * @return
  */
-mlir::LogicalResult mlir::daphne::EwFloorOp::canonicalize(
-    mlir::daphne::EwFloorOp op, mlir::PatternRewriter &rewriter
-) {
+mlir::LogicalResult mlir::daphne::EwFloorOp::canonicalize(mlir::daphne::EwFloorOp op, mlir::PatternRewriter &rewriter) {
     mlir::Value operand = op.getOperand();
     auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
     mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
@@ -518,14 +516,12 @@ mlir::LogicalResult mlir::daphne::EwFloorOp::canonicalize(
 /**
  * @brief Replaces `ceil(a)` with `a` if `a` is an integer
  * or a matrix of integers.
- * 
+ *
  * @param op
  * @param rewriter
  * @return
  */
-mlir::LogicalResult mlir::daphne::EwCeilOp::canonicalize(
-    mlir::daphne::EwCeilOp op, mlir::PatternRewriter &rewriter
-) {
+mlir::LogicalResult mlir::daphne::EwCeilOp::canonicalize(mlir::daphne::EwCeilOp op, mlir::PatternRewriter &rewriter) {
     mlir::Value operand = op.getOperand();
     auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
     mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
@@ -540,14 +536,12 @@ mlir::LogicalResult mlir::daphne::EwCeilOp::canonicalize(
 /**
  * @brief Replaces `round(a)` with `a` if `a` is an integer
  * or a matrix of integers.
- * 
+ *
  * @param op
  * @param rewriter
  * @return
  */
-mlir::LogicalResult mlir::daphne::EwRoundOp::canonicalize(
-    mlir::daphne::EwRoundOp op, mlir::PatternRewriter &rewriter
-) {
+mlir::LogicalResult mlir::daphne::EwRoundOp::canonicalize(mlir::daphne::EwRoundOp op, mlir::PatternRewriter &rewriter) {
     mlir::Value operand = op.getOperand();
     auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
     mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
