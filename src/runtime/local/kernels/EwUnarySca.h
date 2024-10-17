@@ -154,7 +154,7 @@ template <typename TRes, typename TArg> TRes ewUnarySca(UnaryOpCode opCode, TArg
 // One such line for each unary function to support.
 // Arithmetic/general math.
 MAKE_EW_UNARY_SCA(UnaryOpCode::MINUS, -arg);
-MAKE_EW_UNARY_SCA(UnaryOpCode::ABS, abs(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::ABS, std::abs(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::SIGN,
                   (arg == 0) ? 0 : ((arg < 0) ? -1 : ((arg > 0) ? 1 : std::numeric_limits<TRes>::quiet_NaN())));
 MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR(UnaryOpCode::SQRT, sqrt(arg), -0.0, "SQRT with domain [-0, inf]")
