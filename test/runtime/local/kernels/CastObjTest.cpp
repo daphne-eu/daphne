@@ -243,8 +243,8 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<number>,
     DataObjectFactory::destroy(arg_stdSTR, arg_FixedStr16);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<long>, long int", TAG_KERNELS, (DenseMatrix),
-                           (long)) {
+TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<int64_t>, int64_t", TAG_KERNELS, (DenseMatrix),
+                           (int64_t)) {
     using DTRes = TestType;
     using VTRes = typename DTRes::VT;
 
@@ -271,12 +271,12 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<long>, l
 
     SECTION("FixedStr16") {
         auto arg_FixedStr16 = genGivenVals<DenseMatrix<FixedStr16>>(
-            numRows, {FixedStr16("9223372036854774"), FixedStr16("9223372036854773"), FixedStr16("9223372036854772"),
-                      FixedStr16("9223372036854771"), FixedStr16("9223372036854776"), FixedStr16("9223372036854775")});
+            numRows, {FixedStr16("123456789012345"), FixedStr16("123456789012344"), FixedStr16("123456789012343"),
+                      FixedStr16("123456789012342"), FixedStr16("123456789012341"), FixedStr16("123456789012340")});
         DTRes *res_FixedStr16 = nullptr;
         auto check_FixedStr16 =
-            genGivenVals<DenseMatrix<VTRes>>(numRows, {9223372036854774, 9223372036854773, 9223372036854772,
-                                                       9223372036854771, 9223372036854776, 9223372036854775});
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
 
         castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr16>>(res_FixedStr16, arg_FixedStr16, nullptr);
 
