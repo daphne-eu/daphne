@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_CASTSCA_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <cstring>
 
@@ -64,6 +65,57 @@ template <typename VTArg> struct CastSca<const char *, VTArg> {
         strncpy(res, str.c_str(), len);
         res[len] = 0;
         return res;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// any type <- string
+// ----------------------------------------------------------------------------
+
+template <typename VTRes> struct CastSca<VTRes, std::string> {
+    static VTRes apply(std::string arg, DCTX(ctx)) {
+        if constexpr (std::is_integral<VTRes>::value) {
+            if constexpr (std::is_unsigned<VTRes>::value)
+                return static_cast<VTRes>(std::stoull(arg));
+            else
+                return static_cast<VTRes>(std::stoll(arg));
+        } else if constexpr (std::is_same<VTRes, double>::value)
+            return static_cast<VTRes>(std::stold(arg));
+
+        else if constexpr (std::is_same<VTRes, float>::value)
+            return static_cast<VTRes>(std::stof(arg));
+        else {
+            // Trigger a compiler warning using deprecated attribute.
+            return throwUnsupportedType(arg);
+        }
+    }
+
+    [[deprecated("CastSca: Warning! Unsupported result type in casting string values.")]]
+    static VTRes throwUnsupportedType(std::string arg) {
+        throw std::runtime_error("CastSca: Unsupported result type in casting string values");
+    }
+};
+
+template <typename VTRes> struct CastSca<VTRes, FixedStr16> {
+    static VTRes apply(FixedStr16 arg, DCTX(ctx)) {
+        if constexpr (std::is_integral<VTRes>::value) {
+            if constexpr (std::is_unsigned<VTRes>::value)
+                return static_cast<VTRes>(std::stoull(arg.buffer));
+            else
+                return static_cast<VTRes>(std::stoll(arg.buffer));
+        } else if constexpr (std::is_same<VTRes, double>::value)
+            return static_cast<VTRes>(std::stold(arg.buffer));
+        else if constexpr (std::is_same<VTRes, float>::value)
+            return static_cast<VTRes>(std::stof(arg.buffer));
+        else {
+            // Trigger a compiler warning using deprecated attribute.
+            return throwUnsupportedType(arg);
+        }
+    }
+
+    [[deprecated("CastSca: Warning! Unsupported result type in casting string values.")]]
+    static VTRes throwUnsupportedType(std::string arg) {
+        throw std::runtime_error("CastSca: Unsupported result type in casting string values");
     }
 };
 

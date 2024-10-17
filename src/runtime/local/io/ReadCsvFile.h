@@ -21,7 +21,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
-#include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
 
 #include <util/preprocessor_defs.h>
@@ -119,6 +118,70 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                         pos++;
                     pos++; // skip delimiter
                 }
+            }
+        }
+    }
+};
+
+template <> struct ReadCsvFile<DenseMatrix<std::string>> {
+    static void apply(DenseMatrix<std::string> *&res, struct File *file, size_t numRows, size_t numCols, char delim) {
+        if (file == nullptr)
+            throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
+        if (numRows <= 0)
+            throw std::runtime_error("ReadCsvFile: numRows must be > 0");
+        if (numCols <= 0)
+            throw std::runtime_error("ReadCsvFile: numCols must be > 0");
+
+        if (res == nullptr) {
+            res = DataObjectFactory::create<DenseMatrix<std::string>>(numRows, numCols, false);
+        }
+
+        size_t cell = 0;
+        std::string *valuesRes = res->getValues();
+
+        for (size_t r = 0; r < numRows; r++) {
+            if (getFileLine(file) == -1)
+                throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
+
+            size_t pos = 0;
+            for (size_t c = 0; c < numCols; c++) {
+                std::string val("");
+                int next_column_pos = setCString(file, pos, &val, delim);
+                // TODO This assumes that rowSkip == numCols.
+                valuesRes[cell++] = val;
+                pos += next_column_pos + 1;
+            }
+        }
+    }
+};
+
+template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
+    static void apply(DenseMatrix<FixedStr16> *&res, struct File *file, size_t numRows, size_t numCols, char delim) {
+        if (file == nullptr)
+            throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
+        if (numRows <= 0)
+            throw std::runtime_error("ReadCsvFile: numRows must be > 0");
+        if (numCols <= 0)
+            throw std::runtime_error("ReadCsvFile: numCols must be > 0");
+
+        if (res == nullptr) {
+            res = DataObjectFactory::create<DenseMatrix<FixedStr16>>(numRows, numCols, false);
+        }
+
+        size_t cell = 0;
+        FixedStr16 *valuesRes = res->getValues();
+
+        for (size_t r = 0; r < numRows; r++) {
+            if (getFileLine(file) == -1)
+                throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
+
+            size_t pos = 0;
+            for (size_t c = 0; c < numCols; c++) {
+                std::string val("");
+                int next_column_pos = setCString(file, pos, &val, delim);
+                // TODO This assumes that rowSkip == numCols.
+                valuesRes[cell++].set(val.c_str());
+                pos += next_column_pos + 1;
             }
         }
     }

@@ -166,6 +166,7 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs))
 MAKE_EW_BINARY_SCA(BinaryOpCode::AND, lhs &&rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::OR, lhs || rhs)
 // Strings.
+MAKE_EW_BINARY_SCA(BinaryOpCode::CONCAT, lhs + rhs)
 template <> struct EwBinarySca<BinaryOpCode::CONCAT, const char *, const char *, const char *> {
     inline static const char *apply(const char *lhs, const char *rhs, DCTX(ctx)) {
         const auto lenLhs = std::string_view(lhs).size();

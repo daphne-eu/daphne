@@ -93,6 +93,11 @@ static constexpr bool supportsBinaryOp = false;
 // simplicity).
 #define SUPPORT(Op, VT) template <> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VT, VT, VT> = true;
 
+// Generates code specifying that the binary operation `Op` should be supported on
+// the value types `VTLhs` and `VTRhs` with result `VTRes`.
+#define SUPPORT_RLR(Op, VTRes, VTLhs, VTRhs)                                                                           \
+    template <> constexpr bool supportsBinaryOp<BinaryOpCode::Op, VTRes, VTLhs, VTRhs> = true;
+
 // Generates code specifying that all binary operations of a certain category
 // should be supported on the given value type `VT` (for the result and the two
 // arguments, for simplicity).
@@ -126,6 +131,23 @@ static constexpr bool supportsBinaryOp = false;
     /* Bitwise. */                                                                                                     \
     SUPPORT(BITWISE_AND, VT)
 
+// Generates code specifying that all binary operations of a certain category should be
+// supported on the given argument value type `VTArg` (for the left and right-hand-side
+// arguments, for simplicity) and the given result value type `VTRes`.
+#define SUPPORT_COMPARISONS_RA(VTRes, VTArg)                                                                           \
+    /* string Comparisons operations. */                                                                               \
+    SUPPORT_RLR(LT, VTRes, VTArg, VTArg)                                                                               \
+    SUPPORT_RLR(GT, VTRes, VTArg, VTArg)
+#define SUPPORT_EQUALITY_RA(VTRes, VTArg)                                                                              \
+    /* string Comparisons operations. */                                                                               \
+    SUPPORT_RLR(EQ, VTRes, VTArg, VTArg)                                                                               \
+    SUPPORT_RLR(NEQ, VTRes, VTArg, VTArg)
+#define SUPPORT_STRING_RA(VTRes, VTArg)                                                                                \
+    /* string concatenation operations. */                                                                             \
+    /*  Since the result may not fit in FixedStr16,*/                                                                  \
+    /*  it always return std::string*/                                                                                 \
+    SUPPORT_RLR(CONCAT, VTRes, VTArg, VTArg)
+
 // Generates code specifying that all binary operations typically supported on a
 // certain category of value types should be supported on the given value type
 // `VT` (for the result and the two arguments, for simplicity).
@@ -151,11 +173,19 @@ SUPPORT_NUMERIC_INT(int8_t)
 SUPPORT_NUMERIC_INT(uint64_t)
 SUPPORT_NUMERIC_INT(uint32_t)
 SUPPORT_NUMERIC_INT(uint8_t)
-template <> constexpr bool supportsBinaryOp<BinaryOpCode::CONCAT, const char *, const char *, const char *> = true;
-template <> constexpr bool supportsBinaryOp<BinaryOpCode::EQ, int64_t, const char *, const char *> = true;
+// Strings binary operations.
+SUPPORT_EQUALITY_RA(int64_t, std::string)
+SUPPORT_EQUALITY_RA(int64_t, FixedStr16)
+SUPPORT_EQUALITY_RA(int64_t, const char *)
+SUPPORT_COMPARISONS_RA(int64_t, std::string)
+SUPPORT_COMPARISONS_RA(int64_t, FixedStr16)
+SUPPORT_STRING_RA(std::string, std::string)
+SUPPORT_STRING_RA(std::string, FixedStr16)
+SUPPORT_STRING_RA(const char *, const char *)
 
 // Undefine helper macros.
 #undef SUPPORT
+#undef SUPPORT_RLR
 #undef SUPPORT_ARITHMETIC
 #undef SUPPORT_EQUALITY
 #undef SUPPORT_COMPARISONS
@@ -163,3 +193,6 @@ template <> constexpr bool supportsBinaryOp<BinaryOpCode::EQ, int64_t, const cha
 #undef SUPPORT_BITWISE
 #undef SUPPORT_NUMERIC_FP
 #undef SUPPORT_NUMERIC_INT
+#undef SUPPORT_EQUALITY_RA
+#undef SUPPORT_COMPARISONS_RA
+#undef SUPPORT_STRING_RA
