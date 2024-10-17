@@ -48,6 +48,10 @@ TEST_CASE("readMatrixFromCSV", TAG_IO) {
     compareDaphneToRef(dirPath + "testReadMatrix.txt", dirPath + "testReadMatrix.daphne");
 }
 
+TEST_CASE("readStringMatrixFromCSV", TAG_IO) {
+    compareDaphneToRef(dirPath + "testReadStringMatrix.txt", dirPath + "testReadStringMatrix.daphne");
+}
+
 // does not yet work!
 // TEST_CASE("readReadMatrixFromCSV_DynamicPath", TAG_IO)
 // {

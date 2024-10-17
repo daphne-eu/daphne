@@ -1,0 +1,15 @@
+// test oneHot encoding on a matrix of strings.
+
+info_m = [ -1, 0, 3, 4 ](1, 4);
+
+X = fill("b", 4, 4);
+X[1, ] = fill("a", 1, 4);
+X[2, ] = fill("c", 1, 4);
+R = oneHot(X, info_m);
+
+print("input matrix");
+print(X);
+print("input info");
+print(info_m);
+print("result");
+print(R);

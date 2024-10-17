@@ -168,7 +168,11 @@ struct CompilerUtils {
             else {
                 switch (matTy.getRepresentation()) {
                 case mlir::daphne::MatrixRepresentation::Dense: {
-                    const std::string vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
+                    std::string vtName;
+                    if (matTy.getElementType().isa<mlir::daphne::StringType>())
+                        vtName = "std::string";
+                    else
+                        vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
                     return angleBrackets ? ("DenseMatrix<" + vtName + ">") : ("DenseMatrix_" + vtName);
                 }
                 case mlir::daphne::MatrixRepresentation::Sparse: {
