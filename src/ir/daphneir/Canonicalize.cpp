@@ -1,19 +1,3 @@
-/*
- * Copyright 2024 The DAPHNE Consortium
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "ir/daphneir/Daphne.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Support/LogicalResult.h"
@@ -254,8 +238,18 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
     const bool rhsIsStr = llvm::isa<mlir::daphne::StringType>(rhs.getType());
     if (lhsIsStr || rhsIsStr) {
         mlir::Type strTy = mlir::daphne::StringType::get(rewriter.getContext());
-        if (!lhsIsStr)
-            lhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, lhs);
+        if (!lhsIsStr) {
+            const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
+            if (!lhsIsSca) {
+                const bool lhsIsMatStr =
+                    llvm::isa<mlir::daphne::StringType>(lhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+                if (lhsIsMatStr) {
+                    rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, lhs.getType(), lhs, rhs);
+                    return mlir::success();
+                }
+            } else
+                lhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, lhs);
+        }
         if (!rhsIsStr)
             rhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, rhs);
         rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, strTy, lhs, rhs);
@@ -266,6 +260,15 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
         if (lhsIsSca && !rhsIsSca) {
             rewriter.replaceOpWithNewOp<mlir::daphne::EwAddOp>(op, op.getResult().getType(), rhs, lhs);
             return mlir::success();
+        } else if (!lhsIsSca && !rhsIsSca) {
+            const bool lhsIsMatStr =
+                llvm::isa<mlir::daphne::StringType>(lhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+            const bool rhsIsMatStr =
+                llvm::isa<mlir::daphne::StringType>(rhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+            if (lhsIsMatStr && rhsIsMatStr) {
+                rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, op.getResult().getType(), lhs, rhs);
+                return mlir::success();
+            }
         }
         return mlir::failure();
     }

@@ -288,7 +288,11 @@ std::vector<Type> daphne::ExtractOp::inferTypes() {
 
 std::vector<Type> daphne::OneHotOp::inferTypes() {
     Type srcType = getArg().getType();
-    return {srcType.dyn_cast<daphne::MatrixType>().withSameElementType()};
+    Builder builder(getContext());
+    if (srcType.dyn_cast<daphne::MatrixType>().getElementType().isa<mlir::daphne::StringType>())
+        return {srcType.dyn_cast<daphne::MatrixType>().withElementType(builder.getIntegerType(64, false))};
+    else
+        return {srcType.dyn_cast<daphne::MatrixType>().withSameElementType()};
 }
 
 std::vector<Type> daphne::GenericCallOp::inferTypes() {
@@ -333,6 +337,8 @@ mlir::Type mlirTypeForCode(ValueTypeCode type, Builder builder) {
         return builder.getF32Type();
     case ValueTypeCode::F64:
         return builder.getF64Type();
+    case ValueTypeCode::STR:
+        return builder.getType<mlir::daphne::StringType>();
     default:
         throw std::runtime_error("mlirTypeForCode: unknown value type code");
     }
@@ -352,7 +358,8 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
         //  sparsity
         if (p.first) {
             FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
-            mlir::Type valType = mlirTypeForCode(fmd.schema[0], builder);
+            mlir::Type valType;
+            valType = mlirTypeForCode(fmd.schema[0], builder);
             return {mlir::daphne::MatrixType::get(getContext(), valType)};
         } else {
             return {mlir::daphne::MatrixType::get(getContext(), daphne::UnknownType::get(getContext()))};
