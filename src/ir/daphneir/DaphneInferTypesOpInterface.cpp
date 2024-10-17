@@ -193,7 +193,10 @@ std::vector<Type> daphne::RandMatrixOp::inferTypes() {
             throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface (daphne::RandMatrixOp::inferTypes)",
                                               "min and max need to have the same type");
     }
-    return {daphne::MatrixType::get(getContext(), elTy)};
+    if (auto matrixType = llvm::dyn_cast<mlir::daphne::MatrixType>(getRes().getType()))
+        return {daphne::MatrixType::get(getContext(), elTy)};
+    throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface (daphne::RandMatrixOp::inferTypes)",
+                                      "output type for randMatrix is not of matrix type");
 }
 
 std::vector<Type> daphne::EigenOp::inferTypes() {
@@ -342,7 +345,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
 
     auto p = CompilerUtils::isConstant<std::string>(getFileName());
     Builder builder(getContext());
-    if (getRes().getType().dyn_cast<daphne::MatrixType>()) {
+    if (auto matrixType = llvm::dyn_cast<mlir::daphne::MatrixType>(getRes().getType())) {
         // If an individual value type was specified per column
         // (fmd.isSingleValueType == false), then this silently uses the
         // type of the first column.
@@ -353,9 +356,9 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
         if (p.first) {
             FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
             mlir::Type valType = mlirTypeForCode(fmd.schema[0], builder);
-            return {mlir::daphne::MatrixType::get(getContext(), valType)};
+            return {matrixType.withElementType(valType)};
         } else {
-            return {mlir::daphne::MatrixType::get(getContext(), daphne::UnknownType::get(getContext()))};
+            return {matrixType.withElementType(daphne::UnknownType::get(getContext()))};
         }
     } else if (getRes().getType().dyn_cast<daphne::FrameType>()) {
         if (p.first) {
@@ -461,7 +464,7 @@ std::vector<Type> daphne::CondOp::inferTypes() {
             throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                               "the then/else-values of CondOp must have the same value type");
 
-        return {daphne::MatrixType::get(getContext(), thenValTy)};
+        return {condMatTy.withElementType(thenValTy)};
     } else if (auto condFrmTy = condTy.dyn_cast<daphne::FrameType>())
         throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                           "CondOp does not support frames for the condition yet");
