@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <util/PropertyLogger.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 #include <util/KernelDispatchMapping.h>
@@ -47,12 +48,13 @@ void InsertDaphneContextPass::runOnOperation() {
     Location loc = f.getLoc();
 
     // Insert a CreateDaphneContextOp as the first operation in the block.
-    builder.create<daphne::CreateDaphneContextOp>(
-        loc, daphne::DaphneContextType::get(&getContext()),
-        builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&user_config)),
-        builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())),
-        builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&Statistics::instance())),
-        builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&StringRefCounter::instance())));
+    builder.create<daphne::CreateDaphneContextOp>(loc, daphne::DaphneContextType::get(&getContext()),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&user_config)),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&KernelDispatchMapping::instance())),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&Statistics::instance())),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&PropertyLogger::instance())),
+            builder.create<daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(&StringRefCounter::instance())));
+
 
 #ifdef USE_CUDA
     if (user_config.use_cuda) {

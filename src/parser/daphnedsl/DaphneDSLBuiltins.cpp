@@ -16,11 +16,13 @@
 
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
+#include <mlir/IR/Value.h>
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/FileMetaData.h>
 
 #include "antlr4-runtime.h"
+#include "util/ErrorHandler.h"
 
 #include <algorithm>
 #include <sstream>
