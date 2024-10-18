@@ -87,7 +87,7 @@ execute_process(
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 
 file(GLOB CODEGEN_CPP_FILES CONFIGURE_DEPENDS
-     "${PROJECT_BINARY_DIR}/src/runtime/local/kernels/*.cpp")
+     "${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels_*.cpp")
 # message("CODEGEN_CPP_FILES: ${CODEGEN_CPP_FILES}")
 
 list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
