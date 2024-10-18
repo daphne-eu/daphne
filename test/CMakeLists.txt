@@ -64,6 +64,7 @@ set(TEST_SOURCES
         api/cli/codegen/MapOpTest.cpp
 
 
+        ir/daphneir/InferSparsityTest.cpp
         ir/daphneir/InferTypesTest.cpp
         api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
 

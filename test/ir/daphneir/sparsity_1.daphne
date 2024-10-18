@@ -1,0 +1,28 @@
+// --------------------------------------------------------------------
+// Data Generation
+// --------------------------------------------------------------------
+
+print("FillOp");
+print(sparsity(fill(0, 2, 2)));
+print(sparsity(fill(1, 2, 2)));
+print(sparsity(fill(0.0, 2, 2)));
+print(sparsity(fill(0.01, 2, 2)));
+
+print("SampleOp");
+X = [1, 1, 0, 0](2, 2);
+print(sparsity(replace(X, 0, 1)));
+print(sparsity(replace(X, 1, 0)));
+
+print("SeqOp");
+// TODO Commented lines require negative numbers to be known at compile-time (see #774).
+// The tests need to be adjusted as well, but unfortunately I couldnt just comment out the lines there. 
+print(sparsity(seq(0, 1, 1)));
+print(sparsity(seq(0, 7, 1)));
+print(sparsity(seq(1, 3, 1)));
+//print(sparsity(seq(2, -1, -1)));
+//print(sparsity(seq(-2, -1, 1)));
+print(sparsity(seq(0.0, 0.01, 0.01)));
+print(sparsity(seq(0.0, 0.07, 0.01)));
+print(sparsity(seq(0.01, 0.03, 0.01)));
+//print(sparsity(seq(0.02, -0.01, -0.01)));
+//print(sparsity(seq(-0.02, -0.01, 0.01)));

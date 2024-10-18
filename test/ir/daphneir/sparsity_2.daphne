@@ -1,0 +1,190 @@
+// --------------------------------------------------------------------
+// Unary
+// --------------------------------------------------------------------
+
+X = rand(5, 5, 1, 1, 0.5, -1);
+// row slicing
+print(sparsity(X[:2,]));
+print(sparsity(X[2,]));
+print(sparsity(X[2:,]));
+
+// col slicing
+print(sparsity(X[,:2]));
+print(sparsity(X[,2]));
+print(sparsity(X[,2:]));
+
+// --------------------------------------------------------------------
+// Elementwise Unary
+// --------------------------------------------------------------------
+print("Elementwise Unary");
+X = rand(2, 2, 1, 1, 0.5, -1);
+
+print("sin");
+print(sparsity(sin(X)));
+
+print("cos");
+print(sparsity(cos(X)));
+
+print("tan");
+print(sparsity(tan(X)));
+
+print("asin");
+print(sparsity(asin(X)));
+
+print("acos");
+print(sparsity(acos(X)));
+
+print("atan");
+print(sparsity(atan(X)));
+
+print("sinh");
+print(sparsity(sinh(X)));
+
+print("cosh");
+print(sparsity(cosh(X)));
+
+print("tanh");
+print(sparsity(tanh(X)));
+
+zero = rand(1, 1, 0, 2, 0.0, -1);
+full = rand(1, 1, 0, 2, 1.0, -1);
+
+print("round");
+print(sparsity(round(zero)));
+print(sparsity(round(full)));
+
+print("floor");
+print(sparsity(floor(zero)));
+print(sparsity(floor(full)));
+
+print("ceil");
+print(sparsity(ceil(zero)));
+print(sparsity(ceil(full)));
+
+// --------------------------------------------------------------------
+// Elementwise Binary
+// --------------------------------------------------------------------
+
+print("Elementwise Binary");
+
+// we take 3 matrices of different sparsities to take into account all the possible cases for the different ops.
+empty = rand(2, 2, 1, 1, 0.0, -1);
+half = rand(2, 2, 1, 1, 0.5, -1);
+full = rand(2, 2, 1, 1, 1.0, -1);
+unknown = sin(rand(2, 2, 1, 1, 0.5, -1));
+
+print("ewadd");
+print(sparsity(empty + empty));
+print(sparsity(empty + half));
+print(sparsity(half + half));
+print(sparsity(unknown + half));
+print(sparsity(unknown + unknown));
+
+
+print("ewsub");
+print(sparsity(empty - empty));
+print(sparsity(empty - half));
+print(sparsity(half - half));
+print(sparsity(unknown - half));
+print(sparsity(unknown - unknown));
+
+print("ewmul");
+print(sparsity(empty * empty));
+print(sparsity(empty * half));
+print(sparsity(half * half));
+print(sparsity(unknown * empty));
+print(sparsity(unknown * half));
+print(sparsity(unknown * unknown));
+
+print("ewdiv");
+print(sparsity(empty / empty));
+print(sparsity(empty / half));
+print(sparsity(half / half));
+print(sparsity(unknown / half));
+print(sparsity(half / unknown));
+print(sparsity(unknown / unknown));
+
+print("ewpow");
+print(sparsity(empty ^ empty));
+print(sparsity(empty ^ half));
+print(sparsity(half ^ half));
+print(sparsity(unknown ^ half));
+print(sparsity(unknown ^ unknown));
+
+print("ewmod");
+print(sparsity(empty % empty));
+print(sparsity(empty % half));
+print(sparsity(half % half));
+print(sparsity(unknown % half));
+print(sparsity(unknown % unknown));
+
+print("ewmin");
+print(sparsity(min(empty, empty)));
+print(sparsity(min(empty, half)));
+print(sparsity(min(full, full)));
+print(sparsity(min(unknown, empty)));
+
+print("ewmax");
+print(sparsity(max(empty, empty)));
+print(sparsity(max(empty, half)));
+print(sparsity(max(full, full)));
+print(sparsity(max(unknown, empty)));
+
+print("ewand");
+print(sparsity(empty && empty));
+print(sparsity(empty && half));
+print(sparsity(half && half));
+print(sparsity(unknown && empty));
+print(sparsity(unknown && full));
+
+print("ewor");
+print(sparsity(empty || empty));
+print(sparsity(empty || half));
+print(sparsity(half || empty));
+print(sparsity(half || half));
+print(sparsity(unknown || empty));
+print(sparsity(unknown || full));
+
+print("eweq");
+print(sparsity(empty == empty));
+print(sparsity(full == full));
+print(sparsity(full == empty));
+print(sparsity(empty == full));
+print(sparsity(unknown == empty));
+print(sparsity(unknown == unknown));
+
+print("ewneq");
+print(sparsity(empty != empty));
+print(sparsity(full != full));
+print(sparsity(full != empty));
+print(sparsity(empty != full));
+print(sparsity(unknown != empty));
+print(sparsity(unknown != unknown));
+
+print("ewlt");
+print(sparsity(empty < empty));
+print(sparsity(full < full));
+print(sparsity(full < empty));
+print(sparsity(unknown < empty));
+print(sparsity(unknown < unknown));
+
+print("ewle");
+print(sparsity(empty <= empty));
+print(sparsity(full <= full));
+print(sparsity(full <= empty));
+print(sparsity(unknown <= empty));
+print(sparsity(unknown <= unknown));
+
+print("ewgt");
+print(sparsity(empty > empty));
+print(sparsity(full > full));
+print(sparsity(full > empty));
+print(sparsity(unknown > empty));
+print(sparsity(unknown > unknown));
+
+print("ewge");
+print(sparsity(empty >= empty));
+print(sparsity(full >= full));
+print(sparsity(full >= empty));
+print(sparsity(unknown >= empty));
+print(sparsity(unknown >= unknown));
