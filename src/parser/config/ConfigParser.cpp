@@ -31,8 +31,10 @@ int readLogLevel(const std::string &level) {
 bool ConfigParser::fileExists(const std::string &filename) {
     // Open the given config file.
     std::ifstream ifs(filename, std::ios::in);
-    if (!ifs.good())
-        throw std::runtime_error("could not open file '" + filename + "' for reading user config");
+    if (!ifs.good()) {
+        spdlog::warn("could not open file {} for reading user config", filename);
+        return false;
+    }
     return true;
 }
 
