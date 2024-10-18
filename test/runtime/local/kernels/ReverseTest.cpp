@@ -134,7 +134,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Reverse", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) 
     DataObjectFactory::destroy(arg, exp, res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Reverse_string", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Reverse - string specific", TAG_KERNELS, (DATA_TYPES), (ALL_STRING_VALUE_TYPES)) {
     using DT = TestType;
 
     DT *arg = nullptr;
@@ -160,9 +160,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Reverse_string", TAG_KERNELS, (DenseMatrix), (ALL_ST
     }
     SECTION("column matrix") {
         arg = genGivenVals<DT>(9, {"ab", "abcd", "", "a", "abcde", "abcdef", "abcdefg", "abcdefgh", "abcdefghi"});
-        exp = genGivenVals<DT>(9, {"abcdefghi", "abcdefgh", "abcdefg", "abcdef", "abcde", "a", "", "abcd", "ab"
-
-                                  });
+        exp = genGivenVals<DT>(9, {"abcdefghi", "abcdefgh", "abcdefg", "abcdef", "abcde", "a", "", "abcd", "ab"});
         DT *res = nullptr;
         reverse<DT, DT>(res, arg, nullptr);
         CHECK(*res == *exp);

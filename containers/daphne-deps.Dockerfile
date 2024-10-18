@@ -62,9 +62,10 @@ FROM build-cmake AS build
 ARG DAPHNE_DIR=/daphne
 ARG DAPHNE_REPO=https://github.com/daphne-eu/daphne.git
 ARG DAPHNE_BRANCH=main
+ARG DAPHNE_BUILD_FLAGS="--mpi --hdfs"
 RUN git clone --depth=1 --single-branch --branch=$DAPHNE_BRANCH $DAPHNE_REPO $DAPHNE_DIR
 WORKDIR $DAPHNE_DIR
-RUN ./build.sh --no-fancy --no-submodule-update --installPrefix /usr/local
+RUN PATH=/usr/local/bin:$PATH LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH ./build.sh --no-fancy --no-submodule-update --installPrefix /usr/local $DAPHNE_BUILD_FLAGS
 RUN find /usr/local -exec file {} \; | grep -e "not stripped" | cut -d ":" -f 1 | xargs strip --strip-unneeded
 RUN rm -rf $DAPHNE_DIR
 RUN ldconfig

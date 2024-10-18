@@ -35,10 +35,10 @@
 // CSRMatrix currently only supports ADD and MUL opCodes
 #define DATA_TYPES_NO_CSR DenseMatrix, Matrix
 
-template <class DTarg, class DTres>
-void checkEwBinaryMat(BinaryOpCode opCode, const DTarg *lhs, const DTarg *rhs, const DTres *exp) {
-    DTres *res = nullptr;
-    ewBinaryMat<DTres, DTarg, DTarg>(opCode, res, lhs, rhs, nullptr);
+template <class DTArg, class DTRes>
+void checkEwBinaryMat(BinaryOpCode opCode, const DTArg *lhs, const DTArg *rhs, const DTRes *exp) {
+    DTRes *res = nullptr;
+    ewBinaryMat<DTRes, DTArg, DTArg>(opCode, res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
 }
 
