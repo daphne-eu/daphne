@@ -77,7 +77,7 @@ class CUDAContext final : public IContext {
     void *getCUDNNWorkspace(size_t size);
 
     [[nodiscard]] size_t getMemBudget() const { return mem_budget; }
-    int getMaxNumThreads();
+    int getMaxNumThreads() const;
     static CUDAContext *get(DaphneContext *ctx, size_t id) {
         return dynamic_cast<CUDAContext *>(ctx->getCUDAContext(id));
     }
