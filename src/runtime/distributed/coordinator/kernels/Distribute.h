@@ -186,10 +186,14 @@ template <class DT> struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT> {
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);
         while (partioner.HasNextChunk()) {
             auto dp = partioner.GetNextChunk();
-            // Skip if already placed at workers
-            if (dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))->getDistributedData().isPlacedAtWorker)
-                continue;
 
+            if (auto grpc_alloc = dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))) {
+                auto dist_data = grpc_alloc->getDistributedData();
+                // Skip if already placed at workers
+                if (dist_data.isPlacedAtWorker)
+                    continue;
+            } else
+                throw std::runtime_error("dynamic_cast<AllocationDescriptorGRPC*>(alloc) failed (returned nullptr)");
             std::vector<char> buffer;
 
             auto workerAddr = dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))->getLocation();
@@ -199,7 +203,8 @@ template <class DT> struct Distribute<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT> {
                 distributed::StoredData storedData;
                 grpc::ClientContext grpc_ctx;
 
-                auto slicedMat = mat->sliceRow(dp->getRange()->r_start, dp->getRange()->r_start + dp->getRange()->r_len);
+                auto slicedMat =
+                    mat->sliceRow(dp->getRange()->r_start, dp->getRange()->r_start + dp->getRange()->r_len);
                 auto serializer =
                     DaphneSerializerChunks<DT>(slicedMat, dctx->config.max_distributed_serialization_chunk_size);
                 distributed::Data protoMsg;

@@ -17,10 +17,8 @@
 #pragma once
 
 #include <runtime/local/context/DistributedContext.h>
-
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
-#include <runtime/local/datastructures/Range.h>
 
 #include <cstddef>
 #include <stdexcept>
@@ -55,11 +53,12 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
     // Here we provide the different implementations.
     // Another solution would be to make sure that every constructor is similar
     // so this would not be needed.
-    static ALLOCATOR CreateAllocatorDescriptor(DaphneContext* ctx, const std::string &addr, DistributedData& data) {
+    static std::unique_ptr<ALLOCATOR> CreateAllocatorDescriptor(DaphneContext *ctx, const std::string &addr,
+                                                                DistributedData &data) {
         if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorMPI>)
-            return AllocationDescriptorMPI(std::stoi(addr), ctx, data);
+            return std::make_unique<AllocationDescriptorMPI>(std::stoi(addr), ctx, data);
         else if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorGRPC>)
-            return AllocationDescriptorGRPC(ctx, addr, data);
+            return std::make_unique<AllocationDescriptorGRPC>(ctx, addr, data);
         else
             throw std::runtime_error("Unknown allocation type");
     }
@@ -133,7 +132,7 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
             data.ix = GetDistributedIndex();
             auto allocationDescriptor = CreateAllocatorDescriptor(dctx, workerAddr, data);
             std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
-            allocations.emplace_back(&allocationDescriptor);
+            allocations.emplace_back(std::move(allocationDescriptor));
             dp = mat->getMetaDataObject()->addDataPlacement(allocations, &range);
         }
         taskIndex++;
@@ -199,7 +198,7 @@ template <class DT, class ALLOCATOR> class LoadPartitioningDistributed {
                 } else { // else create new dp entry
                     auto allocationDescriptor = CreateAllocatorDescriptor(dctx, workerAddr, data);
                     std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
-                    allocations.emplace_back(&allocationDescriptor);
+                    allocations.emplace_back(std::move(allocationDescriptor));
                     ((*outputs[i]))->getMetaDataObject()->addDataPlacement(allocations, &range);
                 }
             }
