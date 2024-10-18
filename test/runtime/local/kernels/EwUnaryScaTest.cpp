@@ -57,11 +57,18 @@ template <UnaryOpCode opCode, typename VT> void checkEwUnaryScaNaN(const VT arg)
 // Arithmetic/general math
 // ****************************************************************************
 
-TEMPLATE_TEST_CASE(TEST_NAME("abs"), TAG_KERNELS, VALUE_TYPES) {
+TEMPLATE_TEST_CASE(TEST_NAME("abs int"), TAG_KERNELS, SI_VALUE_TYPES) {
     using VT = TestType;
     checkEwUnarySca<UnaryOpCode::ABS, VT>(0, 0);
     checkEwUnarySca<UnaryOpCode::ABS, VT>(2, 2);
     checkEwUnarySca<UnaryOpCode::ABS, VT>(-2, 2);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("abs fp"), TAG_KERNELS, FP_VALUE_TYPES) {
+    using VT = TestType;
+    checkEwUnarySca<UnaryOpCode::ABS, VT>(0.5, 0.5);
+    checkEwUnarySca<UnaryOpCode::ABS, VT>(2.5, 2.5);
+    checkEwUnarySca<UnaryOpCode::ABS, VT>(-2.5, 2.5);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("sign"), TAG_KERNELS, VALUE_TYPES) {

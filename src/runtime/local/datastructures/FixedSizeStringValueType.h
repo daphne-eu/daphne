@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,21 @@
 
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
-
-#include <algorithm>
-#include <cstddef>
-#include <cstring>
-
-#include <string.h>
 #include <string>
 #include <vector>
 
+#include <cstddef>
+#include <cstring>
+
+/**
+ * @brief A string value type with a maximum length of 15 characters.
+ *
+ * Each instance is backed by a 16-character buffer, whereby at least the last character must always be a null
+ * character. The null-termination is required for some operations to work correctly (e.g., casting to a number).
+ */
 struct FixedStr16 {
     static const std::size_t N = 16;
     char buffer[N];
@@ -37,7 +41,7 @@ struct FixedStr16 {
     // Constructor from a C-style string
     FixedStr16(const char *str) {
         size_t len = std::strlen(str);
-        if (len > N) {
+        if (len >= N) {
             throw std::length_error("string exceeds fixed buffer size");
         }
         std::copy(str, str + len, buffer);
@@ -50,10 +54,10 @@ struct FixedStr16 {
     // Constructor from a std::string
     FixedStr16(const std::string &other) {
         size_t len = other.size();
-        if (len > N) {
+        if (len >= N) {
             throw std::length_error("string exceeds fixed buffer size");
         }
-        std::copy(other.begin(), other.end() + N, buffer);
+        std::copy(other.begin(), other.end(), buffer);
         std::fill(buffer + len, buffer + N, '\0');
     }
 
@@ -103,7 +107,7 @@ struct FixedStr16 {
     // Method to set the string
     void set(const char *str) {
         size_t len = std::strlen(str);
-        if (len > N) {
+        if (len >= N) {
             throw std::length_error("string exceeds fixed buffer size");
         }
         std::transform(str, str + len, buffer, [](char c) { return c; });
