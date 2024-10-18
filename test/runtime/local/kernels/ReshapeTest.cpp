@@ -89,7 +89,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Reshape", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) 
     DataObjectFactory::destroy(arg);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("Reshape_string", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Reshape - string specific", TAG_KERNELS, (DATA_TYPES), (ALL_STRING_VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
     using DTView = typename std::conditional<std::is_same<DT, Matrix<VT>>::value, DenseMatrix<VT>, DT>::type;

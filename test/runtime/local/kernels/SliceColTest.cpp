@@ -47,7 +47,7 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceCol", TAG_KERNELS, (DenseMatrix, Matrix), (doub
     DataObjectFactory::destroy(arg, exp, res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("SliceCol", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("SliceCol - string specific", TAG_KERNELS, (DenseMatrix, Matrix), (ALL_STRING_VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 

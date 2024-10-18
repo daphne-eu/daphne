@@ -150,7 +150,8 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)
 
     DataObjectFactory::destroy(arg, ins);
 }
-TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, DenseMatrix, (ALL_STRING_VALUE_TYPES)) {
+
+TEMPLATE_PRODUCT_TEST_CASE("InsertCol - string specific", TAG_KERNELS, (DATA_TYPES), (ALL_STRING_VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
