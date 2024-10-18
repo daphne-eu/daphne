@@ -23,6 +23,15 @@ DenseMatrix(2x2, bool)
 1 1
 0 1
 
+DenseMatrix(4x1, std::string)
+a
+b
+c
+d
+DenseMatrix(2x2, std::string)
+a b
+c d
+
 DenseMatrix(2x2, int64_t)
 1 2
 3 4

@@ -1,0 +1,11 @@
+input matrix
+DenseMatrix(4x3, std::string)
+A B C
+D E F
+G H I
+J K L
+result
+DenseMatrix(3x4, std::string)
+A D G J
+B E H K
+C F I L

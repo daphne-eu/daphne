@@ -89,16 +89,29 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
             readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
             break;
         case 1:
-            readMM(res, filename);
+            if constexpr (std::is_same<VT, std::string>::value)
+                throw std::runtime_error("File extension not supported for strings");
+            else {
+                readMM(res, filename);
+                break;
+            }
             break;
         case 2:
-            if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
-            readParquet(res, filename, fmd.numRows, fmd.numCols);
-            break;
+            if constexpr (std::is_same<VT, std::string>::value)
+                throw std::runtime_error("File extension not supported for strings");
+            else {
+                if (res == nullptr)
+                    res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
+                readParquet(res, filename, fmd.numRows, fmd.numCols);
+                break;
+            }
         case 3:
-            readDaphne(res, filename);
-            break;
+            if constexpr (std::is_same<VT, std::string>::value)
+                throw std::runtime_error("File extension not supported for strings");
+            else {
+                readDaphne(res, filename);
+                break;
+            }
 #if USE_HDFS
         case 4:
             if (res == nullptr)

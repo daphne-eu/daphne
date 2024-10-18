@@ -503,6 +503,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
 
     if (func == "isNan")
         return createUnaryOp<EwIsNanOp>(loc, func, args);
+    // --------------------------------------------------------------------
+    // String Operators
+    // --------------------------------------------------------------------
+    if (func == "lower")
+        return createUnaryOp<EwLowerOp>(loc, func, args);
+    if (func == "upper")
+        return createUnaryOp<EwUpperOp>(loc, func, args);
 
     // ********************************************************************
     // Elementwise binary
@@ -530,11 +537,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     // Strings
     // --------------------------------------------------------------------
 
-    if (func == "concat") {
-        checkNumArgsExact(loc, func, numArgs, 2);
-        return static_cast<mlir::Value>(
-            builder.create<EwConcatOp>(loc, StringType::get(builder.getContext()), args[0], args[1]));
-    }
+    if (func == "concat")
+        return createBinaryOp<EwConcatOp>(loc, func, args);
 
     // ********************************************************************
     // Outer binary (generalized outer product)
@@ -1198,7 +1202,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value arg = args[0];
         mlir::Value info = args[1];
-        return static_cast<mlir::Value>(builder.create<OneHotOp>(loc, arg.getType(), arg, info));
+        mlir::Type arg_type = arg.getType();
+        if (arg_type.dyn_cast<mlir::daphne::MatrixType>().getElementType().isa<mlir::daphne::StringType>()) {
+            return static_cast<mlir::Value>(
+                builder.create<OneHotOp>(loc, utils.matrixOf(builder.getIntegerType(64, true)), arg, info));
+        } else {
+            return static_cast<mlir::Value>(builder.create<OneHotOp>(loc, arg.getType(), arg, info));
+        }
     }
     if (func == "recode") {
         checkNumArgsExact(loc, func, numArgs, 2);
