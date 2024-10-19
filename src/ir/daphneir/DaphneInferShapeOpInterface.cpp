@@ -496,12 +496,6 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
                                               " (found " +
                                                   std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")");
         resNumCols = upEx.second - loIn.second;
-
-        if (!resNumCols)
-            throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
-                                              "SliceColOp shape inference: cannot select zero cols"
-                                              " with slice between [" +
-                                                  std::to_string(loInPos) + ":" + std::to_string(upExPos) + "].");
     }
 
     return {{srcNumRows, resNumCols}};
