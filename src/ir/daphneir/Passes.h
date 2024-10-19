@@ -67,7 +67,12 @@ std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig &cf
                                                       std::unordered_map<std::string, bool> &usedLibPaths);
 std::unique_ptr<Pass> createSelectMatrixRepresentationsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg);
-std::unique_ptr<Pass> createVectorizeComputationsPass();
+
+std::unique_ptr<Pass> createDaphneVectorizeComputationsPass();
+std::unique_ptr<Pass> createGreedy1VectorizeComputationsPass(const DaphneUserConfig& cfg);
+std::unique_ptr<Pass> createHorizontalFusionPass();
+std::unique_ptr<Pass> createDrawPipelineOpsPass(const std::string filename);
+
 #ifdef USE_CUDA
 std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
 #endif

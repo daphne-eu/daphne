@@ -68,6 +68,9 @@ template <typename DT> class MTWrapperBase {
             if (splits[i] == mlir::daphne::VectorSplit::ROWS) {
                 len = std::max(len, inputs[i]->getNumRows());
                 mem_required += inputs[i]->getNumItems() * sizeof(typename DT::VT);
+            } else if (splits[i] == mlir::daphne::VectorSplit::COLS) {
+                len = std::max(len, inputs[i]->getNumCols());
+                mem_required += inputs[i]->getNumItems() * sizeof(typename DT::VT); 
             }
         }
         return std::make_pair(len, mem_required);

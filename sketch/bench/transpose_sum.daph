@@ -1,0 +1,9 @@
+X = rand($r, $c, 0.0, 1.0, 1, 12345);
+
+<start>
+t = t(X);
+s = sum(t);
+<stop>
+
+print(s);
+<end>

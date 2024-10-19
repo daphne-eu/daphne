@@ -19,12 +19,11 @@
 #include "ir/daphneir/Passes.h"
 #include <util/ErrorHandler.h>
 
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/Support/Casting.h"
+#include "llvm/Support/raw_ostream.h"
 
-#include <iostream>
 #include <memory>
-#include <set>
 
 using namespace mlir;
 
@@ -179,12 +178,15 @@ void movePipelineInterleavedOperations(Block::iterator pipelinePosition,
     }
 }
 
-struct VectorizeComputationsPass : public PassWrapper<VectorizeComputationsPass, OperationPass<func::FuncOp>> {
+struct DaphneVectorizeComputationsPass : public PassWrapper<DaphneVectorizeComputationsPass, OperationPass<func::FuncOp>> {
     void runOnOperation() final;
 };
 } // namespace
 
-void VectorizeComputationsPass::runOnOperation() {
+void DaphneVectorizeComputationsPass::runOnOperation() {
+
+    llvm::outs() << "DaphneVectorizeComputationsPass" << "\n";
+
     auto func = getOperation();
     // TODO: fuse pipelines that have the matching inputs, even if no output of
     // the one pipeline is used by the other.
@@ -194,13 +196,15 @@ void VectorizeComputationsPass::runOnOperation() {
     // Find vectorizable operations and their inputs of vectorizable operations
     std::vector<daphne::Vectorizable> vectOps;
     func->walk([&](daphne::Vectorizable op) {
-        if (CompilerUtils::isMatrixComputation(op))
+        if (CompilerUtils::isMatrixComputation(op) && !llvm::isa<daphne::AllAggSumOp>(op))
             vectOps.emplace_back(op);
     });
     std::vector<daphne::Vectorizable> vectorizables(vectOps.begin(), vectOps.end());
     std::multimap<daphne::Vectorizable, daphne::Vectorizable> possibleMerges;
     for (auto v : vectorizables) {
-        for (auto e : llvm::zip(v->getOperands(), v.getVectorSplits())) {
+        auto splits = v.getVectorSplits()[0];
+        for (auto e : llvm::zip(v->getOperands(), splits)) {
+
             auto operand = std::get<0>(e);
             auto defOp = operand.getDefiningOp<daphne::Vectorizable>();
             if (defOp && v->getBlock() == defOp->getBlock() && CompilerUtils::isMatrixComputation(defOp)) {
@@ -232,7 +236,7 @@ void VectorizeComputationsPass::runOnOperation() {
                     auto split = std::get<1>(e);
                     // find the corresponding `OpResult` to figure out combine
                     auto opResult = *llvm::find(defOp->getResults(), operand);
-                    auto combine = defOp.getVectorCombines()[opResult.getResultNumber()];
+                    auto combine = defOp.getVectorCombines()[0][opResult.getResultNumber()];
 
                     if (split == daphne::VectorSplit::ROWS) {
                         if (combine == daphne::VectorCombine::ROWS)
@@ -300,8 +304,9 @@ void VectorizeComputationsPass::runOnOperation() {
         movePipelineInterleavedOperations(builder.getInsertionPoint(), pipeline);
         for (auto vIt = pipeline.rbegin(); vIt != pipeline.rend(); ++vIt) {
             auto v = *vIt;
-            auto vSplits = v.getVectorSplits();
-            auto vCombines = v.getVectorCombines();
+            auto vSplits = v.getVectorSplits()[0];
+            auto vCombines = v.getVectorCombines()[0];
+            auto vOutSizes = v.createOpsOutputSizes(builder)[0];
             // TODO: although we do create enum attributes, it might make
             // sense/make it easier to
             //  just directly use an I64ArrayAttribute
@@ -319,7 +324,7 @@ void VectorizeComputationsPass::runOnOperation() {
             for (auto result : v->getResults()) {
                 results.push_back(result);
             }
-            for (auto outSize : v.createOpsOutputSizes(builder)) {
+            for (auto outSize : vOutSizes) {
                 outRows.push_back(outSize.first);
                 outCols.push_back(outSize.second);
             }
@@ -404,6 +409,6 @@ void VectorizeComputationsPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<Pass> daphne::createVectorizeComputationsPass() {
-    return std::make_unique<VectorizeComputationsPass>();
+std::unique_ptr<Pass> daphne::createDaphneVectorizeComputationsPass() {
+    return std::make_unique<DaphneVectorizeComputationsPass>();
 }

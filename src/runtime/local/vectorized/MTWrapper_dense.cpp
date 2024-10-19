@@ -36,7 +36,13 @@ template <typename VT>
     std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
 
     std::vector<TaskQueue *> tmp_q{q.get()};
-    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
+    
+    auto batchSize8M = ctx->config.batchSize;
+    if (batchSize8M == 0) {
+        batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
+    }
+    //llvm::outs() << "si: " << batchSize8M << "\n";
+
     this->initCPPWorkers(tmp_q, batchSize8M, verbose, 1, 0, false);
 
 #ifdef USE_CUDA
@@ -109,7 +115,13 @@ template <typename VT>
         }
     }
 
-    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
+
+    auto batchSize8M = ctx->config.batchSize;
+    if (batchSize8M == 0) {
+        batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
+    }
+    //llvm::outs() << "mu: " << batchSize8M << "\n";
+
     this->initCPPWorkers(qvector, batchSize8M, verbose, this->_numQueues, this->_queueMode,
                          ctx->getUserConfig().pinWorkers);
 
