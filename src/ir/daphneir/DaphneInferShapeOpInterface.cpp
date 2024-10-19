@@ -442,11 +442,6 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
                                               " (found " +
                                                   std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")");
         resNumRows = upExPos - loInPos;
-        if (!resNumRows)
-            throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
-                                              "SliceRowOp shape inference: cannot select zero rows"
-                                              " with slice between [" +
-                                                  std::to_string(loInPos) + ":" + std::to_string(upExPos) + "].");
     }
 
     return {{resNumRows, srcNumCols}};
