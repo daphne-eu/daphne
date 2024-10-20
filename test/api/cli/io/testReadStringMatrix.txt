@@ -1,0 +1,11 @@
+DenseMatrix(9x3, std::string)
+banana, grape 36 Fruit Basket
+xyz""uvw 34 No Category\"
+parrot, rabbit 31 Pets
+line1
+line2 26 with newline
+chair 28 Furniture Set
+green, yellow\n 51 
+\n\"xyz""uvw\" 29 Mixed string
+\"blue, \"\" 42 
+unknown, item 23 Unknown Item

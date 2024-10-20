@@ -16,6 +16,12 @@ checkMatBool = reshape(checkMatBool, 2, 2);
 print(checkMatBool);
 print("");
 
+checkMatstring = [ "a", "b", "c", "d" ];
+print(checkMatstring);
+checkMatstring = reshape(checkMatstring, 2, 2);
+print(checkMatstring);
+print("");
+
 // Defining matrix dimensions at creation.
 InferShapeMat1 = [1,2,3,4](2,2);
 print(InferShapeMat1);

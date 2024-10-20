@@ -72,7 +72,7 @@ template <typename VT> struct MatrixConstant<DenseMatrix<VT>> {
         const VT *valuesOrig = orig->getValues();
         VT *valuesRes = res->getValues();
 
-        memcpy(valuesRes, valuesOrig, numRows * numCols * sizeof(VT));
+        std::copy(valuesOrig, valuesOrig + numRows * numCols, valuesRes);
     }
 };
 #endif // SRC_RUNTIME_LOCAL_KERNELS_MATRIXCONSTANT_H

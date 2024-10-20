@@ -164,6 +164,19 @@ template <typename TRes, typename TArg> TRes ewUnarySca(UnaryOpCode opCode, TArg
         }                                                                                                              \
     };
 
+#define MAKE_EW_UNARY_C_STRING_TRANSFORM(opCode, expr)                                                                 \
+    template <> struct EwUnarySca<opCode, const char *, const char *> {                                                \
+        inline static const char *apply(const char *arg, DCTX(ctx)) {                                                  \
+            size_t len = std::strlen(arg) + 1;                                                                         \
+            char *new_string = new char[len];                                                                          \
+            for (size_t i = 0; i < len - 1; ++i) {                                                                     \
+                new_string[i] = expr(arg[i]);                                                                          \
+            }                                                                                                          \
+            new_string[len - 1] = '\0';                                                                                \
+            return new_string;                                                                                         \
+        }                                                                                                              \
+    };
+
 // One such line for each unary function to support.
 // Arithmetic/general math.
 MAKE_EW_UNARY_SCA(UnaryOpCode::MINUS, -arg);
@@ -196,6 +209,8 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::LOWER, arg.lower())
 MAKE_EW_UNARY_SCA(UnaryOpCode::UPPER, arg.upper())
 MAKE_EW_UNARY_STRING_TRANSFORM(UnaryOpCode::LOWER, std::tolower)
 MAKE_EW_UNARY_STRING_TRANSFORM(UnaryOpCode::UPPER, std::toupper)
+MAKE_EW_UNARY_C_STRING_TRANSFORM(UnaryOpCode::LOWER, std::tolower)
+MAKE_EW_UNARY_C_STRING_TRANSFORM(UnaryOpCode::UPPER, std::toupper)
 
 #undef MAKE_EW_UNARY_SCA_CLOSED_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR

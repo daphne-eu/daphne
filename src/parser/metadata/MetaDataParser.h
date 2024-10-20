@@ -32,7 +32,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ValueTypeCode, {{ValueTypeCode::INVALID, nullptr},
                                              {ValueTypeCode::UI32, "ui32"},
                                              {ValueTypeCode::UI64, "ui64"},
                                              {ValueTypeCode::F32, "f32"},
-                                             {ValueTypeCode::F64, "f64"}})
+                                             {ValueTypeCode::F64, "f64"},
+                                             {ValueTypeCode::STR, "str"}})
 
 /**
  * @brief A JSON representation of a schema column needed to

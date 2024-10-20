@@ -142,11 +142,11 @@ static constexpr bool supportsBinaryOp = false;
     /* string Comparisons operations. */                                                                               \
     SUPPORT_RLR(EQ, VTRes, VTArg, VTArg)                                                                               \
     SUPPORT_RLR(NEQ, VTRes, VTArg, VTArg)
-#define SUPPORT_STRING_RA(VTRes, VTArg)                                                                                \
+#define SUPPORT_STRING_RA(VTRes, VTLhs, VTRhs)                                                                         \
     /* string concatenation operations. */                                                                             \
     /*  Since the result may not fit in FixedStr16,*/                                                                  \
     /*  it always return std::string*/                                                                                 \
-    SUPPORT_RLR(CONCAT, VTRes, VTArg, VTArg)
+    SUPPORT_RLR(CONCAT, VTRes, VTLhs, VTRhs)
 
 // Generates code specifying that all binary operations typically supported on a
 // certain category of value types should be supported on the given value type
@@ -179,9 +179,10 @@ SUPPORT_EQUALITY_RA(int64_t, FixedStr16)
 SUPPORT_EQUALITY_RA(int64_t, const char *)
 SUPPORT_COMPARISONS_RA(int64_t, std::string)
 SUPPORT_COMPARISONS_RA(int64_t, FixedStr16)
-SUPPORT_STRING_RA(std::string, std::string)
-SUPPORT_STRING_RA(std::string, FixedStr16)
-SUPPORT_STRING_RA(const char *, const char *)
+SUPPORT_STRING_RA(std::string, std::string, std::string)
+SUPPORT_STRING_RA(std::string, FixedStr16, FixedStr16)
+SUPPORT_STRING_RA(const char *, const char *, const char *)
+SUPPORT_STRING_RA(std::string, std::string, const char *)
 
 // Undefine helper macros.
 #undef SUPPORT
