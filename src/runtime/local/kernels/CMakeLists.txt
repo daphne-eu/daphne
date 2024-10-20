@@ -108,6 +108,7 @@ set(SOURCES_cpp_kernels
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
+
         )
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(KernelObjLib OBJECT ${SOURCES_cpp_kernels} ${HEADERS_cpp_kernels})

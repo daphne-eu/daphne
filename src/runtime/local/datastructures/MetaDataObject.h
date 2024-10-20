@@ -38,20 +38,33 @@ struct DataPlacement;
  */
 class MetaDataObject {
     std::array<std::vector<std::unique_ptr<DataPlacement>>, static_cast<size_t>(ALLOCATION_TYPE::NUM_ALLOC_TYPES)>
-        data_placements;
+        range_data_placements;
+
+    std::array<std::unique_ptr<DataPlacement>, static_cast<size_t>(ALLOCATION_TYPE::NUM_ALLOC_TYPES)> data_placements;
+    mutable std::mutex mtx{};
     std::vector<size_t> latest_version;
+    std::pair<uint32_t, std::byte *> getDataInternal(uint32_t alloc_idx, const IAllocationDescriptor *alloc_desc,
+                                                     const Range *range);
 
   public:
-    DataPlacement *addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r = nullptr);
-    const DataPlacement *findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const;
+    DataPlacement *addDataPlacement(std::vector<std::unique_ptr<IAllocationDescriptor>> &allocInfos,
+                                    Range *r = nullptr);
     [[nodiscard]] DataPlacement *getDataPlacementByID(size_t id) const;
     [[nodiscard]] DataPlacement *getDataPlacementByLocation(const std::string &location) const;
     [[nodiscard]] auto
-    getDataPlacementByType(ALLOCATION_TYPE type) const -> const std::vector<std::unique_ptr<DataPlacement>> *;
+    getRangeDataPlacementByType(ALLOCATION_TYPE type) const -> const std::vector<std::unique_ptr<DataPlacement>> *;
+    [[nodiscard]] auto getDataPlacementByType(ALLOCATION_TYPE type) const -> DataPlacement *;
     void updateRangeDataPlacementByID(size_t id, Range *r);
+
+    DataPlacement *getDataPlacement(const IAllocationDescriptor *alloc_desc);
 
     [[nodiscard]] bool isLatestVersion(size_t placement) const;
     void addLatest(size_t id);
     void setLatest(size_t id);
     [[nodiscard]] auto getLatest() const -> std::vector<size_t>;
+
+    const std::byte *getData(uint32_t alloc_idx, const IAllocationDescriptor *alloc_desc = nullptr,
+                             const Range *range = nullptr) const;
+    std::byte *getData(uint32_t alloc_idx, const IAllocationDescriptor *alloc_desc = nullptr,
+                       const Range *range = nullptr);
 };

@@ -202,9 +202,8 @@ template <typename VTRes, typename VTArg> struct AggCol<DenseMatrix<VTRes>, CSRM
             // for MEAN and STDDDEV, we need to sum
             func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
-        const VTArg *valuesArg = arg->getValues(0);
-        const size_t *colIdxsArg = arg->getColIdxs(0);
-
+        const VTArg *valuesArg = arg->getRowValues(0);
+        const size_t *colIdxsArg = arg->getColIdxsOfRow(0);
         const size_t numNonZeros = arg->getNumNonZeros();
 
         if (AggOpCodeUtils::isSparseSafe(opCode)) {

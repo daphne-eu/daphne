@@ -26,22 +26,22 @@
 
 class AllocationDescriptorGRPC : public IAllocationDescriptor {
   private:
-    DaphneContext *ctx;
+    DaphneContext *ctx{};
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_GRPC;
     const std::string workerAddress;
     DistributedData distributedData;
     std::shared_ptr<std::byte> data;
 
   public:
-    AllocationDescriptorGRPC(){};
+    AllocationDescriptorGRPC() = default;
     AllocationDescriptorGRPC(DaphneContext *ctx, const std::string &address, const DistributedData &data)
         : ctx(ctx), workerAddress(address), distributedData(data){};
 
-    ~AllocationDescriptorGRPC() override{};
+    ~AllocationDescriptorGRPC() override = default;
     [[nodiscard]] ALLOCATION_TYPE getType() const override { return type; };
 
     std::string getLocation() const override { return workerAddress; };
-    void createAllocation(size_t size, bool zero) override {}
+    std::unique_ptr<IAllocationDescriptor> createAllocation(size_t size, bool zero) const override { return nullptr; }
     // TODO: Implement transferTo and transferFrom functions
     std::shared_ptr<std::byte> getData() override {
         throw std::runtime_error("TransferTo/From functions are not implemented yet.");
