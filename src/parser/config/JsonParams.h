@@ -66,6 +66,10 @@ struct DaphneConfigJsonParams {
     inline static const std::string LOGGING = "logging";
     inline static const std::string FORCE_CUDA = "force_cuda";
     inline static const std::string SPARSITY_THRESHOLD = "sparsity_threshold";
+    inline static const std::string PROPERTY_RECORDING = "enable_property_recording";
+    inline static const std::string PROPERTY_INSERT = "enable_property_insert";
+    inline static const std::string PROPERTIES_FILE_PATH = "properties_file_path";
+
 
     inline static const std::string JSON_PARAMS[] = {MATMUL_VEC_SIZE_BITS,
                                                      MATMUL_TILE,
@@ -95,7 +99,10 @@ struct DaphneConfigJsonParams {
                                                      EXPLAIN_TYPE_ADAPTATION,
                                                      EXPLAIN_VECTORIZED,
                                                      EXPLAIN_MLIR_CODEGEN,
-                                                     EXPLAIN_OBJ_REF_MGNT,
+                                                     EXPLAIN_OBJ_REF_MGNT,	
+                                                     PROPERTY_INSERT,
+                                                     PROPERTY_RECORDING,
+                                                     PROPERTIES_FILE_PATH,
                                                      TASK_PARTITIONING_SCHEME,
                                                      NUMBER_OF_THREADS,
                                                      MINIMUM_TASK_SIZE,

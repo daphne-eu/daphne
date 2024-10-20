@@ -32,6 +32,7 @@
 #include <util/DaphneLogger.h>
 #include <util/KernelDispatchMapping.h>
 #include <util/Statistics.h>
+#include <util/PropertyLogger.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -310,17 +311,39 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                                    "e.g., `--args x=1,y=2.2`"),
                                               CommaSeparated);
     const std::string configFileInitValue = "-";
-    static opt<string> configFile("config", cat(daphneOptions),
-                                  desc("A JSON file that contains the DAPHNE configuration"), value_desc("filename"),
-                                  llvm::cl::init(configFileInitValue));
+    static opt<string> configFile(
+        "config", cat(daphneOptions),
+        desc("A JSON file that contains the DAPHNE configuration"),
+        value_desc("filename"),
+        llvm::cl::init(configFileInitValue)
+    );
 
-    static opt<bool> enableStatistics("statistics", cat(daphneOptions), desc("Enables runtime statistics output."));
+    static opt<bool> enableStatistics(
+        "statistics", cat(daphneOptions),
+        desc("Enables runtime statistics output."));
 
-    static opt<bool> enableProfiling("enable-profiling", cat(daphneOptions), desc("Enable profiling support"));
-    static opt<bool> timing("timing", cat(daphneOptions),
-                            desc("Enable timing of high-level steps (start-up, "
-                                 "parsing, compilation, execution) and print "
-                                 "the times to stderr in JSON format"));
+    static opt<bool> enablePropertyRecording(
+        "enable_property_recording", cat(daphneOptions),
+        desc("records runtime properties and outputs it in JSON."));
+
+    static opt<bool> enablePropertyInsert(
+        "enable_property_insert", cat(daphneOptions),
+        desc("inserts runtime properties from properties.json of previous run."));
+
+    static opt<std::string> properties_file_path(
+        "properties_file_path", cat(daphneOptions),
+        llvm::cl::desc("Path to the Properties File in JSON for the Property insert."),
+        llvm::cl::init("properties.json")
+    );
+
+    static opt<bool> enableProfiling (
+            "enable-profiling", cat(daphneOptions),
+            desc("Enable profiling support")
+    );
+    static opt<bool> timing (
+            "timing", cat(daphneOptions),
+            desc("Enable timing of high-level steps (start-up, parsing, compilation, execution) and print the times to stderr in JSON format")
+    );
 
     // Positional arguments ---------------------------------------------------
 
@@ -385,6 +408,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         user_config.matmul_tile = true;
     }
     user_config.use_mlir_hybrid_codegen = performHybridCodegen;
+    
 
     if (!libDir.getValue().empty())
         user_config.libdir = libDir.getValue();
@@ -478,6 +502,11 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     }
 
     user_config.statistics = enableStatistics;
+    user_config.enable_property_recording = enablePropertyRecording;
+    user_config.enable_property_insert = enablePropertyInsert;
+
+    if (user_config.enable_property_insert)
+        user_config.properties_file_path = properties_file_path.getValue();
 
     if (user_config.use_distributed && distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
 #ifndef USE_MPI
@@ -652,9 +681,12 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     if (user_config.statistics)
         Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
 
-    // explicitly destroying the moduleOp here due to valgrind complaining about
-    // a memory leak otherwise.
+    if (user_config.enable_property_recording)
+        PropertyLogger::instance().savePropertiesAsJson("properties.json");
+
+    // explicitly destroying the moduleOp here due to valgrind complaining about a memory leak otherwise.
     moduleOp->destroy();
+
     return StatusCode::SUCCESS;
 }
 

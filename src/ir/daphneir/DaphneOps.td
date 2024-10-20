@@ -1513,7 +1513,9 @@ def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
                     UI64 : $userConfigPtr,
                     UI64 : $dispatchMappingPtr,
                     UI64 : $statisticsPtr,
-                    UI64 : $stringRefCountPtr);
+                    UI64 : $propertyLoggerPtr,
+                    UI64 : $stringRefCountPtr
+                    );
     let results = (outs DaphneContext : $ctx);
 }
 
@@ -1679,6 +1681,20 @@ def Daphne_RemoveOp : Daphne_Op<"remove", [
     
     let arguments = (ins ListOrU:$argList, Size:$idx);
     let results = (outs ListOrU:$resList, MatrixOrU:$elem);
+}
+
+// ****************************************************************************
+// Property Recording
+// ****************************************************************************
+
+def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
+    let arguments = (ins MatrixOrU:$arg, UI32:$value_id);
+    let results = (outs);
+
+    let summary = "Records properties of an operation.";
+    let description = [{
+        This operation records properties of an operation.
+    }];
 }
 
 // ****************************************************************************

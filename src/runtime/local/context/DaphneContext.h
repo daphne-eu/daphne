@@ -19,9 +19,9 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <util/KernelDispatchMapping.h>
 #include <util/Statistics.h>
+#include <util/PropertyLogger.h>
 #include <util/StringRefCount.h>
 
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -65,16 +65,20 @@ struct DaphneContext {
      * Modifying the configuration is intensionally allowed, since it enables
      * changing the configuration at run-time via DaphneDSL.
      */
-    DaphneUserConfig &config;
-    KernelDispatchMapping &dispatchMapping;
-    Statistics &stats;
-    StringRefCounter &stringRefCount;
+    DaphneUserConfig& config;
+    KernelDispatchMapping& dispatchMapping;
+    Statistics& stats;
+    PropertyLogger& propertyLogger;
+    StringRefCounter& stringRefCount;
 
     std::shared_ptr<spdlog::logger> logger;
 
-    explicit DaphneContext(DaphneUserConfig &config, KernelDispatchMapping &dispatchMapping, Statistics &stats,
-                           StringRefCounter &stringRefCnt)
-        : config(config), dispatchMapping(dispatchMapping), stats(stats), stringRefCount(stringRefCnt) {
+    explicit DaphneContext(DaphneUserConfig &config,
+                           KernelDispatchMapping &dispatchMapping,
+                           Statistics &stats,
+                           PropertyLogger &propertyLogger,
+                           StringRefCounter &stringRefCount)
+        : config(config), dispatchMapping(dispatchMapping), stats(stats),  propertyLogger(propertyLogger), stringRefCount(stringRefCount) {
         logger = spdlog::get("runtime");
     }
 

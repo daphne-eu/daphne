@@ -28,6 +28,8 @@ add_library(Util
 		preprocessor_defs.h
         Statistics.h
         Statistics.cpp
+        PropertyLogger.h
+        PropertyLogger.cpp
 		StringRefCount.h
 		StringRefCount.cpp
         )
