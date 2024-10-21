@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <api/cli/Utils.h>
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -28,46 +29,9 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <string>
-
-bool compareContentsFromFile(const std::string &filePath1, const std::string &filePath2) {
-    std::ifstream file1(filePath1, std::ios::binary);
-    std::ifstream file2(filePath2, std::ios::binary);
-
-    if (!file1.is_open() || !file2.is_open()) {
-        std::cerr << "Cannot open one or both files." << std::endl;
-        return false;
-    }
-
-    std::string line1, line2;
-    bool filesAreEqual = true;
-
-    while (std::getline(file1, line1)) {
-        if (!std::getline(file2, line2)) {
-            filesAreEqual = false;
-            break;
-        }
-
-        if (line1 != line2) {
-            filesAreEqual = false;
-            break;
-        }
-    }
-
-    if (filesAreEqual && std::getline(file2, line2)) {
-        if (!line2.empty()) {
-            filesAreEqual = false;
-        }
-    }
-
-    file1.close();
-    file2.close();
-
-    return filesAreEqual;
-}
 
 TEMPLATE_PRODUCT_TEST_CASE("WriteMM AIG", TAG_IO, (DenseMatrix), (int32_t)) {
     using DT = TestType;
@@ -85,7 +49,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteMM AIG", TAG_IO, (DenseMatrix), (int32_t)) {
 
     writeMM(m, resultPath);
 
-    CHECK(compareContentsFromFile(filename, resultPath));
+    CHECK(compareFileContents(filename, resultPath));
     std::filesystem::remove(resultPath);
 
     CHECK(m->get(0, 0) == 1);
@@ -113,7 +77,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteMM AIK", TAG_IO, (DenseMatrix), (int32_t)) {
 
     writeMM(m, resultPath);
 
-    CHECK(compareContentsFromFile(filename, resultPath));
+    CHECK(compareFileContents(filename, resultPath));
     std::filesystem::remove(resultPath);
 
     CHECK(m->get(1, 0) == 1);
@@ -143,7 +107,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteMM AIS", TAG_IO, (DenseMatrix), (int32_t)) {
 
     writeMM(m, resultPath);
 
-    CHECK(compareContentsFromFile(filename, resultPath));
+    CHECK(compareFileContents(filename, resultPath));
     std::filesystem::remove(resultPath);
 
     CHECK(m->get(1, 1) == 4);
@@ -171,7 +135,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteMM CIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) 
 
     writeMM(m, resultPath);
 
-    CHECK(compareContentsFromFile(filename, resultPath));
+    CHECK(compareFileContents(filename, resultPath));
     std::filesystem::remove(resultPath);
 
     CHECK(m->get(0, 0) == 1);
@@ -198,7 +162,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteMM CRG (CSR)", TAG_IO, (CSRMatrix), (double)) {
 
     writeMM(m, resultPath);
 
-    CHECK(compareContentsFromFile(filename, resultPath));
+    CHECK(compareFileContents(filename, resultPath));
     std::filesystem::remove(resultPath);
 
     CHECK(m->get(5, 0) == 0.25599762);
