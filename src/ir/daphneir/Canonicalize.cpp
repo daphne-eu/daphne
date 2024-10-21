@@ -31,7 +31,7 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
 
     for (size_t i = 0; i < currentSize; i++) {
         const auto &input = op.getInputs()[i];
-        const auto &split = op.getSplits()[i].cast<daphne::VectorSplitAttr>().getValue();
+        const auto &split = vSplitsAttrs[i].cast<daphne::VectorSplitAttr>().getValue();
 
         if (inputMap.count(input) == 0) {
             inputMap[input] = i;
