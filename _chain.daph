@@ -1,0 +1,15 @@
+X = fill(1.0, 30000, 30000);
+startProfiling();
+v0 = t(X);
+v1 = t(v0);
+v2 = t(v1);
+v3 = t(v2);
+v4 = t(v3);
+v5 = t(v4);
+v6 = t(v5);
+v7 = t(v6);
+v8 = t(v7);
+v9 = t(v8);
+stopProfiling();
+print(v9[0,0]);
+

@@ -1,0 +1,9 @@
+X = rand($r, $c, 0.0, 1.0, 1, 12345);
+
+<start>
+i1 = sqrt(X);
+i2 = sum(i1);
+<stop>
+
+print(i2);
+<end>

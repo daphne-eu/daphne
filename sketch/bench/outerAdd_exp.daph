@@ -1,0 +1,12 @@
+X = rand($r, 1, 0.0, 1.0, 1, 12345);
+Y = rand(1, $c, 0.0, 1.0, 1, 67890);
+
+<start>
+i1 = outerAdd(X,Y); 
+i2 = exp(i1);
+i3 = i2 + 2;
+<stop>
+
+
+print(i3[0,0]);
+<end>

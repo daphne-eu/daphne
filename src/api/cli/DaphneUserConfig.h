@@ -18,6 +18,9 @@
 
 #include <api/daphnelib/DaphneLibResult.h>
 #include <compiler/catalog/KernelCatalog.h>
+#include <compiler/lowering/vectorize/VectorizeDefs.h>
+#include <cstddef>
+#include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include <runtime/local/datastructures/IAllocationDescriptor.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include <util/DaphneLogger.h>
@@ -38,6 +41,11 @@ struct DaphneUserConfig {
     // Remember to update UserConfig.json accordingly!
     bool use_cuda = false;
     bool use_vectorized_exec = false;
+
+    bool no_horizontal_fusion = false;
+    VectorizationType vectorizationType = GREEDY_1;
+    size_t batchSize = 0;
+
     bool use_distributed = false;
     bool use_obj_ref_mgnt = true;
     bool use_ipa_const_propa = true;

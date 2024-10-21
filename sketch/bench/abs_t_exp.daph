@@ -1,0 +1,11 @@
+X = rand($r, $c, 0.0, 1.0, 1, 12345);
+
+<start>
+i1 = abs(X);
+i2 = t(i1);
+i3 = exp(i2); 
+i4 = i3 + 2; 
+<stop>
+
+print(i4[0,0]);
+<end>

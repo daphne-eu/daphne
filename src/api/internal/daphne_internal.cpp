@@ -24,7 +24,10 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <api/cli/StatusCode.h>
 #include <api/daphnelib/DaphneLibResult.h>
-#include <api/internal/daphne_internal.h>
+#include <parser/daphnedsl/DaphneDSLParser.h>
+#include "compiler/execution/DaphneIrExecutor.h"
+#include "compiler/lowering/vectorize/VectorizeDefs.h"
+#include <runtime/local/vectorized/LoadPartitioning.h>
 #include <parser/catalog/KernelCatalogParser.h>
 #include <parser/config/ConfigParser.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
@@ -303,7 +306,27 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                          clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
                          clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
         CommaSeparated);
+    
+    static opt<VectorizationType> vectorizeTypeList(
+        "vec-type", cat(daphneOptions),
+        llvm::cl::desc("Apply specific Vectorization pass"),
+        llvm::cl::values(
+            clEnumVal(DAPHNE, "Use original DAPHNE Vectorization pass"),
+            clEnumVal(GREEDY_1, "Use first Greedy Vectorization pass")),
+            init(GREEDY_1)
+    );
 
+    static opt<size_t> batchSize(
+            "batchSize", cat(daphneOptions),
+            desc(
+                "batchSize"
+            )
+    );
+
+    static opt<bool> noHorizontalFusion(
+        "no-hf", cat(daphneOptions),
+        desc("No horizontal fusion"));
+    
     static llvm::cl::list<string> scriptArgs1("args", cat(daphneOptions),
                                               desc("Alternative way of specifying arguments to the DaphneDSL "
                                                    "script; must be a comma-separated list of name-value-pairs, "
@@ -367,6 +390,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         logger = std::make_unique<DaphneLogger>(user_config);
 
     user_config.use_vectorized_exec = useVectorizedPipelines;
+    user_config.vectorizationType = vectorizeTypeList;
+    user_config.batchSize = batchSize;
+
     user_config.use_distributed = useDistributedRuntime;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;
@@ -512,6 +538,10 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
 
     if (fpgaopencl) {
         user_config.use_fpgaopencl = true;
+    }
+
+    if (noHorizontalFusion) {
+        user_config.no_horizontal_fusion = true;
     }
 
     if (enableProfiling) {

@@ -57,17 +57,17 @@ template <class DT> struct CompiledPipelineTaskData {
     const int64_t *_outCols;
     const VectorSplit *_splits;
     const VectorCombine *_combines;
-    const uint64_t _rl;              // row lower index
-    const uint64_t _ru;              // row upper index
+    const uint64_t _dl;              // dim lower index
+    const uint64_t _du;              // dim upper index
     const int64_t *_wholeResultRows; // number of rows of the complete result
     const int64_t *_wholeResultCols; // number of cols of the complete result
     const uint64_t _offset;
     DCTX(_ctx);
 
-    [[maybe_unused]] CompiledPipelineTaskData<DT> withDifferentRange(uint64_t newRl, uint64_t newRu) {
+    [[maybe_unused]] CompiledPipelineTaskData<DT> withDifferentRange(uint64_t newDl, uint64_t newDu) {
         CompiledPipelineTaskData<DT> flatCopy = *this;
-        flatCopy._rl = newRl;
-        flatCopy._ru = newRu;
+        flatCopy._dl = newDl;
+        flatCopy._du = newDu;
         return flatCopy;
     }
 };
@@ -83,10 +83,12 @@ template <class DT> class CompiledPipelineTaskBase : public Task {
 
   protected:
     bool isBroadcast(mlir::daphne::VectorSplit splitMethod, Structure *input) {
-        return splitMethod == VectorSplit::NONE || (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1);
+        return splitMethod == VectorSplit::NONE || 
+              (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1) || 
+              (splitMethod == VectorSplit::COLS && input->getNumCols() == 1);
     }
 
-    std::vector<Structure *> createFuncInputs(uint64_t rowStart, uint64_t rowEnd) {
+    std::vector<Structure *> createFuncInputs(uint64_t dimStart, uint64_t dimEnd) {
         std::vector<Structure *> linputs;
         for (auto i = 0u; i < _data._numInputs; i++) {
             if (isBroadcast(_data._splits[i], _data._inputs[i])) {
@@ -101,8 +103,12 @@ template <class DT> class CompiledPipelineTaskBase : public Task {
                     // alternative.
                     _data._inputs[i]->increaseRefCounter();
             } else if (VectorSplit::ROWS == _data._splits[i]) {
-                linputs.push_back(_data._inputs[i]->sliceRow(rowStart, rowEnd));
-            } else {
+                linputs.push_back(_data._inputs[i]->sliceRow(dimStart, dimEnd));
+            }
+            else if(VectorSplit::COLS == _data._splits[i]) {
+                linputs.push_back(_data._inputs[i]->sliceCol(dimStart, dimEnd));
+            }
+            else {
                 llvm_unreachable("Not all vector splits handled");
             }
         }
@@ -126,7 +132,9 @@ template <typename VT> class CompiledPipelineTask<DenseMatrix<VT>> : public Comp
 
   private:
     void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
-                           uint64_t rowStart, uint64_t rowEnd);
+                           uint64_t dimStart, uint64_t dimEnd);
+    void accumulateAggregate(DenseMatrix<VT>*& localAddRes, DenseMatrix<VT>* &localResult, 
+                           BinaryOpCode opCode);
 };
 
 template <typename VT> class CompiledPipelineTask<CSRMatrix<VT>> : public CompiledPipelineTaskBase<CSRMatrix<VT>> {
