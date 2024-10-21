@@ -1,0 +1,130 @@
+// --------------------------------------------------------------------
+// Outer Binary
+// --------------------------------------------------------------------
+
+print("Outer Binary");
+
+// we take 3 matrices of different sparsities to take into account all the possible cases for the different ops.
+empty_col = rand(2, 1, 1, 1, 0.0, -1);
+empty_row = rand(1, 2, 1, 1, 0.0, -1);
+half_col = rand(2, 1, 1, 1, 0.5, -1);
+half_row = rand(1, 2, 1, 1, 0.5, -1);
+full_col = rand(2, 1, 1, 1, 1.0, -1);
+full_row = rand(1, 2, 1, 1, 1.0, -1);
+unknown_col = sin(rand(2, 1, 1, 1, 0.5, -1));
+unknown_row = sin(rand(1, 2, 1, 1, 0.5, -1));
+
+print("outeradd");
+print(sparsity(outerAdd(empty_col, empty_row)));
+print(sparsity(outerAdd(empty_col, half_row)));
+print(sparsity(outerAdd(half_col, half_row)));
+print(sparsity(outerAdd(unknown_col, half_row)));
+print(sparsity(outerAdd(unknown_col, unknown_row)));
+
+print("outersub");
+print(sparsity(outerSub(empty_col, empty_row)));
+print(sparsity(outerSub(empty_col, half_row)));
+print(sparsity(outerSub(half_col, half_row)));
+print(sparsity(outerSub(unknown_col, half_row)));
+print(sparsity(outerSub(unknown_col, unknown_row)));
+
+print("outermul");
+print(sparsity(outerMul(empty_col, empty_row)));
+print(sparsity(outerMul(empty_col, half_row)));
+print(sparsity(outerMul(half_col, half_row)));
+print(sparsity(outerMul(unknown_col, empty_row)));
+print(sparsity(outerMul(unknown_col, half_row)));
+print(sparsity(outerMul(unknown_col, unknown_row)));
+
+print("outerdiv");
+// print(sparsity(outerDiv(empty_col, empty_row)));
+// print(sparsity(outerDiv(empty_col, half_row)));
+// print(sparsity(outerDiv(half_col, half_row)));
+print(sparsity(outerDiv(unknown_col, half_row)));
+print(sparsity(outerDiv(half_col, unknown_row)));
+print(sparsity(outerDiv(unknown_col, unknown_row)));
+
+print("outerpow");
+print(sparsity(outerPow(empty_col, empty_row)));
+print(sparsity(outerPow(empty_col, half_row)));
+print(sparsity(outerPow(half_col, half_row)));
+print(sparsity(outerPow(unknown_col, half_row)));
+print(sparsity(outerPow(unknown_col, unknown_row)));
+
+print("outermod");
+print(sparsity(outerMod(empty_col, empty_row)));
+print(sparsity(outerMod(empty_col, half_row)));
+print(sparsity(outerMod(half_col, half_row)));
+print(sparsity(outerMod(unknown_col, half_row)));
+print(sparsity(outerMod(unknown_col, unknown_row)));
+
+print("outermin");
+print(sparsity(outerMin(empty_col, empty_row)));
+print(sparsity(outerMin(empty_col, half_row)));
+print(sparsity(outerMin(full_col, full_row)));
+print(sparsity(outerMin(unknown_col, empty_row)));
+
+print("outermax");
+print(sparsity(outerMax(empty_col, empty_row)));
+print(sparsity(outerMax(empty_col, half_row)));
+print(sparsity(outerMax(full_col, full_row)));
+print(sparsity(outerMax(unknown_col, empty_row)));
+
+print("outerand");
+print(sparsity(outerAnd(empty_col, empty_row)));
+print(sparsity(outerAnd(empty_col, half_row)));
+print(sparsity(outerAnd(half_col, half_row)));
+print(sparsity(outerAnd(unknown_col, empty_row)));
+print(sparsity(outerAnd(unknown_col, full_row)));
+
+print("outeror");
+print(sparsity(outerOr(empty_col, empty_row)));
+print(sparsity(outerOr(empty_col, half_row)));
+print(sparsity(outerOr(half_col, empty_row)));
+print(sparsity(outerOr(half_col, half_row)));
+print(sparsity(outerOr(unknown_col, empty_row)));
+print(sparsity(outerOr(unknown_col, full_row)));
+
+print("outereq");
+print(sparsity(outerEq(empty_col, empty_row)));
+print(sparsity(outerEq(full_col, full_row)));
+print(sparsity(outerEq(full_col, empty_row)));
+print(sparsity(outerEq(empty_col, full_row)));
+print(sparsity(outerEq(unknown_col, empty_row)));
+print(sparsity(outerEq(unknown_col, unknown_row)));
+
+print("outerneq");
+print(sparsity(outerNeq(empty_col, empty_row)));
+print(sparsity(outerNeq(full_col, full_row)));
+print(sparsity(outerNeq(full_col, empty_row)));
+print(sparsity(outerNeq(empty_col, full_row)));
+print(sparsity(outerNeq(unknown_col, empty_row)));
+print(sparsity(outerNeq(unknown_col, unknown_row)));
+
+print("outerlt");
+print(sparsity(outerLt(empty_col, empty_row)));
+print(sparsity(outerLt(full_col, full_row)));
+print(sparsity(outerLt(full_col, empty_row)));
+print(sparsity(outerLt(unknown_col, empty_row)));
+print(sparsity(outerLt(unknown_col, unknown_row)));
+
+print("outerle");
+print(sparsity(outerLe(empty_col, empty_row)));
+print(sparsity(outerLe(full_col, full_row)));
+print(sparsity(outerLe(full_col, empty_row)));
+print(sparsity(outerLe(unknown_col, empty_row)));
+print(sparsity(outerLe(unknown_col, unknown_row)));
+
+print("outergt");
+print(sparsity(outerGt(empty_col, empty_row)));
+print(sparsity(outerGt(full_col, full_row)));
+print(sparsity(outerGt(full_col, empty_row)));
+print(sparsity(outerGt(unknown_col, empty_row)));
+print(sparsity(outerGt(unknown_col, unknown_row)));
+
+print("outerge");
+print(sparsity(outerGe(empty_col, empty_row)));
+print(sparsity(outerGe(full_col, full_row)));
+print(sparsity(outerGe(full_col, empty_row)));
+print(sparsity(outerGe(unknown_col, empty_row)));
+print(sparsity(outerGe(unknown_col, unknown_row)));

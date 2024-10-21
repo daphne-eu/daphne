@@ -1,0 +1,59 @@
+// --------------------------------------------------------------------
+// Reorganization
+// --------------------------------------------------------------------
+
+lhs = rand(2, 2, 0, 2, 0.25, -1);
+rhs = rand(2, 2, 0, 2, 0.75, -1);
+unknown = sin(rand(2, 2, 0, 2, 0.75, -1));
+
+print("Reorganization");
+
+print("reshape");
+print(sparsity(reshape(lhs, 1, 4)));
+print(sparsity(reshape(rhs, 1, 4)));
+print(sparsity(reshape(unknown, 1, 4)));
+
+print("transpose");
+print(sparsity(transpose(lhs)));
+print(sparsity(transpose(rhs)));
+print(sparsity(transpose(unknown)));
+
+print("cbind");
+print(sparsity(cbind(lhs, rhs)));
+print(sparsity(cbind(lhs, unknown)));
+
+print("rbind");
+print(sparsity(rbind(lhs, rhs)));
+print(sparsity(rbind(lhs, unknown)));
+
+print("reverse");
+print(sparsity(reverse(lhs)));
+print(sparsity(reverse(rhs)));
+print(sparsity(reverse(unknown)));
+
+// --------------------------------------------------------------------
+// Other Operations
+// --------------------------------------------------------------------
+
+print("Other Operations");
+
+print("diagVector");
+print(sparsity(diagVector(lhs)));
+print(sparsity(diagVector(rhs)));
+print(sparsity(diagVector(unknown)));
+
+print("lowerTri");
+print(sparsity(lowerTri(lhs, 0, 0)));
+print(sparsity(lowerTri(rhs, 0, 0)));
+print(sparsity(lowerTri(unknown, 0, 0)));
+
+print("upperTri");
+print(sparsity(upperTri(lhs, 0, 0)));
+print(sparsity(upperTri(rhs, 0, 0)));
+print(sparsity(upperTri(unknown, 0, 0)));
+
+print("replace");
+print(sparsity(replace(lhs, 0, 1)));
+print(sparsity(replace(unknown, 0, 1)));
+print(sparsity(replace(lhs, 0, 0)));
+print(sparsity(replace(lhs, 1, 0)));

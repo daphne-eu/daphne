@@ -1,0 +1,100 @@
+// --------------------------------------------------------------------
+// Full/row/column aggregation
+// --------------------------------------------------------------------
+
+empty = rand(2, 2, 1, 1, 0.0, -1);
+half = rand(2, 2, 1, 1, 0.5, -1);
+full = rand(2, 2, 1, 1, 1.0, -1);
+
+print("Full/row/column aggregation");
+print("sum");
+print(sparsity(sum(empty, 0)));
+print(sparsity(sum(half, 0)));
+print(sparsity(sum(full, 0)));
+print(sparsity(sum(empty, 1)));
+print(sparsity(sum(half, 1)));
+print(sparsity(sum(full, 1)));
+
+print("min");
+print(sparsity(aggMin(empty, 0)));
+print(sparsity(aggMin(half, 0)));
+print(sparsity(aggMin(full, 0)));
+print(sparsity(aggMin(empty, 1)));
+print(sparsity(aggMin(half, 1)));
+print(sparsity(aggMin(full, 1)));
+
+print("max");
+print(sparsity(aggMax(empty, 0)));
+print(sparsity(aggMax(half, 0)));
+print(sparsity(aggMax(full, 0)));
+print(sparsity(aggMax(empty, 1)));
+print(sparsity(aggMax(half, 1)));
+print(sparsity(aggMax(full, 1)));
+
+print("idxmin");
+print(sparsity(idxMin(empty, 0)));
+print(sparsity(idxMin(half, 0)));
+print(sparsity(idxMin(full, 0)));
+print(sparsity(idxMin(empty, 1)));
+print(sparsity(idxMin(half, 1)));
+print(sparsity(idxMin(full, 1)));
+
+print("idxmax");
+print(sparsity(idxMax(empty, 0)));
+print(sparsity(idxMax(half, 0)));
+print(sparsity(idxMax(full, 0)));
+print(sparsity(idxMax(empty, 1)));
+print(sparsity(idxMax(half, 1)));
+print(sparsity(idxMax(full, 1)));
+
+print("mean");
+print(sparsity(mean(empty, 0)));
+print(sparsity(mean(half, 0)));
+print(sparsity(mean(full, 0)));
+print(sparsity(mean(empty, 1)));
+print(sparsity(mean(half, 1)));
+print(sparsity(mean(full, 1)));
+
+print("var");
+print(sparsity(var(empty, 0)));
+print(sparsity(var(half, 0)));
+print(sparsity(var(full, 0)));
+print(sparsity(var(empty, 1)));
+print(sparsity(var(half, 1)));
+print(sparsity(var(full, 1)));
+
+print("stddev");
+print(sparsity(stddev(empty, 0)));
+print(sparsity(stddev(half, 0)));
+print(sparsity(stddev(full, 0)));
+print(sparsity(stddev(empty, 1)));
+print(sparsity(stddev(half, 1)));
+print(sparsity(stddev(full, 1)));
+
+
+// --------------------------------------------------------------------
+// Cumulative aggregation
+// --------------------------------------------------------------------
+
+print("Cumulative aggregation");
+
+print("CumSum");
+print(sparsity(cumSum(empty)));
+print(sparsity(cumSum(half)));
+print(sparsity(cumSum(full)));
+
+print("CumProd");
+print(sparsity(cumProd(empty)));
+print(sparsity(cumProd(half)));
+print(sparsity(cumProd(full)));
+
+print("CumMin");
+print(sparsity(cumMin(empty)));
+print(sparsity(cumMin(half)));
+print(sparsity(cumMin(full)));
+
+print("CumMax");
+print(sparsity(cumMax(empty)));
+print(sparsity(cumMax(half)));
+print(sparsity(cumMax(full)));
+
