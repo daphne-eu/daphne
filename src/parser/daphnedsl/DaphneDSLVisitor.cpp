@@ -1304,6 +1304,8 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, const
         if constexpr (std::is_same<VT, std::string>::value) {
             if (currentType.isa<mlir::daphne::StringType>())
                 fillRes(i, CompilerUtils::isConstant<std::string>(currentValue));
+            else
+                throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
         } else {
             if (mlir::IntegerType valueIntType = currentType.dyn_cast<mlir::IntegerType>()) {
                 if (currentType.isSignedInteger()) {

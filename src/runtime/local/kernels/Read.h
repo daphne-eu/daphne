@@ -90,37 +90,38 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
             break;
         case 1:
             if constexpr (std::is_same<VT, std::string>::value)
-                throw std::runtime_error("File extension not supported for strings");
-            else {
+                throw std::runtime_error("reading string-valued MatrixMarket files is not supported (yet)");
+            else
                 readMM(res, filename);
-                break;
-            }
             break;
         case 2:
             if constexpr (std::is_same<VT, std::string>::value)
-                throw std::runtime_error("File extension not supported for strings");
+                throw std::runtime_error("reading string-valued Parquet files is not supported (yet)");
             else {
                 if (res == nullptr)
                     res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
                 readParquet(res, filename, fmd.numRows, fmd.numCols);
-                break;
             }
+            break;
         case 3:
             if constexpr (std::is_same<VT, std::string>::value)
-                throw std::runtime_error("File extension not supported for strings");
-            else {
+                throw std::runtime_error("reading string-valued DAPHNE binary format files is not supported (yet)");
+            else
                 readDaphne(res, filename);
-                break;
-            }
+            break;
 #if USE_HDFS
         case 4:
-            if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
-            readHDFS(res, filename, ctx);
+            if constexpr (std::is_same<VT, std::string>::value)
+                throw std::runtime_error("reading string-valued HDFS files is not supported (yet)");
+            else {
+                if (res == nullptr)
+                    res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
+                readHDFS(res, filename, ctx);
+            }
             break;
 #endif
         default:
-            throw std::runtime_error("File extension not supported");
+            throw std::runtime_error("file extension not supported");
         }
     }
 };

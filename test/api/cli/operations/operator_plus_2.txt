@@ -1,21 +1,35 @@
+scalar+scalar
 ab
 a1
 1a
 12
 a3
 3a
-DenseMatrix(4x1, std::string)
-abcde
-abcde
-abcde
-abcde
-DenseMatrix(4x1, std::string)
-abcde
-abcde
-abcde
-abcde
-DenseMatrix(4x1, std::string)
-abcdend
-abcdend
-abcdend
-abcdend
+
+matrix+scalar
+DenseMatrix(1x1, std::string)
+ab
+DenseMatrix(1x1, std::string)
+a1
+DenseMatrix(1x1, std::string)
+1a
+DenseMatrix(1x1, std::string)
+12
+DenseMatrix(1x1, std::string)
+a3
+DenseMatrix(1x1, std::string)
+3a
+
+matrix+matrix
+DenseMatrix(1x1, std::string)
+ab
+DenseMatrix(1x1, std::string)
+a1
+DenseMatrix(1x1, std::string)
+1a
+DenseMatrix(1x1, std::string)
+12
+DenseMatrix(1x1, std::string)
+a3
+DenseMatrix(1x1, std::string)
+3a

@@ -1,13 +1,13 @@
-// test recode on a matrix of strings.
+# Recoding a non-empty matrix (string values; non-order-preserving and order-preserving).
 
-X = fill("a", 10, 1);
-X[2, 0] = fill("b", 1, 1);
-X [5:, 0] = fill("c", 5, 1);
+X = ["v_33", "v_22", "v_55", "v_22", "v_22", "v_11", "v_44", "v_55"];
+
 codes, dict = recode(X, false);
-
-print("input matrix");
-print(X);
-print("dict");
-print(dict);
-print("codes");
 print(codes);
+print(dict);
+
+print("");
+
+codes, dict = recode(X, true);
+print(codes);
+print(dict);

@@ -1,16 +1,12 @@
 input matrix
-DenseMatrix(4x2, std::string)
-abCD abCD
-abCD abCD
-abCD abCD
-abCD abCD
+DenseMatrix(2x1, std::string)
+abCD
+eFgH
 result
-DenseMatrix(4x2, std::string)
-ABCD ABCD
-ABCD ABCD
-ABCD ABCD
-ABCD ABCD
-input string
+DenseMatrix(2x1, std::string)
+ABCD
+EFGH
+input scalar
 ABCDefg
 result
 ABCDEFG
