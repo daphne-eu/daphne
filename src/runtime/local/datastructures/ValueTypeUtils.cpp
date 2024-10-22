@@ -42,6 +42,8 @@ size_t ValueTypeUtils::sizeOf(ValueTypeCode type) {
         return sizeof(float);
     case ValueTypeCode::F64:
         return sizeof(double);
+    case ValueTypeCode::STR:
+        return sizeof(std::string);
     default:
         throw std::runtime_error("ValueTypeUtils::sizeOf: unknown value type code");
     }
@@ -122,6 +124,7 @@ template <> const uint64_t ValueTypeUtils::defaultValue<uint64_t> = 0;
 template <> const float ValueTypeUtils::defaultValue<float> = 0;
 template <> const double ValueTypeUtils::defaultValue<double> = 0;
 template <> const bool ValueTypeUtils::defaultValue<bool> = false;
+template <> const char *ValueTypeUtils::defaultValue<const char *> = "";
 template <> const std::string ValueTypeUtils::defaultValue<std::string> = std::string("");
 template <> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16> = FixedStr16();
 

@@ -68,6 +68,10 @@ template <typename VTArg> struct CastSca<const char *, VTArg> {
     }
 };
 
+template <typename VTArg> struct CastSca<std::string, VTArg> {
+    static std::string apply(VTArg arg, DCTX(ctx)) { return std::to_string(arg).c_str(); }
+};
+
 // ----------------------------------------------------------------------------
 // any type <- string
 // ----------------------------------------------------------------------------

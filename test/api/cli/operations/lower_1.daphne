@@ -1,0 +1,17 @@
+// test element-wise unary operation lower.
+
+// matrix of strings.
+A = ["abCD", "eFgH"];
+
+print("input matrix");
+print(A);
+print("result");
+print(lower(A));
+
+// string scalar.
+B = "ABCDefg";
+
+print("input scalar");
+print(B);
+print("result");
+print(lower(B));

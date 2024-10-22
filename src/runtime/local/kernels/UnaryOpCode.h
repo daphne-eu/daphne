@@ -140,6 +140,7 @@ SUPPORT_NUMERIC(uint8_t)
 // String operations
 SUPPORT_STRING(std::string)
 SUPPORT_STRING(FixedStr16)
+SUPPORT_STRING(const char *)
 
 // Undefine helper macros.
 #undef SUPPORT

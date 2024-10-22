@@ -291,7 +291,11 @@ std::vector<Type> daphne::ExtractOp::inferTypes() {
 
 std::vector<Type> daphne::OneHotOp::inferTypes() {
     Type srcType = getArg().getType();
-    return {srcType.dyn_cast<daphne::MatrixType>().withSameElementType()};
+    Builder builder(getContext());
+    if (srcType.dyn_cast<daphne::MatrixType>().getElementType().isa<mlir::daphne::StringType>())
+        return {srcType.dyn_cast<daphne::MatrixType>().withElementType(builder.getIntegerType(64, true))};
+    else
+        return {srcType.dyn_cast<daphne::MatrixType>().withSameElementType()};
 }
 
 std::vector<Type> daphne::GenericCallOp::inferTypes() {
@@ -336,6 +340,8 @@ mlir::Type mlirTypeForCode(ValueTypeCode type, Builder builder) {
         return builder.getF32Type();
     case ValueTypeCode::F64:
         return builder.getF64Type();
+    case ValueTypeCode::STR:
+        return mlir::daphne::StringType::get(builder.getContext());
     default:
         throw std::runtime_error("mlirTypeForCode: unknown value type code");
     }

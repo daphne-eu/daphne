@@ -47,12 +47,12 @@ template <class DTRes, typename VTArg> void fill(DTRes *&res, VTArg arg, size_t 
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT> struct Fill<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct Fill<DenseMatrix<VTRes>, VTArg> {
+    static void apply(DenseMatrix<VTRes> *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
         if (res != nullptr)
             throw std::invalid_argument("Trying to fill an already existing DenseMatrix.");
 
-        res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+        res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
         std::fill(res->getValues(), res->getValues() + res->getNumItems(), arg);
     }
 };
