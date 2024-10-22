@@ -16,10 +16,10 @@ checkMatBool = reshape(checkMatBool, 2, 2);
 print(checkMatBool);
 print("");
 
-checkMatstring = [ "a", "b", "c", "d" ];
-print(checkMatstring);
-checkMatstring = reshape(checkMatstring, 2, 2);
-print(checkMatstring);
+checkMatString = [ "a", "b", "c", "d" ];
+print(checkMatString);
+checkMatString = reshape(checkMatString, 2, 2);
+print(checkMatString);
 print("");
 
 // Defining matrix dimensions at creation.

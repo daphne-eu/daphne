@@ -266,7 +266,7 @@ def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", NumScalar, [ValueTypeFromArgsFP
 def Daphne_EwIsNanOp : Daphne_EwUnaryOp<"ewIsnan", NumScalar, [ValueTypeFromFirstArg]>;
 
 // ----------------------------------------------------------------------------
-// String Operators
+// Strings
 // ----------------------------------------------------------------------------
 
 def Daphne_EwLowerOp : Daphne_EwUnaryOp<"ewLower", StrScalar, [ValueTypeFromFirstArg]>;
@@ -343,7 +343,7 @@ def Daphne_EwBitwiseAndOp    : Daphne_EwBinaryOp<"ewBitwiseAnd", NumScalar, [Com
 // Strings
 // ----------------------------------------------------------------------------
 
-def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar, [ValueTypeStr, CastArgsToMostGeneralArgType]>;
+def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar, [ValueTypeStr, CastArgsToResType]>;
 
 // ----------------------------------------------------------------------------
 // Comparisons

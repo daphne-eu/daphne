@@ -30,12 +30,12 @@ template <BinaryOpCode opCode, typename VT> void checkEwBinarySca(VT lhs, VT rhs
     CHECK(ewBinarySca<VT, VT, VT>(opCode, lhs, rhs, nullptr) == exp);
 }
 
-template <BinaryOpCode opCode> void checkEwBinarySca(std::string lhs, std::string rhs, int exp) {
+template <BinaryOpCode opCode> void checkEwBinarySca(std::string lhs, std::string rhs, int64_t exp) {
     CHECK(EwBinarySca<opCode, int64_t, std::string, std::string>::apply(lhs, rhs, nullptr) == exp);
     CHECK(ewBinarySca<int64_t, std::string, std::string>(opCode, lhs, rhs, nullptr) == exp);
 }
 
-template <BinaryOpCode opCode> void checkEwBinarySca(FixedStr16 lhs, FixedStr16 rhs, int exp) {
+template <BinaryOpCode opCode> void checkEwBinarySca(FixedStr16 lhs, FixedStr16 rhs, int64_t exp) {
     CHECK(EwBinarySca<opCode, int64_t, FixedStr16, FixedStr16>::apply(lhs, rhs, nullptr) == exp);
     CHECK(ewBinarySca<int64_t, FixedStr16, FixedStr16>(opCode, lhs, rhs, nullptr) == exp);
 }
@@ -222,8 +222,9 @@ TEMPLATE_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, VALUE_TYPES) {
 }
 
 // ****************************************************************************
-// String op
+// String ops
 // ****************************************************************************
+
 TEMPLATE_TEST_CASE(TEST_NAME("concat"), TAG_KERNELS, ALL_STRING_VALUE_TYPES) {
     using VT = TestType;
     checkEwBinarySca<VT>(VT("abcd"), VT("abcd"), std::string("abcdabcd"));

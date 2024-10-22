@@ -9,13 +9,9 @@ DenseMatrix(1x1, int64_t)
 1
 DenseMatrix(1x1, double)
 2
-DenseMatrix(3x1, double)
+DenseMatrix(1x1, double)
 1.1
-1
-1
-DenseMatrix(3x1, int64_t)
-1
-1
+DenseMatrix(1x1, int64_t)
 1
 DenseMatrix(3x1, double)
 20

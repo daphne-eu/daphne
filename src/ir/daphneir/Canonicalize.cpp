@@ -15,7 +15,7 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
 
     for (size_t i = 0; i < currentSize; i++) {
         const auto &input = op.getInputs()[i];
-        const auto &split = op.getSplits()[i].cast<daphne::VectorSplitAttr>().getValue();
+        const auto &split = vSplitsAttrs[i].cast<daphne::VectorSplitAttr>().getValue();
 
         if (inputMap.count(input) == 0) {
             inputMap[input] = i;
@@ -244,7 +244,7 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
                 const bool lhsIsMatStr =
                     llvm::isa<mlir::daphne::StringType>(lhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
                 if (lhsIsMatStr) {
-                    rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, lhs.getType(), lhs, rhs);
+                    rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, op.getResult().getType(), lhs, rhs);
                     return mlir::success();
                 }
             } else
@@ -252,7 +252,7 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
         }
         if (!rhsIsStr)
             rhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, rhs);
-        rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, strTy, lhs, rhs);
+        rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, op.getResult().getType(), lhs, rhs);
         return mlir::success();
     } else {
         const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());

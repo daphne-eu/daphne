@@ -142,7 +142,7 @@ static constexpr bool supportsBinaryOp = false;
     /* string Comparisons operations. */                                                                               \
     SUPPORT_RLR(EQ, VTRes, VTArg, VTArg)                                                                               \
     SUPPORT_RLR(NEQ, VTRes, VTArg, VTArg)
-#define SUPPORT_STRING_RA(VTRes, VTLhs, VTRhs)                                                                         \
+#define SUPPORT_STRING_RLR(VTRes, VTLhs, VTRhs)                                                                        \
     /* string concatenation operations. */                                                                             \
     /*  Since the result may not fit in FixedStr16,*/                                                                  \
     /*  it always return std::string*/                                                                                 \
@@ -179,10 +179,10 @@ SUPPORT_EQUALITY_RA(int64_t, FixedStr16)
 SUPPORT_EQUALITY_RA(int64_t, const char *)
 SUPPORT_COMPARISONS_RA(int64_t, std::string)
 SUPPORT_COMPARISONS_RA(int64_t, FixedStr16)
-SUPPORT_STRING_RA(std::string, std::string, std::string)
-SUPPORT_STRING_RA(std::string, FixedStr16, FixedStr16)
-SUPPORT_STRING_RA(const char *, const char *, const char *)
-SUPPORT_STRING_RA(std::string, std::string, const char *)
+SUPPORT_STRING_RLR(std::string, std::string, std::string)
+SUPPORT_STRING_RLR(std::string, FixedStr16, FixedStr16)
+SUPPORT_STRING_RLR(const char *, const char *, const char *)
+SUPPORT_STRING_RLR(std::string, std::string, const char *)
 
 // Undefine helper macros.
 #undef SUPPORT
@@ -196,4 +196,4 @@ SUPPORT_STRING_RA(std::string, std::string, const char *)
 #undef SUPPORT_NUMERIC_INT
 #undef SUPPORT_EQUALITY_RA
 #undef SUPPORT_COMPARISONS_RA
-#undef SUPPORT_STRING_RA
+#undef SUPPORT_STRING_RLR

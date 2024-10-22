@@ -60,6 +60,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALU
     DataObjectFactory::destroy(exp, res);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE("Fill-existing", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    VT arg = 123;
+    size_t numRows = 4, numCols = 4;
+    DT *res = genGivenVals<DT>(2, {VT(1.5), VT(1.5), VT(1.5), VT(1.5)});
+    CHECK_THROWS(fill(res, arg, numRows, numCols, nullptr));
+}
+
 TEMPLATE_PRODUCT_TEST_CASE("FillString", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;

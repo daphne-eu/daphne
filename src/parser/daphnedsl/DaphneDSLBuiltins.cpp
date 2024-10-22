@@ -503,9 +503,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
 
     if (func == "isNan")
         return createUnaryOp<EwIsNanOp>(loc, func, args);
+
     // --------------------------------------------------------------------
-    // String Operators
+    // Strings
     // --------------------------------------------------------------------
+
     if (func == "lower")
         return createUnaryOp<EwLowerOp>(loc, func, args);
     if (func == "upper")
@@ -1202,13 +1204,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value arg = args[0];
         mlir::Value info = args[1];
-        mlir::Type arg_type = arg.getType();
-        if (arg_type.dyn_cast<mlir::daphne::MatrixType>().getElementType().isa<mlir::daphne::StringType>()) {
-            return static_cast<mlir::Value>(
-                builder.create<OneHotOp>(loc, utils.matrixOf(builder.getIntegerType(64, true)), arg, info));
-        } else {
-            return static_cast<mlir::Value>(builder.create<OneHotOp>(loc, arg.getType(), arg, info));
-        }
+        return utils.retValWithInferedType(builder.create<OneHotOp>(loc, utils.unknownType, arg, info));
     }
     if (func == "recode") {
         checkNumArgsExact(loc, func, numArgs, 2);
