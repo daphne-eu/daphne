@@ -365,6 +365,18 @@ template <> struct ReadCsvFile<Frame> {
                     convertCstr(file->line + pos, &val_f64);
                     reinterpret_cast<double *>(rawCols[col])[row] = val_f64;
                     break;
+                case ValueTypeCode::STR: {
+                    std::string val_str = "";
+                    pos = setCString(file, pos, &val_str, delim);
+                    reinterpret_cast<std::string *>(rawCols[col])[row] = val_str;
+                    break;
+                }
+                case ValueTypeCode::FIXEDSTR16: {
+                    std::string val_str = "";
+                    pos = setCString(file, pos, &val_str, delim);
+                    reinterpret_cast<FixedStr16 *>(rawCols[col])[row] = FixedStr16(val_str);
+                    break;
+                }
                 default:
                     throw std::runtime_error("ReadCsvFile::apply: unknown value type code");
                 }

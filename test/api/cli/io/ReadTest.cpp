@@ -44,6 +44,10 @@ TEST_CASE("readFrameFromCSV", TAG_IO) {
     compareDaphneToRef(dirPath + "testReadFrame.txt", dirPath + "testReadFrame.daphne");
 }
 
+TEST_CASE("readStringValuesIntoFrameFromCSV", TAG_IO) {
+    compareDaphneToRef(dirPath + "testReadStringIntoFrame.txt", dirPath + "testReadStringIntoFrame.daphne");
+}
+
 TEST_CASE("readMatrixFromCSV", TAG_IO) {
     compareDaphneToRef(dirPath + "testReadMatrix.txt", dirPath + "testReadMatrix.daphne");
 }

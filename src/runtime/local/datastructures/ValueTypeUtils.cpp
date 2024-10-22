@@ -44,6 +44,8 @@ size_t ValueTypeUtils::sizeOf(ValueTypeCode type) {
         return sizeof(double);
     case ValueTypeCode::STR:
         return sizeof(std::string);
+    case ValueTypeCode::FIXEDSTR16:
+        return sizeof(FixedStr16);
     default:
         throw std::runtime_error("ValueTypeUtils::sizeOf: unknown value type code");
     }
@@ -76,6 +78,9 @@ void ValueTypeUtils::printValue(std::ostream &os, ValueTypeCode type, const void
         break;
     case ValueTypeCode::F64:
         os << reinterpret_cast<const double *>(array)[pos];
+        break;
+    case ValueTypeCode::STR:
+        os << reinterpret_cast<const std::string *>(array)[pos];
         break;
     default:
         throw std::runtime_error("ValueTypeUtils::printValue: unknown value type code");
@@ -146,6 +151,8 @@ const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
         return cppNameFor<float>;
     case ValueTypeCode::F64:
         return cppNameFor<double>;
+    case ValueTypeCode::STR:
+        return cppNameFor<std::string>;
     default:
         throw std::runtime_error("ValueTypeUtils::cppNameForCode: unknown value type code");
     }
