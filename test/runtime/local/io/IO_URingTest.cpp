@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include <chrono>
 
 #include <fcntl.h>
 
@@ -44,10 +44,10 @@ TEST_CASE("io_uring basic File R/W test", TAG_IO) {
     int fd = open("./test/runtime/local/io", O_TMPFILE | O_RDWR | O_DIRECT, S_IRUSR | S_IWUSR);
     REQUIRE(fd > 0);
 
-    auto data_page   = std::make_unique<uint64_t[]>(4096 / sizeof(uint64_t));
+    auto data_page = std::make_unique<uint64_t[]>(4096 / sizeof(uint64_t));
     auto result_page = std::make_unique<uint64_t[]>(4096 / sizeof(uint64_t));
     for (size_t i = 0; i < (4096 / sizeof(uint64_t)); i++) {
-        data_page[i]   = 42;
+        data_page[i] = 42;
         result_page[i] = 0;
     }
 
@@ -62,8 +62,8 @@ TEST_CASE("io_uring basic File R/W test", TAG_IO) {
     bool timed_out = false;
     while (write_future[0] == IO_STATUS::IN_FLIGHT) {
         if (static_cast<uint64_t>(
-              std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
-                .count()) > 3000) {
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
+                    .count()) > 3000) {
             timed_out = true;
             break;
         }
@@ -79,11 +79,11 @@ TEST_CASE("io_uring basic File R/W test", TAG_IO) {
     std::unique_ptr<std::atomic<IO_STATUS>[]> read_future = io_pool.SubmitReads(read_requests);
 
     timed_out = false;
-    start     = std::chrono::high_resolution_clock::now();
+    start = std::chrono::high_resolution_clock::now();
     while (read_future[0] == IO_STATUS::IN_FLIGHT) {
         if (static_cast<uint64_t>(
-              std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
-                .count()) > 3000) {
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
+                    .count()) > 3000) {
             timed_out = true;
             break;
         }
@@ -103,20 +103,21 @@ TEST_CASE("io_uring sleep cv test", TAG_IO) {
     int fd = open("./test/runtime/local/io", O_TMPFILE | O_RDWR | O_DIRECT, S_IRUSR | S_IWUSR);
     REQUIRE(fd > 0);
 
-    auto data_page   = std::make_unique<uint64_t[]>(4096 / sizeof(uint64_t));
+    auto data_page = std::make_unique<uint64_t[]>(4096 / sizeof(uint64_t));
     auto result_page = std::make_unique<uint64_t[]>(4096 / sizeof(uint64_t));
     for (size_t i = 0; i < (4096 / sizeof(uint64_t)); i++) {
-        data_page[i]   = 42;
+        data_page[i] = 42;
         result_page[i] = 0;
     }
-    
+
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
-    // Wait till threads timed out and went to sleep. Should happen after roughly idle_:timeout_threshold = 20ms 
-    while(static_cast<uint64_t>(
-              std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
-                .count()) < 500) {};
-    
+    // Wait till threads timed out and went to sleep. Should happen after roughly idle_:timeout_threshold = 20ms
+    while (static_cast<uint64_t>(
+               std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
+                   .count()) < 500) {
+    };
+
     // Threads should be sleeping now an actual assert does not make sense though due to spurious wakeups
 
     // The write
@@ -130,8 +131,8 @@ TEST_CASE("io_uring sleep cv test", TAG_IO) {
     bool timed_out = false;
     while (write_future[0] == IO_STATUS::IN_FLIGHT) {
         if (static_cast<uint64_t>(
-              std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
-                .count()) > 3000) {
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
+                    .count()) > 3000) {
             timed_out = true;
             break;
         }
@@ -147,18 +148,19 @@ TEST_CASE("io_uring sleep cv test", TAG_IO) {
     start = std::chrono::high_resolution_clock::now();
 
     // Let the threads go to sleep again
-    while(static_cast<uint64_t>(
-              std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
-                .count()) < 500) {};
+    while (static_cast<uint64_t>(
+               std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
+                   .count()) < 500) {
+    };
 
     std::unique_ptr<std::atomic<IO_STATUS>[]> read_future = io_pool.SubmitReads(read_requests);
 
     timed_out = false;
-    start     = std::chrono::high_resolution_clock::now();
+    start = std::chrono::high_resolution_clock::now();
     while (read_future[0] == IO_STATUS::IN_FLIGHT) {
         if (static_cast<uint64_t>(
-              std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
-                .count()) > 3000) {
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
+                    .count()) > 3000) {
             timed_out = true;
             break;
         }
@@ -180,17 +182,17 @@ TEST_CASE("io_uring basic File R/W test - multiple instance and requests", TAG_I
 
     uint64_t op_count = 47;
 
-    auto data_page   = std::make_unique<uint8_t[]>(op_count * 4096);
+    auto data_page = std::make_unique<uint8_t[]>(op_count * 4096);
     auto result_page = std::make_unique<uint8_t[]>(op_count * 4096);
 
     for (size_t i = 0; i < 4096 * op_count; i++) {
-        data_page[i]   = (i * 42) % 256;
+        data_page[i] = (i * 42) % 256;
         result_page[i] = 0;
     }
 
     // The write
     std::vector<URingWrite> write_requests;
-    for (size_t i=0; i < op_count; i++) {
+    for (size_t i = 0; i < op_count; i++) {
         write_requests.push_back({&data_page[i * 4096], 4096, i * 4096, fd});
     }
     std::unique_ptr<std::atomic<IO_STATUS>[]> write_future = io_pool.SubmitWrites(write_requests);
@@ -198,11 +200,11 @@ TEST_CASE("io_uring basic File R/W test - multiple instance and requests", TAG_I
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
     bool timed_out = false;
-    for (size_t i=0; i < op_count; i++) {
+    for (size_t i = 0; i < op_count; i++) {
         while (write_future[i] == IO_STATUS::IN_FLIGHT) {
-            if (static_cast<uint64_t>(
-                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
-                    .count()) > 3000) {
+            if (static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                          std::chrono::high_resolution_clock::now() - start)
+                                          .count()) > 3000) {
                 timed_out = true;
                 break;
             }
@@ -210,25 +212,25 @@ TEST_CASE("io_uring basic File R/W test - multiple instance and requests", TAG_I
     }
     REQUIRE(!timed_out);
 
-    for (size_t i=0; i < op_count; i++) {
+    for (size_t i = 0; i < op_count; i++) {
         REQUIRE(write_future[i] == IO_STATUS::SUCCESS);
     }
 
     // The Read
     std::vector<URingRead> read_requests;
-    for (size_t i=0; i < op_count; i++) {
+    for (size_t i = 0; i < op_count; i++) {
         read_requests.push_back({&result_page[i * 4096], 4096, i * 4096, fd});
     }
 
     std::unique_ptr<std::atomic<IO_STATUS>[]> read_future = io_pool.SubmitReads(read_requests);
 
     timed_out = false;
-    start     = std::chrono::high_resolution_clock::now();
-    for (size_t i=0; i < op_count; i++) {
+    start = std::chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < op_count; i++) {
         while (read_future[i] == IO_STATUS::IN_FLIGHT) {
-            if (static_cast<uint64_t>(
-                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start)
-                    .count()) > 3000) {
+            if (static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                          std::chrono::high_resolution_clock::now() - start)
+                                          .count()) > 3000) {
                 timed_out = true;
                 break;
             }
@@ -236,7 +238,7 @@ TEST_CASE("io_uring basic File R/W test - multiple instance and requests", TAG_I
     }
     REQUIRE(!timed_out);
 
-    for (size_t i=0; i < op_count; i++) {
+    for (size_t i = 0; i < op_count; i++) {
         REQUIRE(read_future[i] == IO_STATUS::SUCCESS);
     }
 

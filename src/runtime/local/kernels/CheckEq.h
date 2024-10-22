@@ -24,7 +24,6 @@
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Matrix.h>
 
-
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************

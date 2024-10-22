@@ -21,11 +21,11 @@
 #include <cstring>
 #include <vector>
 
-#include <liburing.h>
 #include <asm-generic/errno-base.h>
+#include <liburing.h>
 
-#include "Container.h"
 #include "AsyncUtil.h"
+#include "Container.h"
 
 enum struct IO_OP_CODE : uint8_t { READ = 0, WRITE = 1 };
 
@@ -79,7 +79,7 @@ struct InFilghtSQE {
 // Thread safety: io_urings default thread safety model intends at a maximum one
 // user space thread to operate on the SQ and CQ respectively.
 struct URing {
-    bool use_io_dev_polling;    // Needs hardware support
+    bool use_io_dev_polling; // Needs hardware support
     bool use_sq_polling;
 
     struct io_uring_params ring_para;
@@ -95,9 +95,7 @@ struct URing {
     Pool<InFilghtSQE> in_flight_SQEs;
 
     // ring_size must be <= 32K and will be rounded up to the next power of two
-    URing(uint32_t ring_size,
-          bool use_io_dev_polling,
-          bool use_sq_polling,
+    URing(uint32_t ring_size, bool use_io_dev_polling, bool use_sq_polling,
           uint32_t submission_queue_idle_timeout_in_ms);
 
     ~URing();

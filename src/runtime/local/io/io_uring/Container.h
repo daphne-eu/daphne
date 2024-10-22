@@ -24,8 +24,7 @@
 #include <optional>
 #include <vector>
 
-template<typename T>
-struct ThreadSafeStack {
+template <typename T> struct ThreadSafeStack {
     T *data;
     std::atomic<uint64_t> size = 0;
     uint64_t capacity;
@@ -125,18 +124,15 @@ struct ThreadSafeStack {
         return result;
     }
 
-    // Does not acquire the lock -> likely only useful for e.g. polling style operations 
-    uint64_t Size() {
-        return size.load();
-    }
+    // Does not acquire the lock -> likely only useful for e.g. polling style operations
+    uint64_t Size() { return size.load(); }
 
     // Assumes id is in bounds
-    template<bool allready_holding_lck>
-    void Erase(uint64_t id) {
+    template <bool allready_holding_lck> void Erase(uint64_t id) {
         if constexpr (!allready_holding_lck) {
             lck.lock();
         }
-        T *new_buffer                  = static_cast<T *>(std::malloc(sizeof(T) * capacity));
+        T *new_buffer = static_cast<T *>(std::malloc(sizeof(T) * capacity));
         uint64_t size_before_decrement = size--;
         std::memcpy(new_buffer, data, sizeof(T) * id);
         std::memcpy(new_buffer + id, data + id + 1, sizeof(T) * (size_before_decrement - id - 1));
@@ -151,14 +147,11 @@ struct ThreadSafeStack {
         data = static_cast<T *>(std::malloc(sizeof(T) * initial_capacity));
     }
 
-    ~ThreadSafeStack() {
-        std::free(data);
-    }
+    ~ThreadSafeStack() { std::free(data); }
 };
 
 // Fixed buffer, random access Container / Allocator
-template<typename DataType>
-struct Pool {
+template <typename DataType> struct Pool {
     std::unique_ptr<DataType[]> data;
     uint64_t max_size;
     std::unique_ptr<std::mutex[]> entry_lcks;
@@ -167,16 +160,15 @@ struct Pool {
     std::atomic<uint64_t> currently_occupied_slots = 0;
 
     Pool(uint64_t max_size) : max_size(max_size) {
-        data       = std::make_unique<DataType[]>(max_size);
-        is_in_use  = std::make_unique<std::atomic<bool>[]>(max_size);
+        data = std::make_unique<DataType[]>(max_size);
+        is_in_use = std::make_unique<std::atomic<bool>[]>(max_size);
         entry_lcks = std::make_unique<std::mutex[]>(max_size);
         for (uint64_t i = 0; i < max_size; i++) {
             is_in_use[i] = false;
         }
     };
 
-    template<bool keep_holding_lock_after_success>
-    std::optional<uint64_t> Alloc() {
+    template <bool keep_holding_lock_after_success> std::optional<uint64_t> Alloc() {
         for (uint64_t i = 0; i < max_size; i++) {
             entry_lcks[i].lock();
             if (!is_in_use[i]) {
@@ -193,8 +185,7 @@ struct Pool {
         return std::nullopt;
     }
 
-    template<bool already_holding_lock>
-    void Free(uint64_t id) {
+    template <bool already_holding_lock> void Free(uint64_t id) {
         if constexpr (!already_holding_lock) {
             entry_lcks[id].lock();
         }
@@ -207,8 +198,7 @@ struct Pool {
 
     // Attempts to insert item into pool and returns the according index.
     // Fails if full, but also may spuriously fail if polling flag is set
-    template<bool poll_before_acquire>
-    std::optional<uint64_t> TryInsert(DataType to_insert) {
+    template <bool poll_before_acquire> std::optional<uint64_t> TryInsert(DataType to_insert) {
         for (uint64_t i = 0; i < max_size; i++) {
             if constexpr (poll_before_acquire) {
                 if (!is_in_use[i]) {
@@ -216,7 +206,7 @@ struct Pool {
 
                     if (!is_in_use[i]) {
                         is_in_use[i] = true;
-                        data[i]      = to_insert;
+                        data[i] = to_insert;
                         currently_occupied_slots++;
                         entry_lcks[i].unlock();
                         return i;
@@ -227,7 +217,7 @@ struct Pool {
                 entry_lcks[i].lock();
                 if (!is_in_use[i]) {
                     is_in_use[i] = true;
-                    data[i]      = to_insert;
+                    data[i] = to_insert;
                     currently_occupied_slots++;
                     entry_lcks[i].unlock();
                     return i;
@@ -269,8 +259,7 @@ struct Pool {
         return std::nullopt;
     }
 
-    template<bool keep_holding_lock_after_success>
-    std::optional<uint64_t> Find(DataType to_find) {
+    template <bool keep_holding_lock_after_success> std::optional<uint64_t> Find(DataType to_find) {
         for (uint64_t i = 0; i < max_size; i++) {
             if (is_in_use[i]) {
                 entry_lcks[i].lock();
@@ -291,8 +280,7 @@ struct Pool {
     }
 
     // For use with T==DataType or with other T that has a matching == operator
-    template<typename T>
-    bool FindAndRemove(T to_find) {
+    template <typename T> bool FindAndRemove(T to_find) {
         for (uint64_t i = 0; i < max_size; i++) {
             entry_lcks[i].lock();
 
@@ -312,8 +300,7 @@ struct Pool {
     }
 
     // For use with T==DataType or with other T that has a matching == operator
-    template<typename T>
-    std::optional<DataType> FindAndExtract(T to_find) {
+    template <typename T> std::optional<DataType> FindAndExtract(T to_find) {
         for (uint64_t i = 0; i < max_size; i++) {
             entry_lcks[i].lock();
 
@@ -347,7 +334,7 @@ struct Pool {
 
     DataType Extract(uint64_t id) {
         entry_lcks[id].lock();
-        DataType tmp  = data[id];
+        DataType tmp = data[id];
         is_in_use[id] = false;
         currently_occupied_slots--;
         entry_lcks[id].unlock();
