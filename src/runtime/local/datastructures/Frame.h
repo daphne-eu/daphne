@@ -140,18 +140,20 @@ class Frame : public Structure {
             this->schema[i] = schema[i];
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            if (this->schema[i] == ValueTypeCode::STR)
+
+            if (this->schema[i] == ValueTypeCode::STR) {
+                // If this is a string column, we must make sure that the column array contains only valid std::string
+                // objects.
                 this->columns[i] =
                     std::shared_ptr<ColByteType>(reinterpret_cast<ColByteType *>(new std::string[maxNumRows]),
                                                  [](ColByteType *p) { delete[] reinterpret_cast<std::string *>(p); });
-            else
-                this->columns[i] =
-                    std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc], std::default_delete<ColByteType[]>());
-            if (zero) {
-                if (this->schema[i] == ValueTypeCode::STR)
+                if (zero)
                     std::fill(reinterpret_cast<std::string *>(this->columns[i].get()),
                               reinterpret_cast<std::string *>(this->columns[i].get()) + maxNumRows, std::string(""));
-                else
+            } else {
+                this->columns[i] =
+                    std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc], std::default_delete<ColByteType[]>());
+                if (zero)
                     memset(this->columns[i].get(), 0, sizeAlloc);
             }
         }

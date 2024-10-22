@@ -1,4 +1,3 @@
-#Test reading from a file when the file path is not trivially constant(i.e., a parameter to a UDF)
-def readFrameFromCSV(path : str) { print(readFrame(path)); }
+// Test reading frame with string columns.
 
-readFrameFromCSV("test/api/cli/io/ReadCsv3.csv");
+print(readFrame("test/api/cli/io/ReadCsv3.csv"));

@@ -3,51 +3,15 @@
     "numCols": 3,
     "schema": [
         {
-            "label": "",
+            "label": "a",
             "valueType": "si8"
         },
         {
-            "label": "",
+            "label": "b",
             "valueType": "ui8"
         },
         {
-            "label": "",
-            "valueType": "str"
-        },
-        {
-            "label": "",
-            "valueType": "si8"
-        },
-        {
-            "label": "",
-            "valueType": "ui8"
-        },
-        {
-            "label": "",
-            "valueType": "str"
-        },
-        {
-            "label": "",
-            "valueType": "si8"
-        },
-        {
-            "label": "",
-            "valueType": "ui8"
-        },
-        {
-            "label": "",
-            "valueType": "str"
-        },
-        {
-            "label": "",
-            "valueType": "si8"
-        },
-        {
-            "label": "",
-            "valueType": "ui8"
-        },
-        {
-            "label": "",
+            "label": "c",
             "valueType": "str"
         }
     ]
