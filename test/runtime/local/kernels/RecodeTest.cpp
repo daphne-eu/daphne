@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/Recode.h>
 
@@ -29,10 +29,10 @@
 
 #include <cstdint>
 
-template<class DTRes, class DTDict, class DTArg>
-void checkRecode(const DTArg * arg, bool orderPreserving, const DTRes * expRes, const DTDict * expDict) {
-    DTRes * res = nullptr;
-    DTDict * dict = nullptr;
+template <class DTRes, class DTDict, class DTArg>
+void checkRecode(const DTArg *arg, bool orderPreserving, const DTRes *expRes, const DTDict *expDict) {
+    DTRes *res = nullptr;
+    DTDict *dict = nullptr;
     recode<DTRes, DTDict, DTArg>(res, dict, arg, orderPreserving, nullptr);
     CHECK(*res == *expRes);
     CHECK(*dict == *expDict);
@@ -43,20 +43,14 @@ TEMPLATE_PRODUCT_TEST_CASE("Recode", TAG_KERNELS, (DenseMatrix, Matrix), (double
     using DTArg = TestType;
     using VTArg = typename DTArg::VT;
     using DTRes = typename DTArg::template WithValueType<int64_t>;
-    using DTEmptyArg = typename std::conditional<
-                        std::is_same<DTArg, Matrix<VTArg>>::value,
-                        DenseMatrix<VTArg>,
-                        DTArg
-                    >::type;
-    using DTEmptyRes = typename std::conditional<
-                        std::is_same<DTArg, Matrix<VTArg>>::value,
-                        DenseMatrix<int64_t>,
-                        DTRes
-                    >::type;
-    
-    DTArg * arg = nullptr;
-    DTRes * expRes = nullptr;
-    DTArg * expDict = nullptr;
+    using DTEmptyArg =
+        typename std::conditional<std::is_same<DTArg, Matrix<VTArg>>::value, DenseMatrix<VTArg>, DTArg>::type;
+    using DTEmptyRes =
+        typename std::conditional<std::is_same<DTArg, Matrix<VTArg>>::value, DenseMatrix<int64_t>, DTRes>::type;
+
+    DTArg *arg = nullptr;
+    DTRes *expRes = nullptr;
+    DTArg *expDict = nullptr;
 
     SECTION("empty arg, non-order-preserving recoding") {
         arg = static_cast<DTArg *>(DataObjectFactory::create<DTEmptyArg>(0, 1, false));
@@ -80,6 +74,46 @@ TEMPLATE_PRODUCT_TEST_CASE("Recode", TAG_KERNELS, (DenseMatrix, Matrix), (double
         arg = genGivenVals<DTArg>(8, {33, 22, 55, 22, 22, 11, 44, 55});
         expRes = genGivenVals<DTRes>(8, {2, 1, 4, 1, 1, 0, 3, 4});
         expDict = genGivenVals<DTArg>(5, {11, 22, 33, 44, 55});
+        checkRecode(arg, true, expRes, expDict);
+    }
+
+    DataObjectFactory::destroy(arg, expRes, expDict);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("Recode", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+    using DTRes = DenseMatrix<int64_t>;
+    using DTDict = DenseMatrix<VTArg>;
+
+    DTArg *arg = nullptr;
+    DTRes *expRes = nullptr;
+    DTArg *expDict = nullptr;
+
+    SECTION("empty arg, non-order-preserving recoding") {
+        arg = DataObjectFactory::create<DTArg>(0, 1, false);
+        expRes = DataObjectFactory::create<DTRes>(0, 1, false);
+        expDict = DataObjectFactory::create<DTDict>(0, 1, false);
+        checkRecode(arg, false, expRes, expDict);
+    }
+    SECTION("empty arg, order-preserving recoding") {
+        arg = DataObjectFactory::create<DTArg>(0, 1, false);
+        expRes = DataObjectFactory::create<DTRes>(0, 1, false);
+        expDict = DataObjectFactory::create<DTDict>(0, 1, false);
+        checkRecode(arg, true, expRes, expDict);
+    }
+    SECTION("non-empty arg, non-order-preserving recoding") {
+        arg = genGivenVals<DTArg>(8, {VTArg("abc"), VTArg("ab"), VTArg("abcde"), VTArg("ab"), VTArg("ab"), VTArg("a"),
+                                      VTArg("abcd"), VTArg("abcde")});
+        expRes = genGivenVals<DTRes>(8, {0, 1, 2, 1, 1, 3, 4, 2});
+        expDict = genGivenVals<DTDict>(5, {VTArg("abc"), VTArg("ab"), VTArg("abcde"), VTArg("a"), VTArg("abcd")});
+        checkRecode(arg, false, expRes, expDict);
+    }
+    SECTION("non-empty arg, order-preserving recoding") {
+        arg = genGivenVals<DTArg>(8, {VTArg("abc"), VTArg("ab"), VTArg("abcde"), VTArg("ab"), VTArg("ab"), VTArg("a"),
+                                      VTArg("abcd"), VTArg("abcde")});
+        expRes = genGivenVals<DTRes>(8, {2, 1, 4, 1, 1, 0, 3, 4});
+        expDict = genGivenVals<DTDict>(5, {VTArg("a"), VTArg("ab"), VTArg("abc"), VTArg("abcd"), VTArg("abcde")});
         checkRecode(arg, true, expRes, expDict);
     }
 

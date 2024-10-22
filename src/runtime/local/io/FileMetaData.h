@@ -18,18 +18,18 @@
 
 #include <runtime/local/datastructures/ValueTypeCode.h>
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
-struct HDFSMetaData{
+struct HDFSMetaData {
     bool isHDFS = false;
     std::string HDFSFilename;
 };
 
 /**
  * @brief Very simple representation of basic file meta data.
- * 
+ *
  * Currently tailored to frames.
  */
 struct FileMetaData {
@@ -40,42 +40,22 @@ struct FileMetaData {
     std::vector<std::string> labels;
     const ssize_t numNonZeros;
     HDFSMetaData hdfs;
-    
+
     /**
      * @brief Construct a new File Meta Data object for Frames
      */
-    FileMetaData(
-        size_t numRows,
-        size_t numCols,
-        bool isSingleValueType,
-        std::vector<ValueTypeCode> schema,
-        std::vector<std::string> labels,
-        ssize_t numNonZeros = -1,
-        HDFSMetaData hdfs = {}
-    ) :
-        numRows(numRows), numCols(numCols),
-        isSingleValueType(isSingleValueType),
-        schema(std::move(schema)),
-        labels(std::move(labels)),
-        numNonZeros(numNonZeros),
-        hdfs(hdfs) {}
+    FileMetaData(size_t numRows, size_t numCols, bool isSingleValueType, std::vector<ValueTypeCode> schema,
+                 std::vector<std::string> labels, ssize_t numNonZeros = -1, HDFSMetaData hdfs = {})
+        : numRows(numRows), numCols(numCols), isSingleValueType(isSingleValueType), schema(std::move(schema)),
+          labels(std::move(labels)), numNonZeros(numNonZeros), hdfs(hdfs) {}
 
     /**
      * @brief Construct a new File Meta Data object for Matrix
      */
-    FileMetaData(
-        size_t numRows,
-        size_t numCols,
-        bool isSingleValueType,
-        ValueTypeCode valueType,
-        ssize_t numNonZeros = -1,
-        HDFSMetaData hdfs = {}
-    ) :
-        numRows(numRows), numCols(numCols),
-        isSingleValueType(isSingleValueType),
-        numNonZeros(numNonZeros),
-        hdfs(hdfs)
-    {
+    FileMetaData(size_t numRows, size_t numCols, bool isSingleValueType, ValueTypeCode valueType,
+                 ssize_t numNonZeros = -1, HDFSMetaData hdfs = {})
+        : numRows(numRows), numCols(numCols), isSingleValueType(isSingleValueType), numNonZeros(numNonZeros),
+          hdfs(hdfs) {
         schema.emplace_back(valueType);
     }
 };

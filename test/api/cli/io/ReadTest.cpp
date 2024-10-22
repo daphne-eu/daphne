@@ -40,18 +40,17 @@ TEST_CASE("readSparse", TAG_IO) {
 }
 #endif
 
-TEST_CASE("readFrameFromCSV", TAG_IO)
-{
+TEST_CASE("readFrameFromCSV", TAG_IO) {
     compareDaphneToRef(dirPath + "testReadFrame.txt", dirPath + "testReadFrame.daphne");
 }
 
-TEST_CASE("readMatrixFromCSV", TAG_IO)
-{
+TEST_CASE("readMatrixFromCSV", TAG_IO) {
     compareDaphneToRef(dirPath + "testReadMatrix.txt", dirPath + "testReadMatrix.daphne");
 }
 
 // does not yet work!
 // TEST_CASE("readReadMatrixFromCSV_DynamicPath", TAG_IO)
 // {
-//     compareDaphneToRef(dirPath + "testReadMatrix.txt", dirPath + "testReadMatrix_DynamicPath.daphne");
+//     compareDaphneToRef(dirPath + "testReadMatrix.txt", dirPath +
+//     "testReadMatrix_DynamicPath.daphne");
 // }

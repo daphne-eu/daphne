@@ -18,8 +18,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
-#include <runtime/local/kernels/SliceCol.h>
 #include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/SliceCol.h>
 
 #include <tags.h>
 
@@ -31,22 +31,33 @@
 
 TEMPLATE_PRODUCT_TEST_CASE("SliceCol", TAG_KERNELS, (DenseMatrix, Matrix), (double, int64_t, uint32_t)) {
     using DT = TestType;
-    
+
     std::vector<typename DT::VT> vals = {
-        0, 0, 1, 0, 2, 0,
-        0, 0, 0, 0, 0, 0,
-        3, 4, 5, 0, 6, 7,
-        0, 8, 0, 0, 9, 0,
+        0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 4, 5, 0, 6, 7, 0, 8, 0, 0, 9, 0,
     };
     std::vector<typename DT::VT> valsExp = {
-        0, 1,
-        0, 0,
-        4, 5,
-        8, 0,
+        0, 1, 0, 0, 4, 5, 8, 0,
     };
     auto arg = genGivenVals<DT>(4, vals);
     auto exp = genGivenVals<DT>(4, valsExp);
-    DT * res = nullptr;
+    DT *res = nullptr;
+    sliceCol(res, arg, 1, 3, nullptr);
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(arg, exp, res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("SliceCol - string specific", TAG_KERNELS, (DenseMatrix, Matrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    std::vector<VT> vals = {VT("a"),  VT(""),  VT("1"),  VT("abc"), VT("e"),   VT("j"),    VT("abc"), VT("abcd"),
+                            VT("ab"), VT("a"), VT("f"),  VT("k"),   VT("ABC"), VT("34ab"), VT("ac"),  VT("b"),
+                            VT("g"),  VT("l"), VT("cd"), VT(" "),   VT("ad"),  VT("c"),    VT("h"),   VT(" ")};
+    std::vector<VT> valsExp = {VT(""), VT("1"), VT("abcd"), VT("ab"), VT("34ab"), VT("ac"), VT(" "), VT("ad")};
+    auto arg = genGivenVals<DT>(4, vals);
+    auto exp = genGivenVals<DT>(4, valsExp);
+    DT *res = nullptr;
     sliceCol(res, arg, 1, 3, nullptr);
     CHECK(*res == *exp);
 
@@ -58,14 +69,11 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceCol - check throws", TAG_KERNELS, (DenseMatrix,
     using VT = typename DT::VT;
 
     auto arg = genGivenVals<DT>(4, {
-        0, 0, 1, 0, 2, 0,
-        0, 0, 0, 0, 0, 0,
-        3, 4, 5, 0, 6, 7,
-        0, 8, 0, 0, 9, 0,
-    });
+                                       0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 4, 5, 0, 6, 7, 0, 8, 0, 0, 9, 0,
+                                   });
 
-    DT * res = nullptr;
-    
+    DT *res = nullptr;
+
     SECTION("lowerIncl out of bounds - negative") {
         REQUIRE_THROWS_AS((sliceCol(res, arg, -1, 3, nullptr)), std::out_of_range);
     }
@@ -88,11 +96,11 @@ TEMPLATE_TEST_CASE("SliceCol", TAG_KERNELS, (Frame)) {
     auto c3 = genGivenVals<DenseMatrix<VT>>(4, {3.0, 4.0, 5.0, 6.0});
     std::vector<Structure *> cols1 = {c0, c1, c2, c3};
     std::vector<Structure *> cols2 = {c1, c2};
-    std::string * labels1 =  new std::string[4] {"ab", "cde", "fghi", "jkilm"};
-    std::string * labels2 =  new std::string[4] {"cde", "fghi"};
+    std::string *labels1 = new std::string[4]{"ab", "cde", "fghi", "jkilm"};
+    std::string *labels2 = new std::string[4]{"cde", "fghi"};
     auto arg = DataObjectFactory::create<Frame>(cols1, labels1);
     auto exp = DataObjectFactory::create<Frame>(cols2, labels2);
-    Frame * res = nullptr;
+    Frame *res = nullptr;
     sliceCol(res, arg, 1, 3, nullptr);
     CHECK(*res == *exp);
 
@@ -109,10 +117,10 @@ TEMPLATE_TEST_CASE("SliceCol - check throws", TAG_KERNELS, (Frame)) {
     auto c2 = genGivenVals<DenseMatrix<VT>>(4, {8.8, 9.9, 1.0, 2.0});
     auto c3 = genGivenVals<DenseMatrix<VT>>(4, {3.0, 4.0, 5.0, 6.0});
     std::vector<Structure *> cols1 = {c0, c1, c2, c3};
-    std::string * labels1 =  new std::string[4] {"ab", "cde", "fghi", "jkilm"};
+    std::string *labels1 = new std::string[4]{"ab", "cde", "fghi", "jkilm"};
     auto arg = DataObjectFactory::create<Frame>(cols1, labels1);
 
-    Frame * res = nullptr;
+    Frame *res = nullptr;
 
     SECTION("lowerIncl out of bounds - negative") {
         REQUIRE_THROWS_AS((sliceCol(res, arg, -0.1, 3.0, nullptr)), std::out_of_range);

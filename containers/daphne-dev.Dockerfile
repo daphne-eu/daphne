@@ -33,8 +33,9 @@ RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recom
     build-essential clang gfortran lld llvm llvm-18-tools ninja-build openjdk-11-jdk-headless pkg-config python3-numpy python3-pandas \
     vim nano rsync sudo iputils-ping virtualenv openssh-server iproute2 git htop gdb lldb lld gpg-agent net-tools \
     software-properties-common ca-certificates file unzip wget tar zstd \
-    ccache python3-pip python3-networkx python3-dev graphviz-dev \
+    ccache python3-pip python3-networkx python3-dev graphviz-dev clang-format \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 COPY --from=daphneeu/daphne-deps /usr/local/bin/ /usr/local/bin/
 COPY --from=daphneeu/daphne-deps /usr/local/include/ /usr/local/include/
 COPY --from=daphneeu/daphne-deps /usr/local/lib/ /usr/local/lib/

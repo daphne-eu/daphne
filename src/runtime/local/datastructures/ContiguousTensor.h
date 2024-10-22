@@ -16,41 +16,40 @@
 
 #pragma once
 
-#include <memory>
-#include <cstring>
-#include <ostream>
 #include <cstddef>
-#include <stdexcept>
-#include <utility>
-#include <type_traits>
-#include <vector>
+#include <cstring>
+#include <memory>
 #include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/Tensor.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Tensor.h>
 
 /**
-*  @brief An implementation of a tensor with a contiguous, "row-major" memory layout
-*
-*  This tensor implementation is backed by a single allocation for its data. The elements of the tensor are placed
-*  within this in the "higher dimensional equivalent of row-major order".
-*
-*/
-template<typename ValueType>
-class ContiguousTensor : public Tensor<ValueType> {
-    public:
+ *  @brief An implementation of a tensor with a contiguous, "row-major" memory
+ * layout
+ *
+ *  This tensor implementation is backed by a single allocation for its data.
+ * The elements of the tensor are placed within this in the "higher dimensional
+ * equivalent of row-major order".
+ *
+ */
+template <typename ValueType> class ContiguousTensor : public Tensor<ValueType> {
+  public:
     std::vector<size_t> strides;
 
     std::shared_ptr<ValueType[]> data;
 
-    private:
+  private:
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
-    template<class DataType, typename ... ArgTypes>
-    friend DataType * DataObjectFactory::create(ArgTypes ...);
-    template<class DataType>
-    friend void DataObjectFactory::destroy(const DataType * obj);
+    template <class DataType, typename... ArgTypes> friend DataType *DataObjectFactory::create(ArgTypes...);
+    template <class DataType> friend void DataObjectFactory::destroy(const DataType *obj);
 
     ContiguousTensor(const std::vector<size_t> &tensor_shape, InitCode init_code)
         : Tensor<ValueType>::Tensor(tensor_shape),
@@ -60,7 +59,7 @@ class ContiguousTensor : public Tensor<ValueType> {
             strides[0] = 1;
         }
 
-        for(size_t i=0; i<this->rank; i++) {
+        for (size_t i = 0; i < this->rank; i++) {
             if (tensor_shape[i] == 0) {
                 throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
@@ -71,45 +70,46 @@ class ContiguousTensor : public Tensor<ValueType> {
         }
 
         switch (init_code) {
-            case InitCode::NONE:
-                break;
-            case InitCode::ZERO: {
-                for (size_t i = 0; i < this->total_element_count; i++) {
-                    data.get()[i] = 0;
-                }
-                break;
+        case InitCode::NONE:
+            break;
+        case InitCode::ZERO: {
+            for (size_t i = 0; i < this->total_element_count; i++) {
+                data.get()[i] = 0;
             }
-            case InitCode::MAX: {
-                for (size_t i = 0; i < this->total_element_count; i++) {
-                    data.get()[i] = std::numeric_limits<ValueType>::max();
-                }
-                break;
+            break;
+        }
+        case InitCode::MAX: {
+            for (size_t i = 0; i < this->total_element_count; i++) {
+                data.get()[i] = std::numeric_limits<ValueType>::max();
             }
-            case InitCode::MIN: {
-                for (size_t i = 0; i < this->total_element_count; i++) {
-                    data.get()[i] = std::numeric_limits<ValueType>::min();
-                }
-                break;
+            break;
+        }
+        case InitCode::MIN: {
+            for (size_t i = 0; i < this->total_element_count; i++) {
+                data.get()[i] = std::numeric_limits<ValueType>::min();
             }
-            case InitCode::IOTA: {
-                for (size_t i = 0; i < this->total_element_count; i++) {
-                    data.get()[i] = i;
-                }
-                break;
+            break;
+        }
+        case InitCode::IOTA: {
+            for (size_t i = 0; i < this->total_element_count; i++) {
+                data.get()[i] = i;
             }
+            break;
+        }
         }
     };
-    
-    template<typename VTArg>
+
+    template <typename VTArg>
     ContiguousTensor(const ContiguousTensor<VTArg> *other)
         : Tensor<ValueType>::Tensor(other->tensor_shape), strides(other->strides) {
         // workarround for old versions of gcc with template specialization bug
-        //https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85282
-        if constexpr (std::is_same<VTArg, ValueType>::value) { 
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85282
+        if constexpr (std::is_same<VTArg, ValueType>::value) {
             data = other->data;
         } else {
-            data = std::shared_ptr<ValueType[]>(new ValueType[this->total_element_count], std::default_delete<ValueType[]>());
-            for(size_t i=0; i<this->total_element_count; i++) {
+            data = std::shared_ptr<ValueType[]>(new ValueType[this->total_element_count],
+                                                std::default_delete<ValueType[]>());
+            for (size_t i = 0; i < this->total_element_count; i++) {
                 data[i] = static_cast<ValueType>(other->data[i]);
             }
         }
@@ -118,7 +118,7 @@ class ContiguousTensor : public Tensor<ValueType> {
     ContiguousTensor(const DenseMatrix<ValueType> *other)
         : Tensor<ValueType>::Tensor(other->getNumRows(), other->getNumCols()), data(other->getValuesSharedPtr()) {
         strides = {1, other->getRowSkip()};
-        for(size_t i=0; i<this->rank; i++) {
+        for (size_t i = 0; i < this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
                 throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
@@ -134,7 +134,7 @@ class ContiguousTensor : public Tensor<ValueType> {
             strides[0] = 1;
         }
 
-        for(size_t i=0; i<this->rank; i++) {
+        for (size_t i = 0; i < this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
                 throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
@@ -147,7 +147,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         std::memcpy(data.get(), input_data, this->total_element_count * sizeof(ValueType));
     }
 
-    ContiguousTensor(std::shared_ptr<ValueType[]>& input_data, const std::vector<size_t> &tensor_shape)
+    ContiguousTensor(std::shared_ptr<ValueType[]> &input_data, const std::vector<size_t> &tensor_shape)
         : Tensor<ValueType>::Tensor(tensor_shape) {
         data = input_data;
         strides.resize(this->rank);
@@ -155,7 +155,7 @@ class ContiguousTensor : public Tensor<ValueType> {
             strides[0] = 1;
         }
 
-        for(size_t i=0; i<this->rank; i++) {
+        for (size_t i = 0; i < this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
                 throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
@@ -174,7 +174,7 @@ class ContiguousTensor : public Tensor<ValueType> {
             strides[0] = 1;
         }
 
-        for(size_t i=0; i<this->rank; i++) {
+        for (size_t i = 0; i < this->rank; i++) {
             if (this->tensor_shape[i] == 0) {
                 throw std::runtime_error("Tensors with dimensions of extend 0 are disallowed.");
             }
@@ -188,18 +188,15 @@ class ContiguousTensor : public Tensor<ValueType> {
     ~ContiguousTensor() override = default;
 
     void printValue(std::ostream &os, ValueType val) const;
-    
-    public:
 
-    public:
-
+  public:
     bool operator==(const ContiguousTensor<ValueType> &rhs) const {
         if (this->tensor_shape != rhs.tensor_shape) {
             return false;
         }
 
         return !static_cast<bool>(
-          std::memcmp(data.get(), rhs.data.get(), this->total_element_count * sizeof(ValueType)));
+            std::memcmp(data.get(), rhs.data.get(), this->total_element_count * sizeof(ValueType)));
     }
 
     DenseMatrix<ValueType> *tryToGetDenseMatrix() const {
@@ -298,12 +295,13 @@ class ContiguousTensor : public Tensor<ValueType> {
         os << std::endl;
     }
 
-    // Ranges inclusive on lower bound and exclusive on upper bound i.e. [x,y] at dsl lvl is in math == [x:y)
+    // Ranges inclusive on lower bound and exclusive on upper bound i.e. [x,y]
+    // at dsl lvl is in math == [x:y)
     ContiguousTensor<ValueType> *tryDice(std::vector<std::pair<size_t, size_t>> index_ranges) const {
         if (index_ranges.size() != this->rank) {
             return nullptr;
         }
-        
+
         for (size_t i = 0; i < this->rank; i++) {
             index_ranges[i] = {std::get<0>(index_ranges[i]), std::get<1>(index_ranges[i]) - 1};
             if (std::get<0>(index_ranges[i]) >= this->tensor_shape[i] ||
@@ -320,7 +318,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         }
 
         ContiguousTensor<ValueType> *new_tensor =
-          DataObjectFactory::create<ContiguousTensor<ValueType>>(new_tensor_shape, InitCode::NONE);
+            DataObjectFactory::create<ContiguousTensor<ValueType>>(new_tensor_shape, InitCode::NONE);
 
         std::vector<size_t> current_indices;
         current_indices.resize(this->rank);
@@ -349,9 +347,7 @@ class ContiguousTensor : public Tensor<ValueType> {
         this->rank = this->tensor_shape.size();
     }
 
-    size_t getNumItems() const override {
-        return this->total_element_count;
-    }
+    size_t getNumItems() const override { return this->total_element_count; }
 
     size_t serialize(std::vector<char> &buf) const override {
         throw std::runtime_error("ContiguousTensor::serialize() is not supported (yet)");

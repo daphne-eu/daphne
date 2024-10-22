@@ -18,17 +18,21 @@
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    add_custom_command(
-            OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json
-            COMMAND python3 ARGS genKernelInst.py kernels.json
-                    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json CUDA
-            MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
-            DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
-    )
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    execute_process(
+      COMMAND
+        ${Python3_EXECUTABLE} genKernelInst.py kernels.json
+        ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels
+        ${PROJECT_SOURCE_DIR}/lib/CUDAcatalog.json CUDA
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
+
+  file(GLOB CUDA_CODEGEN_CPP_FILES CONFIGURE_DEPENDS
+      "${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDA*.cpp")
 
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
@@ -56,7 +60,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Solve.cpp
             ${PREFIX}/Syrk.cu
             ${PREFIX}/Transpose.cpp
-            ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
+            ${CUDA_CODEGEN_CPP_FILES}
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
@@ -70,17 +74,21 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
     target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms CUDA::cudart CUDA::cublasLt CUDA::cublas
-            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver Util MLIRDaphneInference)
+            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver Util MLIRDaphneInference fmt::fmt)
     set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+    set_property(TARGET CUDAKernels PROPERTY CUDA_ARCHITECTURES all)
 endif()
 
-add_custom_command(
-        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp ${PROJECT_SOURCE_DIR}/lib/catalog.json
-        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp ${PROJECT_SOURCE_DIR}/lib/catalog.json CPP
-        MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
-        DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
-)
+execute_process(
+  COMMAND
+    ${Python3_EXECUTABLE} genKernelInst.py kernels.json
+    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels
+    ${PROJECT_SOURCE_DIR}/lib/catalog.json CPP
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
+
+file(GLOB CODEGEN_CPP_FILES CONFIGURE_DEPENDS
+     "${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels_*.cpp")
+# message("CODEGEN_CPP_FILES: ${CODEGEN_CPP_FILES}")
 
 list(APPEND LIBS DataStructures IO IO_URING_LIB BLAS::BLAS MLIRParser)
 
@@ -88,10 +96,11 @@ set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels
     ${PREFIX}/MatMul.h
 )
+
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/instrumentation/KernelInstrumentation.cpp
-        ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        ${CODEGEN_CPP_FILES}
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CreateDaphneContext.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
@@ -101,7 +110,9 @@ set(SOURCES_cpp_kernels
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
         )
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
-add_library(AllKernels SHARED ${SOURCES_cpp_kernels} ${HEADERS_cpp_kernels})
+add_library(KernelObjLib OBJECT ${SOURCES_cpp_kernels} ${HEADERS_cpp_kernels})
+set_target_properties(KernelObjLib PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+add_library(AllKernels SHARED $<TARGET_OBJECTS:KernelObjLib>)
 set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 set(ALLKERNELS_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/thirdparty/installed/include" /usr/local/include)
@@ -126,8 +137,5 @@ if(USE_HDFS)
         find_library(LIBHDFS3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 endif()
 
-find_library(URING NAMES uring HINTS /usr/local/lib "${CMAKE_SOURCE_DIR}/thirdparty/installed/lib")
-target_link_directories(AllKernels PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/installed/lib" /usr/local/lib)
-message(STATUS "ALLKERNELS_INCLUDE_DIRS: ${ALLKERNELS_INCLUDE_DIRS}")
-target_include_directories(AllKernels  PUBLIC ${ALLKERNELS_INCLUDE_DIRS})
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3} ${URING})
+target_link_libraries(KernelObjLib PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})

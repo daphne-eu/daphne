@@ -1,7 +1,7 @@
 #ifndef SRC_RUNTIME_LOCAL_FPGAOPENCL_KERNEL_UTILS_H
 #define SRC_RUNTIME_LOCAL_FPGAOPENCL_KERNEL_UTILS_H
 
-
+#include "kernel_utils.h"
 #include "AOCLUtils/aocl_utils.h"
 #include "CL/opencl.h"
 #include <cstdio>
@@ -18,7 +18,6 @@
 #include <string>
 #include <sys/time.h>
 #include <time.h>
-#include "kernel_utils.h"
 
 using namespace aocl_utils;
 
@@ -40,7 +39,7 @@ double compute_kernel_execution_time(cl_event &event, double &start_d, double &e
 
     start_d = (double)1.0e-9 * start;
     end_d = (double)1.0e-9 * end;
-    //return (double)(end-start);
+    // return (double)(end-start);
     return (double)1.0e-9 * (end - start); // nanoseconds to seconds
 }
 

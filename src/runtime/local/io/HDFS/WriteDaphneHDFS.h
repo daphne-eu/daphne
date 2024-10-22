@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
-#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/context/HDFSContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 
+#include <runtime/local/io/DaphneSerializer.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
-#include <runtime/local/io/DaphneSerializer.h>
 
 #include <util/preprocessor_defs.h>
 
@@ -33,11 +33,11 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <queue>
 #include <fstream>
-#include <limits>
-#include <sstream>
 #include <iostream>
+#include <limits>
+#include <queue>
+#include <sstream>
 
 #include <fstream>
 #include <vector>
@@ -46,9 +46,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTArg>
-struct WriteDaphneHDFS
-{
+template <class DTArg> struct WriteDaphneHDFS {
     static void apply(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) = delete;
 };
 
@@ -56,9 +54,7 @@ struct WriteDaphneHDFS
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg>
-void writeDaphneHDFS(const DTArg *arg, const char *hdfsFilename, DCTX(dctx))
-{
+template <class DTArg> void writeDaphneHDFS(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
     WriteDaphneHDFS<DTArg>::apply(arg, hdfsFilename, dctx);
 }
 
@@ -70,20 +66,17 @@ void writeDaphneHDFS(const DTArg *arg, const char *hdfsFilename, DCTX(dctx))
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT>
-struct WriteDaphneHDFS<DenseMatrix<VT>>{
-    static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename, DCTX(dctx))
-    {
+template <typename VT> struct WriteDaphneHDFS<DenseMatrix<VT>> {
+    static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename, DCTX(dctx)) {
         size_t length;
         length = DaphneSerializer<DenseMatrix<VT>>::length(arg);
-                
+
         std::vector<char> buffer(length);
         DaphneSerializer<DenseMatrix<VT>>::serialize(arg, buffer);
 
         auto hdfsCtx = HDFSContext::get(dctx);
         auto fs = hdfsCtx->getConnection();
-        if (fs == NULL)
-        {
+        if (fs == NULL) {
             std::cout << "Error connecting to HDFS" << std::endl;
         }
 
@@ -101,15 +94,13 @@ struct WriteDaphneHDFS<DenseMatrix<VT>>{
 
         // Write binary
         hdfsFile = hdfsOpenFile(*fs, hdfsFilename, O_WRONLY, 0, 0, 0);
-        if (hdfsFile == NULL)
-        {
+        if (hdfsFile == NULL) {
             throw std::runtime_error("Error opening HDFS file");
         }
 
         hdfsWrite(*fs, hdfsFile, buffer.data(), length);
-        if (hdfsCloseFile(*fs, hdfsFile) == -1)
-        {
+        if (hdfsCloseFile(*fs, hdfsFile) == -1) {
             throw std::runtime_error("Failed to close HDFS file");
-        }        
+        }
     }
 };

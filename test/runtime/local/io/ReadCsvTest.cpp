@@ -16,8 +16,8 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
+#include <runtime/local/io/ReadCsv.h>
 
 #include <tags.h>
 
@@ -30,240 +30,285 @@
 #include <limits>
 
 TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (double)) {
-  using DT = TestType;
-  DT *m = nullptr;
+    using DT = TestType;
+    DT *m = nullptr;
 
-  size_t numRows = 2;
-  size_t numCols = 4;
+    size_t numRows = 2;
+    size_t numCols = 4;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim);
+    readCsv(m, filename, numRows, numCols, delim);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->get(0, 0) == -0.1);
-  CHECK(m->get(0, 1) == -0.2);
-  CHECK(m->get(0, 2) == 0.1);
-  CHECK(m->get(0, 3) == 0.2);
+    CHECK(m->get(0, 0) == -0.1);
+    CHECK(m->get(0, 1) == -0.2);
+    CHECK(m->get(0, 2) == 0.1);
+    CHECK(m->get(0, 3) == 0.2);
 
-  CHECK(m->get(1, 0) == 3.14);
-  CHECK(m->get(1, 1) == 5.41);
-  CHECK(m->get(1, 2) == 6.22216);
-  CHECK(m->get(1, 3) == 5);
+    CHECK(m->get(1, 0) == 3.14);
+    CHECK(m->get(1, 1) == 5.41);
+    CHECK(m->get(1, 2) == 6.22216);
+    CHECK(m->get(1, 3) == 5);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (uint8_t)) {
-  using DT = TestType;
-  DT *m = nullptr;
+    using DT = TestType;
+    DT *m = nullptr;
 
-  size_t numRows = 2;
-  size_t numCols = 4;
+    size_t numRows = 2;
+    size_t numCols = 4;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim);
+    readCsv(m, filename, numRows, numCols, delim);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->get(0, 0) == 1);
-  CHECK(m->get(0, 1) == 2);
-  CHECK(m->get(0, 2) == 3);
-  CHECK(m->get(0, 3) == 4);
+    CHECK(m->get(0, 0) == 1);
+    CHECK(m->get(0, 1) == 2);
+    CHECK(m->get(0, 2) == 3);
+    CHECK(m->get(0, 3) == 4);
 
-  /* File contains negative numbers. Expect cast to positive */
-  CHECK(m->get(1, 0) == 255);
-  CHECK(m->get(1, 1) == 254);
-  CHECK(m->get(1, 2) == 253);
-  CHECK(m->get(1, 3) == 252);
+    /* File contains negative numbers. Expect cast to positive */
+    CHECK(m->get(1, 0) == 255);
+    CHECK(m->get(1, 1) == 254);
+    CHECK(m->get(1, 2) == 253);
+    CHECK(m->get(1, 3) == 252);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, col + row ignore", TAG_IO,
-                           (DenseMatrix), (int8_t)) {
-  using DT = TestType;
-  DT *m = nullptr;
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, col + row ignore", TAG_IO, (DenseMatrix), (int8_t)) {
+    using DT = TestType;
+    DT *m = nullptr;
 
-  size_t numRows = 1;
-  size_t numCols = 2;
+    size_t numRows = 1;
+    size_t numCols = 2;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim);
+    readCsv(m, filename, numRows, numCols, delim);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->get(0, 0) == 1);
-  CHECK(m->get(0, 1) == 2);
+    CHECK(m->get(0, 0) == 1);
+    CHECK(m->get(0, 1) == 2);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, INF and NAN parsing", TAG_IO,
-                           (DenseMatrix), (double)) {
-  using DT = TestType;
-  DT *m = nullptr;
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, INF and NAN parsing", TAG_IO, (DenseMatrix), (double)) {
+    using DT = TestType;
+    DT *m = nullptr;
 
-  size_t numRows = 2;
-  size_t numCols = 4;
+    size_t numRows = 2;
+    size_t numCols = 4;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv3.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv3.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim);
+    readCsv(m, filename, numRows, numCols, delim);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->get(0, 0) == -std::numeric_limits<double>::infinity());
-  CHECK(m->get(0, 1) == std::numeric_limits<double>::infinity());
-  CHECK(m->get(0, 2) == -std::numeric_limits<double>::infinity());
-  CHECK(m->get(0, 3) == std::numeric_limits<double>::infinity());
+    CHECK(m->get(0, 0) == -std::numeric_limits<double>::infinity());
+    CHECK(m->get(0, 1) == std::numeric_limits<double>::infinity());
+    CHECK(m->get(0, 2) == -std::numeric_limits<double>::infinity());
+    CHECK(m->get(0, 3) == std::numeric_limits<double>::infinity());
 
-  CHECK(std::isnan(m->get(1, 0)));
-  CHECK(std::isnan(m->get(1, 1)));
-  CHECK(std::isnan(m->get(1, 2)));
-  CHECK(std::isnan(m->get(1, 3)));
+    CHECK(std::isnan(m->get(1, 0)));
+    CHECK(std::isnan(m->get(1, 1)));
+    CHECK(std::isnan(m->get(1, 2)));
+    CHECK(std::isnan(m->get(1, 3)));
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
 TEST_CASE("ReadCsv, frame of floats", TAG_IO) {
-  ValueTypeCode schema[] = { ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64 };
-  Frame *m = NULL;
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64};
+    Frame *m = NULL;
 
-  size_t numRows = 2;
-  size_t numCols = 4;
+    size_t numRows = 2;
+    size_t numCols = 4;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim, schema);
+    readCsv(m, filename, numRows, numCols, delim, schema);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->getColumn<double>(0)->get(0, 0) == -0.1);
-  CHECK(m->getColumn<double>(1)->get(0, 0) == -0.2);
-  CHECK(m->getColumn<double>(2)->get(0, 0) == 0.1);
-  CHECK(m->getColumn<double>(3)->get(0, 0) == 0.2);
+    CHECK(m->getColumn<double>(0)->get(0, 0) == -0.1);
+    CHECK(m->getColumn<double>(1)->get(0, 0) == -0.2);
+    CHECK(m->getColumn<double>(2)->get(0, 0) == 0.1);
+    CHECK(m->getColumn<double>(3)->get(0, 0) == 0.2);
 
-  CHECK(m->getColumn<double>(0)->get(1, 0) == 3.14);
-  CHECK(m->getColumn<double>(1)->get(1, 0) == 5.41);
-  CHECK(m->getColumn<double>(2)->get(1, 0) == 6.22216);
-  CHECK(m->getColumn<double>(3)->get(1, 0) == 5);
+    CHECK(m->getColumn<double>(0)->get(1, 0) == 3.14);
+    CHECK(m->getColumn<double>(1)->get(1, 0) == 5.41);
+    CHECK(m->getColumn<double>(2)->get(1, 0) == 6.22216);
+    CHECK(m->getColumn<double>(3)->get(1, 0) == 5);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
 TEST_CASE("ReadCsv, frame of uint8s", TAG_IO) {
-  ValueTypeCode schema[] = { ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8 };
-  Frame *m = NULL;
+    ValueTypeCode schema[] = {ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8};
+    Frame *m = NULL;
 
-  size_t numRows = 2;
-  size_t numCols = 4;
+    size_t numRows = 2;
+    size_t numCols = 4;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim, schema);
+    readCsv(m, filename, numRows, numCols, delim, schema);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->getColumn<uint8_t>(0)->get(0, 0) == 1);
-  CHECK(m->getColumn<uint8_t>(1)->get(0, 0) == 2);
-  CHECK(m->getColumn<uint8_t>(2)->get(0, 0) == 3);
-  CHECK(m->getColumn<uint8_t>(3)->get(0, 0) == 4);
+    CHECK(m->getColumn<uint8_t>(0)->get(0, 0) == 1);
+    CHECK(m->getColumn<uint8_t>(1)->get(0, 0) == 2);
+    CHECK(m->getColumn<uint8_t>(2)->get(0, 0) == 3);
+    CHECK(m->getColumn<uint8_t>(3)->get(0, 0) == 4);
 
-  /* File contains negative numbers. Expect cast to positive */
-  CHECK(m->getColumn<uint8_t>(0)->get(1, 0) == 255);
-  CHECK(m->getColumn<uint8_t>(1)->get(1, 0) == 254);
-  CHECK(m->getColumn<uint8_t>(2)->get(1, 0) == 253);
-  CHECK(m->getColumn<uint8_t>(3)->get(1, 0) == 252);
+    /* File contains negative numbers. Expect cast to positive */
+    CHECK(m->getColumn<uint8_t>(0)->get(1, 0) == 255);
+    CHECK(m->getColumn<uint8_t>(1)->get(1, 0) == 254);
+    CHECK(m->getColumn<uint8_t>(2)->get(1, 0) == 253);
+    CHECK(m->getColumn<uint8_t>(3)->get(1, 0) == 252);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
 TEST_CASE("ReadCsv, col + row ignore", TAG_IO) {
-  ValueTypeCode schema[] = { ValueTypeCode::UI8, ValueTypeCode::UI8 };
-  Frame *m = NULL;
+    ValueTypeCode schema[] = {ValueTypeCode::UI8, ValueTypeCode::UI8};
+    Frame *m = NULL;
 
-  size_t numRows = 1;
-  size_t numCols = 2;
+    size_t numRows = 1;
+    size_t numCols = 2;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim, schema);
+    readCsv(m, filename, numRows, numCols, delim, schema);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->getColumn<uint8_t>(0)->get(0, 0) == 1);
-  CHECK(m->getColumn<uint8_t>(1)->get(0, 0) == 2);
+    CHECK(m->getColumn<uint8_t>(0)->get(0, 0) == 1);
+    CHECK(m->getColumn<uint8_t>(1)->get(0, 0) == 2);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
 TEST_CASE("ReadCsv, INF and NAN parsing", TAG_IO) {
-  ValueTypeCode schema[] = { ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64 };
-  Frame *m = NULL;
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64};
+    Frame *m = NULL;
 
-  size_t numRows = 2;
-  size_t numCols = 4;
+    size_t numRows = 2;
+    size_t numCols = 4;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv3.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv3.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim, schema);
+    readCsv(m, filename, numRows, numCols, delim, schema);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->getColumn<double>(0)->get(0, 0) == -std::numeric_limits<double>::infinity());
-  CHECK(m->getColumn<double>(1)->get(0, 0) == std::numeric_limits<double>::infinity());
-  CHECK(m->getColumn<double>(2)->get(0, 0) == -std::numeric_limits<double>::infinity());
-  CHECK(m->getColumn<double>(3)->get(0, 0) == std::numeric_limits<double>::infinity());
+    CHECK(m->getColumn<double>(0)->get(0, 0) == -std::numeric_limits<double>::infinity());
+    CHECK(m->getColumn<double>(1)->get(0, 0) == std::numeric_limits<double>::infinity());
+    CHECK(m->getColumn<double>(2)->get(0, 0) == -std::numeric_limits<double>::infinity());
+    CHECK(m->getColumn<double>(3)->get(0, 0) == std::numeric_limits<double>::infinity());
 
-  CHECK(std::isnan(m->getColumn<double>(0)->get(1, 0)));
-  CHECK(std::isnan(m->getColumn<double>(1)->get(1, 0)));
-  CHECK(std::isnan(m->getColumn<double>(2)->get(1, 0)));
-  CHECK(std::isnan(m->getColumn<double>(3)->get(1, 0)));
+    CHECK(std::isnan(m->getColumn<double>(0)->get(1, 0)));
+    CHECK(std::isnan(m->getColumn<double>(1)->get(1, 0)));
+    CHECK(std::isnan(m->getColumn<double>(2)->get(1, 0)));
+    CHECK(std::isnan(m->getColumn<double>(3)->get(1, 0)));
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
 }
 
 TEST_CASE("ReadCsv, varying columns", TAG_IO) {
-  ValueTypeCode schema[] = { ValueTypeCode::SI8, ValueTypeCode::F32 };
-  Frame *m = NULL;
+    ValueTypeCode schema[] = {ValueTypeCode::SI8, ValueTypeCode::F32};
+    Frame *m = NULL;
 
-  size_t numRows = 2;
-  size_t numCols = 2;
+    size_t numRows = 2;
+    size_t numCols = 2;
 
-  char filename[] = "./test/runtime/local/io/ReadCsv4.csv";
-  char delim = ',';
+    char filename[] = "./test/runtime/local/io/ReadCsv4.csv";
+    char delim = ',';
 
-  readCsv(m, filename, numRows, numCols, delim, schema);
+    readCsv(m, filename, numRows, numCols, delim, schema);
 
-  REQUIRE(m->getNumRows() == numRows);
-  REQUIRE(m->getNumCols() == numCols);
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->getColumn<int8_t>(0)->get(0, 0) == 1);
-  CHECK(m->getColumn<float>(1)->get(0, 0) == 0.5);
+    CHECK(m->getColumn<int8_t>(0)->get(0, 0) == 1);
+    CHECK(m->getColumn<float>(1)->get(0, 0) == 0.5);
 
-  CHECK(m->getColumn<int8_t>(0)->get(1, 0) == 2);
-  CHECK(m->getColumn<float>(1)->get(1, 0) == 1.0);
+    CHECK(m->getColumn<int8_t>(0)->get(1, 0) == 2);
+    CHECK(m->getColumn<float>(1)->get(1, 0) == 1.0);
 
-  DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m);
+}
 
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    DT *m = nullptr;
+
+    size_t numRows = 9;
+    size_t numCols = 3;
+
+    char filename[] = "./test/runtime/local/io/ReadCsvStr.csv";
+    char delim = ',';
+
+    readCsv(m, filename, numRows, numCols, delim);
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+
+    CHECK(m->get(0, 0) == "apple, orange");
+    CHECK(m->get(1, 0) == "dog, cat");
+    CHECK(m->get(2, 0) == "table");
+    CHECK(m->get(3, 0) == "\"\"");
+    CHECK(m->get(4, 0) == "abc\"\"def");
+    CHECK(m->get(5, 0) == "red, blue\\n");
+    CHECK(m->get(6, 0) == "\\n\\\"abc\"\"def\\\"");
+    CHECK(m->get(7, 0) == "line1\nline2");
+    CHECK(m->get(8, 0) == "\\\"red, \\\"\\\"");
+
+    CHECK(m->get(0, 1) == "35");
+    CHECK(m->get(1, 1) == "30");
+    CHECK(m->get(2, 1) == "27");
+    CHECK(m->get(3, 1) == "22");
+    CHECK(m->get(4, 1) == "33");
+    CHECK(m->get(5, 1) == "50");
+    CHECK(m->get(6, 1) == "28");
+    CHECK(m->get(7, 1) == "27");
+    CHECK(m->get(8, 1) == "41");
+
+    CHECK(m->get(0, 2) == "Fruit Basket");
+    CHECK(m->get(1, 2) == "Pets");
+    CHECK(m->get(2, 2) == "Furniture Set");
+    CHECK(m->get(3, 2) == "Unknown Item");
+    CHECK(m->get(4, 2) == "No Category\\\"");
+    CHECK(m->get(5, 2) == "");
+    CHECK(m->get(6, 2) == "Mixed string");
+    CHECK(m->get(7, 2) == "with newline");
+    CHECK(m->get(8, 2) == "");
+
+    DataObjectFactory::destroy(m);
 }

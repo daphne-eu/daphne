@@ -16,19 +16,19 @@
 
 #pragma once
 
+#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
-#include <runtime/local/context/DaphneContext.h>
 
-#include <runtime/local/io/File.h>
-#include <runtime/local/io/utils.h>
-#include <runtime/local/io/DaphneSerializer.h>
-#include <runtime/local/io/HDFS/ReadHDFSCsv.h>
-#include <runtime/local/io/HDFS/ReadDaphneHDFS.h>
-#include <runtime/distributed/coordinator/kernels/DistributedRead.h>
 #include <parser/metadata/MetaDataParser.h>
+#include <runtime/distributed/coordinator/kernels/DistributedRead.h>
+#include <runtime/local/io/DaphneSerializer.h>
+#include <runtime/local/io/File.h>
+#include <runtime/local/io/HDFS/ReadDaphneHDFS.h>
+#include <runtime/local/io/HDFS/ReadHDFSCsv.h>
+#include <runtime/local/io/utils.h>
 
 #include <util/preprocessor_defs.h>
 
@@ -36,12 +36,12 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <queue>
 #include <fstream>
-#include <limits>
-#include <sstream>
-#include <iostream>
 #include <iomanip> // For setfill and setw
+#include <iostream>
+#include <limits>
+#include <queue>
+#include <sstream>
 #include <vector>
 
 #include <fstream>
@@ -50,11 +50,8 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes>
-struct ReadHDFS
-{
-    static void apply(DTRes *&res, const char *filename, DCTX(dctx))
-    {        
+template <class DTRes> struct ReadHDFS {
+    static void apply(DTRes *&res, const char *filename, DCTX(dctx)) {
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
         res = DataObjectFactory::create<DTRes>(fmd.numRows, fmd.numCols, false);
 
@@ -80,8 +77,6 @@ struct ReadHDFS
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes>
-void readHDFS(DTRes *&res, const char *hdfsFilename, DCTX(dctx))
-{
+template <class DTRes> void readHDFS(DTRes *&res, const char *hdfsFilename, DCTX(dctx)) {
     ReadHDFS<DTRes>::apply(res, hdfsFilename, dctx);
 }

@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_GEMV_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -27,17 +28,15 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTMat, class DTVec>
-struct Gemv {
-    static void apply(DTRes *& res, const DTMat * mat, const DTVec * vec, DCTX(ctx)) = delete;
+template <class DTRes, class DTMat, class DTVec> struct Gemv {
+    static void apply(DTRes *&res, const DTMat *mat, const DTVec *vec, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTMat, class DTVec>
-void gemv(DTRes *& res, const DTMat * mat, const DTVec * vec, DCTX(ctx)) {
+template <class DTRes, class DTMat, class DTVec> void gemv(DTRes *&res, const DTMat *mat, const DTVec *vec, DCTX(ctx)) {
     Gemv<DTRes, DTMat, DTVec>::apply(res, mat, vec, ctx);
 }
 
@@ -49,59 +48,36 @@ void gemv(DTRes *& res, const DTMat * mat, const DTVec * vec, DCTX(ctx)) {
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<>
-struct Gemv<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
-    static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * mat, const DenseMatrix<double> * vec, DCTX(ctx)) {
+template <> struct Gemv<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
+    static void apply(DenseMatrix<double> *&res, const DenseMatrix<double> *mat, const DenseMatrix<double> *vec,
+                      DCTX(ctx)) {
         const size_t numRows = mat->getNumRows();
         const size_t numCols = mat->getNumCols();
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<double>>(numCols, 1, false);
 
-        cblas_dgemv(CblasRowMajor,
-            CblasTrans,
-            numRows,
-            numCols,
-            1.0,
-            mat->getValues(),
-            mat->getRowSkip(),
-            vec->getValues(),
-            vec->getRowSkip(),
-            0.0,
-            res->getValues(),
-            res->getRowSkip()
-        );
+        cblas_dgemv(CblasRowMajor, CblasTrans, numRows, numCols, 1.0, mat->getValues(), mat->getRowSkip(),
+                    vec->getValues(), vec->getRowSkip(), 0.0, res->getValues(), res->getRowSkip());
     }
 };
 
-template<>
-struct Gemv<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * mat, const DenseMatrix<float> * vec, DCTX(ctx)) {
+template <> struct Gemv<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
+    static void apply(DenseMatrix<float> *&res, const DenseMatrix<float> *mat, const DenseMatrix<float> *vec,
+                      DCTX(ctx)) {
         const size_t numRows = mat->getNumRows();
         const size_t numCols = mat->getNumCols();
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<float>>(numCols, 1, false);
 
-        cblas_sgemv(CblasRowMajor,
-            CblasTrans,
-            numRows,
-            numCols,
-            1.0,
-            mat->getValues(),
-            mat->getRowSkip(),
-            vec->getValues(),
-            vec->getRowSkip(),
-            0.0,
-            res->getValues(),
-            res->getRowSkip()
-        );
+        cblas_sgemv(CblasRowMajor, CblasTrans, numRows, numCols, 1.0, mat->getValues(), mat->getRowSkip(),
+                    vec->getValues(), vec->getRowSkip(), 0.0, res->getValues(), res->getRowSkip());
     }
 };
 
-template<typename VT>
-struct Gemv<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const CSRMatrix<VT> * mat, const DenseMatrix<VT> * vec, DCTX(ctx)) {
+template <typename VT> struct Gemv<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *&res, const CSRMatrix<VT> *mat, const DenseMatrix<VT> *vec, DCTX(ctx)) {
         const size_t nr1 = mat->getNumRows();
         [[maybe_unused]] const size_t nc1 = mat->getNumCols();
 
@@ -109,35 +85,34 @@ struct Gemv<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         const size_t nc2 = vec->getNumCols();
 
         if (nc1 != nr2) {
-            throw std::runtime_error(
-                "Gemv - #cols of mat and #rows of vec must be the same");
+            throw std::runtime_error("Gemv - #cols of mat and #rows of vec must be the same");
         }
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false);
 
-        const VT * valuesRhs = vec->getValues();
-        VT * valuesRes = res->getValues();
+        const VT *valuesRhs = vec->getValues();
+        VT *valuesRes = res->getValues();
 
         const size_t rowSkipRhs = vec->getRowSkip();
         const size_t rowSkipRes = res->getRowSkip();
 
         memset(valuesRes, VT(0), sizeof(VT) * nr1 * nc2);
-        for(size_t r = 0; r < nr1; r++) {
+        for (size_t r = 0; r < nr1; r++) {
             const size_t rowNumNonZeros = mat->getNumNonZeros(r);
-            const size_t * rowColIdxs = mat->getColIdxs(r);
-            const VT * rowValues = mat->getValues(r);
+            const size_t *rowColIdxs = mat->getColIdxs(r);
+            const VT *rowValues = mat->getValues(r);
 
             const size_t rowIdxRes = r * rowSkipRes;
-            for(size_t i = 0; i < rowNumNonZeros; i++) {
+            for (size_t i = 0; i < rowNumNonZeros; i++) {
                 const size_t c = rowColIdxs[i];
                 const size_t rowIdxRhs = c * rowSkipRhs;
 
-                for(size_t j = 0; j < nc2; j++) {
-		    valuesRes[rowIdxRes + j] += rowValues[i] * valuesRhs[rowIdxRhs + j];
+                for (size_t j = 0; j < nc2; j++) {
+                    valuesRes[rowIdxRes + j] += rowValues[i] * valuesRhs[rowIdxRhs + j];
                 }
             }
         }
     }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_GEMV_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_GEMV_H

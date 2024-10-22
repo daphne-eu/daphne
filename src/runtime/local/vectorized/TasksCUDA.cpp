@@ -14,112 +14,112 @@
  * limitations under the License.
  */
 
-#include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #include "runtime/local/vectorized/TasksCUDA.h"
+#include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #include "runtime/local/kernels/CUDA/EwBinaryMat.h"
 
-template<typename VT>
-void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batchSize) {
+template <typename VT> void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batchSize) {
     // local add aggregation to minimize locking
-    std::vector<DenseMatrix<VT>*> localAddRes(_data._numOutputs);
-    std::vector<DenseMatrix<VT>*> localResults(_data._numOutputs);
-    for(uint64_t r = _data._rl ; r < _data._ru ; r += batchSize) {
-        //create zero-copy views of inputs/outputs
+    std::vector<DenseMatrix<VT> *> localAddRes(_data._numOutputs);
+    std::vector<DenseMatrix<VT> *> localResults(_data._numOutputs);
+    for (uint64_t r = _data._rl; r < _data._ru; r += batchSize) {
+        // create zero-copy views of inputs/outputs
         uint64_t r2 = std::min(r + batchSize, _data._ru);
-        
+
         auto linputs = this->createFuncInputs(r, r2);
-        std::vector<DenseMatrix<VT>**> outputs;
-        
+        std::vector<DenseMatrix<VT> **> outputs;
+
         for (auto &lres : localResults) {
             outputs.push_back(&lres);
         }
-        //execute function on given data binding (batch size)
+        // execute function on given data binding (batch size)
         _data._funcs[fid](outputs.data(), linputs.data(), _data._ctx);
         accumulateOutputs(localResults, localAddRes, r, r2);
-        
+
         // cleanup
         for (auto &localResult : localResults) {
-            if(localResult) {
+            if (localResult) {
                 DataObjectFactory::destroy(localResult);
                 localResult = nullptr;
             }
         }
     }
-    
-    for(size_t o = 0; o < _data._numOutputs; ++o) {
-        if(_data._combines[o] == VectorCombine::ADD) {
+
+    for (size_t o = 0; o < _data._numOutputs; ++o) {
+        if (_data._combines[o] == VectorCombine::ADD) {
             auto &result = (*_res[o]);
             _resLock.lock();
-            if(result == nullptr) {
+            if (result == nullptr) {
                 result = localAddRes[o];
                 _resLock.unlock();
-            }
-            else {
+            } else {
                 CUDA::ewBinaryMat(BinaryOpCode::ADD, result, result, localAddRes[o], _data._ctx);
                 _resLock.unlock();
-                //cleanup
+                // cleanup
                 DataObjectFactory::destroy(localAddRes[o]);
             }
         }
     }
 }
 
-template<typename VT>
-void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseMatrix<VT>*>& localResults,
-        std::vector<DenseMatrix<VT> *> &localAddRes, uint64_t rowStart, uint64_t rowEnd) {
-    
-    //TODO: in-place computation via better compiled pipelines
-    //TODO: multi-return
-    const size_t deviceID = 0; //ToDo: multi device support
+template <typename VT>
+void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults,
+                                                                  std::vector<DenseMatrix<VT> *> &localAddRes,
+                                                                  uint64_t rowStart, uint64_t rowEnd) {
+
+    // TODO: in-place computation via better compiled pipelines
+    // TODO: multi-return
+    const size_t deviceID = 0; // ToDo: multi device support
     AllocationDescriptorCUDA alloc_desc(_data._ctx, deviceID);
-    for(auto o = 0u ; o < _data._numOutputs ; ++o) {
+    for (auto o = 0u; o < _data._numOutputs; ++o) {
         auto &result = (*_res[o]);
         switch (_data._combines[o]) {
-            case VectorCombine::ROWS: {
-                auto bufsize = localResults[o]->getBufferSize();
-                auto data = result->getValues(&alloc_desc);
-                data += result->getRowSkip() * rowStart;
-                CHECK_CUDART(cudaMemcpy(data, localResults[o]->getValues(&alloc_desc), bufsize, cudaMemcpyDeviceToDevice));
-//                debugPrintCUDABuffer("TaskCUDA: accumulate outputs", localResults[o]->getValues(&alloc_desc), localResults[o]->getNumItems());
-                break;
+        case VectorCombine::ROWS: {
+            auto bufsize = localResults[o]->getBufferSize();
+            auto data = result->getValues(&alloc_desc);
+            data += result->getRowSkip() * rowStart;
+            CHECK_CUDART(cudaMemcpy(data, localResults[o]->getValues(&alloc_desc), bufsize, cudaMemcpyDeviceToDevice));
+            //                debugPrintCUDABuffer("TaskCUDA: accumulate
+            //                outputs", localResults[o]->getValues(&alloc_desc),
+            //                localResults[o]->getNumItems());
+            break;
+        }
+        case VectorCombine::COLS: {
+            auto res_base_ptr = result->getValues(&alloc_desc);
+            auto lres_data_base_ptr = localResults[o]->getValues(&alloc_desc);
+            auto rlen = rowEnd - rowStart;
+            auto slice = result->slice(0, this->_data._outRows[o], rowStart, rowEnd);
+            for (auto i = 0u; i < slice->getNumRows(); ++i) {
+                auto data_src = lres_data_base_ptr + localResults[o]->getRowSkip() * i;
+                //                    auto data_dst = res_base_ptr +
+                //                    result->getRowSkip() * i + rowStart;
+                auto data_dst = res_base_ptr + result->getNumCols() * i + rowStart;
+                //                    auto data_dst = res_base_ptr;
+                CHECK_CUDART(cudaMemcpy(data_dst, data_src, sizeof(VT) * rlen, cudaMemcpyDeviceToDevice));
             }
-            case VectorCombine::COLS: {
-                auto res_base_ptr = result->getValues(&alloc_desc);
-                auto lres_data_base_ptr = localResults[o]->getValues(&alloc_desc);
-                auto rlen = rowEnd - rowStart;
-                auto slice = result->slice(0, this->_data._outRows[o], rowStart, rowEnd);
-                for(auto i = 0u; i < slice->getNumRows(); ++i) {
-                    auto data_src = lres_data_base_ptr + localResults[o]->getRowSkip() * i;
-//                    auto data_dst = res_base_ptr + result->getRowSkip() * i + rowStart;
-                    auto data_dst = res_base_ptr + result->getNumCols() * i + rowStart;
-//                    auto data_dst = res_base_ptr;
-                    CHECK_CUDART(cudaMemcpy(data_dst, data_src, sizeof(VT) * rlen, cudaMemcpyDeviceToDevice));
-                }
-                DataObjectFactory::destroy(slice);
-                break;
+            DataObjectFactory::destroy(slice);
+            break;
+        }
+        case VectorCombine::ADD: {
+            if (localAddRes[o] == nullptr) {
+                // take lres and reset it to nullptr
+                localAddRes[o] = localResults[o];
+                localResults[o] = nullptr;
+            } else {
+                CUDA::ewBinaryMat(BinaryOpCode::ADD, localAddRes[o], localAddRes[o], localResults[o], nullptr);
             }
-            case VectorCombine::ADD: {
-                if(localAddRes[o] == nullptr) {
-                    // take lres and reset it to nullptr
-                    localAddRes[o] = localResults[o];
-                    localResults[o] = nullptr;
-                }
-                else {
-                    CUDA::ewBinaryMat(BinaryOpCode::ADD, localAddRes[o], localAddRes[o], localResults[o], nullptr);
-                }
-                break;
-            }
-            default: {
-                throw std::runtime_error(("VectorCombine case `"
-                                          + std::to_string(static_cast<int64_t>(_data._combines[o])) + "` not supported"));
-            }
+            break;
+        }
+        default: {
+            throw std::runtime_error(("VectorCombine case `" +
+                                      std::to_string(static_cast<int64_t>(_data._combines[o])) + "` not supported"));
+        }
         }
     }
 }
 
-template<typename VT>
-uint64_t CompiledPipelineTaskCUDA<DenseMatrix<VT>>::getTaskSize() {
-    return _data._ru-_data._rl;
+template <typename VT> uint64_t CompiledPipelineTaskCUDA<DenseMatrix<VT>>::getTaskSize() {
+    return _data._ru - _data._rl;
 }
 
 template class CompiledPipelineTaskCUDA<DenseMatrix<double>>;

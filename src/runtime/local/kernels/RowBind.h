@@ -18,9 +18,9 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_ROWBIND_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
@@ -34,17 +34,16 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTUp, class DTLow>
-struct RowBind {
-    static void apply(DTRes *& res, const DTUp * ups, const DTLow * lows, DCTX(ctx)) = delete;
+template <class DTRes, class DTUp, class DTLow> struct RowBind {
+    static void apply(DTRes *&res, const DTUp *ups, const DTLow *lows, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTUp, class DTLow>
-void rowBind(DTRes *& res, const DTUp * ups, const DTLow * lows, DCTX(ctx)) {
+template <class DTRes, class DTUp, class DTLow>
+void rowBind(DTRes *&res, const DTUp *ups, const DTLow *lows, DCTX(ctx)) {
     RowBind<DTRes, DTUp, DTLow>::apply(res, ups, lows, ctx);
 }
 
@@ -56,34 +55,31 @@ void rowBind(DTRes *& res, const DTUp * ups, const DTLow * lows, DCTX(ctx)) {
 // DenseMatrix <- DenseMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * ups, const DenseMatrix<VT> * lows, DCTX(ctx)) {
+template <typename VT> struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *ups, const DenseMatrix<VT> *lows, DCTX(ctx)) {
         const size_t numCols = ups->getNumCols();
-        if(numCols != lows->getNumCols())
-            throw std::runtime_error(
-                "the two operands must have the same number of columns, but ups has " + std::to_string(numCols) +
-                " and lows has " + std::to_string(lows->getNumCols()) + " columns"
-            );
-        
+        if (numCols != lows->getNumCols())
+            throw std::runtime_error("the two operands must have the same number of columns, but "
+                                     "ups has " +
+                                     std::to_string(numCols) + " and lows has " + std::to_string(lows->getNumCols()) +
+                                     " columns");
+
         const size_t numRowsUps = ups->getNumRows();
         const size_t numRowsLows = lows->getNumRows();
         const size_t numColsUps = ups->getNumCols();
         const size_t numColsLows = lows->getNumCols();
-        
-        if(res == nullptr)
+
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsUps + numRowsLows, numCols, false);
-        
-        
-        const VT * valuesUps = ups->getValues();
-        const VT * valuesLows = lows->getValues();
-        VT * valuesRes = res->getValues();
-        
+
+        const VT *valuesUps = ups->getValues();
+        const VT *valuesLows = lows->getValues();
+        VT *valuesRes = res->getValues();
+
         // TODO Take rowSkip into account. If ups/lows/res are views into
         // column segments of larger data objects, we must proceed row-by-row.
         memcpy(valuesRes, valuesUps, numColsUps * numRowsUps * sizeof(VT));
         memcpy(valuesRes + numRowsUps * numColsUps, valuesLows, numColsLows * numRowsLows * sizeof(VT));
-        
     }
 };
 
@@ -91,33 +87,30 @@ struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
 // Frame <- Frame, Frame
 // ----------------------------------------------------------------------------
 
-template<>
-struct RowBind<Frame, Frame, Frame> {
-    static void apply(Frame *& res, const Frame * ups, const Frame * lows, const DCTX(ctx)) {
+template <> struct RowBind<Frame, Frame, Frame> {
+    static void apply(Frame *&res, const Frame *ups, const Frame *lows, const DCTX(ctx)) {
         const size_t numCols = ups->getNumCols();
-        const ValueTypeCode* schema = ups->getSchema();
-        
-        if(numCols != lows->getNumCols())
-            throw std::runtime_error(
-                "the two operands must have the same number of columns, but ups has " + std::to_string(numCols) +
-                " and lows has " + std::to_string(lows->getNumCols()) + " columns"
-            );
-        for(size_t i = 0; i < numCols; i++) {
-            if(schema[i] != lows->getSchema()[i])
+        const ValueTypeCode *schema = ups->getSchema();
+
+        if (numCols != lows->getNumCols())
+            throw std::runtime_error("the two operands must have the same number of columns, but "
+                                     "ups has " +
+                                     std::to_string(numCols) + " and lows has " + std::to_string(lows->getNumCols()) +
+                                     " columns");
+        for (size_t i = 0; i < numCols; i++) {
+            if (schema[i] != lows->getSchema()[i])
                 throw std::runtime_error("ups and lows must have the same schema");
-            if(ups->getLabels()[i] != lows->getLabels()[i])
+            if (ups->getLabels()[i] != lows->getLabels()[i])
                 throw std::runtime_error("ups and lows must have the same column names");
         }
-        
-        res = DataObjectFactory::create<Frame>(
-                ups->getNumRows() + lows->getNumRows(), numCols,
-                schema, ups->getLabels(), false
-        );
-        for(size_t i = 0; i < numCols; i++){
-            const void * colUps = ups->getColumnRaw(i);
-            const void * colLows = lows->getColumnRaw(i);
-            uint8_t * colRes = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
-            
+
+        res = DataObjectFactory::create<Frame>(ups->getNumRows() + lows->getNumRows(), numCols, schema,
+                                               ups->getLabels(), false);
+        for (size_t i = 0; i < numCols; i++) {
+            const void *colUps = ups->getColumnRaw(i);
+            const void *colLows = lows->getColumnRaw(i);
+            uint8_t *colRes = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
+
             const size_t elemSize = ValueTypeUtils::sizeOf(schema[i]);
             memcpy(colRes, colUps, ups->getNumRows() * elemSize);
             memcpy(colRes + ups->getNumRows() * elemSize, colLows, lows->getNumRows() * elemSize);
@@ -125,40 +118,38 @@ struct RowBind<Frame, Frame, Frame> {
     }
 };
 
-
 // ----------------------------------------------------------------------------
 // CSRMatrix <- CSRMatrix, CSRMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct RowBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * ups, const CSRMatrix<VT> * lows, DCTX(ctx)) {
-        if(ups->getNumCols() != lows->getNumCols())
-            throw std::runtime_error(
-                "the two operands must have the same number of columns, but ups has " + std::to_string(ups->getNumCols()) +
-                " and lows has " + std::to_string(lows->getNumCols()) + " columns"
-            );
+template <typename VT> struct RowBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *ups, const CSRMatrix<VT> *lows, DCTX(ctx)) {
+        if (ups->getNumCols() != lows->getNumCols())
+            throw std::runtime_error("the two operands must have the same number of columns, but "
+                                     "ups has " +
+                                     std::to_string(ups->getNumCols()) + " and lows has " +
+                                     std::to_string(lows->getNumCols()) + " columns");
 
         auto upsRowOffsets = ups->getRowOffsets();
         auto lowsRowOffsets = lows->getRowOffsets();
-        
+
         const size_t upsNumNonZeros = ups->getNumNonZeros();
         const size_t lowsNumNonZeros = lows->getNumNonZeros();
-        
+
         size_t numRowsRes = ups->getNumRows() + lows->getNumRows();
         size_t numNonZerosRes = upsNumNonZeros + lowsNumNonZeros;
 
-        if(!res)
+        if (!res)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRowsRes, ups->getNumCols(), numNonZerosRes, false);
 
         auto resRowOffsets = res->getRowOffsets();
-        
+
         // Ups
         size_t startOffset = upsRowOffsets[0];
         size_t offsetsSubsetLength = upsNumNonZeros;
 
-        if(ups->isView())
-            for(size_t rOffset = 0; rOffset < ups->getNumRows(); rOffset++)
+        if (ups->isView())
+            for (size_t rOffset = 0; rOffset < ups->getNumRows(); rOffset++)
                 resRowOffsets[rOffset] = upsRowOffsets[rOffset] - startOffset;
         else
             memcpy(resRowOffsets, upsRowOffsets, ups->getNumRows() * sizeof(size_t));
@@ -170,10 +161,11 @@ struct RowBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
         startOffset = lowsRowOffsets[0];
         offsetsSubsetLength = lowsNumNonZeros;
 
-        for(size_t rOffset = 0; rOffset < lows->getNumRows(); rOffset++)
+        for (size_t rOffset = 0; rOffset < lows->getNumRows(); rOffset++)
             resRowOffsets[rOffset + ups->getNumRows()] = lowsRowOffsets[rOffset] - startOffset + lowsTranslate;
         memcpy(&res->getValues()[lowsTranslate], &lows->getValues()[startOffset], offsetsSubsetLength * sizeof(VT));
-        memcpy(&res->getColIdxs()[lowsTranslate], &lows->getColIdxs()[startOffset], offsetsSubsetLength * sizeof(size_t));
+        memcpy(&res->getColIdxs()[lowsTranslate], &lows->getColIdxs()[startOffset],
+               offsetsSubsetLength * sizeof(size_t));
 
         res->getRowOffsets()[numRowsRes] = lowsTranslate + lowsNumNonZeros;
     }
@@ -183,19 +175,18 @@ struct RowBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
 // Matrix <- Matrix, Matrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct RowBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
-    static void apply(Matrix<VT> *& res, const Matrix<VT> * ups, const Matrix<VT> * lows, DCTX(ctx)) {
+template <typename VT> struct RowBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *ups, const Matrix<VT> *lows, DCTX(ctx)) {
         const size_t numRowsUps = ups->getNumRows();
         const size_t numColsUps = ups->getNumCols();
         const size_t numRowsLows = lows->getNumRows();
         const size_t numColsLows = lows->getNumCols();
 
         if (numColsUps != numColsLows)
-            throw std::runtime_error(
-                "the two operands must have the same number of columns, but ups has " + std::to_string(numColsUps) +
-                " and lows has " + std::to_string(numColsLows) + " columns"
-            );
+            throw std::runtime_error("the two operands must have the same "
+                                     "number of columns, but ups has " +
+                                     std::to_string(numColsUps) + " and lows has " + std::to_string(numColsLows) +
+                                     " columns");
 
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsUps + numRowsLows, numColsUps, false);
@@ -212,4 +203,4 @@ struct RowBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_ROWBIND_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_ROWBIND_H

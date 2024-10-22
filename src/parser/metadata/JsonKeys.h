@@ -22,21 +22,21 @@
 /**
  * @brief A container that contains names of JSON keys for a file
  * metadata.
- * 
+ *
  */
 struct JsonKeys {
 
     // mandatory keys
-    inline static const std::string NUM_ROWS = "numRows";   // int
-    inline static const std::string NUM_COLS = "numCols";   // int
+    inline static const std::string NUM_ROWS = "numRows"; // int
+    inline static const std::string NUM_COLS = "numCols"; // int
 
     // should always contain exactly one of the following keys
-    inline static const std::string VALUE_TYPE = "valueType";   // string
-    inline static const std::string SCHEMA = "schema";  // array of objects
+    inline static const std::string VALUE_TYPE = "valueType"; // string
+    inline static const std::string SCHEMA = "schema";        // array of objects
 
     // optional key
-    inline static const std::string NUM_NON_ZEROS = "numNonZeros";  // int (default: -1)
-    inline static const std::string HDFS = "hdfs";   // json
+    inline static const std::string NUM_NON_ZEROS = "numNonZeros"; // int (default: -1)
+    inline static const std::string HDFS = "hdfs";                 // json
     struct HDFSKeys {
         inline static const std::string isHDFS = "isHDFS";
         inline static const std::string HDFSFilename = "HDFSFilename";

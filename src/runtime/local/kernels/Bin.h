@@ -30,17 +30,17 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-struct Bin {
-    static void apply(DTRes *& res, const DTArg * arg, int64_t numBins, typename DTArg::VT min, typename DTArg::VT max, DCTX(ctx)) = delete;
+template <class DTRes, class DTArg> struct Bin {
+    static void apply(DTRes *&res, const DTArg *arg, int64_t numBins, typename DTArg::VT min, typename DTArg::VT max,
+                      DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void bin(DTRes *& res, const DTArg * arg, int64_t numBins, typename DTArg::VT min, typename DTArg::VT max, DCTX(ctx)) {
+template <class DTRes, class DTArg>
+void bin(DTRes *&res, const DTArg *arg, int64_t numBins, typename DTArg::VT min, typename DTArg::VT max, DCTX(ctx)) {
     Bin<DTRes, DTArg>::apply(res, arg, numBins, min, max, ctx);
 }
 
@@ -48,14 +48,14 @@ void bin(DTRes *& res, const DTArg * arg, int64_t numBins, typename DTArg::VT mi
 // Argument validation
 // ****************************************************************************
 
-template<typename VTArg>
-void validateArgsBin(int64_t numBins, VTArg min, VTArg max) {
+template <typename VTArg> void validateArgsBin(int64_t numBins, VTArg min, VTArg max) {
     if (numBins <= 0)
         throw std::runtime_error("bin-kernel: numBins must be greater than zero");
     if (min > max)
         throw std::runtime_error("bin-kernel: min must not be greater than max");
     if (min == max && numBins > 1)
-        throw std::runtime_error("bin-kernel: min equals max, so numBins must not be greater than 1");
+        throw std::runtime_error("bin-kernel: min equals max, so numBins must "
+                                 "not be greater than 1");
     if (std::is_floating_point<VTArg>::value) {
         const VTArg inf = std::numeric_limits<VTArg>::infinity();
         if (std::isnan(min))
@@ -81,42 +81,42 @@ void validateArgsBin(int64_t numBins, VTArg min, VTArg max) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTArg>
-struct Bin<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, int64_t numBins, VTArg min, VTArg max, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct Bin<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *arg, int64_t numBins, VTArg min, VTArg max,
+                      DCTX(ctx)) {
         validateArgsBin(numBins, min, max);
-        
+
         double binSize = static_cast<double>(max - min) / numBins;
 
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
-        
-        const VTArg * valuesArg = arg->getValues();
-        VTRes * valuesRes = res->getValues();
+
+        const VTArg *valuesArg = arg->getValues();
+        VTRes *valuesRes = res->getValues();
         const size_t rowSkipArg = arg->getRowSkip();
         const size_t rowSkipRes = res->getRowSkip();
 
-        if(min == max && numBins == 1)
-            for(size_t r = 0; r < numRows; r++) {
-                for(size_t c = 0; c < numCols; c++)
+        if (min == max && numBins == 1)
+            for (size_t r = 0; r < numRows; r++) {
+                for (size_t c = 0; c < numCols; c++)
                     valuesRes[c] = 0;
                 valuesRes += rowSkipRes;
             }
         else
-            for(size_t r = 0; r < numRows; r++) {
-                for(size_t c = 0; c < numCols; c++) {
+            for (size_t r = 0; r < numRows; r++) {
+                for (size_t c = 0; c < numCols; c++) {
                     VTArg v = valuesArg[c];
                     VTRes b;
-                    if(v <= min) // important if VTArg is an unsigned integer type
+                    if (v <= min) // important if VTArg is an unsigned integer type
                         b = 0;
                     else {
                         b = std::ceil(static_cast<double>(v - min) / binSize) - 1;
-                        if(b < 0)
+                        if (b < 0)
                             b = 0;
-                        else if(b >= numBins)
+                        else if (b >= numBins)
                             b = numBins - 1;
                     }
                     valuesRes[c] = b;
@@ -131,11 +131,10 @@ struct Bin<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 // Matrix
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTArg>
-struct Bin<Matrix<VTRes>, Matrix<VTArg>> {
-    static void apply(Matrix<VTRes> *& res, const Matrix<VTArg> * arg, int64_t numBins, VTArg min, VTArg max, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct Bin<Matrix<VTRes>, Matrix<VTArg>> {
+    static void apply(Matrix<VTRes> *&res, const Matrix<VTArg> *arg, int64_t numBins, VTArg min, VTArg max, DCTX(ctx)) {
         validateArgsBin(numBins, min, max);
-        
+
         double binSize = static_cast<double>(max - min) / numBins;
 
         const size_t numRows = arg->getNumRows();
@@ -148,8 +147,7 @@ struct Bin<Matrix<VTRes>, Matrix<VTArg>> {
             // sets all values to zero
             res->prepareAppend();
             res->finishAppend();
-        }
-        else {
+        } else {
             res->prepareAppend();
             for (size_t r = 0; r < numRows; ++r) {
                 for (size_t c = 0; c < numCols; ++c) {

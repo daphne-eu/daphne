@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <runtime/local/datastructures/FixedSizeStringValueType.h>
+
 // ****************************************************************************
 // Enum for unary op codes and their names
 // ****************************************************************************
@@ -46,7 +48,10 @@ enum class UnaryOpCode {
     CEIL,
     ROUND,
     // Comparison.
-    ISNAN
+    ISNAN,
+    // String.
+    UPPER,
+    LOWER
 };
 
 /**
@@ -64,8 +69,9 @@ static std::string_view unary_op_codes[] = {
     // Rounding.
     "FLOOR", "CEIL", "ROUND",
     // Comparison.
-    "ISNAN"
-};
+    "ISNAN",
+    // String.
+    "UPPER", "LOWER"};
 
 // ****************************************************************************
 // Specification which unary ops should be supported on which value types
@@ -79,45 +85,48 @@ static std::string_view unary_op_codes[] = {
  * @tparam VTRes The result value type.
  * @tparam VTArg The argument value type.
  */
-template<UnaryOpCode op, typename VTRes, typename VTArg>
-static constexpr bool supportsUnaryOp = false;
+template <UnaryOpCode op, typename VTRes, typename VTArg> static constexpr bool supportsUnaryOp = false;
 
 // Macros for concisely specifying which unary operations should be
 // supported on which value types.
 
-// Generates code specifying that the unary operation `Op` should be supported on
-// the value type `VT` (for both the result and the argument, for simplicity).
-#define SUPPORT(Op, VT) \
-    template<> constexpr bool supportsUnaryOp<UnaryOpCode::Op, VT, VT> = true;
+// Generates code specifying that the unary operation `Op` should be supported
+// on the value type `VT` (for both the result and the argument, for
+// simplicity).
+#define SUPPORT(Op, VT) template <> constexpr bool supportsUnaryOp<UnaryOpCode::Op, VT, VT> = true;
 
 // Generates code specifying that all unary operations typically supported on
 // numeric value types should be supported on the given value type `VT`
 // (for both the result and the argument, for simplicity).
-#define SUPPORT_NUMERIC(VT) \
-    /* Arithmetic/general math. */ \
-    SUPPORT(MINUS, VT) \
-    SUPPORT(ABS  , VT) \
-    SUPPORT(SIGN , VT) \
-    SUPPORT(SQRT , VT) \
-    SUPPORT(EXP  , VT) \
-    SUPPORT(LN   , VT) \
-    /* Trigonometric/hyperbolic. */ \
-    SUPPORT(SIN , VT) \
-    SUPPORT(COS , VT) \
-    SUPPORT(TAN , VT) \
-    SUPPORT(ASIN, VT) \
-    SUPPORT(ACOS, VT) \
-    SUPPORT(ATAN, VT) \
-    SUPPORT(SINH, VT) \
-    SUPPORT(COSH, VT) \
-    SUPPORT(TANH, VT) \
-    /* Rounding. */ \
-    SUPPORT(FLOOR, VT) \
-    SUPPORT(CEIL , VT) \
-    SUPPORT(ROUND, VT) \
-    /* Comparison */ \
+#define SUPPORT_NUMERIC(VT)                                                                                            \
+    /* Arithmetic/general math. */                                                                                     \
+    SUPPORT(MINUS, VT)                                                                                                 \
+    SUPPORT(ABS, VT)                                                                                                   \
+    SUPPORT(SIGN, VT)                                                                                                  \
+    SUPPORT(SQRT, VT)                                                                                                  \
+    SUPPORT(EXP, VT)                                                                                                   \
+    SUPPORT(LN, VT)                                                                                                    \
+    /* Trigonometric/hyperbolic. */                                                                                    \
+    SUPPORT(SIN, VT)                                                                                                   \
+    SUPPORT(COS, VT)                                                                                                   \
+    SUPPORT(TAN, VT)                                                                                                   \
+    SUPPORT(ASIN, VT)                                                                                                  \
+    SUPPORT(ACOS, VT)                                                                                                  \
+    SUPPORT(ATAN, VT)                                                                                                  \
+    SUPPORT(SINH, VT)                                                                                                  \
+    SUPPORT(COSH, VT)                                                                                                  \
+    SUPPORT(TANH, VT)                                                                                                  \
+    /* Rounding. */                                                                                                    \
+    SUPPORT(FLOOR, VT)                                                                                                 \
+    SUPPORT(CEIL, VT)                                                                                                  \
+    SUPPORT(ROUND, VT)                                                                                                 \
+    /* Comparison */                                                                                                   \
     SUPPORT(ISNAN, VT)
 
+#define SUPPORT_STRING(VT)                                                                                             \
+    /* String */                                                                                                       \
+    SUPPORT(UPPER, VT)                                                                                                 \
+    SUPPORT(LOWER, VT)
 // Concise specification of which unary operations should be supported on
 // which value types.
 SUPPORT_NUMERIC(double)
@@ -128,9 +137,13 @@ SUPPORT_NUMERIC(int8_t)
 SUPPORT_NUMERIC(uint64_t)
 SUPPORT_NUMERIC(uint32_t)
 SUPPORT_NUMERIC(uint8_t)
+// String operations
+SUPPORT_STRING(std::string)
+SUPPORT_STRING(FixedStr16)
 
 // Undefine helper macros.
 #undef SUPPORT
 #undef SUPPORT_NUMERIC
+#undef SUPPORT_STRING
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H

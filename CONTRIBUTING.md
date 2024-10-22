@@ -79,9 +79,13 @@ That is, please try your best to make a good-quality contribution and we will he
    Please choose an expressive title and provide a short description of your changes.
    Feel free to mark your pull request "WIP: " or "Draft: " in the title.
    Note that you can add more commits to your pull request after you created it.
-7. You **receive feedback** on your proposed contribution.
+   Ideally, the changes in the PR contain only the changes you made for that PR,
+   e.g, by rebasing your branch on top of the target branch. This makes it easier for others to
+   review your PR.
+7. [Resolve any open conflicts](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/addressing-merge-conflicts/about-merge-conflicts) to the target branch of the PR.
+8. You **receive feedback** on your proposed contribution.
    You may be asked to apply certain changes, or we might apply straightforward adjustments ourselves before the integration.
-8. If it looks good (potentially after some help), **your contribution becomes a part of DAPHNE**.
+9. If it looks good (potentially after some help), **your contribution becomes a part of DAPHNE**.
 
 ### Experienced DAPHNE Contributors (Collaborators)
 
@@ -108,3 +112,18 @@ At the same time, this freedom comes with certain responsibilities, which are ro
    - actually merging a pull request in
    
    Balancing the handling of pull requests is important to *keep the development process scalable*.
+
+
+### Code Style
+
+Before contributing, please make sure to run `clang-format` on your C++ (.h and
+.cpp) files. The codebase is currently formatted with `clang-format` version
+`18.1.3`. This is the default `clang-format` version when installing via `apt`
+on Ubuntu 24.04, and can easily be installed via `python -mpip install clang-format==18.1.3`
+on other systems.
+We provide a `.clang-format` file at the root of the repository. Most text
+editors and IDEs will have some kind of integration for detecting that file
+and automatically applying `clang-format`. `git-clang-format` can be used to
+format staged files.
+For more information about `clang-format`, `git-clang-format` and text editor
+integration, please see [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html).

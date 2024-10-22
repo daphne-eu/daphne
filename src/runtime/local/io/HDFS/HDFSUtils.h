@@ -37,22 +37,24 @@ struct HDFSUtils {
         return MetaDataParser::readMetaDataFromString(fmdStr);
     }
 
-    static inline std::string getBaseFile(const char * fn){
+    static inline std::string getBaseFile(const char *fn) {
         std::filesystem::path filePath(fn);
         return filePath.filename().string();
     }
 
-    static std::tuple<int, size_t> findSegmendAndOffset(const hdfsFS &fs, size_t startOffset, size_t startRow, const char * filename, size_t offsetMuliplier) {
+    static std::tuple<int, size_t> findSegmendAndOffset(const hdfsFS &fs, size_t startOffset, size_t startRow,
+                                                        const char *filename, size_t offsetMuliplier) {
         size_t skippedRows = 0;
         int seg = 1;
-        
+
         while (skippedRows != startRow) {
-            std::string segf = std::string(filename) + "/" + HDFSUtils::getBaseFile(filename) + "_segment_" + std::to_string(seg++);
+            std::string segf =
+                std::string(filename) + "/" + HDFSUtils::getBaseFile(filename) + "_segment_" + std::to_string(seg++);
             auto fmd = HDFSUtils::parseHDFSMetaData(segf, fs);
             skippedRows += fmd.numRows;
             // We need offset within segment
             if (skippedRows > startRow) {
-                seg--;  // adjust segment and skipped rows
+                seg--; // adjust segment and skipped rows
                 skippedRows -= fmd.numRows;
                 startOffset += (startRow - skippedRows) * offsetMuliplier;
                 skippedRows = startRow;
@@ -61,9 +63,9 @@ struct HDFSUtils {
         return std::make_tuple(seg, startOffset);
     }
 
-    static std::tuple<std::string, uint16_t> parseIPAddress(const std::string& input) {
+    static std::tuple<std::string, uint16_t> parseIPAddress(const std::string &input) {
         std::string ip;
-        uint16_t port = 9000;  // Default port
+        uint16_t port = 9000; // Default port
         size_t colonPos = input.find(':');
 
         if (colonPos != std::string::npos) {

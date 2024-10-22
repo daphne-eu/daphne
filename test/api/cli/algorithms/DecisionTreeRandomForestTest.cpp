@@ -15,11 +15,12 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- * 
+ *
  * Modifications 2024 The DAPHNE Consortium.
  */
 
-// This code has been manually translated from Apache SystemDS (and significantly adapted).
+// This code has been manually translated from Apache SystemDS (and
+// significantly adapted).
 
 #include <api/cli/Utils.h>
 
@@ -36,8 +37,9 @@ const std::string DATASET_DIR = "test/data/";
 const std::string WINE_DATA = DATASET_DIR + "wine/winequality-red-white.csv";
 // const std::string EEG_DATA = DATASET_DIR + "EEG.csv";
 
-void runDecisionTree(int testNr, const std::string & dataFilePath, double minAcc, int dt, double maxV) {
-    const std::string scriptFileName = ("test/api/cli/algorithms/decisionTreeRealData" + std::to_string(testNr)) + ".daphne";
+void runDecisionTree(int testNr, const std::string &dataFilePath, double minAcc, int dt, double maxV) {
+    const std::string scriptFileName =
+        ("test/api/cli/algorithms/decisionTreeRealData" + std::to_string(testNr)) + ".daphne";
     const std::string argData = "data=\"" + dataFilePath + "\"";
     const std::string argDt = "dt=" + std::to_string(dt);
     const std::string argMaxV = "maxV=" + std::to_string(maxV);
@@ -60,8 +62,8 @@ void runDecisionTree(int testNr, const std::string & dataFilePath, double minAcc
 // }
 
 // TEST_CASE("randomForestTitanic8_MaxV1", TAG_ALGORITHMS) {
-//     //8 trees with sample fraction 0.125 each, accuracy 0.785 due to randomness
-//     runDecisionTree(1, TITANIC_DATA, 0.793, 9, 1.0);
+//     //8 trees with sample fraction 0.125 each, accuracy 0.785 due to
+//     randomness runDecisionTree(1, TITANIC_DATA, 0.793, 9, 1.0);
 // }
 
 // TEST_CASE("decisionTreeTitanic_MaxV06", TAG_ALGORITHMS) {
@@ -74,47 +76,39 @@ void runDecisionTree(int testNr, const std::string & dataFilePath, double minAcc
 // }
 
 // TEST_CASE("randomForestTitanic8_MaxV06", TAG_ALGORITHMS) {
-//     //8 trees with sample fraction 0.125 each, accuracy 0.785 due to randomness
-//     runDecisionTree(1, TITANIC_DATA, 0.793, 9, 0.6);
+//     //8 trees with sample fraction 0.125 each, accuracy 0.785 due to
+//     randomness runDecisionTree(1, TITANIC_DATA, 0.793, 9, 0.6);
 // }
 
-TEST_CASE("decisionTree_Wine_MaxV1", TAG_ALGORITHMS) {
-    runDecisionTree(2, WINE_DATA, 0.989, 1, 1.0);
-}
+TEST_CASE("decisionTree_Wine_MaxV1", TAG_ALGORITHMS) { runDecisionTree(2, WINE_DATA, 0.989, 1, 1.0); }
 
 // Added in DAPHNE (wasn't present in SystemDS).
-TEST_CASE("decisionTree_Wine_MaxV05", TAG_ALGORITHMS) {
-    runDecisionTree(2, WINE_DATA, 0.988, 1, 0.5);
-}
+TEST_CASE("decisionTree_Wine_MaxV05", TAG_ALGORITHMS) { runDecisionTree(2, WINE_DATA, 0.988, 1, 0.5); }
 
-TEST_CASE("randomForestWine_MaxV1", TAG_ALGORITHMS) {
-    runDecisionTree(2, WINE_DATA, 0.989, 2, 1.0);
-}
+TEST_CASE("randomForestWine_MaxV1", TAG_ALGORITHMS) { runDecisionTree(2, WINE_DATA, 0.989, 2, 1.0); }
 
 // Added in DAPHNE (wasn't present in SystemDS).
-TEST_CASE("randomForestWine_MaxV05", TAG_ALGORITHMS) {
-    runDecisionTree(2, WINE_DATA, 0.988, 2, 0.5);
-}
+TEST_CASE("randomForestWine_MaxV05", TAG_ALGORITHMS) { runDecisionTree(2, WINE_DATA, 0.988, 2, 0.5); }
 
 TEST_CASE("decisionTree_WineReg_MaxV1", TAG_ALGORITHMS) {
-    //for regression we compare R2 and use rss to optimize
+    // for regression we compare R2 and use rss to optimize
     runDecisionTree(3, WINE_DATA, 0.364, 1, 1.0);
 }
 
 // Added in DAPHNE (wasn't present in SystemDS).
 TEST_CASE("decisionTree_WineReg_MaxV05", TAG_ALGORITHMS) {
-    //for regression we compare R2 and use rss to optimize
+    // for regression we compare R2 and use rss to optimize
     runDecisionTree(3, WINE_DATA, 0.291, 1, 0.5);
 }
 
 TEST_CASE("randomForestWineReg_MaxV1", TAG_ALGORITHMS) {
-    //for regression we compare R2 and use rss to optimize
+    // for regression we compare R2 and use rss to optimize
     runDecisionTree(3, WINE_DATA, 0.364, 2, 1.0);
 }
 
 // Added in DAPHNE (wasn't present in SystemDS).
 TEST_CASE("randomForestWineReg_MaxV05", TAG_ALGORITHMS) {
-    //for regression we compare R2 and use rss to optimize
+    // for regression we compare R2 and use rss to optimize
     runDecisionTree(3, WINE_DATA, 0.284, 2, 0.5);
 }
 

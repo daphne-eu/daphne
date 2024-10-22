@@ -23,6 +23,4 @@
 // Convenience function
 // ****************************************************************************
 
-static void createHDFSContext(DCTX(ctx)) {
-    ctx->hdfs_context = HDFSContext::createHDFSContext(ctx->config);
-}
+static void createHDFSContext(DCTX(ctx)) { ctx->hdfs_context = HDFSContext::createHDFSContext(ctx->config); }

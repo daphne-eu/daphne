@@ -21,27 +21,24 @@
 #include <util/Statistics.h>
 #include <util/StringRefCount.h>
 
-#include <vector>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include "IContext.h"
 
 #ifdef USE_FPGAOPENCL
-    #include "FPGAContext.h"
+#include "FPGAContext.h"
 #endif
-
-
-
 
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
 // required.
-#define DCTX(varname) DaphneContext * varname
+#define DCTX(varname) DaphneContext *varname
 
 /**
  * @brief This class carries all kinds of run-time context information.
- * 
+ *
  * An instance of this class is passed to every kernel at run-time. It allows
  * the kernel to retrieve information about the run-time environment.
  */
@@ -54,7 +51,6 @@ struct DaphneContext {
     // creating an individual struct/class for them and adding a single member
     // of that type here, in order to separate concerns and allow a  high-level
     // overview of the context information.
-
 
     std::vector<std::unique_ptr<IContext>> cuda_contexts;
     std::vector<std::unique_ptr<IContext>> fpga_contexts;
@@ -69,26 +65,24 @@ struct DaphneContext {
      * Modifying the configuration is intensionally allowed, since it enables
      * changing the configuration at run-time via DaphneDSL.
      */
-    DaphneUserConfig& config;
-    KernelDispatchMapping& dispatchMapping;
-    Statistics& stats;
-    StringRefCounter& stringRefCount;
+    DaphneUserConfig &config;
+    KernelDispatchMapping &dispatchMapping;
+    Statistics &stats;
+    StringRefCounter &stringRefCount;
 
     std::shared_ptr<spdlog::logger> logger;
 
-    explicit DaphneContext(DaphneUserConfig &config,
-                           KernelDispatchMapping &dispatchMapping,
-                           Statistics &stats,
-                           StringRefCounter& stringRefCnt)
+    explicit DaphneContext(DaphneUserConfig &config, KernelDispatchMapping &dispatchMapping, Statistics &stats,
+                           StringRefCounter &stringRefCnt)
         : config(config), dispatchMapping(dispatchMapping), stats(stats), stringRefCount(stringRefCnt) {
         logger = spdlog::get("runtime");
     }
 
     ~DaphneContext() {
-        for (auto& ctx : cuda_contexts) {
+        for (auto &ctx : cuda_contexts) {
             ctx->destroy();
         }
-        for (auto& ctx : fpga_contexts) {
+        for (auto &ctx : fpga_contexts) {
             ctx->destroy();
         }
         cuda_contexts.clear();
@@ -96,40 +90,30 @@ struct DaphneContext {
     }
 
 #ifdef USE_CUDA
-    // ToDo: in a multi device setting this should use a find call instead of a direct [] access
-    [[nodiscard]] IContext* getCUDAContext(size_t dev_id) const {
-        return cuda_contexts[dev_id].get();
-    }
+    // ToDo: in a multi device setting this should use a find call instead of a
+    // direct [] access
+    [[nodiscard]] IContext *getCUDAContext(size_t dev_id) const { return cuda_contexts[dev_id].get(); }
 #endif
 #ifdef USE_FPGAOPENCL
-    // ToDo: in a multi device setting this should use a find call instead of a direct [] access
-    [[nodiscard]] FPGAContext* getFPGAContext(int dev_id) const {
- //	std::cout<<"inside getFPGAContext"<<std::endl;
-       return dynamic_cast<FPGAContext*>(fpga_contexts[dev_id].get());
+    // ToDo: in a multi device setting this should use a find call instead of a
+    // direct [] access
+    [[nodiscard]] FPGAContext *getFPGAContext(int dev_id) const {
+        //	std::cout<<"inside getFPGAContext"<<std::endl;
+        return dynamic_cast<FPGAContext *>(fpga_contexts[dev_id].get());
     }
 #endif
 
-    void startKernelTimer(int kId) {
-        stats.startKernelTimer(kId);
-    }
+    void startKernelTimer(int kId) { stats.startKernelTimer(kId); }
 
-    void stopKernelTimer(int kId) {
-        stats.stopKernelTimer(kId);
-    }
+    void stopKernelTimer(int kId) { stats.stopKernelTimer(kId); }
 
     [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
     [[nodiscard]] bool useFPGA() const { return !fpga_contexts.empty(); }
 
-    [[nodiscard]] IContext *getDistributedContext() const {
-        return distributed_context.get();
-    }
+    [[nodiscard]] IContext *getDistributedContext() const { return distributed_context.get(); }
 #ifdef USE_HDFS
-    [[nodiscard]] IContext* getHDFSContext() const {
-        return hdfs_context.get();
-    }
+    [[nodiscard]] IContext *getHDFSContext() const { return hdfs_context.get(); }
 #endif
 
     [[nodiscard]] DaphneUserConfig &getUserConfig() const { return config; }
-
-
 };

@@ -17,11 +17,11 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/context/HDFSContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
-#include <runtime/local/context/HDFSContext.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -34,8 +34,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTArg>
-struct WriteHDFSCsv {
+template <class DTArg> struct WriteHDFSCsv {
     static void apply(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) = delete;
 };
 
@@ -43,8 +42,7 @@ struct WriteHDFSCsv {
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg>
-void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
+template <class DTArg> void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
     WriteHDFSCsv<DTArg>::apply(arg, hdfsFilename, dctx);
 }
 
@@ -56,8 +54,7 @@ void writeHDFSCsv(const DTArg *arg, const char *hdfsFilename, DCTX(dctx)) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT>
-struct WriteHDFSCsv<DenseMatrix<VT>> {
+template <typename VT> struct WriteHDFSCsv<DenseMatrix<VT>> {
     static void apply(const DenseMatrix<VT> *arg, const char *hdfsFilename, DCTX(dctx)) {
         if (hdfsFilename == nullptr) {
             throw std::runtime_error("Could not read hdfs file");
@@ -74,7 +71,7 @@ struct WriteHDFSCsv<DenseMatrix<VT>> {
         // Check if path exists
         std::filesystem::path filePath(hdfsFilename);
         auto dirFileName = filePath.parent_path();
-        
+
         if (hdfsExists(*fs, dirFileName.c_str()) == -1) {
             // The file does not exist, so create the directory structure
             // and the file
@@ -111,23 +108,20 @@ struct WriteHDFSCsv<DenseMatrix<VT>> {
                 // Convert the numeric value to a string and add a comma
                 std::ostringstream oss;
                 oss << valuesArg[cell];
-                oss << (j < (arg->getNumCols() - 1)
-                            ? ","
-                            : "");  // Add a comma unless it's the last column
+                oss << (j < (arg->getNumCols() - 1) ? "," : ""); // Add a comma unless it's the last column
                 const std::string &valueStr = oss.str();
 
                 // Write the value string to the HDFS file
                 if (hdfsWrite(*fs, hdfsFile, static_cast<const void *>(valueStr.c_str()), valueStr.size()) == -1) {
-                    hdfsCloseFile(*fs, hdfsFile);                
+                    hdfsCloseFile(*fs, hdfsFile);
                     throw std::runtime_error("Failed to write to HDFS file");
                 }
                 cell++;
             }
             // Add a newline character at the end of each row
             const char newline = '\n';
-            if (hdfsWrite(*fs, hdfsFile, static_cast<const void *>(&newline),
-                          1) == -1) {
-                hdfsCloseFile(*fs, hdfsFile);                
+            if (hdfsWrite(*fs, hdfsFile, static_cast<const void *>(&newline), 1) == -1) {
+                hdfsCloseFile(*fs, hdfsFile);
                 throw std::runtime_error("Failed to write to HDFS file");
             }
         }

@@ -20,6 +20,8 @@
 
 #include <catch.hpp>
 
+#include <limits>
+
 #include <cstdint>
 
 TEST_CASE("castSca, no-op casts", TAG_KERNELS) {
@@ -34,16 +36,41 @@ TEST_CASE("castSca, actual casts", TAG_KERNELS) {
     CHECK(castSca<int64_t, double>(-123.4, nullptr) == -123);
     CHECK(castSca<double, int64_t>(123, nullptr) == 123.0);
     CHECK(castSca<double, int64_t>(-123, nullptr) == -123.0);
-    
+
     CHECK(castSca<int64_t, bool>(false, nullptr) == 0);
     CHECK(castSca<int64_t, bool>(true, nullptr) == 1);
     CHECK(castSca<double, bool>(false, nullptr) == 0.0);
     CHECK(castSca<double, bool>(true, nullptr) == 1.0);
-    
+
     CHECK(castSca<bool, int64_t>(123, nullptr) == true);
     CHECK(castSca<bool, int64_t>(-123, nullptr) == true);
     CHECK(castSca<bool, int64_t>(0, nullptr) == false);
     CHECK(castSca<bool, double>(123.4, nullptr) == true);
     CHECK(castSca<bool, double>(-123.4, nullptr) == true);
     CHECK(castSca<bool, double>(0.0, nullptr) == false);
+}
+
+TEST_CASE("castSca, actual casts strings to numbers", TAG_KERNELS) {
+
+    CHECK(castSca<int64_t, std::string>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, std::string>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, std::string>("0", nullptr) == 0);
+    CHECK(castSca<double, std::string>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, std::string>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, std::string>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, std::string>("9223372036854775807", nullptr) == std::numeric_limits<int64_t>::max());
+    CHECK(castSca<int64_t, std::string>("-9223372036854775808", nullptr) == std::numeric_limits<int64_t>::min());
+    CHECK(castSca<uint64_t, std::string>("18446744073709551615", nullptr) == std::numeric_limits<uint64_t>::max());
+    CHECK(castSca<uint64_t, std::string>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, FixedStr16>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, FixedStr16>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, FixedStr16>("0", nullptr) == 0);
+    CHECK(castSca<double, FixedStr16>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, FixedStr16>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, FixedStr16>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, FixedStr16>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, FixedStr16>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, FixedStr16>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, FixedStr16>("0", nullptr) == std::numeric_limits<uint64_t>::min());
 }

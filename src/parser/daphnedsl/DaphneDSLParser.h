@@ -18,8 +18,8 @@
 
 #include <parser/Parser.h>
 
-#include <mlir/IR/Builders.h>
 #include <api/cli/DaphneUserConfig.h>
+#include <mlir/IR/Builders.h>
 
 #include <istream>
 #include <string>
@@ -30,14 +30,12 @@ class DaphneDSLParser : public Parser {
 
     std::unordered_map<std::string, std::string> args;
     DaphneUserConfig userConf;
-    
-public:
 
-    DaphneDSLParser(std::unordered_map<std::string, std::string> args, DaphneUserConfig userConf) :
-            args(std::move(args)), userConf(std::move(userConf)) { }
+  public:
+    DaphneDSLParser(std::unordered_map<std::string, std::string> args, DaphneUserConfig userConf)
+        : args(std::move(args)), userConf(std::move(userConf)) {}
 
-    DaphneDSLParser() : DaphneDSLParser(std::unordered_map<std::string, std::string>(), DaphneUserConfig()) { }
+    DaphneDSLParser() : DaphneDSLParser(std::unordered_map<std::string, std::string>(), DaphneUserConfig()) {}
 
     void parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) override;
-    
 };

@@ -60,6 +60,7 @@ function printHelp {
     echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
     echo "  --mpi             Compile with support for MPI"
     echo "  --hdfs            Compile with support for HDFS"
+    echo "  --io_uring        Compile with support for io_uring"
     echo "  --no-papi         Compile without support for PAPI"
 }
 
@@ -451,6 +452,7 @@ BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 BUILD_MPI="-DUSE_MPI=OFF"
 BUILD_HDFS="-DUSE_HDFS=OFF"
+BUILD_IO_URING="-DUSE_IO_URING=OFF"
 BUILD_PAPI="-DUSE_PAPI=ON"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
@@ -503,6 +505,10 @@ while [[ $# -gt 0 ]]; do
     --hdfs)
         echo using HDFS
         export BUILD_HDFS="-DUSE_HDFS=ON"
+        ;;
+    --io-uring)
+        echo using io_uring
+        export BUILD_IO_URING="-DUSE_IO_URING=ON"
         ;;
     --no-papi)
         echo not using PAPI
@@ -655,7 +661,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.3 Antlr4 (parser)
+    # Antlr4 (parser)
     #------------------------------------------------------------------------------
 
     antlrJarName="antlr-${antlrVersion}-complete.jar"
@@ -708,7 +714,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.4 catch2 (unit test framework)
+    # catch2 (unit test framework)
     #------------------------------------------------------------------------------
     # Download catch2 release zip (if necessary), and unpack the single header file
     # (if necessary).
@@ -734,7 +740,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.5 OpenBLAS (basic linear algebra subprograms)
+    # OpenBLAS (basic linear algebra subprograms)
     #------------------------------------------------------------------------------
 
     openBlasDirName="OpenBLAS-$openBlasVersion"
@@ -744,7 +750,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
 
     if ! is_dependency_downloaded "${dep_openBlas[@]}"; then
         daphne_msg "Get OpenBlas version ${openBlasVersion}"
-        wget "https://github.com/xianyi/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}" \
+        wget "https://github.com/OpenMathLib/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}" \
             -qO "${cacheDir}/${openBlasZipName}"
         unzip -q "$cacheDir/$openBlasZipName" -d "$sourcePrefix"
         dependency_download_success "${dep_openBlas[@]}"
@@ -761,7 +767,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.6 nlohmann/json (library for JSON parsing)
+    # nlohmann/json (library for JSON parsing)
     #------------------------------------------------------------------------------
 
     nlohmannjsonDirName=nlohmannjson
@@ -779,7 +785,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.7 abseil (compiled separately to apply a patch)
+    # abseil (compiled separately to apply a patch)
     #------------------------------------------------------------------------------
 
     abslPath=$sourcePrefix/abseil-cpp
@@ -808,7 +814,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.8 MPI (Default is MPI library is OpenMPI but cut can be any)
+    # MPI (Default is MPI library is OpenMPI but cut can be any)
     #------------------------------------------------------------------------------
 
     MPIZipName=openmpi-$openMPIVersion.tar.gz
@@ -834,7 +840,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.9 gRPC
+    # gRPC
     #------------------------------------------------------------------------------
 
     grpcDirName="grpc"
@@ -875,7 +881,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.10 Arrow / Parquet
+    # Arrow / Parquet
     #------------------------------------------------------------------------------
 
     arrowDirName="apache-arrow-$arrowVersion"
@@ -913,22 +919,44 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # 8.11 spdlog
+    # fmt
+    #------------------------------------------------------------------------------
+
+    fmtDirName="fmt-$fmtVersion"
+    fmtArtifactFileName=$fmtDirName.zip
+    if ! is_dependency_downloaded "fmt_v${fmtVersion}"; then
+        rm -rf "${sourcePrefix:?}/${fmtDirName}"
+        wget "https://github.com/fmtlib/fmt/releases/download/${fmtVersion}/$fmtArtifactFileName" -qO  "$cacheDir/$fmtArtifactFileName"
+        unzip -q "$cacheDir/$fmtArtifactFileName" -d "$sourcePrefix"
+        dependency_download_success "fmt_v${fmtVersion}"
+    fi
+    if ! is_dependency_installed "fmt_v${fmtVersion}"; then
+        cmake -G Ninja -S "${sourcePrefix}/${fmtDirName}" -B "${buildPrefix}/${fmtDirName}" \
+            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DFMT_MASTER_PROJECT=OFF
+        cmake --build "${buildPrefix}/${fmtDirName}" --target install/strip
+        dependency_install_success "fmt_v${fmtVersion}"
+    else
+        daphne_msg "No need to build fmt again."
+    fi
+
+    #------------------------------------------------------------------------------
+    # spdlog
     #------------------------------------------------------------------------------
 
     spdlogDirName="spdlog-$spdlogVersion"
     spdlogArtifactFileName=$spdlogDirName.tar.gz
     if ! is_dependency_downloaded "spdlog_v${spdlogVersion}"; then
         rm -rf "${sourcePrefix:?}/${spdlogDirName}"
-        wget "https://github.com/gabime/spdlog/archive/refs/tags/v$spdlogVersion.tar.gz" -qO \
+        # changed URL scheme due to  temporarily use tip of main branch (2024-10-03)
+#        wget "https://github.com/gabime/spdlog/archive/refs/tags/v$spdlogVersion.tar.gz" -qO \
+        wget https://github.com/gabime/spdlog/archive/$spdlogVersion.tar.gz -qO \
             "$cacheDir/$spdlogArtifactFileName"
         tar xzf "$cacheDir/$spdlogArtifactFileName" --directory="$sourcePrefix"
         dependency_download_success "spdlog_v${spdlogVersion}"
     fi
-
     if ! is_dependency_installed "spdlog_v${spdlogVersion}"; then
         cmake -G Ninja -S "${sourcePrefix}/${spdlogDirName}" -B "${buildPrefix}/${spdlogDirName}" \
-            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+            -DSPDLOG_FMT_EXTERNAL=ON -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
         cmake --build "${buildPrefix}/${spdlogDirName}" --target install/strip
         dependency_install_success "spdlog_v${spdlogVersion}"
     else
@@ -936,7 +964,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # 8.12 Eigen
+    # Eigen
     #------------------------------------------------------------------------------
 
     eigenDirName="eigen-${eigenVersion}"
@@ -957,7 +985,38 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.13 Build MLIR
+    # HAWQ (libhdfs3)
+    #------------------------------------------------------------------------------
+
+    hawqDirName="hawq-rel-v$hawqVersion"
+    hawqDlTarName="v${hawqVersion}.tar.gz"
+    hawqTarName="${hawqDirName}.tar.gz"
+    hawqInstDirName=$installPrefix
+
+    if [ $BUILD_HDFS == "-DUSE_HDFS=ON" ]; then
+        if ! is_dependency_downloaded "hawq_v${hawqVersion}"; then
+            daphne_msg "Get HAWQ (libhdfs3) version ${hawqVersion}"
+            wget "https://github.com/apache/hawq/archive/refs/tags/rel/${hawqDlTarName}" \
+                -qO "${cacheDir}/${hawqTarName}"
+            tar -xf "$cacheDir/$hawqTarName" -C "$sourcePrefix"
+            daphne_msg "Applying 0005-libhdfs3-remove-gtest-dep.patch"
+            patch -Np1 -i "${patchDir}/0005-libhdfs3-remove-gtest-dep.patch" -d "$sourcePrefix/$hawqDirName"
+            daphne_msg "Applying 0006-libhdfs3-add-cstdint-include.patch"
+            patch -Np1 -i "${patchDir}/0006-libhdfs3-add-cstdint-include.patch" -d "$sourcePrefix/$hawqDirName"
+            dependency_download_success "hawq_v${hawqVersion}"
+        fi
+        if ! is_dependency_installed "hawq_v${hawqVersion}"; then
+            cmake -G Ninja -S "$sourcePrefix/$hawqDirName/depends/libhdfs3" -B "${buildPrefix}/${hawqDirName}" \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$installPrefix"
+            cmake --build "${buildPrefix}/${hawqDirName}" --target install/strip
+            dependency_install_success "hawq_v${hawqVersion}"
+        else
+              daphne_msg "No need to build HAWQ (libhdfs3) again."
+        fi
+    fi
+
+    #------------------------------------------------------------------------------
+    # Build MLIR
     #------------------------------------------------------------------------------
     # We rarely need to build MLIR/LLVM, only during the first build of the
     # prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
@@ -1016,34 +1075,7 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # #8.14 HAWQ (libhdfs3)
-    #------------------------------------------------------------------------------
-
-    hawqDirName="hawq-rel-v$hawqVersion"
-    hawqTarName="v${hawqVersion}.tar.gz"
-    hawqInstDirName=$installPrefix
-    if ! is_dependency_downloaded "hawq_v${hawqVersion}"; then
-	      daphne_msg "Get HAWQ (libhdfs3) version ${hawqVersion}"
-        wget "https://github.com/apache/hawq/archive/refs/tags/rel/${hawqTarName}" \
-            -qO "${cacheDir}/${hawqTarName}"
-        tar -xf "$cacheDir/$hawqTarName" -C "$sourcePrefix"
-        daphne_msg "Applying 0005-libhdfs3-remove-gtest-dep.patch"
-        patch -Np1 -i "${patchDir}/0005-libhdfs3-remove-gtest-dep.patch" -d "$sourcePrefix/$hawqDirName"
-        daphne_msg "Applying 0006-libhdfs3-add-cstdint-include.patch"
-        patch -Np1 -i "${patchDir}/0006-libhdfs3-add-cstdint-include.patch" -d "$sourcePrefix/$hawqDirName"
-        dependency_download_success "hawq_v${hawqVersion}"
-    fi
-    if ! is_dependency_installed "hawq_v${hawqVersion}"; then
-        cmake -G Ninja -S "$sourcePrefix/$hawqDirName/depends/libhdfs3" -B "${buildPrefix}/${hawqDirName}" \
-            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$installPrefix"
-        cmake --build "${buildPrefix}/${hawqDirName}" --target install/strip
-        dependency_install_success "hawq_v${hawqVersion}"
-    else
-	      daphne_msg "No need to build HAWQ (libhdfs3) again."
-    fi
-
-    #------------------------------------------------------------------------------
-    # 8.15 Liburing
+    # Liburing
     #------------------------------------------------------------------------------
 
     liburingDirName="liburing-$liburingVersion"
@@ -1053,28 +1085,30 @@ if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
     liburing_cc=$([ "$CC" = "" ] && echo "gcc" || echo "$CC")
     liburing_cxx=$([ "$CXX" = "" ] && echo "g++" || echo "$CXX")
 
-    if ! is_dependency_downloaded "liburing_v${liburingVersion}"; then
-        daphne_msg "Get liburing version ${liburingVersion}"
-        wget "https://github.com/axboe/liburing/archive/refs/tags/${liburingTarName}" \
-            -qO "${cacheDir}/${liburingTarName}"
-        mkdir "$sourcePrefix/$liburingDirName"
-        tar -xf "$cacheDir/$liburingTarName" -C "$sourcePrefix/$liburingDirName" --strip-components=1
-        dependency_download_success "liburing_v${liburingVersion}"
-    fi
-    if ! is_dependency_installed "liburing_v${liburingVersion}"; then
-        cd "$sourcePrefix/$liburingDirName"
-        ./configure --cc="$liburing_cc" --cxx="$liburing_cxx" --prefix="$liburingInstDirName"
-        make -j"$(nproc)"
-        cp ./src/liburing.a "$installPrefix/lib/"
-        cp -r ./src/include/* "$installPrefix/include"
-        cd - > /dev/null
-        dependency_install_success "liburing_v${liburingVersion}"
-    else
-        daphne_msg "No need to build liburing again."
+    if [ $BUILD_IO_URING == "-DUSE_IO_URING=ON" ]; then
+        if ! is_dependency_downloaded "liburing_v${liburingVersion}"; then
+            daphne_msg "Get liburing version ${liburingVersion}"
+            wget "https://github.com/axboe/liburing/archive/refs/tags/${liburingTarName}" \
+                -qO "${cacheDir}/${liburingTarName}"
+            mkdir "$sourcePrefix/$liburingDirName"
+            tar -xf "$cacheDir/$liburingTarName" -C "$sourcePrefix/$liburingDirName" --strip-components=1
+            dependency_download_success "liburing_v${liburingVersion}"
+        fi
+        if ! is_dependency_installed "liburing_v${liburingVersion}"; then
+            cd "$sourcePrefix/$liburingDirName"
+            ./configure --cc="$liburing_cc" --cxx="$liburing_cxx" --prefix="$liburingInstDirName"
+            make -j"$(nproc)"
+            cp ./src/liburing.a "$installPrefix/lib/"
+            cp -r ./src/include/* "$installPrefix/include"
+            cd - > /dev/null
+            dependency_install_success "liburing_v${liburingVersion}"
+        else
+            daphne_msg "No need to build liburing again."
+        fi
     fi
 
     #------------------------------------------------------------------------------
-    # 8.16 Fetch bitstreams
+    # Fetch bitstreams
     #------------------------------------------------------------------------------
 
     if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then

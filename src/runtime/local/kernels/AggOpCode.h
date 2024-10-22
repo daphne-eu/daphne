@@ -36,67 +36,74 @@ enum class AggOpCode {
 
 struct AggOpCodeUtils {
     static bool isPureBinaryReduction(AggOpCode opCode) {
-        switch(opCode) {
-            case AggOpCode::SUM:
-            case AggOpCode::PROD:
-            case AggOpCode::MIN:
-            case AggOpCode::MAX:
-                return true;
-            case AggOpCode::MEAN:
-            case AggOpCode::STDDEV:
-            case AggOpCode::VAR:
-                return false;
-            default:
-                throw std::runtime_error("unsupported AggOpCode");
+        switch (opCode) {
+        case AggOpCode::SUM:
+        case AggOpCode::PROD:
+        case AggOpCode::MIN:
+        case AggOpCode::MAX:
+            return true;
+        case AggOpCode::MEAN:
+        case AggOpCode::STDDEV:
+        case AggOpCode::VAR:
+            return false;
+        default:
+            throw std::runtime_error("unsupported AggOpCode");
         }
     }
-    
+
     static BinaryOpCode getBinaryOpCode(AggOpCode opCode) {
         if (!isPureBinaryReduction(opCode)) {
-            throw std::runtime_error(
-                "Aggregation kernel expects pure binary reduction.");
+            throw std::runtime_error("Aggregation kernel expects pure binary reduction.");
         }
-        switch(opCode) {
-            case AggOpCode::SUM: return BinaryOpCode::ADD;
-            case AggOpCode::PROD: return BinaryOpCode::MUL;
-            case AggOpCode::MIN: return BinaryOpCode::MIN;
-            case AggOpCode::MAX: return BinaryOpCode::MAX;
-            default:
-                throw std::runtime_error("unsupported AggOpCode");
+        switch (opCode) {
+        case AggOpCode::SUM:
+            return BinaryOpCode::ADD;
+        case AggOpCode::PROD:
+            return BinaryOpCode::MUL;
+        case AggOpCode::MIN:
+            return BinaryOpCode::MIN;
+        case AggOpCode::MAX:
+            return BinaryOpCode::MAX;
+        default:
+            throw std::runtime_error("unsupported AggOpCode");
         }
     }
-    
-    template<typename VT>
-    static VT getNeutral(AggOpCode opCode) {
+
+    template <typename VT> static VT getNeutral(AggOpCode opCode) {
         if (!isPureBinaryReduction(opCode)) {
-            throw std::runtime_error(
-                "Aggregation kernel expects pure binary reduction.");
+            throw std::runtime_error("Aggregation kernel expects pure binary reduction.");
         }
-        switch(opCode) {
-            case AggOpCode::SUM: return VT(0);
-            case AggOpCode::PROD: return VT(1);
-            case AggOpCode::MIN: return std::numeric_limits<VT>::has_infinity ?  std::numeric_limits<VT>::infinity() : std::numeric_limits<VT>::max();
-            case AggOpCode::MAX: return std::numeric_limits<VT>::has_infinity ? -std::numeric_limits<VT>::infinity() : std::numeric_limits<VT>::min();
-            default:
-                throw std::runtime_error("unsupported AggOpCode");
+        switch (opCode) {
+        case AggOpCode::SUM:
+            return VT(0);
+        case AggOpCode::PROD:
+            return VT(1);
+        case AggOpCode::MIN:
+            return std::numeric_limits<VT>::has_infinity ? std::numeric_limits<VT>::infinity()
+                                                         : std::numeric_limits<VT>::max();
+        case AggOpCode::MAX:
+            return std::numeric_limits<VT>::has_infinity ? -std::numeric_limits<VT>::infinity()
+                                                         : std::numeric_limits<VT>::min();
+        default:
+            throw std::runtime_error("unsupported AggOpCode");
         }
     }
-    
+
     static bool isSparseSafe(AggOpCode opCode) {
-        switch(opCode) {
-            case AggOpCode::SUM:
-                return true;
-            case AggOpCode::PROD:
-            case AggOpCode::MIN:
-            case AggOpCode::MAX:
-            case AggOpCode::MEAN:
-            case AggOpCode::STDDEV:
-            case AggOpCode::VAR:
-                return false;
-            default:
-                throw std::runtime_error("unsupported AggOpCode");
+        switch (opCode) {
+        case AggOpCode::SUM:
+            return true;
+        case AggOpCode::PROD:
+        case AggOpCode::MIN:
+        case AggOpCode::MAX:
+        case AggOpCode::MEAN:
+        case AggOpCode::STDDEV:
+        case AggOpCode::VAR:
+            return false;
+        default:
+            throw std::runtime_error("unsupported AggOpCode");
         }
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_AGGOPCODE_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_AGGOPCODE_H

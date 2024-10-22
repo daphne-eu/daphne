@@ -20,25 +20,26 @@
 #include <runtime/local/io/HDFS/HDFSUtils.h>
 
 #if USE_HDFS
-    #include <hdfs/hdfs.h>
+#include <hdfs/hdfs.h>
 #endif
 
 #include <memory>
 #include <vector>
 
-
 // TODO: Separate implementation in a .cpp file?
 class HDFSContext final : public IContext {
-private:
+  private:
     std::vector<std::string> workers{};
-public:
+
+  public:
 #if USE_HDFS
     std::unique_ptr<hdfsFS> fs;
 #endif
     HDFSContext(const DaphneUserConfig &cfg) {
 #if USE_HDFS
         auto IpPort = HDFSUtils::parseIPAddress(cfg.hdfs_Address);
-        fs = std::make_unique<hdfsFS>(hdfsConnectAsUser(std::get<0>(IpPort).c_str(), std::get<1>(IpPort), cfg.hdfs_username.c_str()));
+        fs = std::make_unique<hdfsFS>(
+            hdfsConnectAsUser(std::get<0>(IpPort).c_str(), std::get<1>(IpPort), cfg.hdfs_username.c_str()));
 #endif
     }
     ~HDFSContext() {
@@ -56,7 +57,7 @@ public:
         // Clean up
     };
 #if USE_HDFS
-    static HDFSContext* get(DaphneContext *ctx) { return dynamic_cast<HDFSContext*>(ctx->getHDFSContext()); };
-    hdfsFS* getConnection() { return fs.get(); };
+    static HDFSContext *get(DaphneContext *ctx) { return dynamic_cast<HDFSContext *>(ctx->getHDFSContext()); };
+    hdfsFS *getConnection() { return fs.get(); };
 #endif
 };

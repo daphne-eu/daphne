@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/MatMul.h>
-#include <runtime/local/kernels/Transpose.h>
 #include <runtime/local/kernels/Solve.h>
-#include "run_tests.h"
+#include <runtime/local/kernels/Transpose.h>
 
 #include <tags.h>
 
@@ -28,12 +28,12 @@
 
 #include <vector>
 
-template<class DT>
-void checkSolve(const DT* lhs, const DT* rhs, const DT * exp, DCTX(dctx)) {
+template <class DT> void checkSolve(const DT *lhs, const DT *rhs, const DT *exp, DCTX(dctx)) {
     DT *res = nullptr;
     solve<DT, DT, DT>(res, lhs, rhs, dctx);
     // instead of CHECK(*res == * exp), we use the below approximate comparison
-    // because otherwise the float results do not exactly match, while double does
+    // because otherwise the float results do not exactly match, while double
+    // does
     CHECK(res->getNumRows() == exp->getNumRows());
     CHECK(res->getNumCols() == exp->getNumCols());
     CHECK(checkEqApprox(res, exp, 1e-6, nullptr));
@@ -43,20 +43,12 @@ TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix), (float, double))
     using DT = TestType;
     auto dctx = setupContextAndLogger();
 
-    auto X = genGivenVals<DT>(7, {
-        1, 4, 5,
-        3, 7, 1,
-        2, 3, 5,
-        9, 8, 1,
-        1, 2, 3,
-        5, 1, 9,
-        2, 3, 1
-    });
+    auto X = genGivenVals<DT>(7, {1, 4, 5, 3, 7, 1, 2, 3, 5, 9, 8, 1, 1, 2, 3, 5, 1, 9, 2, 3, 1});
     auto w = genGivenVals<DT>(3, {
-        1,
-        2,
-        3,
-    });
+                                     1,
+                                     2,
+                                     3,
+                                 });
 
     DT *y = nullptr, *tX = nullptr, *A = nullptr, *b = nullptr;
     matMul(y, X, w, false, false, dctx.get());

@@ -17,53 +17,47 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-//#include <runtime/local/datastructures/DataObjectFactory.h>
-//#include <runtime/local/datastructures/DenseMatrix.h>
+// #include <runtime/local/datastructures/DataObjectFactory.h>
+// #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/coordinator/kernels/DistributedWrapper.h>
-//#include <ir/daphneir/Daphne.h>
-
+// #include <ir/daphneir/Daphne.h>
 
 #include <iostream>
 
-using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
+using mlir::daphne::VectorSplit;
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-//template<class DTRes, class DTArg>
-//struct DistributedPipeline {
-//    static void apply(
-//            DTRes *& res,
-//            const char * irCode,
-//            const DTArg ** inputs, size_t numInputs,
-//            size_t * outRows, size_t numOutRows,
-//            size_t *outCols, size_t numOutCols,
-//            DCTX(ctx)
-//    );
-//};
+// template<class DTRes, class DTArg>
+// struct DistributedPipeline {
+//     static void apply(
+//             DTRes *& res,
+//             const char * irCode,
+//             const DTArg ** inputs, size_t numInputs,
+//             size_t * outRows, size_t numOutRows,
+//             size_t *outCols, size_t numOutCols,
+//             DCTX(ctx)
+//     );
+// };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
 // One output.
-template<class DTRes>
-void distributedPipeline(
-        DTRes ** outputs, size_t numOutputs,
-        const Structure ** inputs, size_t numInputs,
-        int64_t * outRows, int64_t * outCols,
-        int64_t * splits, int64_t * combines,
-        const char * irCode,
-        DCTX(ctx)
-) {
+template <class DTRes>
+void distributedPipeline(DTRes **outputs, size_t numOutputs, const Structure **inputs, size_t numInputs,
+                         int64_t *outRows, int64_t *outCols, int64_t *splits, int64_t *combines, const char *irCode,
+                         DCTX(ctx)) {
 
     auto wrapper = std::make_unique<DistributedWrapper<DTRes>>(ctx);
     // TODO *** -> **
     DTRes ***res = new DTRes **[numOutputs];
     for (size_t i = 0; i < numOutputs; i++)
-        res[i] = outputs+i;
+        res[i] = outputs + i;
     wrapper->execute(irCode, res, inputs, numInputs, numOutputs, outRows, outCols,
-            reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines));
+                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines));
 }

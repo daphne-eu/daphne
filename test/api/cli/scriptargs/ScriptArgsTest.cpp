@@ -27,9 +27,9 @@ const std::string dirPath = "test/api/cli/scriptargs/";
 
 TEST_CASE("Print single script argument", TAG_SCRIPTARGS) {
     const std::string scriptPath = dirPath + "printSingleArg.daphne";
-    compareDaphneToStr("123\n"        , scriptPath.c_str(), "--args", "foo=123");
-    compareDaphneToStr("-123.45\n"    , scriptPath.c_str(), "--args", "foo=-123.45");
-    compareDaphneToStr("1\n"          , scriptPath.c_str(), "--args", "foo=true");
+    compareDaphneToStr("123\n", scriptPath.c_str(), "--args", "foo=123");
+    compareDaphneToStr("-123.45\n", scriptPath.c_str(), "--args", "foo=-123.45");
+    compareDaphneToStr("1\n", scriptPath.c_str(), "--args", "foo=true");
     compareDaphneToStr("hello world\n", scriptPath.c_str(), "--args", "foo=\"hello world\"");
     compareDaphneToStr("nan\n", scriptPath.c_str(), "--args", "foo=nan");
     compareDaphneToStr("inf\n", scriptPath.c_str(), "--args", "foo=inf");
@@ -67,36 +67,20 @@ TEST_CASE("Duplicate script argument") {
 TEST_CASE("Ways of specifying script arguments", TAG_SCRIPTARGS) {
     std::stringstream out;
     std::stringstream err;
-    
+
     const std::string scriptPath = dirPath + "printMultipleArgs.daphne";
 
     int status;
-    SECTION("only after script file") {
-        status = runDaphne(
-                out, err,
-                scriptPath.c_str(), "a=1", "b=2", "c=3", "d=4"
-        );
-    }
-    SECTION("only via --args") {
-        status = runDaphne(
-                out, err,
-                "--args", "a=1,b=2,c=3,d=4", scriptPath.c_str()
-        );
-    }
-    SECTION("mixed") {
-        status = runDaphne(
-                out, err,
-                "--args", "a=1,b=2", scriptPath.c_str(), "c=3", "d=4"
-        );
-    }
-    
+    SECTION("only after script file") { status = runDaphne(out, err, scriptPath.c_str(), "a=1", "b=2", "c=3", "d=4"); }
+    SECTION("only via --args") { status = runDaphne(out, err, "--args", "a=1,b=2,c=3,d=4", scriptPath.c_str()); }
+    SECTION("mixed") { status = runDaphne(out, err, "--args", "a=1,b=2", scriptPath.c_str(), "c=3", "d=4"); }
+
     // Don't REQUIRE, such that out and err are also printed in case of a test
     // failure. Don't use empty() on err, such that err is printed on failure.
     CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == "1\n2\n3\n4\n");
     CHECK(err.str() == "");
 }
-
 
 TEST_CASE("Don't support general expressions as script arguments", TAG_SCRIPTARGS) {
     const std::string scriptPath = dirPath + "printSingleArg.daphne";

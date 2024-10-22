@@ -35,32 +35,23 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-struct BatchNorm2DTrainForward {
-    static void apply(  DTRes *&res, 
-                        DTRes *&new_emaMean, DTRes *&new_emaVar,
-                        DTRes *&mean, DTRes *&invVar, 
-                        const DTArg *in, 
-                        const DTArg *gamma, const DTArg *beta,
-                        const DTArg *emaMean, const DTArg *emaVar, 
-                        const typename DTArg::VT eps, const typename DTArg::VT mu,
-                        DCTX(dctx)) = delete;
+template <class DTRes, class DTArg> struct BatchNorm2DTrainForward {
+    static void apply(DTRes *&res, DTRes *&new_emaMean, DTRes *&new_emaVar, DTRes *&mean, DTRes *&invVar,
+                      const DTArg *in, const DTArg *gamma, const DTArg *beta, const DTArg *emaMean, const DTArg *emaVar,
+                      const typename DTArg::VT eps, const typename DTArg::VT mu, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void batchNorm2DTrainForward(   DTRes *&res, 
-                            DTRes *&new_emaMean, DTRes *&new_emaVar,
-                            DTRes *&mean, DTRes *&invVar, 
-                            const DTArg *in, 
-                            const DTArg *gamma, const DTArg *beta,
-                            const DTArg *emaMean, const DTArg *emaVar, 
-                            const typename DTArg::VT eps, const typename DTArg::VT mu,
-                            DCTX(dctx)) {
-    BatchNorm2DTrainForward<DTRes, DTArg>::apply(res, new_emaMean, new_emaVar, mean, invVar, in, gamma, beta, emaMean, emaVar, eps, mu, dctx);
+template <class DTRes, class DTArg>
+void batchNorm2DTrainForward(DTRes *&res, DTRes *&new_emaMean, DTRes *&new_emaVar, DTRes *&mean, DTRes *&invVar,
+                             const DTArg *in, const DTArg *gamma, const DTArg *beta, const DTArg *emaMean,
+                             const DTArg *emaVar, const typename DTArg::VT eps, const typename DTArg::VT mu,
+                             DCTX(dctx)) {
+    BatchNorm2DTrainForward<DTRes, DTArg>::apply(res, new_emaMean, new_emaVar, mean, invVar, in, gamma, beta, emaMean,
+                                                 emaVar, eps, mu, dctx);
 }
 
 // ****************************************************************************
@@ -71,23 +62,13 @@ void batchNorm2DTrainForward(   DTRes *&res,
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg>
-struct BatchNorm2DTrainForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
-{
-    static void 
-    apply(  DenseMatrix<VTRes> *&res,
-            DenseMatrix<VTRes> *&new_emaMean,
-            DenseMatrix<VTRes> *&new_emaVar,
-            DenseMatrix<VTRes> *&Mean,
-            DenseMatrix<VTRes> *&invVar,
-            const DenseMatrix<VTArg> *in,
-            const DenseMatrix<VTArg> *gamma, 
-            const DenseMatrix<VTArg> *beta,
-            const DenseMatrix<VTArg> *emaMean,
-            const DenseMatrix<VTArg> *emaVar,
-            const VTArg eps, const VTArg mu, DCTX(dctx))
-    {
-        
+template <typename VTRes, typename VTArg> struct BatchNorm2DTrainForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(DenseMatrix<VTRes> *&res, DenseMatrix<VTRes> *&new_emaMean, DenseMatrix<VTRes> *&new_emaVar,
+                      DenseMatrix<VTRes> *&Mean, DenseMatrix<VTRes> *&invVar, const DenseMatrix<VTArg> *in,
+                      const DenseMatrix<VTArg> *gamma, const DenseMatrix<VTArg> *beta,
+                      const DenseMatrix<VTArg> *emaMean, const DenseMatrix<VTArg> *emaVar, const VTArg eps,
+                      const VTArg mu, DCTX(dctx)) {
+
         auto start = 0;
         auto stop = in->getNumRows();
         auto CHW = in->getNumCols();
@@ -109,39 +90,33 @@ struct BatchNorm2DTrainForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>>
             Mean = DataObjectFactory::create<DenseMatrix<VTArg>>(C, C, true);
         if (invVar == nullptr)
             invVar = DataObjectFactory::create<DenseMatrix<VTArg>>(C, C, true);
-        
-        for(uint32_t c = 0; c < C; c++)
-        {
+
+        for (uint32_t c = 0; c < C; c++) {
             mean = 0;
-            for(uint32_t i = start; i < stop; i++)
-                for(uint32_t j = 0; j < HW; j++)
-                {
+            for (uint32_t i = start; i < stop; i++)
+                for (uint32_t j = 0; j < HW; j++) {
                     off = i * CHW + c * HW + j;
-                    mean =  mean + in->getValues()[off] / (stop * HW);
+                    mean = mean + in->getValues()[off] / (stop * HW);
                 }
 
             var = 0;
-            for(uint32_t i = start; i < stop; i++)
-                for(uint32_t j = 0; j < HW; j++)
-                {
+            for (uint32_t i = start; i < stop; i++)
+                for (uint32_t j = 0; j < HW; j++) {
                     off = i * CHW + c * HW + j;
-                    var =  var + std::pow((in->getValues()[off] - mean), 2) / (stop * HW);
+                    var = var + std::pow((in->getValues()[off] - mean), 2) / (stop * HW);
                 }
 
             Mean->getValues()[c] = mean;
             invVar->getValues()[c] = 1 / std::sqrt(var + eps);
             new_emaMean->getValues()[c] = (1 - mu) * emaMean->getValues()[c] + mu * mean;
             new_emaVar->getValues()[c] = (1 - mu) * emaVar->getValues()[c] + mu * var;
-            for(uint32_t i = start; i < stop; i++)
-            {
-                for(uint32_t j = 0; j < HW; j++)
-                {
+            for (uint32_t i = start; i < stop; i++) {
+                for (uint32_t j = 0; j < HW; j++) {
                     off = i * CHW + c * HW + j;
                     x_hat = (in->getValues()[off] - mean) / std::sqrt(var + eps);
                     res->getValues()[off] = gamma->getValues()[c] * x_hat + beta->getValues()[c];
                 }
             }
-
         }
     }
 };

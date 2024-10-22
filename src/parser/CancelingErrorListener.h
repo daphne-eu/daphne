@@ -21,19 +21,16 @@
 #include <util/ErrorHandler.h>
 
 class CancelingErrorListener : public antlr4::BaseErrorListener {
-private:
-    void syntaxError(antlr4::Recognizer *recognizer,
-                     antlr4::Token *offendingSymbol,
-                     size_t line,
-                     size_t charPositionInLine,
-                     const std::string &msg,
-                     std::exception_ptr e) override {
+  private:
+    void syntaxError(antlr4::Recognizer *recognizer, antlr4::Token *offendingSymbol, size_t line,
+                     size_t charPositionInLine, const std::string &msg, std::exception_ptr e) override {
         std::stringstream ss;
-        ss << recognizer->getInputStream()->getSourceName() << ':' << line << ':' << charPositionInLine << ' '
-           << msg << "\n";
-        throw ErrorHandler::makeError("Antlr4 Parser", ss.str(), recognizer->getInputStream()->getSourceName(), line, charPositionInLine);
+        ss << recognizer->getInputStream()->getSourceName() << ':' << line << ':' << charPositionInLine << ' ' << msg
+           << "\n";
+        throw ErrorHandler::makeError("Antlr4 Parser", ss.str(), recognizer->getInputStream()->getSourceName(), line,
+                                      charPositionInLine);
         // throw antlr4::ParseCancellationException(ss.str());
     }
 };
 
-#endif //SRC_PARSER_CANCELINGERRORLISTENER_H
+#endif // SRC_PARSER_CANCELINGERRORLISTENER_H

@@ -30,17 +30,16 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-struct Reshape {
-    static void apply(DTRes *& res, const DTArg * arg, size_t numRows, size_t numCols, DCTX(ctx)) = delete;
+template <class DTRes, class DTArg> struct Reshape {
+    static void apply(DTRes *&res, const DTArg *arg, size_t numRows, size_t numCols, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void reshape(DTRes *& res, const DTArg * arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+template <class DTRes, class DTArg>
+void reshape(DTRes *&res, const DTArg *arg, size_t numRows, size_t numCols, DCTX(ctx)) {
     Reshape<DTRes, DTArg>::apply(res, arg, numRows, numCols, ctx);
 }
 
@@ -52,24 +51,23 @@ void reshape(DTRes *& res, const DTArg * arg, size_t numRows, size_t numCols, DC
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t numRows, size_t numCols, DCTX(ctx)) {
-        if(numRows * numCols != arg->getNumRows() * arg->getNumCols())
+template <typename VT> struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+        if (numRows * numCols != arg->getNumRows() * arg->getNumCols())
             throw std::runtime_error("reshape must retain the number of cells");
 
-        if(arg->getRowSkip() == arg->getNumCols() && res == nullptr)
+        if (arg->getRowSkip() == arg->getNumCols() && res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg->getValuesSharedPtr());
         else {
-            if(res == nullptr)
+            if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
             auto resVals = res->getValues();
             auto argVals = arg->getValues();
             size_t numArgRows = arg->getNumRows();
             size_t numArgCols = arg->getNumCols();
-            for(size_t r = 0; r < numArgRows; r++) {
-                memcpy(resVals, argVals, numArgCols * sizeof(VT));
+            for (size_t r = 0; r < numArgRows; r++) {
+                std::copy(argVals, argVals + numArgCols, resVals);
                 argVals += arg->getRowSkip();
                 resVals += numArgCols;
             }
@@ -81,9 +79,8 @@ struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
 // Matrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct Reshape<Matrix<VT>, Matrix<VT>> {
-    static void apply(Matrix<VT> *& res, const Matrix<VT> * arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+template <typename VT> struct Reshape<Matrix<VT>, Matrix<VT>> {
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, size_t numRows, size_t numCols, DCTX(ctx)) {
         const size_t numColsArg = arg->getNumCols();
 
         if (numRows * numCols != arg->getNumRows() * numColsArg)
@@ -103,4 +100,4 @@ struct Reshape<Matrix<VT>, Matrix<VT>> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_RESHAPE_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_RESHAPE_H
