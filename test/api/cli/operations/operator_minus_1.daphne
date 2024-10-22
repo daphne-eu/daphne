@@ -1,4 +1,4 @@
-// '-' for subtraction.
+// binary '-' for subtraction.
 
 print("scalar - scalar");
 print(1 - 2);

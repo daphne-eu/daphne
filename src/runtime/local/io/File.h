@@ -23,7 +23,9 @@
 struct File {
   FILE *identifier;
   unsigned long pos;
-  unsigned long read;
+  long read;
+  char *line;
+  size_t line_len;
 };
 
 inline struct File *openMemFile(FILE *ident){
@@ -31,6 +33,9 @@ inline struct File *openMemFile(FILE *ident){
 
   f->identifier = ident;
   f->pos = 0;
+
+  f->line = NULL;
+  f->line_len = 0;
 
   return f;
 }
@@ -43,6 +48,10 @@ inline struct File *openFile(const char *filename) {
 
   if (f->identifier == NULL)
     return NULL;
+
+  f->line = NULL;
+  f->line_len = 0;
+
   return f;
 }
 
@@ -54,19 +63,27 @@ inline struct File *openFileForWrite(const char *filename) {
   
   if (f->identifier == NULL)
     return NULL;
+
+  f->line = NULL;
+  f->line_len = 0;
+
   return f;
 }
 
-inline void closeFile(File *f) { fclose(f->identifier); }
+inline void closeFile(File *f) {
+  fclose(f->identifier);
+  if (f->line) {
+    free(f->line);
+  }
+  free(f);
+}
 
-inline char *getLine(File *f) {
-  char *line = NULL;
-  size_t len = 0;
+inline ssize_t getFileLine(File *f) {
+  ssize_t ret = getline(&f->line, &f->line_len, f->identifier);
+  f->read = ret;
+  f->pos += ret;
 
-  f->read = getline(&line, &len, f->identifier);
-  f->pos += f->read;
-
-  return line;
+  return ret;
 }
 
 #endif

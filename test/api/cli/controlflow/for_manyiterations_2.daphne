@@ -1,0 +1,6 @@
+// A for-loop with many iterations, containing a variadic op.
+
+for(i in 1:500_000) {
+    f = createFrame(as.matrix(i));
+    print(f);
+}

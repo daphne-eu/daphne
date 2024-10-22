@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "daphne"
+name = "daphne-lib"
 authors = [
     {name = "The DAPHNE Consortium", email = "daphne_dev@know-center.at"},
 ]
@@ -12,18 +12,28 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Apache v2.0"}
 classifiers = [
-    "License :: Apache v2.0",
-    "Topic :: Software Development :: Libraries",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: POSIX :: Linux",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+keywords = [
+    "DAPHNE",
+    "Integrated Data Analysis Pipelines",
 ]
 dependencies = [
     "pandas",
 ]
-version = "0.2.0"
+version = "0.3.0"
 
 [project.urls]
 Homepage = "https://daphne-eu.eu/"
-Documentation = "https://daphne-eu.github.io/daphne/"
+Documentation = "https://daphne-eu.github.io/daphne/DaphneLib/Overview/"
 Repository = "https://github.com/daphne-eu/daphne"
 Issues = "https://github.com/daphne-eu/daphne/issues"
 Changelog = "https://github.com/daphne-eu/daphne/releases"

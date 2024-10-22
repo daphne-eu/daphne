@@ -18,6 +18,8 @@
 
 #include <api/cli/DaphneUserConfig.h>
 #include <util/KernelDispatchMapping.h>
+#include <util/Statistics.h>
+#include <util/StringRefCount.h>
 
 #include <vector>
 #include <iostream>
@@ -57,8 +59,8 @@ struct DaphneContext {
     std::vector<std::unique_ptr<IContext>> cuda_contexts;
     std::vector<std::unique_ptr<IContext>> fpga_contexts;
 
-
     std::unique_ptr<IContext> distributed_context;
+    std::unique_ptr<IContext> hdfs_context;
 
     /**
      * @brief The user configuration (including information passed via CLI
@@ -69,12 +71,16 @@ struct DaphneContext {
      */
     DaphneUserConfig& config;
     KernelDispatchMapping& dispatchMapping;
+    Statistics& stats;
+    StringRefCounter& stringRefCount;
 
     std::shared_ptr<spdlog::logger> logger;
 
     explicit DaphneContext(DaphneUserConfig &config,
-                           KernelDispatchMapping &dispatchMapping)
-        : config(config), dispatchMapping(dispatchMapping) {
+                           KernelDispatchMapping &dispatchMapping,
+                           Statistics &stats,
+                           StringRefCounter& stringRefCnt)
+        : config(config), dispatchMapping(dispatchMapping), stats(stats), stringRefCount(stringRefCnt) {
         logger = spdlog::get("runtime");
     }
 
@@ -87,8 +93,6 @@ struct DaphneContext {
         }
         cuda_contexts.clear();
         fpga_contexts.clear();
-
-
     }
 
 #ifdef USE_CUDA
@@ -104,9 +108,14 @@ struct DaphneContext {
        return dynamic_cast<FPGAContext*>(fpga_contexts[dev_id].get());
     }
 #endif
- 
 
+    void startKernelTimer(int kId) {
+        stats.startKernelTimer(kId);
+    }
 
+    void stopKernelTimer(int kId) {
+        stats.stopKernelTimer(kId);
+    }
 
     [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
     [[nodiscard]] bool useFPGA() const { return !fpga_contexts.empty(); }
@@ -114,6 +123,13 @@ struct DaphneContext {
     [[nodiscard]] IContext *getDistributedContext() const {
         return distributed_context.get();
     }
-    
-    [[maybe_unused]] [[nodiscard]] DaphneUserConfig getUserConfig() const { return config; }
+#ifdef USE_HDFS
+    [[nodiscard]] IContext* getHDFSContext() const {
+        return hdfs_context.get();
+    }
+#endif
+
+    [[nodiscard]] DaphneUserConfig &getUserConfig() const { return config; }
+
+
 };

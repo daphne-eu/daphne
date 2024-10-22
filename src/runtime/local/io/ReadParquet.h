@@ -27,7 +27,6 @@
 
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <queue>
@@ -103,7 +102,8 @@ inline struct File *arrowToCsv(const char *filename){
 
     FILE *buf = fmemopen(ccsv, csv.size(), "r");
     struct File *file = openMemFile(buf);
-    getLine(file); // Parquet has headers, readCsv does not expect that.
+    if (getFileLine(file) == -1) // Parquet has headers, readCsv does not expect that.
+        throw std::runtime_error("arrowToCsv: getFileLine failed");
 
     return file;
 }

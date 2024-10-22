@@ -1,0 +1,13 @@
+M = (seq(1, 8) % 3) == 1;
+
+X = seq(1, 8);
+Y = seq(1, 8) * 10;
+
+# mat ? sca : sca
+print(M ? 3.141 : 2.718);
+# mat ? mat : sca
+print(M ? X : 0);
+# mat ? sca : mat
+print(M ? 0 : Y);
+# mat ? mat : mat
+print(M ? X : Y);

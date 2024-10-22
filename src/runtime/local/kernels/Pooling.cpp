@@ -15,13 +15,14 @@
  */
 
 #include "Pooling.h"
+#include "Padding.h"
 
 namespace NN::Pooling {
 
-    uint32_t getPQ(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent) {
-        uint32_t padded_image_extent = img_extent + 2 * pad_extent;
-        return (padded_image_extent - filter_extent) / stride_extent + 1;
-    }
+    // uint32_t getPQ(uint32_t img_extent, uint32_t filter_extent, uint32_t pad_extent, uint32_t stride_extent) {
+    //     uint32_t padded_image_extent = img_extent + 2 * pad_extent;
+    //     return (padded_image_extent - filter_extent) / stride_extent + 1;
+    // }
 
     template<template<typename> class OP, typename DTRes, typename DTArg>
     void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, size_t& res_h, size_t& res_w,
@@ -47,6 +48,10 @@ namespace NN::Pooling {
         // 1 / pool length for averaging
         auto plen = static_cast<typename DTRes::VT>(1) / static_cast<typename DTRes::VT>(pool_w * pool_h);
 
+        auto padded_img_h = img_h + 2 * pad_h;
+        auto padded_img_w = img_w + 2 * pad_w;
+        DTArg *padded_data = DataObjectFactory::create<DTArg>(1, padded_img_h * padded_img_w, true);
+        
         if (res == nullptr) {
             res = DataObjectFactory::create<DTRes>(batch_size, CPQ, true);
         }
@@ -71,8 +76,33 @@ namespace NN::Pooling {
                                         data->getValues(), off2 + q, std::min(pool_w, img_w - q), plen);
                             }
         }
-        else
-            throw std::runtime_error("ToDo: pooling general case with stride & padding");
+        else if(pad_h == 0 && pad_w == 0) {
+            // throw std::runtime_error("ToDo: pooling general case with stride & padding");
+            for (uint32_t i = start; i < stop; i++)
+                for (uint32_t c = 0, off = ii + (i - start) * CHW, oix = oi + (i - start) * CPQ; c < C; c++, off += HW)
+                    for (uint32_t p = 0; p < P; p++, oix += Q)
+                        for (uint32_t h = p * stride_h; h < std::min(p * stride_h + pool_h, img_h); h++)
+                            for (uint32_t q = 0, off2 = off + h * img_w; q < Q; q++) {
+                                res->getValues()[oix + q] = OP<typename DTArg::VT>::run(res->getValues()[oix + q],
+                                        data->getValues(), off2 + q * stride_w, std::min(pool_w, img_w - q * stride_w), plen);
+                            }
+        }
+        else{
+            for (uint32_t i = start; i < stop; i++)
+                for (uint32_t c = 0, off = ii + (i - start) * CHW, oix = oi + (i - start) * CPQ; c < C; c++, off += HW){
+
+                    Padding(padded_data->getValues(), data->getValues(), pad_h, pad_w, img_w, img_h, off);
+
+                    for (uint32_t p = 0; p < P; p++, oix += Q)
+                        for (uint32_t h = p * stride_h; h < std::min(p * stride_h + pool_h, padded_img_h); h++)
+                            for (uint32_t q = 0, off2 = h * padded_img_w; q < Q; q++) {
+                                res->getValues()[oix + q] = OP<typename DTArg::VT>::run(res->getValues()[oix + q],
+                                        padded_data->getValues(), off2 + q * stride_w, std::min(pool_w, padded_img_w - q * stride_w), plen);
+                            }
+                }
+                    
+        }
+        DataObjectFactory::destroy(padded_data);
     }
 
     template struct Forward<AVG, DenseMatrix<float>, DenseMatrix<float>>;

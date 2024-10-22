@@ -1,0 +1,12 @@
+// Copy-on-write vs. for-loops, for matrices.
+
+A = [1];
+B = A;
+# A and B are the same.
+
+for(i in 1:3) {
+    print(A);
+    B = B + 1; # change to B must not affect A
+}
+
+print(B);

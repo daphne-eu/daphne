@@ -10,6 +10,7 @@
 - [DAPHNE Packaging, Distributed Deployment, and Management](/doc/Deploy.md)
 - [DaphneLib: DAPHNE's Python API](/doc/DaphneLib/Overview.md)
 - [DaphneLib API Reference](/doc/DaphneLib/APIRef.md)
+- [Porting Numpy to DaphneLib](/doc/DaphneLib/Numpy2DaphneLib.md)
 - [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md)
 - [DaphneDSL Built-in Functions](/doc/DaphneDSL/Builtins.md)
 - [Using SQL in DaphneDSL](/doc/tutorial/sqlTutorial.md)
@@ -34,6 +35,7 @@
 - [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
 - [Logging in DAPHNE](/doc/development/Logging.md)
 - [Profiling in DAPHNE](/doc/development/Profiling.md)
+- [Testing](/doc/development/Testing.md)
 
 ### Source Code Documentation
 

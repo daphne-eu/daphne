@@ -60,16 +60,22 @@ const std::string dirPath = "test/api/python/";
         const std::string prefix = dirPath+name; \
         compareDaphneToDaphneLib(prefix+".py", prefix+".daphne", argument); \
     }
+#define MAKE_TEST_CASE_STR(name, str) \
+    TEST_CASE(name ".py", TAG_DAPHNELIB) { \
+        const std::string prefix = dirPath+name; \
+        compareDaphneLibToStr(str, prefix+".py"); \
+    }
 
 MAKE_TEST_CASE("data_transfer_numpy_1")
 MAKE_TEST_CASE("data_transfer_numpy_2")
+MAKE_TEST_CASE("data_transfer_numpy_3")
 MAKE_TEST_CASE("data_transfer_pandas_1")
 MAKE_TEST_CASE("data_transfer_pandas_2")
 MAKE_TEST_CASE("data_transfer_pandas_3_series")
 MAKE_TEST_CASE("data_transfer_pandas_4_sparse_dataframe")
 MAKE_TEST_CASE("data_transfer_pandas_5_categorical_dataframe")
-// MAKE_TEST_CASE_ENVVAR("data_transfer_pytorch_1", "DAPHNE_DEP_AVAIL_PYTORCH")
-// MAKE_TEST_CASE_ENVVAR("data_transfer_tensorflow_1", "DAPHNE_DEP_AVAIL_TENSFORFLOW")
+MAKE_TEST_CASE_ENVVAR("data_transfer_pytorch_1", "DAPHNE_DEP_AVAIL_PYTORCH")
+MAKE_TEST_CASE_ENVVAR("data_transfer_tensorflow_1", "DAPHNE_DEP_AVAIL_TENSFORFLOW")
 MAKE_TEST_CASE("frame_innerJoin")
 MAKE_TEST_CASE("frame_setColLabels")
 MAKE_TEST_CASE("frame_setColLabelsPrefix")
@@ -95,6 +101,12 @@ MAKE_TEST_CASE("matrix_outerbinary")
 MAKE_TEST_CASE("matrix_agg")
 MAKE_TEST_CASE("matrix_reorg")
 MAKE_TEST_CASE("matrix_other")
+MAKE_TEST_CASE("matrix_preprocessing")
+MAKE_TEST_CASE("matrix_indexing_1")
+MAKE_TEST_CASE("matrix_indexing_2")
+MAKE_TEST_CASE("matrix_ifelse_1")
+MAKE_TEST_CASE("matrix_asType_1")
+MAKE_TEST_CASE_STR("matrix_indexing_3", "90\n")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
 MAKE_TEST_CASE("numpy_matrix_ops_replace")

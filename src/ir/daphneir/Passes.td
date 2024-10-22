@@ -31,10 +31,6 @@ def Inference: Pass<"inference", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createInferencePass()";
 }
 
-def SelectMatrixRepresentations: Pass<"select-matrix-representations", "::mlir::func::FuncOp"> {
-    let constructor = "mlir::daphne::createSelectMatrixRepresentationsPass()";
-}
-
 def AdaptTypesToKernels: Pass<"adapt-types-to-kernels", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createAdaptTypesToKernelsPass()";
 }

@@ -27,12 +27,12 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -63,7 +63,8 @@ void writeCsv(const DTArg *arg, File *file) {
 template <typename VT>
 struct WriteCsv<DenseMatrix<VT>> {
     static void apply(const DenseMatrix<VT> *arg, File* file) {
-        assert(file != nullptr && "File required");
+        if (file == nullptr)
+            throw std::runtime_error("WriteCsv: requires a file to be specified (must not be nullptr)");
         const VT * valuesArg = arg->getValues();
         const size_t rowSkip = arg->getRowSkip();
         const size_t argNumCols = arg->getNumCols();
@@ -93,7 +94,8 @@ struct WriteCsv<DenseMatrix<VT>> {
 template <> struct WriteCsv<Frame> {
     static void apply(const Frame * arg, File * file) {
 
-    assert(file != nullptr && "File required");
+    if (file == nullptr)
+        throw std::runtime_error("WriteCsv: requires a file to be specified (must not be nullptr)");
 
     for(size_t i = 0; i < arg->getNumRows(); ++i) {
         for(size_t j = 0; j < arg->getNumCols(); ++j) {

@@ -26,6 +26,7 @@ set(TEST_SOURCES
         api/cli/distributed/DistributedTest.cpp
         api/cli/expressions/CastTest.cpp
         api/cli/expressions/CondTest.cpp
+        api/cli/expressions/FrameLiteralTest.cpp
         api/cli/expressions/MatrixLiteralTest.cpp
         api/cli/extensibility/ExtensionTest.cpp
         api/cli/extensibility/HintTest.cpp
@@ -37,9 +38,11 @@ set(TEST_SOURCES
         api/cli/indexing/IndexingTest.cpp
         api/cli/inference/InferenceTest.cpp
         api/cli/io/ReadTest.cpp
+        api/cli/lists/ListsTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
+        api/cli/operations/TypeOfTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/parser/MetaDataParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
@@ -63,6 +66,7 @@ set(TEST_SOURCES
         codegen/MatMulAccuracyTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
+        api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
 
         parser/config/ConfigParserTest.cpp
 
@@ -94,12 +98,23 @@ set(TEST_SOURCES
         runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
+        runtime/local/kernels/CheckEqApproxTest.cpp
         runtime/local/kernels/ColBindTest.cpp
+        runtime/local/kernels/CondMatMatMatTest.cpp
+        runtime/local/kernels/CondMatMatScaTest.cpp
+        runtime/local/kernels/CondMatScaMatTest.cpp
+        runtime/local/kernels/CondMatScaScaTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/CTableTest.cpp
         runtime/local/kernels/DiagMatrixTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
-        runtime/local/kernels/DNNPoolingTest.cpp
+        runtime/local/kernels/DNNPoolingTestForward.cpp
+        runtime/local/kernels/DNNConv2DBackwardTest.cpp
+        runtime/local/kernels/DNNConv2DForwardTest.cpp
+        runtime/local/kernels/DNNBatchNorm2DForwardTest.cpp
+        runtime/local/kernels/DNNBatchNorm2DBackwardTest.cpp
+        runtime/local/kernels/DNNBiasAddForwardTest.cpp
+        runtime/local/kernels/DNNPoolingBackwardTest.cpp
         runtime/local/kernels/EigenCalTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryObjScaTest.cpp
@@ -108,6 +123,7 @@ set(TEST_SOURCES
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp
+        runtime/local/kernels/FillTest.cpp
         runtime/local/kernels/FilterColTest.cpp
         runtime/local/kernels/FilterRowTest.cpp
         runtime/local/kernels/GroupJoinTest.cpp
@@ -132,18 +148,20 @@ set(TEST_SOURCES
         runtime/local/kernels/ReverseTest.cpp
         runtime/local/kernels/RowBindTest.cpp
         runtime/local/kernels/SampleTest.cpp
+        runtime/local/kernels/SemiJoinTest.cpp
         runtime/local/kernels/SeqTest.cpp
         runtime/local/kernels/SetColLabelsTest.cpp
         runtime/local/kernels/SetColLabelsPrefixTest.cpp
         runtime/local/kernels/SliceColTest.cpp
         runtime/local/kernels/SliceRowTest.cpp
         runtime/local/kernels/SolveTest.cpp
+        runtime/local/kernels/StopTest.cpp
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/ThetaJoinTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
+        
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
-        runtime/local/kernels/CheckEqApproxTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )
@@ -153,11 +171,11 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             runtime/local/kernels/CUDA/FillTest.cpp
             runtime/local/kernels/CUDA/MatMulTest.cpp
             runtime/local/kernels/CUDA_ContextTest.cpp
-            runtime/local/kernels/DNNActivationTest.cpp
-            runtime/local/kernels/DNNAffineTest.cpp
-            runtime/local/kernels/DNNBatchNormTest.cpp
-            runtime/local/kernels/DNNConvolutionTest.cpp
-            runtime/local/kernels/DNNSoftmaxTest.cpp)
+            runtime/local/kernels/CUDA/DNNActivationTest.cpp
+            runtime/local/kernels/CUDA/DNNAffineTest.cpp
+            runtime/local/kernels/CUDA/DNNBatchNormTest.cpp
+            runtime/local/kernels/CUDA/DNNConvolutionTest.cpp
+            runtime/local/kernels/CUDA/DNNSoftmaxTest.cpp)
 endif()
 
 add_executable(run_tests ${TEST_SOURCES})

@@ -63,7 +63,9 @@ struct ColBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
 
         if (numRows != rhs->getNumRows()) {
             throw std::runtime_error(
-                "ColBind - lhs and rhs must have the same number of rows");
+                "ColBind - the two operands must have the same number of rows, but lhs has " + std::to_string(numRows) +
+                " and rhs has " + std::to_string(rhs->getNumRows()) + " rows"
+            );
         }
 
         const size_t numColsLhs = lhs->getNumCols();
@@ -109,7 +111,10 @@ template<typename VT>
 struct ColBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
         if(lhs->getNumRows() != rhs->getNumRows())
-            throw std::runtime_error("lhs and rhs must have the same number of rows");
+            throw std::runtime_error(
+                "ColBind - the two operands must have the same number of rows, but lhs has " + std::to_string(lhs->getNumRows()) +
+                " and rhs has " + std::to_string(rhs->getNumRows()) + " rows"
+            );
 
         size_t numColsRes = lhs->getNumCols() + rhs->getNumCols();
         size_t numNonZerosRes = lhs->getNumNonZeros() + rhs->getNumNonZeros();
@@ -155,9 +160,10 @@ struct ColBind<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         const size_t numRows = lhs->getNumRows();
 
         if (numRows != rhs->getNumRows()) {
-            std::ostringstream errMsg;
-            errMsg << "ColBind: lhs and rhs must have the same number of rows but are instead " << numRows << " and " << rhs->getNumRows();
-            throw std::runtime_error(errMsg.str());
+            throw std::runtime_error(
+                "ColBind - the two operands must have the same number of rows, but lhs has " + std::to_string(numRows) +
+                " and rhs has " + std::to_string(rhs->getNumRows()) + " rows"
+            );
         }
 
         const size_t numColsLhs = lhs->getNumCols();

@@ -313,7 +313,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
 
                 // Get the ConditionOp.
                 Operation * condOp = beforeBlock.getTerminator();
-                // TODO Make this an assertion?
+
                 if(!llvm::isa<scf::ConditionOp>(condOp))
                     throw ErrorHandler::compilerError(op, "InferencePass", "WhileOp terminator is not a ConditionOp");
 
@@ -334,7 +334,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
 
                 // Get the YieldOp.
                 Operation * yieldOp = afterBlock.getTerminator();
-                // TODO Make this an assertion?
+
                 if(whileOp->getNumOperands() != yieldOp->getNumOperands())
                     throw ErrorHandler::compilerError(
                         op, "InferencePass",

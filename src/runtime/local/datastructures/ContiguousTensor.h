@@ -191,6 +191,8 @@ class ContiguousTensor : public Tensor<ValueType> {
     
     public:
 
+    public:
+
     bool operator==(const ContiguousTensor<ValueType> &rhs) const {
         if (this->tensor_shape != rhs.tensor_shape) {
             return false;

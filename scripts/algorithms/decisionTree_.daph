@@ -22,12 +22,29 @@
 #-------------------------------------------------------------
 
 # This script has been manually translated from Apache SystemDS (https://github.com/apache/systemds).
-# Original file: scripts/builtin/decisionTree.dml @ 4c97c1c376727f552a80c60217648c37d76fcb4e.
+# Original file: scripts/builtin/decisionTree.dml @ 23177b7779f1868fd51c7af8f98e2ab8221b9011.
 
 # This script implements decision trees for recoded and binned categorical and
 # numerical input features. We train a single CART (classification and
 # regression tree) decision trees depending on the provided labels y, either
 # classification (majority vote per leaf) or regression (average per leaf).
+#
+# .. code-block::
+#
+#   For example, give a feature matrix with features [a,b,c,d]
+#   and the following trees, M would look as follows:
+#
+#   (L1)               |d<5|
+#                     /     \
+#   (L2)           P1:2    |a<7|
+#                          /   \
+#   (L3)                 P2:2 P3:1
+#
+#   --> M :=
+#   [[4, 5, 0, 2, 1, 7, 0, 0, 0, 0, 0, 2, 0, 1]]
+#    |(L1)| |  (L2)   | |        (L3)         |
+#
+#
 #
 # INPUT:
 # ------------------------------------------------------------------------------
@@ -43,6 +60,12 @@
 #                 candidates at tree nodes: m = ceil(num_features^max_features)
 # max_values      Parameter controlling the number of values per feature used
 #                 as split candidates: nb = ceil(num_values^max_values)
+# max_dataratio   Parameter in [0,1] controlling when to materialize data
+#                 subsets of X and y on node splits. When set to 0, we always
+#                 scan the original X and y, which has the benefit of avoiding
+#                 the allocation and maintenance of data for all active nodes.
+#                 When set to 0.01 we rematerialize whenever the sub-tree data
+#                 would be less than 1% of last the parent materialize data size.
 # impurity        Impurity measure: entropy, gini (default), rss (regression)
 # seed            Fixed seed for randomization of samples and split candidates
 # verbose         Flag indicating verbose debug output
@@ -50,19 +73,7 @@
 #
 # OUTPUT:
 # ------------------------------------------------------------------------------
-# M              Matrix M containing the learne trees, in linearized form
-#                For example, give a feature matrix with features [a,b,c,d]
-#                and the following trees, M would look as follows:
-#
-#                (L1)               |d<5|
-#                                  /     \
-#                (L2)           P1:2    |a<7|
-#                                       /   \
-#                (L3)                 P2:2 P3:1
-#
-#                --> M :=
-#                [[4, 5, 0, 2, 1, 7, 0, 0, 0, 0, 0, 2, 0, 1]]
-#                 |(L1)| |  (L2)   | |        (L3)         |
+# M              Matrix M containing the learned trees, in linearized form
 # ------------------------------------------------------------------------------
 
 def computeLeafLabel(y2:matrix<f64>, I:matrix<f64>, classify:bool, verbose:bool) -> f64
@@ -106,8 +117,7 @@ def computeImpurity(y2:matrix<f64>, I:matrix<f64>, impurity:str) -> matrix<f64>
     score = sum((I * res)^2, 0);                # sum((yhat-y)^2)
   }
   else
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: unsupported impurity measure: "+impurity);
+    stop("decisionTree: unsupported impurity measure: "+impurity);
   
   return score;
 }
@@ -125,6 +135,9 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
     rI = rand(n, 1, 0.0, 1.0, 1, seed) <= (n^max_features/n);
     feat = feat[[rI, ]];
     # TODO Problem: feat can have zero rows now -> what would SystemDS do?
+    if( sum(feat) == 0 ) #sample at least one
+      # TODO as.si64() should not be necessary.
+      feat[0,0] = round(rand(1, 1, 1, as.si64(n), 1, -1));
   }
 
   # evaluate features and feature splits
@@ -137,24 +150,50 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
     f = as.scalar(feat[i - 1, ]);      # feature
     beg = as.scalar(foffb[0,f - 1])+1; # feature start in X2
     end = as.scalar(foffe[0,f - 1]);   # feature end in X2
-    belen = end-beg;
+    belen = end-beg; #numFeat - 1
     # TODO Do we need this in DAPHNE?
     #while(FALSE){} # make beg/end known
 
     # construct 0/1 predicate vectors with <= semantics
     # find rows that match at least one value and appear in I
     # (vectorized evaluation, each column in P is a split candidate)
-    fP = upperTri(fill(1,belen,belen), true, true);
-    vI = seq(1,belen+1,1);
-    if( max_values < 1.0 && ncol(fP)>10 ) {
+
+    # Note: Compared to SystemDS, we use a manual rewrite of the program in DAPHNE.
+    # In a direct translation, the matrix multiplication `X2 @ P` is the most
+    # expensive operation in this decision trees implementation. However, it can
+    # be rewritten as a cumsum along the rows on a column fragment of `X2`. This
+    # makes the algorithm significantly faster in DAPHNE (on a dense data
+    # representation). Understanding if this rewrite would also be beneficial in
+    # SystemDS would require further investigation, especially since SystemDS most
+    # likely uses sparse data representations at criticial points here.
+    # Consequently, a few lines below are commented out, since they are not
+    # needed anymore after this manual rewrite. Furthermore, `ncol(fP)` has
+    # been replaced by `belen`, since `fP` does not exist anymore after that
+    # manual rewrite.
+
+    # fP = upperTri(fill(1,belen,belen), true, true);
+    vI = seq(1,belen,1);
+    rI2 = fill(1, belen, 1);
+    sampledFeatVals = false;
+    if( max_values < 1.0 && belen>10 ) {
       # This cannot generate 0.0, as sparsity is set to 1; is that okay?
-      rI2 = rand(ncol(fP), 1, 0.0, 1.0, 1, seed) <= (ncol(fP)^max_values/ncol(fP));
-      fP = fP[[, t(rI2)]];
+      rI2 = as.si64(rand(belen, 1, 0.0, 1.0, 1, seed) <= (belen^max_values/belen));
+      # fP = fP[[, rI2]];
       vI = vI[[rI2, ]];
+      sampledFeatVals = true;
     }
-    P = fill(0, ncol(X2), ncol(fP));
-    P[beg - 1:end - 1,0:ncol(fP)] = fP;
-    Ileft = (t(X2 @ P) * I) != 0;
+
+    # Original from SystemDS.
+    # P = fill(0, ncol(X2), ncol(fP));
+    # P[beg - 1:end - 1,0:ncol(fP)] = fP;
+    # Ileft = (t(X2 @ P) * I) != 0;
+
+    # Manual rewrite for DAPHNE.
+    X2_ = X2[, beg - 1:end - 1];
+    if(sampledFeatVals)
+      X2_ = X2_[[, rI2]];
+    Ileft = (cumSum(t(X2_)) * I) != 0;
+
     Iright = (Ileft==0) * I;
 
     # compute information gain for all split candidates
@@ -200,7 +239,7 @@ def findBestSplit (X2:matrix<f64>, y2:matrix<f64>, foffb:matrix<f64>, foffe:matr
 # TODO Support optional parameters with defaults (see #548).
 def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
     max_depth:si64 /*= 10*/, min_leaf:si64 /*= 20*/, min_split:si64 /*= 50*/,
-    max_features:f64 /*= 0.5*/, max_values:f64 /*= 1.0*/,
+    max_features:f64 /*= 0.5*/, max_values:f64 /*= 1.0*/, max_dataratio /*= 0.25*/,
     impurity:str /*= "gini"*/, seed:si64 /*= -1*/, verbose:bool /*= false*/)
     -> matrix<f64>
 {
@@ -208,20 +247,15 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
 
   # validation checks
   if( max_depth > 32 )
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: invalid max_depth > 32: "+max_depth);
+    stop("decisionTree: invalid max_depth > 32: "+max_depth);
   if( sum(X<=0) != 0 )
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: feature matrix X is not properly recoded/binned (values <= 0): "+sum(X<=0));
+    stop("decisionTree: feature matrix X is not properly recoded/binned (values <= 0): "+sum(X<=0));
   if( sum(abs(X-round(X))>1e-14) != 0 )
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: feature matrix X is not properly recoded/binned (non-integer): "+sum(abs(X-round(X))>1e-14));
+    stop("decisionTree: feature matrix X is not properly recoded/binned (non-integer): "+sum(abs(X-round(X))>1e-14));
   if( sum(y<=0) != 0 )
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: label vector y is not properly recoded/binned: "+sum(y<=0));
+    stop("decisionTree: label vector y is not properly recoded/binned: "+sum(y<=0));
   if(ncol(X) + 1 != ncol(ctypes))
-    # TODO Support stop()-function (see #658).
-    print("decisionTree: row-vector of column types ctypes must have must have one entry per column of feature matrix X and one additional entry for the label vector y");
+    stop("decisionTree: row-vector of column types ctypes must have must have one entry per column of feature matrix X and one additional entry for the label vector y");
   # TODO Check if shapes are valid, e.g., if ctypes is a row vector  (would also help SystemDS).
   # TODO Check if the values in ctypes are all 1 or 2 (would also help SystemDS).
 
@@ -247,7 +281,8 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
 
   if( verbose ) {
     print("decisionTree: initialize with max_depth=" + max_depth + ", max_features="
-      + max_features + ", impurity=" + impurity + ", seed=" + seed + ".");
+      + max_features +", max_dataratio=" + max_dataratio + ", impurity="
+      + impurity + ", seed=" + seed + ".");
     print("decisionTree: basic statistics:");
     print("-- impurity: " + as.scalar(computeImpurity(y2, I, impurity)));
     print("-- minFeatureCount: " + aggMin(cnt));
@@ -258,26 +293,35 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
   # TODO .0 should not be necessary.
   M = fill(0.0, 1, 2*(2^max_depth - 1));
   # TODO Support for lists at DSL-level (see #660).
-  #queue = list(list(1,I)); # node IDs / data indicators
-  queue_nID = as.matrix(1);
-  queue_nI = I;
+  # The DML script uses a "list of lists". As that is not supported in DaphneDSL yet,
+  # we (a) emulate lists by matrices to which we add and remove rows/columns (the "lists" part),
+  # and (b) split the data structure into its four components (the "of lists" part).
+  #queue = list(list(1,I,X2,y2)); # node IDs / data indicators
+  queue_nID = createList([1]);
+  queue_nI = createList(I);
+  queue_X2 = createList(X2);
+  queue_y2 = createList(y2);
   # TODO .0 should not be necessary.
   maxPath = 1.0;
-  while( nrow(queue_nID) > 0 ) {
+  while( length(queue_nID) > 0 ) {
     # pop next node from queue for splitting
-    nID = as.scalar(queue_nID[0, ]);
-    nI = queue_nI[0, ];
-    # TODO Instead of this if-then-else, it should be valid to slice rows 1:1 on 1 row, result should be 0 rows
-    if(nrow(queue_nID) > 1) {
-      queue_nID = queue_nID[1:, ];
-      queue_nI = queue_nI[1:, ];
-    }
-    else {
-      queue_nID = fill(1, 0, 1);
-      queue_nI = fill(1.0, 0, nrow(X));
-    }
+    queue_nID, nIDmat = remove(queue_nID, 0);
+    # TODO <si64> should not be necessary here.
+    nID = as.scalar<si64>(nIDmat);
+    queue_nI, nI = remove(queue_nI, 0);
+    queue_X2, X2 = remove(queue_X2, 0);
+    queue_y2, y2 = remove(queue_y2, 0);
     if(verbose)
       print("decisionTree: attempting split of node "+nID+" ("+sum(nI)+" rows)");
+
+    # optional rematerialization of data per node
+    if( sum(nI) < max_dataratio*ncol(nI) ) {
+      if(verbose)
+        print("-- compacting data: "+ncol(nI)+" --> "+sum(nI));
+      X2 = X2[[t(nI), ]];
+      y2 = y2[[t(nI), ]];
+      nI = fill(1.0, 1, nrow(X2));
+    }
 
     # find best split attribute
     nSeed = (seed==-1) ? seed : seed*nID;
@@ -300,8 +344,10 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
     # split data, finalize or recurse
     if( validSplit ) {
       if( sum(Ileft) >= min_split && floor(log(IDleft,2))+2 < max_depth ) {
-        queue_nID = rbind(queue_nID, as.matrix(IDleft));
-        queue_nI = rbind(queue_nI, Ileft);
+        queue_nID = append(queue_nID, as.matrix(IDleft));
+        queue_nI = append(queue_nI, Ileft);
+        queue_X2 = append(queue_X2, X2);
+        queue_y2 = append(queue_y2, y2);
       }
       else {
         # TODO as.bool() should not be necessary, should be casted automatically (see #661).
@@ -309,8 +355,10 @@ def decisionTree(X:matrix<f64>, y:matrix<f64>, ctypes:matrix<f64>,
         M[,2*IDleft - 1] = as.matrix(computeLeafLabel(y2, Ileft, as.bool(classify), verbose));
       }
       if( sum(Iright) >= min_split && floor(log(IDright,2))+2 < max_depth ) {
-        queue_nID = rbind(queue_nID, as.matrix(IDright));
-        queue_nI = rbind(queue_nI, Iright);
+        queue_nID = append(queue_nID, as.matrix(IDright));
+        queue_nI = append(queue_nI, Iright);
+        queue_X2 = append(queue_X2, X2);
+        queue_y2 = append(queue_y2, y2);
       }
       else {
         # TODO as.bool() should not be necessary, should be casted automatically (see #661).

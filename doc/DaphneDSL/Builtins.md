@@ -35,7 +35,7 @@ We use the following notation (deviating from the DaphneDSL function syntax):
 DaphneDSL's built-in functions can be categorized as follows:
 
 - Data generation
-- Matrix/frame dimensions
+- Matrix/frame meta data
 - Elementwise unary
 - Elementwise binary
 - Outer binary (generalized outer product)
@@ -45,10 +45,11 @@ DaphneDSL's built-in functions can be categorized as follows:
 - Deep neural network
 - Other matrix operations
 - Extended relational algebra
-- Conversions, casts and copying
+- Conversions and casts
 - Input/output
 - Data preprocessing
 - Measurements
+- List operations
 
 ## Data generation
 
@@ -68,24 +69,32 @@ DaphneDSL's built-in functions can be categorized as follows:
 - **`rand`**`(numRows:size, numCols:size, min:scalar, max:scalar, sparsity:double, seed:si64)`
 
     Generates a *(`numRows` x `numCols`)* matrix of random values.
-    The values are drawn uniformly from the range *[`min`, `max`]* (both inclusive).
+    The values are drawn uniformly from the range *[`min`, `max`]* (both inclusive). A value of zero in the `min` parameter
+    will be ignored, as the insertion of zeros in the output is controlled by the `sparsity` parameter.
     The `sparsity` can be chosen between `0.0` (all zeros) and `1.0` (all non-zeros).
     The `seed` can be set to `-1` (randomly chooses a seed), or be provided explicitly to enable reproducible random values.
   
 - **`sample`**`(range:scalar, size:size, withReplacement:bool, seed:si64)`
 
-    Generates a *(`size` x 1)* column-matrix of values drawn from the range *[0, `range` - 1]*.
+    Generates a *(`size` x 1)* column-matrix of values drawn from the range *[0, `range - 1`]*.
     The parameter `withReplacement` determines if a value can be drawn multiple times (`true`) or not (`false`).
     The `seed` can be set to `-1` (randomly chooses a seed), or be provided explicitly to enable reproducible random values.
   
-- **`seq`**`(from:scalar, to:scalar, inc:scalar)`
+- **`seq`**`(from:scalar, to:scalar[, inc:scalar])`
 
     Generates a column matrix containing an arithmetic sequence of values starting at `from`, going through `to`, in increments of `inc`.
     Note that `from` may be greater than `to`, and `inc` may be negative.
+    The scalar `inc` is an optional argument and defaults to `1`.
 
-## Matrix/frame dimensions
+## Matrix/frame meta data
 
-The following built-in functions allow to find out the shape/dimensions of matrices and frames.
+The following built-in functions allow to find out meta data of matrices and frames.
+
+- **`typeOf`**`(arg:scalar/matrix/frame)`
+
+    Returns a string with the data type of `arg`, which can be a scalar, matrix, or a frame containing mixed value types.
+    For matrices and frames, this includes their dimensions and value type or value type per column in the case of frames.
+    Value types are named after their C++ representation.
 
 - **`nrow`**`(arg:matrix/frame)`
 
@@ -99,6 +108,11 @@ The following built-in functions allow to find out the shape/dimensions of matri
 
     Returns the number of cells in `arg`.
     This is the product of the number of rows and the number of columns.
+  
+- **`sparsity`**`(arg:matrix)`
+
+    Returns the DAPHNE compiler's *estimate* of the argument's sparsity.
+    Note that this value may deviate from the *actual* sparsity of the data at run-time.
 
 ## Elementwise unary
 
@@ -121,6 +135,7 @@ The following built-in functions all follow the same scheme:
 ### Trigonometric/Hyperbolic
 
 `arg` unit must be radians (conversion: $x^\circ * \frac{\pi}{180^\circ} = y$ radians)
+
 | function | meaning |
 | ----- | ----- |
 | **`sin`** | sine |
@@ -129,9 +144,9 @@ The following built-in functions all follow the same scheme:
 | **`asin`** | arc sine  (inverse of sine) |
 | **`acos`** | arc cosine (inverse of cosine) |
 | **`atan`** | arc tangent (inverse of tangent) |
-| **`sinh`** | hyperbolic sine ($\frac{e^\text{arg}-e^\text{ - arg}}{2}$) |
-| **`cosh`** | hyperbolic cosine ($\frac{e^\text{arg}+e^\text{ - arg}}{2}$) |
-| **`tanh`** | hyperbolic tangent ($\frac{\text{sinh arg}}{\text{cosh arg}}$) |
+| **`sinh`** | hyperbolic sine $\left( \frac{\exp(\text{arg}) \, - \, \exp(\text{ - arg})}{2} \right)$ |
+| **`cosh`** | hyperbolic cosine $\left( \frac{\exp(\text{arg}) \, + \, \exp(\text{ - arg})}{2} \right)$ |
+| **`tanh`** | hyperbolic tangent $\left( \frac{\text{sinh arg}}{\text{cosh arg}} \right)$ |
 
 ### Rounding
 
@@ -140,6 +155,12 @@ The following built-in functions all follow the same scheme:
 | **`round`** | round to nearest |
 | **`floor`** | round down |
 | **`ceil`** | round up |
+
+### Comparison
+
+| function | meaning |
+| ----- | ----- |
+| **`isNan`** | `1` if argument is NaN, `0` otherwise |
 
 ## Elementwise binary
 
@@ -339,7 +360,12 @@ The following built-in functions all follow the same scheme:
 
 ## Matrix decomposition & co
 
-We plan to support various matrix decompositions like **`eigen`**, **`lu`**, **`qr`**, and **`svd`**.
+- **`eigen`**`(arg:matrix)`
+
+    Calculates the eigenvalues and eigenvectors of the given matrix.
+    This built-in function has two results: (1) the eigenvalues as a column matrix, and (2) the eigenvectors as a matrix, where each column is an eigenvector.
+
+We plan to support additional matrix decompositions like **`lu`**, **`qr`**, and **`svd`** in the future.
 
 ## Deep neural network
 
@@ -401,12 +427,14 @@ Note that most of these operations only have a CUDNN-based kernel for GPU execut
 
     Returns the contingency table of two *(n x 1)* column-matrices `ys` and `xs`.
     The resulting matrix `res` consists of `max(ys) + 1` rows and `max(xs) + 1` columns.
-    More precisely, *`res[x, y]` = |{ k | `ys[k, 0]` = y and `xs[k, 0]` = x, 0 ≤ k ≤ n-1 }| * `weight`*.
+    More precisely,
+    $\text{res}[x, y] = \left| \{ k \bigm| \text{ys}[k, 0] = y \wedge \text{xs}[k, 0] = x, \; 0 \leq k \leq n-1 \} \right| * \text{weight} \quad \forall x \in \text{xs}, y \in \text{ys}$.
   
-    In other words, starting with an all-zero result matrix, `ys` and `xs` can be thought of as lists of `y`/`x`-coordinates which indicate the result matrix's cells whose value shall be increased by `weight`.
+    In other words, starting with an all-zero result matrix, all pairs of values $\{ (\text{xs}[k, 0],\text{ys}[k, 0]) \mid 0 \leq k \leq n-1 \}$
+    are used to index the result matrix and increase the corresponding value by `weight`.  
     Note that `ys` and `xs` must not contain negative numbers.
   
-    The scalar weight is an optional argument and defaults to 1.0.
+    The scalar weight is an optional argument and defaults to `1.0`.
     The weight also determines the value type of the result.
 
     Moreover, optionally, the result shape in terms of the number of rows and columns can be specified.
@@ -490,14 +518,10 @@ We will support more variants of joins, including (left/right) outer joins, thet
 
     Prepends the given `prefix` to the labels of all columns in `arg`.
 
-## Conversions, casts and copying
+## Conversions and casts
 
 Note that DaphneDSL offers casts in form of the `as.()`-expression.
 See the [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md) for details.
-
-- **`copy`**`(arg:matrix/frame)`
-
-    Creates a copy of `arg`.
 
 - **`quantize`**`(arg:matrix<f32>, min:f32, max:f32)`
 
@@ -542,6 +566,10 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
     Note that the type of `arg` determines how to store the data; thus, it suffices to call `write()` (but `writeFrame()` and `writeMatrix()` can be used synonymously for consistency with reading).
     At the same time, this creates a `.meta`-file for the written file, so that it can be read again using `readMatrix()`/`readFrame()`.
 
+- **`stop`**`([message:str])`
+
+    Terminates the DaphneDSL script execution with the given optional message.
+
 ## Data preprocessing
 
 - **`oneHot`**`(arg:matrix, info:matrix<si64>)`
@@ -566,6 +594,7 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
     That way, only point predicates are possible on the encoded output.
 
     There are two results:
+
     - The first result is the encoded data, a *(n x 1)* matrix of the codes for each element in the input `arg`.
     - The second result is the decoding dictionary, a *(#distinct(`arg`) x 1)* matrix of the distinct values in `arg`.
         The value at position *i* is the value that is mapped to the code *i*.
@@ -631,3 +660,24 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 - **`now`**`()`
 
     Returns the current time since the epoch in nano seconds.
+
+## List operations
+
+- **`createList`**`(elm:matrix, ...)`
+
+    Creates and returns a new list from the given elements `elm`.
+    At least one element must be specified.
+
+- **`length`**`(lst:list)`
+
+    Returns the number of elements in the given list `lst`.
+
+- **`append`**`(lst:list, elm:matrix)`
+
+    Appends the given matrix `elm` to the given list `lst`.
+    Returns the result as a new list (the argument list stays unchanged).
+
+- **`remove`**`(lst:list, idx:size)`
+
+    Removes the element at position `idx` (counting starts at zero) from the given list `lst`.
+    Returns (1) the result as a new list (the argument list stays unchanged), and (2) the removed element.

@@ -106,6 +106,12 @@ if(USE_MPI)
 endif()    
 ##########
 
+###### PAPI
+if(USE_PAPI)
+    add_definitions(-DUSE_PAPI)
+endif()
+##########
+
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
 include(CheckLanguage)
 check_language(CUDA)
@@ -162,6 +168,42 @@ if(USE_FPGAOPENCL)
 	message(STATUS "cmake: using FPGA")
 	add_definitions(-DUSE_FPGAOPENCL)
 endif()
+
+
+# HDFS library
+# look through provided CMAKE_PREFIX_PATHs
+option(USE_HDFS "Whether to activate compilation of HDSF support" OFF)
+if(USE_HDFS)
+    foreach(path ${CMAKE_PREFIX_PATH})
+        if(NOT DEFINED HDFS_LIB_FOUND)
+            set(HDFS_LIB_LOCATION ${path}/hdfs)
+            if(EXISTS ${HDFS_LIB_LOCATION})
+                set(HDFS_LIB_FOUND TRUE)
+            else()
+                unset(HDFS_LIB_LOCATION)
+                unset(HDFS_LIB_FOUND)
+            endif()
+        endif()
+    endforeach(path)
+
+    # fallback if not using CMAKE_PREFIX_PATH (e.g., system/container install)
+    if(NOT DEFINED CMAKE_PREFIX_PATH OR NOT DEFINED HDFS_LIB_FOUND)
+        set(HDFS_LIB_LOCATION /usr/local/include/hdfs)
+        if(EXISTS ${HDFS_LIB_LOCATION})
+            set(HDFS_LIB_FOUND TRUE)
+        else()
+            unset(HDFS_LIB_LOCATION)
+        endif()
+    endif()
+
+    include_directories(${PROJECT_SOURCE_DIR} ${HDFS_LIB_LOCATION})
+    find_library(hdfs3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+    message(STATUS "HDFS_LIB_FOUND: ${HDFS_LIB_FOUND}")
+    if(DEFINED HDFS_LIB_FOUND)
+        add_definitions(-DUSE_HDFS)
+    endif()
+endif()
+
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 

@@ -58,7 +58,9 @@ function printHelp {
     echo "  --cuda            Compile with support for CUDA ops"
     echo "  --debug           Compile with support for debug mode"
     echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
-    echo " --mpi             Compile with support for MPI"
+    echo "  --mpi             Compile with support for MPI"
+    echo "  --hdfs            Compile with support for HDFS"
+    echo "  --no-papi         Compile without support for PAPI"
 }
 
 #******************************************************************************
@@ -448,6 +450,8 @@ BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 BUILD_MPI="-DUSE_MPI=OFF"
+BUILD_HDFS="-DUSE_HDFS=OFF"
+BUILD_PAPI="-DUSE_PAPI=ON"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
 
@@ -495,6 +499,14 @@ while [[ $# -gt 0 ]]; do
     --mpi)
         echo using MPI
         export BUILD_MPI="-DUSE_MPI=ON"
+        ;;
+    --hdfs)
+        echo using HDFS
+        export BUILD_HDFS="-DUSE_HDFS=ON"
+        ;;
+    --no-papi)
+        echo not using PAPI
+        export BUILD_PAPI="-DUSE_PAPI=OFF"
         ;;
     --debug)
         echo building DEBUG version
@@ -591,29 +603,30 @@ if [ $WITH_DEPS -gt 0 ]; then
     # 8.1 PAPI (Performance Application Programming Interface)
     #------------------------------------------------------------------------------
 
-    papiDirName="papi-$papiVersion"
-    papiTarName="${papiDirName}.tar.gz"
-    papiInstDirName=$installPrefix
-    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
-        daphne_msg "Get PAPI version ${papiVersion}"
-        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
-            -qO "${cacheDir}/${papiTarName}"
-        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
-        dependency_download_success "papi_v${papiVersion}"
-    fi
-    if ! is_dependency_installed "papi_v${papiVersion}"; then
-        cd "$sourcePrefix/$papiDirName/src"
-        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
-        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
-            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
+if [ $BUILD_PAPI == "-DUSE_PAPI=ON" ]; then
+        papiDirName="papi-$papiVersion"
+        papiTarName="${papiDirName}.tar.gz"
+        papiInstDirName=$installPrefix
+        if ! is_dependency_downloaded "papi_v${papiVersion}"; then
+            daphne_msg "Get PAPI version ${papiVersion}"
+            wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
+                -qO "${cacheDir}/${papiTarName}"
+            tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
+            dependency_download_success "papi_v${papiVersion}"
+        fi
+        if ! is_dependency_installed "papi_v${papiVersion}"; then
+            cd "$sourcePrefix/$papiDirName/src"
+            # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
+            CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
+                --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
 
-
-        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
-        make install
-        cd - > /dev/null
-        dependency_install_success "papi_v${papiVersion}"
-    else
-        daphne_msg "No need to build PAPI again."
+            CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+            make install
+            cd - > /dev/null
+            dependency_install_success "papi_v${papiVersion}"
+        else
+            daphne_msg "No need to build PAPI again."
+        fi
     fi
 
     #------------------------------------------------------------------------------
@@ -659,7 +672,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "Download Antlr v${antlrVersion} Runtime"
         wget https://www.antlr.org/download/${antlrCppRuntimeZipName} -qO "${cacheDir}/${antlrCppRuntimeZipName}"
         rm -rf "${sourcePrefix:?}/$antlrCppRuntimeDirName"
-        mkdir --parents "$sourcePrefix/$antlrCppRuntimeDirName"
+        mkdir -p "$sourcePrefix/$antlrCppRuntimeDirName"
         unzip -q "$cacheDir/$antlrCppRuntimeZipName" -d "$sourcePrefix/$antlrCppRuntimeDirName"
         dependency_download_success "${dep_antlr[@]}"
     fi
@@ -699,7 +712,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     # Download catch2 release zip (if necessary), and unpack the single header file
     # (if necessary).
-    
+
     catch2Name="catch2"
     catch2ZipName="v$catch2Version.zip"
     catch2SingleHeaderInstalledPath=$installPrefix/include/catch.hpp
@@ -707,7 +720,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     
     if ! is_dependency_installed "${dep_catch2[@]}"; then
         daphne_msg "Get catch2 version ${catch2Version}"
-        mkdir --parents "${thirdpartyPath}/${catch2Name}"
+        mkdir -p "${thirdpartyPath}/${catch2Name}"
         cd "${thirdpartyPath}/${catch2Name}"
         if [ ! -f "$catch2ZipName" ] || [ ! -f "$catch2SingleHeaderInstalledPath" ]; then
             daphne_msg "Download catch2 version ${catch2Version}"
@@ -723,7 +736,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     # #8.5 OpenBLAS (basic linear algebra subprograms)
     #------------------------------------------------------------------------------
-    
+
     openBlasDirName="OpenBLAS-$openBlasVersion"
     openBlasZipName="${openBlasDirName}.zip"
     openBlasInstDirName=$installPrefix
@@ -750,7 +763,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     # #8.6 nlohmann/json (library for JSON parsing)
     #------------------------------------------------------------------------------
-    
+
     nlohmannjsonDirName=nlohmannjson
     nlohmannjsonSingleHeaderName=json.hpp
     dep_nlohmannjson=("nlohmannjson_v${nlohmannjsonVersion}" "v1")
@@ -768,16 +781,21 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     # #8.7 abseil (compiled separately to apply a patch)
     #------------------------------------------------------------------------------
-    
+
     abslPath=$sourcePrefix/abseil-cpp
+    if [ $(arch) == 'armv64'  ] || [ $(arch) == 'aarch64' ]; then
+        abslVersion=20211102.0
+    fi
     dep_absl=("absl_v${abslVersion}" "v1")
 
     if ! is_dependency_downloaded "${dep_absl[@]}"; then
         daphne_msg "Get abseil version ${abslVersion}"
         rm -rf "$abslPath"
         git clone --depth 1 --branch "$abslVersion" https://github.com/abseil/abseil-cpp.git "$abslPath"
-#        daphne_msg "Applying 0002-absl-stdmax-params.patch"
-#        patch -Np1 -i "${patchDir}/0002-absl-stdmax-params.patch" -d "$abslPath"
+        if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
+           daphne_msg "Applying 0002-absl-stdmax-params.patch"
+           patch -Np1 -i "${patchDir}/0002-absl-stdmax-params.patch" -d "$abslPath"
+        fi
         dependency_download_success "${dep_absl[@]}"
     fi
     if ! is_dependency_installed "${dep_absl[@]}"; then
@@ -792,7 +810,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     # #8.8 MPI (Default is MPI library is OpenMPI but cut can be any)
     #------------------------------------------------------------------------------
-    
+
     MPIZipName=openmpi-$openMPIVersion.tar.gz
     MPIInstDirName=$installPrefix
     dep_mpi=("openmpi_v${openMPIVersion}" "v1")
@@ -802,7 +820,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         wget "https://download.open-mpi.org/release/open-mpi/v4.1/$MPIZipName" -qO "${cacheDir}/${MPIZipName}"
         tar -xf "$cacheDir/$MPIZipName" --directory "$sourcePrefix"
         dependency_download_success "${dep_mpi[@]}"
-        mkdir --parents "$MPIInstDirName"
+        mkdir -p "$MPIInstDirName"
     fi
     if ! is_dependency_installed "${dep_mpi[@]}"; then
         cd "$sourcePrefix/openmpi-$openMPIVersion"
@@ -814,6 +832,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build OpenMPI again"
     fi
+
     #------------------------------------------------------------------------------
     # #8.9 gRPC
     #------------------------------------------------------------------------------
@@ -854,11 +873,11 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build GRPC again."
     fi
-    
+
     #------------------------------------------------------------------------------
     # #8.10 Arrow / Parquet
     #------------------------------------------------------------------------------
-    
+
     arrowDirName="apache-arrow-$arrowVersion"
     arrowArtifactFileName=$arrowDirName.tar.gz
     dep_arrow=("arrow_v${arrowVersion}" "v1")
@@ -997,7 +1016,34 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # 8.14 Liburing
+    # #8.14 HAWQ (libhdfs3)
+    #------------------------------------------------------------------------------
+
+    hawqDirName="hawq-rel-v$hawqVersion"
+    hawqTarName="v${hawqVersion}.tar.gz"
+    hawqInstDirName=$installPrefix
+    if ! is_dependency_downloaded "hawq_v${hawqVersion}"; then
+	      daphne_msg "Get HAWQ (libhdfs3) version ${hawqVersion}"
+        wget "https://github.com/apache/hawq/archive/refs/tags/rel/${hawqTarName}" \
+            -qO "${cacheDir}/${hawqTarName}"
+        tar -xf "$cacheDir/$hawqTarName" -C "$sourcePrefix"
+        daphne_msg "Applying 0005-libhdfs3-remove-gtest-dep.patch"
+        patch -Np1 -i "${patchDir}/0005-libhdfs3-remove-gtest-dep.patch" -d "$sourcePrefix/$hawqDirName"
+        daphne_msg "Applying 0006-libhdfs3-add-cstdint-include.patch"
+        patch -Np1 -i "${patchDir}/0006-libhdfs3-add-cstdint-include.patch" -d "$sourcePrefix/$hawqDirName"
+        dependency_download_success "hawq_v${hawqVersion}"
+    fi
+    if ! is_dependency_installed "hawq_v${hawqVersion}"; then
+        cmake -G Ninja -S "$sourcePrefix/$hawqDirName/depends/libhdfs3" -B "${buildPrefix}/${hawqDirName}" \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$installPrefix"
+        cmake --build "${buildPrefix}/${hawqDirName}" --target install/strip
+        dependency_install_success "hawq_v${hawqVersion}"
+    else
+	      daphne_msg "No need to build HAWQ (libhdfs3) again."
+    fi
+
+    #------------------------------------------------------------------------------
+    # 8.15 Liburing
     #------------------------------------------------------------------------------
 
     liburingDirName="liburing-$liburingVersion"
@@ -1028,7 +1074,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # 8.14 Fetch bitstreams
+    # 8.16 Fetch bitstreams
     #------------------------------------------------------------------------------
 
     if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
@@ -1054,7 +1100,7 @@ daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
-    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI
+    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_HDFS $BUILD_PAPI
 
 cmake --build "$daphneBuildDir" --target "$target"
 

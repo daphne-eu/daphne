@@ -19,7 +19,6 @@
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/kernels/CUDA/HostUtils.h"
 
-#include <cassert>
 #include <iostream>
 #include <memory>
 #include <map>

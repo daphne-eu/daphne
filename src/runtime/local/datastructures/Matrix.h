@@ -150,18 +150,18 @@ public:
     bool operator==(const Matrix<ValueType> & rhs) const {
         if (this == &rhs)
             return true;
-        
+
         const size_t numRows = this->getNumRows();
         const size_t numCols = this->getNumCols();
-        
+
         if (numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
             return false;
-        
+
         for (size_t r = 0; r < numRows; ++r)
             for (size_t c = 0; c < numCols; ++c)
                 if (this->get(r, c) != rhs.get(r, c))
                     return false;
-        
+
         return true;
     }
 

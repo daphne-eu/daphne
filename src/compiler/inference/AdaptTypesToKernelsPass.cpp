@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+#include <compiler/inference/TypeInferenceUtils.h>
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 
 #include <mlir/Pass/Pass.h>
+
+#include <vector>
 
 using namespace mlir;
 
@@ -29,10 +32,14 @@ using namespace mlir;
  * for each infered type combination is available. Thus, the task of this pass is to adapt input and
  * output types by casts, where necessary, to ensure that an existing pre-compiled kernel can be used.
  * 
- * At the moment, this pass is implemented in a very simple way. It merely harmonizes the value types
- * of all inputs with those of the single output of certain operations. This is because so far we mainly
- * pre-compile our kernels for homogeneous combinations of input/output types. The operations are
- * marked by traits.
+ * At the moment, this pass is implemented in a very simple way. It supports only two concrete actions:
+ * - It harmonizes the value types of all inputs with those of the single output, for certain operations.
+ *   This is because so far we mainly pre-compile our kernels for homogeneous combinations of input/output
+ *   types.
+ * - It harmonizes the value types of all inputs (independently of the output type), for certain operations.
+ *   This is because some kernels need to output a different type than their inputs (e.g., comparisons on
+ *   non-numeric value types).
+ * In general, the affected operations are marked by traits.
  * 
  * In the future, this pass should take the kernel registry and/or extension catalog into account to find
  * out for which type combinations there are available kernels.
@@ -53,45 +60,80 @@ void AdaptTypesToKernelsPass::runOnOperation()
     f.getBody().front().walk([&](Operation* op) {
         const size_t numOperands = op->getNumOperands();
 
-        // Depending on the related trait, detemine which inputs to harmonize with the output.
-        std::vector<size_t> operandIdxs;
-        if(op->hasTrait<OpTrait::CastArgsToResType>()) // all inputs
+        // Depending on the related trait, determine which inputs to cast to which value type.
+        std::vector<size_t> operandIdxs; // the inputs to cast
+        Type targetVTy; // the value type to cast to
+
+        if(op->hasTrait<OpTrait::CastArgsToMostGeneralArgType>()) {
+            // The only related trait that does not consider the result type.
+
+            // TODO Support frame ops.
+            // Skip frame ops, since we cannot easily cast the column types of frames anyway.
+            if(llvm::any_of(op->getOperands(), [](Value operand){
+                return llvm::isa<daphne::FrameType>(operand.getType());
+            }))
+                return;
+
+            // Cast all inputs to the most general input value type.
             for(size_t i = 0; i < numOperands; i++)
                 operandIdxs.push_back(i);
-        else if(op->hasTrait<OpTrait::CastFirstTwoArgsToResType>()) // inputs 0 and 1
-            operandIdxs = {0, 1};
-        // TODO Instead of such a non-reusable op-specific trait, we should rather check for the concrete op here.
-        else if(op->hasTrait<OpTrait::CastArgsToResTypeRandMatrixOp>()) // inputs 2 and 3
-            operandIdxs = {2, 3};
+            std::vector<Type> argVTys;
+            for(size_t i = 0; i < numOperands; i++)
+                argVTys.push_back(CompilerUtils::getValueType(op->getOperand(i).getType()));
+            targetVTy = mostGeneralVt(argVTys);
+        }
+        else {
+            // All remaining related traits consider the result type.
 
-        if(!operandIdxs.empty()) {
+            // Skip operations without results.
+            if(!op->getNumResults())
+                return;
             Type resTy = op->getResult(0).getType();
-
-            // TODO Support this.
-            // Skip pure frame ops, since we cannot easily cast the column types of frames anyway.
-            // TODO Adapt this to use operandIdxs.
-            if(!(
-                llvm::isa<daphne::FrameType>(resTy) &&
-                llvm::all_of(op->getOperands(), [](Value operand){
+            // TODO Support frame ops.
+            // Skip frame ops, since we cannot easily cast the column types of frames anyway.
+            if(
+                llvm::isa<daphne::FrameType>(resTy) ||
+                llvm::any_of(op->getOperands(), [](Value operand){
                     return llvm::isa<daphne::FrameType>(operand.getType());
                 })
-            )) {
-                // Insert casts where necessary.
-                Type resVTy = CompilerUtils::getValueType(resTy);
-                builder.setInsertionPoint(op);
-                for(size_t i : operandIdxs) {
-                    Value argVal = op->getOperand(i);
-                    Type argTy = argVal.getType();
-                    if(CompilerUtils::getValueType(argTy) != resVTy) {
-                        op->setOperand(
-                                i,
-                                builder.create<daphne::CastOp>(
-                                        argVal.getLoc(),
-                                        CompilerUtils::setValueType(argTy, resVTy),
-                                        argVal
-                                )
-                        );
-                    }
+            )
+                return;
+            Type resVTy = CompilerUtils::getValueType(resTy);
+
+            if(op->hasTrait<OpTrait::CastArgsToResType>()) {
+                // Cast all inputs to the result value type.
+                for(size_t i = 0; i < numOperands; i++)
+                    operandIdxs.push_back(i);
+                targetVTy = resVTy;
+            }
+            else if(op->hasTrait<OpTrait::CastFirstTwoArgsToResType>()) {
+                // Cast inputs 0 and 1 to the result value type.
+                operandIdxs = {0, 1};
+                targetVTy = resVTy;
+            }
+            // TODO Instead of such a non-reusable op-specific trait, we should rather check for the concrete op here.
+            else if(op->hasTrait<OpTrait::CastArgsToResTypeRandMatrixOp>()) {
+                // Cast inputs 2 and 3 to the result value type.
+                operandIdxs = {2, 3};
+                targetVTy = resVTy;
+            }
+        }
+
+        if(!operandIdxs.empty()) {
+            // Insert casts where necessary.
+            builder.setInsertionPoint(op);
+            for(size_t i : operandIdxs) {
+                Value argVal = op->getOperand(i);
+                Type argTy = argVal.getType();
+                if(CompilerUtils::getValueType(argTy) != targetVTy) {
+                    op->setOperand(
+                            i,
+                            builder.create<daphne::CastOp>(
+                                    argVal.getLoc(),
+                                    CompilerUtils::setValueType(argTy, targetVTy),
+                                    argVal
+                            )
+                    );
                 }
             }
         }

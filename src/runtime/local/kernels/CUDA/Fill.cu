@@ -41,6 +41,7 @@ namespace CUDA {
         }
     }
 
+    template struct Fill<DenseMatrix<bool>, bool>;
     template struct Fill<DenseMatrix<float>, float>;
     template struct Fill<DenseMatrix<double>, double>;
     template struct Fill<DenseMatrix<int64_t>, int64_t>;

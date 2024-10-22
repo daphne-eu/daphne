@@ -67,7 +67,7 @@ struct Sample<DenseMatrix<VT>, VT> {
         if (range <= 0)
             throw std::runtime_error("range must be > 0");
         if (!withReplacement && !std::is_floating_point<VT>::value &&
-            range < size) {
+            range < static_cast<VT>(size)) {
             throw std::runtime_error("if no duplicates are allowed, "
                                      "then must be range >= size");
         }
@@ -127,7 +127,8 @@ struct Sample<DenseMatrix<VT>, VT> {
             // to create non-duplicate numbers (see Knuth's algorithm).
             else {                
                 VT *valuesRes = res->getValues();
-                int64_t iRange, iSize;
+                VT iRange;
+                int64_t iSize;
                 iSize = 0;
 
                 for (iRange = 0; iRange < range && iSize < size; iRange++) {

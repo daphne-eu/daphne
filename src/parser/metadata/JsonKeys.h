@@ -36,6 +36,11 @@ struct JsonKeys {
 
     // optional key
     inline static const std::string NUM_NON_ZEROS = "numNonZeros";  // int (default: -1)
+    inline static const std::string HDFS = "hdfs";   // json
+    struct HDFSKeys {
+        inline static const std::string isHDFS = "isHDFS";
+        inline static const std::string HDFSFilename = "HDFSFilename";
+    };
 };
 
 #endif

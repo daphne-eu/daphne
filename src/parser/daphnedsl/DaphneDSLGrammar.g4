@@ -87,6 +87,7 @@ expr:
     | KW_AS (('.' DATA_TYPE) | ('.' VALUE_TYPE) | ('.' DATA_TYPE '<' VALUE_TYPE '>')) '(' expr ')' # castExpr
     | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
     | obj=expr idx=indexing # rightIdxExtractExpr
+    | op=('+'|'-') arg=expr # minusExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
     | lhs=expr op='^' rhs=expr # powExpr
     | lhs=expr op='%' rhs=expr # modExpr
@@ -96,8 +97,13 @@ expr:
     | lhs=expr op='&&' rhs=expr # conjExpr
     | lhs=expr op='||' rhs=expr # disjExpr
     | cond=expr '?' thenExpr=expr ':' elseExpr=expr # condExpr
-    | '[' (literal (',' literal)*)? ']' # matrixLiteralExpr
+    | '[' (expr (',' expr)*)? ']' ('(' rows=expr? ',' cols=expr? ')')? # matrixLiteralExpr
+    | '{' (labels+=expr ':' cols+=expr (',' labels+=expr ':' cols+=expr)*)? '}' # colMajorFrameLiteralExpr
+    | '{' labels=frameRow (',' rows+=frameRow)* '}' # rowMajorFrameLiteralExpr
     ;
+
+frameRow:
+    '[' (expr (',' expr)*)? ']' ;
 
 indexing:
     '[' (rows=range)? ',' (cols=range)? ']' ;
@@ -156,16 +162,14 @@ VALUE_TYPE:
     ) ;
 
 INT_LITERAL:
-    ('0' | '-'? NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)* ('l' | 'u' | 'ull' | 'z')?);
+    ('0' | NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)*) ('l' | 'u' | 'ull' | 'z')? ;
 
 FLOAT_LITERAL:
     (
         // special values
-        'nan' | 'nanf' | '-'? ('inf' | 'inff')
+        'nan' | 'nanf' | 'inf' | 'inff'
         |
         // ordinary values
-        // optional minus
-        '-'?
         // part before the decimal point
         ('0' | NON_ZERO_DIGIT (DIGIT_SEP? DIGIT)*)
         (

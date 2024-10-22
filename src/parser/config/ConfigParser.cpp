@@ -61,7 +61,7 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_USE_FIXED_TILE_SIZES))
         config.matmul_use_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_USE_FIXED_TILE_SIZES).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES))
-        config.matmul_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES).get<std::vector<unsigned>>(); 
+        config.matmul_fixed_tile_sizes = jf.at(DaphneConfigJsonParams::MATMUL_FIXED_TILE_SIZES).get<std::vector<unsigned>>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR))
         config.matmul_unroll_factor = jf.at(DaphneConfigJsonParams::MATMUL_UNROLL_FACTOR).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_UNROLL_JAM_FACTOR))
@@ -111,6 +111,12 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.numberOfThreads = jf.at(DaphneConfigJsonParams::NUMBER_OF_THREADS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MINIMUM_TASK_SIZE))
         config.minimumTaskSize = jf.at(DaphneConfigJsonParams::MINIMUM_TASK_SIZE).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_HDFS_))
+        config.use_hdfs = jf.at(DaphneConfigJsonParams::USE_HDFS_).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::HDFS_ADDRESS))
+        config.hdfs_Address = jf.at(DaphneConfigJsonParams::HDFS_ADDRESS).get<std::string>();
+    if (keyExists(jf, DaphneConfigJsonParams::HDFS_USERNAME))
+        config.hdfs_username = jf.at(DaphneConfigJsonParams::HDFS_USERNAME).get<std::string>();
 #ifdef USE_CUDA
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_DEVICES))
         config.cuda_devices = jf.at(DaphneConfigJsonParams::CUDA_DEVICES).get<std::vector<int>>();
@@ -143,6 +149,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
     }
     if (keyExists(jf, DaphneConfigJsonParams::FORCE_CUDA))
         config.force_cuda = jf.at(DaphneConfigJsonParams::FORCE_CUDA).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::SPARSITY_THRESHOLD))
+        config.sparsity_threshold = jf.at(DaphneConfigJsonParams::SPARSITY_THRESHOLD).get<float>();
 }
 
 bool ConfigParser::keyExists(const nlohmann::json& j, const std::string& key) {

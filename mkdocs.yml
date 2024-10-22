@@ -27,6 +27,8 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
 markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
@@ -35,6 +37,9 @@ markdown_extensions:
   - pymdownx.striphtml
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 repo_url: https://github.com/daphne-eu/daphne
 repo_name: daphne-eu/daphne
 nav:
@@ -51,6 +56,7 @@ nav:
     - 'DaphneLib':
       - DaphneLib/Overview.md
       - DaphneLib/APIRef.md
+      - DaphneLib/Numpy2DaphneLib.md
     - FileMetaDataFormat.md
     - DistributedRuntime.md
     - SchedulingOptions.md
@@ -72,3 +78,4 @@ nav:
     - development/ImplementBuiltinKernel.md
     - development/Profiling.md
     - development/WriteDocs.md
+    - development/Testing.md

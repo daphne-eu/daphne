@@ -34,4 +34,4 @@ const std::string dirPath = "test/api/cli/operations/";
         } \
     }
 
-MAKE_TEST_CASE("constantFolding", 1)
+MAKE_TEST_CASE("constantFolding", 2)

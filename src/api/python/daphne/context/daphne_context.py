@@ -70,13 +70,16 @@ class DaphneContext(object):
         unnamed_params = ['\"'+file+'\"']
         return Frame(self, 'readFrame', unnamed_params)
     
-    def from_numpy(self, mat: np.array, shared_memory=True, verbose=False) -> Matrix:
+    def from_numpy(self, mat: np.array, shared_memory=True, verbose=False, return_shape=False):
         """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
         :param mat: The numpy array.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
         :param verbose: Whether to print timing information (True) or not (False).
+        :param return_shape: Whether to return the original shape of the input array.
         :return: The data from numpy as a Matrix.
         """
+
+        original_shape = mat.shape
 
         if verbose:
             start_time = time.time()
@@ -85,10 +88,10 @@ class DaphneContext(object):
         if mat.ndim == 1:
             rows = mat.shape[0]
             cols = 1
-        elif mat.ndim == 2:
+        elif mat.ndim >= 2:
+            if mat.ndim > 2:
+                mat = mat.reshape((original_shape[0], -1))
             rows, cols = mat.shape
-        else:
-            raise ValueError("input numpy array should be 1d or 2d")
 
         if shared_memory:
             # Data transfer via shared memory.
@@ -136,7 +139,7 @@ class DaphneContext(object):
         if verbose:
             print(f"from_numpy(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
 
-        return res
+        return (res, original_shape) if return_shape else res
 
     def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame:
         """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
@@ -366,7 +369,7 @@ class DaphneContext(object):
 
         return Frame(self, 'createFrame', [*columns, *labels])
     
-    def seq(self, start, end, inc) -> Matrix:
+    def seq(self, start, end, inc = 1) -> Matrix:
         named_input_nodes = {'start':start, 'end':end, 'inc':inc}
         return Matrix(self, 'seq', [], named_input_nodes=named_input_nodes)
 

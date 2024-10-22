@@ -27,7 +27,9 @@
 #include <runtime/local/io/ReadParquet.h>
 #include <runtime/local/io/ReadDaphne.h>
 #include <parser/metadata/MetaDataParser.h>
-
+#if USE_HDFS
+	#include <runtime/local/io/HDFS/ReadHDFS.h>
+#endif
 #include <string>
 #include <regex>
 #include <map>
@@ -39,6 +41,9 @@ struct FileExt {
 		m["mtx"] = 1;
 		m["parquet"] = 2;
 		m["dbdf"] = 3;
+#if USE_HDFS
+		m["hdfs"] = 4;
+#endif
 		return m;
 	}
 	static const std::map<std::string, int> map;
@@ -98,9 +103,18 @@ struct Read<DenseMatrix<VT>> {
 		break;
 	case 3:
 		readDaphne(res, filename);
-                break;
-        default:
-            throw std::runtime_error("File extension not supported");
+		break;
+#if USE_HDFS		
+	case 4: 
+		if(res == nullptr)
+			res = DataObjectFactory::create<DenseMatrix<VT>>(
+				fmd.numRows, fmd.numCols, false
+			);		
+		readHDFS(res, filename, ctx);				
+		break;
+#endif
+	default:
+		throw std::runtime_error("File extension not supported");
 	}
     }
 };

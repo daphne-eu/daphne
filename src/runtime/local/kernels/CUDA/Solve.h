@@ -20,7 +20,6 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <cassert>
 #include <cstddef>
 
 namespace CUDA {

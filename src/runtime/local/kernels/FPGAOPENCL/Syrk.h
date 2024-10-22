@@ -24,7 +24,6 @@
 #include <cblas.h>
 #include <math.h>
 
-#include <cassert>
 #include <cstddef>
 #include "syrk_interface.h"
 

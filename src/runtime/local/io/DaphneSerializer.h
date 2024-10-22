@@ -24,7 +24,6 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
-#include <cassert>
 #include <cstdint>
 #include <stdlib.h>
 #include <stdexcept>
@@ -263,8 +262,10 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
      */
     static DenseMatrix<VT> *deserializeHeader(const char *buf, DenseMatrix<VT> *matrix = nullptr) {
         size_t bufIdx = 0;
-        assert((DF_Dtype(buf) == DF_data_t::DenseMatrix_t) && "DenseMatrix deserialize(): DT mismatch");
-        assert((DF_Vtype(buf) == ValueTypeUtils::codeFor<VT>) && "DenseMatrix deserialize(): VT mismatch");
+        if (DF_Dtype(buf) != DF_data_t::DenseMatrix_t)
+            throw std::runtime_error("DenseMatrix deserialize(): DT mismatch");
+        if (DF_Vtype(buf) != ValueTypeUtils::codeFor<VT>)
+            throw std::runtime_error("DenseMatrix deserialize(): VT mismatch");
         // FF to the body
         bufIdx += sizeof(DF_header);
         bufIdx += sizeof(ValueTypeCode);
@@ -642,8 +643,10 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
      * @return CSRMatrix<VT>* The result matrix.
      */
     static CSRMatrix<VT> *deserializeHeader(const char *buffer, CSRMatrix<VT> *matrix = nullptr) {
-        assert((DF_Dtype(buffer) == DF_data_t::CSRMatrix_t) && "CSRMatrix deserialize(): DT mismatch");
-        assert((DF_Vtype(buffer) == ValueTypeUtils::codeFor<VT>) && "CSRMatrix deserialize(): VT mismatch");
+        if (DF_Dtype(buffer) != DF_data_t::CSRMatrix_t)
+            throw std::runtime_error("CSRMatrix deserialize(): DT mismatch");
+        if (DF_Vtype(buffer) != ValueTypeUtils::codeFor<VT>)
+            throw std::runtime_error("CSRMatrix deserialize(): VT mismatch");
 
         size_t bufferIdx = 0;
         // FF to the body

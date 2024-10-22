@@ -1,0 +1,11 @@
+# Scalar typeOf test
+print(typeOf(as.si8(0)));
+print(typeOf(as.si32(0)));
+print(typeOf(as.si64(0)));
+print(typeOf(as.ui8(0)));
+print(typeOf(as.ui32(0)));
+print(typeOf(as.ui64(0)));
+print(typeOf(as.f32(0)));
+print(typeOf(as.f64(0)));
+print(typeOf(as.bool(0)));
+print(typeOf("0"));

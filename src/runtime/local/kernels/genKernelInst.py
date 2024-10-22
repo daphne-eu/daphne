@@ -54,7 +54,6 @@ def toCppType(t):
     else:
         return t
 
-
 def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, outFile, catalogEntries, API):
     # Extract some information.
     opName = kernelTemplateInfo["opName"]
@@ -186,12 +185,24 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             opCodeWord = opCodeType[:-len("OpCode")]
             callTemplateParams = ["{}::{}".format(opCodeWord if API == "CPP" else API + "::" + opCodeWord, opCode)] + callTemplateParams
 
+        nonInstrumentedOps = ["map", "createDaphneContext","destroyDaphneContext"]
         # Body of that function: delegate to the kernel instantiation.
         outFile.write(2 * INDENT)
         if not isCreateDaphneContext:
             # try
             outFile.write(f"try{{\n")
+            if opName in nonInstrumentedOps:
+                outFile.write("")
+            elif isVectorizedOrDistributed:
+                outFile.write(3 * INDENT)
+                outFile.write(f"preKernelInstrumentation(0, ctx);\n")
+            else:
+                outFile.write(3 * INDENT)
+                outFile.write(f"preKernelInstrumentation(kId, ctx);\n")
             outFile.write(3 * INDENT)
+
+        #  import pdb;pdb.set_trace()
+        #  insertPreKernelInstrumentation(outFile)
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
 
@@ -205,10 +216,19 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"])),
         ))
         if not isCreateDaphneContext:
-            outFile.write(2 * INDENT)
-            if isVectorizedOrDistributed:
+
+            if opName in nonInstrumentedOps:
+                outFile.write(2 * INDENT)
+                outFile.write(f"}} catch(std::exception &e) {{\n{3*INDENT}throw ErrorHandler::runtimeError(0, e.what(), &(ctx->dispatchMapping));\n{2*INDENT}}}\n")
+            elif isVectorizedOrDistributed:
+                outFile.write(3 * INDENT)
+                outFile.write(f"postKernelInstrumentation(0, ctx);\n")
+                outFile.write(2 * INDENT)
                 outFile.write(f"}} catch(std::exception &e) {{\n{3*INDENT}throw ErrorHandler::runtimeError(-1, e.what(), &(ctx->dispatchMapping));\n{2*INDENT}}}\n")
             else:
+                outFile.write(3 * INDENT)
+                outFile.write(f"postKernelInstrumentation(kId, ctx);\n")
+                outFile.write(2 * INDENT)
                 outFile.write(f"}} catch(std::exception &e) {{\n{3*INDENT}throw ErrorHandler::runtimeError(kId, e.what(), &(ctx->dispatchMapping));\n{2*INDENT}}}\n")
         outFile.write(INDENT + "}\n")
 
@@ -321,6 +341,7 @@ if __name__ == "__main__":
         outFile.write("#include <runtime/local/context/DaphneContext.h>\n")
         outFile.write("#include <stdexcept>\n")
         outFile.write("#include <util/ErrorHandler.h>\n")
+        outFile.write("#include <runtime/local/instrumentation/KernelInstrumentation.h>\n")
         outFile.write(header_str)
         outFile.write("\nextern \"C\" {\n")
         outFile.write(ops_inst_str)

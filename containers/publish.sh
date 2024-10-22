@@ -25,7 +25,7 @@ TIMESTAMP_DATE=$(date -I)
 
 # swap comments to tag a specific version
 VERSION=$TIMESTAMP_DATE
-#VERSION=v0.2-rc1
+#VERSION=0.3
 
 # read needed software versions (e.g., CUDA version,...)
 source ../software-package-versions.txt
@@ -41,7 +41,7 @@ if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
 fi
 
 # GitHub actions environment
-$USE_SUDO docker push daphneeu/github-action:latest
+$USE_SUDO docker push -a daphneeu/github-action
 
 # cuda dev image
 $USE_SUDO docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion} daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}

@@ -29,7 +29,6 @@
 #include <util/preprocessor_defs.h>
 
 #include <type_traits>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>

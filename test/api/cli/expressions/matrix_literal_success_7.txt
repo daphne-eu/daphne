@@ -1,0 +1,18 @@
+DenseMatrix(1x9, double)
+8 7 6 5 4 3 2 1 0
+DenseMatrix(1x8, float)
+7 6 5 4 3 2 1 0
+DenseMatrix(1x7, uint64_t)
+6 5 4 3 2 1 0
+DenseMatrix(1x6, int64_t)
+5 4 3 2 1 0
+DenseMatrix(1x5, uint32_t)
+4 3 2 1 0
+DenseMatrix(1x4, int32_t)
+3 2 1 0
+DenseMatrix(1x3, uint8_t)
+2 1 0
+DenseMatrix(1x2, int8_t)
+1 0
+DenseMatrix(1x2, bool)
+1 0
