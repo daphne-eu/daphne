@@ -1,0 +1,3 @@
+X = readMatrix($inPath);
+print(X);
+write(X, "out.mtx");

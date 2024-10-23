@@ -20,10 +20,11 @@
 
 #include <catch.hpp>
 
-#include <filesystem>
+#include <iostream>
 #include <string>
 
 const std::string dirPath = "test/api/cli/io/";
+const std::string dirPath2 = "test/runtime/local/io/";
 
 TEST_CASE("writeMatrixCSV_Full", TAG_IO) {
     std::string csvPath = dirPath + "matrix_full.csv";
@@ -41,4 +42,31 @@ TEST_CASE("writeMatrixCSV_View", TAG_IO) {
                           std::string("outPath=\"" + csvPath + "\"").c_str());
     compareDaphneToRef(dirPath + "matrix_view_ref.csv", dirPath + "readMatrix.daphne", "--args",
                        std::string("inPath=\"" + csvPath + "\"").c_str());
+}
+
+TEST_CASE("writeMatrixMtxaig", TAG_IO) {
+    std::string expectedPath = dirPath2 + "aig.mtx";
+    std::string resultPath = "out.mtx";
+    checkDaphneStatusCode(StatusCode::SUCCESS, dirPath + "readAndWriteMtx.daphne", "--args",
+                          std::string("inPath=\"" + expectedPath + "\"").c_str());
+    CHECK(compareFileContents(expectedPath, resultPath));
+    std::filesystem::remove(resultPath); // remove old file if it still exists
+}
+
+TEST_CASE("writeMatrixMtxaik", TAG_IO) {
+    std::string expectedPath = dirPath2 + "aik.mtx";
+    std::string resultPath = "out.mtx";
+    checkDaphneStatusCode(StatusCode::SUCCESS, dirPath + "readAndWriteMtx.daphne", "--args",
+                          std::string("inPath=\"" + expectedPath + "\"").c_str());
+    CHECK(compareFileContents(expectedPath, resultPath));
+    std::filesystem::remove(resultPath); // remove old file if it still exists
+}
+
+TEST_CASE("writeMatrixMtxais", TAG_IO) {
+    std::string expectedPath = dirPath2 + "ais.mtx";
+    std::string resultPath = "out.mtx";
+    checkDaphneStatusCode(StatusCode::SUCCESS, dirPath + "readAndWriteMtx.daphne", "--args",
+                          std::string("inPath=\"" + expectedPath + "\"").c_str());
+    CHECK(compareFileContents(expectedPath, resultPath));
+    std::filesystem::remove(resultPath); // remove old file if it still exists
 }

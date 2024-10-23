@@ -31,6 +31,7 @@
 #include <grpcpp/server.h>
 
 #include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -590,5 +591,19 @@ void compareDaphneToSomeRefSimple(const std::string &dirPath, const std::string 
  * @return
  */
 std::string generalizeDataTypes(const std::string &str);
+
+/**
+ * @brief Compares the contents of two files line by line.
+ *
+ * This function opens two files specified by their paths and compares their 
+ * contents line by line. If the contents of both files match exactly, 
+ * the function returns true. If the files differ at any point, or if either 
+ * file cannot be opened, the function returns false.
+ *
+ * @param filePath1 The path to the first file to be compared.
+ * @param filePath2 The path to the second file to be compared.
+ * @return true if the files are identical in content; false otherwise.
+ */
+bool compareFileContents(const std::string &filePath1, const std::string &filePath2);
 
 #endif // TEST_API_CLI_UTILS_H
