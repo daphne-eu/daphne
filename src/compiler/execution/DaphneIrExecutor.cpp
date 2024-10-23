@@ -25,6 +25,7 @@
 
 #include <filesystem>
 
+#include "compiler/lowering/vectorize/VectorizeDefs.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
@@ -140,8 +141,27 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.use_vectorized_exec || userConfig_.use_distributed) {
         // TODO: add inference here if we have rewrites that could apply to
         // vectorized pipelines due to smaller sizes
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
+        switch (userConfig_.vectorizationType) {
+
+            case DAPHNE:
+                pm.addNestedPass<mlir::func::FuncOp>(
+                    mlir::daphne::createDaphneVectorizeComputationsPass());
+                break;
+            case GREEDY_1: 
+                pm.addNestedPass<mlir::func::FuncOp>(
+                    mlir::daphne::createGreedy1VectorizeComputationsPass(userConfig_));
+                break;
+            default:
+                pm.addNestedPass<mlir::func::FuncOp>(
+                    mlir::daphne::createGreedy1VectorizeComputationsPass(userConfig_));
+                break;
+        }
         pm.addPass(mlir::createCanonicalizerPass());
+        if (!userConfig_.no_horizontal_fusion) {
+            pm.addNestedPass<mlir::func::FuncOp>
+                (mlir::daphne::createHorizontalFusionPass());
+            pm.addPass(mlir::createCanonicalizerPass());
+        }
     }
     if (userConfig_.explain_vectorized)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization:"));
@@ -193,7 +213,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     // Initialize the use of each distinct kernels library to false.
     usedLibPaths = userConfig_.kernelCatalog.getLibPaths();
-
+    
     try {
         if (failed(pm.run(module))) {
             module->dump();

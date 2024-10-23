@@ -1,0 +1,18 @@
+
+//r=40000, c=40000
+//NoVec: Killed
+//GR1: Killed
+//GR2: ~33s
+X = rand($r, 1, 0.0, 1.0, 1, 12345);
+Y = rand(1, $c, 0.0, 1.0, 1, 67890);
+
+<start>
+i1 = outerAdd(X,Y);
+i2 = t(i1);
+i3 = exp(i2); 
+i4 = i3 + 2; 
+<stop>
+
+
+print(i4[0,0]);
+<end>
