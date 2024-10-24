@@ -39,6 +39,7 @@ struct DaphneUserConfig {
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
+    bool use_grpc_async = false;
     bool use_obj_ref_mgnt = true;
     bool use_ipa_const_propa = true;
     bool use_phy_op_selection = true;

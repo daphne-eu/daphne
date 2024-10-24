@@ -28,8 +28,6 @@ class AllocationDescriptorCUDA : public IAllocationDescriptor {
     size_t alloc_id{};
 
   public:
-    AllocationDescriptorCUDA() = delete;
-
     AllocationDescriptorCUDA(DaphneContext *ctx, uint32_t device_id) : device_id(device_id), dctx(ctx) {}
 
     ~AllocationDescriptorCUDA() override {
@@ -45,9 +43,12 @@ class AllocationDescriptorCUDA : public IAllocationDescriptor {
     // [[nodiscard]] uint32_t getLocation() const { return device_id; }
     [[nodiscard]] std::string getLocation() const override { return std::to_string(device_id); }
 
-    void createAllocation(size_t size, bool zero) override {
+    [[nodiscard]] std::unique_ptr<IAllocationDescriptor> createAllocation(size_t size, bool zero) const override {
+        auto new_alloc = std::make_unique<AllocationDescriptorCUDA>(dctx, device_id);
         auto ctx = CUDAContext::get(dctx, device_id);
-        data = ctx->malloc(size, zero, alloc_id);
+        new_alloc->data = ctx->malloc(size, zero, new_alloc->alloc_id);
+        new_alloc->size = size;
+        return new_alloc;
     }
 
     std::shared_ptr<std::byte> getData() override { return data; }

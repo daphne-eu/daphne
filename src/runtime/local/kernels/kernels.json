@@ -3870,6 +3870,7 @@
             [["DenseMatrix", "std::string"]],
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
             ["Frame"]
         ]
     },
