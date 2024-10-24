@@ -1,0 +1,12 @@
+import "kmeans_final.daph";
+
+X = rand(5, 100, -10.0, 10.0, 0.5, -1);
+k = 2;
+runs = 5;
+max_iter = 5;
+eps = 0.0001;
+is_verbose = true;
+avg_sample_size_per_centroid = 2;
+seed = -1;
+
+kmeans_final.m_kmeans(as.matrix<f64>(X), k, runs, max_iter, eps, is_verbose, avg_sample_size_per_centroid, seed);
