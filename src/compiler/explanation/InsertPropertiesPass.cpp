@@ -102,84 +102,33 @@ void InsertPropertiesPass::runOnOperation() {
             if (mt) {
               if ((llvm::isa<scf::ForOp>(op) || llvm::isa<scf::WhileOp>(op) ||
                    llvm::isa<scf::IfOp>(op))) {
-                // Create the CastOp for the current loop result
                 builder.setInsertionPointAfter(op);
                 builder.create<daphne::CastOp>(op->getLoc(),
                                                mt.withSparsity(sparsity), res);
               }
 
               else {
-                // For each use of 'res' in an SCF operation
                 for (auto &use : res.getUses()) {
                   Operation *userOp = use.getOwner();
                   if (isa<scf::ForOp>(userOp) || isa<scf::IfOp>(userOp) ||
                       isa<scf::WhileOp>(userOp)) {
-                    // Create a key based on 'res' and 'userOp'
                     auto key = std::make_pair(res, userOp);
 
                     Value castOpValue;
                     if (castOpMap.count(key)) {
-                      // CastOp already exists for this (res, userOp), reuse it
                       castOpValue = castOpMap[key];
                     } else {
-                      // Insert the CastOp before the SCF operation
                       builder.setInsertionPoint(userOp);
                       castOpValue =
                           builder.create<daphne::CastOp>(op->getLoc(), mt, res);
-                      // Store in the map
                       castOpMap[key] = castOpValue;
                     }
 
-                    // Replace the operand
                     userOp->setOperand(use.getOperandNumber(), castOpValue);
                   }
                 }
               }
 
-              /**
-              else
-              {
-                  // if op has use in SCF op create a cast before the loop
-                  for (auto &use : res.getUses())
-                  {
-                      Operation *userOp = use.getOwner();
-                      if (isa<scf::ForOp>(userOp) || isa<scf::IfOp>(userOp) ||
-              isa<scf::WhileOp>(userOp))
-                      {
-                          Value castOpValue;
-                          if (castOpMap.count(res)) {
-                              // CastOp already exists for 'res', reuse it
-                              castOpValue = castOpMap[res];
-                          } else {
-                              builder.setInsertionPoint(userOp);
-                              castOpValue = builder.create<daphne::CastOp>(
-                                  op->getLoc(),
-                                  mt,
-                                  res
-                              );
-
-                              // Replace the specific operand directly
-                              //userOp->setOperand(use.getOperandNumber(),
-              castOpValue);
-
-                              // Or this approach:
-                              // Replace all uses without self-referencing
-                              //for (unsigned i = 0, e =
-              userOp->getNumOperands(); i < e; ++i) {
-                              //    if (userOp->getOperand(i) == res) {
-                              //        userOp->setOperand(i, castOpValue);
-                              //    }
-                              //}
-                              castOpMap[res] = castOpValue;
-                          }
-                          userOp->setOperand(use.getOperandNumber(),
-              castOpValue);
-
-                      }
-                  }
-
-              }
-              */
               ++propertyIndex;
             }
           }
