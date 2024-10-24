@@ -29,15 +29,18 @@
 #include <unordered_map>
 
 namespace mlir::daphne {
-struct InferenceConfig {
-    InferenceConfig(bool partialInferenceAllowed, bool typeInference, bool shapeInference, bool frameLabelInference,
-                    bool sparsityInference);
-    bool partialInferenceAllowed;
-    bool typeInference;
-    bool shapeInference;
-    bool frameLabelInference;
-    bool sparsityInference;
-};
+    struct InferenceConfig {
+        InferenceConfig(bool partialInferenceAllowed,
+                        bool typeInference,
+                        bool shapeInference,
+                        bool frameLabelInference,
+                        bool sparsityInference);
+        bool partialInferenceAllowed;
+        bool typeInference;
+        bool shapeInference;
+        bool frameLabelInference;
+        bool sparsityInference;
+    };
 
     // alphabetically sorted list of passes
     std::unique_ptr<Pass> createAdaptTypesToKernelsPass();
@@ -48,7 +51,8 @@ struct InferenceConfig {
     std::unique_ptr<Pass> createModOpLoweringPass();
     std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
     std::unique_ptr<Pass> createRecordPropertiesPass();
-    std::unique_ptr<Pass> createInsertPropertiesPass(const std::string jsonFile = "");
+    std::unique_ptr<OperationPass<func::FuncOp>> createInsertPropertiesPass(
+        std::string properties_file_path = "");
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createDaphneOptPass();
     std::unique_ptr<OperationPass<ModuleOp>> createMatMulOpLoweringPass(bool matmul_tile,
@@ -74,15 +78,15 @@ struct InferenceConfig {
     std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
 #ifdef USE_CUDA
-std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
+    std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg);
 #endif
 
 #ifdef USE_FPGAOPENCL
-std::unique_ptr<Pass> createMarkFPGAOPENCLOpsPass(const DaphneUserConfig &cfg);
+    std::unique_ptr<Pass> createMarkFPGAOPENCLOpsPass(const DaphneUserConfig& cfg);
 #endif
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"
 } // namespace mlir::daphne
 
-#endif // SRC_IR_DAPHNEIR_PASSES_H
+#endif //SRC_IR_DAPHNEIR_PASSES_H
