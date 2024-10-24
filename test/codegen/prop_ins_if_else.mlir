@@ -1,4 +1,4 @@
-// RUN: daphne-opt --record-properties %s | FileCheck %s --check-prefix=CHECK-RECORDED -dump-input=always
+// RUN: daphne-opt --insert-properties="properties_file_path=properties_ins_if.json" %s | FileCheck %s --check-prefix=CHECK-INSERTED -dump-input=always
 
 module {
   func.func @main() {
@@ -36,21 +36,18 @@ module {
   }
 }
 
-// CHECK-RECORDED: "daphne.randMatrix"(%0, %0, %4, %5, %6, %7) {daphne.value_ids = [1 : ui32]} : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>
-// CHECK-RECORDED: "daphne.recordProperties"(%8, %9) : (!daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.randMatrix"(%0, %0, %4, %5, %6, %7) {daphne.value_ids = [2 : ui32]} : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>
-// CHECK-RECORDED: "daphne.recordProperties"(%10, %11) : (!daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewAdd"(%8, %10) {daphne.value_ids = [3 : ui32]} : (!daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>, !daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>) -> !daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>
-// CHECK-RECORDED: "daphne.recordProperties"(%12, %13) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>, ui32) -> ()
-// CHECK_RECORDED: "daphne.ewMul"(%12, %3) {daphne.value_ids = [4 : ui32]} : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>, si64) -> !daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>
-// CHECK-RECORDED: "daphne.recordProperties"(%14, %15) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>, ui32) -> ()
-// CHECK-RECORDED: scf.if %19 -> (!daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>, !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>) {
-// CHECK-RECORDED: "daphne.ewMul"(%14, %3) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>, si64) -> !daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>
-// CHECK-RECORDED: scf.yield %26, %27 : !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>, !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
-// CHECK-RECORDED: } else {
-// CHECK-RECORDED: "daphne.cast"(%14) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>) -> !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
-// CHECK-RECORDED: "daphne.cast"(%14) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>) -> !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
-// CHECK-RECORDED: scf.yield %25, %26 : !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>, !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
-// CHECK-RECORDED: } {daphne.value_ids = [5 : ui32, 6 : ui32]}
-// CHECK-RECORDED: "daphne.recordProperties"(%20#1, %21) : (!daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.recordProperties"(%20#0, %22) : (!daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>, ui32) -> ()
+// CHECK-INSERTED: "daphne.randMatrix"(%0, %0, %4, %5, %6, %7) : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>
+// CHECK-INSERTED: "daphne.randMatrix"(%0, %0, %4, %5, %6, %7) : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>
+// CHECK-INSERTED: "daphne.ewAdd"(%8, %9) : (!daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>, !daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>) -> !daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>
+// CHECK-INSERTED: "daphne.ewMul"(%10, %3) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>, si64) -> !daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>
+// CHECK-INSERTED: %16:2 = scf.if %15 -> (!daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>, !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>) {
+// CHECK-INSERTED: "daphne.ewMul"(%11, %3) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>, si64) -> !daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>
+// CHECK-INSERTED: "daphne.cast"(%21) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>) -> !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
+// CHECK-INSERTED: "daphne.cast"(%10) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>) -> !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
+// CHECK-INSERTED: scf.yield %22, %23 : !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>, !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
+// CHECK-INSERTED: } else {
+// CHECK-INSERTED: "daphne.cast"(%11) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>) -> !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
+// CHECK-INSERTED: "daphne.cast"(%11) : (!daphne.Matrix<5000x5000xsi64:sp[0.95999999999999996]>) -> !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
+// CHECK-INSERTED: scf.yield %21, %22 : !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>, !daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>
+// CHECK-INSERTED: "daphne.cast"(%16#1) : (!daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>) -> !daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>
+// CHECK-INSERTED: "daphne.cast"(%16#0) : (!daphne.Matrix<5000x5000xsi64:sp[0.000000e+00]>) -> !daphne.Matrix<5000x5000xsi64:sp[8.000000e-01]>

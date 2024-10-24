@@ -1,4 +1,4 @@
-// RUN: daphne-opt --record-properties %s | FileCheck %s --check-prefix=CHECK-RECORDED -dump-input=always
+// RUN: daphne-opt --insert-properties="properties_file_path=properties_ins_for.json" %s | FileCheck %s --check-prefix=CHECK-INSERTED -dump-input=always
 
 module {
   func.func @main() {
@@ -35,20 +35,16 @@ module {
   }
 }
 
-// CHECK-RECORDED: "daphne.randMatrix"(%3, %3, %8, %7, %9, %10) {daphne.value_ids = [1 : ui32]} : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>
-// CHECK-RECORDED: "daphne.recordProperties"(%11, %12) : (!daphne.Matrix<10x10xsi64:sp[8.000000e-01]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.randMatrix"(%3, %3, %8, %7, %9, %10) {daphne.value_ids = [2 : ui32]} : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>
-// CHECK-RECORDED: "daphne.recordProperties"(%13, %14) : (!daphne.Matrix<10x10xsi64:sp[8.000000e-01]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewAdd"(%11, %13) {daphne.value_ids = [3 : ui32]} : (!daphne.Matrix<10x10xsi64:sp[8.000000e-01]>, !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>) -> !daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>
-// CHECK-RECORDED: "daphne.recordProperties"(%15, %16) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewAdd"(%15, %6) {daphne.value_ids = [4 : ui32]} : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, f64) -> !daphne.Matrix<10x10xf64>
-// CHECK-RECORDED: "daphne.recordProperties"(%17, %18) : (!daphne.Matrix<10x10xf64>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewMul"(%15, %2) {daphne.value_ids = [5 : ui32]} : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, si64) -> !daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>
-// CHECK-RECORDED: "daphne.recordProperties"(%19, %20) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewAdd"(%19, %6) {daphne.value_ids = [6 : ui32]} : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, f64) -> !daphne.Matrix<10x10xf64>
-// CHECK-RECORDED: "daphne.recordProperties"(%21, %22) : (!daphne.Matrix<10x10xf64>, ui32) -> ()
-// CHECK-RECORDED: scf.for {{.*}}
-// CHECK-RECORDED: scf.yield %30, %32
-// CHECK-RECORDED: {daphne.value_ids = [7 : ui32, 8 : ui32]}
-// CHECK-RECORDED: "daphne.recordProperties"(%23#1, %24) : (!daphne.Matrix<10x10xf64>, ui32) -> ()
-// CHECK-RECORDED: "daphne.recordProperties"(%23#0, %25) : (!daphne.Matrix<10x10xf64>, ui32) -> ()
+
+// CHECK-INSERTED: "daphne.randMatrix"(%3, %3, %8, %7, %9, %10) : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>
+// CHECK-INSERTED: "daphne.randMatrix"(%3, %3, %8, %7, %9, %10) : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>
+// CHECK-INSERTED: "daphne.ewAdd"(%11, %12) : (!daphne.Matrix<10x10xsi64:sp[8.000000e-01]>, !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>) -> !daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>
+// CHECK-INSERTED: "daphne.ewAdd"(%13, %6) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, f64) -> !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: "daphne.ewMul"(%13, %2) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, si64) -> !daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>
+// CHECK-INSERTED: "daphne.ewAdd"(%15, %6) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, f64) -> !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: "daphne.cast"(%14) : (!daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: "daphne.cast"(%16) : (!daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: scf.for %arg0 = %0 to %1 step %0 iter_args(%arg1 = %17, %arg2 = %18) -> (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>)
+// CHECK-INSERTED: scf.yield %26, %28 : !daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: "daphne.cast"(%19#1) : (!daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64:sp[1.000000e+00]>
+// CHECK-INSERTED: "daphne.cast"(%19#0) : (!daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64:sp[1.000000e+00]>

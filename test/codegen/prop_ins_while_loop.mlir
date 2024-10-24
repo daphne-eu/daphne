@@ -1,4 +1,4 @@
-// RUN: daphne-opt --record-properties %s | FileCheck %s --check-prefix=CHECK-RECORDED -dump-input=always
+// RUN: daphne-opt --insert-properties="properties_file_path=properties_ins_while.json" %s | FileCheck %s --check-prefix=CHECK-INSERTED -dump-input=always
 
 module {
   func.func @main() {
@@ -39,20 +39,15 @@ module {
   }
 }
 
-// CHECK-RECORDED: "daphne.randMatrix"(%0, %0, %7, %6, %8, %9) {daphne.value_ids = [1 : ui32]} : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>
-// CHECK-RECORDED: "daphne.recordProperties"(%10, %11) : (!daphne.Matrix<10x10xsi64:sp[8.000000e-01]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.randMatrix"(%0, %0, %7, %6, %8, %9) {daphne.value_ids = [2 : ui32]} : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>
-// CHECK-RECORDED: "daphne.recordProperties"(%12, %13) : (!daphne.Matrix<10x10xsi64:sp[8.000000e-01]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewAdd"(%10, %12) {daphne.value_ids = [3 : ui32]} : (!daphne.Matrix<10x10xsi64:sp[8.000000e-01]>, !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>) -> !daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>
-// CHECK-RECORDED: "daphne.recordProperties"(%14, %15) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewAdd"(%14, %5) {daphne.value_ids = [4 : ui32]} : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, f64) -> !daphne.Matrix<10x10xf64>
-// CHECK-RECORDED: "daphne.recordProperties"(%16, %17) : (!daphne.Matrix<10x10xf64>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewMul"(%14, %4) {daphne.value_ids = [5 : ui32]} : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, si64) -> !daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>
-// CHECK-RECORDED: "daphne.recordProperties"(%18, %19) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, ui32) -> ()
-// CHECK-RECORDED: "daphne.ewAdd"(%18, %5) {daphne.value_ids = [6 : ui32]} : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, f64) -> !daphne.Matrix<10x10xf64>
-// CHECK-RECORDED: "daphne.recordProperties"(%20, %21) : (!daphne.Matrix<10x10xf64>, ui32) -> ()
-// CHECK-RECORDED: scf.while {{.*}}
-// CHECK-RECORDED: scf.yield %28, %30, %31
-// CHECK-RECORDED: {daphne.value_ids = [7 : ui32, 8 : ui32]}
-// CHECK-RECORDED: "daphne.recordProperties"(%22#1, %23) : (!daphne.Matrix<10x10xf64>, ui32) -> ()
-// CHECK-RECORDED: "daphne.recordProperties"(%22#0, %24) : (!daphne.Matrix<10x10xf64>, ui32) -> ()
+// CHECK-INSERTED: "daphne.randMatrix"(%0, %0, %7, %6, %8, %9) : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>
+// CHECK-INSERTED: "daphne.randMatrix"(%0, %0, %7, %6, %8, %9) : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>
+// CHECK-INSERTED: "daphne.ewAdd"(%10, %11) : (!daphne.Matrix<10x10xsi64:sp[8.000000e-01]>, !daphne.Matrix<10x10xsi64:sp[8.000000e-01]>) -> !daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>
+// CHECK-INSERTED: "daphne.ewAdd"(%12, %5) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, f64) -> !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: "daphne.ewMul"(%12, %4) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, si64) -> !daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>
+// CHECK-INSERTED: "daphne.ewAdd"(%14, %5) : (!daphne.Matrix<10x10xsi64:sp[0.95999999999999996]>, f64) -> !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: "daphne.cast"(%13) : (!daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: "daphne.cast"(%15) : (!daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64>
+// CHECK-INSERTED: %18:3 = scf.while (%arg0 = %16, %arg1 = %17, %arg2 = %7) : (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>, si64) -> (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>, si64) {
+// CHECK-INSERTED: scf.yield %24, %26, %27 : !daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>, si64
+// CHECK-INSERTED: "daphne.cast"(%18#1) : (!daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64:sp[1.000000e+00]>
+// CHECK-INSERTED: "daphne.cast"(%18#0) : (!daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64:sp[1.000000e+00]>
