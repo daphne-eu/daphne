@@ -368,15 +368,20 @@ void VectorizeComputationsPass::runOnOperation() {
 
             auto pipelineReplaceResults = pipelineOp->getResults().drop_front(resultsIx).take_front(numResults);
             resultsIx += numResults;
-            for (auto z : llvm::zip(v->getResults(), pipelineReplaceResults)) {
-                auto old = std::get<0>(z);
-                auto replacement = std::get<1>(z);
+            for (auto [old, replacement] : llvm::zip(v->getResults(), pipelineReplaceResults)) {
 
                 // TODO: switch to type based size inference instead
                 // FIXME: if output is dynamic sized, we can't do this
                 // replace `NumRowOp` and `NumColOp`s for output size inference
-                for (auto &use : old.getUses()) {
+                // FIXME: there are cases where old.getUses returns a null value, which should not happen.
+                // This indicates that we messed up somewhere in this pass and at this point, we have
+                // an invalid IR. See #881, using the safer llvm::make_early_inc_range iterator circumvents the segfault
+                // at this point, but dose not resolve the root cause (invalid IR).
+                for (auto &use : llvm::make_early_inc_range(old.getUses())) {
                     auto *op = use.getOwner();
+                    if (!op)
+                        continue;
+
                     if (auto nrowOp = llvm::dyn_cast<daphne::NumRowsOp>(op)) {
                         nrowOp.replaceAllUsesWith(pipelineOp.getOutRows()[replacement.getResultNumber()]);
                         nrowOp.erase();
