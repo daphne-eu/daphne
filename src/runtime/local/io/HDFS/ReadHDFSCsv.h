@@ -76,8 +76,8 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
             std::cerr << "Error connecting to HDFS" << std::endl;
         }
 
-        [[maybe_unused]] auto [startSegment, dummy] =
-            HDFSUtils::findSegmendAndOffset(*fs, 0, startRow, hdfsDir, numCols * sizeof(VT));
+        [[maybe_unused]] auto [startSegment, startRowWithinSegment] =
+            HDFSUtils::findSegmendAndOffset(*fs, 0, startRow, hdfsDir, 1);
         // TODO verify file exists
 
         size_t parsedRows = 0;
@@ -124,8 +124,9 @@ template <typename VT> struct ReadHDFSCsv<DenseMatrix<VT>> {
                     }
                 } while (cur == nullptr);
                 // If first segment, skip rows
-                if (parsedRows == 0 && startRow > (segment - 2) * segFmd.numRows + r)
+                if (parsedRows == 0 && startRowWithinSegment > r) {
                     continue;
+                }
 
                 size_t pos = 0;
                 for (size_t c = 0; c < numCols; c++) {

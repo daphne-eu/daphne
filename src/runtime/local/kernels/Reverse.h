@@ -69,7 +69,7 @@ template <typename VT> struct Reverse<DenseMatrix<VT>, DenseMatrix<VT>> {
         } else {
             const VT *valuesArgLastRow = valuesArg + ((numRows - 1) * arg->getRowSkip());
             for (size_t r = 0; r < numRows; r++) {
-                memcpy(valuesRes, valuesArgLastRow, numCols * sizeof(VT));
+                std::copy(valuesArgLastRow, valuesArgLastRow + numCols, valuesRes);
                 valuesRes += res->getRowSkip();
                 valuesArgLastRow -= arg->getRowSkip();
             }

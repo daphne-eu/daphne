@@ -212,6 +212,82 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, multi-column", TAG_KERNEL
     DataObjectFactory::destroy(check123);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<number>, multi-column", TAG_KERNELS,
+                           (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTRes = TestType;
+    using VTRes = typename DTRes::VT;
+
+    const size_t numRows = 2;
+
+    auto arg_stdSTR =
+        genGivenVals<DenseMatrix<std::string>>(numRows, {std::string("3.1"), std::string("1.1"), std::string("4.1"),
+                                                         std::string("1.1"), std::string("5.1"), std::string("9.1")});
+    DTRes *res_stdSTR = nullptr;
+
+    auto arg_FixedStr16 =
+        genGivenVals<DenseMatrix<FixedStr16>>(numRows, {FixedStr16("3.1"), FixedStr16("1.1"), FixedStr16("4.1"),
+                                                        FixedStr16("1.1"), FixedStr16("5.1"), FixedStr16("9.1")});
+    DTRes *res_FixedStr16 = nullptr;
+
+    auto check = genGivenVals<DenseMatrix<VTRes>>(
+        numRows, {VTRes(3.1), VTRes(1.1), VTRes(4.1), VTRes(1.1), VTRes(5.1), VTRes(9.1)});
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<std::string>>(res_stdSTR, arg_stdSTR, nullptr);
+    CHECK(*res_stdSTR == *check);
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr16>>(res_FixedStr16, arg_FixedStr16, nullptr);
+    CHECK(*res_FixedStr16 == *check);
+
+    DataObjectFactory::destroy(check);
+    DataObjectFactory::destroy(res_stdSTR, res_FixedStr16);
+    DataObjectFactory::destroy(arg_stdSTR, arg_FixedStr16);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<int64_t>, int64_t", TAG_KERNELS, (DenseMatrix),
+                           (int64_t)) {
+    using DTRes = TestType;
+    using VTRes = typename DTRes::VT;
+
+    const size_t numRows = 2;
+
+    SECTION("std::string") {
+        auto arg_string = genGivenVals<DenseMatrix<std::string>>(
+            numRows, {std::string("9223372036854775807"), std::string("9223372036854775806"),
+                      std::string("9223372036854775805"), std::string("9223372036854775804"),
+                      std::string("9223372036854775803"), std::string("9223372036854775802")});
+        DTRes *res_string = nullptr;
+        auto check_string =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {9223372036854775807, 9223372036854775806, 9223372036854775805,
+                                                       9223372036854775804, 9223372036854775803, 9223372036854775802});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<std::string>>(res_string, arg_string, nullptr);
+
+        CHECK(*res_string == *check_string);
+
+        DataObjectFactory::destroy(check_string);
+        DataObjectFactory::destroy(res_string);
+        DataObjectFactory::destroy(arg_string);
+    }
+
+    SECTION("FixedStr16") {
+        auto arg_FixedStr16 = genGivenVals<DenseMatrix<FixedStr16>>(
+            numRows, {FixedStr16("123456789012345"), FixedStr16("123456789012344"), FixedStr16("123456789012343"),
+                      FixedStr16("123456789012342"), FixedStr16("123456789012341"), FixedStr16("123456789012340")});
+        DTRes *res_FixedStr16 = nullptr;
+        auto check_FixedStr16 =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr16>>(res_FixedStr16, arg_FixedStr16, nullptr);
+
+        CHECK(*res_FixedStr16 == *check_FixedStr16);
+
+        DataObjectFactory::destroy(check_FixedStr16);
+        DataObjectFactory::destroy(res_FixedStr16);
+        DataObjectFactory::destroy(arg_FixedStr16);
+    }
+}
+
 TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, single dim", TAG_KERNELS, (DenseMatrix),
                            (double, int64_t, uint32_t)) {
     using DTRes = TestType;

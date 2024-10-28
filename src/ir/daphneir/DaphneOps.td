@@ -271,6 +271,13 @@ def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", NumScalar, [ValueTypeFromArgsFP
 
 def Daphne_EwIsNanOp : Daphne_EwUnaryOp<"ewIsnan", NumScalar, [ValueTypeFromFirstArg]>;
 
+// ----------------------------------------------------------------------------
+// Strings
+// ----------------------------------------------------------------------------
+
+def Daphne_EwLowerOp : Daphne_EwUnaryOp<"ewLower", StrScalar, [ValueTypeFromFirstArg]>;
+def Daphne_EwUpperOp : Daphne_EwUnaryOp<"ewUpper", StrScalar, [ValueTypeFromFirstArg]>;
+
 // ****************************************************************************
 // Elementwise binary
 // ****************************************************************************
@@ -301,7 +308,7 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
 // ----------------------------------------------------------------------------
 
 // TODO Make EwAddOp Commutative again (see #449).
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [ValueTypeFromArgs, CastArgsToResType/*, Commutative*/, EwSparseIfBoth, CUDASupport]> {
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", AnyScalar, [ValueTypeFromArgs, CastArgsToResType/*, Commutative*/, EwSparseIfBoth, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, CastArgsToResType, EwSparseIfBoth, CUDASupport]> {
@@ -342,7 +349,7 @@ def Daphne_EwBitwiseAndOp    : Daphne_EwBinaryOp<"ewBitwiseAnd", NumScalar, [Com
 // Strings
 // ----------------------------------------------------------------------------
 
-def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar, [CastArgsToResType]>;
+def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar, [ValueTypeStr, CastArgsToResType]>;
 
 // ----------------------------------------------------------------------------
 // Comparisons

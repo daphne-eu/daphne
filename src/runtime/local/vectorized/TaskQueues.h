@@ -54,12 +54,13 @@ class BlockingTaskQueue : public TaskQueue {
 
     void enqueueTask(Task *t) override {
         // lock mutex, released at end of scope
-        std::unique_lock<std::mutex> ul(_qmutex);
+        std::unique_lock<std::mutex> lk(_qmutex);
         // blocking wait until tasks dequeued
         while (_data.size() + 1 > _capacity)
-            _cv.wait(ul);
+            _cv.wait(lk);
         // add task to end of list
         _data.push_back(t);
+        lk.unlock();
         // notify blocked dequeue operations
         _cv.notify_one();
     }
@@ -70,38 +71,41 @@ class BlockingTaskQueue : public TaskQueue {
         CPU_ZERO(&cpuset);
         CPU_SET(targetCPU, &cpuset);
         sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
-        std::unique_lock<std::mutex> ul(_qmutex);
+        std::unique_lock<std::mutex> lk(_qmutex);
         while (_data.size() + 1 > _capacity)
-            _cv.wait(ul);
+            _cv.wait(lk);
         _data.push_back(t);
+        lk.unlock();
         _cv.notify_one();
     }
 
     Task *dequeueTask() override {
         // lock mutex, released at end of scope
-        std::unique_lock<std::mutex> ul(_qmutex);
+        std::unique_lock<std::mutex> lk(_qmutex);
         // blocking wait for new tasks
         while (_data.empty()) {
             if (_closedInput)
                 return &_eof;
             else
-                _cv.wait(ul);
+                _cv.wait(lk);
         }
         // obtain next task
         Task *t = _data.front();
         _data.pop_front();
+        lk.unlock();
         _cv.notify_one();
         return t;
     }
 
     uint64_t size() override {
-        std::unique_lock<std::mutex> lu(_qmutex);
+        std::unique_lock<std::mutex> lk(_qmutex);
         return _data.size();
     }
 
     void closeInput() override {
-        std::unique_lock<std::mutex> lu(_qmutex);
+        std::unique_lock<std::mutex> lk(_qmutex);
         _closedInput = true;
+        lk.unlock();
         _cv.notify_all();
     }
 };

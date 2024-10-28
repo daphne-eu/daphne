@@ -124,18 +124,22 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
         if (rowSkip == numCols || lastAppendedRowIdx == rowIdx) {
             const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
             const size_t endPosExcl = pos(rowIdx, colIdx);
+
             if (startPosIncl < endPosExcl)
-                memset(values.get() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
+                std::fill(values.get() + startPosIncl, values.get() + endPosExcl,
+                          ValueTypeUtils::defaultValue<ValueType>);
         } else {
             auto v = values.get() + lastAppendedRowIdx * rowSkip;
-            memset(v + lastAppendedColIdx + 1, 0, (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
+            std::fill(v + lastAppendedColIdx + 1, v + numCols, ValueTypeUtils::defaultValue<ValueType>);
+
             v += rowSkip;
+
             for (size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
-                memset(v, 0, numCols * sizeof(ValueType));
+                std::fill(v, v + numCols, ValueTypeUtils::defaultValue<ValueType>);
                 v += rowSkip;
             }
             if (colIdx)
-                memset(v, 0, (colIdx - 1) * sizeof(ValueType));
+                std::fill(v, v + colIdx - 1, ValueTypeUtils::defaultValue<ValueType>);
         }
     }
 
@@ -258,7 +262,7 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
     void prepareAppend() override {
         // The matrix might be empty.
         if (numRows != 0 && numCols != 0)
-            values.get()[0] = ValueType(0);
+            values.get()[0] = ValueType(ValueTypeUtils::defaultValue<ValueType>);
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
     }
@@ -277,7 +281,7 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
         // The matrix might be empty.
         if ((numRows != 0 && numCols != 0) &&
             ((lastAppendedRowIdx + 1 < numRows) || (lastAppendedColIdx + 1 < numCols)))
-            append(numRows - 1, numCols - 1, ValueType(0));
+            append(numRows - 1, numCols - 1, ValueType(ValueTypeUtils::defaultValue<ValueType>));
     }
 
     void print(std::ostream &os) const override {
@@ -327,17 +331,15 @@ template <typename ValueType> class DenseMatrix : public Matrix<ValueType> {
         if (valuesLhs == valuesRhs && rowSkipLhs == rowSkipRhs)
             return true;
 
-        if (rowSkipLhs == numCols && rowSkipRhs == numCols)
-            return !memcmp(valuesLhs, valuesRhs, numRows * numCols * sizeof(ValueType));
-        else {
-            for (size_t r = 0; r < numRows; r++) {
-                if (memcmp(valuesLhs, valuesRhs, numCols * sizeof(ValueType)))
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
+                if (*(valuesLhs + c) != *(valuesRhs + c))
                     return false;
-                valuesLhs += rowSkipLhs;
-                valuesRhs += rowSkipRhs;
             }
-            return true;
+            valuesLhs += rowSkipLhs;
+            valuesRhs += rowSkipRhs;
         }
+        return true;
     }
 
     size_t serialize(std::vector<char> &buf) const override;
