@@ -1,0 +1,33 @@
+// Performs an MaxOp. Used to compare precompiled kernel with codegen.
+// Values extracted as scalar to avoid them being optimized out of
+// the calculation with constant folding or similar.
+
+// f64
+X = [1.0, 2, 3, 4, 5, 6](2, 3);
+Y = [0.0, 1, 4, 11, 5, 0](2, 3);
+a = as.scalar(X[1:2, 0:1]); // 4
+b = as.scalar(X[0:1, 1:2]); // 2
+
+print(max(X, Y)); // mat, mat
+print(max(X, a)); // mat, scalar (broadcasting)
+print(max(a, b)); // scalar, scalar
+
+// si64
+X = [1, 2, 3, 4, 5, 6](2, 3);
+Y = [0, 1, 4, 11, 5, 0](2, 3);
+a = as.scalar(X[1:2, 0:1]); // 4
+b = as.scalar(X[0:1, 1:2]); // 2
+
+print(max(X, Y)); // mat, mat
+print(max(X, a)); // mat, scalar (broadcasting)
+print(max(a, b)); // scalar, scalar
+
+// ui64
+X = [1u, 2u, 3u, 4u, 5u, 6u](2, 3);
+Y = [0u, 1u, 4u, 11u, 5u, 0u](2, 3);
+a = as.scalar(X[1:2, 0:1]); // 4
+b = as.scalar(X[0:1, 1:2]); // 2
+
+print(max(X, Y)); // mat, mat
+print(max(X, a)); // mat, scalar (broadcasting)
+print(max(a, b)); // scalar, scalar

@@ -34,7 +34,6 @@
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/AffineExpr.h"
 #include "mlir/IR/AffineMap.h"
-#include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -43,7 +42,6 @@
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
-#include "mlir/IR/TypeRange.h"
 #include "mlir/IR/UseDefLists.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
@@ -51,8 +49,6 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/StringRef.h"
 
 using namespace mlir;
 
@@ -77,22 +73,31 @@ class TransposeOpLowering : public OpConversionPattern<daphne::TransposeOp> {
     LogicalResult matchAndRewrite(daphne::TransposeOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
 
-        mlir::Location loc = op->getLoc();
+        daphne::MatrixType matrixType = adaptor.getArg().getType().dyn_cast<daphne::MatrixType>();
+        if (!matrixType) {
+            return failure();
+        }
 
-        mlir::daphne::MatrixType matrixType = adaptor.getArg().getType().dyn_cast<mlir::daphne::MatrixType>();
-        mlir::Type matrixElementType = matrixType.getElementType();
+        Location loc = op->getLoc();
+
+        Type matrixElementType = matrixType.getElementType();
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
 
-        mlir::Value argMemref = rewriter.create<mlir::daphne::ConvertDenseMatrixToMemRef>(
-            loc, mlir::MemRefType::get({numRows, numCols}, matrixElementType), adaptor.getArg());
+        if (numRows < 0 || numCols < 0) {
+            return rewriter.notifyMatchFailure(
+                op, "aggAll codegen currently can not handle matrix dimensions that are not known at compile time");
+        }
 
-        Value resMemref =
-            rewriter.create<mlir::memref::AllocOp>(loc, mlir::MemRefType::get({numCols, numRows}, matrixElementType));
+        Value argMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(
+            loc, MemRefType::get({numRows, numCols}, matrixElementType), adaptor.getArg());
 
-        auto permutation = rewriter.getDenseI64ArrayAttr({1, 0}); // AffineMap::getPermutationMap ?
+        Value resMemref = rewriter.create<memref::AllocOp>(loc, MemRefType::get({numCols, numRows}, matrixElementType));
+
+        auto permutation = rewriter.getDenseI64ArrayAttr({1, 0});
         rewriter.create<linalg::TransposeOp>(loc, argMemref, resMemref, permutation);
-        auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
+
+        Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
 
         rewriter.replaceOp(op, resDenseMatrix);
 
@@ -120,8 +125,7 @@ struct TransposeLoweringPass : public mlir::PassWrapper<TransposeLoweringPass, m
     }
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::linalg::LinalgDialect,
-                        mlir::memref::MemRefDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::linalg::LinalgDialect, mlir::memref::MemRefDialect>();
     }
     void runOnOperation() final;
 };
@@ -141,17 +145,13 @@ void TransposeLoweringPass::runOnOperation() {
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
     target.addLegalDialect<BuiltinDialect>();
-    target.addLegalDialect<daphne::DaphneDialect>();
-    target.addLegalDialect<mlir::AffineDialect>();
-    target.addLegalDialect<mlir::arith::ArithDialect>();
-    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
-    target.addLegalDialect<mlir::linalg::LinalgDialect>();
-    target.addLegalDialect<mlir::memref::MemRefDialect>();
+    target.addLegalDialect<daphne::DaphneDialect, AffineDialect, arith::ArithDialect, LLVM::LLVMDialect,
+                           linalg::LinalgDialect, memref::MemRefDialect>();
 
-    target.addLegalOp<mlir::daphne::ConvertDenseMatrixToMemRef>();
-    target.addLegalOp<mlir::daphne::ConvertMemRefToDenseMatrix>();
+    target.addLegalOp<daphne::ConvertDenseMatrixToMemRef>();
+    target.addLegalOp<daphne::ConvertMemRefToDenseMatrix>();
 
-    target.addIllegalOp<mlir::daphne::TransposeOp>();
+    target.addIllegalOp<daphne::TransposeOp>();
 
     patterns.insert<TransposeOpLowering>(typeConverter, &getContext());
     auto module = getOperation();
@@ -160,6 +160,6 @@ void TransposeLoweringPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createTransposeOpLoweringPass() {
+std::unique_ptr<mlir::Pass> daphne::createTransposeOpLoweringPass() {
     return std::make_unique<TransposeLoweringPass>();
 }

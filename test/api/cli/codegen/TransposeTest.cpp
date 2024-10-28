@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,25 @@
  */
 
 #include <api/cli/Utils.h>
+
 #include <tags.h>
 
 #include <catch.hpp>
+
 #include <string>
 
 const std::string dirPath = "test/api/cli/codegen/";
 
-void testAggAllResult(const std::string result, const std::string op) {
-    compareDaphneToStr(result, dirPath + "aggall_" + op + ".daphne");
-    compareDaphneToStr(result, dirPath + "aggall_" + op + ".daphne", "--mlir-codegen");
-}
+TEST_CASE("transpose", TAG_CODEGEN) {
+    std::string result = "DenseMatrix(3x2, double)\n"
+                         "1 -4\n"
+                         "-2 5\n"
+                         "3 -6\n"
+                         "DenseMatrix(3x2, int64_t)\n"
+                         "1 -4\n"
+                         "-2 5\n"
+                         "3 -6\n";
 
-TEST_CASE("aggAll sum", TAG_CODEGEN) { testAggAllResult("100\n100\n100\n", "sum"); }
-TEST_CASE("aggAll min", TAG_CODEGEN) { testAggAllResult("1\n1\n1\n", "min"); }
-TEST_CASE("aggAll max", TAG_CODEGEN) { testAggAllResult("6\n6\n6\n", "max"); }
+    compareDaphneToStr(result, dirPath + "transpose.daphne");
+    compareDaphneToStr(result, dirPath + "transpose.daphne", "--mlir-codegen");
+}

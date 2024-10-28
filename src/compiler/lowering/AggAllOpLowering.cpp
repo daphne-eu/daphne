@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "compiler/utils/LoweringUtils.h"
+
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
@@ -35,7 +36,6 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Utils/StructuredOpsUtils.h"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/BuiltinDialect.h"
@@ -43,7 +43,6 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/PatternMatch.h"
-#include "mlir/IR/UseDefLists.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
 #include "mlir/Pass/Pass.h"
@@ -53,48 +52,130 @@
 
 using namespace mlir;
 
-class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
-  public:
-    using OpConversionPattern::OpConversionPattern;
+// ****************************************************************************
+// AggAllOp templates
+// ****************************************************************************
 
-    SumAllOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
-        : OpConversionPattern<daphne::AllAggSumOp>(typeConverter, ctx) {
-        this->setDebugName("SumAllOpLowering");
+template <typename AggOp, typename SIOp, typename UIOp, typename FOp>
+class AggAllOpLowering : public OpConversionPattern<AggOp> {
+  public:
+    using OpAdaptor = typename OpConversionPattern<AggOp>::OpAdaptor;
+
+    AggAllOpLowering(TypeConverter &typeConverter, MLIRContext *ctx) : OpConversionPattern<AggOp>(typeConverter, ctx) {
+        this->setDebugName("AggAllOpLowering");
     }
 
-    LogicalResult matchAndRewrite(daphne::AllAggSumOp op, OpAdaptor adaptor,
-                                  ConversionPatternRewriter &rewriter) const override {
-        daphne::MatrixType matrixType = adaptor.getArg().getType().dyn_cast<daphne::MatrixType>();
+    LogicalResult matchAndRewrite(AggOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
+
+        daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
+        // Pass currently only handles Dense Matrix
+        if (!matrixType) {
+            return failure();
+        }
+
         Location loc = op->getLoc();
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
 
+        if (numRows < 0 || numCols < 0) {
+            return rewriter.notifyMatchFailure(
+                op, "aggAll codegen currently can not handle matrix dimensions that are not known at compile time");
+        }
+
         Type matrixElementType = matrixType.getElementType();
         auto memRefType = MemRefType::get({numRows, numCols}, matrixElementType);
-        auto argMemRef =
-            rewriter.create<daphne::ConvertDenseMatrixToMemRef>(op->getLoc(), memRefType, adaptor.getArg());
+        auto argMemRef = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, memRefType, adaptor.getArg());
 
         // Create a single element Memref to store the running sum in.
         // This is necessary because Linalg only accepts shaped variadics.
+        // Store first elem of argMemRef into accumulator and then iterate over remainder.
         Value accumulator = rewriter.create<memref::AllocaOp>(loc, MemRefType::get({1}, matrixElementType));
-        rewriter.create<memref::StoreOp>(
-            loc, rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(matrixElementType)), accumulator,
-            ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0)});
+        Value initValue = rewriter.create<memref::LoadOp>(loc, argMemRef,
+                                                          ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0),
+                                                                     rewriter.create<arith::ConstantIndexOp>(loc, 0)});
+        rewriter.create<memref::StoreOp>(loc, initValue, accumulator,
+                                         ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0)});
 
-        SmallVector<AffineMap, 2> indexMap = {AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
-                                              AffineMap::get(2, 0, {rewriter.getAffineConstantExpr(0)}, getContext())};
-        SmallVector<utils::IteratorType, 2> iterTypes = {utils::IteratorType::reduction,
-                                                         utils::IteratorType::reduction};
+        SmallVector<AffineMap, 2> indexMap{
+            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
+            AffineMap::get(2, 0, {rewriter.getAffineConstantExpr(0)}, rewriter.getContext())};
+        SmallVector<utils::IteratorType, 2> iterTypes{utils::IteratorType::reduction, utils::IteratorType::reduction};
+
+        // Aggregate over the remainder of the first row of argMemRef before aggregating over the remaining values.
+        SmallVector<OpFoldResult, 2> firstRowOffsets{rewriter.getIndexAttr(0), rewriter.getIndexAttr(1)};
+        SmallVector<OpFoldResult, 2> firstRowSizes{rewriter.getIndexAttr(1), rewriter.getIndexAttr(numCols - 1)};
+        SmallVector<OpFoldResult, 2> firstRowStrides{rewriter.getIndexAttr(1), rewriter.getIndexAttr(1)};
+
+        Value firstRow =
+            rewriter.create<memref::SubViewOp>(loc, argMemRef, firstRowOffsets, firstRowSizes, firstRowStrides);
+
         rewriter.create<linalg::GenericOp>(
-            loc, TypeRange{}, ValueRange{argMemRef}, ValueRange{accumulator}, indexMap, iterTypes,
+            loc, TypeRange{}, ValueRange{firstRow}, ValueRange{accumulator}, indexMap, iterTypes,
             [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
                 Value currentElem = OpBuilderNested.create<memref::LoadOp>(
                     loc, accumulator, ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0)});
-                Value runningSum =
-                    llvm::isa<IntegerType>(matrixElementType)
-                        ? OpBuilderNested.create<arith::AddIOp>(locNested, currentElem, arg[0]).getResult()
-                        : OpBuilderNested.create<arith::AddFOp>(locNested, currentElem, arg[0]).getResult();
-                OpBuilderNested.create<linalg::YieldOp>(locNested, runningSum);
+                Value nextElem = arg[0];
+                Value runningAgg;
+
+                if (llvm::isa<IntegerType>(matrixElementType)) {
+                    currentElem = this->typeConverter->materializeTargetConversion(
+                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), currentElem);
+                    nextElem = this->typeConverter->materializeTargetConversion(
+                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), nextElem);
+                }
+
+                if (matrixElementType.isSignedInteger()) {
+                    runningAgg = OpBuilderNested.create<SIOp>(locNested, currentElem, nextElem).getResult();
+                } else if (matrixElementType.isUnsignedInteger()) {
+                    runningAgg = OpBuilderNested.create<UIOp>(locNested, currentElem, nextElem).getResult();
+                } else {
+                    runningAgg = OpBuilderNested.create<FOp>(locNested, currentElem, nextElem).getResult();
+                }
+
+                if (llvm::isa<IntegerType>(matrixElementType)) {
+                    runningAgg =
+                        this->typeConverter->materializeTargetConversion(rewriter, loc, matrixElementType, runningAgg);
+                }
+
+                OpBuilderNested.create<linalg::YieldOp>(locNested, runningAgg);
+            });
+
+        SmallVector<OpFoldResult, 2> remainderOffsets{rewriter.getIndexAttr(1), rewriter.getIndexAttr(0)};
+        SmallVector<OpFoldResult, 2> remainderSizes{rewriter.getIndexAttr(numRows - 1), rewriter.getIndexAttr(numCols)};
+        SmallVector<OpFoldResult, 2> remainderStrides{rewriter.getIndexAttr(1), rewriter.getIndexAttr(1)};
+
+        Value remainder =
+            rewriter.create<memref::SubViewOp>(loc, argMemRef, remainderOffsets, remainderSizes, remainderStrides);
+
+        rewriter.create<linalg::GenericOp>(
+            loc, TypeRange{}, ValueRange{remainder}, ValueRange{accumulator}, indexMap, iterTypes,
+            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+                Value currentElem = OpBuilderNested.create<memref::LoadOp>(
+                    loc, accumulator, ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0)});
+                Value nextElem = arg[0];
+                Value runningAgg;
+
+                if (llvm::isa<IntegerType>(matrixElementType)) {
+                    currentElem = this->typeConverter->materializeTargetConversion(
+                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), currentElem);
+                    nextElem = this->typeConverter->materializeTargetConversion(
+                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), nextElem);
+                }
+
+                if (matrixElementType.isSignedInteger()) {
+                    runningAgg = OpBuilderNested.create<SIOp>(locNested, currentElem, nextElem).getResult();
+                } else if (matrixElementType.isUnsignedInteger()) {
+                    runningAgg = OpBuilderNested.create<UIOp>(locNested, currentElem, nextElem).getResult();
+                } else {
+                    runningAgg = OpBuilderNested.create<FOp>(locNested, currentElem, nextElem).getResult();
+                }
+
+                if (llvm::isa<IntegerType>(matrixElementType)) {
+                    runningAgg =
+                        this->typeConverter->materializeTargetConversion(rewriter, loc, matrixElementType, runningAgg);
+                }
+
+                OpBuilderNested.create<linalg::YieldOp>(locNested, runningAgg);
             });
 
         rewriter.replaceOp(op, ValueRange{rewriter.create<memref::LoadOp>(
@@ -103,6 +184,14 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         return success();
     }
 };
+
+// ****************************************************************************
+// AggAllOp specializations
+// ****************************************************************************
+
+using SumAllOpLowering = AggAllOpLowering<daphne::AllAggSumOp, arith::AddIOp, arith::AddIOp, arith::AddFOp>;
+using MinAllOpLowering = AggAllOpLowering<daphne::AllAggMinOp, arith::MinSIOp, arith::MinUIOp, arith::MinFOp>;
+using MaxAllOpLowering = AggAllOpLowering<daphne::AllAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp>;
 
 namespace {
 /**
@@ -118,13 +207,13 @@ struct AggAllLoweringPass : public PassWrapper<AggAllLoweringPass, OperationPass
 
     StringRef getArgument() const final { return "lower-agg"; }
     StringRef getDescription() const final {
-        return "Lowers AggAll operators to a set of affine loops and performs "
+        return "Lowers AggAll operators to a Linalg GenericOp and performs "
                "the aggregation on a MemRef which is created from the input "
                "DenseMatrix.";
     }
 
     void getDependentDialects(DialectRegistry &registry) const override {
-        registry.insert<LLVM::LLVMDialect, AffineDialect, memref::MemRefDialect, linalg::LinalgDialect>();
+        registry.insert<LLVM::LLVMDialect, arith::ArithDialect, memref::MemRefDialect, linalg::LinalgDialect>();
     }
     void runOnOperation() final;
 };
@@ -143,18 +232,12 @@ void AggAllLoweringPass::runOnOperation() {
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
-    target.addLegalDialect<AffineDialect>();
-    target.addLegalDialect<arith::ArithDialect>();
-    target.addLegalDialect<BuiltinDialect>();
-    target.addLegalDialect<daphne::DaphneDialect>();
-    target.addLegalDialect<linalg::LinalgDialect>();
-    target.addLegalDialect<LLVM::LLVMDialect>();
-    target.addLegalDialect<memref::MemRefDialect>();
-    target.addLegalDialect<scf::SCFDialect>();
+    target.addLegalDialect<AffineDialect, arith::ArithDialect, BuiltinDialect, daphne::DaphneDialect,
+                           linalg::LinalgDialect, LLVM::LLVMDialect, memref::MemRefDialect>();
 
-    target.addIllegalOp<daphne::AllAggSumOp>();
+    target.addIllegalOp<daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>();
 
-    patterns.insert<SumAllOpLowering>(typeConverter, &getContext());
+    patterns.insert<SumAllOpLowering, MinAllOpLowering, MaxAllOpLowering>(typeConverter, &getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();

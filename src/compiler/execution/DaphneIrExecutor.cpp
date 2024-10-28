@@ -26,8 +26,10 @@
 #include <filesystem>
 
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
+#include "mlir/Conversion/MemRefToSPIRV/MemRefToSPIRVPass.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
@@ -39,6 +41,7 @@
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/MemRef/Transforms/Passes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
@@ -258,6 +261,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createDaphneOptPass());
     pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
+    pm.addPass(mlir::daphne::createAggDimOpLoweringPass());
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
     pm.addPass(mlir::daphne::createTransposeOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
@@ -279,9 +283,11 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
 
-    // pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgNamedOpConversionPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgGeneralizationPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createConvertLinalgToAffineLoopsPass());
+
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::memref::createFoldMemRefAliasOpsPass());
+    pm.addPass(mlir::memref::createNormalizeMemRefsPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createAffineScalarReplacementPass());
     pm.addPass(mlir::createLowerAffinePass());

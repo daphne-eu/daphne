@@ -1,0 +1,24 @@
+// Compare precompiled kernel with codegen generated for the AggAllOp.
+
+// Row
+X = [1.0, 2, 1, 6, 1, 4](2, 3);
+a = idxMax(X, 0);
+print(a);
+
+a = idxMax(as.matrix<si64>(X), 0);
+print(a);
+
+a = idxMax(as.matrix<ui64>(X), 0);
+print(a);
+
+
+// Column
+X = [1.0, 2, 1, 6, 1, 4](2, 3);
+a = idxMax(X, 1);
+print(a);
+
+a = idxMax(as.matrix<si64>(X), 1);
+print(a);
+
+a = idxMax(as.matrix<ui64>(X), 1);
+print(a);

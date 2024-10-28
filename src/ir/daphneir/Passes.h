@@ -42,6 +42,7 @@ struct InferenceConfig {
 // alphabetically sorted list of passes
 std::unique_ptr<Pass> createAdaptTypesToKernelsPass();
 std::unique_ptr<Pass> createAggAllOpLoweringPass();
+std::unique_ptr<Pass> createAggDimOpLoweringPass();
 std::unique_ptr<Pass> createDaphneOptPass();
 std::unique_ptr<Pass> createDistributeComputationsPass();
 std::unique_ptr<Pass> createDistributePipelinesPass();
