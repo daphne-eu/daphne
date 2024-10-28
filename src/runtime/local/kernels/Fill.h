@@ -20,6 +20,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
+#include <stdexcept>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -45,17 +47,13 @@ template <class DTRes, typename VTArg> void fill(DTRes *&res, VTArg arg, size_t 
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT> struct Fill<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+template <typename VTRes, typename VTArg> struct Fill<DenseMatrix<VTRes>, VTArg> {
+    static void apply(DenseMatrix<VTRes> *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+        if (res != nullptr)
+            throw std::invalid_argument("Trying to fill an already existing DenseMatrix.");
 
-        if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
-
-        if (arg != 0) {
-            VT *valuesRes = res->getValues();
-            for (auto i = 0ul; i < res->getNumItems(); ++i)
-                valuesRes[i] = arg;
-        }
+        res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+        std::fill(res->getValues(), res->getValues() + res->getNumItems(), arg);
     }
 };
 
@@ -65,9 +63,10 @@ template <typename VT> struct Fill<DenseMatrix<VT>, VT> {
 
 template <typename VT> struct Fill<Matrix<VT>, VT> {
     static void apply(Matrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
-        if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
+        if (res != nullptr)
+            throw std::invalid_argument("Trying to fill an already existing DenseMatrix.");
 
+        res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
         if (arg != 0) {
             res->prepareAppend();
             for (size_t r = 0; r < numRows; ++r)

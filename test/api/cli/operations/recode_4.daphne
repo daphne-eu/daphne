@@ -1,0 +1,13 @@
+# Recoding a non-empty matrix (string values; non-order-preserving and order-preserving).
+
+X = ["v_33", "v_22", "v_55", "v_22", "v_22", "v_11", "v_44", "v_55"];
+
+codes, dict = recode(X, false);
+print(codes);
+print(dict);
+
+print("");
+
+codes, dict = recode(X, true);
+print(codes);
+print(dict);

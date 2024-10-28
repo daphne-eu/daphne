@@ -67,7 +67,7 @@ template <typename VT> struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
             size_t numArgRows = arg->getNumRows();
             size_t numArgCols = arg->getNumCols();
             for (size_t r = 0; r < numArgRows; r++) {
-                memcpy(resVals, argVals, numArgCols * sizeof(VT));
+                std::copy(argVals, argVals + numArgCols, resVals);
                 argVals += arg->getRowSkip();
                 resVals += numArgCols;
             }

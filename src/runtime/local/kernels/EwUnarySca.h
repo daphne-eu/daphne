@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 
+#include <algorithm>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -92,6 +93,9 @@ template <typename VTRes, typename VTArg> EwUnaryScaFuncPtr<VTRes, VTArg> getEwU
         MAKE_CASE(UnaryOpCode::ROUND)
         // Comparison.
         MAKE_CASE(UnaryOpCode::ISNAN)
+        // String.
+        MAKE_CASE(UnaryOpCode::LOWER)
+        MAKE_CASE(UnaryOpCode::UPPER)
 #undef MAKE_CASE
     default:
         throw std::runtime_error("unknown UnaryOpCode: " + std::to_string(static_cast<int>(opCode)));
@@ -151,10 +155,32 @@ template <typename TRes, typename TArg> TRes ewUnarySca(UnaryOpCode opCode, TArg
         }                                                                                                              \
     };
 
+#define MAKE_EW_UNARY_STRING_TRANSFORM(opCode, expr)                                                                   \
+    template <> struct EwUnarySca<opCode, std::string, std::string> {                                                  \
+        inline static std::string apply(std::string arg, DCTX(ctx)) {                                                  \
+            std::string new_string = arg;                                                                              \
+            std::transform(new_string.begin(), new_string.end(), new_string.begin(), static_cast<int (*)(int)>(expr)); \
+            return new_string;                                                                                         \
+        }                                                                                                              \
+    };
+
+#define MAKE_EW_UNARY_C_STRING_TRANSFORM(opCode, expr)                                                                 \
+    template <> struct EwUnarySca<opCode, const char *, const char *> {                                                \
+        inline static const char *apply(const char *arg, DCTX(ctx)) {                                                  \
+            size_t len = std::strlen(arg) + 1;                                                                         \
+            char *new_string = new char[len];                                                                          \
+            for (size_t i = 0; i < len - 1; ++i) {                                                                     \
+                new_string[i] = expr(arg[i]);                                                                          \
+            }                                                                                                          \
+            new_string[len - 1] = '\0';                                                                                \
+            return new_string;                                                                                         \
+        }                                                                                                              \
+    };
+
 // One such line for each unary function to support.
 // Arithmetic/general math.
 MAKE_EW_UNARY_SCA(UnaryOpCode::MINUS, -arg);
-MAKE_EW_UNARY_SCA(UnaryOpCode::ABS, abs(arg));
+MAKE_EW_UNARY_SCA(UnaryOpCode::ABS, std::abs(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::SIGN,
                   (arg == 0) ? 0 : ((arg < 0) ? -1 : ((arg > 0) ? 1 : std::numeric_limits<TRes>::quiet_NaN())));
 MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR(UnaryOpCode::SQRT, sqrt(arg), -0.0, "SQRT with domain [-0, inf]")
@@ -178,9 +204,17 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::CEIL, std::ceil(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::ROUND, round(arg));
 // Comparison.
 MAKE_EW_UNARY_SCA(UnaryOpCode::ISNAN, std::isnan(arg));
+// String.
+MAKE_EW_UNARY_SCA(UnaryOpCode::LOWER, arg.lower())
+MAKE_EW_UNARY_SCA(UnaryOpCode::UPPER, arg.upper())
+MAKE_EW_UNARY_STRING_TRANSFORM(UnaryOpCode::LOWER, std::tolower)
+MAKE_EW_UNARY_STRING_TRANSFORM(UnaryOpCode::UPPER, std::toupper)
+MAKE_EW_UNARY_C_STRING_TRANSFORM(UnaryOpCode::LOWER, std::tolower)
+MAKE_EW_UNARY_C_STRING_TRANSFORM(UnaryOpCode::UPPER, std::toupper)
 
 #undef MAKE_EW_UNARY_SCA_CLOSED_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA_OPEN_DOMAIN_ERROR
 #undef MAKE_EW_UNARY_SCA
+#undef MAKE_EW_UNARY_STRING_TRANSFORM
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H

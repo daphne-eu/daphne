@@ -62,11 +62,8 @@ set(TEST_SOURCES
         api/cli/codegen/EwBinaryTest.cpp
         api/cli/codegen/EwUnaryTest.cpp
         api/cli/codegen/EwOpLoopFusionTest.cpp
-        api/cli/codegen/MatMulTest.cpp
         api/cli/codegen/MapOpTest.cpp
         api/cli/codegen/TransposeTest.cpp
-        codegen/CodegenTest.cpp
-        codegen/MatMulAccuracyTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
         api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp

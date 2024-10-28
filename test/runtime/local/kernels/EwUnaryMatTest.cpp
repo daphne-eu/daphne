@@ -603,6 +603,36 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("isNan, floating-point specific"), TAG_KERN
 }
 
 // ****************************************************************************
+// String Upper and Lower
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Upper, string data"), TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(2, {VT(""), VT("Ab"), VT("123 abc"), VT("ABc"), VT("ab"), VT("12")});
+
+    auto exp = genGivenVals<DenseMatrix<VT>>(2, {VT(""), VT("AB"), VT("123 ABC"), VT("ABC"), VT("AB"), VT("12")});
+
+    checkEwUnaryMat(UnaryOpCode::UPPER, arg, exp);
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Lower, string data"), TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(2, {VT(""), VT("Ab"), VT("123 ABC"), VT("ABc"), VT("ab"), VT("14")});
+
+    auto exp = genGivenVals<DenseMatrix<VT>>(2, {VT(""), VT("ab"), VT("123 abc"), VT("abc"), VT("ab"), VT("14")});
+
+    checkEwUnaryMat(UnaryOpCode::LOWER, arg, exp);
+
+    DataObjectFactory::destroy(arg, exp);
+}
+
+// ****************************************************************************
 // Invalid op-code
 // ****************************************************************************
 
