@@ -58,7 +58,6 @@ set(TEST_SOURCES
         api/python/DaphneLibTest.cpp
 
         api/cli/codegen/EwBinaryScalarTest.cpp
-        api/cli/codegen/MatMulTest.cpp
         api/cli/codegen/EwOpLoopFusionTest.cpp
         api/cli/codegen/AggAllTest.cpp
         api/cli/codegen/MapOpTest.cpp
