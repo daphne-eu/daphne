@@ -97,7 +97,8 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
     if (is_multiLine)
         pos++;
 
-    int is_not_end = 1;
+    uint8_t has_line_break = 0;
+    uint8_t is_not_end = 1;
     while (is_not_end && str[pos]) {
         is_not_end -= (!is_multiLine && str[pos] == delim);
         is_not_end -= (!is_multiLine && str[pos] == '\n');
@@ -117,6 +118,7 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
             getFileLine(file);
             str = file->line;
             pos = 0;
+            has_line_break = 1;
         } else {
             res->push_back(str[pos]);
             pos++;
@@ -126,5 +128,8 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
     if (is_multiLine)
         pos++;
 
-    return pos;
+    if (has_line_break)
+        return pos;
+    else
+        return pos + start_pos;
 }
