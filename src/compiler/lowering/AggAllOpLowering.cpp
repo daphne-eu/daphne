@@ -102,7 +102,7 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
         MemRefType memRefType = MemRefType::get({numRows, numCols}, matrixElementType);
         auto argMemRef = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, memRefType, adaptor.getArg());
 
-        // Create a singleton Memref to store the running sum in.
+        // Create a singleton Memref to store the running aggregation result in.
         // This is necessary because Linalg only accepts shaped variadics.
         // Store first elem of argMemRef into accumulator and then iterate over remainder.
         Value accumulator = rewriter.create<memref::AllocaOp>(loc, MemRefType::get({1}, matrixElementType));
