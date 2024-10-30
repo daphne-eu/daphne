@@ -47,12 +47,26 @@
 
 using namespace mlir;
 
+#define convToSignlessInt(rewriter, loc, origVal, targetType)                                                          \
+    typeConverter->materializeTargetConversion(rewriter, loc,                                                          \
+                                               rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal)
+
 // ****************************************************************************
 // Rewriter Templates (Elemwise Unary, Elemwise Binary)
 // ****************************************************************************
 
 using unaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value arg);
 
+/**
+ * @brief template for lowering elemwise unary functions.
+ * The corresponding `UnaryOp` is applied to every element
+ * of a matrix or scalar operand.
+ *
+ * @param UnaryOp The target operation this pass aims to rewrite.
+ * @param UnaryFunc The function applied to every element. Must have
+ * the following signature
+ * `(OpBuilder, mlir::Location, TypeConverter*, mlir::Value arg) -> mlir::Value`.
+ */
 template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : public mlir::OpConversionPattern<UnaryOp> {
   public:
     using OpAdaptor = typename mlir::OpConversionPattern<UnaryOp>::OpAdaptor;
@@ -72,7 +86,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         Location loc = op->getLoc();
         daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
 
-        // Scalar values are handled separately. The rest of the code assumes the input to be dense matrices.
+        // Scalar values are handled separately. Otherwise assume input is DenseMatrix.
         if (!matrixType) {
             return matchAndRewriteScalarVal(op, adaptor, rewriter);
         }
@@ -83,7 +97,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
 
         if (numRows < 0 || numCols < 0) {
             return rewriter.notifyMatchFailure(
-                op, "aggAll codegen currently can not handle matrix dimensions that are not known at compile time");
+                op, "ewOps codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         Value argMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(
@@ -95,12 +109,12 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
                                                AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())};
         SmallVector<utils::IteratorType, 2> iterTypes = {utils::IteratorType::parallel, utils::IteratorType::parallel};
 
-        rewriter.create<linalg::GenericOp>(loc, TypeRange{}, ValueRange{argMemref}, ValueRange{resMemref}, indexMaps,
-                                           iterTypes,
-                                           [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
-                                               auto resValue = unaryFunc(rewriter, loc, this->typeConverter, arg[0]);
-                                               OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
-                                           });
+        rewriter.create<linalg::GenericOp>(
+            loc, TypeRange{}, ValueRange{argMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
+            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+                Value resValue = unaryFunc(OpBuilderNested, locNested, this->typeConverter, arg[0]);
+                OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
+            });
 
         auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
 
@@ -112,6 +126,17 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
 
 using binaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs);
 
+/**
+ * @brief template for lowering elemwise binary functions.
+ * The corresponding `BinaryOp` is applied to every element
+ * with the same index for 2 matching matrices, 2 scalar inputs,
+ * or broadcasted to a matrix (lhs) from a scalar (rhs).
+ *
+ * @param BinaryOp The target operation this pass aims to rewrite.
+ * @param BinaryFunc The function applied to every element pair. Must have
+ * the following signature
+ * `(OpBuilder, mlir::Location, TypeConverter*, mlir::Value lhs, mlir::Value rhs) -> mlir::Value`.
+ */
 template <class BinaryOp, binaryFuncType binaryFunc>
 class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
   public:
@@ -140,7 +165,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 
         Type matrixElementType = lhsMatrixType.getElementType();
 
-        auto argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
+        MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
         Value lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
 
         Value resMemref = rewriter.create<memref::AllocOp>(loc, argMemRefType);
@@ -152,8 +177,8 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         rewriter.create<linalg::GenericOp>(
             loc, TypeRange{}, ValueRange{lhsMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
             [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
-                auto resValue = binaryFunc(rewriter, loc, this->typeConverter, arg[0], rhs);
-                rewriter.create<linalg::YieldOp>(locNested, resValue);
+                Value resValue = binaryFunc(OpBuilderNested, locNested, this->typeConverter, arg[0], rhs);
+                OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
             });
 
         Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
@@ -171,7 +196,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         daphne::MatrixType rhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
 
         // Match Scalar-Scalar and Matrix-Scalar broadcasting (assuming scalar values are always switched to rhs).
-        // Broadcasting where either Matrix holds only 1 element needs to be handled separately below.
+        // Broadcasting where either Matrix is a singleton needs to be handled separately below.
         if (!rhsMatrixType) {
             if (!lhsMatrixType) {
                 return matchAndRewriteScalarVal(op, adaptor, rewriter);
@@ -189,7 +214,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 
         if (lhsRows < 0 || lhsRows < 0 || rhsRows < 0 || rhsCols < 0) {
             return rewriter.notifyMatchFailure(
-                op, "aggAll codegen currently can not handle matrix dimensions that are not known at compile time");
+                op, "ewOps codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         // Assume that if only one matrix contains a single value for broadcasting it is rhs.
@@ -212,7 +237,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                                                            std::make_format_args(lhsRows, lhsCols, rhsRows, rhsCols)));
         }
 
-        auto argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
+        MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
         Value lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
         Value rhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, rhs);
 
@@ -226,8 +251,8 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         rewriter.create<linalg::GenericOp>(
             loc, TypeRange{}, ValueRange{lhsMemref, rhsMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
             [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
-                auto resValue = binaryFunc(rewriter, loc, this->typeConverter, arg[0], arg[1]);
-                rewriter.create<linalg::YieldOp>(locNested, resValue);
+                Value resValue = binaryFunc(OpBuilderNested, locNested, this->typeConverter, arg[0], arg[1]);
+                OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
             });
 
         Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
@@ -257,10 +282,9 @@ Value unaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *
     Type resType = arg.getType();
     Value res = arg;
     if (llvm::isa<mlir::IntegerType>(resType)) {
-        res = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resType.getIntOrFloatBitWidth()), ValueRange{res});
+        res = convToSignlessInt(rewriter, loc, res, resType);
         res = rewriter.create<IOp>(loc, res).getResult();
-        res = typeConverter->materializeTargetConversion(rewriter, loc, resType, ValueRange{res});
+        res = typeConverter->materializeTargetConversion(rewriter, loc, resType, res);
     } else {
         res = rewriter.create<FOp>(loc, res).getResult();
     }
@@ -272,12 +296,10 @@ Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter 
     Type resType = lhs.getType();
     Value res{};
     if (llvm::isa<mlir::IntegerType>(resType)) {
-        lhs = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resType.getIntOrFloatBitWidth()), ValueRange{lhs});
-        rhs = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resType.getIntOrFloatBitWidth()), ValueRange{rhs});
+        lhs = convToSignlessInt(rewriter, loc, lhs, resType);
+        rhs = convToSignlessInt(rewriter, loc, rhs, resType);
         res = rewriter.create<IOp>(loc, lhs, rhs).getResult();
-        res = typeConverter->materializeTargetConversion(rewriter, loc, resType, ValueRange{res});
+        res = typeConverter->materializeTargetConversion(rewriter, loc, resType, res);
     } else {
         res = rewriter.create<FOp>(loc, lhs, rhs).getResult();
     }
@@ -288,20 +310,12 @@ template <typename SIOp, typename UIOp, typename FOp>
 Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) {
     Type resType = lhs.getType();
     Value res{};
-    if (resType.isSignedInteger()) {
-        lhs = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resType.getIntOrFloatBitWidth()), ValueRange{lhs});
-        rhs = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resType.getIntOrFloatBitWidth()), ValueRange{rhs});
-        res = rewriter.create<SIOp>(loc, lhs, rhs).getResult();
-        res = typeConverter->materializeTargetConversion(rewriter, loc, resType, ValueRange{res});
-    } else if (llvm::isa<IntegerType>(resType)) {
-        lhs = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resType.getIntOrFloatBitWidth()), ValueRange{lhs});
-        rhs = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resType.getIntOrFloatBitWidth()), ValueRange{rhs});
-        res = rewriter.create<UIOp>(loc, lhs, rhs).getResult();
-        res = typeConverter->materializeTargetConversion(rewriter, loc, resType, ValueRange{res});
+    if (llvm::isa<IntegerType>(resType)) {
+        lhs = convToSignlessInt(rewriter, loc, lhs, resType);
+        rhs = convToSignlessInt(rewriter, loc, rhs, resType);
+        res = resType.isSignedInteger() ? rewriter.create<SIOp>(loc, lhs, rhs).getResult()
+                                        : rewriter.create<UIOp>(loc, lhs, rhs).getResult();
+        res = typeConverter->materializeTargetConversion(rewriter, loc, resType, res);
     } else {
         res = rewriter.create<FOp>(loc, lhs, rhs).getResult();
     }
@@ -319,16 +333,12 @@ Value ewPowOpComputeRes(OpBuilder &rewriter, Location loc, TypeConverter *typeCo
     Type resMatrixElementType = lhs.getType();
     // The integer specializations of PowOp expect signless Integers
     if (llvm::isa<mlir::IntegerType>(resMatrixElementType)) {
-        Value lhsCasted = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()), ValueRange{lhs});
-        Value rhsCasted = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()), ValueRange{rhs});
+        Value lhsCasted = convToSignlessInt(rewriter, loc, lhs, resMatrixElementType);
+        Value rhsCasted = convToSignlessInt(rewriter, loc, rhs, resMatrixElementType);
         resValue = rewriter.create<math::IPowIOp>(loc, lhsCasted, rhsCasted).getResult();
-        resValue =
-            typeConverter->materializeTargetConversion(rewriter, loc, resMatrixElementType, ValueRange{resValue});
+        resValue = typeConverter->materializeTargetConversion(rewriter, loc, resMatrixElementType, resValue);
     } else if (llvm::isa<mlir::IntegerType>(rhsMatrixElementType)) {
-        Value rhsCasted = typeConverter->materializeTargetConversion(
-            rewriter, loc, rewriter.getIntegerType(resMatrixElementType.getIntOrFloatBitWidth()), ValueRange{rhs});
+        Value rhsCasted = convToSignlessInt(rewriter, loc, rhs, resMatrixElementType);
         resValue = rewriter.create<math::FPowIOp>(loc, lhs, rhsCasted).getResult();
     } else {
         resValue = rewriter.create<math::PowFOp>(loc, lhs, rhs).getResult();
@@ -340,12 +350,13 @@ Value ewPowOpComputeRes(OpBuilder &rewriter, Location loc, TypeConverter *typeCo
 // Rewriter Class Instantiations
 // ****************************************************************************
 
-// math::sqrt only supports floating point, DAPHNE promotes argument type of sqrt to f32/64
 // Unary Arithmetic/general math
 using AbsOpLowering = UnaryOpLowering<daphne::EwAbsOp, unaryWithConversionFunc<math::AbsIOp, math::AbsFOp>>;
+// DAPHNE promotes argument type of sqrt to f32/64, so SqrtOp does not deal with integer values
 using SqrtOpLowering = UnaryOpLowering<daphne::EwSqrtOp, unaryNoConversionFunc<math::SqrtOp, math::SqrtOp>>;
 using ExpOpLowering = UnaryOpLowering<daphne::EwExpOp, unaryNoConversionFunc<math::ExpOp, math::ExpOp>>;
 using LnOpLowering = UnaryOpLowering<daphne::EwLnOp, unaryNoConversionFunc<math::LogOp, math::LogOp>>;
+
 // Unary Trig/Hyperbolic functions
 using SinOpLowering = UnaryOpLowering<daphne::EwSinOp, unaryNoConversionFunc<math::SinOp, math::SinOp>>;
 using CosOpLowering = UnaryOpLowering<daphne::EwCosOp, unaryNoConversionFunc<math::CosOp, math::CosOp>>;
@@ -356,12 +367,9 @@ using TanOpLowering = UnaryOpLowering<daphne::EwTanOp, unaryNoConversionFunc<mat
 // using SinhOpLowering = UnaryOpLowering<daphne::EwSinhOp, unaryNoConversionFunc<math::SinhOp, math::SinhOp>>;
 // using CoshOpLowering = UnaryOpLowering<daphne::EwCoshOp, unaryNoConversionFunc<math::CoshOp, math::CoshOp>>;
 // using TanhOpLowering = UnaryOpLowering<daphne::EwTanhOp, unaryNoConversionFunc<math::TanhOp, math::TanhOp>>;
-/**
- * Rounding
- *
- * Since these operations have no effect on un/signed integers, they are removed in a prior canoniclization pass.
- * Therefore, the lowering for them only has to deal with floating point values.
- */
+
+// Rounding
+// Prior canonicalization pass removes rounding ops on integers, meaning only f32/f64 types need to be dealt with
 using FloorOpLowering = UnaryOpLowering<daphne::EwFloorOp, unaryNoConversionFunc<math::FloorOp, math::FloorOp>>;
 using CeilOpLowering = UnaryOpLowering<daphne::EwCeilOp, unaryNoConversionFunc<math::CeilOp, math::CeilOp>>;
 using RoundOpLowering = UnaryOpLowering<daphne::EwRoundOp, unaryNoConversionFunc<math::RoundOp, math::RoundOp>>;
@@ -375,6 +383,7 @@ using DivOpLowering =
 using PowOpLowering = BinaryOpLowering<daphne::EwPowOp, ewPowOpComputeRes>;
 // ModOpLowering - specialized in ModOpLowering.cpp
 // TODO: find or implement generalized logarithm in mlir
+
 // Binary Comparison
 // Min/Max
 using MaxOpLowering =
@@ -393,8 +402,8 @@ using MinOpLowering =
 
 namespace {
 /**
- * @brief This pass lowers element-wise operations to affine loop
- * structures and arithmetic operations.
+ * @brief This pass lowers element-wise operations to Linalg GenericOps
+ * and arithmetic operations.
  *
  * This rewrite may enable loop fusion of the produced affine loops by
  * running the loop fusion pass.
@@ -446,7 +455,7 @@ void populateLowerEwOpConversionPatterns(mlir::LLVMTypeConverter &typeConverter,
         MinOpLowering,
         MaxOpLowering
         // , AndOpLowering,
-        // OrOpLowering,
+        // OrOpLowering
         >(typeConverter, patterns.getContext());
     // clang-format on
 }

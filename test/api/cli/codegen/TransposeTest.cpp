@@ -24,16 +24,17 @@
 
 const std::string dirPath = "test/api/cli/codegen/";
 
-TEST_CASE("transpose", TAG_CODEGEN) {
+TEST_CASE("transposeOp", TAG_CODEGEN) {
+    // clang-format off
     std::string result = "DenseMatrix(3x2, double)\n"
-                         "1 -4\n"
-                         "-2 5\n"
-                         "3 -6\n"
+                            "1 -4\n"
+                            "-2 5\n"
+                            "3 -6\n"
                          "DenseMatrix(3x2, int64_t)\n"
-                         "1 -4\n"
-                         "-2 5\n"
-                         "3 -6\n";
-
+                            "1 -4\n"
+                            "-2 5\n"
+                            "3 -6\n";
+    // clang-format on
     compareDaphneToStr(result, dirPath + "transpose.daphne");
     compareDaphneToStr(result, dirPath + "transpose.daphne", "--mlir-codegen");
 }

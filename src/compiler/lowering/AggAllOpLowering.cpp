@@ -52,10 +52,27 @@
 
 using namespace mlir;
 
+#define convToSignlessInt(rewriter, loc, origVal, targetType)                                                          \
+    this->typeConverter->materializeTargetConversion(                                                                  \
+        rewriter, loc, rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal)
+
 // ****************************************************************************
 // AggAllOp templates
 // ****************************************************************************
 
+/**
+ * @brief template for lowering fully aggregating functions.
+ * Aggregation is initialized with the first value of the input MemRef.
+ * A Linalg GenericOp then iterates over the remainder of the first row
+ * and the remaining (n-1) x m matrix. The next element as well as the
+ * running aggregation result are mapped using the corresponding SI/UI/FOp
+ * to update the result.
+ *
+ * @param AggOp The target operation this pass aims to rewrite.
+ * @param SIOp The binary operation applied along the axis for signed integers.
+ * @param UIOp The binary operation applied along the axis for unsigned integers.
+ * @param FOp The binary operation applied along the axis for floating point values.
+ */
 template <typename AggOp, typename SIOp, typename UIOp, typename FOp>
 class AggAllOpLowering : public OpConversionPattern<AggOp> {
   public:
@@ -68,7 +85,6 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
     LogicalResult matchAndRewrite(AggOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
         daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
-        // Pass currently only handles Dense Matrix
         if (!matrixType) {
             return failure();
         }
@@ -79,14 +95,14 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
 
         if (numRows < 0 || numCols < 0) {
             return rewriter.notifyMatchFailure(
-                op, "aggAll codegen currently can not handle matrix dimensions that are not known at compile time");
+                op, "aggAllOp codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         Type matrixElementType = matrixType.getElementType();
-        auto memRefType = MemRefType::get({numRows, numCols}, matrixElementType);
+        MemRefType memRefType = MemRefType::get({numRows, numCols}, matrixElementType);
         auto argMemRef = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, memRefType, adaptor.getArg());
 
-        // Create a single element Memref to store the running sum in.
+        // Create a singleton Memref to store the running sum in.
         // This is necessary because Linalg only accepts shaped variadics.
         // Store first elem of argMemRef into accumulator and then iterate over remainder.
         Value accumulator = rewriter.create<memref::AllocaOp>(loc, MemRefType::get({1}, matrixElementType));
@@ -113,15 +129,13 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
             loc, TypeRange{}, ValueRange{firstRow}, ValueRange{accumulator}, indexMap, iterTypes,
             [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
                 Value currentElem = OpBuilderNested.create<memref::LoadOp>(
-                    loc, accumulator, ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0)});
+                    locNested, accumulator, ValueRange{OpBuilderNested.create<arith::ConstantIndexOp>(locNested, 0)});
                 Value nextElem = arg[0];
                 Value runningAgg;
 
                 if (llvm::isa<IntegerType>(matrixElementType)) {
-                    currentElem = this->typeConverter->materializeTargetConversion(
-                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), currentElem);
-                    nextElem = this->typeConverter->materializeTargetConversion(
-                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), nextElem);
+                    currentElem = convToSignlessInt(OpBuilderNested, locNested, currentElem, matrixElementType);
+                    nextElem = convToSignlessInt(OpBuilderNested, locNested, nextElem, matrixElementType);
                 }
 
                 if (matrixElementType.isSignedInteger()) {
@@ -133,8 +147,8 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
                 }
 
                 if (llvm::isa<IntegerType>(matrixElementType)) {
-                    runningAgg =
-                        this->typeConverter->materializeTargetConversion(rewriter, loc, matrixElementType, runningAgg);
+                    runningAgg = this->typeConverter->materializeTargetConversion(OpBuilderNested, locNested,
+                                                                                  matrixElementType, runningAgg);
                 }
 
                 OpBuilderNested.create<linalg::YieldOp>(locNested, runningAgg);
@@ -151,15 +165,13 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
             loc, TypeRange{}, ValueRange{remainder}, ValueRange{accumulator}, indexMap, iterTypes,
             [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
                 Value currentElem = OpBuilderNested.create<memref::LoadOp>(
-                    loc, accumulator, ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0)});
+                    locNested, accumulator, ValueRange{OpBuilderNested.create<arith::ConstantIndexOp>(locNested, 0)});
                 Value nextElem = arg[0];
                 Value runningAgg;
 
                 if (llvm::isa<IntegerType>(matrixElementType)) {
-                    currentElem = this->typeConverter->materializeTargetConversion(
-                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), currentElem);
-                    nextElem = this->typeConverter->materializeTargetConversion(
-                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), nextElem);
+                    currentElem = convToSignlessInt(OpBuilderNested, locNested, currentElem, matrixElementType);
+                    nextElem = convToSignlessInt(OpBuilderNested, locNested, nextElem, matrixElementType);
                 }
 
                 if (matrixElementType.isSignedInteger()) {
@@ -171,8 +183,8 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
                 }
 
                 if (llvm::isa<IntegerType>(matrixElementType)) {
-                    runningAgg =
-                        this->typeConverter->materializeTargetConversion(rewriter, loc, matrixElementType, runningAgg);
+                    runningAgg = this->typeConverter->materializeTargetConversion(OpBuilderNested, locNested,
+                                                                                  matrixElementType, runningAgg);
                 }
 
                 OpBuilderNested.create<linalg::YieldOp>(locNested, runningAgg);
@@ -195,9 +207,9 @@ using MaxAllOpLowering = AggAllOpLowering<daphne::AllAggMaxOp, arith::MaxSIOp, a
 
 namespace {
 /**
- * @brief Lowers the daphne::AggAll operator to a Linalg GenericOp
+ * @brief Lowers the daphne::AllAgg operator to a Linalg GenericOp
  * which iterates over a MemRef that is created from the input DenseMatrix
- * and uses a single element Memref to store the aggregation result.
+ * and uses a singleton MemRef to store the aggregation result.
  *
  * This rewrite may enable loop fusion of the GenericOp or lowered Affine
  * loops using the loop fusion pass.
@@ -207,7 +219,7 @@ struct AggAllLoweringPass : public PassWrapper<AggAllLoweringPass, OperationPass
 
     StringRef getArgument() const final { return "lower-agg"; }
     StringRef getDescription() const final {
-        return "Lowers AggAll operators to a Linalg GenericOp and performs "
+        return "Lowers AllAgg* operators to a Linalg GenericOp and performs "
                "the aggregation on a MemRef which is created from the input "
                "DenseMatrix.";
     }

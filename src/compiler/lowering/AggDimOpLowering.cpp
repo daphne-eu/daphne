@@ -56,6 +56,10 @@
 
 using namespace mlir;
 
+#define convToSignlessInt(rewriter, loc, origVal, targetType)                                                          \
+    this->typeConverter->materializeTargetConversion(                                                                  \
+        rewriter, loc, rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal)
+
 static constexpr size_t ROW = 0;
 static constexpr size_t COL = 1;
 
@@ -64,17 +68,18 @@ static constexpr size_t COL = 1;
 // ****************************************************************************
 
 /**
- * @brief template for lowering aggregate functions along a dimension.
+ * @brief template for lowering partial aggregate functions along a dimension.
  * Aggregation is initialized with the values along the 1st row or column
- * of the input MemRef. Afterwards, the next element along the row/column
- * is loaded, the corresponding Op is applied to this element and the last
- * result (or initial value) and their result is stored.
+ * of the input MemRef. Afterwards, the next element along a row/column
+ * is loaded, the corresponding binary UI/SI/F Op is applied to this element
+ * and the running aggregation result in the corresponding row/column and
+ * their result is stored again.
  *
  * @param AggOp The target operation this pass aims to rewrite.
  * @param SIOp The binary operation applied along the axis for signed integers.
  * @param UIOp The binary operation applied along the axis for unsigned integers.
  * @param FOp The binary operation applied along the axis for floating point values.
- * @param aggAlongDim `0` (row) or `1` (col) to specify the axis along
+ * @param aggAlongDim `0` (ROW) or `1` (COL) to specify the axis along
  * which to aggregate. If the pass aggregates along a row, all columns are
  * collapsed and vice versa.
  */
@@ -90,7 +95,6 @@ class AggDimOpLowering : public OpConversionPattern<AggOp> {
     LogicalResult matchAndRewrite(AggOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
         daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
-        // Pass currently only handles Dense Matrix
         if (!matrixType) {
             return failure();
         }
@@ -98,6 +102,11 @@ class AggDimOpLowering : public OpConversionPattern<AggOp> {
         Location loc = op->getLoc();
         ssize_t numRows = matrixType.getNumRows();
         ssize_t numCols = matrixType.getNumCols();
+
+        if (numRows < 0 || numCols < 0) {
+            return rewriter.notifyMatchFailure(
+                op, "aggDimOp codegen currently only works with matrix dimensions that are known at compile time");
+        }
 
         Type matrixElementType = matrixType.getElementType();
         MemRefType argMemRefType = MemRefType::get({numRows, numCols}, matrixElementType);
@@ -158,36 +167,26 @@ class AggDimOpLowering : public OpConversionPattern<AggOp> {
         rewriter.create<linalg::GenericOp>(
             loc, TypeRange{}, ValueRange{remainderValues}, ValueRange{resMemRef}, remainderIndexMaps,
             remainderIterTypes, [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
-                auto resIndex = aggAlongDim == ROW
-                                    ? ValueRange{OpBuilderNested.create<linalg::IndexOp>(locNested, 0),
-                                                 OpBuilderNested.create<arith::ConstantIndexOp>(locNested, 0)}
-                                    : ValueRange{OpBuilderNested.create<arith::ConstantIndexOp>(locNested, 0),
-                                                 OpBuilderNested.create<linalg::IndexOp>(locNested, 1)};
-                Value storedElem = OpBuilderNested.create<memref::LoadOp>(loc, resMemRef, resIndex);
-                // Some Ops require a signless integer input.
-                // Since memref::CastOp does not support conversions like e.g. `memref<2x1xi64> -> memref<2x1xsi64>`
-                // the stored element and currentElem needs to be cast before IOp and again before it is stored
-                // again.
+                ValueRange resIndex = aggAlongDim == ROW
+                                          ? ValueRange{OpBuilderNested.create<linalg::IndexOp>(locNested, 0),
+                                                       OpBuilderNested.create<arith::ConstantIndexOp>(locNested, 0)}
+                                          : ValueRange{OpBuilderNested.create<arith::ConstantIndexOp>(locNested, 0),
+                                                       OpBuilderNested.create<linalg::IndexOp>(locNested, 1)};
+                Value storedElem = OpBuilderNested.create<memref::LoadOp>(locNested, resMemRef, resIndex);
+                Value currentElem = arg[0];
+
                 if (llvm::isa<IntegerType>(matrixElementType)) {
-                    Value currentElem = this->typeConverter->materializeTargetConversion(
-                        OpBuilderNested, locNested,
-                        OpBuilderNested.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), ValueRange{arg[0]});
+                    currentElem = convToSignlessInt(OpBuilderNested, locNested, currentElem, matrixElementType);
+                    storedElem = convToSignlessInt(OpBuilderNested, locNested, storedElem, matrixElementType);
 
-                    storedElem = this->typeConverter->materializeTargetConversion(
-                        OpBuilderNested, locNested,
-                        OpBuilderNested.getIntegerType(matrixElementType.getIntOrFloatBitWidth()),
-                        ValueRange{storedElem});
+                    storedElem = matrixElementType.isSignedInteger()
+                                     ? OpBuilderNested.create<SIOp>(locNested, storedElem, currentElem).getResult()
+                                     : OpBuilderNested.create<UIOp>(locNested, storedElem, currentElem).getResult();
 
-                    if (matrixElementType.isSignedInteger()) {
-                        storedElem = OpBuilderNested.create<SIOp>(locNested, storedElem, currentElem).getResult();
-                    } else {
-                        storedElem = OpBuilderNested.create<UIOp>(locNested, storedElem, currentElem).getResult();
-                    }
-
-                    storedElem = this->typeConverter->materializeTargetConversion(
-                        OpBuilderNested, locNested, matrixElementType, ValueRange{storedElem});
+                    storedElem = this->typeConverter->materializeTargetConversion(OpBuilderNested, locNested,
+                                                                                  matrixElementType, storedElem);
                 } else {
-                    storedElem = OpBuilderNested.create<FOp>(locNested, storedElem, arg[0]).getResult();
+                    storedElem = OpBuilderNested.create<FOp>(locNested, storedElem, currentElem).getResult();
                 }
                 OpBuilderNested.create<linalg::YieldOp>(locNested, storedElem);
             });
@@ -201,16 +200,19 @@ class AggDimOpLowering : public OpConversionPattern<AggOp> {
 };
 
 /**
- * @brief template for lowering aggregate functions along a dimension
+ * @brief template for lowering partial aggregate functions along a dimension
  * that return an index.
- * Aggregation is initialized with zeros. Afterwards, the next element
- * along the row/column is loaded, the corresponding Op is applied to this
- * element and the element at the last stored index (or initial value)
- * and the index of the result is stored.
+ * The result is initialized with zeros. During iteration, the next element
+ * along the row/column as well as the element the current result index points
+ * to are loaded and the passed binary `AggOp` is applied to them. If MaxIdx
+ * is `true`, the index of the greater (or equal) value is stored in the
+ * corresponding row/column. If a row/column contain multiple values equal
+ * to the max/min value, returns the index of the first one.
  *
  * @param AggOp The target operation this pass aims to rewrite.
- * @param MaxIdx ...
- * @param aggAlongDim `0` (row) or `1` (col) to specify the axis along
+ * @param MaxIdx Bool to determine whether to take the maximum (true) or
+ * minimum (false) along the specified dimension.
+ * @param aggAlongDim `0` (ROW) or `1` (COL) to specify the axis along
  * which to aggregate. If the pass aggregates along a row, all columns are
  * collapsed and vice versa.
  */
@@ -227,7 +229,6 @@ class AggDimIdxOpLowering : public OpConversionPattern<AggOp> {
     LogicalResult matchAndRewrite(AggOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
         daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
-        // Pass currently only handles Dense Matrix
         if (!matrixType) {
             return failure();
         }
@@ -238,7 +239,7 @@ class AggDimIdxOpLowering : public OpConversionPattern<AggOp> {
 
         if (numRows < 0 || numCols < 0) {
             return rewriter.notifyMatchFailure(
-                op, "aggAll codegen currently can not handle matrix dimensions that are not known at compile time");
+                op, "aggDimOp codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         Type matrixElementType = matrixType.getElementType();
@@ -275,8 +276,8 @@ class AggDimIdxOpLowering : public OpConversionPattern<AggOp> {
                                            : ValueRange{innerLoop.getInductionVar(), outerLoop.getInductionVar()};
                 Value cmpVal = rewriter.create<AffineLoadOp>(loc, argMemRef, cmpValIdx);
 
-                // Determines whether or not to update resMemRef
                 Value cmpResBool;
+                Value currentResVal = innerLoop.getRegionIterArgs()[1];
                 if (llvm::isa<IntegerType>(matrixElementType)) {
                     arith::CmpIPredicate cmpFunc;
                     if (matrixElementType.isSignedInteger()) {
@@ -284,15 +285,11 @@ class AggDimIdxOpLowering : public OpConversionPattern<AggOp> {
                     } else {
                         cmpFunc = MaxIdx ? arith::CmpIPredicate::uge : arith::CmpIPredicate::ule;
                     }
-                    currentResVal = this->typeConverter->materializeTargetConversion(
-                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()),
-                        innerLoop.getRegionIterArgs()[1]);
-                    cmpVal = this->typeConverter->materializeTargetConversion(
-                        rewriter, loc, rewriter.getIntegerType(matrixElementType.getIntOrFloatBitWidth()), cmpVal);
+                    currentResVal = convToSignlessInt(rewriter, loc, currentResVal, matrixElementType);
+                    cmpVal = convToSignlessInt(rewriter, loc, cmpVal, matrixElementType);
                     cmpResBool = rewriter.create<arith::CmpIOp>(loc, cmpFunc, currentResVal, cmpVal);
                 } else {
                     arith::CmpFPredicate cmpFunc = MaxIdx ? arith::CmpFPredicate::OGE : arith::CmpFPredicate::OLE;
-                    currentResVal = innerLoop.getRegionIterArgs()[1];
                     cmpResBool = rewriter.create<arith::CmpFOp>(loc, cmpFunc, currentResVal, cmpVal);
                 }
 
@@ -336,7 +333,6 @@ using MinColOpLowering = AggDimOpLowering<daphne::ColAggMinOp, arith::MinSIOp, a
 using MaxRowOpLowering = AggDimOpLowering<daphne::RowAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp, ROW>;
 using MaxColOpLowering = AggDimOpLowering<daphne::ColAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp, COL>;
 
-// index dialect - indexMaxOp ?
 using ArgMinRowOpLowering = AggDimIdxOpLowering<daphne::RowAggIdxMinOp, false, ROW>;
 using ArgMinColOpLowering = AggDimIdxOpLowering<daphne::ColAggIdxMinOp, false, COL>;
 using ArgMaxRowOpLowering = AggDimIdxOpLowering<daphne::RowAggIdxMaxOp, true, ROW>;
@@ -344,9 +340,9 @@ using ArgMaxColOpLowering = AggDimIdxOpLowering<daphne::ColAggIdxMaxOp, true, CO
 
 namespace {
 /**
- * @brief Lowers the daphne::AggRow and daphne::AggCol operator to a Linalg GenericOp
+ * @brief Lowers the daphne::RowAgg* and daphne::ColAgg* operator to a Linalg GenericOp
  * or Affine ForOp Nest which iterates over a MemRef that is created from the input DenseMatrix
- * and uses a single element Memref to store the aggregation result.
+ * and uses a (2 dim) single row/column Memref to store the aggregation results.
  *
  * This rewrite may enable loop fusion of the GenericOp or lowered Affine
  * loops using the loop fusion pass.
@@ -356,9 +352,9 @@ struct AggDimLoweringPass : public PassWrapper<AggDimLoweringPass, OperationPass
 
     StringRef getArgument() const final { return "lower-agg-dim"; }
     StringRef getDescription() const final {
-        return "Lowers AggDim operators to a set of affine loops and performs "
-               "the aggregation on a MemRef which is created from the input "
-               "DenseMatrix.";
+        return "Lowers *Agg operators to a Linalg Generic Op or a "
+               "set of affine loops and performs the aggregation on "
+               "a MemRef which is created from the input DenseMatrix.";
     }
 
     void getDependentDialects(DialectRegistry &registry) const override {
@@ -383,7 +379,7 @@ void AggDimLoweringPass::runOnOperation() {
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
     target.addLegalDialect<AffineDialect, arith::ArithDialect, BuiltinDialect, daphne::DaphneDialect,
-                           linalg::LinalgDialect, LLVM::LLVMDialect, memref::MemRefDialect, scf::SCFDialect>();
+                           linalg::LinalgDialect, LLVM::LLVMDialect, memref::MemRefDialect>();
 
     target.addIllegalOp<daphne::RowAggSumOp, daphne::ColAggSumOp, daphne::RowAggMinOp, daphne::ColAggMinOp,
                         daphne::RowAggMaxOp, daphne::ColAggMaxOp, daphne::RowAggIdxMinOp, daphne::ColAggIdxMinOp,

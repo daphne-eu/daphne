@@ -1,4 +1,4 @@
-// Compare precompiled kernel with codegen generated for the AggAllOp.
+// Compare precompiled kernel with codegen generated for the *AggIdxMaxOp.
 
 // Row
 X = [1.0, 2, 1, 6, 1, 4](2, 3);
