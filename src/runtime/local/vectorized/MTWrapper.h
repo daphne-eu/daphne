@@ -189,7 +189,7 @@ template <typename DT> class MTWrapperBase {
         if (ctx->config.numberOfThreads > 0)
             _numCPPThreads = ctx->config.numberOfThreads;
         else
-            _numCPPThreads = std::thread::hardware_concurrency();
+            _numCPPThreads = topologyPhysicalIds.size();
 
         if (_ctx->getUserConfig().queueSetupScheme != CENTRALIZED)
             _numCPPThreads = topologyUniqueThreads.size();
