@@ -51,9 +51,7 @@ template <typename DT> class MTWrapperBase {
     size_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
-    int _queueMode;
-    // _queueMode 0: Centralized queue for all workers, 1: One queue for every
-    // physical ID (socket), 2: One queue per CPU
+    QueueTypeOption _queueMode;
     int _numQueues;
     int _stealLogic;
     int _totalNumaDomains;
@@ -120,7 +118,8 @@ template <typename DT> class MTWrapperBase {
     }
 
     void initCPPWorkers(std::vector<TaskQueue *> &qvector, uint32_t batchSize, const bool verbose = false,
-                        int numQueues = 0, int queueMode = 0, bool pinWorkers = false) {
+                        int numQueues = 0, QueueTypeOption queueMode = QueueTypeOption::CENTRALIZED,
+                        bool pinWorkers = false) {
         cpp_workers.resize(_numCPPThreads);
         if (numQueues == 0) {
             throw std::runtime_error("MTWrapper::initCPPWorkers: numQueues is "
@@ -205,7 +204,7 @@ template <typename DT> class MTWrapperBase {
         if (ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
 
-        _queueMode = 0;
+        _queueMode = QueueTypeOption::CENTRALIZED;
         _numQueues = 1;
         _stealLogic = _ctx->getUserConfig().victimSelection;
         if (std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled)
@@ -214,10 +213,10 @@ template <typename DT> class MTWrapperBase {
         _totalNumaDomains = std::set<double>(topologyPhysicalIds.begin(), topologyPhysicalIds.end()).size();
 
         if (_ctx->getUserConfig().queueSetupScheme == PERGROUP) {
-            _queueMode = 1;
+            _queueMode = QueueTypeOption::PERGROUP;
             _numQueues = _totalNumaDomains;
         } else if (_ctx->getUserConfig().queueSetupScheme == PERCPU) {
-            _queueMode = 2;
+            _queueMode = QueueTypeOption::PERCPU;
             _numQueues = _numCPPThreads;
         }
 
