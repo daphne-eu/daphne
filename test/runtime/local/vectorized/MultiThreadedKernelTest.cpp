@@ -42,7 +42,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     using DT = TestType;
     using VT = typename DT::VT;
     auto dctx = setupContextAndLogger();
-    dctx->config.taskPartitioningScheme = GSS;
+    dctx->config.taskPartitioningScheme = SelfSchedulingScheme::GSS;
     dctx->config.minimumTaskSize = 50;
 
     DT *m1 = nullptr, *m2 = nullptr;

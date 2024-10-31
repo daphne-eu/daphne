@@ -68,7 +68,7 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(
     uint64_t endChunk = 0;
     uint64_t currentItr = 0;
     uint64_t target;
-    int method = ctx->config.taskPartitioningScheme;
+    SelfSchedulingScheme schedulingScheme = ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if (chunkParam <= 0)
         chunkParam = 1;
@@ -76,9 +76,9 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(
         uint64_t oneChunk = len / this->_numQueues;
         int remainder = len - (oneChunk * this->_numQueues);
         std::vector<LoadPartitioning> lps;
-        lps.emplace_back(method, oneChunk + remainder, chunkParam, this->_numThreads, false);
+        lps.emplace_back(schedulingScheme, oneChunk + remainder, chunkParam, this->_numThreads, false);
         for (int i = 1; i < this->_numQueues; i++) {
-            lps.emplace_back(method, oneChunk, chunkParam, this->_numThreads, false);
+            lps.emplace_back(schedulingScheme, oneChunk, chunkParam, this->_numThreads, false);
         }
         if (ctx->getUserConfig().pinWorkers) {
             for (int i = 0; i < this->_numQueues; i++) {
@@ -109,10 +109,10 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(
         }
     } else {
         bool autoChunk = false;
-        if (method == AUTO)
+        if (schedulingScheme == SelfSchedulingScheme::AUTO)
             autoChunk = true;
 
-        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, autoChunk);
+        LoadPartitioning lp(schedulingScheme, len, chunkParam, this->_numThreads, autoChunk);
         if (ctx->getUserConfig().pinWorkers) {
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
