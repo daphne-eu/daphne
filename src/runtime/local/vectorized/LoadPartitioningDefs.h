@@ -16,23 +16,23 @@
 
 #pragma once
 
-enum QueueTypeOption { CENTRALIZED = 0, PERGROUP, PERCPU };
+enum class QueueTypeOption { CENTRALIZED, PERGROUP, PERCPU };
 
-enum VictimSelectionLogic { SEQ = 0, SEQPRI, RANDOM, RANDOMPRI };
+enum class VictimSelectionLogic { SEQ, SEQPRI, RANDOM, RANDOMPRI };
 
-enum SelfSchedulingScheme {
-    STATIC = 0,
-    SS,
-    GSS,
-    TSS,
-    FAC2,
-    TFSS,
-    FISS,
-    VISS,
-    PLS,
+enum class SelfSchedulingScheme {
+    INVALID = -1,
+    STATIC,
+    SS,   // self-scheduling
+    GSS,  // guided self-scheduling
+    TSS,  // trapezoid self-scheduling
+    FAC2, // factoring
+    TFSS, // trapezoid factoring self-scheduling (TFSS)
+    FISS, // fixed increase self-scheduling
+    VISS, // variable increase self-scheduling
+    PLS,  // performance-based loop self-scheduling
+    PSS,  // probabilistic self-scheduling
     MSTATIC,
-    MFSC,
-    PSS,
+    MFSC, // modifed fixed-size chunk self-scheduling
     AUTO,
-    INVALID = -1 /* only for JSON enum conversion */
 };
