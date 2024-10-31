@@ -145,6 +145,7 @@ class LoadPartitioning {
             chunkSize = mfscChunk;
             break;
         }
+        case SelfSchedulingScheme::MSTATIC:
         default: {
             chunkSize = (uint64_t)ceil(totalTasks / totalWorkers / 4.0);
             break;
