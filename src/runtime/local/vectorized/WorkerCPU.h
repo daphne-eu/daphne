@@ -31,7 +31,7 @@ class WorkerCPU : public Worker {
     uint32_t _batchSize;
     int _threadID;
     int _numQueues;
-    int _queueMode;
+    QueueTypeOption _queueMode;
     int _stealLogic;
     bool _pinWorkers;
 
@@ -39,7 +39,7 @@ class WorkerCPU : public Worker {
     // ToDo: remove compile-time verbose parameter and use logger
     WorkerCPU(std::vector<TaskQueue *> deques, std::vector<int> physical_ids, std::vector<int> unique_threads,
               DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
-              int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0)
+              QueueTypeOption queueMode = QueueTypeOption::CENTRALIZED, int stealLogic = 0, bool pinWorkers = 0)
         : Worker(dctx), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads), _verbose(verbose),
           _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode),
           _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
@@ -60,11 +60,11 @@ class WorkerCPU : public Worker {
 
         int currentDomain = _physical_ids[_threadID];
         int targetQueue = _threadID;
-        if (_queueMode == 0) {
+        if (_queueMode == QueueTypeOption::CENTRALIZED) {
             targetQueue = 0;
-        } else if (_queueMode == 1) {
+        } else if (_queueMode == QueueTypeOption::PERGROUP) {
             targetQueue = currentDomain;
-        } else if (_queueMode == 2) {
+        } else if (_queueMode == QueueTypeOption::PERCPU) {
             targetQueue = _threadID;
         } else {
             ctx->logger->error("WorkerCPU: queue not found");
@@ -103,7 +103,7 @@ class WorkerCPU : public Worker {
                 }
             } else if (_stealLogic == 1) {
                 // Stealing in sequential order from same domain first
-                if (_queueMode == 2) {
+                if (_queueMode == QueueTypeOption::PERCPU) {
                     targetQueue = (targetQueue + 1) % _numQueues;
 
                     while (targetQueue != startingQueue) {
@@ -163,7 +163,7 @@ class WorkerCPU : public Worker {
                         queuesThisDomain++;
                     }
                 }
-                if (_queueMode == 2) {
+                if (_queueMode == QueueTypeOption::PERCPU) {
                     while (std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < queuesThisDomain) {
                         targetQueue = rand() % _numQueues;
                         if (_physical_ids[targetQueue] == currentDomain) {

@@ -37,7 +37,7 @@ template <typename VT>
 
     std::vector<TaskQueue *> tmp_q{q.get()};
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(tmp_q, batchSize8M, verbose, 1, 0, false);
+    this->initCPPWorkers(tmp_q, batchSize8M, verbose, 1, QueueTypeOption::CENTRALIZED, false);
 
 #ifdef USE_CUDA
     if (this->_numCUDAThreads) {
