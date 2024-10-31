@@ -26,7 +26,7 @@
 class LoadPartitioning {
 
   private:
-    int schedulingMethod;
+    SelfSchedulingScheme schedulingMethod;
     uint64_t totalTasks;
     uint64_t chunkParam;
     uint64_t scheduledTasks;
@@ -52,7 +52,7 @@ class LoadPartitioning {
     }
 
   public:
-    LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autoChunk) {
+    LoadPartitioning(SelfSchedulingScheme method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autoChunk) {
         schedulingMethod = method;
         totalTasks = tasks;
         double tSize = (totalTasks + workers - 1.0) / workers;
@@ -64,7 +64,7 @@ class LoadPartitioning {
             // calculate expertChunk
             int mul = log2(totalTasks / workers) * 0.618;
             chunkParam = (totalTasks) / ((2 << mul) * workers);
-            method = SS;
+            method = SelfSchedulingScheme::SS;
             if (chunkParam < 1) {
                 chunkParam = 1;
             }
@@ -81,32 +81,32 @@ class LoadPartitioning {
     uint64_t getNextChunk() {
         uint64_t chunkSize = 0;
         switch (schedulingMethod) {
-        case STATIC: { // STATIC
+        case SelfSchedulingScheme::STATIC: {
             chunkSize = std::ceil(totalTasks / totalWorkers);
             break;
         }
-        case SS: { // self-scheduling (SS)
+        case SelfSchedulingScheme::SS: {
             chunkSize = 1;
             break;
         }
-        case GSS: { // guided self-scheduling (GSS)
+        case SelfSchedulingScheme::GSS: {
             chunkSize = (uint64_t)ceil((double)remainingTasks / totalWorkers);
             break;
         }
-        case TSS: { // trapezoid self-scheduling (TSS)
+        case SelfSchedulingScheme::TSS: {
             chunkSize = tssChunk - tssDelta * schedulingStep;
             break;
         }
-        case FAC2: {                                             // factoring (FAC2)
+        case SelfSchedulingScheme::FAC2: {
             uint64_t actualStep = schedulingStep / totalWorkers; // has to be an integer division
             chunkSize = (uint64_t)ceil(pow(0.5, actualStep + 1) * (totalTasks / totalWorkers));
             break;
         }
-        case TFSS: { // trapezoid factoring self-scheduling (TFSS)
+        case SelfSchedulingScheme::TFSS: {
             chunkSize = (uint64_t)ceil((double)remainingTasks / ((double)2.0 * totalWorkers));
             break;
         }
-        case FISS: { // fixed increase self-scheduling (FISS)
+        case SelfSchedulingScheme::FISS: {
             // TODO
             uint64_t X = fissStages + 2;
             uint64_t initChunk = (uint64_t)ceil(totalTasks / ((2.0 + fissStages) * totalWorkers));
@@ -116,14 +116,14 @@ class LoadPartitioning {
                                                              (fissStages - 1))); // chunksize with increment after init
             break;
         }
-        case VISS: { // variable increase self-scheduling (VISS)
+        case SelfSchedulingScheme::VISS: {
             // TODO
             uint64_t schedulingStepnew = schedulingStep / totalWorkers;
             uint64_t initChunk = (uint64_t)ceil(totalTasks / ((2.0 + fissStages) * totalWorkers));
             chunkSize = initChunk * (uint64_t)ceil((double)(1 - pow(0.5, schedulingStepnew)) / 0.5);
             break;
         }
-        case PLS: { // performance-based loop self-scheduling (PLS)
+        case SelfSchedulingScheme::PLS: {
             // TODO
             double SWR = 0.5; // static workload ratio
             if (remainingTasks > totalTasks - (totalTasks * SWR)) {
@@ -133,7 +133,7 @@ class LoadPartitioning {
             }
             break;
         }
-        case PSS: { // probabilistic self-scheduling (PSS)
+        case SelfSchedulingScheme::PSS: { // probabilistic self-scheduling (PSS)
             // E[P] is the average number of idle processor, for now we use
             // still totalWorkers
             double averageIdleProc = (double)totalWorkers;
@@ -141,7 +141,7 @@ class LoadPartitioning {
             // TODO
             break;
         }
-        case MFSC: { // modifed fixed-size chunk self-scheduling (MFSC)
+        case SelfSchedulingScheme::MFSC: { // modifed fixed-size chunk self-scheduling (MFSC)
             chunkSize = mfscChunk;
             break;
         }

@@ -32,17 +32,18 @@ class WorkerCPU : public Worker {
     int _threadID;
     int _numQueues;
     QueueTypeOption _queueMode;
-    int _stealLogic;
+    VictimSelectionLogic _victimSelection;
     bool _pinWorkers;
 
   public:
     // ToDo: remove compile-time verbose parameter and use logger
     WorkerCPU(std::vector<TaskQueue *> deques, std::vector<int> physical_ids, std::vector<int> unique_threads,
               DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
-              QueueTypeOption queueMode = QueueTypeOption::CENTRALIZED, int stealLogic = 0, bool pinWorkers = 0)
+              QueueTypeOption queueMode = QueueTypeOption::CENTRALIZED,
+              VictimSelectionLogic victimSelection = VictimSelectionLogic::SEQ, bool pinWorkers = 0)
         : Worker(dctx), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads), _verbose(verbose),
           _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode),
-          _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
+          _victimSelection(victimSelection), _pinWorkers(pinWorkers) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPU::run, this);
     }
@@ -87,7 +88,7 @@ class WorkerCPU : public Worker {
         // queues.
 
         if (_numQueues > 1) {
-            if (_stealLogic == 0) {
+            if (_victimSelection == VictimSelectionLogic::SEQ) {
                 // Stealing in sequential order
 
                 targetQueue = (targetQueue + 1) % _numQueues;
@@ -101,7 +102,7 @@ class WorkerCPU : public Worker {
                         delete t;
                     }
                 }
-            } else if (_stealLogic == 1) {
+            } else if (_victimSelection == VictimSelectionLogic::SEQPRI) {
                 // Stealing in sequential order from same domain first
                 if (_queueMode == QueueTypeOption::PERCPU) {
                     targetQueue = (targetQueue + 1) % _numQueues;
@@ -134,7 +135,7 @@ class WorkerCPU : public Worker {
                         delete t;
                     }
                 }
-            } else if (_stealLogic == 2) {
+            } else if (_victimSelection == VictimSelectionLogic::RANDOM) {
                 // stealing from random workers until all workers EOF
 
                 eofWorkers.fill(false);
@@ -153,7 +154,7 @@ class WorkerCPU : public Worker {
                     }
                 }
 
-            } else if (_stealLogic == 3) {
+            } else if (_victimSelection == VictimSelectionLogic::RANDOMPRI) {
                 // stealing from random workers from same socket first
                 int queuesThisDomain = 0;
                 eofWorkers.fill(false);

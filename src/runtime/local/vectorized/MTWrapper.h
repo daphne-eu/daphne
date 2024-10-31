@@ -53,7 +53,7 @@ template <typename DT> class MTWrapperBase {
     uint32_t _numCUDAThreads{};
     QueueTypeOption _queueMode;
     int _numQueues;
-    int _stealLogic;
+    VictimSelectionLogic _victimSelection;
     int _totalNumaDomains;
     DCTX(_ctx);
 
@@ -85,16 +85,19 @@ template <typename DT> class MTWrapperBase {
                 uniqueThreads.push_back(obj->children[i]->os_index);
 
             switch (_ctx->getUserConfig().queueSetupScheme) {
-            case CENTRALIZED: {
+            case QueueTypeOption::CENTRALIZED: {
                 responsibleThreads.push_back(0);
-            } break;
-            case PERGROUP: {
+                break;
+            }
+            case QueueTypeOption::PERGROUP: {
                 if (responsibleThreads.size() == parent_package_id)
                     responsibleThreads.push_back(obj->children[0]->os_index);
-            } break;
-            case PERCPU: {
+                break;
+            }
+            case QueueTypeOption::PERCPU: {
                 responsibleThreads.push_back(obj->os_index);
-            } break;
+                break;
+            }
             }
         }
     }
@@ -129,7 +132,7 @@ template <typename DT> class MTWrapperBase {
         int i = 0;
         for (auto &w : cpp_workers) {
             w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, _ctx, verbose, 0,
-                                            batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
+                                            batchSize, i, numQueues, queueMode, this->_victimSelection, pinWorkers);
             i++;
         }
     }
@@ -190,7 +193,7 @@ template <typename DT> class MTWrapperBase {
         else
             _numCPPThreads = topologyPhysicalIds.size();
 
-        if (_ctx->getUserConfig().queueSetupScheme != CENTRALIZED)
+        if (_ctx->getUserConfig().queueSetupScheme != QueueTypeOption::CENTRALIZED)
             _numCPPThreads = topologyUniqueThreads.size();
 
         // If the available CPUs from Slurm is less than the configured num
@@ -206,16 +209,16 @@ template <typename DT> class MTWrapperBase {
 
         _queueMode = QueueTypeOption::CENTRALIZED;
         _numQueues = 1;
-        _stealLogic = _ctx->getUserConfig().victimSelection;
+        _victimSelection = _ctx->getUserConfig().victimSelection;
         if (std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled)
             topologyUniqueThreads.resize(_numCPPThreads);
         _numThreads = _numCPPThreads + _numCUDAThreads;
         _totalNumaDomains = std::set<double>(topologyPhysicalIds.begin(), topologyPhysicalIds.end()).size();
 
-        if (_ctx->getUserConfig().queueSetupScheme == PERGROUP) {
+        if (_ctx->getUserConfig().queueSetupScheme == QueueTypeOption::PERGROUP) {
             _queueMode = QueueTypeOption::PERGROUP;
             _numQueues = _totalNumaDomains;
-        } else if (_ctx->getUserConfig().queueSetupScheme == PERCPU) {
+        } else if (_ctx->getUserConfig().queueSetupScheme == QueueTypeOption::PERCPU) {
             _queueMode = QueueTypeOption::PERCPU;
             _numQueues = _numCPPThreads;
         }
