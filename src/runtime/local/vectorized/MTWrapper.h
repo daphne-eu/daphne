@@ -20,16 +20,20 @@
 #include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #endif
 
+#include "PipelineHWlocInfo.h"
+
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/vectorized/LoadPartitioning.h>
 #include <runtime/local/vectorized/VectorizedDataSink.h>
 #include <runtime/local/vectorized/WorkerCPU.h>
 #include <runtime/local/vectorized/WorkerGPU.h>
 
+#include <spdlog/fmt/ranges.h>
 #include <spdlog/spdlog.h>
 
 #include <functional>
 #include <set>
+#include <utility>
 
 #include <hwloc.h>
 
@@ -42,9 +46,6 @@ template <typename DT> class MTWrapperBase {
   protected:
     std::vector<std::unique_ptr<Worker>> cuda_workers;
     std::vector<std::unique_ptr<Worker>> cpp_workers;
-    std::vector<int> topologyPhysicalIds;
-    std::vector<int> topologyUniqueThreads;
-    std::vector<int> topologyResponsibleThreads;
     size_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
@@ -52,6 +53,7 @@ template <typename DT> class MTWrapperBase {
     int _numQueues;
     VictimSelectionLogic _victimSelection;
     int _totalNumaDomains;
+    PipelineHWlocInfo _topology;
     DCTX(_ctx);
 
     std::pair<size_t, size_t> getInputProperties(Structure **inputs, size_t numInputs, VectorSplit *splits) {
@@ -68,55 +70,6 @@ template <typename DT> class MTWrapperBase {
         return std::make_pair(len, mem_required);
     }
 
-    void hwloc_recurse_topology(hwloc_topology_t topo, hwloc_obj_t obj, unsigned int parent_package_id,
-                                std::vector<int> &physicalIds, std::vector<int> &uniqueThreads,
-                                std::vector<int> &responsibleThreads) {
-        if (obj->type != HWLOC_OBJ_CORE) {
-            for (unsigned int i = 0; i < obj->arity; i++) {
-                hwloc_recurse_topology(topo, obj->children[i], parent_package_id, physicalIds, uniqueThreads,
-                                       responsibleThreads);
-            }
-        } else {
-            physicalIds.push_back(parent_package_id);
-            for (unsigned int i = 0; i < obj->arity; i++)
-                uniqueThreads.push_back(obj->children[i]->os_index);
-
-            switch (_ctx->getUserConfig().queueSetupScheme) {
-            case QueueTypeOption::CENTRALIZED: {
-                responsibleThreads.push_back(0);
-                break;
-            }
-            case QueueTypeOption::PERGROUP: {
-                if (responsibleThreads.size() == parent_package_id)
-                    responsibleThreads.push_back(obj->children[0]->os_index);
-                break;
-            }
-            case QueueTypeOption::PERCPU: {
-                responsibleThreads.push_back(obj->os_index);
-                break;
-            }
-            }
-        }
-    }
-
-    void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads,
-                      std::vector<int> &responsibleThreads) {
-        hwloc_topology_t topology = nullptr;
-
-        hwloc_topology_init(&topology);
-        hwloc_topology_load(topology);
-
-        hwloc_obj_t package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, nullptr);
-
-        while (package != nullptr) {
-            auto package_id = package->os_index;
-            hwloc_recurse_topology(topology, package, package_id, physicalIds, uniqueThreads, responsibleThreads);
-            package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, package);
-        }
-
-        hwloc_topology_destroy(topology);
-    }
-
     void initCPPWorkers(std::vector<TaskQueue *> &qvector, uint32_t batchSize, const bool verbose = false,
                         int numQueues = 0, QueueTypeOption queueMode = QueueTypeOption::CENTRALIZED,
                         bool pinWorkers = false) {
@@ -128,7 +81,9 @@ template <typename DT> class MTWrapperBase {
 
         int i = 0;
         for (auto &w : cpp_workers) {
-            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, _ctx, verbose, 0,
+            _ctx->logger->debug("creatign worker {} with topology {}, size={}", i, _topology.physicalIds,
+                                _topology.physicalIds.size());
+            w = std::make_unique<WorkerCPU>(qvector, _topology.physicalIds, _topology.uniqueThreads, _ctx, verbose, 0,
                                             batchSize, i, numQueues, queueMode, this->_victimSelection, pinWorkers);
             i++;
         }
@@ -181,17 +136,17 @@ template <typename DT> class MTWrapperBase {
     }
 
   public:
-    explicit MTWrapperBase(uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
+    explicit MTWrapperBase(uint32_t numFunctions, PipelineHWlocInfo topology, DCTX(ctx))
+        : _topology(std::move(topology)), _ctx(ctx) {
         _ctx->logger->debug("Querying cpu topology");
-        get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
 
         if (ctx->config.numberOfThreads > 0)
             _numCPPThreads = ctx->config.numberOfThreads;
         else
-            _numCPPThreads = topologyPhysicalIds.size();
+            _numCPPThreads = _topology.physicalIds.size();
 
         if (_ctx->getUserConfig().queueSetupScheme != QueueTypeOption::CENTRALIZED)
-            _numCPPThreads = topologyUniqueThreads.size();
+            _numCPPThreads = _topology.uniqueThreads.size();
 
         // If the available CPUs from Slurm is less than the configured num
         // threads, use the value from Slurm
@@ -207,10 +162,10 @@ template <typename DT> class MTWrapperBase {
         _queueMode = QueueTypeOption::CENTRALIZED;
         _numQueues = 1;
         _victimSelection = _ctx->getUserConfig().victimSelection;
-        if (std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled)
-            topologyUniqueThreads.resize(_numCPPThreads);
+        if (std::thread::hardware_concurrency() < _topology.uniqueThreads.size() && _ctx->config.hyperthreadingEnabled)
+            _topology.uniqueThreads.resize(_numCPPThreads);
         _numThreads = _numCPPThreads + _numCUDAThreads;
-        _totalNumaDomains = std::set<double>(topologyPhysicalIds.begin(), topologyPhysicalIds.end()).size();
+        _totalNumaDomains = std::set<double>(_topology.physicalIds.begin(), _topology.physicalIds.end()).size();
 
         if (_ctx->getUserConfig().queueSetupScheme == QueueTypeOption::PERGROUP) {
             _queueMode = QueueTypeOption::PERGROUP;
@@ -223,15 +178,15 @@ template <typename DT> class MTWrapperBase {
         // ToDo: use logger
         if (_ctx->config.debugMultiThreading) {
             std::cout << "topologyPhysicalIds:" << std::endl;
-            for (const auto &topologyEntry : topologyPhysicalIds) {
+            for (const auto &topologyEntry : _topology.physicalIds) {
                 std::cout << topologyEntry << ',';
             }
             std::cout << std::endl << "topologyUniqueThreads:" << std::endl;
-            for (const auto &topologyEntry : topologyUniqueThreads) {
+            for (const auto &topologyEntry : _topology.uniqueThreads) {
                 std::cout << topologyEntry << ',';
             }
             std::cout << std::endl << "topologyResponsibleThreads:" << std::endl;
-            for (const auto &topologyEntry : topologyResponsibleThreads) {
+            for (const auto &topologyEntry : _topology.responsibleThreads) {
                 std::cout << topologyEntry << ',';
             }
             std::cout << std::endl << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
@@ -250,7 +205,8 @@ template <typename VT> class MTWrapper<DenseMatrix<VT>> : public MTWrapperBase<D
   public:
     using PipelineFunc = void(DenseMatrix<VT> ***, Structure **, DCTX(ctx));
 
-    explicit MTWrapper(uint32_t numFunctions, DCTX(ctx)) : MTWrapperBase<DenseMatrix<VT>>(numFunctions, ctx) {}
+    explicit MTWrapper(uint32_t numFunctions, PipelineHWlocInfo topology, DCTX(ctx))
+        : MTWrapperBase<DenseMatrix<VT>>(numFunctions, topology, ctx) {}
 
     [[maybe_unused]] void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT> ***res,
                                              const bool *isScalar, Structure **inputs, size_t numInputs,
@@ -276,7 +232,8 @@ template <typename VT> class MTWrapper<CSRMatrix<VT>> : public MTWrapperBase<CSR
   public:
     using PipelineFunc = void(CSRMatrix<VT> ***, Structure **, DCTX(ctx));
 
-    explicit MTWrapper(uint32_t numFunctions, DCTX(ctx)) : MTWrapperBase<CSRMatrix<VT>>(numFunctions, ctx) {}
+    explicit MTWrapper(uint32_t numFunctions, PipelineHWlocInfo topology, DCTX(ctx))
+        : MTWrapperBase<CSRMatrix<VT>>(numFunctions, topology, ctx) {}
 
     [[maybe_unused]] void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT> ***res,
                                              const bool *isScalar, Structure **inputs, size_t numInputs,

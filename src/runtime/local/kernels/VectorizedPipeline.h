@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/vectorized/MTWrapper.h>
+#include <runtime/local/vectorized/PipelineHWlocInfo.h>
 
 #include <cstddef>
 
@@ -35,7 +36,8 @@ template <class DTRes> struct VectorizedPipeline {
     static void apply(DTRes **outputs, size_t numOutputs, bool *isScalar, Structure **inputs, size_t numInputs,
                       int64_t *outRows, int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs,
                       void **fun, DCTX(ctx)) {
-        auto wrapper = std::make_unique<MTWrapper<DTRes>>(numFuncs, ctx);
+        static PipelineHWlocInfo topology{ctx};
+        auto wrapper = std::make_unique<MTWrapper<DTRes>>(numFuncs, topology, ctx);
 
         std::vector<std::function<void(DTRes ***, Structure **, DCTX(ctx))>> funcs;
         for (auto i = 0ul; i < numFuncs; ++i) {

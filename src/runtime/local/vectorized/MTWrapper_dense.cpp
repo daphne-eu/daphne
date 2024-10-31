@@ -143,7 +143,7 @@ template <typename VT>
                                                     funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                                                     splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
                                                 resLock, res),
-                                            this->topologyResponsibleThreads[i]);
+                                            this->_topology.responsibleThreads[i]);
                     startChunk = endChunk;
                 }
             }
@@ -174,7 +174,7 @@ template <typename VT>
                                                      funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                                                      splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
                                                  resLock, res),
-                                             this->topologyUniqueThreads[target]);
+                                             this->_topology.uniqueThreads[target]);
                 startChunk = endChunk;
                 currentItr++;
             }

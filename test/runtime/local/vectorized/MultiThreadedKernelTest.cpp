@@ -53,7 +53,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2,
                             dctx.get()); // single-threaded
 
-    auto wrapper = std::make_unique<MTWrapper<DT>>(1, dctx.get());
+    static PipelineHWlocInfo topology{dctx->config.queueSetupScheme};
+    auto wrapper = std::make_unique<MTWrapper<DT>>(1, topology, dctx.get());
     DT **outputs[] = {&r2};
     bool isScalar[] = {false, false};
     Structure *inputs[] = {m1, m2};
@@ -90,7 +91,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES),
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2,
                             dctx.get()); // single-threaded
 
-    auto wrapper = std::make_unique<MTWrapper<DT>>(1, dctx.get());
+    static PipelineHWlocInfo topology{dctx->config.queueSetupScheme};
+    auto wrapper = std::make_unique<MTWrapper<DT>>(1, topology, dctx.get());
     DT **outputs[] = {&r2};
     bool isScalar[] = {false, false};
     Structure *inputs[] = {m1, m2};
@@ -127,7 +129,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES),
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2,
                             dctx.get()); // single-threaded
 
-    auto wrapper = std::make_unique<MTWrapper<DT>>(1, dctx.get());
+    static PipelineHWlocInfo topology{dctx->config.queueSetupScheme};
+    auto wrapper = std::make_unique<MTWrapper<DT>>(1, topology, dctx.get());
     DT **outputs[] = {&r2};
     bool isScalar[] = {false, false};
     Structure *inputs[] = {m1, m2};

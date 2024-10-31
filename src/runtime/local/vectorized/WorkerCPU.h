@@ -61,6 +61,8 @@ class WorkerCPU : public Worker {
         }
 
         int currentDomain = _physical_ids[_threadID];
+        ctx->logger->debug("Thread{}, _physical_ids.size()={}, capacity={}, currentDomain={}", _threadID,
+                           _physical_ids.size(), _physical_ids.capacity(), currentDomain);
         int targetQueue = _threadID;
         if (_queueMode == QueueTypeOption::CENTRALIZED) {
             targetQueue = 0;
