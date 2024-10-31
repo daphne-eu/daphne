@@ -28,14 +28,11 @@
 
 #include <spdlog/spdlog.h>
 
-#include <fstream>
 #include <functional>
-#include <queue>
 #include <set>
 
 #include <hwloc.h>
 
-// TODO use the wrapper to cache threads
 // TODO generalize for arbitrary inputs (not just binary)
 
 using mlir::daphne::VectorCombine;
@@ -104,14 +101,14 @@ template <typename DT> class MTWrapperBase {
 
     void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads,
                       std::vector<int> &responsibleThreads) {
-        hwloc_topology_t topology;
+        hwloc_topology_t topology = nullptr;
 
         hwloc_topology_init(&topology);
         hwloc_topology_load(topology);
 
-        hwloc_obj_t package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, NULL);
+        hwloc_obj_t package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, nullptr);
 
-        while (package != NULL) {
+        while (package != nullptr) {
             auto package_id = package->os_index;
             hwloc_recurse_topology(topology, package, package_id, physicalIds, uniqueThreads, responsibleThreads);
             package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, package);

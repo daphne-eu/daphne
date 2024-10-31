@@ -121,7 +121,7 @@ template <typename VT>
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
     uint64_t currentItr = 0;
-    uint64_t target;
+    uint64_t target = 0;
     SelfSchedulingScheme schedulingScheme = ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if (chunkParam <= 0)
@@ -138,13 +138,12 @@ template <typename VT>
             for (int i = 0; i < this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    qvector[i]->enqueueTaskPinned(
-                        new CompiledPipelineTask<DenseMatrix<VT>>(
-                            CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar, inputs, numInputs, numOutputs,
-                                                                      outRows, outCols, splits, combines, startChunk,
-                                                                      endChunk, outRows, outCols, 0, ctx},
-                            resLock, res),
-                        this->topologyResponsibleThreads[i]);
+                    qvector[i]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(
+                                                CompiledPipelineTaskData<DenseMatrix<VT>>{
+                                                    funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                                    splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
+                                                resLock, res),
+                                            this->topologyResponsibleThreads[i]);
                     startChunk = endChunk;
                 }
             }
@@ -170,13 +169,12 @@ template <typename VT>
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
                 target = currentItr % this->_numQueues;
-                qvector[target]->enqueueTaskPinned(
-                    new CompiledPipelineTask<DenseMatrix<VT>>(
-                        CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar, inputs, numInputs, numOutputs,
-                                                                  outRows, outCols, splits, combines, startChunk,
-                                                                  endChunk, outRows, outCols, 0, ctx},
-                        resLock, res),
-                    this->topologyUniqueThreads[target]);
+                qvector[target]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(
+                                                 CompiledPipelineTaskData<DenseMatrix<VT>>{
+                                                     funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                                     splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
+                                                 resLock, res),
+                                             this->topologyUniqueThreads[target]);
                 startChunk = endChunk;
                 currentItr++;
             }
@@ -296,7 +294,7 @@ template <typename VT>
         uint64_t startChunk = device_task_len;
         uint64_t endChunk = device_task_len;
         uint64_t currentItr = 0;
-        uint64_t target;
+        uint64_t target = 0;
         SelfSchedulingScheme method = ctx->config.taskPartitioningScheme;
         int chunkParam = ctx->config.minimumTaskSize;
         if (chunkParam <= 0)

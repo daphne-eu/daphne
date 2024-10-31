@@ -19,9 +19,8 @@
 #include "LoadPartitioningDefs.h"
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <iostream>
-#include <string>
 
 class LoadPartitioning {
 
@@ -37,8 +36,8 @@ class LoadPartitioning {
     uint64_t tssDelta;
     uint64_t mfscChunk;
     uint32_t fissStages;
-    int getMethod(const char *method) { return std::stoi(method); }
-    int getStages(int tasks, int workers) {
+
+    static int getStages(int tasks, int workers) {
         int actual_step = 0;
         int scheduled = 0;
         int step = 0;
@@ -52,12 +51,11 @@ class LoadPartitioning {
     }
 
   public:
-    LoadPartitioning(SelfSchedulingScheme method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autoChunk) {
-        schedulingMethod = method;
-        totalTasks = tasks;
+    LoadPartitioning(SelfSchedulingScheme method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autoChunk)
+        : schedulingMethod(method), totalTasks(tasks), fissStages(getStages(totalTasks, workers)) {
         double tSize = (totalTasks + workers - 1.0) / workers;
         mfscChunk = ceil(tSize * log(2.0) / log((1.0 * tSize)));
-        fissStages = getStages(totalTasks, workers);
+
         if (!autoChunk) {
             chunkParam = chunk;
         } else {
@@ -74,10 +72,12 @@ class LoadPartitioning {
         schedulingStep = 0;
         scheduledTasks = 0;
         tssChunk = (uint64_t)ceil((double)totalTasks / ((double)2.0 * totalWorkers));
-        uint64_t nTemp = (uint64_t)ceil(2.0 * totalTasks / (tssChunk + 1.0));
+        auto nTemp = (uint64_t)ceil(2.0 * totalTasks / (tssChunk + 1.0));
         tssDelta = (uint64_t)(tssChunk - 1.0) / (double)(nTemp - 1.0);
     }
-    bool hasNextChunk() { return scheduledTasks < totalTasks; }
+
+    [[nodiscard]] bool hasNextChunk() const { return scheduledTasks < totalTasks; }
+
     uint64_t getNextChunk() {
         uint64_t chunkSize = 0;
         switch (schedulingMethod) {
@@ -98,7 +98,7 @@ class LoadPartitioning {
             break;
         }
         case SelfSchedulingScheme::FAC2: {
-            uint64_t actualStep = schedulingStep / totalWorkers; // has to be an integer division
+            const uint64_t actualStep = schedulingStep / totalWorkers; // has to be an integer division
             chunkSize = (uint64_t)ceil(pow(0.5, actualStep + 1) * (totalTasks / totalWorkers));
             break;
         }
@@ -108,8 +108,8 @@ class LoadPartitioning {
         }
         case SelfSchedulingScheme::FISS: {
             // TODO
-            uint64_t X = fissStages + 2;
-            uint64_t initChunk = (uint64_t)ceil(totalTasks / ((2.0 + fissStages) * totalWorkers));
+            const uint64_t X = fissStages + 2;
+            auto initChunk = (uint64_t)ceil(totalTasks / ((2.0 + fissStages) * totalWorkers));
             chunkSize =
                 initChunk + schedulingStep * (uint64_t)ceil((2.0 * totalTasks * (1.0 - (fissStages / X))) /
                                                             (totalWorkers * fissStages *
@@ -119,13 +119,13 @@ class LoadPartitioning {
         case SelfSchedulingScheme::VISS: {
             // TODO
             uint64_t schedulingStepnew = schedulingStep / totalWorkers;
-            uint64_t initChunk = (uint64_t)ceil(totalTasks / ((2.0 + fissStages) * totalWorkers));
+            auto initChunk = (uint64_t)ceil(totalTasks / ((2.0 + fissStages) * totalWorkers));
             chunkSize = initChunk * (uint64_t)ceil((double)(1 - pow(0.5, schedulingStepnew)) / 0.5);
             break;
         }
         case SelfSchedulingScheme::PLS: {
             // TODO
-            double SWR = 0.5; // static workload ratio
+            const double SWR = 0.5; // static workload ratio
             if (remainingTasks > totalTasks - (totalTasks * SWR)) {
                 chunkSize = (uint64_t)ceil((double)totalTasks * SWR / totalWorkers);
             } else {
@@ -136,7 +136,7 @@ class LoadPartitioning {
         case SelfSchedulingScheme::PSS: { // probabilistic self-scheduling (PSS)
             // E[P] is the average number of idle processor, for now we use
             // still totalWorkers
-            double averageIdleProc = (double)totalWorkers;
+            auto averageIdleProc = (double)totalWorkers;
             chunkSize = (uint64_t)ceil((double)remainingTasks / (1.5 * averageIdleProc));
             // TODO
             break;

@@ -18,14 +18,14 @@
 
 #include "Worker.h"
 #include <runtime/local/vectorized/TaskQueues.h>
-
 #include <spdlog/spdlog.h>
+#include <utility>
 
 class WorkerCPU : public Worker {
     std::vector<TaskQueue *> _q;
     std::vector<int> _physical_ids;
     std::vector<int> _unique_threads;
-    std::array<bool, 256> eofWorkers;
+    std::array<bool, 256> eofWorkers{};
     bool _verbose;
     uint32_t _fid;
     uint32_t _batchSize;
@@ -40,10 +40,11 @@ class WorkerCPU : public Worker {
     WorkerCPU(std::vector<TaskQueue *> deques, std::vector<int> physical_ids, std::vector<int> unique_threads,
               DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
               QueueTypeOption queueMode = QueueTypeOption::CENTRALIZED,
-              VictimSelectionLogic victimSelection = VictimSelectionLogic::SEQ, bool pinWorkers = 0)
-        : Worker(dctx), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads), _verbose(verbose),
-          _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode),
-          _victimSelection(victimSelection), _pinWorkers(pinWorkers) {
+              VictimSelectionLogic victimSelection = VictimSelectionLogic::SEQ, bool pinWorkers = false)
+        : Worker(dctx), _q(std::move(deques)), _physical_ids(std::move(physical_ids)),
+          _unique_threads(std::move(unique_threads)), _verbose(verbose), _fid(fid), _batchSize(batchSize),
+          _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _victimSelection(victimSelection),
+          _pinWorkers(pinWorkers) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPU::run, this);
     }

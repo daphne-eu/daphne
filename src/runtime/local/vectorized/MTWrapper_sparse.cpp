@@ -67,7 +67,7 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
     uint64_t currentItr = 0;
-    uint64_t target;
+    uint64_t target = 0;
     SelfSchedulingScheme schedulingScheme = ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if (chunkParam <= 0)
@@ -84,13 +84,12 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(
             for (int i = 0; i < this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    qvector[i]->enqueueTaskPinned(
-                        new CompiledPipelineTask<CSRMatrix<VT>>(
-                            CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar, inputs, numInputs, numOutputs,
-                                                                    outRows, outCols, splits, combines, startChunk,
-                                                                    endChunk, outRows, outCols, 0, ctx},
-                            dataSinks),
-                        this->topologyResponsibleThreads[i]);
+                    qvector[i]->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(
+                                                CompiledPipelineTaskData<CSRMatrix<VT>>{
+                                                    funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                                    splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
+                                                dataSinks),
+                                            this->topologyResponsibleThreads[i]);
                     startChunk = endChunk;
                 }
             }
@@ -117,13 +116,12 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
                 target = currentItr % this->_numQueues;
-                qvector[target]->enqueueTaskPinned(
-                    new CompiledPipelineTask<CSRMatrix<VT>>(
-                        CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar, inputs, numInputs, numOutputs, outRows,
-                                                                outCols, splits, combines, startChunk, endChunk,
-                                                                outRows, outCols, 0, ctx},
-                        dataSinks),
-                    target);
+                qvector[target]->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(
+                                                 CompiledPipelineTaskData<CSRMatrix<VT>>{
+                                                     funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                                     splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
+                                                 dataSinks),
+                                             target);
                 startChunk = endChunk;
                 currentItr++;
             }
