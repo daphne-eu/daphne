@@ -28,14 +28,11 @@
 
 #include <spdlog/spdlog.h>
 
-#include <fstream>
 #include <functional>
-#include <queue>
 #include <set>
 
 #include <hwloc.h>
 
-// TODO use the wrapper to cache threads
 // TODO generalize for arbitrary inputs (not just binary)
 
 using mlir::daphne::VectorCombine;
@@ -51,11 +48,9 @@ template <typename DT> class MTWrapperBase {
     size_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
-    int _queueMode;
-    // _queueMode 0: Centralized queue for all workers, 1: One queue for every
-    // physical ID (socket), 2: One queue per CPU
+    QueueTypeOption _queueMode;
     int _numQueues;
-    int _stealLogic;
+    VictimSelectionLogic _victimSelection;
     int _totalNumaDomains;
     DCTX(_ctx);
 
@@ -87,30 +82,33 @@ template <typename DT> class MTWrapperBase {
                 uniqueThreads.push_back(obj->children[i]->os_index);
 
             switch (_ctx->getUserConfig().queueSetupScheme) {
-            case CENTRALIZED: {
+            case QueueTypeOption::CENTRALIZED: {
                 responsibleThreads.push_back(0);
-            } break;
-            case PERGROUP: {
+                break;
+            }
+            case QueueTypeOption::PERGROUP: {
                 if (responsibleThreads.size() == parent_package_id)
                     responsibleThreads.push_back(obj->children[0]->os_index);
-            } break;
-            case PERCPU: {
+                break;
+            }
+            case QueueTypeOption::PERCPU: {
                 responsibleThreads.push_back(obj->os_index);
-            } break;
+                break;
+            }
             }
         }
     }
 
     void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads,
                       std::vector<int> &responsibleThreads) {
-        hwloc_topology_t topology;
+        hwloc_topology_t topology = nullptr;
 
         hwloc_topology_init(&topology);
         hwloc_topology_load(topology);
 
-        hwloc_obj_t package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, NULL);
+        hwloc_obj_t package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, nullptr);
 
-        while (package != NULL) {
+        while (package != nullptr) {
             auto package_id = package->os_index;
             hwloc_recurse_topology(topology, package, package_id, physicalIds, uniqueThreads, responsibleThreads);
             package = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_PACKAGE, package);
@@ -120,7 +118,8 @@ template <typename DT> class MTWrapperBase {
     }
 
     void initCPPWorkers(std::vector<TaskQueue *> &qvector, uint32_t batchSize, const bool verbose = false,
-                        int numQueues = 0, int queueMode = 0, bool pinWorkers = false) {
+                        int numQueues = 0, QueueTypeOption queueMode = QueueTypeOption::CENTRALIZED,
+                        bool pinWorkers = false) {
         cpp_workers.resize(_numCPPThreads);
         if (numQueues == 0) {
             throw std::runtime_error("MTWrapper::initCPPWorkers: numQueues is "
@@ -130,7 +129,7 @@ template <typename DT> class MTWrapperBase {
         int i = 0;
         for (auto &w : cpp_workers) {
             w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, _ctx, verbose, 0,
-                                            batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
+                                            batchSize, i, numQueues, queueMode, this->_victimSelection, pinWorkers);
             i++;
         }
     }
@@ -191,7 +190,7 @@ template <typename DT> class MTWrapperBase {
         else
             _numCPPThreads = topologyPhysicalIds.size();
 
-        if (_ctx->getUserConfig().queueSetupScheme != CENTRALIZED)
+        if (_ctx->getUserConfig().queueSetupScheme != QueueTypeOption::CENTRALIZED)
             _numCPPThreads = topologyUniqueThreads.size();
 
         // If the available CPUs from Slurm is less than the configured num
@@ -205,19 +204,19 @@ template <typename DT> class MTWrapperBase {
         if (ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
 
-        _queueMode = 0;
+        _queueMode = QueueTypeOption::CENTRALIZED;
         _numQueues = 1;
-        _stealLogic = _ctx->getUserConfig().victimSelection;
+        _victimSelection = _ctx->getUserConfig().victimSelection;
         if (std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled)
             topologyUniqueThreads.resize(_numCPPThreads);
         _numThreads = _numCPPThreads + _numCUDAThreads;
         _totalNumaDomains = std::set<double>(topologyPhysicalIds.begin(), topologyPhysicalIds.end()).size();
 
-        if (_ctx->getUserConfig().queueSetupScheme == PERGROUP) {
-            _queueMode = 1;
+        if (_ctx->getUserConfig().queueSetupScheme == QueueTypeOption::PERGROUP) {
+            _queueMode = QueueTypeOption::PERGROUP;
             _numQueues = _totalNumaDomains;
-        } else if (_ctx->getUserConfig().queueSetupScheme == PERCPU) {
-            _queueMode = 2;
+        } else if (_ctx->getUserConfig().queueSetupScheme == QueueTypeOption::PERCPU) {
+            _queueMode = QueueTypeOption::PERCPU;
             _numQueues = _numCPPThreads;
         }
 

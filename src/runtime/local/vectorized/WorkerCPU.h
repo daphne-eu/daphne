@@ -18,31 +18,33 @@
 
 #include "Worker.h"
 #include <runtime/local/vectorized/TaskQueues.h>
-
 #include <spdlog/spdlog.h>
+#include <utility>
 
 class WorkerCPU : public Worker {
     std::vector<TaskQueue *> _q;
     std::vector<int> _physical_ids;
     std::vector<int> _unique_threads;
-    std::array<bool, 256> eofWorkers;
+    std::array<bool, 256> eofWorkers{};
     bool _verbose;
     uint32_t _fid;
     uint32_t _batchSize;
     int _threadID;
     int _numQueues;
-    int _queueMode;
-    int _stealLogic;
+    QueueTypeOption _queueMode;
+    VictimSelectionLogic _victimSelection;
     bool _pinWorkers;
 
   public:
     // ToDo: remove compile-time verbose parameter and use logger
     WorkerCPU(std::vector<TaskQueue *> deques, std::vector<int> physical_ids, std::vector<int> unique_threads,
               DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0,
-              int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0)
-        : Worker(dctx), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads), _verbose(verbose),
-          _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode),
-          _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
+              QueueTypeOption queueMode = QueueTypeOption::CENTRALIZED,
+              VictimSelectionLogic victimSelection = VictimSelectionLogic::SEQ, bool pinWorkers = false)
+        : Worker(dctx), _q(std::move(deques)), _physical_ids(std::move(physical_ids)),
+          _unique_threads(std::move(unique_threads)), _verbose(verbose), _fid(fid), _batchSize(batchSize),
+          _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _victimSelection(victimSelection),
+          _pinWorkers(pinWorkers) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPU::run, this);
     }
@@ -60,11 +62,11 @@ class WorkerCPU : public Worker {
 
         int currentDomain = _physical_ids[_threadID];
         int targetQueue = _threadID;
-        if (_queueMode == 0) {
+        if (_queueMode == QueueTypeOption::CENTRALIZED) {
             targetQueue = 0;
-        } else if (_queueMode == 1) {
+        } else if (_queueMode == QueueTypeOption::PERGROUP) {
             targetQueue = currentDomain;
-        } else if (_queueMode == 2) {
+        } else if (_queueMode == QueueTypeOption::PERCPU) {
             targetQueue = _threadID;
         } else {
             ctx->logger->error("WorkerCPU: queue not found");
@@ -87,7 +89,7 @@ class WorkerCPU : public Worker {
         // queues.
 
         if (_numQueues > 1) {
-            if (_stealLogic == 0) {
+            if (_victimSelection == VictimSelectionLogic::SEQ) {
                 // Stealing in sequential order
 
                 targetQueue = (targetQueue + 1) % _numQueues;
@@ -101,9 +103,9 @@ class WorkerCPU : public Worker {
                         delete t;
                     }
                 }
-            } else if (_stealLogic == 1) {
+            } else if (_victimSelection == VictimSelectionLogic::SEQPRI) {
                 // Stealing in sequential order from same domain first
-                if (_queueMode == 2) {
+                if (_queueMode == QueueTypeOption::PERCPU) {
                     targetQueue = (targetQueue + 1) % _numQueues;
 
                     while (targetQueue != startingQueue) {
@@ -134,7 +136,7 @@ class WorkerCPU : public Worker {
                         delete t;
                     }
                 }
-            } else if (_stealLogic == 2) {
+            } else if (_victimSelection == VictimSelectionLogic::RANDOM) {
                 // stealing from random workers until all workers EOF
 
                 eofWorkers.fill(false);
@@ -153,7 +155,7 @@ class WorkerCPU : public Worker {
                     }
                 }
 
-            } else if (_stealLogic == 3) {
+            } else if (_victimSelection == VictimSelectionLogic::RANDOMPRI) {
                 // stealing from random workers from same socket first
                 int queuesThisDomain = 0;
                 eofWorkers.fill(false);
@@ -163,7 +165,7 @@ class WorkerCPU : public Worker {
                         queuesThisDomain++;
                     }
                 }
-                if (_queueMode == 2) {
+                if (_queueMode == QueueTypeOption::PERCPU) {
                     while (std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < queuesThisDomain) {
                         targetQueue = rand() % _numQueues;
                         if (_physical_ids[targetQueue] == currentDomain) {

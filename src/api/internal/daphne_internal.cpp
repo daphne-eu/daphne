@@ -164,6 +164,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                      init(""));
 
     // Scheduling options
+    using enum SelfSchedulingScheme;
+    using enum QueueTypeOption;
+    using enum VictimSelectionLogic;
 
     static opt<SelfSchedulingScheme> taskPartitioningScheme(
         "partitioning", cat(schedulingOptions), desc("Choose task partitioning scheme:"),
@@ -179,11 +182,13 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                "i.e., MFSC does not require profiling information as FSC"),
                clEnumVal(PSS, "Probabilistic self-scheduling"), clEnumVal(AUTO, "Automatic partitioning")),
         init(STATIC));
+
     static opt<QueueTypeOption> queueSetupScheme(
         "queue_layout", cat(schedulingOptions), desc("Choose queue setup scheme:"),
         values(clEnumVal(CENTRALIZED, "One queue (default)"), clEnumVal(PERGROUP, "One queue per CPU group"),
                clEnumVal(PERCPU, "One queue per CPU core")),
         init(CENTRALIZED));
+
     static opt<VictimSelectionLogic> victimSelection(
         "victim_selection", cat(schedulingOptions), desc("Choose work stealing victim selection logic:"),
         values(clEnumVal(SEQ, "Steal from next adjacent worker (default)"),

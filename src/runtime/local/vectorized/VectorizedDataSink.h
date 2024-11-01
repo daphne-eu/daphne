@@ -56,7 +56,7 @@ template <typename VT> class VectorizedDataSink<CSRMatrix<VT>> {
         case VectorCombine::COLS: {
             auto rows = matrix->getNumRows();
             auto *off = matrix->getRowOffsets();
-            auto *rowNnz = &_rowNnz[0];
+            auto *rowNnz = _rowNnz.data();
             PRAGMA_LOOP_VECTORIZE
             for (size_t row = 0; row < rows; ++row) {
                 rowNnz[row] += off[row + 1] - off[row];
@@ -102,7 +102,7 @@ template <typename VT> class VectorizedDataSink<CSRMatrix<VT>> {
                 DataObjectFactory::destroy(currMat);
             }
         } else if (_combine == VectorCombine::COLS) {
-            auto *rowNnz = &_rowNnz[0];
+            auto *rowNnz = _rowNnz.data();
             PRAGMA_LOOP_VECTORIZE
             for (size_t row = 0; row < _numRows; ++row) {
                 resRowOff[row + 1] = resRowOff[row] + rowNnz[row];
