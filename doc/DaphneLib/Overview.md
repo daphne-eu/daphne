@@ -556,12 +556,80 @@ tensor([[[100.5474, 100.9653],
          [100.3148, 100.3607]]], dtype=torch.float64)
 ```
 
+## Command-Line Arguments to Influence DAPHNE Behavior
+DAPHNE provides a range of command-line arguments that allow users to control its behavior and customize execution settings.
+These arguments can also be passed from DaphneLib.
+
+*Example Array Format:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+import numpy as np
+
+m1 = np.array([1, 2, 3])
+dc = DaphneContext()
+X = dc.from_numpy(m1)
+X.print().compute(daphne_args=["--explain", "parsing_simplified, parsing", "--timing"])
+```
+
+*Example String Format:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+import numpy as np
+
+m1 = np.array([1, 2, 3])
+dc = DaphneContext()
+X = dc.from_numpy(m1)
+X.print().compute(daphne_args="--explain=parsing_simplified,parsing --timing")
+```
+
+*Output (memory addresses may vary):*
+
+```
+IR after parsing:
+module {
+  func.func @main() {
+    %0 = "daphne.constant"() {value = 0 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = 43781056 : si64} : () -> si64
+    %2 = "daphne.constant"() {value = 3 : si64} : () -> si64
+    %3 = "daphne.constant"() {value = 1 : si64} : () -> si64
+    %4 = "daphne.constant"() {value = 2 : si64} : () -> si64
+    %5 = "daphne.cast"(%0) : (si64) -> ui32
+    %6 = "daphne.cast"(%1) : (si64) -> ui32
+    %7 = "daphne.receiveFromNumpy"(%5, %6, %2, %3) : (ui32, ui32, si64, si64) -> !daphne.Matrix<?x?xsi64>
+    %8 = "daphne.constant"() {value = true} : () -> i1
+    %9 = "daphne.constant"() {value = false} : () -> i1
+    "daphne.print"(%7, %8, %9) : (!daphne.Matrix<?x?xsi64>, i1, i1) -> ()
+    "daphne.return"() : () -> ()
+  }
+}
+IR after parsing and some simplifications:
+module {
+  func.func @main() {
+    %0 = "daphne.constant"() {value = 43781056 : ui32} : () -> ui32
+    %1 = "daphne.constant"() {value = 0 : ui32} : () -> ui32
+    %2 = "daphne.constant"() {value = false} : () -> i1
+    %3 = "daphne.constant"() {value = true} : () -> i1
+    %4 = "daphne.constant"() {value = 3 : si64} : () -> si64
+    %5 = "daphne.constant"() {value = 1 : si64} : () -> si64
+    %6 = "daphne.receiveFromNumpy"(%1, %0, %4, %5) : (ui32, ui32, si64, si64) -> !daphne.Matrix<?x?xsi64>
+    "daphne.print"(%6, %3, %2) : (!daphne.Matrix<?x?xsi64>, i1, i1) -> ()
+    "daphne.return"() : () -> ()
+  }
+}
+DenseMatrix(3x1, int64_t)
+1
+2
+3
+{"startup_seconds": 0.0238036, "parsing_seconds": 0.00178526, "compilation_seconds": 0.0734249, "execution_seconds": 0.0232295, "total_seconds": 0.122243}
+```
+
 ## Known Limitations
 
 DaphneLib is still in an early development stage.
 Thus, there are a few limitations that users should be aware of.
 We plan to fix all of these limitations in the future.
 
-- Using DAPHNE's command-line arguments to influence its behavior is not supported yet.
 - Some DaphneDSL built-in functions are not represented by DaphneLib methods yet.
 - High-level primitives for integrated data analysis pipelines, which are implemented in DaphneDSL, cannot be called from DaphneLib yet.
