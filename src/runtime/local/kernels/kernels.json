@@ -2158,6 +2158,7 @@
             ["int64_t", "int64_t", "int64_t"],
             ["uint64_t", "uint64_t", "uint64_t"],
             ["uint32_t", "uint32_t", "uint32_t"],
+            ["bool", "bool", "bool"],
             ["size_t", "size_t", "size_t"],
             ["const char *", "const char *", "const char *"],
             ["int64_t", "const char *", "const char *"]
