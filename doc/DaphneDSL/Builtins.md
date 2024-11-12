@@ -490,7 +490,7 @@ We will support set operations such as **`intersect`**, **`merge`**, and **`exce
 
 - **`cartesian`**`(lhs:frame, rhs:frame)`
 
-    Calculates the cartesian (cross) product of the two input frames.
+    Calculates the cartesian product of the two input frames.
 
 - **`innerJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)`
 
