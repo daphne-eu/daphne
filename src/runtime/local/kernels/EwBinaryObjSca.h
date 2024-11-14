@@ -102,6 +102,34 @@ template <typename VT> struct EwBinaryObjSca<Matrix<VT>, Matrix<VT>, VT> {
 };
 
 // ----------------------------------------------------------------------------
+// DenseMatrix <- Matrix, scalar
+// ----------------------------------------------------------------------------
+
+template <typename VTRes, typename VTLhs, typename VTRhs>
+struct EwBinaryObjSca<DenseMatrix<VTRes>, Matrix<VTLhs>, VTRhs> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VTRes> *&res, const Matrix<VTLhs> *lhs, VTRhs rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+
+        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
+
+        VTRes *valuesRes = res->getValues();
+        res->prepareAppend();
+
+        for (size_t r = 0; r < numRows; ++r) {
+            for (size_t c = 0; c < numCols; ++c) {
+                valuesRes[r * numCols + c] = func(lhs->get(r, c), rhs, ctx);
+            }
+        }
+        
+        res->finishAppend();
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Frame <- Frame, scalar
 // ----------------------------------------------------------------------------
 

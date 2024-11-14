@@ -175,10 +175,12 @@ struct CompilerUtils {
                 else
                     vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
                 switch (matTy.getRepresentation()) {
-                case mlir::daphne::MatrixRepresentation::Dense:
-                    return angleBrackets ? ("DenseMatrix<" + vtName + ">") : ("DenseMatrix_" + vtName);
-                case mlir::daphne::MatrixRepresentation::Sparse:
-                    return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
+                    case mlir::daphne::MatrixRepresentation::Dense:
+                        return angleBrackets ? ("DenseMatrix<" + vtName + ">") : ("DenseMatrix_" + vtName);
+                    case mlir::daphne::MatrixRepresentation::Sparse:
+                        return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
+                    case mlir::daphne::MatrixRepresentation::Unknown:
+                        return angleBrackets ? ("Matrix<" + vtName + ">") : ("Matrix_" + vtName);
                 }
             }
         } else if (llvm::isa<mlir::daphne::FrameType>(t))

@@ -68,6 +68,7 @@ std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig &cf
 std::unique_ptr<Pass> createSelectMatrixRepresentationsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createVectorizeComputationsPass();
+std::unique_ptr<OperationPass<ModuleOp>> createRecompilePass();
 #ifdef USE_CUDA
 std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
 #endif

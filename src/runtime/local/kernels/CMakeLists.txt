@@ -108,7 +108,11 @@ set(SOURCES_cpp_kernels
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
-        )
+        ../../../compiler/execution/DaphneIrExecutor.cpp)
+
+get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
+get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(KernelObjLib OBJECT ${SOURCES_cpp_kernels} ${HEADERS_cpp_kernels})
 set_target_properties(KernelObjLib PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -139,4 +143,16 @@ if(USE_HDFS)
 endif()
 
 target_link_libraries(KernelObjLib PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
+target_link_libraries(AllKernels PUBLIC 
+  ${LIBS} 
+  ${MPI_LIBRARIES} 
+  ${PAPI_LIB} 
+  ${HWLOC_LIB} 
+  ${LIBHDFS3}
+  ${dialect_libs}
+  ${conversion_libs}        
+  MLIRDaphne
+  MLIRDaphneTransforms
+  MLIRExecutionEngine
+  DaphneCatalogParser
+  )

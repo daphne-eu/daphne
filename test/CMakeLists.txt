@@ -160,6 +160,7 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
+        runtime/local/RecompileTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )

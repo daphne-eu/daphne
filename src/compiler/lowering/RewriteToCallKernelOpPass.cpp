@@ -20,7 +20,6 @@
 #include <compiler/utils/TypePrinting.h>
 #include <util/ErrorHandler.h>
 #include <util/KernelDispatchMapping.h>
-
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -60,6 +59,8 @@ class KernelReplacement : public RewritePattern {
             return 2;
         if (llvm::isa<daphne::DistributedComputeOp, daphne::CreateListOp>(op))
             return 1;
+        if (llvm::isa<daphne::RecompileOp>(op))
+            return 4;
 
         throw ErrorHandler::compilerError(op, "RewriteToCallKernelOpPass",
                                           "lowering to kernel call not yet supported for this variadic "
@@ -108,6 +109,11 @@ class KernelReplacement : public RewritePattern {
             static bool isVariadic[] = {false, true, true, false};
             return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
         }
+        if (auto recompileOp = llvm::dyn_cast<daphne::RecompileOp>(op)) {
+            auto idxAndLen = recompileOp.getODSOperandIndexAndLength(index);
+            static bool isVariadic[] = {false, false, true, true};
+            return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
+        }
         throw ErrorHandler::compilerError(op, "RewriteToCallKernelOpPass",
                                           "lowering to kernel call not yet supported for this variadic "
                                           "operation: " +
@@ -125,10 +131,14 @@ class KernelReplacement : public RewritePattern {
 
     mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
         MLIRContext *mctx = t.getContext();
+
         if (generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>())
             return mlir::daphne::StructureType::get(mctx);
-        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+                
+        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>()) {
             return mt.withSameElementTypeAndRepr();
+        }
+        
         if (t.isa<mlir::daphne::FrameType>())
             return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
@@ -207,7 +217,7 @@ class KernelReplacement : public RewritePattern {
             llvm::isa<daphne::CreateFrameOp>(op) || llvm::isa<daphne::DistributedComputeOp>(op) ||
             llvm::isa<daphne::NumCellsOp>(op) || llvm::isa<daphne::NumColsOp>(op) || llvm::isa<daphne::NumRowsOp>(op) ||
             llvm::isa<daphne::IncRefOp>(op) || llvm::isa<daphne::DecRefOp>(op);
-
+        bool hasVariadicResults = false;
         // Append converted op result types to the look-up result types.
         for (size_t i = 0; i < opResTys.size(); i++)
             lookupResTys.push_back(adaptType(opResTys[i], false));
@@ -267,6 +277,7 @@ class KernelReplacement : public RewritePattern {
                 lookupArgTys.push_back(adaptType(odsOperandTy, generalizeInputTypes));
 
                 if (isVariadic) {
+                    hasVariadicResults = true;
                     // Variadic operand.
                     lookupArgTys.push_back(rewriter.getIndexType());
                     auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
@@ -492,6 +503,9 @@ class KernelReplacement : public RewritePattern {
         // Create a CallKernelOp for the kernel function to call and return
         // success().
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, kernelFuncName, kernelArgs, opResTys);
+        if (hasVariadicResults) {
+            kernel->setAttr("hasVariadicResults", rewriter.getBoolAttr(true));
+        }            
         rewriter.replaceOp(op, kernel.getResults());
         return success();
     }

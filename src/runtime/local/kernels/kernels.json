@@ -846,6 +846,14 @@
             [
                 ["CSRMatrix", "float"],
                 ["CSRMatrix", "double"]
+            ],
+            [
+                ["Matrix", "int64_t"],
+                ["Matrix", "double"]
+            ],
+            [
+                ["Matrix", "double"],
+                ["Matrix", "int64_t"]
             ]
         ]
     },
@@ -1357,6 +1365,55 @@
                     ]
                 ]
             }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Recompile.h",
+            "opName": "recompile",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes **",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg **",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "mlirCode"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numInputs"
+                }
+            ]
+        },
+        "instantiations": [
+            [
+                ["Matrix", "double"],
+                ["Matrix", "double"]
+            ],
+            [
+                ["Matrix", "float"],
+                ["Matrix", "float"]
+            ],
+            [
+                ["Matrix", "int64_t"],
+                ["Matrix", "int64_t"]
+            ]
         ]
     },
     {
@@ -1935,6 +1992,11 @@
                 "name": ["CPP"],
                 "instantiations": [
                     [
+                        ["Matrix", "int64_t"],
+                        ["Matrix", "int64_t"],
+                        ["Matrix", "int64_t"]
+                    ],
+                    [
                         ["CSRMatrix", "double"],
                         ["CSRMatrix", "double"],
                         ["DenseMatrix", "double"]
@@ -2059,6 +2121,21 @@
                         ["DenseMatrix", "uint64_t"],
                         ["DenseMatrix", "uint64_t"],
                         "uint64_t"
+                    ],
+                    [
+                        ["Matrix", "double"],
+                        ["Matrix", "double"],
+                        "double"
+                    ],
+                    [
+                        ["Matrix", "int64_t"],
+                        ["Matrix", "int64_t"],
+                        "int64_t"
+                    ],
+                    [
+                        ["DenseMatrix", "double"],
+                        ["Matrix", "double"],
+                        "double"
                     ]
                 ],
                 "opCodes": [
@@ -3752,7 +3829,10 @@
             [["DenseMatrix", "uint8_t"], "uint8_t"],
             [["CSRMatrix", "double"], "double"],
             [["CSRMatrix", "float"], "float"],
-            [["CSRMatrix", "int64_t"], "int64_t"]
+            [["CSRMatrix", "int64_t"], "int64_t"],
+            [["Matrix", "double"], "double"],
+            [["Matrix", "float"], "float"],
+            [["Matrix", "int64_t"], "int64_t"]
         ]
     },
     {

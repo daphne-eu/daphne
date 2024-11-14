@@ -52,16 +52,32 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
         // Scalar type.
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(st), st);
 
+        // Map type for Generic Matrix.
+        mlir::Type mtMatrix =
+            mlir::daphne::MatrixType::get(mctx, st).withRepresentation(mlir::daphne::MatrixRepresentation::Unknown);
+        typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtMatrix), mtMatrix);
+        
+        //mlir::Type mtMatrix = mlir::daphne::MatrixType::get(mctx, st);
+        //typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtMatrix), mtMatrix);
+        
         // Matrix type for DenseMatrix.
+        mlir::Type mtDense =
+            mlir::daphne::MatrixType::get(mctx, st).withRepresentation(mlir::daphne::MatrixRepresentation::Dense);
+        typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtDense), mtDense);
+        
         // TODO This should have
         // withRepresentation(mlir::daphne::MatrixRepresentation::Dense).
-        mlir::Type mtDense = mlir::daphne::MatrixType::get(mctx, st);
-        typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtDense), mtDense);
+        //mlir::Type mtDense = mlir::daphne::MatrixType::get(mctx, st);
+        //typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtDense), mtDense);
+
         // Matrix type for CSRMatrix.
         mlir::Type mtCSR =
             mlir::daphne::MatrixType::get(mctx, st).withRepresentation(mlir::daphne::MatrixRepresentation::Sparse);
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mtCSR), mtCSR);
 
+        // List type for generic Matrix.
+        mlir::Type ltMatrix = mlir::daphne::ListType::get(mctx, mtMatrix);
+        typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(ltMatrix), ltMatrix);
         // List type for list of DenseMatrix.
         mlir::Type ltDense = mlir::daphne::ListType::get(mctx, mtDense);
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(ltDense), ltDense);

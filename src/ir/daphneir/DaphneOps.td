@@ -1376,6 +1376,41 @@ def Daphne_DistributedCollectOp : Daphne_Op<"distributedCollect", [Pure]> {
 }
 
 // ****************************************************************************
+// Recompiling
+// ****************************************************************************
+
+def Daphne_RecompileOp : Daphne_Op<"recompile", [
+    IsolatedFromAbove
+]> {
+    let summary = "Recompiles and executes the given MLIR code with provided inputs.";
+    let description = [{
+        The `recompile` operation takes an MLIR IR string as an argument along with other inputs.
+        It recompiles the given IR at runtime, executes it with the provided inputs, and produces outputs.
+    }];
+
+    // Define the operands: the IR string, numInputs, and other inputs
+    let arguments = (ins
+        AnyType:$ir_string,
+        I64:$numInputs,
+        Variadic<AnyType>:$inputs
+    );
+
+    // Define the results: outputs from the recompiled function
+    let results = (outs
+        Variadic<AnyType>:$outputs
+    );
+
+    let extraClassDeclaration = [{
+        static void build(OpBuilder &builder, OperationState &state, Value irString, Value numInputs, ValueRange inputs, ValueRange outputs) {
+            state.addOperands(irString);
+            state.addOperands(numInputs);
+            state.addOperands(inputs);
+            state.addOperands(outputs);
+        }
+    }];
+}
+
+// ****************************************************************************
 // Input/output
 // ****************************************************************************
 

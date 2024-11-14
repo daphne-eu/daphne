@@ -53,7 +53,6 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserC
     // register loggers
     if (userConfig_.log_ptr != nullptr)
         userConfig_.log_ptr->registerLoggers();
-
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::arith::ArithDialect>();
     context_.getOrLoadDialect<mlir::func::FuncDialect>();
@@ -89,6 +88,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     // SpecializeGenericFunctionsPass.
     pm.enableVerifier(false);
 
+    //context_.disableMultithreading();
+    //pm.enableIRPrinting();
+
     if (userConfig_.explain_parsing)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
 
@@ -122,6 +124,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
+    
+    //pm.addPass(mlir::daphne::createRecompilePass());
 
     if (userConfig_.use_phy_op_selection) {
         pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());
@@ -183,13 +187,14 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_, usedLibPaths));
     if (userConfig_.explain_kernels)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
-
+    
     pm.addPass(mlir::createConvertSCFToCFPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createRequestCWrappersPass());
-    pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
+    pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));    
     pm.addPass(mlir::createReconcileUnrealizedCastsPass());
     if (userConfig_.explain_llvm)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering:"));
+
 
     // Initialize the use of each distinct kernels library to false.
     usedLibPaths = userConfig_.kernelCatalog.getLibPaths();

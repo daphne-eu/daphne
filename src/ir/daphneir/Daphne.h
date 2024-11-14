@@ -87,6 +87,7 @@ enum class MatrixRepresentation {
     // default is dense
     Default = MatrixRepresentation::Dense,
     Sparse = 1,
+    Unknown = 2
 };
 
 std::string matrixRepresentationToString(MatrixRepresentation rep);
