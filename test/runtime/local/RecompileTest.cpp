@@ -39,15 +39,16 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkR
 
     // simple linear mlir program
     const char *mlirCode = R"(
-    module{
-        func.func @loop_body(%arg1: !daphne.Matrix<10x10xf64>, %arg2: !daphne.Matrix<10x10xf64>, %arg3: si64) -> (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>) {
-            %21 = "daphne.ewLog"(%arg1, %arg3) : (!daphne.Matrix<10x10xf64>, si64) -> !daphne.Matrix<10x10xf64>
-            %22 = "daphne.ewAdd"(%arg1, %21) : (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64>
-            %23 = "daphne.ewLog"(%arg2, %arg3) : (!daphne.Matrix<10x10xf64>, si64) -> !daphne.Matrix<10x10xf64>
-            %24 = "daphne.ewAdd"(%arg2, %23) : (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64>
-            func.return %22, %24 : !daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>
+        module{
+            func.func @main(%arg1: !daphne.Matrix<10x10xf64>, %arg2: !daphne.Matrix<10x10xf64>) -> (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>) {
+                %20 = "daphne.constant"() {value = 2.0 : f64} : () -> f64
+                %21 = "daphne.ewPow"(%arg1, %20) : (!daphne.Matrix<10x10xf64>, f64) -> !daphne.Matrix<10x10xf64>
+                %22 = "daphne.ewPow"(%arg2, %20) : (!daphne.Matrix<10x10xf64>, f64) -> !daphne.Matrix<10x10xf64>
+                %23 = "daphne.ewAdd"(%arg1, %21) : (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64>
+                %24 = "daphne.ewAdd"(%arg2, %22) : (!daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>) -> !daphne.Matrix<10x10xf64>
+                func.return %23, %24 : !daphne.Matrix<10x10xf64>, !daphne.Matrix<10x10xf64>
+            }
         }
-    }
     )";
 
     // Input matrices
@@ -55,16 +56,28 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkR
         0.0, 1.0, 2.0, 1.0, 2.0, 3.0, 3.0, 4.0, 5.0, 6.0,
         1.0, 2.0, 3.0, 2.0, 3.0, 4.0, 4.0, 5.0, 6.0, 7.0,
         3.0, 4.0, 5.0, 4.0, 5.0, 6.0, 6.0, 7.0, 8.0, 9.0,
-        // Fill in the rest to make it 10x10
+        0.0, 1.0, 2.0, 1.0, 2.0, 3.0, 3.0, 4.0, 5.0, 6.0,
+        1.0, 2.0, 3.0, 2.0, 3.0, 4.0, 4.0, 5.0, 6.0, 7.0,
+        3.0, 4.0, 5.0, 4.0, 5.0, 6.0, 6.0, 7.0, 8.0, 9.0,
+        0.0, 1.0, 2.0, 1.0, 2.0, 3.0, 3.0, 4.0, 5.0, 6.0,
+        1.0, 2.0, 3.0, 2.0, 3.0, 4.0, 4.0, 5.0, 6.0, 7.0,
+        3.0, 4.0, 5.0, 4.0, 5.0, 6.0, 6.0, 7.0, 8.0, 9.0,
+        0.0, 1.0, 2.0, 1.0, 2.0, 3.0, 3.0, 4.0, 5.0, 6.0
     });
 
     auto *arg2 = genGivenVals<DTArg>(10, {
         5.0, 6.0, 7.0, 6.0, 7.0, 8.0, 7.0, 8.0, 9.0, 10.0,
         6.0, 7.0, 8.0, 7.0, 8.0, 9.0, 8.0, 9.0, 10.0, 11.0,
         7.0, 8.0, 9.0, 8.0, 9.0, 10.0, 9.0, 10.0, 11.0, 12.0,
-        // Fill in the rest to make it 10x10
+        5.0, 6.0, 7.0, 6.0, 7.0, 8.0, 7.0, 8.0, 9.0, 10.0,
+        6.0, 7.0, 8.0, 7.0, 8.0, 9.0, 8.0, 9.0, 10.0, 11.0,
+        7.0, 8.0, 9.0, 8.0, 9.0, 10.0, 9.0, 10.0, 11.0, 12.0,
+        5.0, 6.0, 7.0, 6.0, 7.0, 8.0, 7.0, 8.0, 9.0, 10.0,
+        6.0, 7.0, 8.0, 7.0, 8.0, 9.0, 8.0, 9.0, 10.0, 11.0,
+        7.0, 8.0, 9.0, 8.0, 9.0, 10.0, 9.0, 10.0, 11.0, 12.0,
+        5.0, 6.0, 7.0, 6.0, 7.0, 8.0, 7.0, 8.0, 9.0, 10.0
     });
-
+    
     const DTArg *args[] = {arg1, arg2};
 
     // Expected output matrices
@@ -72,18 +85,57 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkR
         5.0, 7.0, 9.0, 7.0, 9.0, 11.0, 10.0, 12.0, 14.0, 16.0,
         7.0, 9.0, 11.0, 9.0, 11.0, 13.0, 12.0, 14.0, 16.0, 18.0,
         10.0, 12.0, 14.0, 12.0, 14.0, 16.0, 15.0, 17.0, 19.0, 21.0,
-        // Fill in the rest to make it 10x10
+        5.0, 7.0, 9.0, 7.0, 9.0, 11.0, 10.0, 12.0, 14.0, 16.0,
+        7.0, 9.0, 11.0, 9.0, 11.0, 13.0, 12.0, 14.0, 16.0, 18.0,
+        10.0, 12.0, 14.0, 12.0, 14.0, 16.0, 15.0, 17.0, 19.0, 21.0,
+        5.0, 7.0, 9.0, 7.0, 9.0, 11.0, 10.0, 12.0, 14.0, 16.0,
+        7.0, 9.0, 11.0, 9.0, 11.0, 13.0, 12.0, 14.0, 16.0, 18.0,
+        10.0, 12.0, 14.0, 12.0, 14.0, 16.0, 15.0, 17.0, 19.0, 21.0,
+        5.0, 7.0, 9.0, 7.0, 9.0, 11.0, 10.0, 12.0, 14.0, 16.0
     });
 
     DTRes *expected2 = genGivenVals<DTRes>(10, {
-        // Expected output matrix 2 values based on expected operations
+        5.0, 7.0, 9.0, 7.0, 9.0, 11.0, 10.0, 12.0, 14.0, 16.0,
+        7.0, 9.0, 11.0, 9.0, 11.0, 13.0, 12.0, 14.0, 16.0, 18.0,
+        10.0, 12.0, 14.0, 12.0, 14.0, 16.0, 15.0, 17.0, 19.0, 21.0,
+        5.0, 7.0, 9.0, 7.0, 9.0, 11.0, 10.0, 12.0, 14.0, 16.0,
+        7.0, 9.0, 11.0, 9.0, 11.0, 13.0, 12.0, 14.0, 16.0, 18.0,
+        10.0, 12.0, 14.0, 12.0, 14.0, 16.0, 15.0, 17.0, 19.0, 21.0,
+        5.0, 7.0, 9.0, 7.0, 9.0, 11.0, 10.0, 12.0, 14.0, 16.0,
+        7.0, 9.0, 11.0, 9.0, 11.0, 13.0, 12.0, 14.0, 16.0, 18.0,
+        10.0, 12.0, 14.0, 12.0, 14.0, 16.0, 15.0, 17.0, 19.0, 21.0,
+        5.0, 7.0, 9.0, 7.0, 9.0, 11.0, 10.0, 12.0, 14.0, 16.0
     });
 
     const DTRes *expected[] = {expected1, expected2};
 
     // Results placeholders
-    DTRes *result1 = nullptr;
-    DTRes *result2 = nullptr;
+    DTRes *result1 = genGivenVals<DTRes>(10, {
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    });
+
+    DTRes *result2 = genGivenVals<DTRes>(10, {
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    });
+
     DTRes *results[] = {result1, result2};
 
     // initialize daphne context
@@ -95,14 +147,9 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkR
     REQUIRE(results[1] != nullptr);
 
     // Verify results against expected matrices
-    for (size_t k = 0; k < 2; ++k) {
-        for (size_t i = 0; i < expected[k]->getNumRows(); ++i) {
-            for (size_t j = 0; j < expected[k]->getNumCols(); ++j) {
-                CHECK(results[k]->get(i, j) == Approx(expected[k]->get(i, j)).epsilon(0.001));
-            }
-        }
-    }
-
+    CHECK(*results[0] == *expected[0]);
+    CHECK(*results[1] == *expected[1]);
+    
     // Check types
     CHECK(typeid(*results[0]) == typeid(*expected[0]));
     CHECK(typeid(*results[1]) == typeid(*expected[1]));

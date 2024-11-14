@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cstddef>
 #include <parser/catalog/KernelCatalogParser.h>
 #include "runtime/local/datastructures/Matrix.h"
 #include <compiler/execution/DaphneIrExecutor.h>
