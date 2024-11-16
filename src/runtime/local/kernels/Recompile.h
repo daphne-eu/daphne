@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cassert>
 #include <cstddef>
 #include <parser/catalog/KernelCatalogParser.h>
 #include "runtime/local/datastructures/Matrix.h"
@@ -86,17 +87,16 @@ template <typename VTRes, typename VTArg> struct Recompile<Matrix<VTRes>, Matrix
     
         auto recompileOpFuncTy = funcOp.getFunctionType();
 
-        std::vector<void *> packedInputsOutputs;
-        for (size_t i = 0; i < numInputs; ++i) {
-            //arg[i]->increaseRefCounter();
-            packedInputsOutputs.push_back(const_cast<void *>(static_cast<const void *>(arg[i])));
-        }
-
-        const size_t fixedNumOutputs = recompileOpFuncTy.getNumResults();
-        for (size_t i = 0; i < fixedNumOutputs; ++i) {
-            packedInputsOutputs.push_back(&(*res)[i]);
-        }
-
+        std::vector<void *> inputsObj;
+        std::vector<void *> outputsObj;
+        auto packedInputsOutputs = createPackedCInterfaceInputsOutputs(
+            recompileOpFuncTy, 
+            numInputs, 
+            arg, 
+            res, 
+            inputsObj, 
+            outputsObj);
+        
         if (!executor.runPasses(module.get())) {
             llvm::errs() << "Module Pass Error.\n";
             return;
@@ -110,10 +110,68 @@ template <typename VTRes, typename VTArg> struct Recompile<Matrix<VTRes>, Matrix
         }
 
         auto error = engine->invokePacked(functionName, 
-                                llvm::MutableArrayRef<void *>{packedInputsOutputs.data(), packedInputsOutputs.size()});
+                                llvm::MutableArrayRef<void *>{&packedInputsOutputs[0], (size_t)0});
         if (error) {
             llvm::errs() << "JIT-Engine invocation failed: " << error << '\n';
             return;
         }
+
+        // Assign outputs from outputsObj to res
+        if (outputsObj.size() != recompileOpFuncTy.getNumResults()) {
+            llvm::errs() << "Error: Number of outputs does not match function signature.\n";
+            return;
+        }
+
+        for (size_t i = 0; i < outputsObj.size(); ++i) {
+            res[i] = static_cast<Matrix<VTRes>*>(outputsObj[i]);
+
+            if (!res[i]) {
+                llvm::errs() << "Error: Output " << i << " is null after execution.\n";
+                return;
+            }
+        }
+    }
+
+private:
+    static std::vector<void *> createPackedCInterfaceInputsOutputs(
+        mlir::FunctionType functionType,
+        size_t numInputs,
+        const Matrix<VTArg> **arg,
+        Matrix<VTRes> **res,
+        std::vector<void *> &inputs,
+        std::vector<void *> &outputs) {
+        std::vector<void *> inputsAndOutputs;
+
+        // Prepare inputs
+        inputs.reserve(numInputs);
+        for (size_t i = 0; i < numInputs; ++i) {
+            inputs.push_back(const_cast<void *>(static_cast<const void *>(arg[i])));
+            inputsAndOutputs.push_back(&inputs.back());
+        }
+
+        // Prepare outputs
+        size_t numResults = functionType.getNumResults();
+        outputs.reserve(numResults);
+  
+        for (size_t i = 0; i < numResults; ++i) {
+            if (!res[i]) {
+                auto resultType = functionType.getResult(i);
+                if (llvm::isa<mlir::daphne::MatrixType>(resultType)) {
+                    auto matTy = resultType.dyn_cast<mlir::daphne::MatrixType>();
+
+                    size_t numRows = matTy.getNumRows();
+                    size_t numCols = matTy.getNumCols();
+
+                    res[i] = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+                } else {
+                    llvm::errs() << "Unsupported result type for DenseMatrix lowering.\n";
+                    return {};
+                }
+            }
+            outputs.push_back(static_cast<void *>(res[i]));
+            inputsAndOutputs.push_back(&outputs.back());
+        }
+        
+        return inputsAndOutputs;    
     }
 };

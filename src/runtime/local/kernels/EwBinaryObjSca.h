@@ -57,12 +57,13 @@ template <typename VTRes, typename VTLhs, typename VTRhs>
 struct EwBinaryObjSca<DenseMatrix<VTRes>, DenseMatrix<VTLhs>, VTRhs> {
     static void apply(BinaryOpCode opCode, DenseMatrix<VTRes> *&res, const DenseMatrix<VTLhs> *lhs, VTRhs rhs,
                       DCTX(ctx)) {
+        
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
 
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
-
+        
         const VTRes *valuesLhs = lhs->getValues();
         VTRes *valuesRes = res->getValues();
 
