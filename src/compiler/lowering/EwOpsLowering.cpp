@@ -160,6 +160,11 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         Value lhs = adaptor.getLhs();
 
         daphne::MatrixType lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
+
+        if (lhsMatrixType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
+            return rewriter.notifyMatchFailure(op, "ewOps codegen currently only works with dense matrices");
+        }
+
         ssize_t lhsRows = lhsMatrixType.getNumRows();
         ssize_t lhsCols = lhsMatrixType.getNumCols();
 
@@ -215,6 +220,11 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         if (lhsRows < 0 || lhsRows < 0 || rhsRows < 0 || rhsCols < 0) {
             return rewriter.notifyMatchFailure(
                 op, "ewOps codegen currently only works with matrix dimensions that are known at compile time");
+        }
+
+        if (lhsMatrixType.getRepresentation() != daphne::MatrixRepresentation::Dense ||
+            rhsMatrixType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
+            return rewriter.notifyMatchFailure(op, "ewOps codegen currently only works with dense matrices");
         }
 
         // Assume that if only one matrix contains a single value for broadcasting it is rhs.
@@ -477,15 +487,37 @@ void EwOpLoweringPass::runOnOperation() {
                            mlir::LLVM::LLVMDialect, daphne::DaphneDialect, mlir::BuiltinDialect,
                            mlir::math::MathDialect, mlir::linalg::LinalgDialect>();
 
-    target.addIllegalOp<
-        // UnaryOps
-        daphne::EwAbsOp, daphne::EwSqrtOp, daphne::EwExpOp, daphne::EwLnOp, daphne::EwSinOp, daphne::EwCosOp,
-        /* daphne::EwTanOp, daphne::EwAsinOp, daphne::EwAcosOp, daphne::EwAtanOp, daphne::EwSinhOp, daphne::EwCoshOp,
-         daphne::EwTanhOp,*/
-        daphne::EwFloorOp, daphne::EwCeilOp, daphne::EwRoundOp,
-        // BinaryOps
-        daphne::EwAddOp, daphne::EwSubOp, daphne::EwMulOp, daphne::EwDivOp, daphne::EwPowOp, daphne::EwMinOp,
-        daphne::EwMaxOp /*, daphne::EwAndOp, daphne::EwOrOp*/>();
+    // UnaryOps
+    target.addDynamicallyLegalOp<daphne::EwAbsOp, daphne::EwSqrtOp, daphne::EwExpOp, daphne::EwLnOp, daphne::EwSinOp,
+                                 daphne::EwCosOp,
+                                 /* daphne::EwTanOp, daphne::EwAsinOp, daphne::EwAcosOp, daphne::EwAtanOp,
+                                  daphne::EwSinhOp, daphne::EwCoshOp, daphne::EwTanhOp,*/
+                                 daphne::EwFloorOp, daphne::EwCeilOp, daphne::EwRoundOp>([](Operation *op) {
+        Type operand = op->getOperand(0).getType();
+        daphne::MatrixType matType = operand.dyn_cast<daphne::MatrixType>();
+        if (matType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
+            return true;
+        }
+        return false;
+    });
+    // BinaryOps
+    target.addDynamicallyLegalOp<daphne::EwAddOp, daphne::EwSubOp, daphne::EwMulOp, daphne::EwDivOp, daphne::EwPowOp,
+                                 daphne::EwMinOp, daphne::EwMaxOp /*, daphne::EwAndOp, daphne::EwOrOp*/>(
+        [](Operation *op) {
+            Type lhs = op->getOperand(0).getType();
+            Type rhs = op->getOperand(1).getType();
+            daphne::MatrixType lhsMatType = lhs.dyn_cast<daphne::MatrixType>();
+            daphne::MatrixType rhsMatType = rhs.dyn_cast<daphne::MatrixType>();
+            if ((!lhsMatType && !rhsMatType) ||
+                (lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense && !rhsMatType)) {
+                return false;
+            }
+            if (lhsMatType.getRepresentation() != daphne::MatrixRepresentation::Dense ||
+                rhsMatType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
+                return true;
+            }
+            return false;
+        });
 
     populateLowerEwOpConversionPatterns(typeConverter, patterns);
 

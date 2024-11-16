@@ -76,6 +76,8 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
             // use {0, 0}.
             mlir::Type mrt = mlir::MemRefType::get({0, 0}, st);
             typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mrt), mrt);
+            typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mlir::MemRefType::get({0}, st)),
+                            mlir::MemRefType::get({0}, st));
         }
     }
 

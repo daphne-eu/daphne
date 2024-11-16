@@ -247,7 +247,14 @@ void AggAllLoweringPass::runOnOperation() {
     target.addLegalDialect<AffineDialect, arith::ArithDialect, BuiltinDialect, daphne::DaphneDialect,
                            linalg::LinalgDialect, LLVM::LLVMDialect, memref::MemRefDialect>();
 
-    target.addIllegalOp<daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>();
+    target.addDynamicallyLegalOp<daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>([](Operation *op) {
+        Type operand = op->getOperand(0).getType();
+        daphne::MatrixType matType = operand.dyn_cast<daphne::MatrixType>();
+        if (matType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
+            return true;
+        }
+        return false;
+    });
 
     patterns.insert<SumAllOpLowering, MinAllOpLowering, MaxAllOpLowering>(typeConverter, &getContext());
     auto module = getOperation();

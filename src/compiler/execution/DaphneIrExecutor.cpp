@@ -258,6 +258,12 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         pm.addPass(mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
 
     pm.addPass(mlir::daphne::createDaphneOptPass());
+
+    pm.addPass(mlir::daphne::createSparseExploitLoweringPass());
+    // SparseExploit fuses multiple operations which only need to be lowered if still needed elsewhere.
+    // Todo: if possible, run only if SparseExploitLowering was successful.
+    pm.addPass(mlir::createCanonicalizerPass());
+
     pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
     pm.addPass(mlir::daphne::createAggDimOpLoweringPass());

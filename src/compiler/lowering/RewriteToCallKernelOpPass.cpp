@@ -18,6 +18,7 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include <compiler/utils/TypePrinting.h>
+#include <format>
 #include <util/ErrorHandler.h>
 #include <util/KernelDispatchMapping.h>
 
@@ -133,10 +134,20 @@ class KernelReplacement : public RewritePattern {
             return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
-        if (auto mrt = t.dyn_cast<mlir::MemRefType>())
-            // Remove any dimension information ({0, 0}), but retain the element
-            // type.
-            return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+        if (auto mrt = t.dyn_cast<mlir::MemRefType>()) {
+            // Remove any specific dimension information ({0}), but retain the rank and element type.
+            int64_t mrtRank = mrt.getRank();
+            switch (mrtRank) {
+            case 1:
+                return mlir::MemRefType::get({0}, mrt.getElementType());
+            case 2:
+                return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+            default:
+                throw std::runtime_error(
+                    std::vformat("RewriteToCallKernelOpPass: expected MemRef to be of rank 1 or 2 but was given {}",
+                                 std::make_format_args(mrtRank)));
+            }
+        }
         return t;
     }
 
