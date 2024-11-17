@@ -120,5 +120,11 @@ namespace CUDA::Convolution {
 
     template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
     template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
+
+    template struct Backward<DenseMatrix<float>, DenseMatrix<float>>::Data;
+    template struct Backward<DenseMatrix<double>, DenseMatrix<double>>::Data;
+
+    template struct Backward<DenseMatrix<float>, DenseMatrix<float>>::Filter;
+    template struct Backward<DenseMatrix<double>, DenseMatrix<double>>::Filter;
 }
 
