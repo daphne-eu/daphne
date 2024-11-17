@@ -159,8 +159,8 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkR
     DataObjectFactory::destroy(arg2);
     DataObjectFactory::destroy(expected1);
     DataObjectFactory::destroy(expected2);
-    DataObjectFactory::destroy(results[0]);
-    DataObjectFactory::destroy(results[1]);
+    DataObjectFactory::destroy(result1);
+    DataObjectFactory::destroy(result2);
 }
 
 TEMPLATE_TEST_CASE("recompile", TAG_KERNELS, VALUE_TYPES) {
