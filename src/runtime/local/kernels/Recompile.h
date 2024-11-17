@@ -142,17 +142,14 @@ private:
         std::vector<void *> &outputs) {
         std::vector<void *> inputsAndOutputs;
 
-        // Prepare inputs
         inputs.reserve(numInputs);
         for (size_t i = 0; i < numInputs; ++i) {
             inputs.push_back(const_cast<void *>(static_cast<const void *>(arg[i])));
             inputsAndOutputs.push_back(&inputs.back());
         }
 
-        // Prepare outputs
         size_t numResults = functionType.getNumResults();
         outputs.reserve(numResults);
-  
         for (size_t i = 0; i < numResults; ++i) {
             if (!res[i]) {
                 auto resultType = functionType.getResult(i);
@@ -164,7 +161,6 @@ private:
 
                     res[i] = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
                 } else {
-                    llvm::errs() << "Unsupported result type for DenseMatrix lowering.\n";
                     return {};
                 }
             }
