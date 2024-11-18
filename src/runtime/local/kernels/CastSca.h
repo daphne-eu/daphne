@@ -123,4 +123,11 @@ template <typename VTRes> struct CastSca<VTRes, FixedStr16> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// string <- string
+// ----------------------------------------------------------------------------
+template <> struct CastSca<std::string, std::string> {
+    static std::string apply(const std::string &arg, DaphneContext *ctx) { return arg; }
+};
+
 #endif // SRC_RUNTIME_LOCAL_KERNELS_CASTSCA_H
