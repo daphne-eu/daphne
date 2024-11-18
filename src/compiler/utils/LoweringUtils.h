@@ -54,3 +54,6 @@ mlir::Type convertFloat(mlir::FloatType floatType);
 mlir::Type convertInteger(mlir::IntegerType intType);
 
 mlir::Operation *findLastUseOfSSAValue(mlir::Value &v);
+
+mlir::Value convertToSignlessInt(mlir::OpBuilder &rewriter, mlir::Location loc, mlir::TypeConverter *typeConverter,
+                                 mlir::Value origVal, mlir::Type targetType);

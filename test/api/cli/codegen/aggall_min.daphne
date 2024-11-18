@@ -1,0 +1,11 @@
+// Compare precompiled kernel with codegen generated for the AllAggMinOp.
+
+X = [1.0, 2, 3, 4, 5, 6](2, 3);
+a = aggMin(X);
+print(a);
+
+a = aggMin(as.matrix<si64>(X));
+print(a);
+
+a = aggMin(as.matrix<ui64>(X));
+print(a);
