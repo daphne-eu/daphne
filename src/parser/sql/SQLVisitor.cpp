@@ -551,8 +551,11 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(SQLGrammarParser::InnerJoinContext *ctx
         mlir::Value rhsName = valueOrErrorOnVisit(ctx->rhs);
         mlir::Value lhsName = valueOrErrorOnVisit(ctx->lhs);
 
+        mlir::Value numRowRes =
+            static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(queryLoc, static_cast<int64_t>(-1)));
+
         return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::InnerJoinOp>(loc, t, currentFrame, tojoin, rhsName, lhsName));
+            builder.create<mlir::daphne::InnerJoinOp>(loc, t, currentFrame, tojoin, rhsName, lhsName, numRowRes));
     }
 
     std::vector<mlir::Value> rhsNames;

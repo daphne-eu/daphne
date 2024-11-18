@@ -1,0 +1,14 @@
+# test inner join with optional arg for result size
+f1 = createFrame(
+    [1, 2], [3, 4],
+    "a", "b"
+);
+f2 = createFrame(
+    [3, 4, 5], [6, 7, 8],
+    "c", "d"
+);
+
+f3 = innerJoin(f1, f2, "b", "c");
+f4 = innerJoin(f1, f2, "b", "c", 2);
+print(f3);
+print(f4);
