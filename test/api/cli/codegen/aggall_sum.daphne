@@ -1,0 +1,13 @@
+// Compare precompiled kernel with codegen generated for the AllAggSumOp.
+
+X = fill(1.0, 10, 10);
+a = sum(X);
+print(a);
+
+X = fill(1, 10, 10);
+a = sum(X);
+print(a);
+
+X = fill(1u, 10, 10);
+a = sum(X);
+print(a);

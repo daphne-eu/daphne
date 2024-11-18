@@ -25,7 +25,6 @@
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Value.h"
-#include "mlir/Transforms/Passes.h"
 
 /// Insert an allocation for the given MemRefType.
 mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc, mlir::PatternRewriter &rewriter) {
@@ -130,4 +129,10 @@ mlir::Operation *findLastUseOfSSAValue(mlir::Value &v) {
     }
 
     return lastUseOp;
+}
+
+mlir::Value convertToSignlessInt(mlir::OpBuilder &rewriter, mlir::Location loc, mlir::TypeConverter *typeConverter,
+                                 mlir::Value origVal, mlir::Type targetType) {
+    return typeConverter->materializeTargetConversion(
+        rewriter, loc, rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal);
 }

@@ -1,0 +1,21 @@
+// Performs an AddOp. Used to compare precompiled kernel with codegen.
+// Values extracted as scalar to avoid them being optimized out of
+// the calculation with constant folding or similar.
+
+// f64
+X = [1.0, 2, 3, 4, 5, 6](2, 3);
+a = as.scalar(X[0:1, 1:2]); // 2
+b = as.scalar(X[1:2, 0:1]); // 4
+
+print(X + X); // mat + mat
+print(X + a); // mat + scalar (broadcasting)
+print(a + b); // scalar + scalar
+
+// si64
+X = [1, 2, 3, 4, 5, 6](2, 3);
+a = as.scalar(X[0:1, 1:2]); // 2
+b = as.scalar(X[1:2, 0:1]); // 4
+
+print(X + X); // mat + mat
+print(X + a); // mat + scalar (broadcasting)
+print(a + b); // scalar + scalar
