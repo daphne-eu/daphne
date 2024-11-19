@@ -41,25 +41,26 @@ namespace CUDA::Convolution {
     template<typename DTRes, typename DTArg>
     struct Backward {
         struct Data {
-            static void apply( DTRes *&dInput, const DTArg *filter, const DTArg *dOutput,
-                               const size_t stride_h, const size_t stride_w,
-                               const size_t pad_h, const size_t pad_w,
-                               const size_t input_batch_size, const size_t input_num_channels,
-                               const size_t input_h, const size_t input_w,
-                               const size_t filter_num_filters, const size_t filter_num_channels,
-                               const size_t filter_h, const size_t filter_w,
-                               DCTX(dctx));
+            static void apply( 
+                DTRes *&dInput, const DTArg *filter, const DTArg *dOutput,
+                const size_t batch_size, const size_t num_channels,
+                const size_t img_h, const size_t img_w,
+                const size_t filter_h, const size_t filter_w,
+                const size_t stride_h, const size_t stride_w,
+                const size_t pad_h, const size_t pad_w,
+                DCTX(dctx));
         };
 
         struct Filter {
-            static void apply( DTRes *&dFilter, const DTArg *input, const DTArg *dOutput,
-                               const size_t stride_h, const size_t stride_w,
-                               const size_t pad_h, const size_t pad_w,
-                               const size_t input_batch_size, const size_t input_num_channels,
-                               const size_t input_h, const size_t input_w,
-                               const size_t filter_num_filters, const size_t filter_num_channels,
-                               const size_t filter_h, const size_t filter_w,
-                               DCTX(dctx));
+            static void apply( 
+                DTRes *&dFilter, const DTArg *input, const DTArg *dOutput,
+                const DTArg *filter,
+                const size_t batch_size, const size_t num_channels,
+                const size_t img_h, const size_t img_w,
+                const size_t filter_h, const size_t filter_w,
+                const size_t stride_h, const size_t stride_w,
+                const size_t pad_h, const size_t pad_w,
+                DCTX(dctx));
         };
     };
 }

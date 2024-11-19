@@ -118,6 +118,300 @@ namespace CUDA::Convolution {
         }
     }
 
+    template<typename DTRes, typename DTArg>
+    void Backward<DTRes, DTArg>::Data::apply(
+        DTRes *&dInput, const DTArg *filter, const DTArg *dOutput,
+        const size_t batch_size, const size_t num_channels,
+        const size_t img_h, const size_t img_w,
+        const size_t filter_h, const size_t filter_w,
+        const size_t stride_h, const size_t stride_w,
+        const size_t pad_h, const size_t pad_w,
+        DCTX(dctx)) 
+    {
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+                
+        using VT = typename DTRes::VT;
+        auto F = filter->getNumRows(); // num filters
+        const VT blend_alpha = 1;
+        VT blend_beta = 0;
+        const VT* d_dy = dOutput->getValues(&alloc_desc);
+        const VT* d_w = filter->getValues(&alloc_desc);
+
+        cudnnConvolutionBwdDataAlgo_t algo;
+                
+        CHECK_CUDNN(
+            cudnnSetTensor4dDescriptor(
+                ctx->src_tensor_desc, 
+                ctx->tensor_format, 
+                ctx->template getCUDNNDataType<VT>(), 
+                batch_size, num_channels, img_h, img_w));
+                        
+        const int tensorDims = 4;
+        int tensorOuputDimA[tensorDims];
+        const int filterDimA[tensorDims] = {
+            static_cast<int>(F), 
+            static_cast<int>(num_channels), 
+            static_cast<int>(filter_h),
+            static_cast<int>(filter_w)};
+
+        CHECK_CUDNN(
+            cudnnSetFilterNdDescriptor(
+                ctx->filter_desc, 
+                ctx->template getCUDNNDataType<VT>(), 
+                CUDNN_TENSOR_NCHW, tensorDims, filterDimA));
+
+        const int convDims = 2;
+        int padA[convDims] = {static_cast<int>(pad_h), static_cast<int>(pad_w)};
+        int filterStrideA[convDims] = { static_cast<int>(stride_h), static_cast<int>(stride_w)};
+        int upscaleA[convDims] = {1,1};
+        cudnnDataType_t convDataType = ctx->template getCUDNNDataType<VT>();
+
+        // ToDo: Math are done in FP32 when tensor are in FP16.
+//        if (ctx->data_type == CUDNN_DATA_HALF) {
+//            convDataType = CUDNN_DATA_FLOAT;
+//        }
+
+        CHECK_CUDNN(
+            cudnnSetConvolutionNdDescriptor(
+                ctx->conv_desc, 
+                convDims, 
+                padA, 
+                filterStrideA, 
+                upscaleA,
+                CUDNN_CROSS_CORRELATION, 
+                convDataType));
+
+        CHECK_CUDNN(
+            cudnnGetConvolutionNdForwardOutputDim(
+                ctx->conv_desc, 
+                ctx->src_tensor_desc, 
+                ctx->filter_desc,
+                tensorDims, 
+                tensorOuputDimA));
+
+        int n = tensorOuputDimA[0]; int c = tensorOuputDimA[1];
+        int h = tensorOuputDimA[2]; int w = tensorOuputDimA[3];
+
+//        size_t out_buf_size = n * c * h * w * sizeOfDataType;
+        CHECK_CUDNN(
+            cudnnSetTensor4dDescriptor(
+                ctx->dst_tensor_desc, 
+                ctx->tensor_format, 
+                ctx->template getCUDNNDataType<VT>(), 
+                n, c, h, w));
+
+        if (dInput == nullptr) {
+            dInput = DataObjectFactory::create<DTRes>(batch_size, c*h*w, false, &alloc_desc);
+        }
+                
+        VT* d_dx = dInput->getValues(&alloc_desc);
+        if (ctx->conv_bwd_data_algo < 0) {
+            int requestedAlgoCount = CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT;
+            int returnedAlgoCount = -1;
+            cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT];
+
+            CHECK_CUDNN(
+                cudnnFindConvolutionBackwardDataAlgorithm(
+                    ctx->getCUDNNHandle(),                                                                            
+                    ctx->filter_desc,
+                    ctx->dst_tensor_desc,
+                    ctx->conv_desc, 
+                    ctx->src_tensor_desc, 
+                    requestedAlgoCount, 
+                    &returnedAlgoCount, 
+                    results));
+            algo = results[0].algo;
+            ctx->conv_bwd_data_algo = algo;
+        }
+        else {
+            algo = static_cast<cudnnConvolutionBwdDataAlgo_t>(ctx->conv_bwd_data_algo);
+        }
+
+        size_t workspace_sizeInBytes=0;
+        void* work_space=nullptr;
+        CHECK_CUDNN(
+            cudnnGetConvolutionBackwardDataWorkspaceSize(
+                ctx->getCUDNNHandle(), 
+                ctx->filter_desc, 
+                ctx->dst_tensor_desc,
+                ctx->conv_desc, 
+                ctx->src_tensor_desc, 
+                algo, 
+                &workspace_sizeInBytes));
+
+        if (workspace_sizeInBytes!=0) {
+            work_space = ctx->getCUDNNWorkspace(workspace_sizeInBytes);
+        }
+
+        CHECK_CUDNN(
+            cudnnConvolutionBackwardData(
+                ctx->getCUDNNHandle(), 
+                &blend_alpha, 
+                ctx->filter_desc,
+                d_w,
+                ctx->dst_tensor_desc, 
+                d_dy, 
+                ctx->conv_desc, 
+                algo, 
+                work_space, 
+                workspace_sizeInBytes, 
+                &blend_beta,
+                ctx->src_tensor_desc, 
+                d_dx));
+    }
+
+    template<typename DTRes, typename DTArg>
+    void Backward<DTRes, DTArg>::Filter::apply(
+        DTRes *&dFilter, const DTArg *input, const DTArg *dOutput,
+
+        // variables for setting descriptors
+        const DTArg *filter,
+        const size_t batch_size, const size_t num_channels,
+        const size_t img_h, const size_t img_w,
+        const size_t filter_h, const size_t filter_w,
+        const size_t stride_h, const size_t stride_w,
+        const size_t pad_h, const size_t pad_w,
+        //
+
+        DCTX(dctx))
+    {
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+                
+        using VT = typename DTRes::VT;
+        auto F = filter->getNumRows(); // num filters
+        const VT blend_alpha = 1;
+        VT blend_beta = 0;
+        const VT* d_dy = dOutput->getValues(&alloc_desc);
+        const VT* d_x = input->getValues(&alloc_desc);
+
+        cudnnConvolutionBwdFilterAlgo_t algo;
+                
+        CHECK_CUDNN(
+            cudnnSetTensor4dDescriptor(
+                ctx->src_tensor_desc, 
+                ctx->tensor_format, 
+                ctx->template getCUDNNDataType<VT>(), 
+                batch_size, num_channels, img_h, img_w));
+                        
+        const int tensorDims = 4;
+        int tensorOuputDimA[tensorDims];
+        const int filterDimA[tensorDims] = {
+            static_cast<int>(F), 
+            static_cast<int>(num_channels), 
+            static_cast<int>(filter_h),
+            static_cast<int>(filter_w)};
+
+        CHECK_CUDNN(
+            cudnnSetFilterNdDescriptor(
+                ctx->filter_desc, 
+                ctx->template getCUDNNDataType<VT>(), 
+                CUDNN_TENSOR_NCHW, tensorDims, filterDimA));
+
+        const int convDims = 2;
+        int padA[convDims] = {static_cast<int>(pad_h), static_cast<int>(pad_w)};
+        int filterStrideA[convDims] = { static_cast<int>(stride_h), static_cast<int>(stride_w)};
+        int upscaleA[convDims] = {1,1};
+        cudnnDataType_t convDataType = ctx->template getCUDNNDataType<VT>();
+
+        // ToDo: Math are done in FP32 when tensor are in FP16.
+//        if (ctx->data_type == CUDNN_DATA_HALF) {
+//            convDataType = CUDNN_DATA_FLOAT;
+//        }
+
+        CHECK_CUDNN(
+            cudnnSetConvolutionNdDescriptor(
+                ctx->conv_desc, 
+                convDims, 
+                padA, 
+                filterStrideA, 
+                upscaleA,
+                CUDNN_CROSS_CORRELATION, 
+                convDataType));
+
+        CHECK_CUDNN(
+            cudnnGetConvolutionNdForwardOutputDim(
+                ctx->conv_desc, 
+                ctx->src_tensor_desc, 
+                ctx->filter_desc,
+                tensorDims, 
+                tensorOuputDimA));
+
+        int n = tensorOuputDimA[0]; int c = tensorOuputDimA[1];
+        int h = tensorOuputDimA[2]; int w = tensorOuputDimA[3];
+
+//        size_t out_buf_size = n * c * h * w * sizeOfDataType;
+        CHECK_CUDNN(
+            cudnnSetTensor4dDescriptor(
+                ctx->dst_tensor_desc, 
+                ctx->tensor_format, 
+                ctx->template getCUDNNDataType<VT>(), 
+                n, c, h, w));
+
+        if (dFilter == nullptr) {
+            dFilter = DataObjectFactory::create<DTRes>(
+                F, num_channels*filter_h*filter_w, false, &alloc_desc);
+        }
+                
+        VT* d_dw = dFilter->getValues(&alloc_desc);
+        if (ctx->conv_bwd_filter_algo < 0) {
+            int requestedAlgoCount = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT;
+            int returnedAlgoCount = -1;
+            cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT];
+
+            CHECK_CUDNN(
+                cudnnFindConvolutionBackwardFilterAlgorithm(
+                    ctx->getCUDNNHandle(),                                                                            
+                    ctx->src_tensor_desc,
+                    ctx->dst_tensor_desc,
+                    ctx->conv_desc, 
+                    ctx->filter_desc,
+                    requestedAlgoCount, 
+                    &returnedAlgoCount, 
+                    results));
+            algo = results[0].algo;
+            ctx->conv_bwd_filter_algo = algo;
+        }
+        else {
+            algo = static_cast<cudnnConvolutionBwdFilterAlgo_t>(ctx->conv_bwd_filter_algo);
+        }
+
+        size_t workspace_sizeInBytes=0;
+        void* work_space=nullptr;
+        CHECK_CUDNN(
+            cudnnGetConvolutionBackwardFilterWorkspaceSize(
+                ctx->getCUDNNHandle(),
+                ctx->src_tensor_desc,
+                ctx->dst_tensor_desc,  
+                ctx->conv_desc,
+                ctx->filter_desc,     
+                algo, 
+                &workspace_sizeInBytes));
+
+        if (workspace_sizeInBytes!=0) {
+            work_space = ctx->getCUDNNWorkspace(workspace_sizeInBytes);
+        }
+
+        CHECK_CUDNN(
+            cudnnConvolutionBackwardFilter(
+                ctx->getCUDNNHandle(), 
+                &blend_alpha, 
+                ctx->src_tensor_desc,
+                d_x
+                ctx->dst_tensor_desc, 
+                d_dy,
+                ctx->conv_desc,
+                algo, 
+                work_space, 
+                workspace_sizeInBytes, 
+                &blend_beta,
+                ctx->filter_desc,
+                d_dw));
+    }
+    
     template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
     template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
 
@@ -127,4 +421,8 @@ namespace CUDA::Convolution {
     template struct Backward<DenseMatrix<float>, DenseMatrix<float>>::Filter;
     template struct Backward<DenseMatrix<double>, DenseMatrix<double>>::Filter;
 }
+
+
+    
+
 

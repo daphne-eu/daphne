@@ -96,15 +96,20 @@ public:
     }
 
     int conv_algorithm = -1;
+    int conv_bwd_data_algo = -1;
+    int conv_bwd_filter_algo = -1;
+
     cudnnPoolingDescriptor_t pooling_desc{};
-    cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
+    cudnnTensorDescriptor_t src_tensor_desc{},  //x, dx
+                            dst_tensor_desc{},  //y, dy
+                            bn_tensor_desc{};
     cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
-    cudnnFilterDescriptor_t filter_desc{};
+    cudnnFilterDescriptor_t filter_desc{};      //w, dw
     cudnnActivationDescriptor_t  activation_desc{};
     cudnnConvolutionDescriptor_t conv_desc{};
     cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
 
-    cudnnTensorDescriptor_t dy_tensor_desc{}, bn_scale_bias_tensor_desc{};
+    cudnnTensorDescriptor_t bn_scale_bias_tensor_desc{};
 
     // A block size of 256 works well in many cases.
     // Putting it here to avoid hard coding things elsewhere.

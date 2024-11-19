@@ -66,7 +66,7 @@ fi
 
 # for interactive use:
 $USE_SUDO docker run $DEBUG_FLAGS $DEVICE_FLAGS -it --rm --hostname daphne-container -w $DAPHNE_ROOT_CONTAINER \
-    -v "$DAPHNE_ROOT:$DAPHNE_ROOT_CONTAINER" -e GID=$GID -e TERM=screen-256color -e PATH -e LD_LIBRARY_PATH \
+    -v "$DAPHNE_ROOT:$DAPHNE_ROOT_CONTAINER" -e GID=$GID -e TERM=screen-256color -e PATH="$PATH" -e LD_LIBRARY_PATH="$LD_LIBRARY_PATH" \
     -e USER=$USERNAME -e UID=$UID \
     "$DOCKER_IMAGE:$DOCKER_TAG" $command
 
