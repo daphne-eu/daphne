@@ -23,7 +23,6 @@
 #include <mlir/Pass/Pass.h>
 
 #include <memory>
-#include <stdexcept>
 
 using namespace mlir;
 
