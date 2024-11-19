@@ -287,7 +287,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         type_adaptation,
         vectorized,
         obj_ref_mgnt,
-        mlir_codegen
+        mlir_codegen_sparsity_exploiting_op_fusion,
+        mlir_codegen_daphneir_to_mlir,
+        mlir_codegen_mlir_specific
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
@@ -305,8 +307,10 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                          clEnumVal(vectorized, "Show DaphneIR after vectorization"),
                          clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
                          clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-                         clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
-                         clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
+                         clEnumVal(mlir_codegen_sparsity_exploiting_op_fusion, "Show DaphneIR after MLIR codegen (sparsity-exploiting operator fusion)"),
+                         clEnumVal(mlir_codegen_daphneir_to_mlir, "Show DaphneIR after MLIR codegen (DaphneIR to MLIR)"),
+                         clEnumVal(mlir_codegen_mlir_specific, "Show DaphneIR after MLIR codegen (MLIR-specific)"),
+                         clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1("args", cat(daphneOptions),
@@ -476,8 +480,14 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         case obj_ref_mgnt:
             user_config.explain_obj_ref_mgnt = true;
             break;
-        case mlir_codegen:
-            user_config.explain_mlir_codegen = true;
+        case mlir_codegen_sparsity_exploiting_op_fusion:
+            user_config.explain_mlir_codegen_sparsity_exploiting_op_fusion = true;
+            break;
+        case mlir_codegen_daphneir_to_mlir:
+            user_config.explain_mlir_codegen_daphneir_to_mlir = true;
+            break;
+        case mlir_codegen_mlir_specific:
+            user_config.explain_mlir_codegen_mlir_specific = true;
             break;
         }
     }

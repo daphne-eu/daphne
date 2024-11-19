@@ -254,15 +254,14 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
 }
 
 void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
-    if (userConfig_.explain_mlir_codegen)
-        pm.addPass(mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
-
     pm.addPass(mlir::daphne::createDaphneOptPass());
 
     pm.addPass(mlir::daphne::createSparseExploitLoweringPass());
     // SparseExploit fuses multiple operations which only need to be lowered if still needed elsewhere.
     // Todo: if possible, run only if SparseExploitLowering was successful.
     pm.addPass(mlir::createCanonicalizerPass());
+    if (userConfig_.explain_mlir_codegen_sparsity_exploiting_op_fusion)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (sparsity-exploiting operator fusion):"));
 
     pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
@@ -279,9 +278,9 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
             userConfig_.matmul_use_fixed_tile_sizes, userConfig_.matmul_unroll_factor,
             userConfig_.matmul_unroll_jam_factor, userConfig_.matmul_num_vec_registers,
             userConfig_.matmul_invert_loops));
-        if (userConfig_.explain_mlir_codegen)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR directly after lowering MatMulOp."));
     }
+    if (userConfig_.explain_mlir_codegen_daphneir_to_mlir)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (DaphneIR to MLIR):"));
 
     pm.addPass(mlir::createConvertMathToLLVMPass());
     pm.addPass(mlir::daphne::createModOpLoweringPass());
@@ -299,6 +298,6 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;
     pm.addPass(mlir::createConvertVectorToLLVMPass(lowerVectorToLLVMOptions));
 
-    if (userConfig_.explain_mlir_codegen)
-        pm.addPass(mlir::daphne::createPrintIRPass("IR after codegen pipeline"));
+    if (userConfig_.explain_mlir_codegen_mlir_specific)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (MLIR-specific):"));
 }
