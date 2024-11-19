@@ -85,6 +85,7 @@ set(TEST_SOURCES
         runtime/local/io/WriteDaphneTest.cpp
         runtime/local/io/ReadDaphneTest.cpp
         runtime/local/io/DaphneSerializerTest.cpp
+        runtime/local/io/IO_URingTest.cpp 
 
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
@@ -183,7 +184,7 @@ add_dependencies(run_tests daphne daphnelib DistributedWorker daphne-opt)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto DaphneConfigParser
-        DaphneMetaDataParser Util)
+    DaphneMetaDataParser Util IO_URING_LIB)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_include_directories(run_tests PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
