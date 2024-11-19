@@ -137,8 +137,8 @@ template <typename VT> struct CheckEqApprox<CSRMatrix<VT>> {
             return false;
 
         for (size_t r = 0; r < numRows; r++) {
-            const VT *valuesLhs = lhs->getValues(r);
-            const VT *valuesRhs = rhs->getValues(r);
+            const VT *valuesLhs = lhs->getRowValues(r);
+            const VT *valuesRhs = rhs->getRowValues(r);
             const size_t nnzElementsLhs = lhs->getNumNonZeros(r);
             const size_t nnzElementsRhs = rhs->getNumNonZeros(r);
             if (nnzElementsLhs != nnzElementsRhs)

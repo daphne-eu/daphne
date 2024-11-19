@@ -66,18 +66,21 @@ template <typename VTRes, typename VTArg> struct AggCum<DenseMatrix<VTRes>, Dens
         EwBinaryScaFuncPtr<VTRes, VTRes, VTArg> func =
             getEwBinaryScaFuncPtr<VTRes, VTRes, VTArg>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
+        auto arg_inc = arg->isView() ? arg->getNumCols() : arg->getRowSkip();
+        auto res_inc = res->isView() ? res->getNumCols() : res->getRowSkip();
+
         // First row: copy from arg to res.
         for (size_t c = 0; c < numCols; c++)
             valuesResCur[c] = valuesArg[c];
-        valuesArg += arg->getRowSkip();
-        valuesResCur += res->getRowSkip();
+        valuesArg += arg_inc;
+        valuesResCur += res_inc;
         // Remaining rows: calculate from previous res row and current arg row.
         for (size_t r = 1; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++)
                 valuesResCur[c] = func(valuesResPrv[c], valuesArg[c], ctx);
-            valuesArg += arg->getRowSkip();
-            valuesResPrv += res->getRowSkip();
-            valuesResCur += res->getRowSkip();
+            valuesArg += arg_inc;
+            valuesResPrv += res_inc;
+            valuesResCur += res_inc;
         }
     }
 };

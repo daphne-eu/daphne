@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOMPUTE_H
-#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOMPUTE_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
@@ -75,7 +74,7 @@ template <class DTRes> struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRe
             std::string addr = std::to_string(rank);
             for (size_t i = 0; i < numInputs; i++) {
                 auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
-                auto distrData = dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).getDistributedData();
+                auto distrData = dynamic_cast<AllocationDescriptorMPI *>(dp->getAllocation(0))->getDistributedData();
 
                 MPIHelper::StoredInfo storedData({distrData.identifier, distrData.numRows, distrData.numCols});
                 task.inputs.push_back(storedData);
@@ -94,12 +93,12 @@ template <class DTRes> struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRe
                 auto resMat = *res[idx++];
                 auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(std::to_string(rank));
 
-                auto data = dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).getDistributedData();
+                auto data = dynamic_cast<AllocationDescriptorMPI *>(dp->getAllocation(0))->getDistributedData();
                 data.identifier = info.identifier;
                 data.numRows = info.numRows;
                 data.numCols = info.numCols;
                 data.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).updateDistributedData(data);
+                dynamic_cast<AllocationDescriptorMPI *>(dp->getAllocation(0))->updateDistributedData(data);
             }
         }
     }
@@ -126,13 +125,13 @@ template <class DTRes> struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYN
                                                                                          dctx);
 
         // Iterate over workers
-        // Pass all the nessecary arguments for the pipeline
+        // Pass all the necessary arguments for the pipeline
         for (auto addr : workers) {
 
             distributed::Task task;
             for (size_t i = 0; i < numInputs; i++) {
                 auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
-                auto distrData = dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getDistributedData();
+                auto distrData = dynamic_cast<AllocationDescriptorMPI *>(dp->getAllocation(0))->getDistributedData();
 
                 distributed::StoredData protoData;
                 protoData.set_identifier(distrData.identifier);
@@ -143,7 +142,7 @@ template <class DTRes> struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYN
             }
             task.set_mlir_code(mlirCode);
             StoredInfo storedInfo({addr});
-            // TODO for now resuing channels seems to slow things down...
+            // TODO for now reusing channels seems to slow things down...
             // It is faster if we generate channel for each call and let gRPC
             // handle resources internally We might need to change this in the
             // future and re-use channels ( data.getChannel() )
@@ -161,12 +160,12 @@ template <class DTRes> struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_ASYN
                 auto resMat = *res[o];
                 auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(addr);
 
-                auto data = dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getDistributedData();
+                auto data = dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))->getDistributedData();
                 data.identifier = computeResult.outputs()[o].stored().identifier();
                 data.numRows = computeResult.outputs()[o].stored().num_rows();
                 data.numCols = computeResult.outputs()[o].stored().num_cols();
                 data.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).updateDistributedData(data);
+                dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))->updateDistributedData(data);
             }
         }
     }
@@ -192,13 +191,13 @@ template <class DTRes> struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC
                                                                                          dctx);
 
         // Iterate over workers
-        // Pass all the nessecary arguments for the pipeline
+        // Pass all the necessary arguments for the pipeline
         for (auto addr : workers) {
 
             distributed::Task task;
             for (size_t i = 0; i < numInputs; i++) {
                 auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
-                auto distrData = dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getDistributedData();
+                auto distrData = dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))->getDistributedData();
 
                 distributed::StoredData protoData;
                 protoData.set_identifier(distrData.identifier);
@@ -222,19 +221,17 @@ template <class DTRes> struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC_SYNC
                     auto resMat = *res[o];
                     auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(addr);
 
-                    auto data = dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getDistributedData();
+                    auto data = dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))->getDistributedData();
                     data.identifier = computeResult.outputs()[o].stored().identifier();
                     data.numRows = computeResult.outputs()[o].stored().num_rows();
                     data.numCols = computeResult.outputs()[o].stored().num_cols();
                     data.isPlacedAtWorker = true;
-                    dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).updateDistributedData(data);
+                    dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))->updateDistributedData(data);
                 }
             });
-            threads_vector.push_back(move(t));
+            threads_vector.push_back(std::move(t));
         }
         for (auto &thread : threads_vector)
             thread.join();
     }
 };
-
-#endif // SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOMPUTE_H

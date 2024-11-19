@@ -95,11 +95,14 @@ class MPICoordinator {
             std::string addr = std::to_string(COORDINATOR);
             // If dp already exists for this worker, update the range and data
             if (auto dp = (*res[i])->getMetaDataObject()->getDataPlacementByLocation(addr)) {
-                (*res[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
-                dynamic_cast<AllocationDescriptorMPI &>(*(dp->allocation)).updateDistributedData(data);
+                (*res[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->getID(), &range);
+                dynamic_cast<AllocationDescriptorMPI *>(dp->getAllocation(0))->updateDistributedData(data);
+
             } else { // else create new dp entry
-                AllocationDescriptorMPI allocationDescriptor(dctx, COORDINATOR, data);
-                ((*res[i]))->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
+                AllocationDescriptorMPI allocationDescriptor(COORDINATOR, dctx, data);
+                std::vector<std::unique_ptr<IAllocationDescriptor>> allocations;
+                allocations.emplace_back(&allocationDescriptor);
+                ((*res[i]))->getMetaDataObject()->addDataPlacement(allocations, &range);
             }
         }
         // solver.Compute(&outputsStoredInfo, inputsStoredInfo, mlirCode);

@@ -126,8 +126,8 @@ template <typename VT> struct Tri<CSRMatrix<VT>> {
         rowOffsetsRes[0] = 0;
         for (size_t r = 0, pos = 0; r < numRows; r++, (*inc)++) {
             const size_t rowNumNonZeros = arg->getNumNonZeros(r);
-            const size_t *rowColIdxs = arg->getColIdxs(r);
-            const VT *rowValues = arg->getValues(r);
+            const size_t *rowColIdxs = arg->getColIdxsOfRow(r);
+            const VT *rowValues = arg->getRowValues(r);
 
             for (size_t i = 0; i < rowNumNonZeros; i++) {
                 const size_t c = rowColIdxs[i];

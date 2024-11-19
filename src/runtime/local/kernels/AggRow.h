@@ -183,7 +183,7 @@ template <typename VTRes, typename VTArg> struct AggRow<DenseMatrix<VTRes>, CSRM
             const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
 
             for (size_t r = 0; r < numRows; r++) {
-                *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(arg->getValues(r), arg->getNumNonZeros(r),
+                *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(arg->getRowValues(r), arg->getNumNonZeros(r),
                                                                        numCols, func, isSparseSafe, neutral, ctx);
                 valuesRes += res->getRowSkip();
             }
@@ -197,7 +197,7 @@ template <typename VTRes, typename VTArg> struct AggRow<DenseMatrix<VTRes>, CSRM
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func =
                 getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             for (size_t r = 0; r < numRows; r++) {
-                *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(arg->getValues(r), arg->getNumNonZeros(r),
+                *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(arg->getRowValues(r), arg->getNumNonZeros(r),
                                                                        numCols, func, isSparseSafe, neutral, ctx);
                 const VTArg *valuesArg = arg->getValues(0);
                 const size_t numNonZeros = arg->getNumNonZeros(r);

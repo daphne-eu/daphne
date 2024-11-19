@@ -52,7 +52,6 @@ void CUDAContext::init() {
     logger->info("Using CUDA device {}: {}\n\tAvailable mem: {} Total mem: {} "
                  "using {}% -> {}",
                  device_id, device_properties.name, available, total, mem_usage * 100, mem_budget);
-
     CHECK_CUBLAS(cublasCreate(&cublas_handle));
     CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
     CHECK_CUDNN(cudnnCreate(&cudnn_handle));
@@ -69,7 +68,6 @@ void CUDAContext::init() {
     CHECK_CUSOLVER(cusolverDnSetStream(cusolver_handle, cusolver_stream));
 
     getCUDNNWorkspace(64 * 1024 * 1024);
-
     //    CHECK_CUBLAS(cublasLtCreate(&cublaslt_Handle));
     //    CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));
 }
@@ -134,4 +132,4 @@ void CUDAContext::free(size_t id) {
     allocations.erase(id);
 }
 
-int CUDAContext::getMaxNumThreads() { return device_properties.maxThreadsPerBlock; }
+int CUDAContext::getMaxNumThreads() const { return device_properties.maxThreadsPerBlock; }

@@ -133,7 +133,7 @@ template <typename VT> struct DiagMatrix<CSRMatrix<VT>, CSRMatrix<VT>> {
 
         for (size_t r = 0, pos = 0; r < numRowsCols; r++) {
             if (arg->getNumNonZeros(r)) {
-                valuesRes[pos] = *(arg->getValues(r));
+                valuesRes[pos] = *(arg->getRowValues(r));
                 colIdxsRes[pos++] = r;
             }
             rowOffsetsRes[r + 1] = pos;

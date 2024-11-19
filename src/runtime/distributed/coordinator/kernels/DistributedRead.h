@@ -68,7 +68,9 @@ template <class DTRes> void distributedRead(DTRes *&res, const char *filename, D
 // MPI
 // ----------------------------------------------------------------------------
 template <class DTRes> struct DistributedRead<ALLOCATION_TYPE::DIST_MPI, DTRes> {
-    static void apply(DTRes *&res, const char *filename, DCTX(dctx)) { throw std::runtime_error("not implemented"); }
+    static void apply(DTRes *&res, const char *filename, DCTX(dctx)) {
+        throw std::runtime_error("DistributedRead not implemented");
+    }
 };
 #endif
 
@@ -77,7 +79,9 @@ template <class DTRes> struct DistributedRead<ALLOCATION_TYPE::DIST_MPI, DTRes> 
 // ----------------------------------------------------------------------------
 
 template <class DTRes> struct DistributedRead<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DTRes> {
-    static void apply(DTRes *&res, const char *filename, DCTX(dctx)) { throw std::runtime_error("not implemented"); }
+    static void apply(DTRes *&res, const char *filename, DCTX(dctx)) {
+        throw std::runtime_error("DistributedRead not implemented");
+    }
 };
 
 // ----------------------------------------------------------------------------
@@ -96,39 +100,45 @@ template <class DTRes> struct DistributedRead<ALLOCATION_TYPE::DIST_GRPC_SYNC, D
         std::vector<std::thread> threads_vector;
         LoadPartitioningDistributed<DTRes, AllocationDescriptorGRPC> partioner(DistributionSchema::DISTRIBUTE, res,
                                                                                dctx);
+        auto hdfsFn = std::string(filename);
+
         while (partioner.HasNextChunk()) {
-            auto hdfsFn = std::string(filename);
             auto dp = partioner.GetNextChunk();
 
-            auto workerAddr = dynamic_cast<AllocationDescriptorGRPC *>(dp->allocation.get())->getLocation();
-            std::thread t([=, &res]() {
-                auto stub = ctx->stubs[workerAddr].get();
+            if (auto grpc_alloc = dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))) {
+                auto workerAddr = grpc_alloc->getLocation();
+                std::thread t([=, &res]() {
+                    auto stub = ctx->stubs[workerAddr].get();
 
-                distributed::HDFSFile fileData;
-                fileData.set_filename(hdfsFn);
-                fileData.set_start_row(dp->range->r_start);
-                fileData.set_num_rows(dp->range->r_len);
-                fileData.set_num_cols(dp->range->c_len);
+                    distributed::HDFSFile fileData;
+                    fileData.set_filename(hdfsFn);
+                    fileData.set_start_row(dp->getRange()->r_start);
+                    fileData.set_num_rows(dp->getRange()->r_len);
+                    fileData.set_num_cols(dp->getRange()->c_len);
 
-                grpc::ClientContext grpc_ctx;
-                distributed::StoredData response;
+                    grpc::ClientContext grpc_ctx;
+                    distributed::StoredData response;
 
-                auto status = stub->ReadHDFS(&grpc_ctx, fileData, &response);
-                if (!status.ok())
-                    throw std::runtime_error(status.error_message());
+                    auto status = stub->ReadHDFS(&grpc_ctx, fileData, &response);
+                    if (!status.ok())
+                        throw std::runtime_error(status.error_message());
 
-                DistributedData newData;
-                newData.identifier = response.identifier();
-                newData.numRows = response.num_rows();
-                newData.numCols = response.num_cols();
-                newData.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).updateDistributedData(newData);
-            });
-            threads_vector.push_back(move(t));
+                    DistributedData newData;
+                    newData.identifier = response.identifier();
+                    newData.numRows = response.num_rows();
+                    newData.numCols = response.num_cols();
+                    newData.isPlacedAtWorker = true;
+                    grpc_alloc->updateDistributedData(newData);
+                });
+                threads_vector.push_back(move(t));
+            } else
+                throw std::runtime_error("dynamic_cast<AllocationDescriptorGRPC*>(alloc) failed (returned nullptr)");
         }
 
         for (auto &thread : threads_vector)
             thread.join();
+#else
+        throw std::runtime_error("DistributedRead not implemented");
 #endif
     }
 };

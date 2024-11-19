@@ -118,41 +118,45 @@ template <class DTArg> struct DistributedWrite<ALLOCATION_TYPE::DIST_GRPC_SYNC, 
             auto hdfsfilename = baseFileName + "_segment_" + std::to_string(chunkId++);
             DataPlacement *dp;
             if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(workerAddr))) {
-                auto data = dynamic_cast<AllocationDescriptorGRPC &>(*(dp->allocation)).getDistributedData();
-                if (data.isPlacedAtWorker) {
-                    std::thread t([=, &mat]() {
-                        auto stub = ctx->stubs[workerAddr].get();
+                if (auto grpc_alloc = dynamic_cast<AllocationDescriptorGRPC *>(dp->getAllocation(0))) {
+                    auto data = grpc_alloc->getDistributedData();
 
-                        distributed::HDFSWriteInfo fileData;
-                        fileData.mutable_matrix()->set_identifier(data.identifier);
-                        fileData.mutable_matrix()->set_num_rows(data.numRows);
-                        fileData.mutable_matrix()->set_num_cols(data.numCols);
+                    if (data.isPlacedAtWorker) {
+                        std::thread t([=, &mat]() {
+                            auto stub = ctx->stubs[workerAddr].get();
 
-                        fileData.set_dirname(hdfsfilename.c_str());
-                        fileData.set_segment(std::to_string(chunkId).c_str());
+                            distributed::HDFSWriteInfo fileData;
+                            fileData.mutable_matrix()->set_identifier(data.identifier);
+                            fileData.mutable_matrix()->set_num_rows(data.numRows);
+                            fileData.mutable_matrix()->set_num_cols(data.numCols);
 
-                        grpc::ClientContext grpc_ctx;
-                        distributed::Empty empty;
+                            fileData.set_dirname(hdfsfilename.c_str());
+                            fileData.set_segment(std::to_string(chunkId).c_str());
 
-                        auto status = stub->WriteHDFS(&grpc_ctx, fileData, &empty);
-                        if (!status.ok())
-                            throw std::runtime_error(status.error_message());
-                    });
-                    threads_vector.push_back(move(t));
-                } else {
-                    auto slicedMat =
-                        mat->sliceRow(dp->range.get()->r_start, dp->range.get()->r_start + dp->range.get()->r_len);
-                    if (extension == ".csv") {
-                        writeHDFSCsv(slicedMat, hdfsfilename.c_str(), dctx);
-                    } else if (extension == ".dbdf") {
-                        writeDaphneHDFS(slicedMat, hdfsfilename.c_str(), dctx);
+                            grpc::ClientContext grpc_ctx;
+                            distributed::Empty empty;
+
+                            auto status = stub->WriteHDFS(&grpc_ctx, fileData, &empty);
+                            if (!status.ok())
+                                throw std::runtime_error(status.error_message());
+                        });
+                        threads_vector.push_back(move(t));
+                    } else {
+                        auto slicedMat =
+                            mat->sliceRow(dp->getRange()->r_start, dp->getRange()->r_start + dp->getRange()->r_len);
+                        if (extension == ".csv") {
+                            writeHDFSCsv(slicedMat, hdfsfilename.c_str(), dctx);
+                        } else if (extension == ".dbdf") {
+                            writeDaphneHDFS(slicedMat, hdfsfilename.c_str(), dctx);
+                        }
                     }
+                } else {
+                    continue;
                 }
-            } else {
-                continue;
-            }
-            // TODO we should also store ranges that did not have a
-            // dataplacement associated with them
+                // TODO we should also store ranges that did not have a
+                // dataplacement associated with them
+            } else
+                throw std::runtime_error("dynamic_cast<AllocationDescriptorGRPC*>(alloc) failed (returned nullptr)");
         }
         for (auto &thread : threads_vector)
             thread.join();
