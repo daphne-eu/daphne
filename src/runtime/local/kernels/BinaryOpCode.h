@@ -165,6 +165,7 @@ static constexpr bool supportsBinaryOp = false;
 
 // Concise specification of which binary operations should be supported on
 // which value types.
+SUPPORT_EQUALITY(bool)
 SUPPORT_NUMERIC_FP(double)
 SUPPORT_NUMERIC_FP(float)
 SUPPORT_NUMERIC_INT(int64_t)

@@ -135,9 +135,14 @@ void TransposeLoweringPass::runOnOperation() {
 
     target.addLegalDialect<BuiltinDialect, daphne::DaphneDialect, linalg::LinalgDialect, memref::MemRefDialect>();
 
-    target.addLegalOp<daphne::ConvertDenseMatrixToMemRef, daphne::ConvertMemRefToDenseMatrix>();
-
-    target.addIllegalOp<daphne::TransposeOp>();
+    target.addDynamicallyLegalOp<daphne::TransposeOp>([](Operation *op) {
+        Type operand = op->getOperand(0).getType();
+        daphne::MatrixType matType = operand.dyn_cast<daphne::MatrixType>();
+        if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
+            return false;
+        }
+        return true;
+    });
 
     patterns.insert<TransposeOpLowering>(typeConverter, &getContext());
     auto module = getOperation();

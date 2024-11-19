@@ -89,7 +89,7 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(
                                                     funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                                                     splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
                                                 dataSinks),
-                                            this->topologyResponsibleThreads[i]);
+                                            this->_topology.responsibleThreads[i]);
                     startChunk = endChunk;
                 }
             }

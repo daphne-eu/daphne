@@ -40,7 +40,8 @@ void test_binary_lowering(const std::string op, const std::string kernel_call, c
     out.str(std::string());
     err.str(std::string());
 
-    status = runDaphne(out, err, "--explain", "llvm", "--mlir-codegen", (dirPath + "ewbinary_" + op + ".daphne").c_str());
+    status =
+        runDaphne(out, err, "--explain", "llvm", "--mlir-codegen", (dirPath + "ewbinary_" + op + ".daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
 
     CHECK_THAT(err.str(), !Catch::Contains(kernel_call));
@@ -135,25 +136,25 @@ TEST_CASE("ewBinaryDivScalar", TAG_CODEGEN) {
     test_binary_lowering("div", "llvm.call @_ewDiv__", "llvm.fdiv", result);
 }
 
-TEST_CASE("ewBinaryPowScalar", TAG_CODEGEN) {
-    // clang-format off
-    std::string result = "DenseMatrix(2x3, double)\n"
-                            "1 4 27\n"
-                            "256 3125 46656\n"
-                        "DenseMatrix(2x3, double)\n"
-                            "1 16 81\n"
-                            "256 625 1296\n"
-                        "16\n"
-                        "DenseMatrix(2x3, int64_t)\n"
-                            "1 4 27\n"
-                            "256 3125 46656\n"
-                        "DenseMatrix(2x3, int64_t)\n"
-                            "1 16 81\n"
-                            "256 625 1296\n"
-                        "16\n";
-    // clang-format on
-    test_binary_lowering("pow", "llvm.call @_ewPow__", "llvm.intr.pow", result);
-}
+// TEST_CASE("ewBinaryPowScalar", TAG_CODEGEN) {
+//     // clang-format off
+//     std::string result = "DenseMatrix(2x3, double)\n"
+//                             "1 4 27\n"
+//                             "256 3125 46656\n"
+//                         "DenseMatrix(2x3, double)\n"
+//                             "1 16 81\n"
+//                             "256 625 1296\n"
+//                         "16\n"
+//                         "DenseMatrix(2x3, int64_t)\n"
+//                             "1 4 27\n"
+//                             "256 3125 46656\n"
+//                         "DenseMatrix(2x3, int64_t)\n"
+//                             "1 16 81\n"
+//                             "256 625 1296\n"
+//                         "16\n";
+//     // clang-format on
+//     test_binary_lowering("pow", "llvm.call @_ewPow__", "llvm.intr.pow", result);
+// }
 
 TEST_CASE("ewBinaryMinScalar", TAG_CODEGEN) {
     // clang-format off

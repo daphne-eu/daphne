@@ -52,10 +52,6 @@
 
 using namespace mlir;
 
-#define convToSignlessInt(rewriter, loc, origVal, targetType)                                                          \
-    this->typeConverter->materializeTargetConversion(                                                                  \
-        rewriter, loc, rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal)
-
 // ****************************************************************************
 // AggAllOp templates
 // ****************************************************************************
@@ -134,8 +130,10 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
                 Value runningAgg;
 
                 if (llvm::isa<IntegerType>(matrixElementType)) {
-                    currentElem = convToSignlessInt(OpBuilderNested, locNested, currentElem, matrixElementType);
-                    nextElem = convToSignlessInt(OpBuilderNested, locNested, nextElem, matrixElementType);
+                    currentElem = convertToSignlessInt(OpBuilderNested, locNested, this->typeConverter, currentElem,
+                                                       matrixElementType);
+                    nextElem = convertToSignlessInt(OpBuilderNested, locNested, this->typeConverter, nextElem,
+                                                    matrixElementType);
                 }
 
                 if (matrixElementType.isSignedInteger()) {
@@ -170,8 +168,10 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
                 Value runningAgg;
 
                 if (llvm::isa<IntegerType>(matrixElementType)) {
-                    currentElem = convToSignlessInt(OpBuilderNested, locNested, currentElem, matrixElementType);
-                    nextElem = convToSignlessInt(OpBuilderNested, locNested, nextElem, matrixElementType);
+                    currentElem = convertToSignlessInt(OpBuilderNested, locNested, this->typeConverter, currentElem,
+                                                       matrixElementType);
+                    nextElem = convertToSignlessInt(OpBuilderNested, locNested, this->typeConverter, nextElem,
+                                                    matrixElementType);
                 }
 
                 if (matrixElementType.isSignedInteger()) {
@@ -215,10 +215,10 @@ namespace {
  * loops using the loop fusion pass.
  */
 struct AggAllLoweringPass : public PassWrapper<AggAllLoweringPass, OperationPass<ModuleOp>> {
-    explicit AggAllLoweringPass() {}
+    explicit AggAllLoweringPass() = default;
 
-    StringRef getArgument() const final { return "lower-agg"; }
-    StringRef getDescription() const final {
+    [[nodiscard]] StringRef getArgument() const final { return "lower-agg"; }
+    [[nodiscard]] StringRef getDescription() const final {
         return "Lowers AllAgg* operators to a Linalg GenericOp and performs "
                "the aggregation on a MemRef which is created from the input "
                "DenseMatrix.";
@@ -249,11 +249,11 @@ void AggAllLoweringPass::runOnOperation() {
 
     target.addDynamicallyLegalOp<daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>([](Operation *op) {
         Type operand = op->getOperand(0).getType();
-        daphne::MatrixType matType = operand.dyn_cast<daphne::MatrixType>();
-        if (matType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
-            return true;
+        auto matType = operand.dyn_cast<daphne::MatrixType>();
+        if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
+            return false;
         }
-        return false;
+        return true;
     });
 
     patterns.insert<SumAllOpLowering, MinAllOpLowering, MaxAllOpLowering>(typeConverter, &getContext());

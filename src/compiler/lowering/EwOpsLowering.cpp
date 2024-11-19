@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <format>
 #include <memory>
 #include <utility>
 
@@ -46,10 +45,6 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
-
-#define convToSignlessInt(rewriter, loc, origVal, targetType)                                                          \
-    typeConverter->materializeTargetConversion(rewriter, loc,                                                          \
-                                               rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal)
 
 // ****************************************************************************
 // Rewriter Templates (Elemwise Unary, Elemwise Binary)
@@ -142,7 +137,6 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
   public:
     using OpAdaptor = typename mlir::OpConversionPattern<BinaryOp>::OpAdaptor;
 
-  public:
     BinaryOpLowering(TypeConverter &typeConverter, mlir::MLIRContext *ctx)
         : mlir::OpConversionPattern<BinaryOp>(typeConverter, ctx) {
         this->setDebugName("EwDaphneOpLowering");
@@ -159,12 +153,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         Location loc = op->getLoc();
         Value lhs = adaptor.getLhs();
 
-        daphne::MatrixType lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
-
-        if (lhsMatrixType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
-            return rewriter.notifyMatchFailure(op, "ewOps codegen currently only works with dense matrices");
-        }
-
+        auto lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
         ssize_t lhsRows = lhsMatrixType.getNumRows();
         ssize_t lhsCols = lhsMatrixType.getNumCols();
 
@@ -197,17 +186,16 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         Value lhs = adaptor.getLhs();
         Value rhs = adaptor.getRhs();
 
-        daphne::MatrixType lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
-        daphne::MatrixType rhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto rhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
 
         // Match Scalar-Scalar and Matrix-Scalar broadcasting (assuming scalar values are always switched to rhs).
         // Broadcasting where either Matrix is a singleton needs to be handled separately below.
         if (!rhsMatrixType) {
             if (!lhsMatrixType) {
                 return matchAndRewriteScalarVal(op, adaptor, rewriter);
-            } else {
-                return matchAndRewriteBroadcastRhs(op, adaptor, rewriter, rhs);
             }
+            return matchAndRewriteBroadcastRhs(op, adaptor, rewriter, rhs);
         }
 
         Type matrixElementType = lhsMatrixType.getElementType();
@@ -217,14 +205,9 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         ssize_t rhsRows = rhsMatrixType.getNumRows();
         ssize_t rhsCols = rhsMatrixType.getNumCols();
 
-        if (lhsRows < 0 || lhsRows < 0 || rhsRows < 0 || rhsCols < 0) {
+        if (lhsRows < 0 || lhsCols < 0 || rhsRows < 0 || rhsCols < 0) {
             return rewriter.notifyMatchFailure(
                 op, "ewOps codegen currently only works with matrix dimensions that are known at compile time");
-        }
-
-        if (lhsMatrixType.getRepresentation() != daphne::MatrixRepresentation::Dense ||
-            rhsMatrixType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
-            return rewriter.notifyMatchFailure(op, "ewOps codegen currently only works with dense matrices");
         }
 
         // Assume that if only one matrix contains a single value for broadcasting it is rhs.
@@ -242,9 +225,10 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 
         if (lhsRows != rhsRows || lhsCols != rhsCols) {
             throw ErrorHandler::compilerError(loc, "EwOpsLowering (BinaryOp)",
-                                              std::vformat("lhs and rhs must have equal dimensions or either one must "
-                                                           "be a scalar value but have dimensions ({},{}) and ({},{})",
-                                                           std::make_format_args(lhsRows, lhsCols, rhsRows, rhsCols)));
+                                              "lhs and rhs must have equal dimensions or either one must "
+                                              "be a scalar value but have dimensions (" +
+                                                  std::to_string(lhsRows) + "," + std::to_string(lhsCols) + ") and (" +
+                                                  std::to_string(rhsRows) + "," + std::to_string(rhsCols) + ")");
         }
 
         MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
@@ -292,7 +276,7 @@ Value unaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *
     Type resType = arg.getType();
     Value res = arg;
     if (llvm::isa<mlir::IntegerType>(resType)) {
-        res = convToSignlessInt(rewriter, loc, res, resType);
+        res = convertToSignlessInt(rewriter, loc, typeConverter, res, resType);
         res = rewriter.create<IOp>(loc, res).getResult();
         res = typeConverter->materializeTargetConversion(rewriter, loc, resType, res);
     } else {
@@ -306,8 +290,8 @@ Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter 
     Type resType = lhs.getType();
     Value res{};
     if (llvm::isa<mlir::IntegerType>(resType)) {
-        lhs = convToSignlessInt(rewriter, loc, lhs, resType);
-        rhs = convToSignlessInt(rewriter, loc, rhs, resType);
+        lhs = convertToSignlessInt(rewriter, loc, typeConverter, lhs, resType);
+        rhs = convertToSignlessInt(rewriter, loc, typeConverter, rhs, resType);
         res = rewriter.create<IOp>(loc, lhs, rhs).getResult();
         res = typeConverter->materializeTargetConversion(rewriter, loc, resType, res);
     } else {
@@ -321,8 +305,8 @@ Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter 
     Type resType = lhs.getType();
     Value res{};
     if (llvm::isa<IntegerType>(resType)) {
-        lhs = convToSignlessInt(rewriter, loc, lhs, resType);
-        rhs = convToSignlessInt(rewriter, loc, rhs, resType);
+        lhs = convertToSignlessInt(rewriter, loc, typeConverter, lhs, resType);
+        rhs = convertToSignlessInt(rewriter, loc, typeConverter, rhs, resType);
         res = resType.isSignedInteger() ? rewriter.create<SIOp>(loc, lhs, rhs).getResult()
                                         : rewriter.create<UIOp>(loc, lhs, rhs).getResult();
         res = typeConverter->materializeTargetConversion(rewriter, loc, resType, res);
@@ -343,12 +327,12 @@ Value ewPowOpComputeRes(OpBuilder &rewriter, Location loc, TypeConverter *typeCo
     Type resMatrixElementType = lhs.getType();
     // The integer specializations of PowOp expect signless Integers
     if (llvm::isa<mlir::IntegerType>(resMatrixElementType)) {
-        Value lhsCasted = convToSignlessInt(rewriter, loc, lhs, resMatrixElementType);
-        Value rhsCasted = convToSignlessInt(rewriter, loc, rhs, resMatrixElementType);
+        Value lhsCasted = convertToSignlessInt(rewriter, loc, typeConverter, lhs, resMatrixElementType);
+        Value rhsCasted = convertToSignlessInt(rewriter, loc, typeConverter, rhs, resMatrixElementType);
         resValue = rewriter.create<math::IPowIOp>(loc, lhsCasted, rhsCasted).getResult();
         resValue = typeConverter->materializeTargetConversion(rewriter, loc, resMatrixElementType, resValue);
     } else if (llvm::isa<mlir::IntegerType>(rhsMatrixElementType)) {
-        Value rhsCasted = convToSignlessInt(rewriter, loc, rhs, resMatrixElementType);
+        Value rhsCasted = convertToSignlessInt(rewriter, loc, typeConverter, rhs, resMatrixElementType);
         resValue = rewriter.create<math::FPowIOp>(loc, lhs, rhsCasted).getResult();
     } else {
         resValue = rewriter.create<math::PowFOp>(loc, lhs, rhs).getResult();
@@ -370,7 +354,8 @@ using LnOpLowering = UnaryOpLowering<daphne::EwLnOp, unaryNoConversionFunc<math:
 // Unary Trig/Hyperbolic functions
 using SinOpLowering = UnaryOpLowering<daphne::EwSinOp, unaryNoConversionFunc<math::SinOp, math::SinOp>>;
 using CosOpLowering = UnaryOpLowering<daphne::EwCosOp, unaryNoConversionFunc<math::CosOp, math::CosOp>>;
-using TanOpLowering = UnaryOpLowering<daphne::EwTanOp, unaryNoConversionFunc<math::TanOp, math::TanOp>>;
+// TODO: link needed library for other trigonometric operations
+// using TanOpLowering = UnaryOpLowering<daphne::EwTanOp, unaryNoConversionFunc<math::TanOp, math::TanOp>>;
 // using AsinOpLowering = UnaryOpLowering<daphne::EwAsinOp, unaryNoConversionFunc<math::AsinOp, math::AsinOp>>;
 // using AcosOpLowering = UnaryOpLowering<daphne::EwAcosOp, unaryNoConversionFunc<math::AcosOp, math::AcosOp>>;
 // using AtanOpLowering = UnaryOpLowering<daphne::EwAtanOp, unaryNoConversionFunc<math::AtanOp, math::AtanOp>>;
@@ -390,7 +375,7 @@ using SubOpLowering = BinaryOpLowering<daphne::EwSubOp, binaryWithConversionFunc
 using MulOpLowering = BinaryOpLowering<daphne::EwMulOp, binaryWithConversionFunc<arith::MulIOp, arith::MulFOp>>;
 using DivOpLowering =
     BinaryOpLowering<daphne::EwDivOp, binaryWithConversionFunc<arith::DivSIOp, arith::DivUIOp, arith::DivFOp>>;
-using PowOpLowering = BinaryOpLowering<daphne::EwPowOp, ewPowOpComputeRes>;
+// using PowOpLowering = BinaryOpLowering<daphne::EwPowOp, ewPowOpComputeRes>; // TODO: link needed library
 // ModOpLowering - specialized in ModOpLowering.cpp
 // TODO: find or implement generalized logarithm in mlir
 
@@ -419,7 +404,7 @@ namespace {
  * running the loop fusion pass.
  */
 struct EwOpLoweringPass : public mlir::PassWrapper<EwOpLoweringPass, mlir::OperationPass<mlir::ModuleOp>> {
-    explicit EwOpLoweringPass() {}
+    explicit EwOpLoweringPass() = default;
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
         registry
@@ -428,8 +413,8 @@ struct EwOpLoweringPass : public mlir::PassWrapper<EwOpLoweringPass, mlir::Opera
     }
     void runOnOperation() final;
 
-    StringRef getArgument() const final { return "lower-ew"; }
-    StringRef getDescription() const final {
+    [[nodiscard]] StringRef getArgument() const final { return "lower-ew"; }
+    [[nodiscard]] StringRef getDescription() const final {
         return "This pass lowers element-wise operations to Linalg GenericOps "
                "that lower to affine loops and arithmetic operations.";
     }
@@ -461,7 +446,7 @@ void populateLowerEwOpConversionPatterns(mlir::LLVMTypeConverter &typeConverter,
         SubOpLowering,
         MulOpLowering,
         DivOpLowering,
-        PowOpLowering,
+        // PowOpLowering,
         MinOpLowering,
         MaxOpLowering
         // , AndOpLowering,
@@ -494,11 +479,14 @@ void EwOpLoweringPass::runOnOperation() {
                                   daphne::EwSinhOp, daphne::EwCoshOp, daphne::EwTanhOp,*/
                                  daphne::EwFloorOp, daphne::EwCeilOp, daphne::EwRoundOp>([](Operation *op) {
         Type operand = op->getOperand(0).getType();
-        daphne::MatrixType matType = operand.dyn_cast<daphne::MatrixType>();
-        if (matType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
-            return true;
+        if (llvm::isa<IntegerType>(operand) || llvm::isa<FloatType>(operand)) {
+            return false;
         }
-        return false;
+        auto matType = operand.dyn_cast<daphne::MatrixType>();
+        if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
+            return false;
+        }
+        return true;
     });
     // BinaryOps
     target.addDynamicallyLegalOp<daphne::EwAddOp, daphne::EwSubOp, daphne::EwMulOp, daphne::EwDivOp, daphne::EwPowOp,
@@ -518,6 +506,29 @@ void EwOpLoweringPass::runOnOperation() {
             }
             return false;
         });
+
+    // BinaryOps
+    target
+        .addDynamicallyLegalOp<daphne::EwAddOp, daphne::EwSubOp, daphne::EwMulOp, daphne::EwDivOp, /*daphne::EwPowOp,*/
+                               daphne::EwMinOp, daphne::EwMaxOp /*, daphne::EwAndOp, daphne::EwOrOp*/>(
+            [](Operation *op) {
+                Type lhs = op->getOperand(0).getType();
+                Type rhs = op->getOperand(1).getType();
+                auto lhsMatType = lhs.dyn_cast<daphne::MatrixType>();
+                auto rhsMatType = rhs.dyn_cast<daphne::MatrixType>();
+                // Rhs is scalar and lhs is scalar or dense matrix (rhs is broadcasted)
+                if ((llvm::isa<IntegerType>(rhs) || llvm::isa<FloatType>(rhs)) &&
+                    ((llvm::isa<IntegerType>(lhs) || llvm::isa<FloatType>(lhs)) ||
+                     (lhsMatType && lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense))) {
+                    return false;
+                }
+                // Both sides are dense matrices (rhs might still be broadcasted if it is a singleton)
+                if ((lhsMatType && lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense) &&
+                    (rhsMatType && rhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense)) {
+                    return false;
+                }
+                return true;
+            });
 
     populateLowerEwOpConversionPatterns(typeConverter, patterns);
 

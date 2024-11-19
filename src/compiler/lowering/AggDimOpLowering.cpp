@@ -56,10 +56,6 @@
 
 using namespace mlir;
 
-#define convToSignlessInt(rewriter, loc, origVal, targetType)                                                          \
-    this->typeConverter->materializeTargetConversion(                                                                  \
-        rewriter, loc, rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal)
-
 static constexpr size_t ROW = 0;
 static constexpr size_t COL = 1;
 
@@ -176,8 +172,10 @@ class AggDimOpLowering : public OpConversionPattern<AggOp> {
                 Value currentElem = arg[0];
 
                 if (llvm::isa<IntegerType>(matrixElementType)) {
-                    currentElem = convToSignlessInt(OpBuilderNested, locNested, currentElem, matrixElementType);
-                    storedElem = convToSignlessInt(OpBuilderNested, locNested, storedElem, matrixElementType);
+                    currentElem = convertToSignlessInt(OpBuilderNested, locNested, this->typeConverter, currentElem,
+                                                       matrixElementType);
+                    storedElem = convertToSignlessInt(OpBuilderNested, locNested, this->typeConverter, storedElem,
+                                                      matrixElementType);
 
                     storedElem = matrixElementType.isSignedInteger()
                                      ? OpBuilderNested.create<SIOp>(locNested, storedElem, currentElem).getResult()
@@ -256,7 +254,7 @@ class AggDimIdxOpLowering : public OpConversionPattern<AggOp> {
         ssize_t outerLoopUB = aggAlongDim == ROW ? numRows : numCols;
         ssize_t innerLoopUB = aggAlongDim == ROW ? numCols : numRows;
 
-        AffineForOp outerLoop = rewriter.create<AffineForOp>(loc, 0, outerLoopUB, 1);
+        auto outerLoop = rewriter.create<AffineForOp>(loc, 0, outerLoopUB, 1);
         rewriter.setInsertionPointToStart(outerLoop.getBody());
         {
 
@@ -267,8 +265,7 @@ class AggDimIdxOpLowering : public OpConversionPattern<AggOp> {
                                                           : ValueRange{resIdx, outerLoop.getInductionVar()};
             Value currentResVal = rewriter.create<AffineLoadOp>(loc, argMemRef, initArgValIdx);
 
-            AffineForOp innerLoop =
-                rewriter.create<AffineForOp>(loc, 1, innerLoopUB, 1, ValueRange{resIdx, currentResVal});
+            auto innerLoop = rewriter.create<AffineForOp>(loc, 1, innerLoopUB, 1, ValueRange{resIdx, currentResVal});
             rewriter.setInsertionPointToStart(innerLoop.getBody());
             {
                 ValueRange cmpValIdx = aggAlongDim == ROW
@@ -285,8 +282,9 @@ class AggDimIdxOpLowering : public OpConversionPattern<AggOp> {
                     } else {
                         cmpFunc = MaxIdx ? arith::CmpIPredicate::uge : arith::CmpIPredicate::ule;
                     }
-                    currentResVal = convToSignlessInt(rewriter, loc, currentResVal, matrixElementType);
-                    cmpVal = convToSignlessInt(rewriter, loc, cmpVal, matrixElementType);
+                    currentResVal =
+                        convertToSignlessInt(rewriter, loc, this->typeConverter, currentResVal, matrixElementType);
+                    cmpVal = convertToSignlessInt(rewriter, loc, this->typeConverter, cmpVal, matrixElementType);
                     cmpResBool = rewriter.create<arith::CmpIOp>(loc, cmpFunc, currentResVal, cmpVal);
                 } else {
                     arith::CmpFPredicate cmpFunc = MaxIdx ? arith::CmpFPredicate::OGE : arith::CmpFPredicate::OLE;
@@ -348,10 +346,10 @@ namespace {
  * loops using the loop fusion pass.
  */
 struct AggDimLoweringPass : public PassWrapper<AggDimLoweringPass, OperationPass<ModuleOp>> {
-    explicit AggDimLoweringPass() {}
+    explicit AggDimLoweringPass() = default;
 
-    StringRef getArgument() const final { return "lower-agg-dim"; }
-    StringRef getDescription() const final {
+    [[nodiscard]] StringRef getArgument() const final { return "lower-agg-dim"; }
+    [[nodiscard]] StringRef getDescription() const final {
         return "Lowers *Agg operators to a Linalg Generic Op or a "
                "set of affine loops and performs the aggregation on "
                "a MemRef which is created from the input DenseMatrix.";
@@ -381,9 +379,17 @@ void AggDimLoweringPass::runOnOperation() {
     target.addLegalDialect<AffineDialect, arith::ArithDialect, BuiltinDialect, daphne::DaphneDialect,
                            linalg::LinalgDialect, LLVM::LLVMDialect, memref::MemRefDialect>();
 
-    target.addIllegalOp<daphne::RowAggSumOp, daphne::ColAggSumOp, daphne::RowAggMinOp, daphne::ColAggMinOp,
-                        daphne::RowAggMaxOp, daphne::ColAggMaxOp, daphne::RowAggIdxMinOp, daphne::ColAggIdxMinOp,
-                        daphne::RowAggIdxMaxOp, daphne::ColAggIdxMaxOp>();
+    target.addDynamicallyLegalOp<daphne::RowAggSumOp, daphne::ColAggSumOp, daphne::RowAggMinOp, daphne::ColAggMinOp,
+                                 daphne::RowAggMaxOp, daphne::ColAggMaxOp, daphne::RowAggIdxMinOp,
+                                 daphne::ColAggIdxMinOp, daphne::RowAggIdxMaxOp, daphne::ColAggIdxMaxOp>(
+        [](Operation *op) {
+            Type operand = op->getOperand(0).getType();
+            auto matType = operand.dyn_cast<daphne::MatrixType>();
+            if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
+                return false;
+            }
+            return true;
+        });
 
     patterns
         .insert<SumRowOpLowering, SumColOpLowering, MinRowOpLowering, MinColOpLowering, MaxRowOpLowering,
