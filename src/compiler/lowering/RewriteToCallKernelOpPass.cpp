@@ -18,7 +18,6 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include <compiler/utils/TypePrinting.h>
-#include <format>
 #include <util/ErrorHandler.h>
 #include <util/KernelDispatchMapping.h>
 
@@ -38,7 +37,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-#include <string_view>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -137,15 +136,14 @@ class KernelReplacement : public RewritePattern {
         if (auto mrt = t.dyn_cast<mlir::MemRefType>()) {
             // Remove any specific dimension information ({0}), but retain the rank and element type.
             int64_t mrtRank = mrt.getRank();
-            switch (mrtRank) {
-            case 1:
+            if (mrtRank == 1) {
                 return mlir::MemRefType::get({0}, mrt.getElementType());
-            case 2:
+            } else if (mrtRank == 2) {
                 return mlir::MemRefType::get({0, 0}, mrt.getElementType());
-            default:
+            } else {
                 throw std::runtime_error(
-                    std::vformat("RewriteToCallKernelOpPass: expected MemRef to be of rank 1 or 2 but was given {}",
-                                 std::make_format_args(mrtRank)));
+                    "RewriteToCallKernelOpPass: expected MemRef to be of rank 1 or 2 but was given " +
+                    std::to_string(mrtRank));
             }
         }
         return t;

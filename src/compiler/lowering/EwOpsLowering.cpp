@@ -488,24 +488,6 @@ void EwOpLoweringPass::runOnOperation() {
         }
         return true;
     });
-    // BinaryOps
-    target.addDynamicallyLegalOp<daphne::EwAddOp, daphne::EwSubOp, daphne::EwMulOp, daphne::EwDivOp, daphne::EwPowOp,
-                                 daphne::EwMinOp, daphne::EwMaxOp /*, daphne::EwAndOp, daphne::EwOrOp*/>(
-        [](Operation *op) {
-            Type lhs = op->getOperand(0).getType();
-            Type rhs = op->getOperand(1).getType();
-            daphne::MatrixType lhsMatType = lhs.dyn_cast<daphne::MatrixType>();
-            daphne::MatrixType rhsMatType = rhs.dyn_cast<daphne::MatrixType>();
-            if ((!lhsMatType && !rhsMatType) ||
-                (lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense && !rhsMatType)) {
-                return false;
-            }
-            if (lhsMatType.getRepresentation() != daphne::MatrixRepresentation::Dense ||
-                rhsMatType.getRepresentation() != daphne::MatrixRepresentation::Dense) {
-                return true;
-            }
-            return false;
-        });
 
     // BinaryOps
     target
