@@ -62,7 +62,7 @@ void CUDAContext::init() {
     CHECK_CUDNN(cudnnCreateConvolutionDescriptor(&conv_desc));
     CHECK_CUDNN(cudnnCreateFilterDescriptor(&filter_desc));
 
-    CHECK_CUDNN(cudnnCreateTensorDescriptor(&dy_tensor_desc));
+//    CHECK_CUDNN(cudnnCreateTensorDescriptor(&dy_tensor_desc));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&bn_scale_bias_tensor_desc));
 
     CHECK_CUSOLVER(cusolverDnCreate(&cusolver_handle));

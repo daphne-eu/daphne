@@ -203,14 +203,14 @@ namespace CUDA::Convolution {
                 n, c, h, w));
 
         if (dInput == nullptr) {
-            dInput = DataObjectFactory::create<DTRes>(batch_size, c*h*w, false, &alloc_desc);
+            dInput = DataObjectFactory::create<DTRes>(batch_size, num_channels*img_h*img_w, false, &alloc_desc);
         }
                 
         VT* d_dx = dInput->getValues(&alloc_desc);
         if (ctx->conv_bwd_data_algo < 0) {
             int requestedAlgoCount = CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT;
             int returnedAlgoCount = -1;
-            cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT];
+            cudnnConvolutionBwdDataAlgoPerf_t results[2 * CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT];
 
             CHECK_CUDNN(
                 cudnnFindConvolutionBackwardDataAlgorithm(
@@ -360,7 +360,7 @@ namespace CUDA::Convolution {
         if (ctx->conv_bwd_filter_algo < 0) {
             int requestedAlgoCount = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT;
             int returnedAlgoCount = -1;
-            cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT];
+            cudnnConvolutionBwdFilterAlgoPerf_t results[2 * CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT];
 
             CHECK_CUDNN(
                 cudnnFindConvolutionBackwardFilterAlgorithm(
@@ -400,7 +400,7 @@ namespace CUDA::Convolution {
                 ctx->getCUDNNHandle(), 
                 &blend_alpha, 
                 ctx->src_tensor_desc,
-                d_x
+                d_x,
                 ctx->dst_tensor_desc, 
                 d_dy,
                 ctx->conv_desc,

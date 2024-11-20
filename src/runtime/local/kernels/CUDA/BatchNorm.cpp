@@ -81,7 +81,7 @@ namespace CUDA::BatchNorm {
         const VT* d_dout = dout->getValues(&alloc_desc);
 
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), N, C, H, H));    
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dy_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), N, C, H, H));
+//        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dy_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), N, C, H, H));
         
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), N, C, H, H));
         CHECK_CUDNN(cudnnDeriveBNTensorDescriptor(ctx->bn_scale_bias_tensor_desc, ctx->src_tensor_desc, ctx->bn_mode));
@@ -101,7 +101,8 @@ namespace CUDA::BatchNorm {
                                                     ctx->bn_mode,
                                                     &alphaDataDiff, &betaDataDiff, &alphaParamDiff, &betaParamDiff,
                                                     ctx->src_tensor_desc, d_in,
-                                                    ctx->dy_tensor_desc, d_dout,
+                                                    ctx->dst_tensor_desc, d_dout,
+//                                                    ctx->dy_tensor_desc, d_dout,
                                                     ctx->dst_tensor_desc, d_dX,
                                                     ctx->bn_scale_bias_tensor_desc, d_gamma, d_dGamma, d_dBeta,
                                                     eps,
