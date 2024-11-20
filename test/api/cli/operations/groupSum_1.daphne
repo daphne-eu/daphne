@@ -1,0 +1,8 @@
+// constant folding of casts between unsigned, signed, signless types
+
+fr = createFrame([ "String1", "String1", "String2", "String3", "String3" ], [ 1, 1, 2, 3, 4 ],
+                 [ 100, 200, 300, 400, 500 ], "a", "b", "c");
+
+res = group(fr, "c", "a", "b");
+
+print(res);

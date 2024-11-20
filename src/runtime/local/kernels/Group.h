@@ -58,6 +58,23 @@ void group(DT *&res, const DT *arg, const char **keyCols, size_t numKeyCols, con
 // Frame <- Frame
 // ----------------------------------------------------------------------------
 
+inline std::string myStringifyGroupEnum(mlir::daphne::GroupEnum val) {
+    using mlir::daphne::GroupEnum;
+    switch (val) {
+    case GroupEnum::COUNT:
+        return "COUNT";
+    case GroupEnum::SUM:
+        return "SUM";
+    case GroupEnum::MIN:
+        return "MIN";
+    case GroupEnum::MAX:
+        return "MAX";
+    case GroupEnum::AVG:
+        return "AVG";
+    }
+    return "";
+}
+
 // returns the result of the aggregation function aggFunc over the (contiguous)
 // memory between the begin and end pointer
 template <typename VTRes, typename VTArg>
@@ -65,24 +82,58 @@ VTRes aggregate(const mlir::daphne::GroupEnum &aggFunc, const VTArg *begin, cons
     using mlir::daphne::GroupEnum;
     switch (aggFunc) {
     case GroupEnum::COUNT:
-        return end - begin;
+        if constexpr (std::is_same<VTRes, std::string>::value)
+            throw std::invalid_argument(std::string("aggregate: ") + myStringifyGroupEnum(aggFunc) +
+                                        std::string(" aggregation is not supported for these value types."));
+        else
+            return end - begin;
         break; // TODO: Do we need to check for Null elements here?
     case GroupEnum::SUM:
-        return std::accumulate(begin, end, (VTRes)0);
+        if constexpr ((std::is_same<VTRes, std::string>::value) || (std::is_same<VTArg, std::string>::value))
+            throw std::invalid_argument(std::string("aggregate: ") + myStringifyGroupEnum(aggFunc) +
+                                        std::string(" aggregation is not supported for these value types."));
+        else
+            return std::accumulate(begin, end, (VTRes)0);
         break;
     case GroupEnum::MIN:
-        return *std::min_element(begin, end);
+        if constexpr ((std::is_same<VTRes, std::string>::value) || (std::is_same<VTArg, std::string>::value))
+            throw std::invalid_argument(std::string("aggregate: ") + myStringifyGroupEnum(aggFunc) +
+                                        std::string(" aggregation is not supported for these value types."));
+        else
+            return *std::min_element(begin, end);
         break;
     case GroupEnum::MAX:
-        return *std::max_element(begin, end);
+        if constexpr ((std::is_same<VTRes, std::string>::value) || (std::is_same<VTArg, std::string>::value))
+            throw std::invalid_argument(std::string("aggregate: ") + myStringifyGroupEnum(aggFunc) +
+                                        std::string(" aggregation is not supported for these value types."));
+        else
+            return *std::max_element(begin, end);
         break;
     case GroupEnum::AVG:
-        return std::accumulate(begin, end, (double)0) / (double)(end - begin);
+        if constexpr ((std::is_same<VTRes, std::string>::value) || (std::is_same<VTArg, std::string>::value))
+            throw std::invalid_argument(std::string("aggregate: ") + myStringifyGroupEnum(aggFunc) +
+                                        std::string(" aggregation is not supported for these value types."));
+        else
+            return std::accumulate(begin, end, (double)0) / (double)(end - begin);
         break;
     default:
-        return *begin;
+        if constexpr (std::is_same<VTArg, std::string>::value || std::is_same<VTRes, std::string>::value)
+            throw std::invalid_argument("aggregate: Unsupported aggregation operation for string types.");
+        else
+            return *begin;
         break;
     }
+}
+
+template <>
+std::string aggregate(const mlir::daphne::GroupEnum &aggFunc, const std::string *begin, const std::string *end) {
+    using mlir::daphne::GroupEnum;
+    if (aggFunc == GroupEnum::MIN)
+        return *std::min_element(begin, end);
+    if (aggFunc == GroupEnum::MAX)
+        return *std::max_element(begin, end);
+    else
+        return *begin;
 }
 
 // struct which calls the aggregate() function (specified via aggFunc) on each
@@ -117,22 +168,14 @@ template <typename VTRes, typename VTArg> struct ColumnGroupAgg {
     }
 };
 
-inline std::string myStringifyGroupEnum(mlir::daphne::GroupEnum val) {
-    using mlir::daphne::GroupEnum;
-    switch (val) {
-    case GroupEnum::COUNT:
-        return "COUNT";
-    case GroupEnum::SUM:
-        return "SUM";
-    case GroupEnum::MIN:
-        return "MIN";
-    case GroupEnum::MAX:
-        return "MAX";
-    case GroupEnum::AVG:
-        return "AVG";
+// Since DeduceValueTypeAndExecute can not handle string values,
+// we add special ColumnGroupAgg function for arg with std::string values.
+template <typename VTRes> struct ColumnGroupAggStringVTArg {
+    static void apply(Frame *res, const Frame *arg, size_t colIdx, std::vector<std::pair<size_t, size_t>> *groups,
+                      mlir::daphne::GroupEnum aggFunc, DCTX(ctx)) {
+        ColumnGroupAgg<VTRes, std::string>::apply(res, arg, colIdx, groups, aggFunc, ctx);
     }
-    return "";
-}
+};
 
 template <> struct Group<Frame> {
     static void apply(Frame *&res, const Frame *arg, const char **keyCols, size_t numKeyCols, const char **aggCols,
@@ -270,9 +313,18 @@ template <> struct Group<Frame> {
 
         // copying key columns and column-wise group aggregation
         for (size_t i = 0; i < numColsRes; i++) {
-            DeduceValueTypeAndExecute<ColumnGroupAgg>::apply(
-                res->getSchema()[i], ordered->getSchema()[i], res, ordered, i, groups,
-                (i < numKeyCols) ? (GroupEnum)0 : aggFuncs[i - numKeyCols], ctx);
+            if (ordered->getSchema()[i] == ValueTypeCode::STR) {
+                if (ordered->getSchema()[i] == ValueTypeCode::STR)
+                    ColumnGroupAgg<std::string, std::string>::apply(
+                        res, ordered, i, groups, (i < numKeyCols) ? (GroupEnum)0 : aggFuncs[i - numKeyCols], ctx);
+                else
+                    DeduceValueTypeAndExecute<ColumnGroupAggStringVTArg>::apply(
+                        res->getSchema()[i], res, ordered, i, groups,
+                        (i < numKeyCols) ? (GroupEnum)0 : aggFuncs[i - numKeyCols], ctx);
+            } else
+                DeduceValueTypeAndExecute<ColumnGroupAgg>::apply(
+                    res->getSchema()[i], ordered->getSchema()[i], res, ordered, i, groups,
+                    (i < numKeyCols) ? (GroupEnum)0 : aggFuncs[i - numKeyCols], ctx);
         }
         delete groups;
         DataObjectFactory::destroy(ordered);
