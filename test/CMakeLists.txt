@@ -166,6 +166,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             runtime/local/kernels/CUDA/DNNBatchNorm2DBackwardTest.cpp
             runtime/local/kernels/CUDA/DNNConv2DBackwardDataTest.cpp
             runtime/local/kernels/CUDA/DNNConv2DBackwardFilterTest.cpp
+            runtime/local/kernels/CUDA/DNNPoolingBackwardTest.cpp
+            runtime/local/kernels/CUDA/DNNSoftmaxBackwardTest.cpp
 
             runtime/local/kernels/CUDA_ContextTest.cpp
             runtime/local/kernels/DNNActivationTest.cpp

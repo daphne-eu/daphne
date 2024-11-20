@@ -33,4 +33,9 @@ namespace CUDA::Softmax {
     struct Forward {
         static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
     };
+
+    template<typename DTRes, typename DTArg>
+    struct Backward {
+        static void apply(DTRes *&res, const DTArg *output, const DTArg *dOutput, DCTX(dctx));
+    };
 }

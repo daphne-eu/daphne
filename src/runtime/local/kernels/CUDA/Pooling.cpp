@@ -107,10 +107,10 @@ namespace CUDA::NN::Pooling {
                                                n, c, h, w));
 
         const VT* d_dOut = dOut->getValues(&alloc_desc);
-        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dy_tensor_desc, 
-                                               ctx->tensor_format, 
-                                               ctx->getCUDNNDataType<VT>(), 
-                                               n, c, h, w));
+        // CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dy_tensor_desc, 
+        //                                        ctx->tensor_format, 
+        //                                        ctx->getCUDNNDataType<VT>(), 
+        //                                        n, c, h, w));
     
         if (res == nullptr) {
             res = DataObjectFactory::create<DTRes>(batch_size, num_channels * img_h * img_w, false, &alloc_desc);
@@ -120,7 +120,8 @@ namespace CUDA::NN::Pooling {
         CHECK_CUDNN(cudnnPoolingBackward(ctx->getCUDNNHandle(), 
                                          ctx->pooling_desc, &blend_alpha,
                                          ctx->dst_tensor_desc, d_output,
-                                         ctx->dy_tensor_desc, d_dOut,
+                                         ctx->dst_tensor_desc, d_dOut,
+                                        //  ctx->dy_tensor_desc, d_dOut,
                                          ctx->src_tensor_desc, d_input,
                                          &blend_beta, ctx->src_tensor_desc, d_res));
     }
