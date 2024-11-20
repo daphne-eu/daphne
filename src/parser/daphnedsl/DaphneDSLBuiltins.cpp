@@ -1060,7 +1060,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         // result column types
         mlir::Type vt = utils.unknownType;
         for (size_t i = 0; i < groupName.size() + columnName.size(); i++) {
-            std::cout << "4";
             colTypes.push_back(vt);
         }
 
