@@ -60,7 +60,7 @@ class KernelReplacement : public RewritePattern {
         if (llvm::isa<daphne::DistributedComputeOp, daphne::CreateListOp>(op))
             return 1;
         if (llvm::isa<daphne::RecompileOp>(op))
-            return 4;
+            return 3;
 
         throw ErrorHandler::compilerError(op, "RewriteToCallKernelOpPass",
                                           "lowering to kernel call not yet supported for this variadic "
@@ -240,11 +240,15 @@ class KernelReplacement : public RewritePattern {
             // In that case, there is no operand corresponding to the
             // variadic ODS operand.
             const size_t numODSOperands = getNumODSOperands(op);
+            llvm::errs() << "numODSOperands: " << numODSOperands << "\n";
             for (size_t i = 0; i < numODSOperands; i++) {
                 auto odsOpInfo = getODSOperandInfo(op, i);
                 const unsigned idx = std::get<0>(odsOpInfo);
                 const unsigned len = std::get<1>(odsOpInfo);
                 const bool isVariadic = std::get<2>(odsOpInfo);
+                llvm::errs() << "idx: " << idx << "\n";
+                llvm::errs() << "len: " << len << "\n";
+                llvm::errs() << "isVariadic: " << isVariadic << "\n";
 
                 // Determine the MLIR type of the current ODS operand.
                 Type odsOperandTy;
@@ -253,6 +257,7 @@ class KernelReplacement : public RewritePattern {
                     // we use the type of the first operand belonging to
                     // the current ODS operand.
                     odsOperandTy = opArgTys[idx];
+                    llvm::errs() << "odsOperandTy: " << odsOperandTy << "\n";
                 } else { // len == 0
                     // If the current ODS operand does not have any occurrences
                     // (e.g., a variadic ODS operand with zero concrete operands
