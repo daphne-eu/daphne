@@ -125,7 +125,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
     
-    //pm.addPass(mlir::daphne::createRecompilePass());
+    pm.addPass(mlir::daphne::createRecompilePass());
 
     if (userConfig_.use_phy_op_selection) {
         pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());

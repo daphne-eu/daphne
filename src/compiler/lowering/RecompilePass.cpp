@@ -61,11 +61,8 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
     std::string loopBodyIR;
     SmallVector<Value> loopBodyInputValues;
 
-    // Mapping for external objects -> loop body uses
-    llvm::DenseMap<Value, SmallVector<mlir::Operation *, 4>> externalObjectUses;
-
     // Step 1: Collect inputs and map external objects to their uses
-    // Add iter_args to loopBodyInputValues (already mapped)
+    // Mapping for external objects -> loop body uses
     for (Value arg : forOp.getRegionIterArgs()) {
         if (std::find(loopBodyInputValues.begin(), loopBodyInputValues.end(), arg) == loopBodyInputValues.end()) {
             loopBodyInputValues.push_back(arg);
@@ -75,6 +72,7 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
     size_t iter_args_size = loopBodyInputValues.size();
 
     // Map external uses
+    llvm::DenseMap<Value, SmallVector<mlir::Operation *, 4>> externalObjectUses;
     forOp.getBody()->walk([&](mlir::Operation *op) {
         for (Value operand : op->getOperands()) {
             if (operand.getDefiningOp() &&
@@ -90,18 +88,17 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
     OpBuilder builder(forOp);
     auto resultTypes = forOp.getResultTypes();
 
-    // Step 2: Create function inputs (types and values)
+    // Create function inputs (types and values)
     SmallVector<Value> inputs;
     SmallVector<Type> inputTypes;
     SmallVector<bool> isScalarInput;
 
-    for (Value &extVal : loopBodyInputValues) {
+    for (Value extVal : loopBodyInputValues) {
         if (!llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(extVal.getType())) {
             auto matType = mlir::daphne::MatrixType::get(context, extVal.getType(), 1, 1, -1, mlir::daphne::MatrixRepresentation::Default);
             inputTypes.push_back(matType);
             isScalarInput.push_back(true);
-
-            mlir::Value ins = static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(extVal.getLoc(), matType, extVal));
+            mlir::Value ins = builder.create<mlir::daphne::CastOp>(extVal.getLoc(), matType, extVal);
             inputs.push_back(ins);
         } else {
             inputTypes.push_back(extVal.getType());
@@ -112,11 +109,12 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
 
     auto funcType = FunctionType::get(context, inputTypes, resultTypes);
     mlir::OwningOpRef<mlir::ModuleOp> tempModule = mlir::ModuleOp::create(forOp.getLoc());
-    OpBuilder moduleBuilder(tempModule->getBodyRegion());
-    auto funcOp = moduleBuilder.create<mlir::func::FuncOp>(forOp.getLoc(), "main", funcType);
+    
+    OpBuilder tempBuilder(tempModule->getBodyRegion());
+    auto funcOp = tempBuilder.create<mlir::func::FuncOp>(forOp.getLoc(), "main", funcType);
     funcOp.getBody().takeBody(forOp.getLoopBody());
 
-    // Step 3: Delete the Index argument and add arguments to the function's entry block
+    // Delete the Index argument and add arguments to the function's entry block
     Block &entryBlock = funcOp.getBody().front();
 
     // Delete the index argument and remove its CastOp
@@ -153,12 +151,12 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
         }
     });
 
-    // Add external inputs
+   
     for(size_t i = iter_args_size; i < inputTypes.size() ; i++) {
         entryBlock.addArgument(inputTypes[i], funcOp.getLoc());
     }
-
-    // Step 4: Replace external object uses with corresponding arguments
+    
+    // Replace external object uses with corresponding arguments
     funcOp.walk([&](mlir::Operation *op) {
         for (auto &operand : op->getOpOperands()) {
             Value extObject = operand.get();
@@ -172,7 +170,7 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
         }
     });
 
-    // Step 4.1: Cast back the 1x1 matrices, how should be scalars and update their uses
+    // Cast back the 1x1 matrices, how should be scalars and update their uses
     for (size_t i = 0; i < inputTypes.size(); ++i) {
         if (isScalarInput[i]) {
             auto arg = entryBlock.getArgument(i);
@@ -188,7 +186,7 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
         }
     }
 
-    // Step 5: Replace `scf.yield` with `func.return`
+    // Replace `scf.yield` with `func.return`
     funcOp.walk([&](mlir::Operation *op) {
         if (isa<mlir::scf::YieldOp>(op)) {
             builder.setInsertionPoint(op);
@@ -197,41 +195,39 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
         }
     });
 
-    // Debug: Print the transformed function
     llvm::raw_string_ostream os(loopBodyIR);
     tempModule->print(os);
     os.flush();
-
-    llvm::errs() << "Transformed Function:\n";
-    funcOp.print(llvm::errs());
-    llvm::errs() << "\n";
-
-    // Step 6: Create and replace the RecompileOp
-    auto stringType = builder.getType<mlir::daphne::StringType>();
-    auto irStringAttr = builder.getStringAttr(loopBodyIR);
-    auto irString = builder.create<mlir::daphne::ConstantOp>(forOp.getLoc(), stringType, irStringAttr).getResult();
+    
+    builder.setInsertionPoint(forOp);
+    auto irString = builder.create<mlir::daphne::ConstantOp>(
+        forOp.getLoc(), 
+        builder.getType<mlir::daphne::StringType>(), 
+        builder.getStringAttr(loopBodyIR)).getResult();
 
     auto numInputs = builder.create<mlir::daphne::ConstantOp>(
-        forOp.getLoc(), builder.getIntegerType(64), builder.getI64IntegerAttr(inputs.size())).getResult();
-
-    SmallVector<Value> outputs(forOp.getResults().begin(), forOp.getResults().end());
-
+        forOp.getLoc(),
+        builder.getIntegerType(64),
+        builder.getI64IntegerAttr(inputs.size())
+    ).getResult();
+    
     auto recompileOp = builder.create<mlir::daphne::RecompileOp>(
         forOp.getLoc(),
+        resultTypes,
         irString,
         numInputs,
-        inputs,
-        outputs
+        inputs
     );
 
-    // Replace ForOp results with RecompileOp results and erase for Op
-    for (auto result : llvm::zip(forOp.getResults(), recompileOp.getResults())) {
-        auto originalResult = std::get<0>(result);
-        auto newResult = std::get<1>(result);
-        originalResult.replaceAllUsesWith(newResult);
+    llvm::errs() << "Created RecompileOp:\n";
+    recompileOp.print(llvm::errs());
+    llvm::errs() << "\n";
+
+    for (auto [forResult, recompileResult] : llvm::zip(forOp.getResults(), recompileOp.getResults())) {
+        forResult.replaceAllUsesWith(recompileResult);
     }
 
-    forOp.getBody()->erase();
+    forOp.erase();
 }
 
 void RecompilePass::runOnOperation() {
@@ -241,8 +237,13 @@ void RecompilePass::runOnOperation() {
     func.walk([&](mlir::Operation *op) {
         if (auto forOp = dyn_cast<mlir::scf::ForOp>(op)) {
             wrapLoopBodyWithRecompileOp(forOp, context);
+            func.print(llvm::errs());
         }
     });
+
+    llvm::errs() << "Transformed IR after RecompilePass:\n";
+    func.print(llvm::errs());
+    llvm::errs() << "\n";
 }
 
 std::unique_ptr<OperationPass<ModuleOp>> mlir::daphne::createRecompilePass() {
