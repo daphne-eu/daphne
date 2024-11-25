@@ -134,7 +134,7 @@ All possible options for the build script:
 
 ## Building on WSL
 
-When using Windows Subsystems for Linux (WSL), the default memory limit for WSL is 50% of total memory on Windows. This can lead to build fails due to SIGKILL for DAPHNE builds. [Advanced settings configuration in WSL](https://learn.microsoft.com/en-us/windows/wsl/wsl-config) describes how the memory can be configured.
+When using Windows Subsystems for Linux (WSL), the default memory limit for WSL is 50% of the total memory of the underlying Windows host. This can lead to build fails due to SIGKILL for DAPHNE builds. [Advanced settings configuration in WSL](https://learn.microsoft.com/en-us/windows/wsl/wsl-config) describes how the memory limit can be configured.
 
 ## Extension
 
