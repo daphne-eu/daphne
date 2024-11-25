@@ -66,9 +66,9 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
      */
     size_t maxNumNonZeros;
 
-    std::shared_ptr<ValueType> values;
-    std::shared_ptr<size_t> colIdxs;
-    std::shared_ptr<size_t> rowOffsets;
+    std::shared_ptr<ValueType[]> values;
+    std::shared_ptr<size_t[]> colIdxs;
+    std::shared_ptr<size_t[]> rowOffsets;
 
     size_t lastAppendedRowIdx;
 
@@ -126,7 +126,7 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         maxNumNonZeros = src->maxNumNonZeros;
         values = src->values;
         colIdxs = src->colIdxs;
-        rowOffsets = std::shared_ptr<size_t>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
+        rowOffsets = std::shared_ptr<size_t[]>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
 
     virtual ~CSRMatrix() {
@@ -174,6 +174,8 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
 
     const ValueType *getValues() const { return values.get(); }
 
+    std::shared_ptr<ValueType[]> getValuesSharedPtr() const { return values; }
+
     ValueType *getValues(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
         if (rowIdx > numRows)
@@ -189,6 +191,8 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
 
     const size_t *getColIdxs() const { return colIdxs.get(); }
 
+    std::shared_ptr<size_t[]> getColIdxsSharedPtr() const { return colIdxs; }
+
     size_t *getColIdxs(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
         if (rowIdx > numRows)
@@ -203,6 +207,8 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     size_t *getRowOffsets() { return rowOffsets.get(); }
 
     const size_t *getRowOffsets() const { return rowOffsets.get(); }
+
+    std::shared_ptr<size_t[]> getRowOffsetsSharedPtr() const { return rowOffsets; }
 
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         if (rowIdx >= numRows)

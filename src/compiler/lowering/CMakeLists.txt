@@ -34,6 +34,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     AggAllOpLowering.cpp
     AggDimOpLowering.cpp
     TransposeOpLowering.cpp
+    SparsityExploitationPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

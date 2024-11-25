@@ -256,5 +256,8 @@ def LowerEwOpPass: Pass<"lower-ew", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createEwOpLoweringPass()";
 }
 
+def SparsityExploitationPass: Pass<"lower-sparse-exploit", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createSparsityExploitationPass()";
+}
 
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

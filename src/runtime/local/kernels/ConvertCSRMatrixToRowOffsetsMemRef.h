@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,21 +18,19 @@
 
 #include "mlir/ExecutionEngine/CRunnerUtils.h"
 #include "runtime/local/context/DaphneContext.h"
-#include "runtime/local/datastructures/DenseMatrix.h"
+#include "runtime/local/datastructures/CSRMatrix.h"
 
 template <typename T>
-inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(const DenseMatrix<T> *input, DCTX(ctx)) {
-    StridedMemRefType<T, 2> memRef{};
-    memRef.basePtr = input->getValuesSharedPtr().get();
-    memRef.data = memRef.basePtr;
-    memRef.offset = 0;
-    memRef.sizes[0] = input->getNumRows();
-    memRef.sizes[1] = input->getNumCols();
+inline StridedMemRefType<size_t, 1> convertCSRMatrixToRowOffsetsMemRef(const CSRMatrix<T> *input, DCTX(ctx)) {
+    StridedMemRefType<size_t, 1> rowOffsetsMemRef{};
 
-    // TODO(phil): needs to be calculated for non row-major memory layouts
-    memRef.strides[0] = input->getNumCols();
-    memRef.strides[1] = 1;
+    rowOffsetsMemRef.basePtr = input->getRowOffsetsSharedPtr().get();
+    rowOffsetsMemRef.data = rowOffsetsMemRef.basePtr;
+    rowOffsetsMemRef.offset = 0;
+    rowOffsetsMemRef.sizes[0] = input->getNumRows() + 1;
+    rowOffsetsMemRef.strides[0] = 1;
+
     input->increaseRefCounter();
 
-    return memRef;
+    return rowOffsetsMemRef;
 }
