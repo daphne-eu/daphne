@@ -1284,6 +1284,7 @@
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">        </span><span class="nt">&quot;algorithms&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;test/api/cli/import/sandbox/algos&quot;</span><span class="p">]</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="p">}</span>
 </code></pre></div>
+<p>NOTE: to use a user config, the json file path needs to be passed as CLI arg to the DAPHNE binary <code>daphne --config=&lt;filename&gt;</code></p>
 <p>NOTE: <code>default_dirs</code> can hold many paths and it will look for the <strong>one</strong> specified file in each, whereas any other library names have a list consisting of <strong>one</strong> directory,  from which <strong>all</strong> files will be imported (can be easily extended to multiple directories).</p>
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;a.daphne&quot;</span><span class="p">;</span>

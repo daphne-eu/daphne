@@ -1082,6 +1082,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#building-on-wsl" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building on WSL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#extension" class="md-nav__link">
     <span class="md-ellipsis">
       Extension
@@ -1457,6 +1466,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#building-on-wsl" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building on WSL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#extension" class="md-nav__link">
     <span class="md-ellipsis">
       Extension
@@ -1637,6 +1655,8 @@ dependencies get installed. The bulid script must be invoked with the following 
 </tbody>
 </table>
 <hr />
+<h2 id="building-on-wsl">Building on WSL</h2>
+<p>When using Windows Subsystems for Linux (WSL), the default memory limit for WSL is 50% of the total memory of the underlying Windows host. This can lead to build fails due to SIGKILL for DAPHNE builds. <a href="https://learn.microsoft.com/en-us/windows/wsl/wsl-config">Advanced settings configuration in WSL</a> describes how the memory limit can be configured.</p>
 <h2 id="extension">Extension</h2>
 <h3 id="overview-over-the-build-script">Overview over the build script</h3>
 <p>The build script is divided into sections, visualized by</p>
