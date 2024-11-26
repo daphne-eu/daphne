@@ -92,8 +92,9 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         ssize_t numCols = matrixType.getNumCols();
 
         if (numRows < 0 || numCols < 0) {
-            return rewriter.notifyMatchFailure(
-                op, "ewOps codegen currently only works with matrix dimensions that are known at compile time");
+            throw ErrorHandler::compilerError(
+                loc, "EwOpsLowering (BinaryOp)",
+                "ewOps codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         Value argMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(
@@ -262,8 +263,9 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         ssize_t rhsCols = rhsMatrixType.getNumCols();
 
         if (lhsRows < 0 || lhsCols < 0 || rhsRows < 0 || rhsCols < 0) {
-            return rewriter.notifyMatchFailure(
-                op, "ewOps codegen currently only works with matrix dimensions that are known at compile time");
+            throw ErrorHandler::compilerError(
+                loc, "EwOpsLowering (BinaryOp)",
+                "ewOps codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         // For efficiency, broadcasting a singleton is handled separately here (assumes singleton is always rhs).
