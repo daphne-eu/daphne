@@ -1,0 +1,11 @@
+[
+  {
+    "opMnemonic": "ewAdd",
+    "kernelFuncName": "coproc",
+    "resTypes": ["DenseMatrix<int64_t>"],
+    "argTypes": ["DenseMatrix<int64_t>","DenseMatrix<int64_t>"],
+    "backend": "CPP",
+    "libPath": "coproc.so"
+  }
+
+]

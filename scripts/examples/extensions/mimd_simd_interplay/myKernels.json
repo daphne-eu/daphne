@@ -1,0 +1,26 @@
+[
+    {
+        "opMnemonic": "sumAll",
+        "kernelFuncName": "aggScalar",
+        "resTypes": ["int64_t"],
+        "argTypes": ["DenseMatrix<int64_t>"],
+        "backend": "CPP",
+        "libPath": "libMyKernels.so"
+    },
+    {
+        "opMnemonic": "sumAll",
+        "kernelFuncName": "aggSIMDLoad",
+        "resTypes": ["int64_t"],
+        "argTypes": ["DenseMatrix<int64_t>"],
+        "backend": "CPP",
+        "libPath": "libMyKernels.so"
+    },
+    {
+        "opMnemonic": "sumAll",
+        "kernelFuncName": "aggSIMDGather",
+        "resTypes": ["int64_t"],
+        "argTypes": ["DenseMatrix<int64_t>"],
+        "backend": "CPP",
+        "libPath": "libMyKernels.so"
+    }
+]
