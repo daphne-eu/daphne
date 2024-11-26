@@ -104,6 +104,15 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.explain_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN))
         config.explain_mlir_codegen = jf.at(DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_SPARSITY_EXPLOITING_OP_FUSION))
+        config.explain_mlir_codegen_sparsity_exploiting_op_fusion =
+            jf.at(DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_SPARSITY_EXPLOITING_OP_FUSION).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_DAPHNEIR_TO_MLIR))
+        config.explain_mlir_codegen_daphneir_to_mlir =
+            jf.at(DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_DAPHNEIR_TO_MLIR).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC))
+        config.explain_mlir_codegen_mlir_specific =
+            jf.at(DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME)) {
         config.taskPartitioningScheme =
             jf.at(DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME).get<SelfSchedulingScheme>();
