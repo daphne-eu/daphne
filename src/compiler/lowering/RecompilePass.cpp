@@ -204,10 +204,11 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
     
     // Create RecompileOp with new args
     Block *loopBody = newForOp.getBody();
-    BlockArgument arg1 = loopBody->getArgument(1);
-    BlockArgument arg2 = loopBody->getArgument(2);
-    inputs[0] = arg1;
-    inputs[1] = arg2;
+    for (size_t i = 0; i < iter_args_size; ++i)
+    {
+        BlockArgument arg = loopBody->getArgument(i+1);
+        inputs[i] = arg;
+    }
 
     auto recompileOp = builder.create<mlir::daphne::RecompileOp>(
         forOp.getLoc(),
