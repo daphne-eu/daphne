@@ -113,64 +113,25 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
     OpBuilder tempBuilder(tempModule->getBodyRegion());
     auto funcOp = tempBuilder.create<mlir::func::FuncOp>(forOp.getLoc(), "main", funcType);
     funcOp.getBody().takeBody(forOp.getLoopBody());
-
     Block &entryBlock = funcOp.getBody().front();
 
     // Delete the index argument and remove its CastOp
-    BlockArgument argToRemove = entryBlock.getArgument(0);
-
-    if (!argToRemove.use_empty()) {
-        auto constantValue = builder.create<mlir::daphne::ConstantOp>(
+    BlockArgument indexArg = entryBlock.getArgument(0);
+     if (!indexArg.use_empty()) {    
+        auto constantValue = tempBuilder.create<mlir::daphne::ConstantOp>(
             funcOp.getLoc(),
-            builder.getIndexType(),
-            builder.getIntegerAttr(builder.getIndexType(), 0)
+            tempBuilder.getIndexType(),
+            tempBuilder.getIntegerAttr(tempBuilder.getIndexType(), 0)
         );
-
-        argToRemove.replaceAllUsesWith(constantValue);
+        
+        indexArg.replaceAllUsesWith(constantValue);
     }
     entryBlock.eraseArgument(0);
-
-    funcOp.walk([&](mlir::Operation *op) {
-        // Find the daphne.cast operation defining %0
-        if (auto castOp = dyn_cast<mlir::daphne::CastOp>(op)) {
-            Value result = castOp.getResult();
-            
-            // Replace all uses of %0 with a constant value
-            if (!result.use_empty()) {
-                auto replacementValue = builder.create<mlir::daphne::ConstantOp>(
-                    op->getLoc(),
-                    builder.getIntegerType(64),
-                    builder.getI64IntegerAttr(10) // Example replacement
-                );
-                result.replaceAllUsesWith(replacementValue);
-            }
-
-            // Erase the cast operation
-            castOp.erase();
-        }
-    });
- 
+    
     for(size_t i = iter_args_size; i < inputTypes.size() ; i++) {
         entryBlock.addArgument(inputTypes[i], funcOp.getLoc());
     }
-
-    /** 
-    for (size_t i = 0; i < entryBlock.getNumArguments(); ++i) {
-        auto blockArg = entryBlock.getArgument(i);
-        Value definingValue = loopBodyInputValues[i];
-        if (!blockArg.use_empty() && definingValue) {
-            llvm::errs() << "Replacing block argument " << i << " with SSA value:\n";
-            llvm::errs() << "  Block Argument: ";
-            blockArg.print(llvm::errs());
-            llvm::errs() << "\n  SSA Value: ";
-            definingValue.print(llvm::errs());
-            llvm::errs() << "\n";
-
-            blockArg.replaceAllUsesWith(definingValue);
-        }
-    }
-    */
-
+    
     // Replace external object uses with corresponding arguments
     funcOp.walk([&](mlir::Operation *op) {
         for (auto &operand : op->getOpOperands()) {
@@ -184,7 +145,7 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
             }
         }
     });
-
+    
     // Cast back the 1x1 matrices, how should be scalars and update their uses
     for (size_t i = 0; i < inputTypes.size(); ++i) {
         if (isScalarInput[i]) {
@@ -200,7 +161,7 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
             }
         }
     }
-
+    
     // Replace `scf.yield` with `func.return`
     funcOp.walk([&](mlir::Operation *op) {
         if (isa<mlir::scf::YieldOp>(op)) {
@@ -214,40 +175,54 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
     tempModule->print(os);
     os.flush();
     
+    // Create New For Op
     builder.setInsertionPoint(forOp);
+
+    Location loc = forOp.getLoc();
+    Value lowerBound = forOp.getLowerBound();
+    Value upperBound = forOp.getUpperBound();
+    Value step = forOp.getStep();
+    SmallVector<Value> iterArgs(forOp.getIterOperands().begin(), forOp.getIterOperands().end());
+    auto newForOp = builder.create<mlir::scf::ForOp>(loc, lowerBound, upperBound, step, iterArgs);
+
+    Block *newBlock = newForOp.getBody();
+
+    builder.setInsertionPointToStart(newBlock);
+
+    // Create Induction Var Cast
+    /** 
+    Value inductionVar = newForOp.getInductionVar();
+    builder.create<mlir::daphne::CastOp>(
+    loc, builder.getI64Type(), inductionVar);
+    */
+
+    // Create Loop Body String
     auto irString = builder.create<mlir::daphne::ConstantOp>(
-        forOp.getLoc(), 
+        newForOp.getLoc(), 
         builder.getType<mlir::daphne::StringType>(), 
         builder.getStringAttr(loopBodyIR)).getResult();
-
-    auto numInputs = builder.create<mlir::daphne::ConstantOp>(
-        forOp.getLoc(),
-        builder.getIntegerType(64),
-        builder.getI64IntegerAttr(inputs.size())
-    ).getResult();
-
-    llvm::errs() << "Creating RecompileOp with operands:\n";
-    llvm::errs() << " Result Types: " << resultTypes << "\n";
-    llvm::errs() << "  IR String: " << irString << "\n";
-    llvm::errs() << "  Num Inputs: " << numInputs << "\n";
-    llvm::errs() << "  Inputs:\n";
-    for (auto input : inputs) {
-        llvm::errs() << "    Input: " << input << " Type: " << input.getType() << "\n";
-    }
+    
+    // Create RecompileOp with new args
+    Block *loopBody = newForOp.getBody();
+    BlockArgument arg1 = loopBody->getArgument(1);
+    BlockArgument arg2 = loopBody->getArgument(2);
+    inputs[0] = arg1;
+    inputs[1] = arg2;
 
     auto recompileOp = builder.create<mlir::daphne::RecompileOp>(
         forOp.getLoc(),
         resultTypes,
-        irString,
-        numInputs,
-        inputs
+        inputs,
+        irString
     );
 
-    mlir::ValueTypeRange<mlir::OperandRange> operandTypes = recompileOp->getOperands();
-    llvm::errs() << "RecompileOp Operand Count: " << operandTypes.size() << "\n";
+    //Rewire Recompile -> Yield and Yield -> old for loop results
+    SmallVector<Value> yieldValues(recompileOp.getResults().begin(), recompileOp.getResults().end());
+    builder.create<mlir::scf::YieldOp>(loc, yieldValues);
 
-    for (auto [forResult, recompileResult] : llvm::zip(forOp.getResults(), recompileOp.getResults())) {
-        forResult.replaceAllUsesWith(recompileResult);
+    
+    for (auto [oldResult, newResult] : llvm::zip(forOp.getResults(), newForOp.getResults())) {
+        oldResult.replaceAllUsesWith(newResult);
     }
 
     forOp.erase();
@@ -256,24 +231,22 @@ void wrapLoopBodyWithRecompileOp(mlir::scf::ForOp forOp, MLIRContext *context) {
 void RecompilePass::runOnOperation() {
     auto func = getOperation();
     MLIRContext *context = &getContext();
-
-    /** 
+ 
     llvm::errs() << "Transformed IR before RecompilePass:\n";
     func.print(llvm::errs());
     llvm::errs() << "\n";
-    */
+    
 
     func.walk([&](mlir::Operation *op) {
         if (auto forOp = dyn_cast<mlir::scf::ForOp>(op)) {
             wrapLoopBodyWithRecompileOp(forOp, context);
         }
     });
-
-    /** 
+     
     llvm::errs() << "Transformed IR after RecompilePass:\n";
     func.print(llvm::errs());
     llvm::errs() << "\n";
-    */
+    
 }
 
 std::unique_ptr<OperationPass<ModuleOp>> mlir::daphne::createRecompilePass() {
