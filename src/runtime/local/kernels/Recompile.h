@@ -41,14 +41,14 @@
 // Struct for partial template specialization
 // ****************************************************************************
 template <class DTRes, class DTArg> struct Recompile {
-    static void apply(DTRes ** res, const DTArg ** arg, const char * mlirCode, size_t numInputs, DCTX(ctx)) = delete;
+    static void apply(DTRes ** res, size_t numOutputs, const DTArg ** arg, size_t numInputs, const char * mlirCode, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-template <class DTRes, class DTArg> void recompile(DTRes ** res, const DTArg ** arg, const char * mlirCode, size_t numInputs, DCTX(ctx)) {
-    Recompile<DTRes, DTArg>::apply(res, arg, mlirCode, numInputs, ctx);
+template <class DTRes, class DTArg> void recompile(DTRes ** res, size_t numOutputs, const DTArg ** arg, size_t numInputs, const char * mlirCode,  DCTX(ctx)) {
+    Recompile<DTRes, DTArg>::apply(res, numOutputs, arg, numInputs, mlirCode, ctx);
 }
 
 // ****************************************************************************
@@ -59,7 +59,7 @@ template <class DTRes, class DTArg> void recompile(DTRes ** res, const DTArg ** 
 // Matrix
 // ****************************************************************************
 template <typename VTRes, typename VTArg> struct Recompile<Matrix<VTRes>, Matrix<VTArg>> {
-    static void apply(Matrix<VTRes> ** res, const Matrix<VTArg> ** arg, const char * mlirCode, size_t numInputs, DCTX(ctx)) {
+    static void apply(Matrix<VTRes> ** res, size_t numOutputs, const Matrix<VTArg> ** arg, size_t numInputs, const char * mlirCode,  DCTX(ctx)) {
         
         auto cfg = ctx->getUserConfig();
         DaphneIrExecutor executor(true, cfg);

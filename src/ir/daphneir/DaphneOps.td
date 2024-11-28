@@ -1390,24 +1390,14 @@ def Daphne_RecompileOp : Daphne_Op<"recompile", [
 
     // Define the operands: the IR string, numInputs, and other inputs
     let arguments = (ins
-        AnyType:$ir_string,
-        I64:$numInputs,
-        Variadic<AnyType>:$inputs
+        Variadic<AnyType>:$inputs,
+        AnyType:$ir_string
     );
 
     // Define the results: outputs from the recompiled function
     let results = (outs
         Variadic<AnyType>:$outputs
     );
-
-    let extraClassDeclaration = [{
-        static void build(OpBuilder &builder, OperationState &state, Value irString, Value numInputs, ValueRange inputs, ValueRange outputs) {
-            state.addOperands(irString);
-            state.addOperands(numInputs);
-            state.addOperands(inputs);
-            state.addOperands(outputs);
-        }
-    }];
 }
 
 // ****************************************************************************

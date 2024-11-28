@@ -1388,16 +1388,21 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTArg **",
-                    "name": "arg"
+                    "type": "size_t",
+                    "name": "numOutputs"
                 },
                 {
-                    "type": "const char *",
-                    "name": "mlirCode"
+                    "type": "const DTArg **",
+                    "name": "arg",
+                    "isVariadic": true
                 },
                 {
                     "type": "size_t",
                     "name": "numInputs"
+                },
+                {
+                    "type": "const char *",
+                    "name": "mlirCode"
                 }
             ]
         },
