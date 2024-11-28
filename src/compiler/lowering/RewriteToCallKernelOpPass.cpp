@@ -31,6 +31,7 @@
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/Location.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <iostream>
 #include <memory>
@@ -60,7 +61,7 @@ class KernelReplacement : public RewritePattern {
         if (llvm::isa<daphne::DistributedComputeOp, daphne::CreateListOp>(op))
             return 1;
         if (llvm::isa<daphne::RecompileOp>(op))
-            return 3;
+            return 2;
 
         throw ErrorHandler::compilerError(op, "RewriteToCallKernelOpPass",
                                           "lowering to kernel call not yet supported for this variadic "
@@ -111,7 +112,7 @@ class KernelReplacement : public RewritePattern {
         }
         if (auto recompileOp = llvm::dyn_cast<daphne::RecompileOp>(op)) {
             auto idxAndLen = recompileOp.getODSOperandIndexAndLength(index);
-            static bool isVariadic[] = {false, false, true, true};
+            static bool isVariadic[] = {true, false};
             return std::make_tuple(idxAndLen.first, idxAndLen.second, isVariadic[index]);
         }
         throw ErrorHandler::compilerError(op, "RewriteToCallKernelOpPass",
@@ -217,10 +218,20 @@ class KernelReplacement : public RewritePattern {
             llvm::isa<daphne::CreateFrameOp>(op) || llvm::isa<daphne::DistributedComputeOp>(op) ||
             llvm::isa<daphne::NumCellsOp>(op) || llvm::isa<daphne::NumColsOp>(op) || llvm::isa<daphne::NumRowsOp>(op) ||
             llvm::isa<daphne::IncRefOp>(op) || llvm::isa<daphne::DecRefOp>(op);
-        bool hasVariadicResults = false;
+        
+        bool hasVariadicResults = llvm::isa<daphne::RecompileOp>(op);
+        
         // Append converted op result types to the look-up result types.
-        for (size_t i = 0; i < opResTys.size(); i++)
-            lookupResTys.push_back(adaptType(opResTys[i], false));
+        for (size_t i = 0; i < opResTys.size(); i++) {
+            if(llvm::isa<mlir::daphne::RecompileOp>(op))
+            {
+                lookupArgTys.push_back(adaptType(opResTys[i], false));
+            }
+            else
+            {
+                lookupResTys.push_back(adaptType(opResTys[i], false));
+            }
+        }
 
         // Append converted op argument types to the look-up argument types.
         // Variadic operands, which can have an arbitrary number of occurrences,
@@ -239,17 +250,45 @@ class KernelReplacement : public RewritePattern {
             // Note that a variadic ODS operand may have zero occurrences.
             // In that case, there is no operand corresponding to the
             // variadic ODS operand.
+
+            if(auto recompileOp = llvm::dyn_cast<mlir::daphne::RecompileOp>(op))
+            {
+                const size_t numODSResults = 1; // we always get one variadic pack of results for RecompileOp
+                for (size_t i = 0; i < numODSResults; i++) {
+                    std::pair<unsigned int, unsigned int> idxAndLen = recompileOp.getODSResultIndexAndLength(i);
+                    const unsigned idx = std::get<0>(idxAndLen);
+                    const unsigned len = std::get<1>(idxAndLen);
+                    const bool isVariadic = true;
+
+                    // Determine the MLIR type of the current ODS operand.
+                    Type odsResultTy = opResTys[idx];
+                    lookupArgTys.push_back(adaptType(odsResultTy, generalizeInputTypes));
+
+                    if (isVariadic) {
+                        // Variadic operand.
+                        lookupArgTys.push_back(rewriter.getIndexType());
+                        auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                            loc, daphne::VariadicPackType::get(rewriter.getContext(), odsResultTy),
+                            rewriter.getI64IntegerAttr(len));
+                        for (int64_t k = 0; k < len; k++)
+                            rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpOp, op->getOperand(idx + k),
+                                                                        rewriter.getI64IntegerAttr(k));
+                        
+                        kernelArgs.push_back(cvpOp);
+                        kernelArgs.push_back(
+                            rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(len)));
+                    } else
+                        // Non-variadic operand.
+                        kernelArgs.push_back(op->getOperand(idx));
+                }
+            }
+
             const size_t numODSOperands = getNumODSOperands(op);
-            llvm::errs() << "numODSOperands: " << numODSOperands << "\n";
             for (size_t i = 0; i < numODSOperands; i++) {
                 auto odsOpInfo = getODSOperandInfo(op, i);
                 const unsigned idx = std::get<0>(odsOpInfo);
                 const unsigned len = std::get<1>(odsOpInfo);
                 const bool isVariadic = std::get<2>(odsOpInfo);
-                llvm::errs() << "idx: " << idx << "\n";
-                llvm::errs() << "len: " << len << "\n";
-                llvm::errs() << "isVariadic: " << isVariadic << "\n";
-
                 // Determine the MLIR type of the current ODS operand.
                 Type odsOperandTy;
                 if (len > 0) {
@@ -257,7 +296,6 @@ class KernelReplacement : public RewritePattern {
                     // we use the type of the first operand belonging to
                     // the current ODS operand.
                     odsOperandTy = opArgTys[idx];
-                    llvm::errs() << "odsOperandTy: " << odsOperandTy << "\n";
                 } else { // len == 0
                     // If the current ODS operand does not have any occurrences
                     // (e.g., a variadic ODS operand with zero concrete operands
@@ -282,7 +320,6 @@ class KernelReplacement : public RewritePattern {
                 lookupArgTys.push_back(adaptType(odsOperandTy, generalizeInputTypes));
 
                 if (isVariadic) {
-                    hasVariadicResults = true;
                     // Variadic operand.
                     lookupArgTys.push_back(rewriter.getIndexType());
                     auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
@@ -386,6 +423,55 @@ class KernelReplacement : public RewritePattern {
             Value rewriteStr = rewriter.create<daphne::ConstantOp>(loc, strTy, rewriter.getStringAttr(stream.str()));
             lookupArgTys.push_back(mlir::daphne::StringType::get(&newContext));
             kernelArgs.push_back(rewriteStr);
+        }
+
+
+        if (llvm::isa<mlir::daphne::RecompileOp>(op))
+        {
+            llvm::errs() << "Debugging Kernel Argument and Result Types:\n";
+
+            llvm::errs() << "Lookup Argument Types (lookupArgTys) before changing:\n";
+            for (size_t i = 0; i < lookupArgTys.size(); ++i) {
+                llvm::errs() << "  Type " << i << ": ";
+                lookupArgTys[i].print(llvm::errs());
+                llvm::errs() << "\n";
+            }
+
+            std::vector<mlir::Type> newLookupArgTys;
+            for (size_t i = 1; i < lookupArgTys.size();) {
+                // Add a Matrix type followed by an index (pattern)
+                if (lookupArgTys[i].isa<daphne::MatrixType>() && i + 1 < lookupArgTys.size() &&
+                    lookupArgTys[i + 1].isa<mlir::IndexType>()) {
+                    
+                    auto mType = lookupArgTys[i].dyn_cast<mlir::daphne::MatrixType>();
+                    auto newMatrixType = mType.withRepresentation(mlir::daphne::MatrixRepresentation::Unknown);
+                    
+                    newLookupArgTys.push_back(newMatrixType);     // Add Matrix
+                    newLookupArgTys.push_back(lookupArgTys[i + 1]); // Add Index
+                    i += 2; // Move past the pair
+                } else if (lookupArgTys[i].isa<daphne::StringType>()) {
+                    // Add the String type
+                    newLookupArgTys.push_back(lookupArgTys[i]);
+                    i++; // Move past the String type
+                } else {
+                    i++; // Skip any type that does not match the pattern
+                }
+            }
+            lookupArgTys = std::move(newLookupArgTys);
+
+            llvm::errs() << "Lookup Argument Types (lookupArgTys) after changing:\n";
+            for (size_t i = 0; i < lookupArgTys.size(); ++i) {
+                llvm::errs() << "  Type " << i << ": ";
+                lookupArgTys[i].print(llvm::errs());
+                llvm::errs() << "\n";
+            }
+
+            llvm::errs() << "Kernel Args:\n";
+            for (size_t i = 0; i < kernelArgs.size(); ++i) {
+                kernelArgs[i].print(llvm::errs());
+                llvm::errs() << "\n";
+            }
+
         }
 
         // *****************************************************************************
