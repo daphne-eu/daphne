@@ -188,6 +188,23 @@ void daphne::InnerJoinOp::inferFrameLabels() {
     getResult().setType(getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
+void daphne::HashJoinOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    auto ft1 = getLhs().getType().dyn_cast<daphne::FrameType>();
+    auto ft2 = getRhs().getType().dyn_cast<daphne::FrameType>();
+    std::vector<std::string> *labelsStr1 = ft1.getLabels();
+    std::vector<std::string> *labelsStr2 = ft2.getLabels();
+
+    if (labelsStr1)
+        for (auto labelStr : *labelsStr1)
+            newLabels->push_back(labelStr);
+    if (labelsStr2)
+        for (auto labelStr : *labelsStr2)
+            newLabels->push_back(labelStr);
+
+    getResult().setType(getRes().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
 void daphne::ThetaJoinOp::inferFrameLabels() {
     std::vector<std::string> *newLabels = nullptr;
 

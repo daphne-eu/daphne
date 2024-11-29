@@ -1184,6 +1184,15 @@ def Daphne_GroupJoinOp : Daphne_Op<"groupJoin", [
     let results = (outs FrameOrU:$res, MatrixOf<[Size]>:$lhsTids);
 }
 
+def Daphne_HashJoinOp : Daphne_Op<"hashJoin", [
+    DataTypeFrm, ValueTypesConcat,
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+]> {
+    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
+    let results = (outs FrameOrU:$res);
+}
+
+
 // ----------------------------------------------------------------------------
 // Selection
 // ----------------------------------------------------------------------------
