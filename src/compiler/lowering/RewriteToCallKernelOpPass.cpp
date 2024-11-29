@@ -257,9 +257,7 @@ class KernelReplacement : public RewritePattern {
                 for (size_t i = 0; i < numODSResults; i++) {
                     std::pair<unsigned int, unsigned int> idxAndLen = recompileOp.getODSResultIndexAndLength(i);
                     const unsigned idx = std::get<0>(idxAndLen);
-                    const unsigned len = std::get<1>(idxAndLen);
                     const bool isVariadic = true;
-
                     // Determine the MLIR type of the current ODS operand.
                     Type odsResultTy = opResTys[idx];
                     lookupArgTys.push_back(adaptType(odsResultTy, generalizeInputTypes));
@@ -267,19 +265,7 @@ class KernelReplacement : public RewritePattern {
                     if (isVariadic) {
                         // Variadic operand.
                         lookupArgTys.push_back(rewriter.getIndexType());
-                        auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
-                            loc, daphne::VariadicPackType::get(rewriter.getContext(), odsResultTy),
-                            rewriter.getI64IntegerAttr(len));
-                        for (int64_t k = 0; k < len; k++)
-                            rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpOp, op->getOperand(idx + k),
-                                                                        rewriter.getI64IntegerAttr(k));
-                        
-                        kernelArgs.push_back(cvpOp);
-                        kernelArgs.push_back(
-                            rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(len)));
-                    } else
-                        // Non-variadic operand.
-                        kernelArgs.push_back(op->getOperand(idx));
+                    } 
                 }
             }
 
@@ -428,15 +414,6 @@ class KernelReplacement : public RewritePattern {
 
         if (llvm::isa<mlir::daphne::RecompileOp>(op))
         {
-            llvm::errs() << "Debugging Kernel Argument and Result Types:\n";
-
-            llvm::errs() << "Lookup Argument Types (lookupArgTys) before changing:\n";
-            for (size_t i = 0; i < lookupArgTys.size(); ++i) {
-                llvm::errs() << "  Type " << i << ": ";
-                lookupArgTys[i].print(llvm::errs());
-                llvm::errs() << "\n";
-            }
-
             std::vector<mlir::Type> newLookupArgTys;
             for (size_t i = 1; i < lookupArgTys.size();) {
                 // Add a Matrix type followed by an index (pattern)
@@ -457,22 +434,10 @@ class KernelReplacement : public RewritePattern {
                     i++; // Skip any type that does not match the pattern
                 }
             }
+            
             lookupArgTys = std::move(newLookupArgTys);
 
-            llvm::errs() << "Lookup Argument Types (lookupArgTys) after changing:\n";
-            for (size_t i = 0; i < lookupArgTys.size(); ++i) {
-                llvm::errs() << "  Type " << i << ": ";
-                lookupArgTys[i].print(llvm::errs());
-                llvm::errs() << "\n";
             }
-
-            llvm::errs() << "Kernel Args:\n";
-            for (size_t i = 0; i < kernelArgs.size(); ++i) {
-                kernelArgs[i].print(llvm::errs());
-                llvm::errs() << "\n";
-            }
-
-        }
 
         // *****************************************************************************
         // Look up a matching kernel from the kernel catalog.

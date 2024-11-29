@@ -96,7 +96,14 @@ template <typename VTRes, typename VTArg> struct Recompile<Matrix<VTRes>, Matrix
             res, 
             inputsObj, 
             outputsObj);
-        
+
+        for (size_t i = 0; i < inputsObj.size(); i++) {
+            if (llvm::isa<mlir::daphne::MatrixType, mlir::daphne::StringType>(recompileOpFuncTy.getInput(i)))
+            {
+                reinterpret_cast<Structure *>(inputsObj[i])->increaseRefCounter();
+            }
+        }
+
         if (!executor.runPasses(module.get())) {
             llvm::errs() << "Module Pass Error.\n";
             return;
