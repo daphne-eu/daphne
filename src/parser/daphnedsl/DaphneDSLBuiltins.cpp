@@ -1021,6 +1021,15 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
                                 lhs, rhs, lhsOn, rhsOn)
             .getResults();
     }
+    if (func == "hashJoin") {
+        checkNumArgsExact(loc, func, numArgs, 4);
+        std::vector<mlir::Type> colTypes;
+        for (int i = 0; i < 2; i++)
+            for (mlir::Type t : args[i].getType().dyn_cast<FrameType>().getColumnTypes())
+                colTypes.push_back(t);
+        return static_cast<mlir::Value>(builder.create<HashJoinOp>(loc, FrameType::get(builder.getContext(), colTypes),
+                                                                   args[0], args[1], args[2], args[3]));
+    }
     if (func == "groupJoin") {
         checkNumArgsExact(loc, func, numArgs, 5);
         mlir::Value lhs = args[0];
