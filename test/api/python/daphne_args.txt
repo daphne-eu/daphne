@@ -1,0 +1,16 @@
+DenseMatrix(3x1, int64_t)
+3
+9
+12
+DenseMatrix(3x1, int64_t)
+3
+9
+12
+DenseMatrix(3x1, int64_t)
+3
+9
+12
+DenseMatrix(3x1, int64_t)
+3
+9
+12

@@ -91,7 +91,7 @@ class OperationNode(DAGNode):
         current_index = self._unnamed_input_nodes.index(current_node)
         self._unnamed_input_nodes[current_index] = new_node
 
-    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False):
+    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False, daphne_args=None):
         """
         Compute function for processing the Daphne Object or operation node and returning the results.
         The function builds a DaphneDSL script from the node and its context, executes it, and processes the results
@@ -103,6 +103,7 @@ class OperationNode(DAGNode):
         :param asPyTorch: If True and the result is a matrix, the output will be converted to a PyTorch tensor.
         :param shape: If provided and the result is a matrix, it defines the shape to reshape the resulting tensor (either TensorFlow or PyTorch).
         :param useIndexColumn: If True and the result is a DataFrame, uses the column named "index" as the DataFrame's index.
+        :param daphne_args: Optional arguments specifically for Daphne DSL script execution, which can customize runtime behavior.
 
         :return: Depending on the parameters and the operation's output type, this function can return:
             - A pandas DataFrame for frame outputs.
@@ -123,7 +124,7 @@ class OperationNode(DAGNode):
             if verbose:
                 exec_start_time = time.time()
 
-            self._script.execute()
+            self._script.execute(daphne_args)
             self._script.clear(self)
 
             if verbose:

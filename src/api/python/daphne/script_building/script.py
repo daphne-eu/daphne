@@ -27,6 +27,7 @@ from daphne.utils.daphnelib import DaphneLib
 
 import ctypes
 import os
+import shlex
 from typing import List, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -88,23 +89,43 @@ class DaphneDSLScript:
         self._dfs_clear_dag_nodes(dag_root)
         self._variable_counter = 0
 
-    def execute(self):
+    def execute(self, daphne_args):
         temp_out_path = os.path.join(TMP_PATH, "tmpdaphne.daphne")
-        temp_out_file = open(temp_out_path, "w")
-        temp_out_file.writelines(self.daphnedsl_script)
-        temp_out_file.close()
-        
-        #os.environ['OPENBLAS_NUM_THREADS'] = '1'
-        res = DaphneLib.daphne(ctypes.c_char_p(str.encode(PROTOTYPE_PATH)), ctypes.c_char_p(str.encode(temp_out_path)))
+        with open(temp_out_path, "w") as temp_out_file:
+            temp_out_file.writelines(self.daphnedsl_script)
+
+        # Construct argv
+        argv = ["daphne", "--libdir", PROTOTYPE_PATH]
+
+        # Handle daphne_args
+        if isinstance(daphne_args, str):
+            argv.extend(shlex.split(daphne_args))
+        elif isinstance(daphne_args, list):
+            argv.extend(daphne_args)
+        elif daphne_args is None:
+            pass
+        else:
+            raise TypeError("daphne_args must be a string or a list")
+
+        # Add the script path
+        argv.append(temp_out_path)
+
+        # Convert argv to ctypes
+        argc = len(argv)
+        argv_ctypes = (ctypes.c_char_p * argc)(* [arg.encode('utf-8') for arg in argv])
+
+        # Set argument and return types for the C function
+        DaphneLib.daphne.argtypes = [ctypes.c_int, ctypes.POINTER(ctypes.c_char_p)]
+        DaphneLib.daphne.restype = ctypes.c_int
+
+        res = DaphneLib.daphne(ctypes.c_int(argc), argv_ctypes)
         if res != 0:
             # Error message with DSL code line.
             error_message = DaphneLib.getResult().error_message.decode("utf-8")
+            raise RuntimeError(f"Error in DaphneDSL script: {error_message}")
             # Remove DSL code line from error message.
             # index_code_line = error_message.find("Source file ->") - 29
             # error_message = error_message[:index_code_line]
-            
-            raise RuntimeError(f"Error in DaphneDSL script: {error_message}")
-        #os.environ['OPENBLAS_NUM_THREADS'] = '32'
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
         """Uses Depth-First-Search to create code from DAG
