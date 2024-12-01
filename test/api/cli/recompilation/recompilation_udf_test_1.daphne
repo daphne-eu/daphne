@@ -1,0 +1,17 @@
+len = 5000;
+X = rand(len, len, 0, 10, 0.8, 42);
+Y = rand(len, len, 0, 10, 0.8, 42);
+Z = X + Y;
+P = Z*2;
+
+def some_calculation(n: matrix<si64>) -> matrix<si64> {
+    return n*2 + 4;
+}
+
+for (i in 1:10) {
+    Z = some_calculation(Z);
+    P = some_calculation(P);
+}
+
+print(sum(Z));
+print(sum(P));

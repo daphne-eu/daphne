@@ -140,7 +140,7 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkR
 
     // initialize daphne context
     auto dctx = setupContextAndLogger();
-    recompile(results, args, mlirCode, 2, dctx.get());
+    recompile(results, 2,args, 2, mlirCode, dctx.get());
 
     // Check that results are not null
     REQUIRE(results[0] != nullptr);

@@ -1,0 +1,15 @@
+X = rand(5000, 5000, 0, 10, 0.8, 42);
+Y = rand(5000, 5000, 0, 10, 0.8, 42);
+Z = X + Y;
+P = Z*2;
+
+if (sum(Z) > sum(P)) {
+    P = P*2;
+}
+else
+{
+    Z = Z*2;
+}
+
+print(sum(Z));
+print(sum(P));

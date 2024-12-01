@@ -1,0 +1,14 @@
+X = rand(10, 10, 0, 10, 0.8, 42);
+Y = rand(10, 10, 0, 10, 0.8, 42);
+
+Z = X + Y + 1e-6;
+P = (X + Y)*2 + 1e-6;
+k = 10;
+
+for (i in 1:2) {
+    Z = Z + log(Z, k);
+    P = P + log(P, k);
+}
+
+print(sum(Z));
+print(sum(P));
