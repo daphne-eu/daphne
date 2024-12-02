@@ -258,6 +258,14 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         pm.addPass(mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
 
     pm.addPass(mlir::daphne::createDaphneOptPass());
+
+    pm.addPass(mlir::daphne::createSparsityExploitationPass());
+    // SparseExploit fuses multiple operations which only need to be lowered if still needed elsewhere.
+    // Todo: if possible, run only if SparseExploitLowering was successful.
+    pm.addPass(mlir::createCanonicalizerPass());
+    if (userConfig_.explain_mlir_codegen_sparsity_exploiting_op_fusion)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (sparsity-exploiting operator fusion):"));
+
     pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
     pm.addPass(mlir::daphne::createAggDimOpLoweringPass());
@@ -277,6 +285,9 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
             pm.addPass(mlir::daphne::createPrintIRPass("IR directly after lowering MatMulOp."));
     }
 
+    if (userConfig_.explain_mlir_codegen_daphneir_to_mlir)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (DaphneIR to MLIR):"));
+
     pm.addPass(mlir::createConvertMathToLLVMPass());
     pm.addPass(mlir::daphne::createModOpLoweringPass());
     pm.addPass(mlir::createCanonicalizerPass());
@@ -295,4 +306,6 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
 
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after codegen pipeline"));
+    if (userConfig_.explain_mlir_codegen_mlir_specific)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (MLIR-specific):"));
 }

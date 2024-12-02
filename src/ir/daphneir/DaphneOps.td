@@ -91,6 +91,27 @@ def Daphne_ConvertDenseMatrixToMemRef : Daphne_Op<"convertDenseMatrixToMemRef", 
     let results = (outs AnyMemRef:$output);
 }
 
+def Daphne_ConvertCSRMatrixToValuesMemRef : Daphne_Op<"convertCSRMatrixToValuesMemRef", [Pure]> {
+    let summary = "Given a CSRMatrix, return a StridedMemRefType.";
+    let description = [{ Constructs a StridedMemRefType with rank 1 containing the values of a CSRMatrix* with already allocated memory. }];
+    let arguments = (ins MatrixOrU:$arg);
+    let results = (outs AnyMemRef:$resValues);
+}
+
+def Daphne_ConvertCSRMatrixToColIdxsMemRef : Daphne_Op<"convertCSRMatrixToColIdxsMemRef", [Pure]> {
+    let summary = "Given a CSRMatrix, return a StridedMemRefType.";
+    let description = [{ Constructs a StridedMemRefType with rank 1 containing the column indices of a CSRMatrix* with already allocated memory. }];
+    let arguments = (ins MatrixOrU:$arg);
+    let results = (outs AnyMemRef:$resColIdxs);
+}
+
+def Daphne_ConvertCSRMatrixToRowOffsetsMemRef : Daphne_Op<"convertCSRMatrixToRowOffsetsMemRef", [Pure]> {
+    let summary = "Given a CSRMatrix, return a StridedMemRefType.";
+    let description = [{ Constructs a StridedMemRefType with rank 1 containing the row offsets of a CSRMatrix* with already allocated memory. }];
+    let arguments = (ins MatrixOrU:$arg);
+    let results = (outs AnyMemRef:$resRowOffsets);
+}
+
 // ****************************************************************************
 // Data generation
 // ****************************************************************************
@@ -195,7 +216,7 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DataTypeMat, ValueTypeFromArgs,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
     DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, FPGAOPENCLSupport,
-    CastFirstTwoArgsToResType
+    CastFirstTwoArgsToResType, NoMemoryEffect
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);

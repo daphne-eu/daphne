@@ -56,7 +56,7 @@ Other features we do and don't support right now can be found below.
 
 ### Supported Features
 
-* Cross Product
+* SQL Cross Product (Cartesian Product)
 * Complex Where Clauses
 * Inner Join with single and multiple join conditions separated by an "AND" Operator
 * Group By Clauses

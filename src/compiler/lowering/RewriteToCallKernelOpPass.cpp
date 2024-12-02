@@ -32,12 +32,13 @@
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/Location.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/ADT/ArrayRef.h"
 
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-#include <string_view>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -133,10 +134,19 @@ class KernelReplacement : public RewritePattern {
             return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
-        if (auto mrt = t.dyn_cast<mlir::MemRefType>())
-            // Remove any dimension information ({0, 0}), but retain the element
-            // type.
-            return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+        if (auto mrt = t.dyn_cast<mlir::MemRefType>()) {
+            // Remove any specific dimension information ({0}), but retain the rank and element type.
+            int64_t mrtRank = mrt.getRank();
+            if (mrtRank == 1) {
+                return mlir::MemRefType::get({0}, mrt.getElementType());
+            } else if (mrtRank == 2) {
+                return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+            } else {
+                throw std::runtime_error(
+                    "RewriteToCallKernelOpPass: expected MemRef to be of rank 1 or 2 but was given " +
+                    std::to_string(mrtRank));
+            }
+        }
         return t;
     }
 

@@ -287,26 +287,35 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         type_adaptation,
         vectorized,
         obj_ref_mgnt,
-        mlir_codegen
+        mlir_codegen,
+        mlir_codegen_sparsity_exploiting_op_fusion,
+        mlir_codegen_daphneir_to_mlir,
+        mlir_codegen_mlir_specific
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
         "explain", cat(daphneOptions),
         llvm::cl::desc("Show DaphneIR after certain compiler passes (separate "
                        "multiple values by comma, the order is irrelevant)"),
-        llvm::cl::values(clEnumVal(parsing, "Show DaphneIR after parsing"),
-                         clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
-                         clEnumVal(sql, "Show DaphneIR after SQL parsing"),
-                         clEnumVal(property_inference, "Show DaphneIR after property inference"),
-                         clEnumVal(select_matrix_repr, "Show DaphneIR after selecting "
-                                                       "physical matrix representations"),
-                         clEnumVal(phy_op_selection, "Show DaphneIR after selecting physical operators"),
-                         clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
-                         clEnumVal(vectorized, "Show DaphneIR after vectorization"),
-                         clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
-                         clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-                         clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
-                         clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
+        llvm::cl::values(
+            clEnumVal(parsing, "Show DaphneIR after parsing"),
+            clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
+            clEnumVal(sql, "Show DaphneIR after SQL parsing"),
+            clEnumVal(property_inference, "Show DaphneIR after property inference"),
+            clEnumVal(select_matrix_repr, "Show DaphneIR after selecting "
+                                          "physical matrix representations"),
+            clEnumVal(phy_op_selection, "Show DaphneIR after selecting physical operators"),
+            clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
+            clEnumVal(vectorized, "Show DaphneIR after vectorization"),
+            clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
+            clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
+            clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen"),
+            clEnumVal(mlir_codegen_sparsity_exploiting_op_fusion,
+                      "Show DaphneIR after MLIR codegen (sparsity-exploiting operator fusion)"),
+            clEnumVal(mlir_codegen_daphneir_to_mlir, "Show DaphneIR after MLIR codegen (DaphneIR to MLIR)"),
+            clEnumVal(mlir_codegen_mlir_specific, "Show DaphneIR after MLIR codegen (MLIR-specific)"),
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1("args", cat(daphneOptions),
@@ -478,6 +487,15 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             break;
         case mlir_codegen:
             user_config.explain_mlir_codegen = true;
+            break;
+        case mlir_codegen_sparsity_exploiting_op_fusion:
+            user_config.explain_mlir_codegen_sparsity_exploiting_op_fusion = true;
+            break;
+        case mlir_codegen_daphneir_to_mlir:
+            user_config.explain_mlir_codegen_daphneir_to_mlir = true;
+            break;
+        case mlir_codegen_mlir_specific:
+            user_config.explain_mlir_codegen_mlir_specific = true;
             break;
         }
     }

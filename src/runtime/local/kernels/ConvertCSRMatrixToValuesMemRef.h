@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The DAPHNE Consortium
+ * Copyright 2024 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,21 +18,19 @@
 
 #include "mlir/ExecutionEngine/CRunnerUtils.h"
 #include "runtime/local/context/DaphneContext.h"
-#include "runtime/local/datastructures/DenseMatrix.h"
+#include "runtime/local/datastructures/CSRMatrix.h"
 
 template <typename T>
-inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(const DenseMatrix<T> *input, DCTX(ctx)) {
-    StridedMemRefType<T, 2> memRef{};
-    memRef.basePtr = input->getValuesSharedPtr().get();
-    memRef.data = memRef.basePtr;
-    memRef.offset = 0;
-    memRef.sizes[0] = input->getNumRows();
-    memRef.sizes[1] = input->getNumCols();
+inline StridedMemRefType<T, 1> convertCSRMatrixToValuesMemRef(const CSRMatrix<T> *input, DCTX(ctx)) {
+    StridedMemRefType<T, 1> valuesMemRef{};
 
-    // TODO(phil): needs to be calculated for non row-major memory layouts
-    memRef.strides[0] = input->getNumCols();
-    memRef.strides[1] = 1;
+    valuesMemRef.basePtr = input->getValuesSharedPtr().get();
+    valuesMemRef.data = valuesMemRef.basePtr;
+    valuesMemRef.offset = 0;
+    valuesMemRef.sizes[0] = input->getNumNonZeros(); // Is numRowsAllocated needed to account for views?
+    valuesMemRef.strides[0] = 1;
+
     input->increaseRefCounter();
 
-    return memRef;
+    return valuesMemRef;
 }

@@ -54,6 +54,10 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
     inline static const std::string EXPLAIN_OBJ_REF_MGNT = "explain_obj_ref_mgnt";
     inline static const std::string EXPLAIN_MLIR_CODEGEN = "explain_mlir_codegen";
+    inline static const std::string EXPLAIN_MLIR_CODEGEN_SPARSITY_EXPLOITING_OP_FUSION =
+        "explain_mlir_codegen_sparsity_exploiting_op_fusion";
+    inline static const std::string EXPLAIN_MLIR_CODEGEN_DAPHNEIR_TO_MLIR = "explain_mlir_codegen_daphneir_to_mlir";
+    inline static const std::string EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC = "explain_mlir_codegen_mlir_specific";
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
@@ -95,6 +99,9 @@ struct DaphneConfigJsonParams {
                                                      EXPLAIN_TYPE_ADAPTATION,
                                                      EXPLAIN_VECTORIZED,
                                                      EXPLAIN_MLIR_CODEGEN,
+                                                     EXPLAIN_MLIR_CODEGEN_SPARSITY_EXPLOITING_OP_FUSION,
+                                                     EXPLAIN_MLIR_CODEGEN_DAPHNEIR_TO_MLIR,
+                                                     EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC,
                                                      EXPLAIN_OBJ_REF_MGNT,
                                                      TASK_PARTITIONING_SCHEME,
                                                      NUMBER_OF_THREADS,
