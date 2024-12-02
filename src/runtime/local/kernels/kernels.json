@@ -4171,12 +4171,8 @@
                     "name": "res"
                 },
                 {
-                    "type": "uint32_t",
-                    "name": "upper"
-                },
-                {
-                    "type": "uint32_t",
-                    "name": "lower"
+                    "type": "uint64_t",
+                    "name": "address"
                 },
                 {
                     "type": "int64_t",

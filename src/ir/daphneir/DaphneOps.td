@@ -1436,7 +1436,7 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
 }
 
 def Daphne_ReceiveFromNumpyOp: Daphne_Op<"receiveFromNumpy">{
-    let arguments = (ins UI32:$upper, UI32:$lower, SI64:$rows, SI64:$cols);
+    let arguments = (ins UI64: $address, SI64:$rows, SI64:$cols);
     let results = (outs MatrixOrU:$res);
 }
 
