@@ -129,12 +129,8 @@ inline void innerJoin(
                                                             row_idx_r, ctx);
             hit = hit || innerJoinProbeIf<double, double>(vtcLhsOn, vtcRhsOn, res, lhs, rhs, lhsOn, rhsOn, row_idx_l,
                                                           row_idx_r, ctx);
-            hit = hit || innerJoinProbeIf<std::string, std::string>(vtcLhsOn, vtcRhsOn, res, lhs, rhs, lhsOn, rhsOn,
-                                                                    row_idx_l, row_idx_r, ctx);
             if (hit) {
                 for (size_t idx_c = 0; idx_c < numColLhs; idx_c++) {
-                    innerJoinSet<std::string>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c,
-                                              ctx);
                     innerJoinSet<int64_t>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c,
                                           ctx);
                     innerJoinSet<double>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c,
@@ -142,10 +138,6 @@ inline void innerJoin(
                     col_idx_res++;
                 }
                 for (size_t idx_c = 0; idx_c < numColRhs; idx_c++) {
-
-                    innerJoinSet<std::string>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c,
-                                              ctx);
-
                     innerJoinSet<int64_t>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c,
                                           ctx);
 

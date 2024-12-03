@@ -993,7 +993,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             builder.create<CartesianOp>(loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1]));
     }
     if (func == "innerJoin") {
-        checkNumArgsMin(loc, func, numArgs, 4);
+        checkNumArgsBetween(loc, func, numArgs, 4, 5);
         std::vector<mlir::Type> colTypes;
         mlir::Value numRowRes;
         for (int i = 0; i < 2; i++)
@@ -1016,7 +1016,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         // TODO Reconcile this with the other join ops, but we need it to work
         // quickly now.
         // return createJoinOp<SemiJoinOp>(loc, func, args);
-        checkNumArgsMin(loc, func, numArgs, 4);
+        checkNumArgsBetween(loc, func, numArgs, 4, 5);
         mlir::Value lhs = args[0];
         mlir::Value rhs = args[1];
         mlir::Value lhsOn = args[2];
