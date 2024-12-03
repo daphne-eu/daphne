@@ -515,6 +515,14 @@ We will support set operations such as **`intersect`**, **`merge`**, and **`exce
   
 We will support more variants of joins, including (left/right) outer joins, theta joins, anti-joins, etc.
 
+### Grouping and aggregation
+
+- **`groupSum`**`(arg:frame, grpColNames:str[, grpColNames, ...], sumColName:str)`
+
+    Groups the rows in the given frame `arg` by the specified columns `grpColNames` (at least one column) and calculates the per-group sum of the column denoted by `sumColName`.
+
+    *This built-in function is currently limited in terms of functionality (aggregation only on a single column, sum as the only aggregation function). It will be extended in the future. Meanwhile, consider using DAPHNE's `sql()` built-in function for more comprehensive grouping and aggregation support.*
+
 ### Frame label manipulation
 
 - **`setColLabels`**`(arg:frame, labels:str, ...)`

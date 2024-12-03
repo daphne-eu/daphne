@@ -1044,6 +1044,45 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             .getResults();
     }
 
+    // --------------------------------------------------------------------
+    // Grouping and aggregation
+    // --------------------------------------------------------------------
+
+    if (func == "groupSum") {
+        // Arbitrary number of columns to group on.
+        // A single column to calculate the sum on.
+        checkNumArgsMin(loc, func, numArgs, 3);
+        mlir::Value currentFrame = args[0];
+        mlir::Value aggCol = args[numArgs - 1];
+        std::vector<mlir::Value> groupName;
+        std::vector<mlir::Value> columnName;
+        std::vector<mlir::Type> colTypes;
+
+        // set aggregaton function to SUM
+        auto aggFunc = static_cast<mlir::Attribute>(
+            mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::SUM));
+        std::vector<mlir::Attribute> functionName;
+        functionName.push_back(aggFunc);
+
+        // get group columns
+        for (size_t i = 1; i < numArgs - 1; i++) {
+            groupName.push_back(args[i]);
+        }
+
+        // get agg column
+        columnName.push_back(aggCol);
+
+        // result column types
+        mlir::Type vt = utils.unknownType;
+        for (size_t i = 0; i < groupName.size() + columnName.size(); i++) {
+            colTypes.push_back(vt);
+        }
+
+        return static_cast<mlir::Value>(builder.create<GroupOp>(loc, FrameType::get(builder.getContext(), colTypes),
+                                                                currentFrame, groupName, columnName,
+                                                                builder.getArrayAttr(functionName)));
+    }
+
     // ********************************************************************
     // Frame label manipulation
     // ********************************************************************
