@@ -80,8 +80,11 @@ inline void innerJoin(
     const Frame *lhs, const Frame *rhs,
     // input column names
     const char *lhsOn, const char *rhsOn,
+    // result size
+    int64_t numRowRes,
     // context
     DCTX(ctx)) {
+
     // Find out the value types of the columns to process.
     ValueTypeCode vtcLhsOn = lhs->getColumnType(lhsOn);
     ValueTypeCode vtcRhsOn = rhs->getColumnType(rhsOn);
@@ -89,7 +92,7 @@ inline void innerJoin(
     // Perhaps check if res already allocated.
     const size_t numRowRhs = rhs->getNumRows();
     const size_t numRowLhs = lhs->getNumRows();
-    const size_t totalRows = numRowRhs * numRowLhs;
+    const size_t totalRows = numRowRes == -1 ? numRowRhs * numRowLhs : numRowRes;
     const size_t numColRhs = rhs->getNumCols();
     const size_t numColLhs = lhs->getNumCols();
     const size_t totalCols = numColRhs + numColLhs;

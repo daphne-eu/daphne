@@ -993,13 +993,18 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             builder.create<CartesianOp>(loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1]));
     }
     if (func == "innerJoin") {
-        checkNumArgsExact(loc, func, numArgs, 4);
+        checkNumArgsBetween(loc, func, numArgs, 4, 5);
         std::vector<mlir::Type> colTypes;
+        mlir::Value numRowRes;
         for (int i = 0; i < 2; i++)
             for (mlir::Type t : args[i].getType().dyn_cast<FrameType>().getColumnTypes())
                 colTypes.push_back(t);
+        if (numArgs == 5)
+            numRowRes = utils.castSI64If(args[4]);
+        else
+            numRowRes = builder.create<ConstantOp>(loc, int64_t(-1));
         return static_cast<mlir::Value>(builder.create<InnerJoinOp>(loc, FrameType::get(builder.getContext(), colTypes),
-                                                                    args[0], args[1], args[2], args[3]));
+                                                                    args[0], args[1], args[2], args[3], numRowRes));
     }
     if (func == "fullOuterJoin")
         return createJoinOp<FullOuterJoinOp>(loc, func, args);
@@ -1011,14 +1016,19 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         // TODO Reconcile this with the other join ops, but we need it to work
         // quickly now.
         // return createJoinOp<SemiJoinOp>(loc, func, args);
-        checkNumArgsExact(loc, func, numArgs, 4);
+        checkNumArgsBetween(loc, func, numArgs, 4, 5);
         mlir::Value lhs = args[0];
         mlir::Value rhs = args[1];
         mlir::Value lhsOn = args[2];
         mlir::Value rhsOn = args[3];
+        mlir::Value numRowRes;
+        if (numArgs == 5)
+            numRowRes = utils.castSI64If(args[4]);
+        else
+            numRowRes = builder.create<ConstantOp>(loc, int64_t(-1));
         return builder
             .create<SemiJoinOp>(loc, FrameType::get(builder.getContext(), {utils.unknownType}), utils.matrixOfSizeType,
-                                lhs, rhs, lhsOn, rhsOn)
+                                lhs, rhs, lhsOn, rhsOn, numRowRes)
             .getResults();
     }
     if (func == "groupJoin") {

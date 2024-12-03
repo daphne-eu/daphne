@@ -1097,7 +1097,7 @@ def Daphne_InnerJoinOp : Daphne_Op<"innerJoin", [
     DataTypeFrm, ValueTypesConcat,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
 ]> {
-    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
+    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn, Size:$numRowRes);
     let results = (outs FrameOrU:$res);
 }
 
@@ -1141,7 +1141,7 @@ def Daphne_SemiJoinOp : Daphne_Op<"semiJoin", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     NumColsFromArg
 ]> {
-    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
+    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn, Size:$numRowRes);
     let results = (outs FrameOrU:$res, MatrixOf<[Size]>:$lhsTids);
 }
 

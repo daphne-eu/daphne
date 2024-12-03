@@ -492,14 +492,22 @@ We will support set operations such as **`intersect`**, **`merge`**, and **`exce
 
     Calculates the cartesian product of the two input frames.
 
-- **`innerJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)`
+- **`innerJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str[, numRowRes:si64])`
 
     Performs an inner join of the two input frames on `lhs`.`lhsOn` == `rhs`.`rhsOn`.
 
-- **`semiJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)`
+    The parameter `numRowRes` is an optional hint for an upper bound of the number or result rows.
+    If specified, it determines the number of rows that will be allocated for the result, whereby `-1` stands for an automatically chosen size.
+    Otherwise, it defaults to `-1`.
+
+- **`semiJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str[, numRowRes:si64])`
 
     Performs a semi join of the two input frames on `lhs`.`lhsOn` == `rhs`.`rhsOn`.
     Returns only the columns belonging to `lhs`.
+    
+    The parameter `numRowRes` is an optional hint for an upper bound of the number or result rows.
+    If specified, it determines the number of rows that will be allocated for the result, whereby `-1` stands for an automatically chosen size.
+    Otherwise, it defaults to `-1`.
 
 - **`groupJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str, rhsAgg:str)`
 

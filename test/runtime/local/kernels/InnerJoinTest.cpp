@@ -31,7 +31,7 @@
 
 #include <cstdint>
 
-TEST_CASE("innerJoin", TAG_KERNELS) {
+TEST_CASE("InnerJoin", TAG_KERNELS) {
     auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(4, {1, 2, 3, 4});
     auto lhsC1 = genGivenVals<DenseMatrix<double>>(4, {11.0, 22.0, 33.0, 44.00});
     std::vector<Structure *> lhsCols = {lhsC0, lhsC1};
@@ -46,7 +46,7 @@ TEST_CASE("innerJoin", TAG_KERNELS) {
     auto rhs = DataObjectFactory::create<Frame>(rhsCols, rhsLabels);
 
     Frame *res = nullptr;
-    innerJoin(res, lhs, rhs, "a", "c", nullptr);
+    innerJoin(res, lhs, rhs, "a", "c", -1, nullptr);
 
     // Check the meta data.
     CHECK(res->getNumRows() == 2);
