@@ -309,7 +309,6 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
             clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen"),
             clEnumVal(mlir_codegen_sparsity_exploiting_op_fusion,
                       "Show DaphneIR after MLIR codegen (sparsity-exploiting operator fusion)"),
