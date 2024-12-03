@@ -2809,13 +2809,19 @@ On the other hand, built-in functions for individual operations of extended rela
 <p>Calculates the cartesian product of the two input frames.</p>
 </li>
 <li>
-<p><strong><code>innerJoin</code></strong><code>(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)</code></p>
+<p><strong><code>innerJoin</code></strong><code>(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str[, numRowRes:si64])</code></p>
 <p>Performs an inner join of the two input frames on <code>lhs</code>.<code>lhsOn</code> == <code>rhs</code>.<code>rhsOn</code>.</p>
+<p>The parameter <code>numRowRes</code> is an optional hint for an upper bound of the number or result rows.
+If specified, it determines the number of rows that will be allocated for the result, whereby <code>-1</code> stands for an automatically chosen size.
+Otherwise, it defaults to <code>-1</code>.</p>
 </li>
 <li>
-<p><strong><code>semiJoin</code></strong><code>(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)</code></p>
+<p><strong><code>semiJoin</code></strong><code>(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str[, numRowRes:si64])</code></p>
 <p>Performs a semi join of the two input frames on <code>lhs</code>.<code>lhsOn</code> == <code>rhs</code>.<code>rhsOn</code>.
 Returns only the columns belonging to <code>lhs</code>.</p>
+<p>The parameter <code>numRowRes</code> is an optional hint for an upper bound of the number or result rows.
+If specified, it determines the number of rows that will be allocated for the result, whereby <code>-1</code> stands for an automatically chosen size.
+Otherwise, it defaults to <code>-1</code>.</p>
 </li>
 <li>
 <p><strong><code>groupJoin</code></strong><code>(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str, rhsAgg:str)</code></p>
