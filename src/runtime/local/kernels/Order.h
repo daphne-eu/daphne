@@ -197,11 +197,8 @@ struct OrderFrame {
 
         if (numColIdxs > 1) {
             for (size_t i = 0; i < numColIdxs - 1; i++) {
-                if (arg->getSchema()[colIdxs[i]] == ValueTypeCode::STR)
-                    MultiColumnIDSort<std::string>::apply(arg, idx, groups, ascending[i], colIdxs[i], ctx);
-                else
-                    DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdxs[i]], arg, idx, groups,
-                                                                        ascending[i], colIdxs[i], ctx);
+                DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdxs[i]], arg, idx, groups,
+                                                                    ascending[i], colIdxs[i], ctx);
             }
         }
 
@@ -209,17 +206,11 @@ struct OrderFrame {
         // use
         size_t colIdx = colIdxs[numColIdxs - 1];
         if (groupsRes == nullptr) {
-            if (arg->getSchema()[colIdx] == ValueTypeCode::STR)
-                ColumnIDSort<std::string>::apply(arg, idx, groups, ascending[numColIdxs - 1], colIdx, ctx);
-            else
-                DeduceValueTypeAndExecute<ColumnIDSort>::apply(arg->getSchema()[colIdx], arg, idx, groups,
-                                                               ascending[numColIdxs - 1], colIdx, ctx);
+            DeduceValueTypeAndExecute<ColumnIDSort>::apply(arg->getSchema()[colIdx], arg, idx, groups,
+                                                           ascending[numColIdxs - 1], colIdx, ctx);
         } else {
-            if (arg->getSchema()[colIdx] == ValueTypeCode::STR)
-                MultiColumnIDSort<std::string>::apply(arg, idx, groups, ascending[numColIdxs - 1], colIdx, ctx);
-            else
-                DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdx], arg, idx, groups,
-                                                                    ascending[numColIdxs - 1], colIdx, ctx);
+            DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdx], arg, idx, groups,
+                                                                ascending[numColIdxs - 1], colIdx, ctx);
             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
         }
     }

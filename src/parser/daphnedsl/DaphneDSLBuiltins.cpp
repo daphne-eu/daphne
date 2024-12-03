@@ -1033,12 +1033,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
                                  utils.matrixOfSizeType, lhs, rhs, lhsOn, rhsOn, rhsAgg)
             .getResults();
     }
-    if (func == "group") {
-        // arbitrary number of columns to group on.
+
+    // --------------------------------------------------------------------
+    // Grouping and aggregation
+    // --------------------------------------------------------------------
+
+    if (func == "groupSum") {
+        // Arbitrary number of columns to group on.
         // A single column to calculate the sum on.
         checkNumArgsMin(loc, func, numArgs, 3);
         mlir::Value currentFrame = args[0];
-        mlir::Value aggCol = args[1];
+        mlir::Value aggCol = args[numArgs - 1];
         std::vector<mlir::Value> groupName;
         std::vector<mlir::Value> columnName;
         std::vector<mlir::Type> colTypes;
@@ -1050,7 +1055,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         functionName.push_back(aggFunc);
 
         // get group columns
-        for (size_t i = 2; i < numArgs; i++) {
+        for (size_t i = 1; i < numArgs - 1; i++) {
             groupName.push_back(args[i]);
         }
 

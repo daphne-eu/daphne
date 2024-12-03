@@ -1,8 +1,8 @@
-// constant folding of casts between unsigned, signed, signless types
+// Grouping and sum aggregation (two grouping columns).
 
-fr = createFrame([ "String1", "String1", "String2", "String3", "String3" ], [ 1, 1, 2, 3, 4 ],
+fr = createFrame([ 11, 11, 22, 33, 33 ], [ 1, 1, 2, 3, 4 ],
                  [ 100, 200, 300, 400, 500 ], "a", "b", "c");
 
-res = group(fr, "c", "a", "b");
+res = groupSum(fr, "a", "b", "c");
 
 print(res);

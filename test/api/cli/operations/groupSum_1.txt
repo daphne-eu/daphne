@@ -1,5 +1,5 @@
-Frame(4x3, [a:std::string, b:int64_t, SUM(c):int64_t])
-String1 1 300
-String2 2 300
-String3 3 400
-String3 4 500
+Frame(4x3, [a:int64_t, b:int64_t, SUM(c):int64_t])
+11 1 300
+22 2 300
+33 3 400
+33 4 500
