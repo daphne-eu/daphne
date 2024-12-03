@@ -131,13 +131,19 @@ template <typename VTSel> struct FilterRow<Frame, Frame, VTSel> {
         for (size_t r = 0; r < numRows; r++) {
             if (valuesSel[r]) {
                 for (size_t c = 0; c < numCols; c++) {
-                    // We always copy in units of 8 bytes (uint64_t). If the
-                    // actual element size is lower, the superfluous bytes will
-                    // be overwritten by the next match. With this approach, we
-                    // do not need to call memcpy for each element, nor
-                    // interpret the types for a L/S of fitting size.
-                    *reinterpret_cast<uint64_t *>(resCols[c]) = *reinterpret_cast<const uint64_t *>(argCols[c]);
-                    resCols[c] += elementSizes[c];
+                    if (schema[c] == ValueTypeCode::STR) {
+                        // Handle std::string column
+                        *reinterpret_cast<std::string *>(resCols[c]) =
+                            *reinterpret_cast<const std::string *>(argCols[c]); // Deep copy the string
+                        resCols[c] += elementSizes[c];
+                    } else { // We always copy in units of 8 bytes (uint64_t). If the
+                        // actual element size is lower, the superfluous bytes will
+                        // be overwritten by the next match. With this approach, we
+                        // do not need to call memcpy for each element, nor
+                        // interpret the types for a L/S of fitting size.
+                        *reinterpret_cast<uint64_t *>(resCols[c]) = *reinterpret_cast<const uint64_t *>(argCols[c]);
+                        resCols[c] += elementSizes[c];
+                    }
                 }
             }
             for (size_t c = 0; c < numCols; c++)
