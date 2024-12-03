@@ -901,6 +901,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#grouping-and-aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grouping and aggregation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#frame-label-manipulation" class="md-nav__link">
     <span class="md-ellipsis">
       Frame label manipulation
@@ -1955,6 +1964,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#grouping-and-aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grouping and aggregation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#frame-label-manipulation" class="md-nav__link">
     <span class="md-ellipsis">
       Frame label manipulation
@@ -2829,6 +2847,14 @@ Otherwise, it defaults to <code>-1</code>.</p>
 </li>
 </ul>
 <p>We will support more variants of joins, including (left/right) outer joins, theta joins, anti-joins, etc.</p>
+<h3 id="grouping-and-aggregation">Grouping and aggregation</h3>
+<ul>
+<li>
+<p><strong><code>groupSum</code></strong><code>(arg:frame, grpColNames:str[, grpColNames, ...], sumColName:str)</code></p>
+<p>Groups the rows in the given frame <code>arg</code> by the specified columns <code>grpColNames</code> (at least one column) and calculates the per-group sum of the column denoted by <code>sumColName</code>.</p>
+<p><em>This built-in function is currently limited in terms of functionality (aggregation only on a single column, sum as the only aggregation function). It will be extended in the future. Meanwhile, consider using DAPHNE's <code>sql()</code> built-in function for more comprehensive grouping and aggregation support.</em></p>
+</li>
+</ul>
 <h3 id="frame-label-manipulation">Frame label manipulation</h3>
 <ul>
 <li>
