@@ -1151,13 +1151,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         return builder.create<WriteOp>(loc, arg, filename).getOperation();
     }
     if (func == "receiveFromNumpy") {
-        checkNumArgsExact(loc, func, numArgs, 5);
+        checkNumArgsExact(loc, func, numArgs, 4);
 
-        mlir::Value upper = utils.castUI32If(args[0]);
-        mlir::Value lower = utils.castUI32If(args[1]);
-        mlir::Value rows = args[2];
-        mlir::Value cols = args[3];
-        mlir::Value valueType = args[4];
+        mlir::Value address = utils.castUI64If(args[0]);
+        mlir::Value rows = args[1];
+        mlir::Value cols = args[2];
+        mlir::Value valueType = args[3];
 
         int64_t valueTypeCode = CompilerUtils::constantOrThrow<int64_t>(
             valueType, "the value type code in ReceiveFromNumpyOp must be a constant");
@@ -1185,7 +1184,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid value type code");
 
         return static_cast<mlir::Value>(
-            builder.create<ReceiveFromNumpyOp>(loc, utils.matrixOf(vt), upper, lower, rows, cols));
+            builder.create<ReceiveFromNumpyOp>(loc, utils.matrixOf(vt), address, rows, cols));
     }
     if (func == "saveDaphneLibResult") {
         checkNumArgsExact(loc, func, numArgs, 1);
