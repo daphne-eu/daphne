@@ -1,0 +1,11 @@
+# Read a matrix from a file when the file path is a parameter to a UDF.
+
+import "../check_matrix.daphne";
+
+def myReadMatrix(path:str) {
+    return readMatrix(path);
+}
+
+chk = myReadMatrix("test/api/cli/io/ref/matrix_123_ref.csv");
+ref = [1];
+check_matrix.checkMatrix(chk, ref, false);

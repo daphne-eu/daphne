@@ -1,0 +1,9 @@
+{
+    "numRows": 5,
+    "numCols": 3,
+    "schema": [
+        {"label": "c_si64", "valueType": "si64"},
+        {"label": "c_f64", "valueType": "f64"},
+        {"label": "c_si64_", "valueType": "si64"}
+    ]
+}

@@ -1,0 +1,13 @@
+# Read a frame from a file when the file path is a parameter to a UDF.
+
+import "../check_frame.daphne";
+
+# TODO Test nan values.
+
+def myReadFrame(path:str) {
+    return readFrame(path);
+}
+
+chk = myReadFrame("test/api/cli/io/ref/frame_123_ref.csv");
+ref = {"a": [1], "b": [2], "c": [3]};
+check_frame.checkFrame(chk, ref, false);

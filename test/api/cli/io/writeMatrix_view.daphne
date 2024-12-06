@@ -1,5 +1,0 @@
-// Write a view into a small matrix to the file $outPath.
-
-X = reshape(seq(1, 6, 1), 3, 2);
-X = X[, 1]; # only the 2nd column
-write(X, $outPath);

@@ -68,7 +68,7 @@ template <typename VTRes> class CastObj<DenseMatrix<VTRes>, Frame> {
         const size_t numRows = argFrm->getNumRows();
         const DenseMatrix<VTArg> *argCol = argFrm->getColumn<VTArg>(c);
         for (size_t r = 0; r < numRows; r++)
-            res->set(r, c, static_cast<VTRes>(argCol->get(r, 0)));
+            res->set(r, c, castSca<VTRes, VTArg>(argCol->get(r, 0), nullptr));
         DataObjectFactory::destroy(argCol);
     }
 
@@ -125,6 +125,9 @@ template <typename VTRes> class CastObj<DenseMatrix<VTRes>, Frame> {
                     break;
                 case ValueTypeCode::UI8:
                     castCol<uint8_t>(res, arg, c);
+                    break;
+                case ValueTypeCode::STR:
+                    castCol<std::string>(res, arg, c);
                     break;
                 default:
                     throw std::runtime_error("CastObj::apply: unknown value type code");

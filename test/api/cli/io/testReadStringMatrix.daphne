@@ -1,3 +1,0 @@
-// Test reading matrix of strings
-
-print(readMatrix("test/api/cli/io/ReadCsv2.csv"));

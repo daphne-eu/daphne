@@ -108,7 +108,7 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
         if (!is_not_end)
             break;
         if (is_multiLine && str[pos] == '"' && str[pos + 1] == '"') {
-            res->append("\"\"");
+            res->append("\"");
             pos += 2;
         } else if (is_multiLine && str[pos] == '\\' && str[pos + 1] == '"') {
             res->append("\\\"");

@@ -1,0 +1,11 @@
+# Read a frame with columns of various value types (including string) from a file.
+
+import "../check_frame.daphne";
+
+# TODO test nan
+
+chk = readFrame($inPath);
+ref = {"c_si64": [0, 1, -22, 3, -44],
+       "c_f64": [0.0, 1.1, -22.2, inf, -inf],
+       "c_str": ["abc", "", "d\"e", "fg\nhi", "mn,op"]};
+check_frame.checkFrame(chk, ref, $nanSafe);
