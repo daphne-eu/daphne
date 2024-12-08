@@ -212,7 +212,9 @@ struct CompilerUtils {
             return "Target";
         else if (auto memRefType = t.dyn_cast<mlir::MemRefType>()) {
             const std::string vtName = mlirTypeToCppTypeName(memRefType.getElementType(), angleBrackets, false);
-            return angleBrackets ? ("StridedMemRefType<" + vtName + ",2>") : ("StridedMemRefType_" + vtName + "_2");
+            const std::string rankStr = std::to_string(memRefType.getRank());
+            return angleBrackets ? ("StridedMemRefType<" + vtName + "," + rankStr + ">")
+                                 : ("StridedMemRefType_" + vtName + "_" + rankStr);
         }
 
         std::string typeName;

@@ -58,7 +58,7 @@ TEST_CASE("SemiJoin", TAG_KERNELS) {
     // res
     Frame *res = nullptr;
     DenseMatrix<int64_t> *lhsTid = nullptr;
-    semiJoin(res, lhsTid, lhs, rhs, "a", "c", nullptr);
+    semiJoin(res, lhsTid, lhs, rhs, "a", "c", -1, nullptr);
 
     CHECK(*res == *expRes);
     CHECK(*lhsTid == *expTid);

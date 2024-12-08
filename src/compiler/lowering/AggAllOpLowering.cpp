@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "compiler/utils/LoweringUtils.h"
+#include <util/ErrorHandler.h>
 
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
@@ -90,8 +91,9 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
         ssize_t numCols = matrixType.getNumCols();
 
         if (numRows < 0 || numCols < 0) {
-            return rewriter.notifyMatchFailure(
-                op, "aggAllOp codegen currently only works with matrix dimensions that are known at compile time");
+            throw ErrorHandler::compilerError(
+                loc, "AggAllOpLowering",
+                "aggAllOp codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         Type matrixElementType = matrixType.getElementType();

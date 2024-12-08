@@ -1541,6 +1541,93 @@
     },
     {
         "kernelTemplate": {
+            "header": "ConvertCSRMatrixToValuesMemRef.h",
+            "opName": "convertCSRMatrixToValuesMemRef",
+            "returnType": "StridedMemRefType<VT,1>",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CSRMatrix<VT> *",
+                    "name": "input"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ConvertCSRMatrixToColIdxsMemRef.h",
+            "opName": "convertCSRMatrixToColIdxsMemRef",
+            "returnType": "StridedMemRefType<size_t,1>",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CSRMatrix<VT> *",
+                    "name": "input"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ConvertCSRMatrixToRowOffsetsMemRef.h",
+            "opName": "convertCSRMatrixToRowOffsetsMemRef",
+            "returnType": "StridedMemRefType<size_t,1>",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CSRMatrix<VT> *",
+                    "name": "input"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CreateFrame.h",
             "opName": "createFrame",
             "returnType": "void",
@@ -2974,7 +3061,11 @@
                 {
                     "type": "const char *",
                     "name": "rhsOn"
-                }
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRowRes"
+                }   
             ]
         },
         "instantiations": [[]]
@@ -4267,6 +4358,10 @@
                 {
                     "type": "const char *",
                     "name": "rhsOn"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRowRes"
                 }
             ]
         },

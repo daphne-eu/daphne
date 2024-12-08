@@ -63,6 +63,7 @@ set(TEST_SOURCES
         api/cli/codegen/EwUnaryTest.cpp
         api/cli/codegen/EwOpLoopFusionTest.cpp
         api/cli/codegen/MapOpTest.cpp
+        api/cli/codegen/SparsityExploitTest.cpp
         api/cli/codegen/TransposeTest.cpp
 
         ir/daphneir/InferTypesTest.cpp

@@ -46,6 +46,8 @@ void semiJoinCol(
     Frame *&res, DenseMatrix<VTTid> *&resLhsTid,
     // arguments
     const DenseMatrix<VTLhs> *argLhs, const DenseMatrix<VTRhs> *argRhs,
+    // result size
+    int64_t numRowRes,
     // context
     DCTX(ctx)) {
     if (argLhs->getNumCols() != 1)
@@ -72,11 +74,14 @@ void semiJoinCol(
     // Create the output data objects.
     if (res == nullptr) {
         ValueTypeCode schema[] = {ValueTypeUtils::codeFor<VTLhs>};
-        res = DataObjectFactory::create<Frame>(numArgLhs, 1, schema, nullptr, false);
+        const size_t resSize = numRowRes == -1 ? numArgLhs : numRowRes;
+        res = DataObjectFactory::create<Frame>(resSize, 1, schema, nullptr, false);
     }
     auto resLhs = res->getColumn<VTLhs>(0);
-    if (resLhsTid == nullptr)
-        resLhsTid = DataObjectFactory::create<DenseMatrix<VTTid>>(numArgLhs, 1, false);
+    if (resLhsTid == nullptr) {
+        const size_t resLhsTidSize = numRowRes == -1 ? numArgLhs : numRowRes;
+        resLhsTid = DataObjectFactory::create<DenseMatrix<VTTid>>(resLhsTidSize, 1, false);
+    }
 
     size_t pos = 0;
     for (size_t i = 0; i < numArgLhs; i++) {
@@ -107,11 +112,13 @@ void semiJoinColIf(
     const Frame *lhs, const Frame *rhs,
     // input column names
     const char *lhsOn, const char *rhsOn,
+    // result size
+    int64_t numRowRes,
     // context
     DCTX(ctx)) {
     if (vtcLhs == ValueTypeUtils::codeFor<VTLhs> && vtcRhs == ValueTypeUtils::codeFor<VTRhs>) {
         semiJoinCol<VTLhs, VTRhs, VTTid>(res, resLhsTid, lhs->getColumn<VTLhs>(lhsOn), rhs->getColumn<VTRhs>(rhsOn),
-                                         ctx);
+                                         numRowRes, ctx);
     }
 }
 
@@ -127,6 +134,8 @@ void semiJoin(
     const Frame *lhs, const Frame *rhs,
     // input column names
     const char *lhsOn, const char *rhsOn,
+    // result size
+    int64_t numRowRes,
     // context
     DCTX(ctx)) {
     // Find out the value types of the columns to process.
@@ -136,8 +145,8 @@ void semiJoin(
     // Call the semiJoin-kernel on columns for the actual combination of
     // value types.
     // Repeat this for all type combinations...
-    semiJoinColIf<int64_t, int64_t, VTLhsTid>(vtcLhsOn, vtcRhsOn, res, lhsTid, lhs, rhs, lhsOn, rhsOn, ctx);
-    semiJoinColIf<int64_t, int64_t, VTLhsTid>(vtcLhsOn, vtcRhsOn, res, lhsTid, lhs, rhs, lhsOn, rhsOn, ctx);
+    semiJoinColIf<int64_t, int64_t, VTLhsTid>(vtcLhsOn, vtcRhsOn, res, lhsTid, lhs, rhs, lhsOn, rhsOn, numRowRes, ctx);
+    semiJoinColIf<int64_t, int64_t, VTLhsTid>(vtcLhsOn, vtcRhsOn, res, lhsTid, lhs, rhs, lhsOn, rhsOn, numRowRes, ctx);
 
     // Set the column labels of the result frame.
     std::string labels[] = {lhsOn};

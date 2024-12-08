@@ -1197,13 +1197,30 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
     mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
+    bool hasKernelHint = ctx->kernel != nullptr;
 
+    mlir::Value res = nullptr;
     if (op == "*")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
+        res = utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
     if (op == "/")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
+        res = utils.retValWithInferedType(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
 
-    throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
+    if (hasKernelHint) {
+        std::string kernel = ctx->kernel->getText();
+
+        // We deliberately don't check if the specified kernel
+        // is registered for the created kind of operation,
+        // since this is checked in RewriteToCallKernelOpPass.
+
+        mlir::Operation *op = res.getDefiningOp();
+        // TODO Don't hardcode the attribute name.
+        op->setAttr("kernel_hint", builder.getStringAttr(kernel));
+    }
+
+    if (res)
+        return res;
+    else
+        throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprContext *ctx) {
@@ -1211,7 +1228,9 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = valueOrErrorOnVisit(ctx->lhs);
     mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
+    bool hasKernelHint = ctx->kernel != nullptr;
 
+    mlir::Value res = nullptr;
     if (op == "+")
         // Note that we use '+' for both addition (EwAddOp) and concatenation
         // (EwConcatOp). The choice is made based on the types of the operands
@@ -1219,11 +1238,28 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
         // types might not be known at this point in time. Thus, we always
         // create an EwAddOp here. Note that EwAddOp has a canonicalize method
         // rewriting it to EwConcatOp if necessary.
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+        res = utils.retValWithInferedType(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
     if (op == "-")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
+        res = utils.retValWithInferedType(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
 
-    throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
+    if (hasKernelHint) {
+        std::string kernel = ctx->kernel->getText();
+
+        // We deliberately don't check if the specified kernel
+        // is registered for the created kind of operation,
+        // since this is checked in RewriteToCallKernelOpPass.
+
+        mlir::Operation *op = res.getDefiningOp();
+        // TODO Don't hardcode the attribute name.
+        op->setAttr("kernel_hint", builder.getStringAttr(kernel));
+
+        // TODO retain the attr in case EwAddOp is rewritten to EwConcatOp.
+    }
+
+    if (res)
+        return res;
+    else
+        throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprContext *ctx) {
