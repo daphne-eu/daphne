@@ -96,6 +96,8 @@ MAKE_READ_TEST_CASE_2("frame_dynamic-path-1")
         std::filesystem::remove(outPath); /* remove old output file if it still exists */                              \
         checkDaphneStatusCode(StatusCode::SUCCESS, scriptPathWrt.c_str(), "--args",                                    \
                               ("outPath=\"" + outPath + "\"").c_str());                                                \
+        /* TODO REQUIRE() the status code to be success (don't only CHECK() it), because in case of failure, */        \
+        /*      the next check doesn't make sense and might produce a misleading output. */                            \
         compareDaphneToStr("0\n", scriptPathCmp.c_str(), "--args",                                                     \
                            ("chkPath=\"" + outPath + "\",refPath=\"" + refPath + "\",nanSafe=" + nanSafe).c_str());    \
     }
@@ -103,7 +105,7 @@ MAKE_READ_TEST_CASE_2("frame_dynamic-path-1")
 // TODO The commented out test cases don't work yet, as the CSV writer doesn't support strings yet.
 MAKE_WRITE_TEST_CASE("matrix", "si64", "false")
 MAKE_WRITE_TEST_CASE("matrix", "f64", "true")
-// MAKE_WRITE_TEST_CASE("matrix", "str", "false")
+MAKE_WRITE_TEST_CASE("matrix", "str", "false")
 MAKE_WRITE_TEST_CASE("matrix", "view", "false")
 MAKE_WRITE_TEST_CASE("frame", "mixed-no-str", "false")
-// MAKE_WRITE_TEST_CASE("frame", "mixed-str", "false")
+MAKE_WRITE_TEST_CASE("frame", "mixed-str", "false")

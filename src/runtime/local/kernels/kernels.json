@@ -4029,6 +4029,7 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "std::string"]],
             ["Frame"]
         ]
     },
