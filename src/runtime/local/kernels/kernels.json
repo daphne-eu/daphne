@@ -3078,39 +3078,6 @@
     },
     {
         "kernelTemplate": {
-            "header": "hashJoin.h",
-            "opName": "hashJoin",
-            "returnType": "void",
-            "templateParams": [],
-            "runtimeParams": [
-                {
-                    "type": "Frame *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const Frame *",
-                    "name": "lhs"
-                },
-                {
-                    "type": "const Frame *",
-                    "name": "rhs"
-                },
-                {
-                    "type": "const char *",
-                    "name": "lhsOn"
-                },
-                {
-                    "type": "const char *",
-                    "name": "rhsOn"
-                }
-            ]
-        },
-        "instantiations": [
-            []
-        ]
-    },
-    {
-        "kernelTemplate": {
             "header": "ThetaJoin.h",
             "opName": "thetaJoin",
             "returnType": "void",
