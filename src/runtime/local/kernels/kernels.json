@@ -2197,6 +2197,11 @@
                         ["DenseMatrix", "std::string"],
                         ["DenseMatrix", "std::string"],
                         "const char *"
+                    ],
+                    [
+                        ["DenseMatrix", "int64_t"],
+                        ["DenseMatrix", "std::string"],
+                        "const char *"
                     ]
                 ],
                 "opCodes": [

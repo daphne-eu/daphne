@@ -63,7 +63,7 @@ struct EwBinaryObjSca<DenseMatrix<VTRes>, DenseMatrix<VTLhs>, VTRhs> {
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
 
-        const VTRes *valuesLhs = lhs->getValues();
+        const VTLhs *valuesLhs = lhs->getValues();
         VTRes *valuesRes = res->getValues();
 
         EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
