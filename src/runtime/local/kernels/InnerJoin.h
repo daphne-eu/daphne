@@ -121,8 +121,6 @@ int64_t ProbeHashLhs(
                 }
 
                 row_idx_res++;
-                row_idx_res++;
-                row_idx_res++;
             }
         }
     }
