@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_INNERJOIN_H
 #define SRC_RUNTIME_LOCAL_KERNELS_INNERJOIN_H
 
@@ -10,7 +26,8 @@
 
 #include <stdexcept>
 #include <tuple>
-#include <unordered_set>
+#include <unordered_map>
+#include <vector>
 
 #include <cstddef>
 #include <cstdint>
@@ -30,19 +47,24 @@ template <typename VTCol>
 void innerJoinSet(ValueTypeCode vtcType, Frame *&res, const Frame *arg, const int64_t toRow, const int64_t toCol,
                   const int64_t fromRow, const int64_t fromCol, DCTX(ctx)) {
     if (vtcType == ValueTypeUtils::codeFor<VTCol>) {
-        innerJoinSetValue<VTCol>(res->getColumn<VTCol>(toCol), arg->getColumn<VTCol>(fromCol), toRow, fromRow, ctx);
+        const DenseMatrix<VTCol> *colArg = arg->getColumn<VTCol>(fromCol);
+        DenseMatrix<VTCol> *colRes = res->getColumn<VTCol>(toCol);
+        innerJoinSetValue<VTCol>(colRes, colArg, toRow, fromRow, ctx);
+        DataObjectFactory::destroy(colArg, colRes);
     }
 }
 
 // Create a hash table for rhs
 template <typename VTRhs>
-std::unordered_map<VTRhs, size_t> BuildHashRhs(const Frame *rhs, const char *rhsOn, const size_t numRowRhs) {
-    std::unordered_map<VTRhs, size_t> res;
+std::unordered_map<VTRhs, std::vector<size_t>> BuildHashRhs(const Frame *rhs, const char *rhsOn,
+                                                            const size_t numRowRhs) {
+    std::unordered_map<VTRhs, std::vector<size_t>> res;
     const DenseMatrix<VTRhs> *col = rhs->getColumn<VTRhs>(rhsOn);
     for (size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++) {
         VTRhs key = col->get(row_idx_r, 0);
-        res[key] = row_idx_r;
+        res[key].push_back(row_idx_r);
     }
+    DataObjectFactory::destroy(col);
     return res;
 }
 
@@ -59,50 +81,59 @@ int64_t ProbeHashLhs(
     // context
     DCTX(ctx),
     // hashed map of Rhs
-    std::unordered_map<VT, size_t> hashRhsIndex,
+    std::unordered_map<VT, std::vector<size_t>> hashRhsIndex,
     // Lhs rowa
     const size_t numRowLhs) {
     int64_t row_idx_res = 0;
     int64_t col_idx_res = 0;
-    auto LhsFKCol = lhs->getColumn<VT>(lhsOn);
+    auto lhsFKCol = lhs->getColumn<VT>(lhsOn);
     for (size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++) {
-        auto key = LhsFKCol->get(row_idx_l, 0);
+        auto key = lhsFKCol->get(row_idx_l, 0);
         auto it = hashRhsIndex.find(key);
 
         if (it != hashRhsIndex.end()) {
-            size_t row_idx_r = it->second;
-            col_idx_res = 0;
+            for (size_t row_idx_r : it->second) {
+                col_idx_res = 0;
 
-            // Populate result row from lhs columns
-            for (size_t idx_c = 0; idx_c < numColLhs; idx_c++) {
-                innerJoinSet<std::string>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c,
+                // Populate result row from lhs columns
+                for (size_t idx_c = 0; idx_c < numColLhs; idx_c++) {
+                    innerJoinSet<std::string>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c,
+                                              ctx);
+                    innerJoinSet<int64_t>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c,
                                           ctx);
-                innerJoinSet<int64_t>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c, ctx);
-                innerJoinSet<double>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c, ctx);
+                    innerJoinSet<double>(schema[col_idx_res], res, lhs, row_idx_res, col_idx_res, row_idx_l, idx_c,
+                                         ctx);
 
-                col_idx_res++;
-            }
+                    col_idx_res++;
+                }
 
-            // Populate result row from rhs columns
-            for (size_t idx_c = 0; idx_c < numColRhs; idx_c++) {
-                innerJoinSet<std::string>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c,
+                // Populate result row from rhs columns
+                for (size_t idx_c = 0; idx_c < numColRhs; idx_c++) {
+                    innerJoinSet<std::string>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c,
+                                              ctx);
+                    innerJoinSet<int64_t>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c,
                                           ctx);
-                innerJoinSet<int64_t>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c, ctx);
 
-                innerJoinSet<double>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c, ctx);
+                    innerJoinSet<double>(schema[col_idx_res], res, rhs, row_idx_res, col_idx_res, row_idx_r, idx_c,
+                                         ctx);
 
-                col_idx_res++;
+                    col_idx_res++;
+                }
+
+                row_idx_res++;
+                row_idx_res++;
+                row_idx_res++;
             }
-
-            row_idx_res++;
         }
     }
+    DataObjectFactory::destroy(lhsFKCol);
     return row_idx_res;
 }
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
+
 inline void innerJoin(
     // results
     Frame *&res,
@@ -114,7 +145,6 @@ inline void innerJoin(
     int64_t numRowRes,
     // context
     DCTX(ctx)) {
-
     // Find out the value types of the columns to process.
     ValueTypeCode vtcLhsOn = lhs->getColumnType(lhsOn);
 
