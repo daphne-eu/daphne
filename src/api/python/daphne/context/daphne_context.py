@@ -96,8 +96,6 @@ class DaphneContext(object):
         if shared_memory:
             # Data transfer via shared memory.
             address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
-            upper = (address & 0xFFFFFFFF00000000) >> 32
-            lower = (address & 0xFFFFFFFF)
 
             # Change the data type, if int16 or uint16 is handed over.
             # TODO This could change the input DataFrame.
@@ -127,7 +125,7 @@ class DaphneContext(object):
                 # TODO Raise an error here?
                 print("unsupported numpy dtype")
 
-            res = Matrix(self, 'receiveFromNumpy', [upper, lower, rows, cols, vtc], local_data=mat)
+            res = Matrix(self, 'receiveFromNumpy', [address, rows, cols, vtc], local_data=mat)
         else:
             # Data transfer via a file.
             data_path_param = "\"" + TMP_PATH + "/{file_name}.csv\""
@@ -201,8 +199,6 @@ class DaphneContext(object):
                     print(f"from_pandas(): original DataFrame column `{column}` (#{idx}) shares memory with new numpy array: {np.shares_memory(mat, df[column].values)}")
 
                 address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
-                upper = (address & 0xFFFFFFFF00000000) >> 32
-                lower = (address & 0xFFFFFFFF)
                 d_type = mat.dtype
                 if d_type == np.double or d_type == np.float64:
                     vtc = F64
@@ -223,7 +219,7 @@ class DaphneContext(object):
                 else:
                     raise TypeError(f'Unsupported numpy dtype in column "{column}" ({idx})')
                 
-                args.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1 , vtc], local_data=mat))
+                args.append(Matrix(self, 'receiveFromNumpy', [address, len(mat), 1 , vtc], local_data=mat))
 
                 if verbose:
                     print(f"from_pandas(): Python-side execution time for column `{column}` (#{idx}): {(time.time() - col_start_time):.10f} seconds")
