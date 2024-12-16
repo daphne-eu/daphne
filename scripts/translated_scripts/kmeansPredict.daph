@@ -1,7 +1,0 @@
-def m_kmeansPredict(X:matrix<f64>, C:matrix<f64>) -> matrix<f64> {
-  D = (-2.0) * (X @ t(C)) + t(sum(C ^ 2, 0));
-  P = (D <= aggMin(D, 0));
-  Y = idxMax(P, 0);
-  return as.matrix<f64>(Y);
-}
-
