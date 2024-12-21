@@ -256,5 +256,8 @@ def LowerEwOpPass: Pass<"lower-ew", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createEwOpLoweringPass()";
 }
 
+def SliceRowOpLoweringPass: Pass<"lower-slice-row", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createSliceRowOpLoweringPass()";
+}
 
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

@@ -1,0 +1,17 @@
+X = [1, 2, 3, 4, 5, 6, 7, 8, 9](3, 3);
+//Y = transpose(X);
+i=2;j=2;k=2;
+n=1*3;
+
+outSliceRow = X[:2, :];
+print(outSliceRow);
+
+
+//outExtractRow = X[ [0, 2], :];
+//outSliceCol = X[:, :2];
+//outExtractCol = X[:, [0, 2] ];
+
+//print(Y);
+//print(outExtractRow);
+//print(outSliceCol);
+//print(outExtractCol);
