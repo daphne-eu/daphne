@@ -36,6 +36,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     TransposeOpLowering.cpp
 
     SliceRowOpLowering.cpp
+    SliceColOpLowering.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

@@ -260,4 +260,8 @@ def SliceRowOpLoweringPass: Pass<"lower-slice-row", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createSliceRowOpLoweringPass()";
 }
 
+def SliceColOpLoweringPass: Pass<"lower-slice-col", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createSliceColOpLoweringPass()";
+}
+
 #endif // SRC_IR_DAPHNEIR_PASSES_TD
