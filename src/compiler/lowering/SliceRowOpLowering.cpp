@@ -94,25 +94,26 @@ class SliceRowOpLowering : public OpConversionPattern<daphne::SliceRowOp> {
         auto lowerIncl = adaptor.getLowerIncl().getDefiningOp<daphne::ConstantOp>().getValue().dyn_cast<mlir::IntegerAttr>().getSInt();
         auto upperExcl = adaptor.getUpperExcl().getDefiningOp<daphne::ConstantOp>().getValue().dyn_cast<mlir::IntegerAttr>().getSInt();
         
-        Value resMemref = rewriter.create<memref::AllocOp>(loc, MemRefType::get({(upperExcl-lowerIncl), numCols}, matrixElementType));
+        // Value resMemref = rewriter.create<memref::AllocOp>(loc, MemRefType::get({(upperExcl-lowerIncl), numCols}, matrixElementType));
         
         DenseI64ArrayAttr offset = rewriter.getDenseI64ArrayAttr({lowerIncl, 0});
         DenseI64ArrayAttr sizes = rewriter.getDenseI64ArrayAttr({(upperExcl-lowerIncl), numCols});
         DenseI64ArrayAttr strides = rewriter.getDenseI64ArrayAttr({1, 1});
         
-        Value selMemref = rewriter.create<memref::SubViewOp>(loc, argMemref, offset, sizes, strides);
+        // Value selMemref = rewriter.create<memref::SubViewOp>(loc, argMemref, offset, sizes, strides);
+        Value resMemref = rewriter.create<memref::SubViewOp>(loc, argMemref, offset, sizes, strides);
 
-        SmallVector<AffineMap, 2> indexMaps{AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
-                                            AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())};
+        // SmallVector<AffineMap, 2> indexMaps{AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
+        //                                     AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())};
 
-        SmallVector<utils::IteratorType, 2> iterTypes{utils::IteratorType::parallel,
-                                                      utils::IteratorType::parallel};
+        // SmallVector<utils::IteratorType, 2> iterTypes{utils::IteratorType::parallel,
+        //                                               utils::IteratorType::parallel};
 
-        rewriter.create<linalg::GenericOp>(loc, TypeRange{}, ValueRange{selMemref}, ValueRange{resMemref},
-                                           indexMaps, iterTypes,
-                                           [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
-                                               OpBuilderNested.create<linalg::YieldOp>(locNested, arg[0]);
-                                           });
+        // rewriter.create<linalg::GenericOp>(loc, TypeRange{}, ValueRange{selMemref}, ValueRange{resMemref},
+        //                                    indexMaps, iterTypes,
+        //                                    [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+        //                                        OpBuilderNested.create<linalg::YieldOp>(locNested, arg[0]);
+        //                                    });
         
         Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
 
