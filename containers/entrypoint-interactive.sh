@@ -13,10 +13,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-USER=ubuntu
+
 /usr/sbin/sshd -f /etc/ssh/sshd_config
-# /usr/sbin/groupadd -g "$GID" dockerusers
-# /usr/sbin/useradd -c 'Docker Container User' -u $UID -g "$GID" -G sudo -m -s /bin/bash -d /home/"$USER" "$USER"
+/usr/sbin/groupadd -g "$GID" dockerusers
+/usr/sbin/useradd -c 'Docker Container User' -u $UID -g "$GID" -G sudo -m -s /bin/bash -d /home/"$USER" "$USER"
 printf "${USER} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo EDITOR="tee -a" visudo #>> /dev/null
 mkdir -p /home/"$USER"/.ssh
 chmod 700 /home/"$USER"/.ssh

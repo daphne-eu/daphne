@@ -68,7 +68,6 @@ fi
 $USE_SUDO docker run $DEBUG_FLAGS $DEVICE_FLAGS -it --rm --hostname daphne-container -w $DAPHNE_ROOT_CONTAINER \
     -v "$DAPHNE_ROOT:$DAPHNE_ROOT_CONTAINER" -e GID=$GID -e TERM=screen-256color -e PATH -e LD_LIBRARY_PATH \
     -e USER=$USERNAME -e UID=$UID \
-    --entrypoint /daphne/containers/entrypoint-interactive.sh \
     "$DOCKER_IMAGE:$DOCKER_TAG" $command
 
 # move this up to above the DOCKER_IMAGE line to override the entrypoint:
