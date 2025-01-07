@@ -93,6 +93,7 @@ generalExpr:
     | lhs=generalExpr op=('*'|'/') rhs=generalExpr # mulExpr
     | lhs=generalExpr op=('+'|'-') rhs=generalExpr # addExpr
     | lhs=generalExpr op=CMP_OP rhs=generalExpr # cmpExpr
+    | obj=generalExpr op=SQL_BETWEEN lhs=generalExpr SQL_AND rhs=generalExpr # betweenExpr 
     | lhs=generalExpr SQL_AND rhs=generalExpr # andExpr
     | lhs=generalExpr SQL_OR rhs=generalExpr # orExpr
     ;
@@ -144,6 +145,7 @@ SQL_ASC: A S C;
 SQL_DESC: D E S C;
 SQL_AND: A N D;
 SQL_OR: O R;
+SQL_BETWEEN: B E T W E E N;
 
 fragment A: [aA];
 fragment B: [bB];

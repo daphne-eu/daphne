@@ -30,7 +30,7 @@
 #include <cstdint>
 #include <regex>
 
-#include <iostream> //todo: remove
+//#include <iostream> //ToDo: remove
 
 // ****************************************************************************
 // Helper functions
@@ -935,8 +935,40 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext *ctx) {
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
     if (op == ">=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor (visitCmpExpr)", "unexpected comparision operation symbol");
+}
 
-    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor", "unexpected op symbol");
+
+antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext *ctx) {
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    antlrcpp::Any vObj = visit(ctx->obj);
+    antlrcpp::Any vLhs = visit(ctx->lhs);
+    antlrcpp::Any vRhs = visit(ctx->rhs);
+
+    if (!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)) {
+        return nullptr;
+    }
+
+    mlir::Value obj = utils.valueOrError(utils.getLoc(ctx->obj->start), vObj);
+    mlir::Value lhs = utils.valueOrError(utils.getLoc(ctx->lhs->start), vLhs);
+    mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
+
+    //first version ->
+    //  we create 7 operations. (greater equal AND less equal) OR (less equal AND greater equal)
+    //  there is a better must be a better and more performant solution but this is the easiest solution
+    //  to get this feature in.  
+    
+    mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, rhs));
+    mlir::Value b1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, lhs));
+    
+    mlir::Value a2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, lhs));
+    mlir::Value b2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, rhs));
+    
+    mlir::Value a = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, a1, a2));
+    mlir::Value b = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, b1, b2));
+
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, a, b));
 }
 
 antlrcpp::Any SQLVisitor::visitAndExpr(SQLGrammarParser::AndExprContext *ctx) {
@@ -1050,7 +1082,6 @@ antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext *ctx) {
     }else if(auto lit = ctx->STRING_LITERAL()){
         std::string real_val = lit->getText();
         std::string val = real_val.substr(1, real_val.length()-2);
-        std::cout << "STRING_LITERAL is: " << val << std::endl; // TODO: remove
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
     }
     // this should not be possible to reach since there are only three types for a literal

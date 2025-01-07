@@ -238,6 +238,8 @@ class SQLVisitor : public SQLGrammarVisitor {
 
     antlrcpp::Any visitCmpExpr(SQLGrammarParser::CmpExprContext *ctx) override;
 
+    antlrcpp::Any visitBetweenExpr(SQLGrammarParser::BetweenExprContext *ctx) override;
+
     antlrcpp::Any visitAndExpr(SQLGrammarParser::AndExprContext *ctx) override;
 
     antlrcpp::Any visitOrExpr(SQLGrammarParser::OrExprContext *ctx) override;
