@@ -107,6 +107,7 @@ selectIdent:
 literal:
     INT_LITERAL
     | FLOAT_LITERAL
+    | STRING_LITERAL
     ;
 
 // ****************************************************************************
@@ -175,6 +176,8 @@ fragment LETTER: [a-zA-Z];
 fragment DIGIT: [0-9];
 fragment NON_ZERO_DIGIT: [1-9];
 
+fragment ESCAPE_SEQ: '\\' [bfnrt"\\];
+
 IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
@@ -185,6 +188,10 @@ INT_LITERAL:
     '-'? DIGIT+;
 
 FLOAT_LITERAL:
-    '-'? ( DIGIT+ '.' DIGIT+);
+    '-'? (( DIGIT* '.' DIGIT+) | ((DIGIT+ '.' DIGIT*)));
+
+STRING_LITERAL:
+    ('"' (ESCAPE_SEQ | ~[\\"])* '"') | ('\'' (ESCAPE_SEQ | ~[\\'])* '\'');
+
 
 WS: [ \t\r\n]+ -> skip;

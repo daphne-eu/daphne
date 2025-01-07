@@ -30,6 +30,8 @@
 #include <cstdint>
 #include <regex>
 
+#include <iostream> //todo: remove
+
 // ****************************************************************************
 // Helper functions
 // ****************************************************************************
@@ -920,6 +922,7 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext *ctx) {
     mlir::Value lhs = utils.valueOrError(utils.getLoc(ctx->lhs->start), vLhs);
     mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
 
+    
     if (op == "=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
     if (op == "<>")
@@ -1040,10 +1043,16 @@ antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext *ctx) {
         int64_t val = std::stol(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
     }
-    if (auto lit = ctx->FLOAT_LITERAL()) {
+    else if (auto lit = ctx->FLOAT_LITERAL()) {
         // ToDo: converted from atof to std::stod for safety -> check perf
         double val = std::stod(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
+    }else if(auto lit = ctx->STRING_LITERAL()){
+        std::string real_val = lit->getText();
+        std::string val = real_val.substr(1, real_val.length()-2);
+        std::cout << "STRING_LITERAL is: " << val << std::endl; // TODO: remove
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
     }
-    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor", "unexpected literal");
+    // this should not be possible to reach since there are only three types for a literal
+    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor (visitLiteral)", "unexpected literal type"); 
 }
