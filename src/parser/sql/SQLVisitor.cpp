@@ -837,7 +837,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(SQLGrammarParser::GroupAggExprContex
 
         setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
-        mlir::Value expr = valueOrErrorOnVisit(ctx->generalExpr());
+        mlir::Value expr = valueOrErrorOnVisit(ctx->generalExpr2());
         setBit(sqlFlag, (int64_t)SQLBit::agg, 0);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
 
@@ -862,6 +862,22 @@ antlrcpp::Any SQLVisitor::visitParanthesesExpr(SQLGrammarParser::ParanthesesExpr
         return nullptr;
     }
     return utils.valueOrError(utils.getLoc(ctx->generalExpr()->start), vRes);
+}
+
+antlrcpp::Any SQLVisitor::visitParanthesesExpr2(SQLGrammarParser::ParanthesesExpr2Context *ctx) {
+    antlrcpp::Any vRes = visit(ctx->generalExpr2());
+    if (!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)) {
+        return nullptr;
+    }
+    return utils.valueOrError(utils.getLoc(ctx->generalExpr2()->start), vRes);
+}
+
+antlrcpp::Any SQLVisitor::visitDefaultExpr(SQLGrammarParser::DefaultExprContext *ctx) {
+    antlrcpp::Any vRes = visit(ctx->generalExpr2());
+    if (!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)) {
+        return nullptr;
+    }
+    return utils.valueOrError(utils.getLoc(ctx->generalExpr2()->start), vRes);
 }
 
 antlrcpp::Any SQLVisitor::visitMulExpr(SQLGrammarParser::MulExprContext *ctx) {
@@ -959,15 +975,17 @@ antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext 
     //  there is a better must be a better and more performant solution but this is the easiest solution
     //  to get this feature in.  
     
-    mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, rhs));
-    mlir::Value b1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, lhs));
-    
-    mlir::Value a2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, lhs));
-    mlir::Value b2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, rhs));
-    
+    // lhs <= rhs (lhs <= obj <= rhs) (this will be it in most case but not all)
+    mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, lhs, obj));
+    mlir::Value a2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, rhs));
     mlir::Value a = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, a1, a2));
-    mlir::Value b = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, b1, b2));
 
+    // lhs >= rhs (rhs <= obj <= lhs)
+    mlir::Value b1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, rhs, obj));
+    mlir::Value b2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, lhs));
+    mlir::Value b = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, b1, b2));
+    
+    //both combined give the solution
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, a, b));
 }
 

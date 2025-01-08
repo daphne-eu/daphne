@@ -85,18 +85,22 @@ orderInformation:
     (asc=SQL_ASC|desc=SQL_DESC)?;
 
 generalExpr:
-    literal # literalExpr
-    | '*' # starExpr
-    | selectIdent # identifierExpr
-    | func=IDENTIFIER '(' var=generalExpr ')' #groupAggExpr
+    generalExpr2 # defaultExpr
     | '(' generalExpr ')' # paranthesesExpr
-    | lhs=generalExpr op=('*'|'/') rhs=generalExpr # mulExpr
-    | lhs=generalExpr op=('+'|'-') rhs=generalExpr # addExpr
-    | lhs=generalExpr op=CMP_OP rhs=generalExpr # cmpExpr
-    | obj=generalExpr op=SQL_BETWEEN lhs=generalExpr SQL_AND rhs=generalExpr # betweenExpr 
+    | obj=generalExpr op=SQL_BETWEEN lhs=generalExpr2 SQL_AND rhs=generalExpr2 # betweenExpr 
     | lhs=generalExpr SQL_AND rhs=generalExpr # andExpr
     | lhs=generalExpr SQL_OR rhs=generalExpr # orExpr
     ;
+
+generalExpr2:
+    literal # literalExpr
+    | '*' # starExpr
+    | selectIdent # identifierExpr
+    | '(' generalExpr2 ')' # paranthesesExpr2
+    | func=IDENTIFIER '(' var=generalExpr2 ')' #groupAggExpr
+    | lhs=generalExpr2 op=('*'|'/') rhs=generalExpr2 # mulExpr
+    | lhs=generalExpr2 op=('+'|'-') rhs=generalExpr2 # addExpr
+    | lhs=generalExpr2 op=CMP_OP rhs=generalExpr2 # cmpExpr;
 
 tableReference:
     var=IDENTIFIER (SQL_AS? aka=IDENTIFIER)?;
