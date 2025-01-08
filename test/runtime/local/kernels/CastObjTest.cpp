@@ -498,7 +498,13 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to column", TAG_KERNELS, (DenseMatri
     
     REQUIRE(res->getPopulationCount() == numRows);
     REQUIRE(res->getLength() == numRows);
+    #if 0
+    // TODO operator== doesn't seem to be defined tuddbs::Column<T>.
     CHECK(*res == *exp);
+    #else
+    // TODO Passing a bool to CHECK() prevents meaningful output on test failure.
+    CHECK(checkEq(res, exp, nullptr));
+    #endif
 
     DataObjectFactory::destroy(arg);
     delete exp;
@@ -551,7 +557,13 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to column", TAG_KERNELS, (DenseMatrix
     
     REQUIRE(res->getPopulationCount() == numRows);
     REQUIRE(res->getLength() == numRows);
+    #if 0
+    // TODO operator== doesn't seem to be defined tuddbs::Column<T>.
     CHECK(*res == *exp);
+    #else
+    // TODO Passing a bool to CHECK() prevents meaningful output on test failure.
+    CHECK(checkEq(res, exp, nullptr));
+    #endif
     
     DataObjectFactory::destroy(arg);
     delete exp;

@@ -83,8 +83,6 @@ TEST_CASE("BitmapPositionListConverter: Test case 2", TAG_KERNELS) {
     
     /// test if result matches expected result
     CHECK(checkEq<DenseMatrix<size_t>>(resultMatrix, expectedResult, nullptr));
-    resultMatrix->print(std::cout);
-    expectedResult->print(std::cout);
     
     /// cleanup
     DataObjectFactory::destroy(resultMatrix, expectedResult, pos_list);

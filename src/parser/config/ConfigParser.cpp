@@ -57,6 +57,14 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::USE_PHY_OP_SELECTION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_MLIR_CODEGEN))
         config.use_mlir_codegen = jf.at(DaphneConfigJsonParams::USE_MLIR_CODEGEN).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_COLUMNAR))
+        config.use_columnar = jf.at(DaphneConfigJsonParams::USE_COLUMNAR).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_COLUMNAR_REDUCE))
+        config.use_columnar_reduce = jf.at(DaphneConfigJsonParams::USE_COLUMNAR_REDUCE).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_COLUMNAR_REWRITE))
+        config.use_columnar_rewrite = jf.at(DaphneConfigJsonParams::USE_COLUMNAR_REWRITE).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_SELECTION_PUSHDOWN))
+        config.use_selection_pushdown = jf.at(DaphneConfigJsonParams::USE_SELECTION_PUSHDOWN).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS))
         config.matmul_vec_size_bits = jf.at(DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_TILE))
@@ -80,6 +88,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.vectorized_single_queue = jf.at(DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::DEBUG_LLVM))
         config.debug_llvm = jf.at(DaphneConfigJsonParams::DEBUG_LLVM).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_COLUMNAR))
+        config.explain_columnar = jf.at(DaphneConfigJsonParams::EXPLAIN_COLUMNAR).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_KERNELS))
         config.explain_kernels = jf.at(DaphneConfigJsonParams::EXPLAIN_KERNELS).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_LLVM))
@@ -92,6 +102,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.explain_property_inference = jf.at(DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SELECT_MATRIX_REPR))
         config.explain_select_matrix_repr = jf.at(DaphneConfigJsonParams::EXPLAIN_SELECT_MATRIX_REPR).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SELECTION_PUSHDOWN))
+        config.explain_selection_pushdown = jf.at(DaphneConfigJsonParams::EXPLAIN_SELECTION_PUSHDOWN).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SQL))
         config.explain_sql = jf.at(DaphneConfigJsonParams::EXPLAIN_SQL).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PHY_OP_SELECTION))
@@ -121,6 +133,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
                                             .append(std::to_string(static_cast<int>(config.taskPartitioningScheme))));
         }
     }
+    if (keyExists(jf, DaphneConfigJsonParams::VECTOR_EXTENSION))
+        config.vector_extension = jf.at(DaphneConfigJsonParams::VECTOR_EXTENSION).get<VectorExtensions>();
     if (keyExists(jf, DaphneConfigJsonParams::NUMBER_OF_THREADS))
         config.numberOfThreads = jf.at(DaphneConfigJsonParams::NUMBER_OF_THREADS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MINIMUM_TASK_SIZE))

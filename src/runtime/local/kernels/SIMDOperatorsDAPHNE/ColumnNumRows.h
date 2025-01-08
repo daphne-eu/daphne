@@ -40,7 +40,7 @@ struct ColumnNumRows {
 
 template<class DTArg>
 size_t columnNumRows(const DTArg * arg, DCTX(ctx)) {
-    ColumnNumRows<DTArg>::apply(arg, ctx);
+    return ColumnNumRows<DTArg>::apply(arg, ctx);
 }
 
 // ****************************************************************************

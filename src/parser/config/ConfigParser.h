@@ -19,6 +19,7 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <nlohmannjson/json.hpp>
 #include <runtime/local/vectorized/LoadPartitioning.h>
+#include <runtime/local/kernels/SIMDOperatorsDAPHNE/VectorExtensions.h>
 #include <string>
 
 // must be in the same namespace as the enum SelfSchedulingScheme
@@ -35,6 +36,13 @@ NLOHMANN_JSON_SERIALIZE_ENUM(SelfSchedulingScheme, {{SelfSchedulingScheme::INVAL
                                                     {SelfSchedulingScheme::MSTATIC, "MSTATIC"},
                                                     {SelfSchedulingScheme::MFSC, "MFSC"},
                                                     {SelfSchedulingScheme::PSS, "PSS"}})
+
+// must be in the same namespace as the enum VectorExtensions
+NLOHMANN_JSON_SERIALIZE_ENUM(VectorExtensions, {{VectorExtensions::INVALID, nullptr},
+                                                {VectorExtensions::SCALAR, "SCALAR"},
+                                                {VectorExtensions::SSE, "SSE"},
+                                                {VectorExtensions::AVX2, "AVX2"},
+                                                {VectorExtensions::AVX512, "AVX512"}})
 
 class ConfigParser {
   public:

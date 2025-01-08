@@ -1013,6 +1013,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         else
               daphne_msg "No need to build HAWQ (libhdfs3) again."
         fi
+    fi
     #------------------------------------------------------------------------------
     # TSL (Template SIMD Library)
     #------------------------------------------------------------------------------

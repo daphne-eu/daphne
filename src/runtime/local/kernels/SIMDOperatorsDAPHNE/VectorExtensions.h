@@ -17,6 +17,7 @@
 #pragma once
 
 enum VectorExtensions {
+    INVALID=-1,
     SCALAR=0,
     SSE,
     AVX2,

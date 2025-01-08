@@ -367,6 +367,12 @@ if __name__ == "__main__":
         cppFiles.append(fileName)
         with open(fileName, "w") as outFile:
             outFile.write(file)
+
+    # Store kernel catalog info as JSON.
+
+    catalogFile = Path(outCatalogPath)
+    catalogFile.parent.mkdir(exist_ok=True, parents=True)
+    with catalogFile.open('w') as outCatalog:
         print("writing catalog to " + outCatalogPath)
         outCatalog.write(json.dumps(catalog_entries, indent=2))
 
