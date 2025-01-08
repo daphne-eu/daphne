@@ -519,9 +519,9 @@ mlir::OpFoldResult mlir::daphne::ColumnEqOp::fold(FoldAdaptor adaptor) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
     // TODO: fix bool return
-    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+    if(auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
         return res;
-    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, intOp))
         return res;
     return {};
 }
@@ -531,9 +531,9 @@ mlir::OpFoldResult mlir::daphne::ColumnNeqOp::fold(FoldAdaptor adaptor) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a != b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a != b; };
     // TODO: fix bool return
-    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+    if(auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
         return res;
-    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, intOp))
         return res;
     return {};
 }
@@ -544,14 +544,14 @@ mlir::OpFoldResult mlir::daphne::ColumnLtOp::fold(FoldAdaptor adaptor) {
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.slt(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ult(b); };
     // TODO: fix bool return
-    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+    if(auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
         return res;
     if(getType().isSignedInteger()) {
-        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, sintOp))
             return res;
     }
     else if(getType().isUnsignedInteger()) {
-        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, uintOp))
             return res;
     }
     return {};
@@ -563,14 +563,14 @@ mlir::OpFoldResult mlir::daphne::ColumnLeOp::fold(FoldAdaptor adaptor) {
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sle(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ule(b); };
     // TODO: fix bool return
-    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+    if(auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
         return res;
     if(getType().isSignedInteger()) {
-        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, sintOp))
             return res;
     }
     else if(getType().isUnsignedInteger()) {
-        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, uintOp))
             return res;
     }
     return {};
@@ -582,14 +582,14 @@ mlir::OpFoldResult mlir::daphne::ColumnGtOp::fold(FoldAdaptor adaptor) {
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sgt(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ugt(b); };
     // TODO: fix bool return
-    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+    if(auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
         return res;
     if(getType().isSignedInteger()) {
-        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, sintOp))
             return res;
     }
     else if(getType().isUnsignedInteger()) {
-        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, uintOp))
             return res;
     }
     return {};
@@ -601,14 +601,14 @@ mlir::OpFoldResult mlir::daphne::ColumnGeOp::fold(FoldAdaptor adaptor) {
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sge(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.uge(b); };
     // TODO: fix bool return
-    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+    if(auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
         return res;
     if(getType().isSignedInteger()) {
-        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, sintOp))
             return res;
     }
     else if(getType().isUnsignedInteger()) {
-        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getLoc(), getType(), operands, uintOp))
             return res;
     }
     return {};

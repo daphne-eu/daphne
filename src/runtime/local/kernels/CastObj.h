@@ -406,5 +406,3 @@ public:
         res = DataObjectFactory::create<Frame>(cols, nullptr);
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H

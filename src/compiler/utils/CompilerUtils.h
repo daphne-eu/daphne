@@ -189,8 +189,10 @@ struct CompilerUtils {
         } else if(auto colTy = t.dyn_cast<mlir::daphne::ColumnType>()) {
             if(generalizeToStructure)
                 return "Structure";
-            else
-                return "Column_" + mlirTypeToCppTypeName(colTy.getColumnType(), false);
+            else {
+                const std::string vtName = mlirTypeToCppTypeName(colTy.getColumnType(), angleBrackets, false);
+                return angleBrackets ? ("tuddbs::Column<" + vtName + ">") : ("tuddbs_Column_" + vtName);
+            }
         } else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
             if (generalizeToStructure)
                 return "Structure";

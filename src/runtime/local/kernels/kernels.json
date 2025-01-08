@@ -863,7 +863,7 @@
             [
                 ["CSRMatrix", "float"],
                 ["CSRMatrix", "double"]
-            ]
+            ],
             
             [["DenseMatrix", "double"], ["tuddbs::Column", "double"]],
             [["DenseMatrix", "int64_t"], ["tuddbs::Column", "int64_t"]],
