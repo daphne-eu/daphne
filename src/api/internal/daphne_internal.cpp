@@ -217,8 +217,8 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                          desc("Prints debug information about the Multithreading Wrapper"));
 
     // Columnar operations
-    static opt<VectorExtensions> vectorExtension("vector_extension",
-            cat(daphneOptions), desc("Choose vector extension to use for columnar operations when enabled."),
+    static opt<VectorExtensions> vectorExtension("vector-extension",
+            cat(daphneOptions), desc("The vector extension to use for columnar operations when enabled."),
             values(
                 clEnumVal(SCALAR, "Using scalar instructions"),
                 clEnumVal(SSE, "Using SSE instructions"),
@@ -230,26 +230,25 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     static opt<bool> useColumnar(
             "columnar", cat(daphneOptions),
             desc(
-                "Enable the switch to use columnar operations with possible SIMD support "
-                "instead of matrix operations with all optimizations.")
+                "Use columnar operations with scalar/SIMD support "
+                "instead of matrix operations, with optimizations for position lists and bit vectors and additional optimizations for columnar ops")
     );
     static opt<bool> useColumnarReduce(
-            "columnar_reduce", cat(daphneOptions),
+            "columnar-reduce", cat(daphneOptions),
             desc(
-                "Enable the switch to use columnar operations with possible SIMD support "
-                "instead of matrix operations.")
+                "Use columnar operations with scalar/SIMD support "
+                "instead of matrix operations, with optimizations for position lists and bit vectors")
     );
     static opt<bool> useColumnarRewrite(
-            "columnar_rewrite", cat(daphneOptions),
+            "columnar-rewrite", cat(daphneOptions),
             desc(
-                "Enable the switch to use columnar operations with possible SIMD support "
+                "Use columnar operations with scalar/SIMD support "
                 "instead of matrix operations.")
     );
     static opt<bool> useSelectionPushdown(
-            "selection_pushdown", cat(daphneOptions),
+            "selection-pushdown", cat(daphneOptions),
             desc(
-                "Enable the switch to use columnar operations with possible SIMD support "
-                "instead of matrix operations.")
+                "Enable selection push-down optimization")
     );
     
     // Other options
