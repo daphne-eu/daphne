@@ -23,9 +23,6 @@
 
 #include <string>
 
-// Forward declaration of extValue function
-// int extValue(const char *filename);
-
 // must be in the same namespace as the enum class ValueTypeCode
 NLOHMANN_JSON_SERIALIZE_ENUM(ValueTypeCode, {{ValueTypeCode::INVALID, nullptr},
                                              {ValueTypeCode::SI8, "si8"},
@@ -69,7 +66,7 @@ class MetaDataParser {
      * @throws std::invalid_argument Thrown if the JSON file contains any
      * unexpected keys or if the file doesn't contain all the metadata.
      */
-    static FileMetaData readMetaData(const std::string &filename, bool labels = false, bool isFrame = true);
+    static FileMetaData readMetaData(const std::string &filename);
     static FileMetaData readMetaDataFromString(const std::string &str);
     /**
      * @brief Saves the file meta data to the specified file.
