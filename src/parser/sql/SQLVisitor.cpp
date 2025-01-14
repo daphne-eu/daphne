@@ -976,12 +976,12 @@ antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext 
     //  to get this feature in.  
     
     // lhs <= rhs (lhs <= obj <= rhs) (this will be it in most case but not all)
-    mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, lhs, obj));
+    mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, lhs));
     mlir::Value a2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, rhs));
     mlir::Value a = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, a1, a2));
 
     // lhs >= rhs (rhs <= obj <= lhs)
-    mlir::Value b1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, rhs, obj));
+    mlir::Value b1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, rhs));
     mlir::Value b2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, lhs));
     mlir::Value b = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, b1, b2));
     
