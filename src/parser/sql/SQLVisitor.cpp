@@ -30,8 +30,6 @@
 #include <cstdint>
 #include <regex>
 
-//#include <iostream> //ToDo: remove
-
 // ****************************************************************************
 // Helper functions
 // ****************************************************************************
@@ -970,7 +968,7 @@ antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext 
     mlir::Value lhs = utils.valueOrError(utils.getLoc(ctx->lhs->start), vLhs);
     mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
 
-    //first version ->
+    // first version ->
     //  we create 7 operations. (greater equal AND less equal) OR (less equal AND greater equal)
     //  there is a better must be a better and more performant solution but this is the easiest solution
     //  to get this feature in.  
@@ -985,7 +983,7 @@ antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext 
     mlir::Value b2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, lhs));
     mlir::Value b = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, b1, b2));
     
-    //both combined give the solution
+    // both combined give the solution
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, a, b));
 }
 
@@ -1092,16 +1090,15 @@ antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext *ctx) {
         // ToDo: converted from atol to stol for safety -> check perf
         int64_t val = std::stol(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
-    }
-    else if (auto lit = ctx->FLOAT_LITERAL()) {
+    } else if (auto lit = ctx->FLOAT_LITERAL()) {
         // ToDo: converted from atof to std::stod for safety -> check perf
         double val = std::stod(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
-    }else if(auto lit = ctx->STRING_LITERAL()){
+    } else if(auto lit = ctx->STRING_LITERAL()){
         std::string real_val = lit->getText();
-        std::string val = real_val.substr(1, real_val.length()-2);
+        std::string val = real_val.substr(1, real_val.length() - 2);
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
     }
     // this should not be possible to reach since there are only three types for a literal
-    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor (visitLiteral)", "unexpected literal type"); 
+    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor (visitLiteral)", "unexpected literal type");
 }
