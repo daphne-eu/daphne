@@ -971,7 +971,7 @@ antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext 
     // first version ->
     //  we create 7 operations. (greater equal AND less equal) OR (less equal AND greater equal)
     //  there is a better must be a better and more performant solution but this is the easiest solution
-    //  to get this feature in.  
+    //  to get this feature in.
     
     // lhs <= rhs (lhs <= obj <= rhs) (this will be it in most case but not all)
     mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, lhs));
@@ -1094,7 +1094,7 @@ antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext *ctx) {
         // ToDo: converted from atof to std::stod for safety -> check perf
         double val = std::stod(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
-    } else if(auto lit = ctx->STRING_LITERAL()){
+    } else if (auto lit = ctx->STRING_LITERAL()){
         std::string real_val = lit->getText();
         std::string val = real_val.substr(1, real_val.length() - 2);
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
