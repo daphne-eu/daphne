@@ -232,7 +232,7 @@ class SQLVisitor : public SQLGrammarVisitor {
 
     antlrcpp::Any visitParanthesesExpr(SQLGrammarParser::ParanthesesExprContext *ctx) override;
     antlrcpp::Any visitParanthesesExpr2(SQLGrammarParser::ParanthesesExpr2Context *ctx) override;
-    
+
     antlrcpp::Any visitDefaultExpr(SQLGrammarParser::DefaultExprContext *ctx) override;
 
     antlrcpp::Any visitMulExpr(SQLGrammarParser::MulExprContext *ctx) override;

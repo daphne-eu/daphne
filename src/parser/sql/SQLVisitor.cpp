@@ -936,7 +936,6 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext *ctx) {
     mlir::Value lhs = utils.valueOrError(utils.getLoc(ctx->lhs->start), vLhs);
     mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
 
-    
     if (op == "=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
     if (op == "<>")
@@ -951,7 +950,6 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext *ctx) {
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
     throw ErrorHandler::compilerError(queryLoc, "SQLVisitor (visitCmpExpr)", "unexpected comparision operation symbol");
 }
-
 
 antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext *ctx) {
     mlir::Location loc = utils.getLoc(ctx->start);
@@ -972,7 +970,7 @@ antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext 
     //  we create 7 operations. (greater equal AND less equal) OR (less equal AND greater equal)
     //  there is a better must be a better and more performant solution but this is the easiest solution
     //  to get this feature in.
-    
+
     // lhs <= rhs (lhs <= obj <= rhs) (this will be it in most case but not all)
     mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, lhs));
     mlir::Value a2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, rhs));
@@ -982,7 +980,7 @@ antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext 
     mlir::Value b1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, rhs));
     mlir::Value b2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, lhs));
     mlir::Value b = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, b1, b2));
-    
+
     // both combined give the solution
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, a, b));
 }
