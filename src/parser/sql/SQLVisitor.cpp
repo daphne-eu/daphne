@@ -1094,7 +1094,7 @@ antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext *ctx) {
         // ToDo: converted from atof to std::stod for safety -> check perf
         double val = std::stod(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
-    } else if (auto lit = ctx->STRING_LITERAL()){
+    } else if (auto lit = ctx->STRING_LITERAL()) {
         std::string real_val = lit->getText();
         std::string val = real_val.substr(1, real_val.length() - 2);
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
