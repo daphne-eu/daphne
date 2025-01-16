@@ -1093,8 +1093,20 @@ antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext *ctx) {
         double val = std::stod(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
     } else if (auto lit = ctx->STRING_LITERAL()) {
-        std::string real_val = lit->getText();
-        std::string val = real_val.substr(1, real_val.length() - 2);
+        std::string val = lit->getText();
+
+        // Remove quotation marks.
+        val = val.substr(1, val.size() - 2);
+
+        // Replace escape sequences.
+        val = std::regex_replace(val, std::regex(R"(\\b)"), "\b");
+        val = std::regex_replace(val, std::regex(R"(\\f)"), "\f");
+        val = std::regex_replace(val, std::regex(R"(\\n)"), "\n");
+        val = std::regex_replace(val, std::regex(R"(\\r)"), "\r");
+        val = std::regex_replace(val, std::regex(R"(\\t)"), "\t");
+        val = std::regex_replace(val, std::regex(R"(\\\")"), "\"");
+        val = std::regex_replace(val, std::regex(R"(\\\\)"), "\\");
+
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
     }
     // this should not be possible to reach since there are only three types for a literal
