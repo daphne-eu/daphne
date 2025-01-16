@@ -104,7 +104,7 @@ MAKE_TEST_CASE("select_asterisk", 6)
 
 MAKE_TEST_CASE("distinct", 4)
 
-MAKE_TEST_CASE("strings", 3)
+MAKE_TEST_CASE("strings", 5)
 
 MAKE_TEST_CASE("between", 4)
 // TODO Use the scripts testing failure cases.

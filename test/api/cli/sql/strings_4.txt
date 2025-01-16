@@ -1,0 +1,4 @@
+Frame(3x2, [f.a:int64_t, f.b:std::string])
+0 Europe
+4 Europe
+7 Europe

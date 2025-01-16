@@ -1,4 +1,4 @@
-# Aggregation with avg without group clause.
+# String for SQL test using equality 
 
 f = createFrame(
     [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
