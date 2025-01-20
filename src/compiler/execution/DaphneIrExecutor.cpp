@@ -268,8 +268,9 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
     pm.addPass(mlir::daphne::createTransposeOpLoweringPass());
 
-    pm.addPass(mlir::daphne::createSliceRowOpLoweringPass());
-    pm.addPass(mlir::daphne::createSliceColOpLoweringPass());
+    //pm.addPass(mlir::daphne::createSliceRowOpLoweringPass());
+    //pm.addPass(mlir::daphne::createSliceColOpLoweringPass());
+    pm.addPass(mlir::daphne::createSliceOpLoweringPass());
 
     pm.addPass(mlir::createInlinerPass());
 
