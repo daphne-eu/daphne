@@ -546,6 +546,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
         auto pppI1Ty = LLVM::LLVMPointerType::get(ptrPtrI1Ty);
 
+        std::string vecFuncName = "_vect";
         LLVM::LLVMFuncOp fOp;
         {
             OpBuilder::InsertionGuard ig(rewriter);
@@ -555,6 +556,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
 
             static auto ix = 0;
             std::string funcName = "_vect" + std::to_string(++ix);
+            vecFuncName = funcName;
 
             // TODO: pass daphne context to function
             auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()),
@@ -827,10 +829,17 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         // Add ctx
         //        newOperands.push_back(operands.back());
         if (op.getCtx() == nullptr) {
+            // TODO(phil): make ErrorHandler call
             op->emitOpError() << "`DaphneContext` not known";
             return failure();
-        } else
-            newOperands.push_back(op.getCtx());
+        }
+
+        auto kId = rewriter.create<mlir::arith::ConstantOp>(
+            loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(vecFuncName, op)));
+
+        newOperands.push_back(kId);
+        newOperands.push_back(op.getCtx());
+
         // Create a CallKernelOp for the kernel function to call and return
         // success().
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), newOperands, resultTypes);

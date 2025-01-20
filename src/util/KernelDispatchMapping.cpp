@@ -39,5 +39,7 @@ int KernelDispatchMapping::registerKernel(std::string name, mlir::Operation *op)
 
 KDMInfo KernelDispatchMapping::getKernelDispatchInfo(int kId) {
     std::lock_guard<std::mutex> lg(m_dispatchMapping);
+    if (!kId)
+        return {"NonInstrumentedOp", "unknkown", 0, 0};
     return dispatchMapping.at(kId);
 }
