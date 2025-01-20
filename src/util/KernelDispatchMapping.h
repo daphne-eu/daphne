@@ -42,7 +42,7 @@ struct KDMInfo {
  */
 struct KernelDispatchMapping {
   private:
-    int kIdCounter{0};
+    int kIdCounter{1};
     std::mutex m_dispatchMapping{};
     std::unordered_map<int, KDMInfo> dispatchMapping{};
     /**

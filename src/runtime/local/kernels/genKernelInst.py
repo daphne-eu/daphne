@@ -121,9 +121,14 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             rp["isOutput"] = False
 
     isCreateDaphneContext = opName == "createDaphneContext"
-    # TODO: KernelDispatchMapping currently does not support
-    # vectorized/distributed ops
-    isVectorizedOrDistributed = "vectorized" in opName or "distributed" in opName
+    def isInstrumentedOp(op :str):
+        if op in ["map", "createDaphneContext"]:
+            return False
+        # TODO: KernelDispatchMapping currently does not support distributed ops
+        if "distributed" in op:
+            return False
+        return True
+    isInstrumented = isInstrumentedOp(opName)
 
     # typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([
@@ -143,7 +148,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         typesForName = "__" + typesForName
     params = ", ".join(
         ["{} {}".format(rtp["type"], rtp["name"]) for rtp in
-         extendedRuntimeParams] + ([] if isVectorizedOrDistributed else ["int kId"]) + ([] if isCreateDaphneContext else ["DCTX(ctx)"])
+         extendedRuntimeParams] + ([] if not isInstrumented else ["int kId"]) + ([] if isCreateDaphneContext else ["DCTX(ctx)"])
     )
 
     def generateFunction(opCode):
@@ -193,20 +198,12 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             opCodeWord = opCodeType[:-len("OpCode")]
             callTemplateParams = ["{}::{}".format(opCodeWord if API == "CPP" else API + "::" + opCodeWord, opCode)] + callTemplateParams
 
-        nonInstrumentedOps = ["map", "createDaphneContext","destroyDaphneContext"]
         # Body of that function: delegate to the kernel instantiation.
         outFile.write(2 * INDENT)
-        if not isCreateDaphneContext:
-            # try
+        if isInstrumented:
             outFile.write(f"try{{\n")
-            if opName in nonInstrumentedOps:
-                outFile.write("")
-            elif isVectorizedOrDistributed:
-                outFile.write(3 * INDENT)
-                outFile.write(f"preKernelInstrumentation(0, ctx);\n")
-            else:
-                outFile.write(3 * INDENT)
-                outFile.write(f"preKernelInstrumentation(kId, ctx);\n")
+            outFile.write(3 * INDENT)
+            outFile.write(f"preKernelInstrumentation(kId, ctx);\n")
             outFile.write(3 * INDENT)
 
         #  import pdb;pdb.set_trace()
@@ -223,21 +220,11 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             # Run-time parameters, possibly including DaphneContext:
             ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"])),
         ))
-        if not isCreateDaphneContext:
-
-            if opName in nonInstrumentedOps:
-                outFile.write(2 * INDENT)
-                outFile.write(f"}} catch(std::exception &e) {{\n{3*INDENT}throw ErrorHandler::runtimeError(0, e.what(), &(ctx->dispatchMapping));\n{2*INDENT}}}\n")
-            elif isVectorizedOrDistributed:
-                outFile.write(3 * INDENT)
-                outFile.write(f"postKernelInstrumentation(0, ctx);\n")
-                outFile.write(2 * INDENT)
-                outFile.write(f"}} catch(std::exception &e) {{\n{3*INDENT}throw ErrorHandler::runtimeError(-1, e.what(), &(ctx->dispatchMapping));\n{2*INDENT}}}\n")
-            else:
-                outFile.write(3 * INDENT)
-                outFile.write(f"postKernelInstrumentation(kId, ctx);\n")
-                outFile.write(2 * INDENT)
-                outFile.write(f"}} catch(std::exception &e) {{\n{3*INDENT}throw ErrorHandler::runtimeError(kId, e.what(), &(ctx->dispatchMapping));\n{2*INDENT}}}\n")
+        if isInstrumented:
+            outFile.write(3 * INDENT)
+            outFile.write(f"postKernelInstrumentation(kId, ctx);\n")
+            outFile.write(2 * INDENT)
+            outFile.write(f"}} catch(std::exception &e) {{\n{3*INDENT}throw ErrorHandler::runtimeError(kId, e.what(), &(ctx->dispatchMapping));\n{2*INDENT}}}\n")
         outFile.write(INDENT + "}\n")
 
         argTypes = [rtp["type"].replace(" **", "").replace(" *", "").replace("const ", "") for rtp in extendedRuntimeParams if not rtp["isOutput"]]
