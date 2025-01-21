@@ -1,0 +1,4 @@
+// Hint to use an existing pre-compiled kernel for a DaphneIR op with exactly one result (DaphneDSL operator symbol, mulExpr (binary */)).
+
+res = [2] *::_ewMul__DenseMatrix_int64_t__DenseMatrix_int64_t__DenseMatrix_int64_t [3];
+print(res);

@@ -58,7 +58,7 @@ MAKE_FAILURE_TEST_CASE("hint_kernel", 3)
 
 // Check if DAPHNE terminates normally when expected and produces the expected
 // output.
-MAKE_SUCCESS_TEST_CASE("hint_kernel", 3)
+MAKE_SUCCESS_TEST_CASE("hint_kernel", 5)
 
 // Check if DAPHNE terminates normally when expected and if the IR really
 // contains the kernel hint.

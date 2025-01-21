@@ -1,0 +1,7 @@
+# Read a frame from a file when the file path is the result of an expression (string/number concat).
+
+import "../check_frame.daphne";
+
+chk = readFrame("test/api/cli/io/ref/frame_" + 123 + "_ref.csv");
+ref = {"a": [1], "b": [2], "c": [3]};
+check_frame.checkFrame(chk, ref, false);

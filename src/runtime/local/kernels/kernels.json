@@ -419,6 +419,7 @@
             [["DenseMatrix", "double"], "Frame"],
             [["DenseMatrix", "int64_t"], "Frame"],
             [["DenseMatrix", "uint64_t"], "Frame"],
+            [["DenseMatrix", "std::string"], "Frame"],
             ["Frame", ["DenseMatrix", "double"]],
             ["Frame", ["DenseMatrix", "int64_t"]],
             ["Frame", ["DenseMatrix", "uint64_t"]],
@@ -1541,6 +1542,93 @@
     },
     {
         "kernelTemplate": {
+            "header": "ConvertCSRMatrixToValuesMemRef.h",
+            "opName": "convertCSRMatrixToValuesMemRef",
+            "returnType": "StridedMemRefType<VT,1>",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CSRMatrix<VT> *",
+                    "name": "input"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ConvertCSRMatrixToColIdxsMemRef.h",
+            "opName": "convertCSRMatrixToColIdxsMemRef",
+            "returnType": "StridedMemRefType<size_t,1>",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CSRMatrix<VT> *",
+                    "name": "input"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ConvertCSRMatrixToRowOffsetsMemRef.h",
+            "opName": "convertCSRMatrixToRowOffsetsMemRef",
+            "returnType": "StridedMemRefType<size_t,1>",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CSRMatrix<VT> *",
+                    "name": "input"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CreateFrame.h",
             "opName": "createFrame",
             "returnType": "void",
@@ -2107,6 +2195,11 @@
                     ["Frame", "Frame", "int64_t"],
                     [
                         ["DenseMatrix", "std::string"],
+                        ["DenseMatrix", "std::string"],
+                        "const char *"
+                    ],
+                    [
+                        ["DenseMatrix", "int64_t"],
                         ["DenseMatrix", "std::string"],
                         "const char *"
                     ]
@@ -2974,7 +3067,11 @@
                 {
                     "type": "const char *",
                     "name": "rhsOn"
-                }
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRowRes"
+                }   
             ]
         },
         "instantiations": [[]]
@@ -3937,6 +4034,7 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "std::string"]],
             ["Frame"]
         ]
     },
@@ -4267,6 +4365,10 @@
                 {
                     "type": "const char *",
                     "name": "rhsOn"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRowRes"
                 }
             ]
         },

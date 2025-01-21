@@ -1,0 +1,6 @@
+# Write a matrix which is a view into another one to a file.
+
+X = [0, 1, -22, 3, -44, 0,
+     0, 5, -66, 0, 0, 0](2, 6);
+X = X[, 1:ncol(X)-1]; # omit the first and last column
+write(X, $outPath);

@@ -1,0 +1,9 @@
+{
+    "numRows": 1,
+    "numCols": 3,
+    "schema": [
+        {"label": "a", "valueType": "si64"},
+        {"label": "b", "valueType": "si64"},
+        {"label": "c", "valueType": "si64"}
+    ]
+}

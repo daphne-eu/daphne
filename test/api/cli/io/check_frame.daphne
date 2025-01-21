@@ -1,0 +1,53 @@
+# Copyright 2024 The DAPHNE Consortium
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Counts in how many corresponding elements the two given frames differ.
+# If nanSafe is true, then two corresponding nan elements are considered equal.
+# If there are differences, the two input frames are printed for debug information.
+def checkFrame(chk, ref, nanSafe:bool) {
+    if(nanSafe)
+        stop("nan-safe comparison of frames is not supported yet");
+
+    if(ncol(chk) != ncol(ref))
+        stop("the two input frames have different #cols: found " + ncol(chk) + " but expected " + ncol(ref));
+
+    numDiff = 0;
+
+    # TODO Doesn't work (missing elementwise binary ops on two frames, see #932).
+    # numDiff = numDiff + sum(as.matrix<si64>(chk != ref));
+
+    # TODO Doesn't work, because the type of the c-th column isn't known at compile-time.
+    # for(c in 0:ncol(chk)-1) {
+    #     colChk = as.matrix(chk[, c]);
+    #     colRef = as.matrix(ref[, c]);
+    #     numDiff = numDiff + sum(as.matrix<si64>(colChk != colRef));
+    # }
+
+    # TODO The following code only works for a hard-coded number of columns.
+    if(ncol(chk) != 3)
+        stop("this script only works for frames with exactly three columns");
+    numDiff = numDiff + sum(as.si64(as.matrix(chk[, 0]) != as.matrix(ref[, 0])));
+    numDiff = numDiff + sum(as.si64(as.matrix(chk[, 1]) != as.matrix(ref[, 1])));
+    numDiff = numDiff + sum(as.si64(as.matrix(chk[, 2]) != as.matrix(ref[, 2])));
+
+    print(numDiff);
+
+    # Debug output.
+    if(numDiff > 0) {
+        print("chk");
+        print(chk);
+        print("ref");
+        print(ref);
+    }
+}

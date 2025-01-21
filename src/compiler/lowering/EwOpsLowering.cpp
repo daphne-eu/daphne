@@ -31,6 +31,7 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -91,8 +92,9 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         ssize_t numCols = matrixType.getNumCols();
 
         if (numRows < 0 || numCols < 0) {
-            return rewriter.notifyMatchFailure(
-                op, "ewOps codegen currently only works with matrix dimensions that are known at compile time");
+            throw ErrorHandler::compilerError(
+                loc, "EwOpsLowering (BinaryOp)",
+                "ewOps codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         Value argMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(
@@ -142,14 +144,69 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         this->setDebugName("EwDaphneOpLowering");
     }
 
+    /**
+     * @brief Returns an affine map for indexing the rhs operand.
+     * Assumes that neither matrix is a singleton and lhs is not broadcast.
+     *
+     * If rhs has no dimensions of size 1, returns an identity map.
+     * Else, returns a map (i,j)->(0,j) or (i,j)->(i,0) to enable broadcasting of rhs.
+     */
+    AffineMap buildRhsAffineMap(Location loc, ConversionPatternRewriter &rewriter, ssize_t lhsRows, ssize_t lhsCols,
+                                ssize_t rhsRows, ssize_t rhsCols) const {
+
+        AffineMap rhsAffineMap;
+
+        // lhs could also be a row/column vector which should not be handled as broadcasting (even though the resulting
+        // affine maps coincide). This allows for a clearer error message as well.
+        if (lhsRows != 1 && rhsRows == 1) {
+            // rhs is a row vector, broadcast along columns
+            if (lhsCols != rhsCols) {
+                throw ErrorHandler::compilerError(
+                    loc, "EwOpsLowering (BinaryOp)",
+                    "could not broadcast rhs along columns. Rhs must "
+                    "be a scalar value, singleton matrix or have an equal amount of column to "
+                    "be broadcast but operands have dimensions (" +
+                        std::to_string(lhsRows) + "," + std::to_string(lhsCols) + ") and (" + std::to_string(rhsRows) +
+                        "," + std::to_string(rhsCols) + ")");
+            }
+            rhsAffineMap = AffineMap::get(2, 0, {rewriter.getAffineConstantExpr(0), rewriter.getAffineDimExpr(1)},
+                                          rewriter.getContext());
+        } else if (lhsCols != 1 && rhsCols == 1) {
+            // rhs is a column vector, broadcast along rows
+            if (lhsRows != rhsRows) {
+                throw ErrorHandler::compilerError(
+                    loc, "EwOpsLowering (BinaryOp)",
+                    "could not broadcast rhs along rows. Rhs must "
+                    "be a scalar value, singleton matrix or have an equal amount of rows to "
+                    "be broadcast but operands have dimensions (" +
+                        std::to_string(lhsRows) + "," + std::to_string(lhsCols) + ") and (" + std::to_string(rhsRows) +
+                        "," + std::to_string(rhsCols) + ")");
+            }
+            rhsAffineMap = AffineMap::get(2, 0, {rewriter.getAffineDimExpr(0), rewriter.getAffineConstantExpr(0)},
+                                          rewriter.getContext());
+        } else {
+            // rhs is not broadcasted, return identity mapping
+            if (lhsRows != rhsRows || lhsCols != rhsCols) {
+                throw ErrorHandler::compilerError(
+                    loc, "EwOpsLowering (BinaryOp)",
+                    "lhs and rhs must have equal dimensions or allow for broadcasting but operands have dimensions (" +
+                        std::to_string(lhsRows) + "," + std::to_string(lhsCols) + ") and (" + std::to_string(rhsRows) +
+                        "," + std::to_string(rhsCols) + ")");
+            }
+            rhsAffineMap = AffineMap::getMultiDimIdentityMap(2, rewriter.getContext());
+        }
+
+        return rhsAffineMap;
+    }
+
     LogicalResult matchAndRewriteScalarVal(BinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const {
         rewriter.replaceOp(op,
                            binaryFunc(rewriter, op.getLoc(), this->typeConverter, adaptor.getLhs(), adaptor.getRhs()));
         return mlir::success();
     }
 
-    LogicalResult matchAndRewriteBroadcastRhs(BinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter,
-                                              Value &rhs) const {
+    LogicalResult matchAndRewriteBroadcastScalarRhs(BinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter,
+                                                    Value &rhs) const {
         Location loc = op->getLoc();
         Value lhs = adaptor.getLhs();
 
@@ -160,7 +217,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         Type matrixElementType = lhsMatrixType.getElementType();
 
         MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
-        Value lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
+        auto lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
 
         Value resMemref = rewriter.create<memref::AllocOp>(loc, argMemRefType);
 
@@ -189,13 +246,13 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         auto lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
         auto rhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
 
-        // Match Scalar-Scalar and Matrix-Scalar broadcasting (assuming scalar values are always switched to rhs).
-        // Broadcasting where either Matrix is a singleton needs to be handled separately below.
+        // Match Scalar-Scalar and Matrix-Scalar broadcasting (assuming scalar values are always switched to
+        // rhs). Broadcasting where either Matrix is a singleton or vector needs to be handled separately below.
         if (!rhsMatrixType) {
             if (!lhsMatrixType) {
                 return matchAndRewriteScalarVal(op, adaptor, rewriter);
             }
-            return matchAndRewriteBroadcastRhs(op, adaptor, rewriter, rhs);
+            return matchAndRewriteBroadcastScalarRhs(op, adaptor, rewriter, rhs);
         }
 
         Type matrixElementType = lhsMatrixType.getElementType();
@@ -206,13 +263,15 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         ssize_t rhsCols = rhsMatrixType.getNumCols();
 
         if (lhsRows < 0 || lhsCols < 0 || rhsRows < 0 || rhsCols < 0) {
-            return rewriter.notifyMatchFailure(
-                op, "ewOps codegen currently only works with matrix dimensions that are known at compile time");
+            throw ErrorHandler::compilerError(
+                loc, "EwOpsLowering (BinaryOp)",
+                "ewOps codegen currently only works with matrix dimensions that are known at compile time");
         }
 
-        // Assume that if only one matrix contains a single value for broadcasting it is rhs.
+        // For efficiency, broadcasting a singleton is handled separately here (assumes singleton is always rhs).
+        // Broadcasting of row/column vectors is handled during the construction of the index map for rhs below.
         if ((lhsRows != 1 || lhsCols != 1) && rhsRows == 1 && rhsCols == 1) {
-            Value rhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(
+            auto rhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(
                 loc, MemRefType::get({1, 1}, matrixElementType), rhs);
             Value rhsBroadcastVal =
                 rewriter
@@ -220,25 +279,21 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                                             ValueRange{rewriter.create<arith::ConstantIndexOp>(loc, 0),
                                                        rewriter.create<arith::ConstantIndexOp>(loc, 0)})
                     .getResult();
-            return matchAndRewriteBroadcastRhs(op, adaptor, rewriter, rhsBroadcastVal);
+            return matchAndRewriteBroadcastScalarRhs(op, adaptor, rewriter, rhsBroadcastVal);
         }
 
-        if (lhsRows != rhsRows || lhsCols != rhsCols) {
-            throw ErrorHandler::compilerError(loc, "EwOpsLowering (BinaryOp)",
-                                              "lhs and rhs must have equal dimensions or either one must "
-                                              "be a scalar value but have dimensions (" +
-                                                  std::to_string(lhsRows) + "," + std::to_string(lhsCols) + ") and (" +
-                                                  std::to_string(rhsRows) + "," + std::to_string(rhsCols) + ")");
-        }
+        MemRefType lhsMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
+        MemRefType rhsMemRefType = MemRefType::get({rhsRows, rhsCols}, matrixElementType);
+        auto lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, lhsMemRefType, lhs);
+        auto rhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, rhsMemRefType, rhs);
 
-        MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
-        Value lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
-        Value rhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, rhs);
+        // If any broadcasting occurs, it is assumed to be rhs so res inherits its shape from lhs.
+        Value resMemref = rewriter.create<memref::AllocOp>(loc, lhsMemRefType);
 
-        Value resMemref = rewriter.create<memref::AllocOp>(loc, argMemRefType);
-
+        // Builds an affine map to index the args and accounts for broadcasting of rhs.
+        // Creation of rhs indexing map checks whether or not the dimensions match and returns a compiler error if not.
         SmallVector<AffineMap, 3> indexMaps = {AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
-                                               AffineMap::getMultiDimIdentityMap(2, rewriter.getContext()),
+                                               buildRhsAffineMap(loc, rewriter, lhsRows, lhsCols, rhsRows, rhsCols),
                                                AffineMap::getMultiDimIdentityMap(2, rewriter.getContext())};
         SmallVector<utils::IteratorType, 2> iterTypes = {utils::IteratorType::parallel, utils::IteratorType::parallel};
 
@@ -364,7 +419,8 @@ using CosOpLowering = UnaryOpLowering<daphne::EwCosOp, unaryNoConversionFunc<mat
 // using TanhOpLowering = UnaryOpLowering<daphne::EwTanhOp, unaryNoConversionFunc<math::TanhOp, math::TanhOp>>;
 
 // Rounding
-// Prior canonicalization pass removes rounding ops on integers, meaning only f32/f64 types need to be dealt with
+// Prior canonicalization pass removes rounding ops on integers, meaning only f32/f64 types need to be dealt
+// with
 using FloorOpLowering = UnaryOpLowering<daphne::EwFloorOp, unaryNoConversionFunc<math::FloorOp, math::FloorOp>>;
 using CeilOpLowering = UnaryOpLowering<daphne::EwCeilOp, unaryNoConversionFunc<math::CeilOp, math::CeilOp>>;
 using RoundOpLowering = UnaryOpLowering<daphne::EwRoundOp, unaryNoConversionFunc<math::RoundOp, math::RoundOp>>;
@@ -388,8 +444,10 @@ using MinOpLowering =
 
 // Logical
 // using AndOpLowering =
-//     BinaryOpLowering<daphne::EwAndOp, binaryWithConversionFunc<arith::AndIOp, arith::AndIOp>>; // distinguish AndFOp
-// using OrOpLowering = BinaryOpLowering<daphne::EwOrOp, binaryWithConversionFunc<arith::OrIOp, arith::OrIOp>>; // - " -
+//     BinaryOpLowering<daphne::EwAndOp, binaryWithConversionFunc<arith::AndIOp, arith::AndIOp>>; // distinguish
+//     AndFOp
+// using OrOpLowering = BinaryOpLowering<daphne::EwOrOp, binaryWithConversionFunc<arith::OrIOp, arith::OrIOp>>;
+// // - " -
 
 // ****************************************************************************
 // General Pass Setup
