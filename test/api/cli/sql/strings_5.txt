@@ -1,0 +1,6 @@
+Frame(5x2, [f.a:int64_t, f.b:std::string])
+0 Europe
+4 Europe
+5 a
+6 Oceania
+7 Europe
