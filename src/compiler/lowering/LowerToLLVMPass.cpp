@@ -570,8 +570,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
             auto returnRef = funcBlock.addArgument(pppI1Ty, rewriter.getUnknownLoc());
             auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty, rewriter.getUnknownLoc());
             auto daphneContext = funcBlock.addArgument(ptrI1Ty, rewriter.getUnknownLoc());
-            // TODO: we should not create a new daphneContext, instead pass the
-            // one created in the main function
+
             for (auto callKernelOp : funcBlock.getOps<daphne::CallKernelOp>()) {
                 callKernelOp.setOperand(callKernelOp.getNumOperands() - 1, daphneContext);
             }
@@ -603,7 +602,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
             }
 
             // Update function block to write return value by reference instead
-            auto oldReturn = funcBlock.getTerminator();
+            auto *oldReturn = funcBlock.getTerminator();
             rewriter.setInsertionPoint(oldReturn);
             for (auto i = 0u; i < oldReturn->getNumOperands(); ++i) {
                 auto retVal = oldReturn->getOperand(i);
@@ -677,7 +676,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
 
                 // Update function block to write return value by reference
                 // instead
-                auto oldReturn = funcBlock.getTerminator();
+                auto *oldReturn = funcBlock.getTerminator();
                 rewriter.setInsertionPoint(oldReturn);
                 for (auto i = 0u; i < oldReturn->getNumOperands(); ++i) {
                     auto retVal = oldReturn->getOperand(i);

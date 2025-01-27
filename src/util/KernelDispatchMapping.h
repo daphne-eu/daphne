@@ -64,7 +64,7 @@ struct KernelDispatchMapping {
      * \param name The symbol name of the kernel.
      * \param op The mlir::Operation being lowered to dispatch a kernel call.
      */
-    int registerKernel(std::string name, mlir::Operation *op);
+    int registerKernel(const std::string &name, mlir::Operation *op);
     //
     KDMInfo getKernelDispatchInfo(int kId);
 };
