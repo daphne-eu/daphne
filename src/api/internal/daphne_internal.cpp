@@ -499,7 +499,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         }
     }
 
-    user_config.statistics = enableStatistics;
+    user_config.enable_statistics = enableStatistics;
 
     if (user_config.use_distributed && distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
 #ifndef USE_MPI
@@ -671,7 +671,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         std::cerr << "}" << std::endl;
     }
 
-    if (user_config.statistics)
+    if (user_config.enable_statistics)
         Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
 
     // explicitly destroying the moduleOp here due to valgrind complaining about
