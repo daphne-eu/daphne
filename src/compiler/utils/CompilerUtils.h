@@ -181,12 +181,12 @@ struct CompilerUtils {
                     return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
                 }
             }
-        } else if (llvm::isa<mlir::daphne::FrameType>(t))
+        } else if (llvm::isa<mlir::daphne::FrameType>(t)) {
             if (generalizeToStructure)
                 return "Structure";
             else
                 return "Frame";
-        else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
+        } else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
             if (generalizeToStructure)
                 return "Structure";
             else {
