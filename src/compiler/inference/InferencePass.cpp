@@ -93,9 +93,15 @@ Type getTypeWithCommonInfo(Type t1, Type t2) {
         const ssize_t nc2 = frm2.getNumCols();
         std::vector<std::string> *lbls1 = frm1.getLabels();
         std::vector<std::string> *lbls2 = frm2.getLabels();
+        std::vector<ssize_t> * mvf1 = frm1.getMaximumValueFrequencies();
+        std::vector<ssize_t> * mvf2 = frm2.getMaximumValueFrequencies();
+        std::vector<ssize_t> * dv1 = frm1.getDistinctValues();
+        std::vector<ssize_t> * dv2 = frm2.getDistinctValues();
+        
         return daphne::FrameType::get(ctx, cts3, (nr1 == nr2) ? nr1 : -1, (nc1 == nc2) ? nc1 : -1,
                                       // TODO Take #485 into account.
-                                      (lbls1 == lbls2) ? lbls1 : nullptr);
+                                      (lbls1 == lbls2) ? lbls1 : nullptr, 
+                                      (mvf1 == mvf2) ? mvf1: nullptr, (dv1 == dv2) ? dv1: nullptr);
     } else if (mat1 || mat2 || frm1 || frm2) // t1 and t2 are of different data
                                              // types (matrix, frame, scalar)
         return nullptr;

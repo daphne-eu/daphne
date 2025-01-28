@@ -151,8 +151,8 @@ def Frame : Daphne_Type<"Frame"> {
         "std::vector<::mlir::Type>":$columnTypes,
         "ssize_t":$numRows, "ssize_t":$numCols,
         "std::vector<std::string> *":$labels,
-        "std::vector<ssize_t> *":$maximum_value_frequencies,
-        "std::vector<ssize_t> *":$distinct_values
+        "std::vector<ssize_t> *":$maximumValueFrequencies,
+        "std::vector<ssize_t> *":$distinctValues
     );
 
     let genVerifyDecl = 1;
@@ -171,15 +171,15 @@ def Frame : Daphne_Type<"Frame"> {
         // new value.
 
         ::mlir::daphne::FrameType withColumnTypes(std::vector<::mlir::Type> columnTypes) {
-            return get(getContext(), columnTypes, getNumRows(), getNumCols(), getLabels());
+            return get(getContext(), columnTypes, getNumRows(), getNumCols(), getLabels(), getMaximumValueFrequencies(), getDistinctValues());
         }
 
         ::mlir::daphne::FrameType withShape(ssize_t numRows, ssize_t numCols) {
-            return get(getContext(), getColumnTypes(), numRows, numCols, getLabels());
+            return get(getContext(), getColumnTypes(), numRows, numCols, getLabels(), getMaximumValueFrequencies(), getDistinctValues());
         }
 
         ::mlir::daphne::FrameType withLabels(std::vector<std::string> * labels) {
-            return get(getContext(), getColumnTypes(), getNumRows(), getNumCols(), labels);
+            return get(getContext(), getColumnTypes(), getNumRows(), getNumCols(), labels, getMaximumValueFrequencies(), getDistinctValues());
         }
 
         // The following method returns a FrameType with the same column types
@@ -216,9 +216,9 @@ def Frame : Daphne_Type<"Frame"> {
             // comparing two mlir::Type/mlir::daphne::FrameType instances using operator==.
             if (other.getLabels() != nullptr && getLabels() != other.getLabels())
                 return false;
-            if (other.getMaximum_value_frequencies() != nullptr && getMaximum_value_frequencies() != other.getMaximum_value_frequencies())
+            if (other.getMaximumValueFrequencies() != nullptr && getMaximumValueFrequencies() != other.getMaximumValueFrequencies())
                 return false;
-            if (other.getDistinct_values() != nullptr && getDistinct_values() != other.getDistinct_values())
+            if (other.getDistinctValues() != nullptr && getDistinctValues() != other.getDistinctValues())
                 return false;
             return true;
         }

@@ -197,7 +197,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         if (parser.parseRSquare() || parser.parseGreater()) {
             return nullptr;
         }
-        return FrameType::get(parser.getBuilder().getContext(), cts, numRows, numCols, nullptr);
+        return FrameType::get(parser.getBuilder().getContext(), cts, numRows, numCols, nullptr, nullptr, nullptr);
     } else if (keyword == "Handle") {
         mlir::Type dataType;
         if (parser.parseLess() || parser.parseType(dataType) || parser.parseGreater()) {
@@ -380,7 +380,9 @@ MatrixRepresentation MatrixType::getRepresentation() const { return getImpl()->r
 
 ::mlir::LogicalResult mlir::daphne::FrameType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
                                                       std::vector<Type> columnTypes, ssize_t numRows, ssize_t numCols,
-                                                      std::vector<std::string> *labels) {
+                                                      std::vector<std::string> *labels, 
+                                                      std::vector<ssize_t> *maximumValueFrequencies,
+                                                      std::vector<ssize_t> *distinctValues) {
     // TODO Verify the individual column types.
     if (numRows < -1 || numCols < -1)
         return mlir::failure();
@@ -395,6 +397,12 @@ MatrixRepresentation MatrixType::getRepresentation() const { return getImpl()->r
     }
     if (labels && labels->size() != columnTypes.size())
         return mlir::failure();
+    if (maximumValueFrequencies && maximumValueFrequencies->size() != columnTypes.size()){
+        return mlir::failure();
+    }
+    if (distinctValues && distinctValues->size() != columnTypes.size()){
+        return mlir::failure();
+    }
     return mlir::success();
 }
 
