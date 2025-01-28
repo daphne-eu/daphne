@@ -150,7 +150,9 @@ def Frame : Daphne_Type<"Frame"> {
     let parameters = (ins
         "std::vector<::mlir::Type>":$columnTypes,
         "ssize_t":$numRows, "ssize_t":$numCols,
-        "std::vector<std::string> *":$labels
+        "std::vector<std::string> *":$labels,
+        "std::vector<ssize_t> *":$maximum_value_frequencies,
+        "std::vector<ssize_t> *":$distinct_values
     );
 
     let genVerifyDecl = 1;
@@ -159,7 +161,7 @@ def Frame : Daphne_Type<"Frame"> {
         // Creates a FrameType from mere column type information, with all
         // other parameters reset.
         TypeBuilder<(ins "std::vector<::mlir::Type>":$columnTypes), [{
-            return Base::get($_ctxt, columnTypes, -1, -1, nullptr);
+            return Base::get($_ctxt, columnTypes, -1, -1, nullptr, nullptr, nullptr);
         }]>,
     ];
 
@@ -214,7 +216,10 @@ def Frame : Daphne_Type<"Frame"> {
             // comparing two mlir::Type/mlir::daphne::FrameType instances using operator==.
             if (other.getLabels() != nullptr && getLabels() != other.getLabels())
                 return false;
-
+            if (other.getMaximum_value_frequencies() != nullptr && getMaximum_value_frequencies() != other.getMaximum_value_frequencies())
+                return false;
+            if (other.getDistinct_values() != nullptr && getDistinct_values() != other.getDistinct_values())
+                return false;
             return true;
         }
     }];
