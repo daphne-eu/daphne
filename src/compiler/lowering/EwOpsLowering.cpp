@@ -77,6 +77,51 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         return mlir::success();
     }
 
+    LogicalResult matchAndRewriteSparseMat(UnaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const {
+        
+        Location loc = op->getLoc();
+        auto sparseMatType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
+        Type matrixElementType = sparseMatType.getElementType();
+        ssize_t numRows = sparseMatType.getNumRows();
+        ssize_t numCols = sparseMatType.getNumCols();
+
+        if (numRows < 0 || numCols < 0) {
+            throw ErrorHandler::compilerError(
+                loc, "EwOpsLowering (BinaryOp)",
+                "ewOps codegen currently only works with matrix dimensions that are known at compile time");
+        }
+
+        MemRefType sparseValuesMemRefType =
+            //MemRefType::get({ShapedType::kDynamic}, matrixElementType);
+            MemRefType::get({numRows*numCols}, matrixElementType);
+        
+        Value argValuesMemref = rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(
+            loc, sparseValuesMemRefType, adaptor.getArg());
+
+        Value resMemref = rewriter.create<memref::AllocOp>(
+            loc, sparseValuesMemRefType);
+
+        SmallVector<AffineMap, 2> indexMaps = {AffineMap::getMultiDimIdentityMap(1, rewriter.getContext()),
+                                               AffineMap::getMultiDimIdentityMap(1, rewriter.getContext())};
+        SmallVector<utils::IteratorType, 1> iterTypes = {utils::IteratorType::parallel};
+
+        rewriter.create<linalg::GenericOp>(
+            loc, TypeRange{}, ValueRange{argValuesMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
+            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+                Value resValue = unaryFunc(OpBuilderNested, locNested, this->typeConverter, arg[0]);
+                OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
+            });
+
+
+        rewriter.replaceOp(op, resMemref);
+
+        //auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
+
+        //rewriter.replaceOp(op, resDenseMatrix);
+
+        return mlir::success();
+    }
+
     LogicalResult matchAndRewrite(UnaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
         Location loc = op->getLoc();
@@ -85,6 +130,10 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         // Scalar values are handled separately. Otherwise assume input is DenseMatrix.
         if (!matrixType) {
             return matchAndRewriteScalarVal(op, adaptor, rewriter);
+        }
+
+        if (matrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse) {
+            return matchAndRewriteSparseMat(op, adaptor, rewriter);
         }
 
         Type matrixElementType = matrixType.getElementType();
@@ -541,7 +590,7 @@ void EwOpLoweringPass::runOnOperation() {
             return false;
         }
         auto matType = operand.dyn_cast<daphne::MatrixType>();
-        if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
+        if (matType && (matType.getRepresentation() == daphne::MatrixRepresentation::Dense || matType.getRepresentation() == daphne::MatrixRepresentation::Sparse)) {
             return false;
         }
         return true;

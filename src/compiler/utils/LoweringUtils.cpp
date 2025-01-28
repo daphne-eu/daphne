@@ -85,6 +85,24 @@ mlir::Value convertMemRefToDenseMatrix(mlir::Location loc, mlir::ConversionPatte
                                                                      strides[0], strides[1]);
 }
 
+mlir::Value convertMemRefToCSRMatrix(mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
+    mlir::Value valuesMemRef, mlir::Value colIdxsMemRef, mlir::Value rowOffsetsMemRef, 
+    size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, mlir::Type type) 
+{
+    //auto extractStridedMetadataOp = rewriter.create<mlir::memref::ExtractStridedMetadataOp>(loc, memRef);
+    // aligned ptr (memref.data)
+    mlir::Value alignedValuesPtr = rewriter.create
+        <mlir::memref::ExtractAlignedPointerAsIndexOp>(loc, valuesMemRef);
+    mlir::Value alignedColIdxsPtr = rewriter.create
+        <mlir::memref::ExtractAlignedPointerAsIndexOp>(loc, colIdxsMemRef);
+    mlir::Value alignedRowOffsetsPtr = rewriter.create
+        <mlir::memref::ExtractAlignedPointerAsIndexOp>(loc, rowOffsetsMemRef);
+
+    return rewriter.create<mlir::daphne::ConvertMemRefToCSRMatrix>(loc, type, 
+        alignedValuesPtr, alignedColIdxsPtr, alignedRowOffsetsPtr, 
+        size_t maxNumRows, size_t numCols, size_t maxNumNonZeros);
+}
+
 mlir::Type convertFloat(mlir::FloatType floatType) {
     return mlir::IntegerType::get(floatType.getContext(), floatType.getIntOrFloatBitWidth());
 }
