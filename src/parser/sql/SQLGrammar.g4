@@ -194,7 +194,7 @@ INT_LITERAL:
     '-'? DIGIT+;
 
 FLOAT_LITERAL:
-    '-'? (( DIGIT* '.' DIGIT+) | ((DIGIT+ '.' DIGIT*)));
+    '-'? (( DIGIT* '.' DIGIT+) | (DIGIT+ '.' DIGIT*));
 
 STRING_LITERAL:
     ('"' (ESCAPE_SEQ | ~[\\"])* '"') | ('\'' (ESCAPE_SEQ | ~['\\])* '\'');

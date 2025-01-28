@@ -1,4 +1,4 @@
-# BETWEEN clause test with following AND from the WHERE clause
+# BETWEEN clause with following AND from the WHERE clause.
 
 f = createFrame(
     [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
