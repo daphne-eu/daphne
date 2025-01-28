@@ -35,8 +35,7 @@ template <class DTRes> struct ReceiveFromNumpy {
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes>
-void receiveFromNumpy(DTRes *&res, uint64_t address, int64_t rows, int64_t cols, DCTX(ctx)) {
+template <class DTRes> void receiveFromNumpy(DTRes *&res, uint64_t address, int64_t rows, int64_t cols, DCTX(ctx)) {
     ReceiveFromNumpy<DTRes>::apply(res, address, rows, cols, ctx);
 }
 
@@ -57,8 +56,8 @@ template <typename VT> struct NoOpDeleter {
 
 template <typename VT> struct ReceiveFromNumpy<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, uint64_t address, int64_t rows, int64_t cols, DCTX(ctx)) {
-        res = DataObjectFactory::create<DenseMatrix<VT>>(
-            rows, cols, std::shared_ptr<VT[]>((VT *)(address), NoOpDeleter<VT>()));
+        res = DataObjectFactory::create<DenseMatrix<VT>>(rows, cols,
+                                                         std::shared_ptr<VT[]>((VT *)(address), NoOpDeleter<VT>()));
     }
 };
 
