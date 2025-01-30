@@ -93,7 +93,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
 
         MemRefType sparseValuesMemRefType =
             //MemRefType::get({ShapedType::kDynamic}, matrixElementType);
-            MemRefType::get({numRows*numCols}, matrixElementType);
+            MemRefType::get({ShapedType::kDynamic}, matrixElementType);
         
         Value argValuesMemref = rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(
             loc, sparseValuesMemRefType, adaptor.getArg());
@@ -113,11 +113,25 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
             });
 
 
-        rewriter.replaceOp(op, resMemref);
+        //rewriter.replaceOp(op, resMemref);
+        MemRefType sparseColIdxsMemRefType = MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
+        MemRefType sparseRowOffsetsMemRefType = MemRefType::get({numRows + 1}, rewriter.getIndexType());
+        
+        Value argColIdxsMemref = rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(
+            loc, sparseColIdxsMemRefType, adaptor.getArg());
+        Value argRowOffsetsMemref = rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(
+            loc, sparseRowOffsetsMemRefType, adaptor.getArg());
+        
+        Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, numRows);
+        Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, numCols);
+        Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, numCols * numRows);
+        //auto resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter, resMemref, op.getType());
 
-        //auto resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemref, op.getType());
+        auto resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
+            resMemref, argColIdxsMemref, argRowOffsetsMemref, 
+            maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType()); 
 
-        //rewriter.replaceOp(op, resDenseMatrix);
+        rewriter.replaceOp(op, resCSRMatrix);
 
         return mlir::success();
     }
@@ -265,6 +279,11 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 
         Type matrixElementType = lhsMatrixType.getElementType();
 
+        if (lhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Dense)
+        {
+            MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
+            auto lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
+        }
         MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
         auto lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
 

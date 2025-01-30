@@ -87,7 +87,7 @@ mlir::Value convertMemRefToDenseMatrix(mlir::Location loc, mlir::ConversionPatte
 
 mlir::Value convertMemRefToCSRMatrix(mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
     mlir::Value valuesMemRef, mlir::Value colIdxsMemRef, mlir::Value rowOffsetsMemRef, 
-    size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, mlir::Type type) 
+    mlir::Value maxNumRows, mlir::Value numCols, mlir::Value maxNumNonZeros, mlir::Type type) 
 {
     //auto extractStridedMetadataOp = rewriter.create<mlir::memref::ExtractStridedMetadataOp>(loc, memRef);
     // aligned ptr (memref.data)
@@ -100,7 +100,7 @@ mlir::Value convertMemRefToCSRMatrix(mlir::Location loc, mlir::ConversionPattern
 
     return rewriter.create<mlir::daphne::ConvertMemRefToCSRMatrix>(loc, type, 
         alignedValuesPtr, alignedColIdxsPtr, alignedRowOffsetsPtr, 
-        size_t maxNumRows, size_t numCols, size_t maxNumNonZeros);
+        maxNumRows, numCols, maxNumNonZeros);
 }
 
 mlir::Type convertFloat(mlir::FloatType floatType) {

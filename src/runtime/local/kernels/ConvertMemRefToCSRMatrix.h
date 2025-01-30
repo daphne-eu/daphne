@@ -24,15 +24,18 @@ inline void convertMemRefToCSRMatrix(CSRMatrix<T> *&result,
     size_t baseValuesPtr, size_t baseColIdxsPtr, size_t baseRowOffsetsPtr, 
     size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, DCTX(ctx)) 
 {
-    auto no_op_deleter = [](T *) {};
+    auto no_op_deleter_1 = [](T *) {};
+    auto no_op_deleter_2 = [](long unsigned int *) {};
     T *valuePtr = reinterpret_cast<T *>(baseValuesPtr);
-    std::shared_ptr<T[]> ptrValues(valuePtr, no_op_deleter);
-    std::shared_ptr<size_t[]> ptrColIdxs(baseColIdxsPtr, no_op_deleter);
-    std::shared_ptr<size_t[]> ptrRowOffsets(baseRowOffsetsPtr, no_op_deleter);
+    long unsigned int *colIdxsPtr = reinterpret_cast<long unsigned int *>(baseColIdxsPtr);
+    long unsigned int *rowOffsetsPtr = reinterpret_cast<long unsigned int *>(baseRowOffsetsPtr);
+    std::shared_ptr<T[]> ptrValues(valuePtr, no_op_deleter_1);
+    std::shared_ptr<long unsigned int[]> ptrColIdxs(colIdxsPtr, no_op_deleter_2);
+    std::shared_ptr<long unsigned int[]> ptrRowOffsets(rowOffsetsPtr, no_op_deleter_2);
     result = DataObjectFactory::create<CSRMatrix<T>>(maxNumRows, numCols, maxNumNonZeros, false);
 
-    result.getValuesSharedPtr() = ptrValues;
-    result.getColIdxsSharedPtr() = ptrColIdxs;
-    result.getRowOffsetsSharedPtr() = ptrRowOffsets;
+    result->getValuesSharedPtr() = ptrValues;
+    result->getColIdxsSharedPtr() = ptrColIdxs;
+    result->getRowOffsetsSharedPtr() = ptrRowOffsets;
 
 }

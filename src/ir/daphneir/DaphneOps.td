@@ -83,6 +83,15 @@ def Daphne_ConvertMemRefToDenseMatrix : Daphne_Op<"convertMemRefToDenseMatrix"> 
     let results = (outs MatrixOrU:$res);
 }
 
+def Daphne_ConvertMemRefToCSRMatrix : Daphne_Op<"convertMemRefToCSRMatrix"> {
+    let summary = "Return a CSRMatrix.";
+    let description = [{ Constructs a DenseMatrix given 3 rank 2 StridedMemRefType. }];
+
+    /* let arguments = (ins AnyMemRef:$arg); */
+    let arguments = (ins Size:$baseValues, Size:$baseColIdxs, Size:$baseRowOffsets, Size:$maxNumRows, Size:$numCols, Size:$maxNumNonZeros);
+    let results = (outs MatrixOrU:$res);
+}
+
 def Daphne_ConvertDenseMatrixToMemRef : Daphne_Op<"convertDenseMatrixToMemRef", [Pure]> {
     let summary = "Given a DenseMatrix, return a StridedMemRefType.";
     let description = [{ Constructs a StridedMemRefType with rank 2 from a DenseMatrix* with already allocated memory. }];

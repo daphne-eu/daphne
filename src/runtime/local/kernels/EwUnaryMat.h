@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/EwUnarySca.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
@@ -91,6 +92,34 @@ template <typename VT> struct EwUnaryMat<Matrix<VT>, Matrix<VT>> {
             for (size_t c = 0; c < numCols; ++c)
                 res->append(r, c, func(arg->get(r, c), ctx));
         res->finishAppend();
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- CSRMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        const size_t maxNumNonZeros = arg->getMaxNumNonZeros();
+        const size_t numNonZeros = arg->getNumNonZeros();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNumNonZeros, false);
+
+        const VT *valuesArg = arg->getValues();
+        VT *valuesRes = res->getValues();
+
+        res->getColIdxsSharedPtr() = arg->getColIdxsSharedPtr();
+        res->getRowOffsetsSharedPtr() = arg->getRowOffsetsSharedPtr();
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        for (size_t i = 0; i < numNonZeros; i++)
+            valuesRes[i] = func(valuesArg[i], ctx);
+
     }
 };
 
