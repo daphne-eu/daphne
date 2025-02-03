@@ -2218,6 +2218,36 @@
                         ["DenseMatrix", "uint64_t"],
                         ["DenseMatrix", "uint64_t"],
                         "uint64_t"
+                    ],
+                    [
+                        ["CSRMatrix", "float"],
+                        ["CSRMatrix", "float"],
+                        "float"
+                    ],
+                    [
+                        ["CSRMatrix", "double"],
+                        ["CSRMatrix", "double"],
+                        "double"
+                    ],
+                    [
+                        ["CSRMatrix", "int64_t"],
+                        ["CSRMatrix", "int64_t"],
+                        "int64_t"
+                    ],
+                    [
+                        ["CSRMatrix", "int32_t"],
+                        ["CSRMatrix", "int32_t"],
+                        "int32_t"
+                    ],
+                    [
+                        ["CSRMatrix", "uint32_t"],
+                        ["CSRMatrix", "uint32_t"],
+                        "uint32_t"
+                    ],
+                    [
+                        ["CSRMatrix", "uint64_t"],
+                        ["CSRMatrix", "uint64_t"],
+                        "uint64_t"
                     ]
                 ],
                 "opCodes": [
@@ -4595,6 +4625,10 @@
             [
                 ["CSRMatrix", "double"],
                 ["CSRMatrix", "double"]
+            ],
+            [
+                ["CSRMatrix", "float"],
+                ["CSRMatrix", "float"]
             ],
             [
                 ["CSRMatrix", "int64_t"],
