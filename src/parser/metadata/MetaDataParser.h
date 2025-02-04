@@ -70,7 +70,7 @@ class MetaDataParser {
      * @throws std::invalid_argument Thrown if the JSON file contains any
      * unexpected keys or if the file doesn't contain all the metadata.
      */
-    static FileMetaData readMetaData(const std::string &filename, bool labels = false);
+    static FileMetaData readMetaData(const std::string &filename, bool labels = false, bool isFrame= true);
     static FileMetaData readMetaDataFromString(const std::string &str);
     /**
      * @brief Saves the file meta data to the specified file.

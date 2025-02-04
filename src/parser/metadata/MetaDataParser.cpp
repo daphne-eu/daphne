@@ -22,14 +22,15 @@
 #include <fstream>
 #include <iostream>
 
-FileMetaData MetaDataParser::readMetaData(const std::string &filename_, bool labels) {
+FileMetaData MetaDataParser::readMetaData(const std::string &filename_, bool labels, bool isFrame) {
     std::string metaFilename = filename_ + ".meta";
     std::ifstream ifs(metaFilename, std::ios::in);
     if (!ifs.good()){
         int extv = extValue(&filename_[0]);
         //TODO: Support other file types than csv
         if (extv == 0){
-            FileMetaData fmd = generateFileMetaData(filename_, labels);
+            FileMetaData fmd = generateFileMetaData(filename_, labels, isFrame);
+            writeMetaData(filename_, fmd);
             return fmd;
         }
         throw std::runtime_error("Could not open file '" + metaFilename + "' for reading meta data. \n"
