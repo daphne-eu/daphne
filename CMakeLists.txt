@@ -213,6 +213,15 @@ endif()
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+
+# ------------------------------------------------------------
+# DuckDB Configuration (pre-built)
+# ------------------------------------------------------------
+# Path to DuckDB headers (e.g., thirdparty/duckdb/include)
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/include)
+# Path to DuckDB libraries (e.g., thirdparty/duckdb/lib)
+link_directories(${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib)
+
 # *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************
