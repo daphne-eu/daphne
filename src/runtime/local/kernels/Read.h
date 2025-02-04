@@ -80,7 +80,7 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx), b
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx), bool labels = false) {
 
-        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels);
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, false);
         int extv = extValue(filename);
         switch (extv) {
         case 0:
@@ -132,8 +132,7 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
 
 template <typename VT> struct Read<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, DCTX(ctx), bool labels = false) {
-
-        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels);
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, false);
         int extv = extValue(filename);
         switch (extv) {
         case 0:
@@ -170,7 +169,7 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 
 template <> struct Read<Frame> {
     static void apply(Frame *&res, const char *filename, DCTX(ctx), bool labels = false) {
-        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels);
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, true);
 
         ValueTypeCode *schema;
         if (fmd.isSingleValueType) {

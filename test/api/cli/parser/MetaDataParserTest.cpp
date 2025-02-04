@@ -19,7 +19,6 @@
 #include <tags.h>
 
 #include <catch.hpp>
-
 #include <parser/metadata/MetaDataParser.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -27,12 +26,6 @@
 #include <iostream>
 
 const std::string dirPath = "test/api/cli/parser/metadataFiles/";
-
-//TODO: add tests:
-// CSV:
-// no metadata -> generate metadata = metadata
-// check for added generatedMetaDataFile
-
 
 TEST_CASE("Proper meta data file for Matrix", TAG_PARSER) {
     const std::string metaDataFile = dirPath + "MetaData1";
@@ -82,13 +75,14 @@ TEST_CASE("Frame meta data file with default \"valueType\"", TAG_PARSER) {
 
 TEST_CASE("Missing meta data file that can be generated", TAG_PARSER) {
     const std::string metaDataFile = dirPath + "ReadCsv1.csv";
-    //FileMetaData metaData(2, 3, true, ValueTypeCode::SI8);
-    //auto matrix = DataObjectFactory::create<DenseMatrix<double>>(1,1, true);
-    //write(matrix,metaDataFile.c_str(), nullptr);
-   // MetaDataParser::writeMetaData(metaDataFile, metaData);
+    if (std::filesystem::exists(metaDataFile + ".meta")) {
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
-    REQUIRE(std::filesystem::exists(metaDataFile+ ".meta"));
-    //std::filesystem::remove(metaDataFile);
+    REQUIRE(std::filesystem::exists(metaDataFile + ".meta"));
+    if (std::filesystem::exists(metaDataFile + ".meta")) {
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER, (DenseMatrix, CSRMatrix), (double)) {

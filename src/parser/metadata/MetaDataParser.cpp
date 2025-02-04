@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <parser/metadata/MetaDataParser.h>
 #include <parser/metadata/JsonKeys.h>
-#include <runtime/local/kernels/Read.h>
+#include <parser/metadata/MetaDataParser.h>
 #include <runtime/local/io/utils.h>
+#include <runtime/local/kernels/Read.h>
 
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
-FileMetaData MetaDataParser::readMetaData(const std::string &filename_, bool labels) {
+FileMetaData MetaDataParser::readMetaData(const std::string &filename_, bool labels, bool isFrame) {
     std::string metaFilename = filename_ + ".meta";
     std::ifstream ifs(metaFilename, std::ios::in);
-    if (!ifs.good()){
+    if (!ifs.good()) {
         int extv = extValue(&filename_[0]);
-        //TODO: Support other file types than csv
+        // TODO: Support other file types than csv
         if (extv == 0) {
-            FileMetaData fmd = generateFileMetaData(filename_, labels);
+            FileMetaData fmd = generateFileMetaData(filename_, labels, isFrame);
+            writeMetaData(filename_, fmd);
             try {
                 writeMetaData(filename_, fmd);
             } catch (std::exception &e) {
@@ -38,8 +39,8 @@ FileMetaData MetaDataParser::readMetaData(const std::string &filename_, bool lab
             }
             return fmd;
         }
-        throw std::runtime_error("Could not open file '" + metaFilename + "' for reading meta data. \n"
-        + "Note: meta data file generation is currently only supported for csv files");
+        throw std::runtime_error("Could not open file '" + metaFilename + "' for reading meta data. \n" +
+                                 "Note: meta data file generation is currently only supported for csv files");
     }
 
     std::stringstream buffer;
