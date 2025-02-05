@@ -79,3 +79,4 @@ nav:
     - development/Profiling.md
     - development/WriteDocs.md
     - development/Testing.md
+    - development/InstallPythonLibsInContainer.md

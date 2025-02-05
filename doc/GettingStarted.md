@@ -125,7 +125,7 @@ git clone https://github.com/daphne-eu/daphne.git
 
 <!-- TODO assumes X86-64 is correct -->
 
-The development container image already contains all necessary dependencies of a DAPHNE development environment as well as a useful initialization of environment variables etc., such that you don't need to worry about these things and can have a productive start.
+The development container image already contains all necessary (¹) dependencies of a DAPHNE development environment as well as a useful initialization of environment variables etc., such that you don't need to worry about these things and can have a productive start.
 
 **Get the container image**
 
@@ -135,6 +135,8 @@ docker pull daphneeu/daphne-dev:latest_X86-64_BASE
 ***Hint:** In case of Docker permission errors, try prepending `sudo` to the command.*
 
 ***Hint:** You may want to choose another image tag based on your platform and needs, e.g., `latest_X86-64_CUDA` (for GPU support) or `latest_ARMV8_BASE` (for ARM support).*
+
+***Hint:** (¹) TensorFlow and PyTorch are *optional* for DaphneLib and *not included* in the `daphne-dev`container due to their footprint of several gigabytes. Please follow the [instructions](/doc/development/InstallPythonLibsInContainer.md) on installing Python libraries in the `daphne-dev` container if you need these libraries.*
 
 **Enter the container**, which should finally print something like the following (where `xyz` is your user name on your system, and the password and IP address may vary):
 
