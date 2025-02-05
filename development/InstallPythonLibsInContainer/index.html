@@ -9,10 +9,8 @@
       
       
       
-        <link rel="prev" href="../ExtendingDistributedRuntime/">
+        <link rel="prev" href="../Testing/">
       
-      
-        <link rel="next" href="../HandlingPRs/">
       
       
       <link rel="icon" href="../../assets/logo_small.png">
@@ -20,7 +18,7 @@
     
     
       
-        <title>ExtendingSchedulingKnobs - DAPHNE</title>
+        <title>InstallPythonLibsInContainer - DAPHNE</title>
       
     
     
@@ -74,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#extending-daphne-with-more-scheduling-knobs" class="md-skip">
+        <a href="#installing-python-libraries-in-the-daphne-dev-container" class="md-skip">
           Skip to content
         </a>
       
@@ -109,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ExtendingSchedulingKnobs
+              InstallPythonLibsInContainer
             
           </span>
         </div>
@@ -1120,31 +1118,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    ExtendingSchedulingKnobs
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../ExtendingSchedulingKnobs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1154,35 +1131,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#guidelines" class="md-nav__link">
-    <span class="md-ellipsis">
-      Guidelines
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1302,10 +1250,31 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../InstallPythonLibsInContainer/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    InstallPythonLibsInContainer
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1315,6 +1284,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installing-additional-python-libraries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installing Additional Python Libraries
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dont-forget" class="md-nav__link">
+    <span class="md-ellipsis">
+      Don't Forget
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1354,9 +1361,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#guidelines" class="md-nav__link">
+  <a href="#installing-additional-python-libraries" class="md-nav__link">
     <span class="md-ellipsis">
-      Guidelines
+      Installing Additional Python Libraries
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dont-forget" class="md-nav__link">
+    <span class="md-ellipsis">
+      Don't Forget
     </span>
   </a>
   
@@ -1381,83 +1397,42 @@
   
 
 
-<h1 id="extending-daphne-with-more-scheduling-knobs">Extending DAPHNE with More Scheduling Knobs</h1>
-<p>This document focuses on how a daphne developer may extend the DAPHNE system by adding new scheduling techniques</p>
-<h2 id="guidelines">Guidelines</h2>
-<p>The daphne developer should consider the following files for adding a new scheduling technique</p>
+<h1 id="installing-python-libraries-in-the-daphne-dev-container">Installing Python Libraries in the <code>daphne-dev</code> Container</h1>
+<p>The <code>daphne-dev</code> container (see <a href="/daphne/GettingStarted">GettingStarted</a>) already contains all <em>required</em> dependencies for running DAPHNE. However, there can be reasons to install additional Python libraries inside the container, e.g.:</p>
 <ol>
-<li>src/runtime/local/vectorized/LoadPartitioning.h</li>
-<li>src/api/cli/daphne.cpp</li>
+<li><strong>To use/test DaphneLib's data exchange with TensorFlow and PyTorch.</strong> 
+    DaphneLib, DAPHNE's Python API, supports the efficient data exchange with widely-used Python libraries like numpy, pandas, TensorFlow, and PyTorch.
+    Numpy and pandas are required for DaphneLib.
+    Thus, they are already installed in the <code>daphne-dev</code> container.
+    In contrast to that, TensorFlow and PyTorch are optional for DaphneLib; if these libraries are not installed on the system, DaphneLib cannot exchange data with them, but all remaining features still work.
+    Likewise, the test cases related to the data exchange with TensorFlow and PyTorch will only run if these libraries are installed.
+    As TensorFlow and PyTorch would increase the <code>daphne-dev</code> container size by several gigabytes, they are <em>not</em> included in the container.</li>
+<li><strong>To add support for additional Python libraries in DaphneLib.</strong>
+    For instance, while implementing efficient data exchange with these additional libraries.</li>
+<li><strong>To build integrated data analysis pipelines involving additional Python libraries.</strong>
+    For instance, for experiments.</li>
 </ol>
-<p><strong>Adding the actual code of the technique:</strong></p>
-<p>The first file <code>LoadPartitioning.h</code> contains the implementation of the currently supported scheduling techniques, i.e., the current version of DAPHNE uses self-scheduling techniques to partition the tasks. Also, it uses the self-scheduling principle for executing the tasks.
-For more details, please visit <a href="https://daphne-eu.eu/wp-content/uploads/2021/11/Deliverable-5.1-fin.pdf">Scheduler design for tasks and pipelines</a>.</p>
-<p>In this file, the developer should change two things:</p>
-<ol>
-<li>
-<p>The enumeration that is called <code>SelfSchedulingScheme</code>. The developer will have to add a name for the new technique, e.g., <code>MYTECH</code></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">enum</span><span class="w"> </span><span class="nc">SelfSchedulingScheme</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">STATIC</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">SS</span><span class="p">,</span><span class="w"> </span><span class="n">GSS</span><span class="p">,</span><span class="w"> </span><span class="n">TSS</span><span class="p">,</span><span class="w"> </span><span class="n">FAC2</span><span class="p">,</span><span class="w"> </span><span class="n">TFSS</span><span class="p">,</span><span class="w"> </span><span class="n">FISS</span><span class="p">,</span><span class="w"> </span><span class="n">VISS</span><span class="p">,</span><span class="w"> </span><span class="n">PLS</span><span class="p">,</span><span class="w"> </span><span class="n">MSTATIC</span><span class="p">,</span><span class="w"> </span><span class="n">MFSC</span><span class="p">,</span><span class="w"> </span><span class="n">PSS</span><span class="p">,</span><span class="w"> </span><span class="n">MYTECH</span><span class="w"> </span><span class="p">};</span>
+<h2 id="installing-additional-python-libraries">Installing Additional Python Libraries</h2>
+<p>Additional Python libraries are best installed in a <em>Python virtual environment</em> inside the <code>daphne-dev</code> container.
+To that end, execute the following commands inside the container:</p>
+<p><strong>Create a Python virtual environment and activate it:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>update
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3.12-venv
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>daphne-venv
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">source</span><span class="w"> </span>daphne-venv/bin/activate
 </code></pre></div>
-</li>
-<li>
-<p>The function that is called <code>getNextChunk()</code>. This function has a switch case that selects the mathematical formula that corresponds to the chosen scheduling method. The developer has to add a new case to handle the new technique.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kt">uint64_t</span><span class="w"> </span><span class="nf">getNextChunk</span><span class="p">(){</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">   </span><span class="c1">//...</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">   </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">schedulingMethod</span><span class="p">){</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">       </span><span class="c1">//...</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">       </span><span class="c1">//Only the following part is what the developer has to add. The rest remains the same</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">       </span><span class="k">case</span><span class="w"> </span><span class="no">MYTECH</span><span class="p">:{</span><span class="w"> </span><span class="c1">// the new technique</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">           </span><span class="n">chunkSize</span><span class="o">=</span><span class="w"> </span><span class="n">FORMULA</span><span class="p">;</span><span class="c1">//Some Formula to calculate the chunksize (partition size)</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">           </span><span class="k">break</span><span class="p">;</span><span class="w"> </span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">       </span><span class="p">}</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">       </span><span class="c1">//...</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">   </span><span class="p">}</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">   </span><span class="c1">//...</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">   </span><span class="k">return</span><span class="w"> </span><span class="n">chunkSize</span><span class="p">;</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="p">}</span>
+<p>Here, we call the virtual environment <code>daphne-venv</code>.
+Feel free to choose a different name.</p>
+<p><strong>Install the desired Python libraries using <code>pip</code>:</strong></p>
+<p>For instance, if you want to use/test DaphneLib's efficient data transfer with widely-used Python libraries like numpy, pandas, TensorFlow, and PyTorch, install the following libraries.
+Feel free to install any library you like.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>numpy<span class="w"> </span>pandas<span class="w"> </span>tensorflow<span class="w"> </span>torch
 </code></pre></div>
-</li>
-</ol>
-<p><strong>Enabling the selection of the newly added technique:</strong></p>
-<p>The second file <code>daphne.cpp</code> contains the code that parses the command line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a vaild option. Otherwise, the developer will not be able to use the newly added technique.
-There is a variable called <code>taskPartitioningScheme</code> and it is of type <code>opt&lt;SelfSchedulingScheme&gt;</code>.
-The developer should extend the declaration of <code>opt&lt;SelfSchedulingScheme&gt;</code> as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">opt</span><span class="o">&lt;</span><span class="n">SelfSchedulingScheme</span><span class="o">&gt;</span><span class="w"> </span><span class="n">taskPartitioningScheme</span><span class="p">(</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">        </span><span class="n">cat</span><span class="p">(</span><span class="n">daphneOptions</span><span class="p">),</span><span class="w"> </span><span class="n">desc</span><span class="p">(</span><span class="s">&quot;Choose task partitioning scheme:&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">        </span><span class="n">values</span><span class="p">(</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">STATIC</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Static (default)&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">SS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">GSS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Guided self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">TSS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Trapezoid self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">FAC2</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Factoring self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">TFSS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Trapezoid Factoring self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">FISS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Fixed-increase self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">VISS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Variable-increase self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">PLS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Performance loop-based self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">MSTATIC</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Modified version of Static, i.e., instead of n/p, it uses n/(4*p) where n is number of tasks and p is number of threads&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">MFSC</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">PSS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Probabilistic self-scheduling&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">            </span><span class="n">clEnumVal</span><span class="p">(</span><span class="n">MYTECH</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;some meaningful description to the abbreviation of the new technique&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">        </span><span class="p">)</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="p">);</span><span class="w"> </span>
+<p>The libraries you install that way will be stored in the <code>daphne-venv</code> directory on the host and, thus, keep existing after you shut down the container.</p>
+<h2 id="dont-forget">Don't Forget</h2>
+<p>Every time you enter the <code>daphne-dev</code> container, make sure to activate the Python virtual environment again:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">source</span><span class="w"> </span>daphne-venv/bin/activate
 </code></pre></div>
-<p><strong>Usage of the new technique:</strong></p>
-<p>Daphne developers may now pass the new technique as an option when they execute a DaphneDSL script.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>daphne<span class="w"> </span>--vec<span class="w"> </span>--MYTECH<span class="w"> </span>--grain-size<span class="w"> </span><span class="m">10</span><span class="w"> </span>--num-threads<span class="w"> </span><span class="m">4</span><span class="w"> </span>--PERCPU<span class="w"> </span>--SEQPRI<span class="w"> </span>--hyperthreading<span class="w"> </span>--debug-mt<span class="w"> </span>my_script.daphne
-</code></pre></div>
-<p>In this example, the daphne system will execute <code>my_script.daphne</code>  with the following configuration:</p>
-<ol>
-<li>the vectorized engine is enabled due to <code>--vec</code></li>
-<li>the DAPHNE runtime will use MYTECH for task partitioning due to <code>--MYTECH</code></li>
-<li>the minimum partition size will be 10 due to <code>--grain-size 10</code></li>
-<li>the vectorized engine will use 4 threads due to <code>--num-threads 4</code></li>
-<li>work stealing will be used with a separate queue for each CPU due to <code>--PERCPU</code></li>
-<li>the work stealing victim selection will be sequential prioritized due to <code>--SEQPRI</code></li>
-<li>the rows will be evenly distributed before the scheduling technique is applied due to <code>--pre-partition</code></li>
-<li>the CPU workers will be pinned to CPU cores due to <code>--pin-workers</code></li>
-<li>if the number of threads were not specified the number of logical CPU cores would be used (instead of physical CPU cores) due to <code>--hyperthreading</code></li>
-<li>Debugging information related to the multithreading of vectorizable operations will be printed due to <code>--debug-mt</code></li>
-</ol>
 
 
 
