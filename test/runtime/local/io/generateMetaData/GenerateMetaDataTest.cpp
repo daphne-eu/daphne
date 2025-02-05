@@ -77,8 +77,6 @@ TEST_CASE("generate meta data for frame with type uint32", "[metadata]") {
     FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false, true);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
-    std::cout << "Float (32-bit) max value: " << std::numeric_limits<float>::max() << std::endl;
-    std::cout << "Float (32-bit) min value: " << std::numeric_limits<float>::lowest() << std::endl;
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::UI32);
     REQUIRE(generatedMetaData.schema[1] == ValueTypeCode::UI32);
 }

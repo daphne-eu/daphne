@@ -77,7 +77,9 @@ TEST_CASE("Missing meta data file that can be generated", TAG_PARSER) {
     const std::string metaDataFile = dirPath + "ReadCsv1.csv";
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
     REQUIRE(std::filesystem::exists(metaDataFile + ".meta"));
-    std::filesystem::remove(metaDataFile + ".meta");
+    if (std::filesystem::exists(metaDataFile + ".meta")){
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER, (DenseMatrix, CSRMatrix), (double)) {

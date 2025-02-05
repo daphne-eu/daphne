@@ -30,7 +30,11 @@ FileMetaData MetaDataParser::readMetaData(const std::string &filename_, bool lab
         // TODO: Support other file types than csv
         if (extv == 0) {
             FileMetaData fmd = generateFileMetaData(filename_, labels, isFrame);
-            writeMetaData(filename_, fmd);
+            try{
+                writeMetaData(filename_, fmd);
+            } catch (std::exception &e) {
+                std::cerr << "Could not write generated meta data to file '" << metaFilename << "': " << e.what() << std::endl;
+            }
             return fmd;
         }
         throw std::runtime_error("Could not open file '" + metaFilename + "' for reading meta data. \n" +
