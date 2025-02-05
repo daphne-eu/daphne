@@ -31,7 +31,6 @@ ValueTypeCode inferValueType(const std::string &value);
 // Function to read the CSV file and determine the FileMetaData
 FileMetaData generateFileMetaData(const std::string &filename, bool hasLabels, bool isFrame);
 
-
 // Conversion of std::string.
 
 inline void convertStr(std::string const &x, double *v) {

@@ -27,8 +27,6 @@
 
 const std::string dirPath = "test/api/cli/parser/metadataFiles/";
 
-
-
 TEST_CASE("Proper meta data file for Matrix", TAG_PARSER) {
     const std::string metaDataFile = dirPath + "MetaData1";
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
@@ -78,8 +76,8 @@ TEST_CASE("Frame meta data file with default \"valueType\"", TAG_PARSER) {
 TEST_CASE("Missing meta data file that can be generated", TAG_PARSER) {
     const std::string metaDataFile = dirPath + "ReadCsv1.csv";
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
-    REQUIRE(std::filesystem::exists(metaDataFile+ ".meta"));
-    std::filesystem::remove(metaDataFile+ ".meta");
+    REQUIRE(std::filesystem::exists(metaDataFile + ".meta"));
+    std::filesystem::remove(metaDataFile + ".meta");
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER, (DenseMatrix, CSRMatrix), (double)) {
