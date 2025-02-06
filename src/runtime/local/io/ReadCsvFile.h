@@ -303,6 +303,53 @@ template <> struct ReadCsvFile<Frame> {
         }
 
         size_t row = 0, col = 0;
+        std::unordered_map<size_t, std::streampos> posMap;
+
+        if (optimized) {
+           std::string dest = std::string(filename) + ".posmap";
+            // Check if there is a positional map
+            if (std::filesystem::exists(dest)) {
+                // Create positional map
+                std::ofstream posMapFile(dest, std::ios::binary);
+                if (!posMapFile.is_open()) {
+                    throw std::runtime_error("Failed to open positional map file for writing");
+                }
+                //add positions for each row, each element
+                //use size of read element
+                while (1) {
+                    std::streampos pos = file->pos;
+                    ssize_t ret = getFileLine(file);
+                    if (file->read == EOF)
+                        break;
+                    if (file->line == NULL)
+                        break;
+                    if (ret == -1)
+                        throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
+
+                    posMap[row] = pos;
+                    posMapFile.write(reinterpret_cast<const char *>(&pos), sizeof(pos));
+                    row++;
+                }
+                posMapFile.close();
+
+                row = 0;
+                fseek(file->identifier, 0, SEEK_SET); // Reset file pointer to beginning
+            } else {
+                // Load positional map
+                std::ifstream posMapFile(dest, std::ios::binary);
+                if (!posMapFile.is_open()) {
+                    throw std::runtime_error("Failed to open positional map file for reading");
+                }
+
+                std::streampos pos;
+                while (posMapFile.read(reinterpret_cast<char *>(&pos), sizeof(pos))) {
+                    posMap[row++] = pos;
+                }
+
+                posMapFile.close();
+                row = 0;
+            }
+        }
 
         uint8_t **rawCols = new uint8_t *[numCols];
         ValueTypeCode *colTypes = new ValueTypeCode[numCols];
@@ -312,6 +359,11 @@ template <> struct ReadCsvFile<Frame> {
         }
 
         while (1) {
+            if (optimized) {
+                //TODO: second version that saves also the column positions
+                fseek(file->identifier, posMap[row], SEEK_SET);
+            }
+
             ssize_t ret = getFileLine(file);
             if (file->read == EOF)
                 break;
