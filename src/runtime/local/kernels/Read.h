@@ -86,7 +86,7 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
         case 0:
             if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
-            readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', true);//ctx->getUserConfig().use_csv_read_opts);
             break;
         case 1:
             if constexpr (std::is_same<VT, std::string>::value)
@@ -144,7 +144,7 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
                 res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
 
             // FIXME: ensure file is sorted, or set `sorted` argument correctly
-            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros,true,true);// ctx->getUserConfig().use_csv_read_opts, true);
             break;
         case 1:
             readMM(res, filename);
@@ -188,7 +188,7 @@ template <> struct Read<Frame> {
         if (res == nullptr)
             res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, fmdLabels, false);
 
-        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
+        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema, true);//ctx->getUserConfig().use_csv_read_opts);
 
         if (fmd.isSingleValueType)
             delete[] schema;

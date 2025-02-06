@@ -230,31 +230,22 @@ std::vector<std::vector<std::streampos>> readPositionalMap(const char *filename,
         std::cerr << "Positional map file not found, creating a new one." << std::endl;
         return std::vector<std::vector<std::streampos>>(numCols);
     }
-    std::cout << "doing posMap stuff" << std::endl;
-    std::vector<std::vector<std::streampos>> posMap(numCols);
-    for (size_t i = 0; i < numCols; i++) {
-        posMap[i].resize(0);
+    posMapFile.seekg(0, std::ios::end);
+    auto fileSize = posMapFile.tellg();
+    posMapFile.seekg(0, std::ios::beg);
+    size_t totalEntries = fileSize / sizeof(std::streampos);
+    if (totalEntries % numCols != 0) {
+        throw std::runtime_error("Incorrect number of entries in posmap file");
     }
-    std::cout << "doing posMap stuff" << std::endl;
-
-   std::streampos pos;
-   size_t col = 0;
-   while (posMapFile.read(reinterpret_cast<char *>(&pos), sizeof(pos))) {
-       posMap[col].push_back(pos);
-       col = (col + 1) % numCols;
-   }
-
-    std::cout << "doing posMap done" << std::endl;
-    posMapFile.close();
-
-    // Debugging output to verify the positional map
-    for (size_t i = 0; i < numCols; i++) {
-        std::cout << "Column " << i << " positions: ";
-        for (const auto &p : posMap[i]) {
-            std::cout << p << " ";
+    size_t numRows = totalEntries / numCols;
+    std::vector<std::vector<std::streampos>> posMap(numCols, std::vector<std::streampos>(numRows));
+    // Read in column-major order:
+    for (size_t col = 0; col < numCols; col++) {
+        for (size_t i = 0; i < numRows; i++) {
+            posMap[col][i] = 0;
+            posMapFile.read(reinterpret_cast<char *>(&posMap[col][i]), sizeof(std::streampos));
         }
-        std::cout << std::endl;
     }
-
+    posMapFile.close();
     return posMap;
 }
