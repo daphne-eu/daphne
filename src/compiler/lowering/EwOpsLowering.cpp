@@ -31,6 +31,7 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinDialect.h"
@@ -46,6 +47,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
+using namespace std;
 
 // ****************************************************************************
 // Rewriter Templates (Elemwise Unary, Elemwise Binary)
@@ -86,6 +88,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         ssize_t numCols = sparseMatType.getNumCols();
 
         if (numRows < 0 || numCols < 0) {
+            std::cout<<"here 5"<<std::endl;
             throw ErrorHandler::compilerError(
                 loc, "EwOpsLowering (BinaryOp)",
                 "ewOps codegen currently only works with matrix dimensions that are known at compile time");
@@ -98,8 +101,9 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         Value argValuesMemref = rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(
             loc, sparseValuesMemRefType, adaptor.getArg());
 
+        Value one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
         Value resMemref = rewriter.create<memref::AllocOp>(
-            loc, sparseValuesMemRefType);
+            loc, sparseValuesMemRefType, ValueRange{one});
 
         SmallVector<AffineMap, 2> indexMaps = {AffineMap::getMultiDimIdentityMap(1, rewriter.getContext()),
                                                AffineMap::getMultiDimIdentityMap(1, rewriter.getContext())};
@@ -130,6 +134,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         auto resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
             resMemref, argColIdxsMemref, argRowOffsetsMemref, 
             maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType()); 
+            //maxNumRowsValue, numColsValue, maxNumNonZerosValue, adaptor.getArg().getType());
 
         rewriter.replaceOp(op, resCSRMatrix);
 
@@ -155,6 +160,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         ssize_t numCols = matrixType.getNumCols();
 
         if (numRows < 0 || numCols < 0) {
+            std::cout<<"here 6"<<std::endl;
             throw ErrorHandler::compilerError(
                 loc, "EwOpsLowering (BinaryOp)",
                 "ewOps codegen currently only works with matrix dimensions that are known at compile time");
@@ -224,6 +230,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         if (lhsRows != 1 && rhsRows == 1) {
             // rhs is a row vector, broadcast along columns
             if (lhsCols != rhsCols) {
+                std::cout<<"here 7"<<std::endl;
                 throw ErrorHandler::compilerError(
                     loc, "EwOpsLowering (BinaryOp)",
                     "could not broadcast rhs along columns. Rhs must "
@@ -237,6 +244,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         } else if (lhsCols != 1 && rhsCols == 1) {
             // rhs is a column vector, broadcast along rows
             if (lhsRows != rhsRows) {
+                std::cout<<"here 8"<<std::endl;
                 throw ErrorHandler::compilerError(
                     loc, "EwOpsLowering (BinaryOp)",
                     "could not broadcast rhs along rows. Rhs must "
@@ -250,6 +258,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         } else {
             // rhs is not broadcasted, return identity mapping
             if (lhsRows != rhsRows || lhsCols != rhsCols) {
+                std::cout<<"here 9"<<std::endl;
                 throw ErrorHandler::compilerError(
                     loc, "EwOpsLowering (BinaryOp)",
                     "lhs and rhs must have equal dimensions or allow for broadcasting but operands have dimensions (" +
@@ -279,11 +288,44 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 
         Type matrixElementType = lhsMatrixType.getElementType();
 
-        if (lhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Dense)
+        if (lhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse)
         {
-            MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
-            auto lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
+            MemRefType valuesMemRefType = MemRefType::get({ShapedType::kDynamic}, matrixElementType);
+            MemRefType colIdxsMemRefType = MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
+            MemRefType rowOffsetsMemRefType = MemRefType::get({lhsRows + 1}, rewriter.getIndexType());
+            
+            auto lhsValuesMemref = rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(loc, valuesMemRefType, lhs);
+            auto lhsColIdxsMemref = rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(loc, colIdxsMemRefType, lhs);
+            auto lhsRowOffsetsMemref = rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(loc, rowOffsetsMemRefType, lhs);
+            
+            Value one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
+            Value resMemref = rewriter.create<memref::AllocOp>(loc, valuesMemRefType, ValueRange{one});
+
+            SmallVector<AffineMap, 2> indexMaps = {AffineMap::getMultiDimIdentityMap(1, rewriter.getContext()),
+                                                   AffineMap::getMultiDimIdentityMap(1, rewriter.getContext())};
+            SmallVector<utils::IteratorType, 1> iterTypes = {utils::IteratorType::parallel};
+
+            rewriter.create<linalg::GenericOp>(
+                loc, TypeRange{}, ValueRange{lhsValuesMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
+                [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+                    Value resValue = binaryFunc(OpBuilderNested, locNested, this->typeConverter, arg[0], rhs);
+                    OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
+                });
+
+            Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsRows);
+            Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsCols);
+            Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsCols * lhsRows);
+
+            auto resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
+                resMemref, lhsColIdxsMemref, lhsRowOffsetsMemref, 
+                maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType()); 
+
+            rewriter.replaceOp(op, resCSRMatrix);
+
+            return mlir::success();
+
         }
+
         MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
         auto lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
 
@@ -306,6 +348,145 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         return mlir::success();
     }
 
+    LogicalResult matchAndRewriteSparseDenseMat(BinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const {
+        Location loc = op->getLoc();
+        Value lhs = adaptor.getLhs();
+        Value rhs = adaptor.getRhs();
+
+        auto sparseLhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto denseRhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
+        
+        ssize_t sparseLhsRows = sparseLhsMatrixType.getNumRows();
+        ssize_t sparseLhsCols = sparseLhsMatrixType.getNumCols();
+        ssize_t denseRhsRows = denseRhsMatrixType.getNumRows();
+        ssize_t denseRhsCols = denseRhsMatrixType.getNumCols();
+        
+        MemRefType sparseLhsValuesMemRefType =
+            MemRefType::get({ShapedType::kDynamic}, sparseLhsMatrixType.getElementType());
+        MemRefType sparseLhsColIdxsMemRefType = 
+            MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
+        MemRefType sparseLhsRowOffsetsMemRefType = 
+            MemRefType::get({sparseLhsRows + 1}, rewriter.getIndexType());
+        MemRefType denseRhsMemRefType = 
+            MemRefType::get({denseRhsRows, denseRhsCols}, denseRhsMatrixType.getElementType());
+        
+        auto sparseLhsValuesMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(loc, sparseLhsValuesMemRefType, lhs);
+        auto sparseLhsColIdxsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(loc, sparseLhsColIdxsMemRefType, lhs);
+        auto sparseLhsRowOffsetsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(loc, sparseLhsRowOffsetsMemRefType, lhs);
+        auto denseRhsMemRef = 
+            rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, denseRhsMemRefType, rhs);
+         
+        auto zero = rewriter.create<arith::ConstantIndexOp>(loc, 0);
+        auto one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
+        auto numSparseLhsRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsRows);
+
+        auto resDenseMemRef = rewriter.create<memref::AllocOp>(loc, denseRhsMemRefType);
+        rewriter.create<memref::CopyOp>(loc, denseRhsMemRef, resDenseMemRef);
+        auto resSparseMemRef = rewriter.create<memref::AllocOp>(loc, sparseLhsValuesMemRefType, ValueRange{one});
+
+        rewriter.create<scf::ForOp>(
+            // loc, rowPtr, nextRowPtr, rewriter.create<arith::ConstantIndexOp>(loc, 1),
+            loc, zero, numSparseLhsRowsValue, one, ValueRange{},
+            // [&](OpBuilder &OpBuilderNested, Location locNested, Value loopIdx)
+            [&](OpBuilder &OpBuilderNested, Location locNested, Value loopIdx, ValueRange loopInvariants) 
+            {
+                auto rowPtr = loopIdx;
+                auto nextRowPtr = OpBuilderNested.create<arith::AddIOp>(locNested, rowPtr, one);
+
+                auto colIdxLowerIncl = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, sparseLhsRowOffsetsMemRef, ValueRange{rowPtr});
+                auto colIdxUpperExcl = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, sparseLhsRowOffsetsMemRef, ValueRange{nextRowPtr});
+                
+                OpBuilderNested.create<scf::ForOp>(
+                    // locNested, colIdxLowerIncl, colIdxUpperExcl, one, ValueRange{rowPtr},
+                    locNested, colIdxLowerIncl, colIdxUpperExcl, one, ValueRange{},
+                    // [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested, Value loopIdxNested, ValueRange loopInvariantsNested) 
+                    [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested, Value loopIdxNested, ValueRange loopInvariants)
+                    {
+                        // auto rowIdx = loopInvariantsNested[0];
+                        auto rowIdx = rowPtr;
+                        auto colIdx = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, sparseLhsColIdxsMemRef, ValueRange{loopIdxNested});
+                        
+                        auto sparseLhsValue = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, sparseLhsValuesMemRef, ValueRange{loopIdxNested});
+                        
+                        auto denseRhsValue = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, denseRhsMemRef, ValueRange{rowIdx, colIdx});
+
+                        Value resValue = binaryFunc(
+                            OpBuilderTwiceNested, locTwiceNested, this->typeConverter, sparseLhsValue, denseRhsValue);
+                        
+                        //Value store;
+
+                        if (llvm::isa<daphne::EwAddOp>(op))
+                        {
+                            // auto store = OpBuilderTwiceNested.create<memref::StoreOp>(
+                            OpBuilderTwiceNested.create<memref::StoreOp>(
+                                locTwiceNested, resValue, resDenseMemRef, ValueRange{rowIdx, colIdx});
+                        }
+                        else if (llvm::isa<daphne::EwMulOp>(op))
+                        {
+                            // auto store = OpBuilderTwiceNested.create<memref::StoreOp>(
+                            OpBuilderTwiceNested.create<memref::StoreOp>(
+                                locTwiceNested, resValue, resSparseMemRef, ValueRange{loopIdxNested});
+                        }
+                        else
+                        {
+                            std::cout<<"here 10"<<std::endl;
+                            throw ErrorHandler::compilerError(loc, "EwOpsLowering (BinaryOp)", "Unsupported ewOps codegen");
+                        }
+                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, resValue);
+                        // OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested);
+                    }
+                );
+                
+                // OpBuilderNested.create<scf::YieldOp>(locNested, resValue);
+                // auto resValue = colLoop.getResult(0);
+                OpBuilderNested.create<scf::YieldOp>(locNested);
+            }
+        );
+
+        if (llvm::isa<daphne::EwAddOp>(op))
+        {
+            Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resDenseMemRef, op.getType());
+            std::cout<<"here 1"<<std::endl;
+            rewriter.replaceOp(op, resDenseMatrix);
+            
+            return mlir::success();
+        }
+        else if (llvm::isa<daphne::EwMulOp>(op))
+        {
+            llvm::errs()<<resSparseMemRef[0]<< "\n";
+            Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsRows);
+            Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsCols);
+            Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsCols * sparseLhsRows);
+
+            Value resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
+                resSparseMemRef, sparseLhsColIdxsMemRef, sparseLhsRowOffsetsMemRef, 
+                maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType()); 
+
+            if (!resCSRMatrix) {
+                llvm::errs() << "Error: resCSRMatrix is null!\n";
+            }
+            std::cout<<"here 2"<<std::endl;
+            op.dump();
+            rewriter.replaceOp(op, resCSRMatrix);
+            std::cout<<"here 3"<<std::endl;
+            op.dump();
+            return mlir::success();
+        }
+        else
+        {
+            std::cout<<"here 11"<<std::endl;
+            throw ErrorHandler::compilerError(loc, "EwOpsLowering (BinaryOp)", "Unsupported ewOps codegen");
+        }    
+    }
+
     LogicalResult matchAndRewrite(BinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
         Location loc = op->getLoc();
         Value lhs = adaptor.getLhs();
@@ -323,6 +504,10 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
             return matchAndRewriteBroadcastScalarRhs(op, adaptor, rewriter, rhs);
         }
 
+        if (lhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse &&
+            rhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Dense)
+            return matchAndRewriteSparseDenseMat(op, adaptor, rewriter);
+
         Type matrixElementType = lhsMatrixType.getElementType();
 
         ssize_t lhsRows = lhsMatrixType.getNumRows();
@@ -331,6 +516,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         ssize_t rhsCols = rhsMatrixType.getNumCols();
 
         if (lhsRows < 0 || lhsCols < 0 || rhsRows < 0 || rhsCols < 0) {
+            std::cout<<"here 4"<<std::endl;
             throw ErrorHandler::compilerError(
                 loc, "EwOpsLowering (BinaryOp)",
                 "ewOps codegen currently only works with matrix dimensions that are known at compile time");
@@ -535,7 +721,7 @@ struct EwOpLoweringPass : public mlir::PassWrapper<EwOpLoweringPass, mlir::Opera
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
         registry
             .insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect,
-                    daphne::DaphneDialect, mlir::math::MathDialect, mlir::arith::ArithDialect>();
+                    daphne::DaphneDialect, mlir::math::MathDialect, mlir::arith::ArithDialect, mlir::scf::SCFDialect>();
     }
     void runOnOperation() final;
 
@@ -596,7 +782,7 @@ void EwOpLoweringPass::runOnOperation() {
 
     target.addLegalDialect<mlir::arith::ArithDialect, memref::MemRefDialect, mlir::AffineDialect,
                            mlir::LLVM::LLVMDialect, daphne::DaphneDialect, mlir::BuiltinDialect,
-                           mlir::math::MathDialect, mlir::linalg::LinalgDialect>();
+                           mlir::math::MathDialect, mlir::linalg::LinalgDialect, mlir::scf::SCFDialect>();
 
     // UnaryOps
     target.addDynamicallyLegalOp<daphne::EwAbsOp, daphne::EwSqrtOp, daphne::EwExpOp, daphne::EwLnOp, daphne::EwSinOp,
@@ -635,6 +821,17 @@ void EwOpLoweringPass::runOnOperation() {
                     (rhsMatType && rhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense)) {
                     return false;
                 }
+
+                if ((llvm::isa<IntegerType>(rhs) || llvm::isa<FloatType>(rhs)) &&
+                    (lhsMatType && lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Sparse)) {
+                    return false;
+                }
+
+                if ((lhsMatType && lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Sparse) &&
+                    (rhsMatType && rhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense)) {
+                    return false;
+                }
+
                 return true;
             });
 
