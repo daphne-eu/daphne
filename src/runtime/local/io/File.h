@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_IO_FILE_H
 #define SRC_RUNTIME_LOCAL_IO_FILE_H
 
+#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 

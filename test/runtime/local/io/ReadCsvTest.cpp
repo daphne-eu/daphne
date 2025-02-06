@@ -163,6 +163,61 @@ TEST_CASE("ReadCsv, frame of floats", TAG_IO) {
     DataObjectFactory::destroy(m);
 }
 
+TEST_CASE("ReadCsv, frame of floats using positional map", "[TAG_IO][posMap]") {
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64};
+    Frame *m = NULL;
+    Frame *m_new = NULL;
+
+    size_t numRows = 2;
+    size_t numCols = 4;
+
+    char filename[] = "test/runtime/local/io/ReadCsv1.csv";
+    char delim = ',';
+
+    if(std::filesystem::exists(filename+std::string(".posmap"))) {
+        std::filesystem::remove(filename + std::string(".posmap"));
+    }
+    std::cout << "first csv read" << std::endl;
+    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    std::cout << "first csv read done" << std::endl;
+    REQUIRE(std::filesystem::exists(filename+std::string(".posmap")));
+    readCsv(m, filename, numRows, numCols, delim, schema, true);
+    std::cout << "second csv read done" << std::endl;
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+
+    CHECK(m->getColumn<double>(0)->get(0, 0) == -0.1);
+    CHECK(m->getColumn<double>(1)->get(0, 0) == -0.2);
+    CHECK(m->getColumn<double>(2)->get(0, 0) == 0.1);
+    CHECK(m->getColumn<double>(3)->get(0, 0) == 0.2);
+
+    CHECK(m->getColumn<double>(0)->get(1, 0) == 3.14);
+    CHECK(m->getColumn<double>(1)->get(1, 0) == 5.41);
+    CHECK(m->getColumn<double>(2)->get(1, 0) == 6.22216);
+    CHECK(m->getColumn<double>(3)->get(1, 0) == 5);
+
+    REQUIRE(m_new->getNumRows() == numRows);
+        REQUIRE(m_new->getNumCols() == numCols);
+
+    CHECK(m_new->getColumn<double>(0)->get(0, 0) == -0.1);
+    CHECK(m_new->getColumn<double>(1)->get(0, 0) == -0.2);
+    CHECK(m_new->getColumn<double>(2)->get(0, 0) == 0.1);
+    CHECK(m_new->getColumn<double>(3)->get(0, 0) == 0.2);
+
+    CHECK(m_new->getColumn<double>(0)->get(1, 0) == 3.14);
+    CHECK(m_new->getColumn<double>(1)->get(1, 0) == 5.41);
+    CHECK(m_new->getColumn<double>(2)->get(1, 0) == 6.22216);
+    CHECK(m_new->getColumn<double>(3)->get(1, 0) == 5);
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+
+    if(std::filesystem::exists(filename+std::string(".posmap"))) {
+        std::filesystem::remove(filename + std::string(".posmap"));
+    }
+}
+
 TEST_CASE("ReadCsv, frame of uint8s", TAG_IO) {
     ValueTypeCode schema[] = {ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8};
     Frame *m = NULL;
