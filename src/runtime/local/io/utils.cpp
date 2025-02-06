@@ -204,3 +204,57 @@ FileMetaData generateFileMetaData(const std::string &filename, bool hasLabels, b
 
     return FileMetaData(numRows, numCols, isSingleValueType, schema, labels);
 }
+
+//create positional map based on csv data
+
+// Function save the positional map
+void writePositionalMap(const char *filename, const std::vector<std::vector<std::streampos>> &posMap) {
+    std::ofstream posMapFile(std::string(filename) + ".posmap", std::ios::binary);
+    if (!posMapFile.is_open()) {
+        throw std::runtime_error("Failed to open positional map file");
+    }
+
+    for (const auto &colPositions : posMap) {
+        for (const auto &pos : colPositions) {
+            posMapFile.write(reinterpret_cast<const char *>(&pos), sizeof(pos));
+        }
+    }
+
+    posMapFile.close();
+}
+
+// Function to read or create the positional map
+std::vector<std::vector<std::streampos>> readPositionalMap(const char *filename, size_t numCols) {
+    std::ifstream posMapFile(std::string(filename) + ".posmap", std::ios::binary);
+    if (!posMapFile.is_open()) {
+        std::cerr << "Positional map file not found, creating a new one." << std::endl;
+        return std::vector<std::vector<std::streampos>>(numCols);
+    }
+    std::cout << "doing posMap stuff" << std::endl;
+    std::vector<std::vector<std::streampos>> posMap(numCols);
+    for (size_t i = 0; i < numCols; i++) {
+        posMap[i].resize(0);
+    }
+    std::cout << "doing posMap stuff" << std::endl;
+
+   std::streampos pos;
+   size_t col = 0;
+   while (posMapFile.read(reinterpret_cast<char *>(&pos), sizeof(pos))) {
+       posMap[col].push_back(pos);
+       col = (col + 1) % numCols;
+   }
+
+    std::cout << "doing posMap done" << std::endl;
+    posMapFile.close();
+
+    // Debugging output to verify the positional map
+    for (size_t i = 0; i < numCols; i++) {
+        std::cout << "Column " << i << " positions: ";
+        for (const auto &p : posMap[i]) {
+            std::cout << p << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    return posMap;
+}
