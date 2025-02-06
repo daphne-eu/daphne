@@ -31,6 +31,12 @@ ValueTypeCode inferValueType(const std::string &value);
 // Function to read the CSV file and determine the FileMetaData
 FileMetaData generateFileMetaData(const std::string &filename, bool hasLabels, bool isFrame);
 
+// Function to create and save the positional map
+void writePositionalMap(const char *filename, const std::vector<std::vector<std::streampos>> &posMap);
+
+// Function to read the positional map
+std::vector<std::vector<std::streampos>> readPositionalMap(const char *filename, size_t numCols);
+
 // Conversion of std::string.
 
 inline void convertStr(std::string const &x, double *v) {
