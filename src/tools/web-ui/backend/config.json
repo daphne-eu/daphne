@@ -1,0 +1,70 @@
+{
+  "use_container": false,
+  "container_cmd": "containers/run-docker-example.sh",
+  "distributed_workers_list": ["localhost:50001", "localhost:50002", "localhost:50003", "localhost:50004", "localhost:50005", "localhost:50006"],
+  "daphne_options": {
+    "max_cpus": 12,
+    "partitioning":[
+      {"flag": "--partitioning=STATIC", "description": "Static (default)" },
+      {"flag": "--partitioning=SS", "description": "Self-scheduling" },
+      {"flag": "--partitioning=GSS", "description": "Guided self-scheduling" },
+      {"flag": "--partitioning=TSS", "description": "Trapezoid self-scheduling" },
+      {"flag": "--partitioning=FAC2", "description": "Factoring self-scheduling" },
+      {"flag": "--partitioning=TFSS", "description": "Trapezoid Factoring self-scheduling" },
+      {"flag": "--partitioning=FISS", "description": "Fixed-increase self-scheduling" },
+      {"flag": "--partitioning=VISS", "description": "Variable-increase self-scheduling" },
+      {"flag": "--partitioning=PLS", "description": "Performance loop-based self-scheduling" },
+      {"flag": "--partitioning=MSTATIC", "description": "Modified version of Static, i.e., instead of n/p, it uses n/(4*p) where n is number of tasks and p is number of threads" },
+      {"flag": "--partitioning=MFSC", "description": "Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC" },
+      {"flag": "--partitioning=PSS", "description": "Probabilistic self-scheduling" }
+    ],
+    "queue_layout":[    
+      {"flag": "--queue_layout=CENTRALIZED", "description": "One queue (default)"},
+      {"flag": "--queue_layout=PERGROUP", "description": "One queue per CPU group"},
+      {"flag": "--queue_layout=PERCPU", "description": "One queue per CPU core"}
+    ],
+    "victim_selection": [
+      {"flag": "--victim_selection=SEQ", "description": "Steal from next adjacent worker (default)"},
+      {"flag": "--victim_selection=SEQPRI", "description": "Steal from next adjacent worker, prioritize same NUMA domain"},
+      {"flag": "--victim_selection=RANDOM", "description": "Steal from random worker"},
+      {"flag": "--victim_selection=RANDOMPRI", "description": "Steal from random worker, prioritize same NUMA domain"}
+    ]
+  },
+  "paths": {
+    "daphne_dir": "/path/to/daphne",
+    "stdout_file": "logs/out.txt",
+    "stderr_file": "logs/err.txt"
+  },
+  "algorithms": {
+    "algorithm_list":[
+      {
+        "name": "Hello World",
+        "filepath": "scripts/examples/hello-world.daph",
+        "arguments": []
+      },
+      {
+        "name": "Connected Components",
+        "filepath": "scripts/algorithms/components.daph",
+        "arguments": [
+          {
+            "name": "Small - Amazon",
+            "arguments": "n=60 e=10 C=\"out.txt\""
+          },
+          {
+            "name": "Medium - Amazon",
+            "arguments": "n=200 e=50 C=\"out.txt\""
+          }
+        ]
+      }
+    ]
+  },
+  "vega_config": {
+    "host": "login.vega.izum.si",
+    "port": 22,
+    "username": "username",
+    "private_key_path": "/path/to/rsa/vega",
+    "daphne_dir": "/path/to/daphne",
+    "stdout_file": "out.txt",
+    "stderr_file": "err.txt"
+  }
+}
