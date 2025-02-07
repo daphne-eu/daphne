@@ -341,3 +341,67 @@ template <typename VT> struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         res->finishAppend();
     }
 };
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- CSRMatrix, DenseMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct EwBinaryMat<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *&res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
+                      DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        // TODO: lhs broadcast
+        // if ((numRows != rhs->getNumRows() && rhs->getNumRows() != 1) ||
+        //     (numCols != rhs->getNumCols() && rhs->getNumCols() != 1))
+        //     throw std::runtime_error("EwBinaryMat(CSR) - lhs and rhs must have "
+        //                              "the same dimensions (or broadcast)");
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+            throw std::runtime_error("EwBinaryMat(CSR) - lhs and rhs must have "
+                                    "the same dimensions (or broadcast)");
+
+        size_t maxNnz;
+        switch (opCode) {
+        case BinaryOpCode::ADD: // merge
+            maxNnz = lhs->getNumNonZeros();
+            break;
+        default:
+            throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
+        }
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+        auto *valuesRes = res->getValues();
+        auto *valuesRhs = rhs->getValues();
+
+        for (size_t r = 0; r < numRows; r++)
+            for (size_t c = 0; c < numCols; c++)
+                valuesRes[r * numCols + c] = valuesRhs[r * numCols + c]; 
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+        switch (opCode) {
+        case BinaryOpCode::ADD: { // merge non-zero cells
+            for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
+                if (nnzRowLhs) {
+                    // merge within row
+                    const VT *valuesRowLhs = lhs->getValues(rowIdx);
+                    const size_t *colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+                    for (size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
+                        auto rhsCol = colIdxsRowLhs[posLhs];
+                        valuesRes[rhsCol] = func(valuesRes[rhsCol], valuesRowLhs[posLhs], ctx);
+                    }
+                } 
+                valuesRes += res->getRowSkip();
+            }
+            break;
+        }
+        default:
+            throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
+        }
+
+        // TODO Update number of non-zeros in result in the end.
+    }
+};
