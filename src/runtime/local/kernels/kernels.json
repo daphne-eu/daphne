@@ -2122,6 +2122,16 @@
                         ["DenseMatrix", "int64_t"],
                         ["DenseMatrix", "std::string"],
                         ["DenseMatrix", "std::string"]
+                    ],
+                    [
+                        ["DenseMatrix", "double"],
+                        ["CSRMatrix", "double"],
+                        ["DenseMatrix", "double"]
+                    ],
+                    [
+                        ["DenseMatrix", "float"],
+                        ["CSRMatrix", "float"],
+                        ["DenseMatrix", "float"]
                     ]
                 ],
                 "opCodes": [
