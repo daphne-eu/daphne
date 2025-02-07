@@ -303,10 +303,8 @@ template <> struct ReadCsvFile<Frame> {
         if (res == nullptr) {
             res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
         }
-        std::string ext = ".posmap";
-        size_t row = 0, col = 0;
-        std::cout << "Starting shit " << filename << std::endl;
 
+        // Prepare raw column pointers and type information.
         uint8_t **rawCols = new uint8_t *[numCols];
         ValueTypeCode *colTypes = new ValueTypeCode[numCols];
         for (size_t i = 0; i < numCols; i++) {
@@ -315,7 +313,15 @@ template <> struct ReadCsvFile<Frame> {
         }
         // Use posMap if exists
         if (optimized && std::filesystem::exists(std::string(filename) + ".posmap")) {
+
             std::cout << "Reading CSV using positional map" << std::endl;
+            std::cout << filename << delim << optimized << std::endl;
+            #ifdef DEBUG
+            if (!std::filesystem::exists(std::string(filename) + ".posmap")){
+                std::cout << "could not find: " << std::string(filename) + ".posmap" << std::endl;
+            }
+            #endif
+
             // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
             std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
             for (size_t r = 0; r < numRows; r++) {
@@ -397,10 +403,10 @@ template <> struct ReadCsvFile<Frame> {
             }
         } else {
             // Normal branch: iterate row by row and for each field save its absolute offset.
-            std::vector<std::vector<std::streampos>> posMap(numCols);
+            std::vector<std::vector<std::streampos>> posMap;
+            if (optimized) posMap.resize(numCols);
             std::streampos currentPos = 0;
-            size_t row = 0;
-            while (row < numRows && true) {
+            for (size_t row = 0; row < numRows; row++) {
                 ssize_t ret = getFileLine(file);
                 if ((file->read == EOF) || (file->line == NULL))
                     break;
@@ -410,7 +416,7 @@ template <> struct ReadCsvFile<Frame> {
                 // Save offsets for the current row
                 for (size_t c = 0; c < numCols; c++) {
                     // Record absolute offset of field c
-                    posMap[c].push_back(currentPos + static_cast<std::streamoff>(pos));
+                    if (optimized) posMap[c].push_back(currentPos + static_cast<std::streamoff>(pos));
                     // Process cell according to type (same as non-optimized branch):
                     switch (colTypes[c]) {
                     case ValueTypeCode::SI8: {
@@ -484,10 +490,11 @@ template <> struct ReadCsvFile<Frame> {
                     }
                 }
                 currentPos += ret;
-                row++;
             }
-            std::cout << "Saving positional map file" << std::endl;
-            writePositionalMap(filename, posMap);
+            if (optimized) {
+                std::cout << "Saving positional map file" << std::endl;
+                writePositionalMap(filename, posMap);
+            }
         }
         delete[] rawCols;
         delete[] colTypes;
