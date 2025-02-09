@@ -39,37 +39,45 @@
 #include <sstream>
 #include <stdexcept>
 
+struct ReadOpts{
+    bool opt_enabled;
+    bool posMap;
+    bool saveBin;
+
+    explicit ReadOpts(bool opt_enabled = false, bool posMap = false, bool saveBin =false) : opt_enabled(opt_enabled), posMap(posMap), saveBin(saveBin) {}
+};
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsvFile {
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, bool optimized = false) = delete;
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) = delete;
 
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros,
-                      bool optimized = false, bool sorted = true) = delete;
+                      bool sorted = true, ReadOpts opt = ReadOpts()) = delete;
 
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema, const char *filename, bool optimized = false) = delete;
+                      ValueTypeCode *schema, const char *filename, ReadOpts opt = ReadOpts()) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes> void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, bool optimized = false) {
-    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, optimized);
+template <class DTRes> void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
+    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, opt);
 }
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, const char *filename = nullptr, bool optimized = false) {
-    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, schema, filename, optimized);
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, const char *filename = nullptr, ReadOpts opt = ReadOpts()) {
+    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, schema, filename, opt);
 }
 
 template <class DTRes>
 void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true,
-                 bool optimized = false) {
-    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted, optimized);
+                 ReadOpts opt = ReadOpts()) {
+    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted, opt);
 }
 
 // ****************************************************************************
@@ -81,7 +89,7 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim, bool optimized = false) {
+    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be "
                                      "specified (must not be nullptr)");
@@ -128,7 +136,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
 };
 
 template <> struct ReadCsvFile<DenseMatrix<std::string>> {
-    static void apply(DenseMatrix<std::string> *&res, struct File *file, size_t numRows, size_t numCols, char delim, bool optimized = false) {
+    static void apply(DenseMatrix<std::string> *&res, struct File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
@@ -159,7 +167,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
 };
 
 template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
-    static void apply(DenseMatrix<FixedStr16> *&res, struct File *file, size_t numRows, size_t numCols, char delim, bool optimized = false) {
+    static void apply(DenseMatrix<FixedStr16> *&res, struct File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
@@ -195,7 +203,7 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
 
 template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ssize_t numNonZeros, bool sorted = true, bool optimized = false) {
+                      ssize_t numNonZeros, bool sorted = true, ReadOpts opt = ReadOpts()) {
         if (numNonZeros == -1)
             throw std::runtime_error("ReadCsvFile: Currently, reading of sparse matrices requires a "
                                      "number of non zeros to be defined");
@@ -296,7 +304,7 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
 // Updated optimized branch in ReadCsvFile<Frame>::apply to reposition file pointer and load file->line.
 template <> struct ReadCsvFile<Frame> {
     static void apply(Frame *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema, const char *filename, bool optimized = false) {
+                      ValueTypeCode *schema, const char *filename, ReadOpts opt = ReadOpts()) {
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
@@ -305,7 +313,6 @@ template <> struct ReadCsvFile<Frame> {
         if (res == nullptr) {
             res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
         }
-        bool saveBin = true;
         // Prepare raw column pointers and type information.
         uint8_t **rawCols = new uint8_t *[numCols];
         ValueTypeCode *colTypes = new ValueTypeCode[numCols];
@@ -314,12 +321,12 @@ template <> struct ReadCsvFile<Frame> {
             colTypes[i] = res->getColumnType(i);
         }
         // Use posMap if exists
-        if (optimized && std::filesystem::exists(std::string(filename) + ".posmap")) {
-            if (saveBin && std::filesystem::exists(std::string(filename) + ".daphne")) {
+        if (opt.posMap && std::filesystem::exists(std::string(filename) + ".posmap")) {
+            if (opt.saveBin && std::filesystem::exists(std::string(filename) + ".daphne")) {
                 readDaphne(res, filename);
             }
             std::cout << "Reading CSV using positional map" << std::endl;
-            std::cout << filename << delim << optimized << std::endl;
+            std::cout << filename << delim << opt.posMap << std::endl;
             #ifdef DEBUG
             if (!std::filesystem::exists(std::string(filename) + ".posmap")){
                 std::cout << "could not find: " << std::string(filename) + ".posmap" << std::endl;
@@ -408,7 +415,7 @@ template <> struct ReadCsvFile<Frame> {
         } else {
             // Normal branch: iterate row by row and for each field save its absolute offset.
             std::vector<std::vector<std::streampos>> posMap;
-            if (optimized) posMap.resize(numCols);
+            if (opt.posMap) posMap.resize(numCols);
             std::streampos currentPos = 0;
             for (size_t row = 0; row < numRows; row++) {
                 ssize_t ret = getFileLine(file);
@@ -420,7 +427,7 @@ template <> struct ReadCsvFile<Frame> {
                 // Save offsets for the current row
                 for (size_t c = 0; c < numCols; c++) {
                     // Record absolute offset of field c
-                    if (optimized) posMap[c].push_back(currentPos + static_cast<std::streamoff>(pos));
+                    if (opt.posMap) posMap[c].push_back(currentPos + static_cast<std::streamoff>(pos));
                     // Process cell according to type (same as non-optimized branch):
                     switch (colTypes[c]) {
                     case ValueTypeCode::SI8: {
@@ -495,9 +502,10 @@ template <> struct ReadCsvFile<Frame> {
                 }
                 currentPos += ret;
             }
-            if (optimized) {
+            if (opt.posMap) {
                 std::cout << "Saving positional map file" << std::endl;
                 writePositionalMap(filename, posMap);
+                if (opt.saveBin)
                 writeDaphne(res, filename);
             }
         }
