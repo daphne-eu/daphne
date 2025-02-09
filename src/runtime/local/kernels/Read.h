@@ -80,13 +80,14 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx), b
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx), bool labels = false) {
 
+        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().use_positional_map, ctx->getUserConfig().save_csv_as_bin);
         FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, false);
         int extv = extValue(filename);
         switch (extv) {
         case 0:
             if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
-            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', true);//ctx->getUserConfig().use_csv_read_opts);
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', read_opt);
             break;
         case 1:
             if constexpr (std::is_same<VT, std::string>::value)
@@ -132,6 +133,7 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
 
 template <typename VT> struct Read<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, DCTX(ctx), bool labels = false) {
+        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().use_positional_map, ctx->getUserConfig().save_csv_as_bin);
         FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, false);
         int extv = extValue(filename);
         switch (extv) {
@@ -144,7 +146,7 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
                 res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
 
             // FIXME: ensure file is sorted, or set `sorted` argument correctly
-            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros,true,true);// ctx->getUserConfig().use_csv_read_opts, true);
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros,true,read_opt);
             break;
         case 1:
             readMM(res, filename);
@@ -170,7 +172,7 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 template <> struct Read<Frame> {
     static void apply(Frame *&res, const char *filename, DCTX(ctx), bool labels = false) {
         FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, true);
-
+        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().use_positional_map, ctx->getUserConfig().save_csv_as_bin);
         ValueTypeCode *schema;
         if (fmd.isSingleValueType) {
             schema = new ValueTypeCode[fmd.numCols];
@@ -188,7 +190,7 @@ template <> struct Read<Frame> {
         if (res == nullptr)
             res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, fmdLabels, false);
 
-        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema, true);//ctx->getUserConfig().use_csv_read_opts);
+        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema, read_opt);
 
         if (fmd.isSingleValueType)
             delete[] schema;

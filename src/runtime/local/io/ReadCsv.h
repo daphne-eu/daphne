@@ -41,32 +41,32 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsv {
-    static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, bool optimized = false) = delete;
+    static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) = delete;
 
     static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, ssize_t numNonZeros,
-                      bool sorted = true) = delete;
+                      bool sorted = true, ReadOpts opt = ReadOpts()) = delete;
 
     static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema, bool optimized = false) = delete;
+                      ValueTypeCode *schema, ReadOpts opt = ReadOpts()) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes> void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, bool optimized = false) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, optimized);
+template <class DTRes> void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, opt);
 }
 
 template <class DTRes>
-void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, bool optimized = false) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema, optimized);
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, ReadOpts opt = ReadOpts()) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema, opt);
 }
 
 template <class DTRes>
 void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true,
-             bool optimized = false) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, numNonZeros, sorted, optimized);
+             ReadOpts opt = ReadOpts()) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, numNonZeros, sorted, opt);
 }
 
 // ****************************************************************************
@@ -78,9 +78,9 @@ void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, 
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim, bool optimized = false) {
+    static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, optimized);
+        readCsvFile(res, file, numRows, numCols, delim, opt);
         closeFile(file);
     }
 };
@@ -91,9 +91,9 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
 
 template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ssize_t numNonZeros, bool sorted = true, bool optimized = false) {
+                      ssize_t numNonZeros, bool sorted = true, ReadOpts opt = ReadOpts()) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted, optimized);
+        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted, opt);
         closeFile(file);
     }
 };
@@ -104,10 +104,10 @@ template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
 
 template <> struct ReadCsv<Frame> {
     static void apply(Frame *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema, bool optimized = false) {
+                      ValueTypeCode *schema, ReadOpts opt = ReadOpts()) {
         struct File *file = openFile(filename);
         std::cout << "opened CSV file: " << file->identifier << std::endl;
-        readCsvFile(res, file, numRows, numCols, delim, schema, filename, optimized);
+        readCsvFile(res, file, numRows, numCols, delim, schema, filename, opt);
         std::cout << "read CSV file: " << file->identifier << std::endl;
         closeFile(file);
     }
