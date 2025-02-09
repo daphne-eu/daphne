@@ -178,10 +178,10 @@ TEST_CASE("ReadCsv, frame of floats using positional map", "[TAG_IO][posMap]") {
         std::filesystem::remove(filename + std::string(".posmap"));
     }
     std::cout << "first csv read" << std::endl;
-    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
     std::cout << "first csv read done" << std::endl;
     REQUIRE(std::filesystem::exists(filename+std::string(".posmap")));
-    readCsv(m, filename, numRows, numCols, delim, schema, true);
+    readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
     std::cout << "second csv read done" << std::endl;
 
     REQUIRE(m->getNumRows() == numRows);
@@ -436,9 +436,9 @@ TEST_CASE("ReadCsv, frame of uint8s using positional map", "[TAG_IO][posMap]") {
     if(std::filesystem::exists(filename + std::string(".posmap"))) {
         std::filesystem::remove(filename + std::string(".posmap"));
     }
-    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
     REQUIRE(std::filesystem::exists(filename + std::string(".posmap")));
-    readCsv(m, filename, numRows, numCols, delim, schema, true);
+    readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
 
     CHECK(m->getColumn<uint8_t>(0)->get(0, 0) == 1);
     CHECK(m->getColumn<uint8_t>(1)->get(0, 0) == 2);
@@ -468,9 +468,9 @@ TEST_CASE("DISABLED_ReadCsv, frame of numbers and strings using positional map",
     if(std::filesystem::exists(filename + std::string(".posmap"))) {
         std::filesystem::remove(filename + std::string(".posmap"));
     }
-    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
     REQUIRE(std::filesystem::exists(filename + std::string(".posmap")));
-    readCsv(m, filename, numRows, numCols, delim, schema, true);
+    readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
 
     CHECK(m->getColumn<uint64_t>(0)->get(0, 0) == 222);
     CHECK(m->getColumn<uint64_t>(0)->get(1, 0) == 444);
@@ -526,9 +526,9 @@ TEST_CASE("ReadCsv, frame of INF and NAN parsing using positional map", "[TAG_IO
     if(std::filesystem::exists(filename + std::string(".posmap"))) {
         std::filesystem::remove(filename + std::string(".posmap"));
     }
-    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
     REQUIRE(std::filesystem::exists(filename + std::string(".posmap")));
-    readCsv(m, filename, numRows, numCols, delim, schema, true);
+    readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
 
     CHECK(m->getColumn<double>(0)->get(0, 0) == -std::numeric_limits<double>::infinity());
     CHECK(m->getColumn<double>(1)->get(0, 0) == std::numeric_limits<double>::infinity());
@@ -558,9 +558,9 @@ TEST_CASE("ReadCsv, frame of varying columns using positional map", "[TAG_IO][po
     if(std::filesystem::exists(filename + std::string(".posmap"))) {
         std::filesystem::remove(filename + std::string(".posmap"));
     }
-    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
     REQUIRE(std::filesystem::exists(filename + std::string(".posmap")));
-    readCsv(m, filename, numRows, numCols, delim, schema, true);
+    readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
 
     CHECK(m->getColumn<int8_t>(0)->get(0, 0) == 1);
     CHECK(m->getColumn<float>(1)->get(0, 0) == 0.5);
@@ -588,7 +588,7 @@ TEST_CASE("ReadCsv, frame of floats: normal vs positional map", "[TAG_IO][posMap
     if(std::filesystem::exists(std::string(filename) + ".posmap")) {
         std::filesystem::remove(std::string(filename) + ".posmap");
     }
-    readCsv(m_opt, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_opt, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
 
     // Compare cell values row-wise
     for(size_t r = 0; r < numRows; r++) {
@@ -599,6 +599,9 @@ TEST_CASE("ReadCsv, frame of floats: normal vs positional map", "[TAG_IO][posMap
     }
     DataObjectFactory::destroy(m_normal);
     DataObjectFactory::destroy(m_opt);
+    if(std::filesystem::exists(filename + std::string(".posmap"))) {
+        std::filesystem::remove(filename + std::string(".posmap"));
+    }
 }
 
 TEST_CASE("ReadCsv, frame of numbers and strings: normal vs positional map", "[TAG_IO][posMap]") {
@@ -615,7 +618,7 @@ TEST_CASE("ReadCsv, frame of numbers and strings: normal vs positional map", "[T
     if(std::filesystem::exists(std::string(filename) + ".posmap")) {
         std::filesystem::remove(std::string(filename) + ".posmap");
     }
-    readCsv(m_opt, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_opt, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
 
     // For each row compare all columns explicitly
     // Column 0: UI64
@@ -643,6 +646,9 @@ TEST_CASE("ReadCsv, frame of numbers and strings: normal vs positional map", "[T
     }
     DataObjectFactory::destroy(m_normal);
     DataObjectFactory::destroy(m_opt);
+    if(std::filesystem::exists(filename + std::string(".posmap"))) {
+        std::filesystem::remove(filename + std::string(".posmap"));
+    }
 }
 
 TEST_CASE("ReadCsv, frame of INF and NAN parsing: normal vs positional map", "[TAG_IO][posMap]") {
@@ -659,7 +665,7 @@ TEST_CASE("ReadCsv, frame of INF and NAN parsing: normal vs positional map", "[T
         std::filesystem::remove(std::string(filename) + ".posmap");
     }
     // Optimized read via positional map
-    readCsv(m_opt, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_opt, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
 
     for(size_t r = 0; r < numRows; r++) {
         for(size_t c = 0; c < numCols; c++) {
@@ -676,6 +682,9 @@ TEST_CASE("ReadCsv, frame of INF and NAN parsing: normal vs positional map", "[T
     }
     DataObjectFactory::destroy(m_normal);
     DataObjectFactory::destroy(m_opt);
+    if(std::filesystem::exists(filename + std::string(".posmap"))) {
+        std::filesystem::remove(filename + std::string(".posmap"));
+    }
 }
 
 TEST_CASE("ReadCsv, frame of varying columns: normal vs positional map", "[TAG_IO][posMap]") {
@@ -692,7 +701,7 @@ TEST_CASE("ReadCsv, frame of varying columns: normal vs positional map", "[TAG_I
         std::filesystem::remove(std::string(filename) + ".posmap");
     }
     // Optimized read via positional map
-    readCsv(m_opt, filename, numRows, numCols, delim, schema, true);
+    readCsv(m_opt, filename, numRows, numCols, delim, schema, ReadOpts(true,true,false));
 
     for(size_t r = 0; r < numRows; r++) {
         CHECK(m_normal->getColumn<int8_t>(0)->get(r, 0) == m_opt->getColumn<int8_t>(0)->get(r, 0));
@@ -700,4 +709,9 @@ TEST_CASE("ReadCsv, frame of varying columns: normal vs positional map", "[TAG_I
     }
     DataObjectFactory::destroy(m_normal);
     DataObjectFactory::destroy(m_opt);
+    if(std::filesystem::exists(filename + std::string(".posmap"))) {
+        std::filesystem::remove(filename + std::string(".posmap"));
+    }
 }
+
+//TODO: add test cases for using binary file opts
