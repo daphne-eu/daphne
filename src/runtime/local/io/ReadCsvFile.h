@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include <parser/metadata/MetaDataParser.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
-#include <parser/metadata/MetaDataParser.h>
 
 #include <runtime/local/io/utils.h>
 
@@ -32,19 +32,19 @@
 #include "WriteDaphne.h"
 #include <cstddef>
 #include <cstdint>
-#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <queue>
 #include <sstream>
 #include <stdexcept>
 
-struct ReadOpts{
+struct ReadOpts {
     bool opt_enabled;
     bool posMap;
     bool saveBin;
 
-    explicit ReadOpts(bool opt_enabled = false, bool posMap = false, bool saveBin =false) : opt_enabled(opt_enabled), posMap(posMap), saveBin(saveBin) {}
+    explicit ReadOpts(bool opt_enabled = false, bool posMap = true, bool saveBin = true)
+        : opt_enabled(opt_enabled), posMap(posMap), saveBin(saveBin) {}
 };
 
 // ****************************************************************************
@@ -52,31 +52,34 @@ struct ReadOpts{
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsvFile {
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) = delete;
-
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros,
-                      bool sorted = true, ReadOpts opt = ReadOpts()) = delete;
-
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema, const char *filename, ReadOpts opt = ReadOpts()) = delete;
+                      ReadOpts opt = ReadOpts()) = delete;
+
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros, bool sorted = true,
+                      ReadOpts opt = ReadOpts()) = delete;
+
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
+                      const char *filename, ReadOpts opt = ReadOpts()) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes> void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
+template <class DTRes>
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
     ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, opt);
 }
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, const char *filename = nullptr, ReadOpts opt = ReadOpts()) {
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
+                 const char *filename = nullptr, ReadOpts opt = ReadOpts()) {
     ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, schema, filename, opt);
 }
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true,
-                 ReadOpts opt = ReadOpts()) {
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros,
+                 bool sorted = true, ReadOpts opt = ReadOpts()) {
     ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted, opt);
 }
 
@@ -89,7 +92,8 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
+    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
+                      ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be "
                                      "specified (must not be nullptr)");
@@ -136,7 +140,8 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
 };
 
 template <> struct ReadCsvFile<DenseMatrix<std::string>> {
-    static void apply(DenseMatrix<std::string> *&res, struct File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
+    static void apply(DenseMatrix<std::string> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
+                      ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
@@ -167,7 +172,8 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
 };
 
 template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
-    static void apply(DenseMatrix<FixedStr16> *&res, struct File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
+    static void apply(DenseMatrix<FixedStr16> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
+                      ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
@@ -301,10 +307,10 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
 // ----------------------------------------------------------------------------
 // Frame
 // ----------------------------------------------------------------------------
-// Updated optimized branch in ReadCsvFile<Frame>::apply to reposition file pointer and load file->line.
+
 template <> struct ReadCsvFile<Frame> {
-    static void apply(Frame *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema, const char *filename, ReadOpts opt = ReadOpts()) {
+    static void apply(Frame *&res, struct File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
+                      const char *filename, ReadOpts opt = ReadOpts()) {
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
@@ -313,7 +319,7 @@ template <> struct ReadCsvFile<Frame> {
         if (res == nullptr) {
             res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
         }
-        // Prepare raw column pointers and type information.
+
         uint8_t **rawCols = new uint8_t *[numCols];
         ValueTypeCode *colTypes = new ValueTypeCode[numCols];
         for (size_t i = 0; i < numCols; i++) {
@@ -322,8 +328,8 @@ template <> struct ReadCsvFile<Frame> {
         }
         // Determine if any optimized branch should be used.
         bool useOptimized = false;
-        bool useBin       = false;
-        bool usePosMap    = false;
+        bool useBin = false;
+        bool usePosMap = false;
         std::string fName;
         if (opt.opt_enabled && filename) {
             fName = filename;
@@ -342,24 +348,14 @@ template <> struct ReadCsvFile<Frame> {
         if (useOptimized) {
             if (useBin) {
                 try {
-                    std::cout << "Reading CSV using binary (.daphne) file: " << fName << std::endl;
-                    readDaphne(res, filename);
+                    readDaphne(res, (std::string(filename) + ".daphne").c_str());
                     delete[] rawCols;
                     delete[] colTypes;
                     return;
                 } catch (std::exception &e) {
-                    std::cerr << "Error reading daphne file: " << e.what() << std::endl;
                     // Fallback to default branch.
                 }
             } else if (usePosMap) {
-                std::cout << "Reading CSV using positional map" << std::endl;
-                std::cout << filename << delim << opt.posMap << std::endl;
-                #ifdef DEBUG
-                    if (!std::filesystem::exists(std::string(filename) + ".posmap")) {
-                        std::cout << "could not find: " << std::string(filename) + ".posmap" << std::endl;
-                    }
-                #endif
-
                 // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
                 std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
                 for (size_t r = 0; r < numRows; r++) {
@@ -439,10 +435,6 @@ template <> struct ReadCsvFile<Frame> {
                         }
                     }
                 }
-                // After optimized read, save optimization files if not exiting
-                if (opt.saveBin)
-                    writeDaphne(res, filename);
-
                 delete[] rawCols;
                 delete[] colTypes;
                 return;
@@ -450,7 +442,8 @@ template <> struct ReadCsvFile<Frame> {
         }
         // Normal branch: iterate row by row and for each field save its absolute offset.
         std::vector<std::vector<std::streampos>> posMap;
-        if (opt.opt_enabled && opt.posMap) posMap.resize(numCols);
+        if (opt.opt_enabled && opt.posMap)
+            posMap.resize(numCols);
         std::streampos currentPos = 0;
         for (size_t row = 0; row < numRows; row++) {
             ssize_t ret = getFileLine(file);
@@ -459,78 +452,68 @@ template <> struct ReadCsvFile<Frame> {
             if (ret == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
             size_t pos = 0;
-            // Save offsets for the current row
-            for (size_t c = 0; c < numCols; c++) {
-                // Record absolute offset of field c
-                if (opt.opt_enabled && opt.posMap) posMap[c].push_back(currentPos + static_cast<std::streamoff>(pos));
-                // Process cell according to type (same as non-optimized branch):
-                switch (colTypes[c]) {
-                case ValueTypeCode::SI8: {
-                    int8_t val;
-                    convertCstr(file->line + pos, &val);
-                    reinterpret_cast<int8_t *>(rawCols[c])[row] = val;
+            for (size_t col = 0; col < numCols; col++) {
+                if (opt.opt_enabled && opt.posMap)
+                    posMap[col].push_back(currentPos + static_cast<std::streamoff>(pos));
+                switch (colTypes[col]) {
+                case ValueTypeCode::SI8:
+                    int8_t val_si8;
+                    convertCstr(file->line + pos, &val_si8);
+                    reinterpret_cast<int8_t *>(rawCols[col])[row] = val_si8;
                     break;
-                }
-                case ValueTypeCode::SI32: {
-                    int32_t val;
-                    convertCstr(file->line + pos, &val);
-                    reinterpret_cast<int32_t *>(rawCols[c])[row] = val;
+                case ValueTypeCode::SI32:
+                    int32_t val_si32;
+                    convertCstr(file->line + pos, &val_si32);
+                    reinterpret_cast<int32_t *>(rawCols[col])[row] = val_si32;
                     break;
-                }
-                case ValueTypeCode::SI64: {
-                    int64_t val;
-                    convertCstr(file->line + pos, &val);
-                    reinterpret_cast<int64_t *>(rawCols[c])[row] = val;
+                case ValueTypeCode::SI64:
+                    int64_t val_si64;
+                    convertCstr(file->line + pos, &val_si64);
+                    reinterpret_cast<int64_t *>(rawCols[col])[row] = val_si64;
                     break;
-                }
-                case ValueTypeCode::UI8: {
-                    uint8_t val;
-                    convertCstr(file->line + pos, &val);
-                    reinterpret_cast<uint8_t *>(rawCols[c])[row] = val;
+                case ValueTypeCode::UI8:
+                    uint8_t val_ui8;
+                    convertCstr(file->line + pos, &val_ui8);
+                    reinterpret_cast<uint8_t *>(rawCols[col])[row] = val_ui8;
                     break;
-                }
-                case ValueTypeCode::UI32: {
-                    uint32_t val;
-                    convertCstr(file->line + pos, &val);
-                    reinterpret_cast<uint32_t *>(rawCols[c])[row] = val;
+                case ValueTypeCode::UI32:
+                    uint32_t val_ui32;
+                    convertCstr(file->line + pos, &val_ui32);
+                    reinterpret_cast<uint32_t *>(rawCols[col])[row] = val_ui32;
                     break;
-                }
-                case ValueTypeCode::UI64: {
-                    uint64_t val;
-                    convertCstr(file->line + pos, &val);
-                    reinterpret_cast<uint64_t *>(rawCols[c])[row] = val;
+                case ValueTypeCode::UI64:
+                    uint64_t val_ui64;
+                    convertCstr(file->line + pos, &val_ui64);
+                    reinterpret_cast<uint64_t *>(rawCols[col])[row] = val_ui64;
                     break;
-                }
-                case ValueTypeCode::F32: {
-                    float val;
-                    convertCstr(file->line + pos, &val);
-                    reinterpret_cast<float *>(rawCols[c])[row] = val;
+                case ValueTypeCode::F32:
+                    float val_f32;
+                    convertCstr(file->line + pos, &val_f32);
+                    reinterpret_cast<float *>(rawCols[col])[row] = val_f32;
                     break;
-                }
-                case ValueTypeCode::F64: {
-                    double val;
-                    convertCstr(file->line + pos, &val);
-                    reinterpret_cast<double *>(rawCols[c])[row] = val;
+                case ValueTypeCode::F64:
+                    double val_f64;
+                    convertCstr(file->line + pos, &val_f64);
+                    reinterpret_cast<double *>(rawCols[col])[row] = val_f64;
                     break;
-                }
                 case ValueTypeCode::STR: {
-                    std::string val;
-                    pos = setCString(file, pos, &val, delim);
-                    reinterpret_cast<std::string *>(rawCols[c])[row] = val;
+                    std::string val_str = "";
+                    pos = setCString(file, pos, &val_str, delim);
+                    reinterpret_cast<std::string *>(rawCols[col])[row] = val_str;
                     break;
                 }
                 case ValueTypeCode::FIXEDSTR16: {
-                    std::string val;
-                    pos = setCString(file, pos, &val, delim);
-                    reinterpret_cast<FixedStr16 *>(rawCols[c])[row] = FixedStr16(val);
+                    std::string val_str = "";
+                    pos = setCString(file, pos, &val_str, delim);
+                    reinterpret_cast<FixedStr16 *>(rawCols[col])[row] = FixedStr16(val_str);
                     break;
                 }
                 default:
                     throw std::runtime_error("ReadCsvFile::apply: unknown value type code");
                 }
-                if (c < numCols - 1) {
+                if (col < numCols - 1) {
                     // Advance pos until next delimiter
-                    while (file->line[pos] != delim && file->line[pos] != '\0')
+                    while (file->line[pos] != delim)
                         pos++;
                     pos++; // skip delimiter
                 }
@@ -538,11 +521,21 @@ template <> struct ReadCsvFile<Frame> {
             currentPos += ret;
         }
         if (opt.opt_enabled) {
-            std::cout << "Saving optimizations to file" << std::endl;
-            if(opt.posMap)
+            if (opt.posMap)
                 writePositionalMap(filename, posMap);
-            if (opt.saveBin)
-                writeDaphne(res, filename);
+            if (opt.saveBin){
+                bool hasString = false;
+                // Check if there are any string columns
+                for (size_t i = 0; i < res->getNumCols(); i++) {
+                    if (static_cast<int>(res->getColumnType(i)) >= 8) {
+                        hasString = true;
+                        break;
+                    }
+                }
+                if (!hasString){ //daphnes binary format does not support strings yet
+                    writeDaphne(res, (std::string(filename) + ".daphne").c_str());
+                }
+            }
         }
         delete[] rawCols;
         delete[] colTypes;
