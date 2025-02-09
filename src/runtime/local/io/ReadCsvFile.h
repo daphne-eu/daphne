@@ -28,6 +28,8 @@
 
 #include <type_traits>
 
+#include "ReadDaphne.h"
+#include "WriteDaphne.h"
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -303,7 +305,7 @@ template <> struct ReadCsvFile<Frame> {
         if (res == nullptr) {
             res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
         }
-
+        bool saveBin = true;
         // Prepare raw column pointers and type information.
         uint8_t **rawCols = new uint8_t *[numCols];
         ValueTypeCode *colTypes = new ValueTypeCode[numCols];
@@ -313,7 +315,9 @@ template <> struct ReadCsvFile<Frame> {
         }
         // Use posMap if exists
         if (optimized && std::filesystem::exists(std::string(filename) + ".posmap")) {
-
+            if (saveBin && std::filesystem::exists(std::string(filename) + ".daphne")) {
+                readDaphne(res, filename);
+            }
             std::cout << "Reading CSV using positional map" << std::endl;
             std::cout << filename << delim << optimized << std::endl;
             #ifdef DEBUG
@@ -494,6 +498,7 @@ template <> struct ReadCsvFile<Frame> {
             if (optimized) {
                 std::cout << "Saving positional map file" << std::endl;
                 writePositionalMap(filename, posMap);
+                writeDaphne(res, filename);
             }
         }
         delete[] rawCols;
