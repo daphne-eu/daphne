@@ -1043,3 +1043,90 @@ TEST_CASE("ReadCsv, frame of varying columns using binary optimization", "[TAG_I
     DataObjectFactory::destroy(m_new);
     std::filesystem::remove(binFile);
 }
+
+TEST_CASE("ReadCsv, CSRMatrix of doubles using binary optimization", "[TAG_IO][csr][binOpt]") {
+    // Assume the CSV file "ReadCsvCSR.csv" contains 3 nonzero entries.
+    // For example, the matrix is 2x4 with nonzero pattern:
+    // row 0: col 1, col 2; row 1: col 3.
+    size_t numRows = 2;
+    size_t numCols = 4;
+    // The file must specify the number of nonzeros explicitly.
+    ssize_t numNonZeros = 3;
+    char filename[] = "test/runtime/local/io/ReadCsvCSR.csv";
+    char delim = ',';
+
+    std::string binFile = std::string(filename) + ".daphne";
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+
+    CSRMatrix<double>* m_new = nullptr;
+    CSRMatrix<double>* m = nullptr;
+
+    std::cout << "First CSV read for CSRMatrix with binary optimization (writing .daphne file)" << std::endl;
+    readCsv(m_new, filename, numRows, numCols, delim, numNonZeros, true, ReadOpts(true, false, true));
+    REQUIRE(std::filesystem::exists(binFile));
+
+    // Check basic dimensions
+    CHECK(m_new->getNumRows() == numRows);
+    CHECK(m_new->getNumCols() == numCols);
+    // Verify the CSR arrays. For instance, if the CSV file results in:
+    // rowOffsets: [0,2,3]  and colIdxs: [1,2,3] with all nonzeros having value 1.
+    size_t* rowOffsets = m_new->getRowOffsets();
+    CHECK(rowOffsets[0] == 0);
+    CHECK(rowOffsets[1] == 2);
+    CHECK(rowOffsets[2] == 3);
+    size_t* colIdxs = m_new->getColIdxs();
+    double* values = m_new->getValues();
+    for (size_t i = 0; i < static_cast<size_t>(numNonZeros); ++i) {
+        // Check that each column index is within bounds and each value equals 1.
+        CHECK(colIdxs[i] < numCols);
+        CHECK(values[i] == 1);
+    }
+
+    std::cout << "Second CSV read for CSRMatrix with binary optimization (reading .daphne file)" << std::endl;
+    readCsv(m, filename, numRows, numCols, delim, numNonZeros, true, ReadOpts(true, false, true));
+
+    CHECK(m->getNumRows() == numRows);
+    CHECK(m->getNumCols() == numCols);
+    size_t* rowOffsets2 = m->getRowOffsets();
+    for(size_t i = 0; i <= numRows; i++) {
+        CHECK(rowOffsets2[i] == rowOffsets[i]);
+    }
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(binFile);
+}
+
+TEST_CASE("ReadCsv, CSRMatrix of doubles using positional map", "[TAG_IO][csr][posMap]") {
+    size_t numRows = 2;
+    size_t numCols = 4;
+    ssize_t numNonZeros = 3;
+    char filename[] = "test/runtime/local/io/ReadCsvCSR.csv";
+    char delim = ',';
+
+    std::string posMapFile = std::string(filename) + ".posmap";
+    if (std::filesystem::exists(posMapFile))
+        std::filesystem::remove(posMapFile);
+
+    CSRMatrix<double>* m_new = nullptr;
+    CSRMatrix<double>* m = nullptr;
+
+    std::cout << "First CSV read for CSRMatrix with positional map (writing .posmap file)" << std::endl;
+    readCsv(m_new, filename, numRows, numCols, delim, numNonZeros, true, ReadOpts(true, true, false));
+    REQUIRE(std::filesystem::exists(posMapFile));
+
+    std::cout << "Second CSV read for CSRMatrix with positional map (using .posmap file)" << std::endl;
+    readCsv(m, filename, numRows, numCols, delim, numNonZeros, true, ReadOpts(true, true, false));
+
+    CHECK(m->getNumRows() == numRows);
+    CHECK(m->getNumCols() == numCols);
+    // Compare the row offsets from both reads.
+    for (size_t i = 0; i <= numRows; i++) {
+        CHECK(m->getRowOffsets()[i] == m_new->getRowOffsets()[i]);
+    }
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(posMapFile);
+}

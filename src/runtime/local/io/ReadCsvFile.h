@@ -259,6 +259,79 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
         if (res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
 
+        // --- Begin new optimized branch ---
+        if(opt.opt_enabled && filename != nullptr) {
+            std::string daphneFile = getDaphneFile(filename);
+            std::string posmapFile = getPosMapFile(filename);
+            if(opt.saveBin && std::filesystem::exists(daphneFile)) {
+                try {
+                    std::cout << "Reading CSRMatrix using binary (.daphne) file: " << daphneFile << std::endl;
+                    readDaphne(res, daphneFile.c_str());
+                    return;
+                } catch(std::exception &e) {
+                    std::cerr << "Error reading daphne file: " << e.what() << std::endl;
+                    // Fallback to default branch.
+                }
+            } else if(sorted && opt.posMap && std::filesystem::exists(posmapFile)) {
+                std::cout << "Reading CSRMatrix using positional map: " << posmapFile << std::endl;
+                // Read positional map: here we assume that the file stores a binary vector with:
+                // [numNonZeros (size_t)][offset0][offset1]...[offset_{numNonZeros-1}]
+                std::ifstream posFile(posmapFile, std::ios::binary);
+                if (!posFile.good())
+                    throw std::runtime_error("Failed to open positional map file for CSRMatrix.");
+                size_t offsetCount;
+                posFile.read(reinterpret_cast<char*>(&offsetCount), sizeof(size_t));
+                if (offsetCount != static_cast<size_t>(numNonZeros))
+                    throw std::runtime_error("Positional map nonzero count mismatch for CSRMatrix.");
+                std::vector<std::streampos> lineOffsets(offsetCount);
+                posFile.read(reinterpret_cast<char*>(lineOffsets.data()), offsetCount * sizeof(std::streampos));
+                posFile.close();
+
+                // Now use the precomputed offsets to read each nonzero entry.
+                auto *rowOffsets = res->getRowOffsets();
+                std::memset(rowOffsets, 0, (numRows + 1) * sizeof(size_t));
+                auto *colIdxs = res->getColIdxs();
+                auto *values = res->getValues();
+                size_t cell = 0;
+                for (size_t i = 0; i < lineOffsets.size(); i++) {
+                    if(fseek(file->identifier, lineOffsets[i], SEEK_SET) != 0)
+                        throw std::runtime_error("Failed to seek to CSRMatrix nonzero entry");
+                    if (getFileLine(file) == -1)
+                        throw std::runtime_error("Optimized branch (posMap) for CSRMatrix: getFileLine failed");
+                    size_t pos = 0;
+                    uint64_t row, col;
+                    convertCstr(file->line, &row);
+                    while (file->line[pos] != delim && file->line[pos] != '\0')
+                        pos++;
+                    pos++; // skip delimiter
+                    convertCstr(file->line + pos, &col);
+                    rowOffsets[row + 1] += 1;
+                    colIdxs[cell] = col;
+                    values[cell] = 1;
+                    cell++;
+                }
+                // Compute cumulative row offsets.
+                for (size_t r = 1; r <= numRows; ++r) {
+                    rowOffsets[r] += rowOffsets[r - 1];
+                }
+                // Save positional map again (if requested) and binary file.
+                if (opt.posMap) {
+                    std::ofstream outPos(posmapFile, std::ios::binary);
+                    size_t count = lineOffsets.size();
+                    outPos.write(reinterpret_cast<const char*>(&count), sizeof(size_t));
+                    outPos.write(reinterpret_cast<const char*>(lineOffsets.data()), count * sizeof(std::streampos));
+                    outPos.close();
+                }
+                if (opt.saveBin) {
+                    std::cout << "Writing binary file for CSRMatrix: " << daphneFile << std::endl;
+                    writeDaphne(res, daphneFile.c_str());
+                }
+                return;
+            }
+        }
+        // --- End new optimized branch ---
+
+        // Default branch if no optimizations (or optimization failure)
         // TODO/FIXME: file format should be inferred from file extension or
         // specified by user
         if (sorted) {
