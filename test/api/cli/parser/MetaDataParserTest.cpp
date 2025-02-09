@@ -75,6 +75,9 @@ TEST_CASE("Frame meta data file with default \"valueType\"", TAG_PARSER) {
 
 TEST_CASE("Missing meta data file that can be generated", TAG_PARSER) {
     const std::string metaDataFile = dirPath + "ReadCsv1.csv";
+    if (std::filesystem::exists(metaDataFile + ".meta")){
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
     REQUIRE(std::filesystem::exists(metaDataFile + ".meta"));
     if (std::filesystem::exists(metaDataFile + ".meta")){
