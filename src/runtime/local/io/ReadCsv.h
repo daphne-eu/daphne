@@ -80,7 +80,7 @@ void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, 
 template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, opt);
+        readCsvFile(res, file, numRows, numCols, delim, filename, opt);
         closeFile(file);
     }
 };
@@ -93,7 +93,7 @@ template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim,
                       ssize_t numNonZeros, bool sorted = true, ReadOpts opt = ReadOpts()) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted, opt);
+        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted, filename, opt);
         closeFile(file);
     }
 };
