@@ -52,14 +52,14 @@ struct ReadOpts {
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsvFile {
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim,
-                      ReadOpts opt = ReadOpts()) = delete;
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, 
+                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
 
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros, bool sorted = true,
-                      ReadOpts opt = ReadOpts()) = delete;
+                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
 
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
-                      const char *filename, ReadOpts opt = ReadOpts()) = delete;
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, 
+                      const char *filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
 };
 
 // ****************************************************************************
@@ -67,8 +67,8 @@ template <class DTRes> struct ReadCsvFile {
 // ****************************************************************************
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
-    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, opt);
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, filename, opt);
 }
 
 template <class DTRes>
@@ -78,9 +78,9 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 }
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros,
-                 bool sorted = true, ReadOpts opt = ReadOpts()) {
-    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted, opt);
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true,
+                 const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted, filename, opt);
 }
 
 // ****************************************************************************
@@ -92,8 +92,8 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ReadOpts opt = ReadOpts()) {
+    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim, 
+                      const char* filename, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be "
                                      "specified (must not be nullptr)");
@@ -106,6 +106,48 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         }
 
+        // Optimized branch: if enabled and filename is provided.
+        if (opt.opt_enabled && filename != nullptr) {
+            std::string daphneFile = getDaphneFile(filename);
+            std::string posmapFile = getPosMapFile(filename);
+            if (opt.saveBin && std::filesystem::exists(daphneFile)) {
+                try {
+                    readDaphne(res, daphneFile.c_str());
+                    return;
+                } catch (std::exception &e) {
+                    // Fallback to next branch.
+                }
+            } else if (opt.posMap && std::filesystem::exists(posmapFile)) {
+                // Read positional map
+                std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
+                VT *valuesRes = res->getValues();
+                // Read row by row using the pre-computed offsets.
+                for (size_t r = 0; r < numRows; r++) {
+                    file->pos = posMap[0][r];
+                    if (fseek(file->identifier, file->pos, SEEK_SET) != 0)
+                        throw std::runtime_error("Failed to seek to beginning of row");
+                    if (getFileLine(file) == -1)
+                        throw std::runtime_error("Optimized branch: getFileLine failed");
+                    size_t pos = 0;
+                    for (size_t c = 0; c < numCols; c++) {
+                        VT val;
+                        convertCstr(file->line + pos, &val);
+                        valuesRes[r * numCols + c] = val;
+                        // Advance pos until delimiter.
+                        while (file->line[pos] != delim && file->line[pos] != '\0')
+                            pos++;
+                        pos++; // skip delimiter
+                    }
+                }
+                // Save optimizations if requested.
+                writePositionalMap(filename, posMap);
+                if (opt.saveBin) {
+                    writeDaphne(res, daphneFile.c_str());
+                }
+                return;
+            }
+        }
+        // non-optimized branch
         size_t cell = 0;
         VT *valuesRes = res->getValues();
 
@@ -141,7 +183,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
 
 template <> struct ReadCsvFile<DenseMatrix<std::string>> {
     static void apply(DenseMatrix<std::string> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ReadOpts opt = ReadOpts()) {
+                      const char* filename, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
@@ -173,7 +215,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
 
 template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
     static void apply(DenseMatrix<FixedStr16> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ReadOpts opt = ReadOpts()) {
+                      const char* filename, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
@@ -209,7 +251,7 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
 
 template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ssize_t numNonZeros, bool sorted = true, ReadOpts opt = ReadOpts()) {
+                      ssize_t numNonZeros, bool sorted = true, const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
         if (numNonZeros == -1)
             throw std::runtime_error("ReadCsvFile: Currently, reading of sparse matrices requires a "
                                      "number of non zeros to be defined");
@@ -225,7 +267,7 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
             // this internally sorts, so it might be worth considering just
             // directly sorting the dense matrix Read file of COO format
             DenseMatrix<uint64_t> *rowColumnPairs = nullptr;
-            readCsvFile(rowColumnPairs, file, static_cast<size_t>(numNonZeros), 2, delim);
+            readCsvFile(rowColumnPairs, file, static_cast<size_t>(numNonZeros), 2, delim, filename);
             readCOOUnsorted(res, rowColumnPairs, numRows, numCols, static_cast<size_t>(numNonZeros));
             DataObjectFactory::destroy(rowColumnPairs);
         }

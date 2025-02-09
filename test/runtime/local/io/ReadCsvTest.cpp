@@ -57,6 +57,91 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (double)) {
     DataObjectFactory::destroy(m);
 }
 
+TEST_CASE("ReadCsv, densematrix of doubles using binary optimization", "[TAG_IO][binOpt]") {
+    size_t numRows = 2;
+    size_t numCols = 4;
+    char filename[] = "test/runtime/local/io/ReadCsv1.csv";
+    char delim = ',';
+
+    DenseMatrix<double>* m_new = nullptr;
+    DenseMatrix<double>* m = nullptr;
+
+    std::string binFile = std::string(filename) + ".daphne";
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+
+    std::cout << "First CSV read for DenseMatrix with binary optimization (writing .daphne file)" << std::endl;
+    readCsv(m_new, filename, numRows, numCols, delim, ReadOpts(true, false, true));
+    REQUIRE(std::filesystem::exists(binFile));
+
+    // Verify dimensions and cell values.
+    REQUIRE(m_new->getNumRows() == numRows);
+    REQUIRE(m_new->getNumCols() == numCols);
+    CHECK(m_new->get(0,0) == Approx(-0.1));
+    CHECK(m_new->get(0,1) == Approx(-0.2));
+    CHECK(m_new->get(0,2) == Approx(0.1));
+    CHECK(m_new->get(0,3) == Approx(0.2));
+    CHECK(m_new->get(1,0) == Approx(3.14));
+    CHECK(m_new->get(1,1) == Approx(5.41));
+    CHECK(m_new->get(1,2) == Approx(6.22216));
+    CHECK(m_new->get(1,3) == Approx(5));
+
+    std::cout << "Second CSV read for DenseMatrix with binary optimization (reading .daphne file)" << std::endl;
+    readCsv(m, filename, numRows, numCols, delim, ReadOpts(true, false, true));
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+    CHECK(m->get(0,0) == Approx(-0.1));
+    CHECK(m->get(0,1) == Approx(-0.2));
+    CHECK(m->get(0,2) == Approx(0.1));
+    CHECK(m->get(0,3) == Approx(0.2));
+    CHECK(m->get(1,0) == Approx(3.14));
+    CHECK(m->get(1,1) == Approx(5.41));
+    CHECK(m->get(1,2) == Approx(6.22216));
+    CHECK(m->get(1,3) == Approx(5));
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(binFile);
+}
+
+TEST_CASE("ReadCsv, densematrix of doubles using positional map", "[TAG_IO][posMap]") {
+    size_t numRows = 2;
+    size_t numCols = 4;
+    char filename[] = "test/runtime/local/io/ReadCsv1.csv";
+    char delim = ',';
+
+    // Remove any pre-existing positional map.
+    std::string posMapFile = std::string(filename) + ".posmap";
+    if (std::filesystem::exists(posMapFile))
+        std::filesystem::remove(posMapFile);
+
+    DenseMatrix<double>* m_new = nullptr;
+    DenseMatrix<double>* m = nullptr;
+
+    std::cout << "First CSV read for DenseMatrix with positional map (writing .posmap file)" << std::endl;
+    readCsv(m_new, filename, numRows, numCols, delim, ReadOpts(true, true, false));
+    REQUIRE(std::filesystem::exists(posMapFile));
+
+    std::cout << "Second CSV read for DenseMatrix with positional map (using .posmap file)" << std::endl;
+    readCsv(m, filename, numRows, numCols, delim, ReadOpts(true, true, false));
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+    CHECK(m->get(0,0) == Approx(-0.1));
+    CHECK(m->get(0,1) == Approx(-0.2));
+    CHECK(m->get(0,2) == Approx(0.1));
+    CHECK(m->get(0,3) == Approx(0.2));
+    CHECK(m->get(1,0) == Approx(3.14));
+    CHECK(m->get(1,1) == Approx(5.41));
+    CHECK(m->get(1,2) == Approx(6.22216));
+    CHECK(m->get(1,3) == Approx(5));
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(posMapFile);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (uint8_t)) {
     using DT = TestType;
     DT *m = nullptr;
