@@ -586,26 +586,33 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                             },
                             [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested)
                             {
-                                auto forLoop = OpBuilderThreetimesNested.create<scf::ForOp>(
-                                    locThreetimesNested, rhsColIdxLowerIncl, rhsColIdxUpperExcl, one, ValueRange{resValuesPtr},
-                                    [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, Value loopIdx, ValueRange loopIterArgs) 
-                                    {
-                                        auto resValue = OpBuilderFourtimesNested.create<memref::LoadOp>(
-                                            locFourtimesNested, lhsValuesMemRef, ValueRange{loopIdx});
-                                        auto resCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
-                                            locFourtimesNested, lhsColIdxsMemRef, ValueRange{loopIdx});  
-                                        auto resIndex = loopIterArgs[0];
-                                        OpBuilderFourtimesNested.create<memref::StoreOp>(
-                                            locFourtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
-                                        OpBuilderFourtimesNested.create<memref::StoreOp>(
-                                            locFourtimesNested, resCol, resColIdxsMemRef, ValueRange{resIndex});
-                                        auto newResValuesPtr = OpBuilderFourtimesNested.create<arith::AddIOp>(
-                                            locFourtimesNested, resIndex, one);
-                                        OpBuilderFourtimesNested.create<scf::YieldOp>(
-                                            locFourtimesNested, ValueRange{newResValuesPtr});
-                                    }
-                                );
-                                OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)});
+                                if (llvm::isa<daphne::EwAddOp>(op)){
+                                    auto forLoop = OpBuilderThreetimesNested.create<scf::ForOp>(
+                                        locThreetimesNested, rhsColIdxLowerIncl, rhsColIdxUpperExcl, one, ValueRange{resValuesPtr},
+                                        [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, Value loopIdx, ValueRange loopIterArgs) 
+                                        {
+                                            auto resValue = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                                locFourtimesNested, lhsValuesMemRef, ValueRange{loopIdx});
+                                            auto resCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                                locFourtimesNested, lhsColIdxsMemRef, ValueRange{loopIdx});  
+                                            auto resIndex = loopIterArgs[0];
+                                            OpBuilderFourtimesNested.create<memref::StoreOp>(
+                                                locFourtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                            OpBuilderFourtimesNested.create<memref::StoreOp>(
+                                                locFourtimesNested, resCol, resColIdxsMemRef, ValueRange{resIndex});
+                                            auto newResValuesPtr = OpBuilderFourtimesNested.create<arith::AddIOp>(
+                                                locFourtimesNested, resIndex, one);
+                                            OpBuilderFourtimesNested.create<scf::YieldOp>(
+                                                locFourtimesNested, ValueRange{newResValuesPtr});
+                                        }
+                                    );
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)});
+                                }
+                                else
+                                {
+                                    auto newResValuesPtr = resValuesPtr;
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{newResValuesPtr});
+                                }                  
                             }
                         );
                         OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, ValueRange{thenRegion.getResult(0)});
@@ -616,26 +623,33 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                             locNested, rhsAllZero,
                             [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested)
                             {
-                                auto forLoop = OpBuilderThreetimesNested.create<scf::ForOp>(
+                                if (llvm::isa<daphne::EwAddOp>(op)){
+                                    auto forLoop = OpBuilderThreetimesNested.create<scf::ForOp>(
                                     locThreetimesNested, lhsColIdxLowerIncl, lhsColIdxUpperExcl, one, ValueRange{resValuesPtr},
-                                    [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, Value loopIdx, ValueRange loopIterArgs) 
-                                    {
-                                        auto resValue = OpBuilderFourtimesNested.create<memref::LoadOp>(
-                                            locFourtimesNested, lhsValuesMemRef, ValueRange{loopIdx});
-                                        auto resCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
-                                            locFourtimesNested, lhsColIdxsMemRef, ValueRange{loopIdx});  
-                                        auto resIndex = loopIterArgs[0];
-                                        OpBuilderFourtimesNested.create<memref::StoreOp>(
-                                            locFourtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
-                                        OpBuilderFourtimesNested.create<memref::StoreOp>(
-                                            locFourtimesNested, resCol, resColIdxsMemRef, ValueRange{resIndex});
-                                        auto newResValuesPtr = OpBuilderFourtimesNested.create<arith::AddIOp>(
-                                            locFourtimesNested, resIndex, one);
-                                        OpBuilderFourtimesNested.create<scf::YieldOp>(
-                                            locFourtimesNested, ValueRange{newResValuesPtr});
-                                    }
-                                );
-                                OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)});
+                                        [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, Value loopIdx, ValueRange loopIterArgs) 
+                                        {
+                                            auto resValue = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                                locFourtimesNested, lhsValuesMemRef, ValueRange{loopIdx});
+                                            auto resCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                                locFourtimesNested, lhsColIdxsMemRef, ValueRange{loopIdx});  
+                                            auto resIndex = loopIterArgs[0];
+                                            OpBuilderFourtimesNested.create<memref::StoreOp>(
+                                                locFourtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                            OpBuilderFourtimesNested.create<memref::StoreOp>(
+                                                locFourtimesNested, resCol, resColIdxsMemRef, ValueRange{resIndex});
+                                            auto newResValuesPtr = OpBuilderFourtimesNested.create<arith::AddIOp>(
+                                                locFourtimesNested, resIndex, one);
+                                            OpBuilderFourtimesNested.create<scf::YieldOp>(
+                                                locFourtimesNested, ValueRange{newResValuesPtr});
+                                        }
+                                    );
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)});
+                                }
+                                else
+                                {
+                                    auto newResValuesPtr = resValuesPtr;
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{newResValuesPtr});
+                                }  
                             },
                             [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested)
                             {
