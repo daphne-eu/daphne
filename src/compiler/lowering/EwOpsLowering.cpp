@@ -565,13 +565,17 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                 auto rhsColUpper = OpBuilderNested.create<memref::LoadOp>(
                     locNested, rhsColIdxsMemRef, ValueRange{rhsColIdxUpperIncl});
                 
+                
                 auto lhsEndFirst = OpBuilderNested.create<arith::CmpIOp>(
-                    locNested, arith::CmpIPredicate::ult, lhsColIdxLowerIncl, lhsColIdxUpperExcl);
+                    // locNested, arith::CmpIPredicate::ult, lhsColIdxLowerIncl, lhsColIdxUpperExcl);
+                    locNested, arith::CmpIPredicate::ult, lhsColUpper, rhsColUpper);
                 
                 auto lhsAllZero = OpBuilderNested.create<arith::CmpIOp>(
-                    locNested, arith::CmpIPredicate::eq, lhsColUpper, rhsColUpper);
+                    // locNested, arith::CmpIPredicate::eq, lhsColUpper, rhsColUpper);
+                    locNested, arith::CmpIPredicate::eq, lhsColIdxLowerIncl, lhsColIdxUpperExcl);
                 auto rhsAllZero = OpBuilderNested.create<arith::CmpIOp>(
-                    locNested, arith::CmpIPredicate::eq, lhsColUpper, rhsColUpper);
+                    // locNested, arith::CmpIPredicate::eq, lhsColUpper, rhsColUpper);
+                    locNested, arith::CmpIPredicate::eq, rhsColIdxLowerIncl, rhsColIdxUpperExcl);
 
                 auto operation = OpBuilderNested.create<scf::IfOp>(
                     locNested, lhsAllZero,
@@ -592,9 +596,9 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                                         [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, Value loopIdx, ValueRange loopIterArgs) 
                                         {
                                             auto resValue = OpBuilderFourtimesNested.create<memref::LoadOp>(
-                                                locFourtimesNested, lhsValuesMemRef, ValueRange{loopIdx});
+                                                locFourtimesNested, rhsValuesMemRef, ValueRange{loopIdx});
                                             auto resCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
-                                                locFourtimesNested, lhsColIdxsMemRef, ValueRange{loopIdx});  
+                                                locFourtimesNested, rhsColIdxsMemRef, ValueRange{loopIdx});  
                                             auto resIndex = loopIterArgs[0];
                                             OpBuilderFourtimesNested.create<memref::StoreOp>(
                                                 locFourtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
