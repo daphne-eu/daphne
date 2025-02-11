@@ -107,21 +107,35 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
         }
 
         // Optimized branch: if enabled and filename is provided.
+        bool useOptimized = false;
+        bool useBin = false;
+        bool usePosMap = false;
+        std::string fName = "";
         if (opt.opt_enabled && filename != nullptr) {
             std::string daphneFile = getDaphneFile(filename);
             std::string posmapFile = getPosMapFile(filename);
             if (opt.saveBin && std::filesystem::exists(daphneFile)) {
+                useOptimized = true;
+                useBin = true;
+                fName = daphneFile;
+            } else if (opt.posMap && std::filesystem::exists(posmapFile)) {
+                useOptimized = true;
+                usePosMap = true;
+                fName = posmapFile;
+            }
+        }
+        if (useOptimized) {
+            if (useBin) {
                 try {
-                    readDaphne(res, daphneFile.c_str());
+                    readDaphne(res, fName.c_str());
                     return;
                 } catch (std::exception &e) {
-                    // Fallback to next branch.
+                    // Fallback to default branch.
                 }
-            } else if (opt.posMap && std::filesystem::exists(posmapFile)) {
-                // Read positional map
+            } else if (usePosMap) {
+                // Read positional map similar to Frame specialization.
                 std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
                 VT *valuesRes = res->getValues();
-                // Read row by row using the pre-computed offsets.
                 for (size_t r = 0; r < numRows; r++) {
                     file->pos = posMap[0][r];
                     if (fseek(file->identifier, file->pos, SEEK_SET) != 0)
@@ -139,11 +153,13 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                         pos++; // skip delimiter
                     }
                 }
-                // Save optimizations if requested.
                 writePositionalMap(filename, posMap);
-                if (opt.saveBin) {
-                    writeDaphne(res, daphneFile.c_str());
-                }
+                if (opt.saveBin)
+                    try{
+                        writeDaphne(res, getDaphneFile(filename).c_str());
+                    } catch (std::exception &e) {
+                        // read data can still be used
+                    }
                 return;
             }
         }
@@ -178,6 +194,14 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                 }
             }
         }
+        if (opt.opt_enabled) {
+            // Write binary file if enabled and the matrix has no strings.
+            if (opt.saveBin) {
+                // For DenseMatrix<VT>, we assume instantiation for non-string types here.
+                if (!std::filesystem::exists(getDaphneFile(filename)))
+                    writeDaphne(res, getDaphneFile(filename).c_str());
+            }
+        }
     }
 };
 
@@ -194,22 +218,66 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<std::string>>(numRows, numCols, false);
         }
-
+        // Optimized branch for string-based DenseMatrix using a positional map
+        bool useOptimized = false;
+        bool usePosMap = false;
+        std::string fName = "";
+        if (opt.opt_enabled && filename != nullptr && opt.posMap) {
+            std::string posmapFile = getPosMapFile(filename);
+            if (std::filesystem::exists(posmapFile)) {
+                useOptimized = true;
+                usePosMap = true;
+                fName = posmapFile;
+            }
+        }
+        if (useOptimized) {
+            // Read stored positional map.
+            std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
+            std::string *valuesRes = res->getValues();
+            size_t cell = 0;
+            for (size_t r = 0; r < numRows; r++) {
+                file->pos = posMap[0][r];
+                if (fseek(file->identifier, file->pos, SEEK_SET) != 0)
+                    throw std::runtime_error("Failed to seek to beginning of row");
+                if (getFileLine(file) == -1)
+                    throw std::runtime_error("Optimized branch: getFileLine failed");
+                for (size_t c = 0; c < numCols; c++) {
+                    size_t relativeOffset = static_cast<size_t>(posMap[c][r] - posMap[0][r]);
+                    size_t pos = relativeOffset;
+                    std::string val;
+                    pos = setCString(file, pos, &val, delim);
+                    // For the last column no delimiter is expected.
+                    if(c < numCols - 1)
+                        pos++; // skip delimiter
+                    valuesRes[cell++] = val;
+                }
+            }
+            // Update the positional map.
+            writePositionalMap(filename, posMap);
+            return;
+        }
         size_t cell = 0;
         std::string *valuesRes = res->getValues();
-
+        std::vector<std::vector<std::streampos>> posMap;
+        if(opt.posMap)
+            posMap.resize(numCols);
+        std::streampos currentPos = file->pos;
         for (size_t r = 0; r < numRows; r++) {
             if (getFileLine(file) == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
 
             size_t pos = 0;
             for (size_t c = 0; c < numCols; c++) {
+                if(opt.posMap)
+                    posMap[c].push_back(currentPos + static_cast<std::streamoff>(pos));
                 std::string val("");
                 pos = setCString(file, pos, &val, delim) + 1;
                 // TODO This assumes that rowSkip == numCols.
                 valuesRes[cell++] = val;
             }
         }
+        if(opt.posMap)
+            writePositionalMap(filename, posMap);
     }
 };
 
@@ -227,20 +295,62 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
             res = DataObjectFactory::create<DenseMatrix<FixedStr16>>(numRows, numCols, false);
         }
 
+        // Optimized branch for FixedStr16-based DenseMatrix using a positional map
+        bool useOptimized = false;
+        bool usePosMap = false;
+        std::string fName = "";
+        if (opt.opt_enabled && filename != nullptr && opt.posMap) {
+            std::string posmapFile = getPosMapFile(filename);
+            if (std::filesystem::exists(posmapFile)) {
+                useOptimized = true;
+                usePosMap = true;
+                fName = posmapFile;
+            }
+        }
+        if (useOptimized) {
+            std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
+            FixedStr16 *valuesRes = res->getValues();
+            for (size_t r = 0; r < numRows; r++) {
+                file->pos = posMap[0][r];
+                if (fseek(file->identifier, file->pos, SEEK_SET) != 0)
+                    throw std::runtime_error("Failed to seek to beginning of row");
+                if (getFileLine(file) == -1)
+                    throw std::runtime_error("Optimized branch: getFileLine failed");
+                for (size_t c = 0; c < numCols; c++) {
+                    size_t relativeOffset = static_cast<size_t>(posMap[c][r] - posMap[0][r]);
+                    size_t pos = relativeOffset;
+                    std::string val;
+                    pos = setCString(file, pos, &val, delim);
+                    if(c < numCols - 1)
+                        pos++;
+                    valuesRes[r].set(val.c_str());
+                }
+            }
+            writePositionalMap(filename, posMap);
+            return;
+        }
+        
         size_t cell = 0;
         FixedStr16 *valuesRes = res->getValues();
-
+        std::vector<std::vector<std::streampos>> posMap;
+        if(opt.posMap)
+            posMap.resize(numCols);
+        std::streampos currentPos = file->pos;
         for (size_t r = 0; r < numRows; r++) {
             if (getFileLine(file) == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
 
             size_t pos = 0;
             for (size_t c = 0; c < numCols; c++) {
+                if(opt.posMap)
+                    posMap[c].push_back(currentPos + static_cast<std::streamoff>(pos));
                 std::string val("");
                 pos = setCString(file, pos, &val, delim) + 1;
                 // TODO This assumes that rowSkip == numCols.
                 valuesRes[cell++].set(val.c_str());
             }
+            if(opt.posMap)
+                writePositionalMap(filename, posMap);
         }
     }
 };
@@ -260,23 +370,37 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
 
         // --- Begin new optimized branch ---
-        if(opt.opt_enabled && filename != nullptr) {
+        bool useOptimized = false;
+        bool useBin = false;
+        bool usePosMap = false;
+        std::string fName = "";
+        if (opt.opt_enabled && filename != nullptr) {
             std::string daphneFile = getDaphneFile(filename);
             std::string posmapFile = getPosMapFile(filename);
-            if(opt.saveBin && std::filesystem::exists(daphneFile)) {
+            if (opt.saveBin && std::filesystem::exists(daphneFile)) {
+                useOptimized = true;
+                useBin = true;
+                fName = daphneFile;
+            } else if (opt.posMap && std::filesystem::exists(posmapFile)) {
+                useOptimized = true;
+                usePosMap = true;
+                fName = posmapFile;
+            }
+        }
+        if (useOptimized) {
+            if (useBin) {
                 try {
-                    std::cout << "Reading CSRMatrix using binary (.daphne) file: " << daphneFile << std::endl;
-                    readDaphne(res, daphneFile.c_str());
+                    std::cout << "Reading CSRMatrix using binary (.daphne) file: " << fName << std::endl;
+                    readDaphne(res, fName.c_str());
                     return;
-                } catch(std::exception &e) {
+                } catch (std::exception &e) {
                     std::cerr << "Error reading daphne file: " << e.what() << std::endl;
                     // Fallback to default branch.
                 }
-            } else if(sorted && opt.posMap && std::filesystem::exists(posmapFile)) {
-                std::cout << "Reading CSRMatrix using positional map: " << posmapFile << std::endl;
-                // Read positional map: here we assume that the file stores a binary vector with:
-                // [numNonZeros (size_t)][offset0][offset1]...[offset_{numNonZeros-1}]
-                std::ifstream posFile(posmapFile, std::ios::binary);
+            } else if (usePosMap) {
+                std::cout << "Reading CSRMatrix using positional map: " << fName << std::endl;
+                // Read positional map file.
+                std::ifstream posFile(fName, std::ios::binary);
                 if (!posFile.good())
                     throw std::runtime_error("Failed to open positional map file for CSRMatrix.");
                 size_t offsetCount;
@@ -286,8 +410,7 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
                 std::vector<std::streampos> lineOffsets(offsetCount);
                 posFile.read(reinterpret_cast<char*>(lineOffsets.data()), offsetCount * sizeof(std::streampos));
                 posFile.close();
-
-                // Now use the precomputed offsets to read each nonzero entry.
+                
                 auto *rowOffsets = res->getRowOffsets();
                 std::memset(rowOffsets, 0, (numRows + 1) * sizeof(size_t));
                 auto *colIdxs = res->getColIdxs();
@@ -310,21 +433,17 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
                     values[cell] = 1;
                     cell++;
                 }
-                // Compute cumulative row offsets.
-                for (size_t r = 1; r <= numRows; ++r) {
+                for (size_t r = 1; r <= numRows; ++r)
                     rowOffsets[r] += rowOffsets[r - 1];
-                }
-                // Save positional map again (if requested) and binary file.
-                if (opt.posMap) {
-                    std::ofstream outPos(posmapFile, std::ios::binary);
-                    size_t count = lineOffsets.size();
-                    outPos.write(reinterpret_cast<const char*>(&count), sizeof(size_t));
-                    outPos.write(reinterpret_cast<const char*>(lineOffsets.data()), count * sizeof(std::streampos));
-                    outPos.close();
-                }
+
+                // Write positional map and binary file if requested.
+                std::vector<std::vector<std::streampos>> posMap;
+                posMap.push_back(lineOffsets);
+                writePositionalMap(filename, posMap);
+                
                 if (opt.saveBin) {
-                    std::cout << "Writing binary file for CSRMatrix: " << daphneFile << std::endl;
-                    writeDaphne(res, daphneFile.c_str());
+                    std::cout << "Writing binary file for CSRMatrix: " << getDaphneFile(filename) << std::endl;
+                    writeDaphne(res, getDaphneFile(filename).c_str());
                 }
                 return;
             }
@@ -426,6 +545,8 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
 template <> struct ReadCsvFile<Frame> {
     static void apply(Frame *&res, struct File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
                       const char *filename, ReadOpts opt = ReadOpts()) {
+        if (file == nullptr)
+            throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr): " + std::string(filename));
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
