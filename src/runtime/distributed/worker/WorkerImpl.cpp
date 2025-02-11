@@ -237,11 +237,11 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &identifier, size_t num
         if (isSparse) {
             if (isFloat) {
                 CSRMatrix<double> *m2 = nullptr;
-                read<CSRMatrix<double>>(m2, identifier.c_str(), nullptr);
+                read<CSRMatrix<double>>(m2, identifier.c_str(), false, nullptr);
                 m = m2;
             } else {
                 CSRMatrix<int64_t> *m2 = nullptr;
-                read<CSRMatrix<int64_t>>(m2, identifier.c_str(), nullptr);
+                read<CSRMatrix<int64_t>>(m2, identifier.c_str(), false, nullptr);
                 m = m2;
             }
         } else {
