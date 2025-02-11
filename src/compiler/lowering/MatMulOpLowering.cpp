@@ -301,12 +301,124 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         return loops;
     }
 
+    template <typename IOp, typename FOp>
+    Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) const {
+        Type resType = lhs.getType();
+        Value res{};
+        if (llvm::isa<mlir::IntegerType>(resType)) {
+            lhs = convertToSignlessInt(rewriter, loc, typeConverter, lhs, resType);
+            rhs = convertToSignlessInt(rewriter, loc, typeConverter, rhs, resType);
+            res = rewriter.create<IOp>(loc, lhs, rhs).getResult();
+            res = typeConverter->materializeTargetConversion(rewriter, loc, resType, res);
+        } else {
+            res = rewriter.create<FOp>(loc, lhs, rhs).getResult();
+        }
+        return res;
+    }
+    
+    LogicalResult matchAndRewriteSparseDenseMat(daphne::MatMulOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const {
+        Location loc = op->getLoc();
+        Value lhs = adaptor.getLhs();
+        Value rhs = adaptor.getRhs();
+
+        mlir::daphne::MatrixType lhsMatrixType = lhs.getType().dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType rhsMatrixType = rhs.getType().dyn_cast<mlir::daphne::MatrixType>();
+
+        auto lhsRows = lhsMatrixType.getNumRows();
+        auto lhsCols = lhsMatrixType.getNumCols();
+
+        auto rhsRows = rhsMatrixType.getNumRows();
+        auto rhsCols = rhsMatrixType.getNumCols();
+
+        auto matrixElementType = lhsMatrixType.getElementType();
+
+        auto lhsValuesMemRefType =
+            MemRefType::get({ShapedType::kDynamic}, matrixElementType);
+        auto lhsColIdxsMemRefType = 
+            MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
+        auto lhsRowOffsetsMemRefType = 
+            MemRefType::get({lhsRows + 1}, rewriter.getIndexType());
+        auto rhsMemRefType = mlir::MemRefType::get({rhsRows, rhsCols}, matrixElementType);
+        auto resMemRefType = mlir::MemRefType::get({lhsRows, rhsCols}, matrixElementType);
+
+        auto lhsValuesMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(loc, lhsValuesMemRefType, lhs);
+        auto lhsColIdxsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(loc, lhsColIdxsMemRefType, lhs);
+        auto lhsRowOffsetsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(loc, lhsRowOffsetsMemRefType, lhs);
+        auto rhsMemRef = 
+            rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, rhsMemRefType, rhs);
+        auto resMemRef = rewriter.create<memref::AllocOp>(loc, resMemRefType);
+
+        auto zeroElement = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(matrixElementType));
+        rewriter.create<linalg::FillOp>(loc, ValueRange{zeroElement}, ValueRange{resMemRef});
+
+        auto zero = rewriter.create<arith::ConstantIndexOp>(loc, 0);
+        auto one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
+        auto numLhsRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsRows);
+        auto numRhsColsValue = rewriter.create<arith::ConstantIndexOp>(loc, rhsCols);
+
+        auto lhsRowLoop = rewriter.create<scf::ForOp>(
+            loc, zero, numLhsRowsValue, one, ValueRange{},
+            [&](OpBuilder &OpBuilderNested, Location locNested, Value loopIdx, ValueRange loopIterArgs) 
+            {
+                auto rowPtr = loopIdx;
+                auto nextRowPtr = OpBuilderNested.create<arith::AddIOp>(locNested, rowPtr, one);
+                auto rhsColLoop = OpBuilderNested.create<scf::ForOp>(
+                    locNested, zero, numRhsColsValue, one, ValueRange{},
+                    [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested, Value loopIdx, ValueRange loopIterArgs) 
+                    {
+                        auto rhsCol = loopIdx;
+                        auto lhsColIdxsLowerIncl = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, lhsRowOffsetsMemRef, ValueRange{rowPtr});
+                        auto lhsColIdxsUpperExcl = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, lhsRowOffsetsMemRef, ValueRange{nextRowPtr});
+                        
+                        auto resValueLoop = OpBuilderTwiceNested.create<scf::ForOp>(
+                            locTwiceNested, lhsColIdxsLowerIncl, lhsColIdxsUpperExcl, one, ValueRange{zeroElement},
+                            [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested, Value loopIdx, ValueRange loopIterArgs) 
+                            {
+                                auto lhsValue = OpBuilderThreetimesNested.create<memref::LoadOp>(
+                                    locThreetimesNested, lhsValuesMemRef, ValueRange{loopIdx});
+                                auto rhsRow = OpBuilderThreetimesNested.create<memref::LoadOp>(
+                                    locThreetimesNested, lhsColIdxsMemRef, ValueRange{loopIdx});
+                                auto rhsValue = OpBuilderThreetimesNested.create<memref::LoadOp>(
+                                    locThreetimesNested, rhsMemRef, ValueRange{rhsRow, rhsCol});
+                                
+                                auto resValue = binaryWithConversionFunc<arith::MulIOp, arith::MulFOp>(
+                                    OpBuilderThreetimesNested, locThreetimesNested, this->typeConverter, lhsValue, rhsValue);
+                                
+                                auto accResValue = binaryWithConversionFunc<arith::AddIOp, arith::AddFOp>(
+                                    OpBuilderThreetimesNested, locThreetimesNested, this->typeConverter, loopIterArgs[0], resValue);
+                                
+                                OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{accResValue});
+                            }
+                        );
+                        OpBuilderTwiceNested.create<memref::StoreOp>(
+                            locTwiceNested, resValueLoop.getResult(0), resMemRef, ValueRange{rowPtr, rhsCol});    
+                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, ValueRange{});
+                    }
+                );
+                OpBuilderNested.create<scf::YieldOp>(locNested, ValueRange{});
+            }
+        );
+        // Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemRef, op.getType());
+        Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemRef, rhs.getType());
+        rewriter.replaceOp(op, resDenseMatrix);
+        return mlir::success();
+    }
+    
     LogicalResult matchAndRewrite(daphne::MatMulOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
         mlir::daphne::MatrixType lhsMatrixType = adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
         mlir::daphne::MatrixType rhsMatrixType = adaptor.getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
 
+        if (lhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse &&
+            rhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Dense)
+            return matchAndRewriteSparseDenseMat(op, adaptor, rewriter);
+        
         auto lhsRows = lhsMatrixType.getNumRows();
         auto lhsCols = lhsMatrixType.getNumCols();
 
