@@ -3974,6 +3974,10 @@
                 {
                     "type": "const char *",
                     "name": "filename"
+                },
+                {
+                    "type": "bool",
+                    "name": "labels"
                 }
             ]
         },
