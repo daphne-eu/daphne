@@ -149,7 +149,7 @@ TEST_CASE("generate meta data for frame with type uint8", "[metadata]") {
 }
 
 TEST_CASE("generate meta data for matrix with type uint8", "[metadata]") {
-    std::string csvFilename = dirPath + "generateMetaData5.csv";
+    std::string csvFilename = dirPath + "generateMetaData5_matrix.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
     FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
     REQUIRE(generatedMetaData.numRows == 2);
@@ -192,10 +192,10 @@ TEST_CASE("generate meta data for frame with type float", "[metadata]") {
 }
 
 TEST_CASE("generate meta data for matrix with type float", "[metadata]") {
-    std::string csvFilename = dirPath + "generateMetaData7.csv";
+    std::string csvFilename = dirPath + "generateMetaData7_matrix.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
     FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
-    REQUIRE(generatedMetaData.numRows == 2); // TODO: look at precision
+    REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 3);
     REQUIRE(generatedMetaData.isSingleValueType == true);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::F32);
