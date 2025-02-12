@@ -197,7 +197,15 @@ FileMetaData generateFileMetaData(const std::string &filename, bool hasLabels, b
         }
         file.close();
     } else {
-        std::cerr << "Unable to open file: " << filename << std::endl;
+        return FileMetaData(0, 0, true, ValueTypeCode::INVALID); // return empty metadata if file cannot be opened
+    }
+    if (labels.empty()) { // fill empty labels with default column names
+        size_t index = 0;
+        if (labels.size() < numCols)
+            index = labels.size();
+        for (size_t i = index; i < numCols; i++) {
+            labels.push_back("col_" + std::to_string(i));
+        }
     }
 
     return FileMetaData(numRows, numCols, isSingleValueType, schema, labels);
