@@ -15,4 +15,3 @@
  */
 
 print("Hello World!");
-readFrame("csv_data1.csv");
