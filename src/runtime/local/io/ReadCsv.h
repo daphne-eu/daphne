@@ -41,6 +41,7 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsv {
+    static void apply(DTRes *&res, const char *filename, char delim) = delete;
     static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim) = delete;
 
     static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, ssize_t numNonZeros,
@@ -53,6 +54,10 @@ template <class DTRes> struct ReadCsv {
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
+
+template <class DTRes> void readCsv(DTRes *&res, const char *filename, char delim) {
+    ReadCsv<DTRes>::apply(res, filename, delim);
+}
 
 template <class DTRes> void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim) {
     ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim);
@@ -83,6 +88,9 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
         readCsvFile(res, file, numRows, numCols, delim);
         closeFile(file);
     }
+    static void apply(DenseMatrix<VT> *&res, const char *filename, char delim) {
+        readCsvFile(res, filename, delim);
+    }
 };
 
 // ----------------------------------------------------------------------------
@@ -96,6 +104,9 @@ template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
         readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted);
         closeFile(file);
     }
+    static void apply(CSRMatrix<VT> *&res, const char *filename, char delim) {
+        readCsvFile(res, filename, delim);
+    }
 };
 
 // ----------------------------------------------------------------------------
@@ -108,5 +119,8 @@ template <> struct ReadCsv<Frame> {
         struct File *file = openFile(filename);
         readCsvFile(res, file, numRows, numCols, delim, schema);
         closeFile(file);
+    }
+    static void apply(Frame *&res, const char *filename, char delim) {
+            readCsvFile(res, filename, delim);
     }
 };

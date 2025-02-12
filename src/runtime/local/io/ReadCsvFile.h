@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
+#include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
 
 #include <util/preprocessor_defs.h>
@@ -40,6 +41,9 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsvFile {
+
+    static void apply(DTRes *&res, const char *filename, char delim) = delete;
+
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim) = delete;
 
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros,
@@ -52,6 +56,9 @@ template <class DTRes> struct ReadCsvFile {
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
+template <class DTRes> void readCsvFile(DTRes *&res, const char *filename, char delim) {
+    ReadCsvFile<DTRes>::apply(res, filename, delim);
+}
 
 template <class DTRes> void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim) {
     ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim);
@@ -400,5 +407,11 @@ template <> struct ReadCsvFile<Frame> {
 
         delete[] rawCols;
         delete[] colTypes;
+    }
+    static void apply(Frame *&res, const char *filename, char delim) {
+        File *file = openFile(filename);
+        apply(res, file, delim, true);// do read without fmd, building meta data in the process
+        // store
+        closeFile(file);
     }
 };
