@@ -1,6 +1,7 @@
 #include <catch.hpp>
 #include <fstream>
 #include <iostream>
+#include <utility>
 #include <parser/metadata/MetaDataParser.h>
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/utils.h>
@@ -11,7 +12,7 @@ class FileCleanupFixture {
   public:
     std::string fileName;
 
-    FileCleanupFixture(const std::string &filename) : fileName(filename) {
+    explicit FileCleanupFixture(std::string filename) : fileName(std::move(filename)) {
         cleanup();
     }
 
@@ -20,7 +21,7 @@ class FileCleanupFixture {
     }
 
   private:
-    void cleanup() {
+    void cleanup() const {
         if (std::filesystem::exists(fileName + ".meta")) {
             std::filesystem::remove(fileName + ".meta");
         }
@@ -31,9 +32,9 @@ TEST_CASE("generated metadata saved correctly", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
     // saving generated metadata with first read
-    FileMetaData generatedMetaData = MetaDataParser::readMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = MetaDataParser::readMetaData(csvFilename);
     // reading metadata from saved file
-    FileMetaData readMD = MetaDataParser::readMetaData(csvFilename, true);
+    FileMetaData readMD = MetaDataParser::readMetaData(csvFilename);
 
     REQUIRE(generatedMetaData.numCols == readMD.numCols);
     REQUIRE(generatedMetaData.numRows == readMD.numRows);
@@ -43,10 +44,11 @@ TEST_CASE("generated metadata saved correctly", "[metadata]") {
     REQUIRE(std::filesystem::exists(csvFilename + ".meta"));
 }
 
-TEST_CASE("generate meta data for frame with labels", "[metadata]") {
+TEST_CASE("generate meta data for frame", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 3);
+    std::cout << generatedMetaData.numCols << std::endl;
     REQUIRE(generatedMetaData.numRows == 3);
     REQUIRE(generatedMetaData.numCols == 3);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::SI8);
@@ -60,7 +62,7 @@ TEST_CASE("generate meta data for frame with labels", "[metadata]") {
 TEST_CASE("generate meta data for frame with type uint64", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData1.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename,',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::UI64);
@@ -70,7 +72,7 @@ TEST_CASE("generate meta data for frame with type uint64", "[metadata]") {
 TEST_CASE("generate meta data for matrix with type uint64", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData1.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.isSingleValueType == true);
@@ -80,7 +82,7 @@ TEST_CASE("generate meta data for matrix with type uint64", "[metadata]") {
 TEST_CASE("generate meta data for frame with type int64", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData2.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::SI64);
@@ -90,7 +92,7 @@ TEST_CASE("generate meta data for frame with type int64", "[metadata]") {
 TEST_CASE("generate meta data for matrix with type int64", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData2.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.isSingleValueType == true);
@@ -100,7 +102,7 @@ TEST_CASE("generate meta data for matrix with type int64", "[metadata]") {
 TEST_CASE("generate meta data for frame with type uint32", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData3.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::UI32);
@@ -110,7 +112,7 @@ TEST_CASE("generate meta data for frame with type uint32", "[metadata]") {
 TEST_CASE("generate meta data for matrix with type uint32", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData3.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.isSingleValueType == true);
@@ -120,7 +122,7 @@ TEST_CASE("generate meta data for matrix with type uint32", "[metadata]") {
 TEST_CASE("generate meta data for frame with type int32", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData4.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::SI32);
@@ -130,7 +132,7 @@ TEST_CASE("generate meta data for frame with type int32", "[metadata]") {
 TEST_CASE("generate meta data for matrix with type int32", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData4.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.isSingleValueType == true);
@@ -140,7 +142,7 @@ TEST_CASE("generate meta data for matrix with type int32", "[metadata]") {
 TEST_CASE("generate meta data for frame with type uint8", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData5.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 3);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::UI8);
@@ -151,7 +153,7 @@ TEST_CASE("generate meta data for frame with type uint8", "[metadata]") {
 TEST_CASE("generate meta data for matrix with type uint8", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData5_matrix.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.isSingleValueType == true);
@@ -161,7 +163,7 @@ TEST_CASE("generate meta data for matrix with type uint8", "[metadata]") {
 TEST_CASE("generate meta data for frame with type int8", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData6.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 3);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::SI8);
@@ -172,7 +174,7 @@ TEST_CASE("generate meta data for frame with type int8", "[metadata]") {
 TEST_CASE("generate meta data for matrix with type int8", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData6.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 3);
     REQUIRE(generatedMetaData.isSingleValueType == true);
@@ -182,7 +184,7 @@ TEST_CASE("generate meta data for matrix with type int8", "[metadata]") {
 TEST_CASE("generate meta data for frame with type float", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData7.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 4);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::F32);
@@ -194,7 +196,7 @@ TEST_CASE("generate meta data for frame with type float", "[metadata]") {
 TEST_CASE("generate meta data for matrix with type float", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData7_matrix.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 3);
     REQUIRE(generatedMetaData.isSingleValueType == true);
@@ -204,7 +206,7 @@ TEST_CASE("generate meta data for matrix with type float", "[metadata]") {
 TEST_CASE("generate meta data for frame with type double", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData8.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.schema[0] == ValueTypeCode::F64);
@@ -214,7 +216,7 @@ TEST_CASE("generate meta data for frame with type double", "[metadata]") {
 TEST_CASE("generate meta data for matrix with type double", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData8.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 2);
     REQUIRE(generatedMetaData.isSingleValueType == true);
@@ -224,7 +226,7 @@ TEST_CASE("generate meta data for matrix with type double", "[metadata]") {
 TEST_CASE("generate meta data for frame with mixed types", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData9.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, true);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 6);
     REQUIRE(generatedMetaData.isSingleValueType == false);
@@ -242,7 +244,7 @@ TEST_CASE("generate meta data for frame with mixed types", "[metadata]") {
 TEST_CASE("generate meta data for matrix with mixed types", "[metadata]") {
     std::string csvFilename = dirPath + "generateMetaData9.csv";
     FileCleanupFixture cleanup(csvFilename); // cleans up before and after the test
-    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, false);
+    FileMetaData generatedMetaData = generateFileMetaData(csvFilename, ',', 2);
     REQUIRE(generatedMetaData.numRows == 2);
     REQUIRE(generatedMetaData.numCols == 5);
     REQUIRE(generatedMetaData.isSingleValueType == true);

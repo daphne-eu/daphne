@@ -25,6 +25,8 @@
 
 #include <runtime/local/io/FileMetaData.h>
 
+ValueTypeCode inferValueType(const char* line, size_t &pos, char delim);
+
 // Function to infer the data type of string value
 ValueTypeCode inferValueType(const std::string &value);
 
