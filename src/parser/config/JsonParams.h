@@ -64,6 +64,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
+    inline static const std::string NUMBER_OF_SAMPLE_ROWS = "numberOfSampleRows";
     inline static const std::string USE_HDFS_ = "useHdfs";
     inline static const std::string HDFS_ADDRESS = "hdfsAddress";
     inline static const std::string HDFS_USERNAME = "hdfsUsername";
