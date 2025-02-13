@@ -83,9 +83,9 @@ std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createMarkFPGAOPENCLOpsPass(const DaphneUserConfig &cfg);
 #endif
 
-#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
+// #if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
     std::unique_ptr<Pass> createMarkVectorExtensionOpsPass(const DaphneUserConfig& cfg);
-#endif
+// #endif
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"

@@ -286,6 +286,23 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPri
         } else
             os << '?';
         os << '>';
+    } else if (auto t = type.dyn_cast<mlir::daphne::ColumnType>()) {
+        os << "Column<"
+                << unknownStrIf(t.getNumRows()) << "x";
+        // Column types.
+        mlir::Type cts = t.getColumnType();
+        os << cts;
+        os << ":, ";
+        // Column labels.
+        std::string * label = t.getLabel();
+        if(label) {
+            os << '[';
+            os << '"' << (*label) << '"';
+            os << ']';
+        }
+        else
+            os << '?';
+        os << '>';
     } else if (auto t = type.dyn_cast<mlir::daphne::ListType>()) {
         os << "List<" << t.getElementType() << '>';
     } else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
@@ -304,24 +321,6 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPri
         os << "Target";
     else if (isa<mlir::daphne::UnknownType>(type))
         os << "Unknown";
-    else if (auto t = type.dyn_cast<mlir::daphne::ColumnType>()) {
-        os << "Column<"
-                << unknownStrIf(t.getNumRows()) << "x";
-        // Column types.
-        mlir::Type cts = t.getColumnType();
-        os << cts;
-        os << ":, ";
-        // Column labels.
-        std::string * label = t.getLabel();
-        if(label) {
-            os << '[';
-            os << '"' << (*label) << '"';
-            os << ']';
-        }
-        else
-            os << '?';
-        os << '>';
-    }
 }
 
 std::string mlir::daphne::matrixRepresentationToString(MatrixRepresentation rep) {

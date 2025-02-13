@@ -395,39 +395,112 @@ def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
 // ----------------------------------------------------------------------------
 // Columnar Operations
 // ----------------------------------------------------------------------------
-class Daphne_ColumnBinaryOp<string name, Type scalarType, list<Trait> traits = []>
+
+class Daphne_ColSelectCmpOp<string name, list<Trait> traits = []>
 : Daphne_Op<name, !listconcat(traits, [
-    DataTypeFromArgs,
-    CastArgsToResType,
-    Pure, VectorExtensionSupport
+    DataTypeCol, ValueTypeSize,
+    Pure
 ])> {
-    let arguments = (ins AnyTypeOf<[ColumnOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[ColumnOf<[scalarType]>, scalarType, Unknown]>:$rhs);
-    let results = (outs AnyTypeOf<[ColumnOf<[scalarType]>, Unknown]>:$res);
+    // TODO Support another column for the rhs.
+    let arguments = (ins ColumnOrU:$lhsData, AnyTypeOf<[AnyScalar, Unknown]>:$rhsData);
+    let results = (outs ColumnOrU:$resPos);
 }
 
-class Daphne_ColumnCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
-: Daphne_EwBinaryOp<name, inputScalarType, !listconcat(traits, [ValueTypeFromArgs, Pure, VectorExtensionSupport])> {
-    
-}
+def Daphne_ColSelectEqOp : Daphne_ColSelectCmpOp<"colSelectEq">;
+def Daphne_ColSelectNeqOp : Daphne_ColSelectCmpOp<"colSelectNeq">;
+def Daphne_ColSelectGtOp : Daphne_ColSelectCmpOp<"colSelectGt">;
+def Daphne_ColSelectGeOp : Daphne_ColSelectCmpOp<"colSelectGe">;
+def Daphne_ColSelectLtOp : Daphne_ColSelectCmpOp<"colSelectLt">;
+def Daphne_ColSelectLeOp : Daphne_ColSelectCmpOp<"colSelectLe">;
 
-def Daphne_ColumnEqOp  : Daphne_ColumnCmpOp<"columnEq" , AnyScalar, [Commutative]>;
-def Daphne_ColumnNeqOp : Daphne_ColumnCmpOp<"columnNeq", AnyScalar, [Commutative]>;
-def Daphne_ColumnLtOp  : Daphne_ColumnCmpOp<"columnLt" , AnyScalar>;
-def Daphne_ColumnLeOp  : Daphne_ColumnCmpOp<"columnLe" , AnyScalar>;
-def Daphne_ColumnGtOp  : Daphne_ColumnCmpOp<"columnGt" , AnyScalar>;
-def Daphne_ColumnGeOp  : Daphne_ColumnCmpOp<"columnGe" , AnyScalar>;
-
-def Daphne_ColumnProjectOp
-: Daphne_Op<"columnProject", [
-    TypeFromFirstArg,
-    ShapeFromArg,
-    Pure,
-    VectorExtensionSupport
+def Daphne_ColProjectOp : Daphne_Op<"colProject", [
+    DataTypeCol, ValueTypeFromFirstArg,
+    Pure
 ]> {
-    let arguments = (ins Column:$data, Column:$pos);
-    let results = (outs Column:$res);
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsPos);
+    let results = (outs ColumnOrU:$resData);
 }
 
+class Daphne_ColSetOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeSize,
+    Pure
+])> {
+    // args must be sorted, res is sorted
+    let arguments = (ins ColumnOrU:$lhsPos, ColumnOrU:$rhsPos);
+    let results = (outs ColumnOrU:$resPos);
+}
+
+def Daphne_ColIntersectOp : Daphne_ColSetOp<"colIntersect">;
+def Daphne_ColMergeOp : Daphne_ColSetOp<"colMerge">;
+
+def Daphne_ColJoinOp : Daphne_Op<"colJoin", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    Pure
+]> {
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsData, Size:$numRes);
+    let results = (outs ColumnOrU:$resLhsPos, ColumnOrU:$resRhsPos);
+}
+
+def Daphne_ColSemiJoinOp : Daphne_Op<"colSemiJoin", [
+    DataTypeCol, ValueTypeSize,
+    Pure
+]> {
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsData, Size:$numRes);
+    let results = (outs ColumnOrU:$resLhsPos);
+}
+
+def Daphne_ColGroupFirstOp : Daphne_Op<"colGroupFirst", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    Pure
+]> {
+    let arguments = (ins ColumnOrU:$argData);
+    let results = (outs ColumnOrU:$resGrpIds, ColumnOrU:$resReprPos);
+}
+
+def Daphne_ColGroupNextOp : Daphne_Op<"colGroupNext", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    Pure
+]> {
+    let arguments = (ins ColumnOrU:$argData, ColumnOrU:$argGrpIds);
+    let results = (outs ColumnOrU:$resGrpIds, ColumnOrU:$resReprPos);
+}
+
+class Daphne_ColCalcBinaryOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromArgs,
+    Pure
+])> {
+    let arguments = (ins AnyTypeOf<[ColumnOrU, AnyScalar]>:$lhsData, AnyTypeOf<[ColumnOrU, AnyScalar]>:$rhsData);
+    let results = (outs ColumnOrU:$resData);
+}
+
+def Daphne_ColCalcSubOp : Daphne_ColCalcBinaryOp<"colCalcSub">;
+def Daphne_ColCalcMulOp : Daphne_ColCalcBinaryOp<"colCalcMul">;
+
+class Daphne_ColAllAggOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromFirstArg,
+    Pure
+])> {
+    let arguments = (ins ColumnOrU:$arg);
+    let results = (outs ColumnOrU:$res);
+}
+
+def Daphne_ColAllSumOp : Daphne_ColAllAggOp<"colAllSum">;
+
+class Daphne_ColGrpAggOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromFirstArg,
+    Pure
+])> {
+    let arguments = (ins ColumnOrU:$data, ColumnOrU:$groupIds, Size:$numDistinct);
+    let results = (outs ColumnOrU:$res);
+}
+
+def Daphne_ColGrpSumOp : Daphne_ColGrpAggOp<"colGrpSum">;
+
+/*
 def Daphne_ColumnProjectionPathOp : Daphne_Op<"columnProjectionPath", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
@@ -437,63 +510,13 @@ def Daphne_ColumnProjectionPathOp : Daphne_Op<"columnProjectionPath", [
     let arguments = (ins Column:$data, Variadic<Column>:$posLists);
     let results = (outs Column:$res);
 }
-
-class Daphne_ColumnAggOp<string name, Type scalarType, list<Trait> traits = []>
-: Daphne_Op<name, !listconcat(traits, [DataTypeCol, ShapeFromArg, Pure, VectorExtensionSupport])> {
-    let arguments = (ins ColumnOf<[scalarType]>:$arg);
-    let results = (outs ColumnOf<[scalarType]>:$res);
-}
-
-def Daphne_ColumnAggSumOp    : Daphne_ColumnAggOp<"columnSum", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_ColumnAggMinOp    : Daphne_ColumnAggOp<"columnMin", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_ColumnAggMaxOp    : Daphne_ColumnAggOp<"columnMax", NumScalar, [ValueTypeFromFirstArg]>;
-def Daphne_ColumnAggMeanOp   : Daphne_ColumnAggOp<"columnMean", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_ColumnAggVarOp    : Daphne_ColumnAggOp<"columnVar", NumScalar, [ValueTypeFromArgsFP]>;
-def Daphne_ColumnAggStddevOp : Daphne_ColumnAggOp<"columnStddev", NumScalar, [ValueTypeFromArgsFP]>;
-
-def Daphne_ColumnJoinOp : Daphne_Op<"columnEquiJoin", [
-    DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>,
-    Pure,
-    VectorExtensionSupport
-]> {
-    let arguments = (ins ColumnOrU:$lhs, ColumnOrU:$rhs);
-    let results = (outs ColumnOrU:$resLhs, ColumnOrU:$resRhs);
-}
-
 def Daphne_ColumnBetweenOp : Daphne_Op<"columnBetween", 
     [TypeFromFirstArg, Pure, VectorExtensionSupport]> {
     let arguments = (ins Column:$data, AnyScalar:$lower, AnyScalar:$upper);
     let results = (outs Column:$res);
 }
+*/
 
-def Daphne_ColumnAddOp    : Daphne_ColumnBinaryOp<"columnAdd", NumScalar, [ValueTypeFromArgs]> {
-    //let hasCanonicalizeMethod = 1;
-}
-def Daphne_ColumnSubOp    : Daphne_ColumnBinaryOp<"columnSub", NumScalar, [ValueTypeFromArgs]> {
-    //let hasCanonicalizeMethod = 1;
-}
-def Daphne_ColumnMulOp    : Daphne_ColumnBinaryOp<"columnMul", NumScalar, [ValueTypeFromArgs, Commutative]> {
-    //let hasCanonicalizeMethod = 1;
-}
-def Daphne_ColumnDivOp    : Daphne_ColumnBinaryOp<"columnDiv", NumScalar, [ValueTypeFromArgs]> {
-    //let hasCanonicalizeMethod = 1;
-}
-
-def Daphne_ColumnAndOp    : Daphne_ColumnBinaryOp<"columnAnd", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
-
-def Daphne_ColumnIntersectOp    : Daphne_ColumnBinaryOp<"columnIntersect", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
-
-class Daphne_ColumnNumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
-    DataTypeSca, ValueTypeSize, Pure
-])> {
-    let arguments = (ins Column:$arg);
-    let results = (outs Size:$res);
-
-    let hasCanonicalizeMethod = 1;
-}
-
-def Daphne_ColumnNumRowsOp : Daphne_ColumnNumOp<"columnNumRows">;
 // ****************************************************************************
 // Outer binary (generalized outer product)
 // ****************************************************************************
@@ -779,6 +802,8 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
 
     let arguments = (ins MatrixOrFrame:$source, AnyTypeOf<[Selection, StrScalar, Unknown]>:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
@@ -855,7 +880,8 @@ def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
     ValueTypesConcat,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport
+    NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport,
+    Pure
 ]>;
 
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind", [
@@ -1386,10 +1412,13 @@ def Daphne_GroupOp : Daphne_Op<"group", [
 def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let arguments = (ins FrameOrU:$arg, Variadic<StrScalar>:$labels);
     let results = (outs FrameOrU:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix", [
@@ -1425,8 +1454,30 @@ def Daphne_CastOp : Daphne_Op<"cast", [
 
     let extraClassDeclaration = [{
         bool isTrivialCast() {
-            return getArg().getType() == getRes().getType();
+            Type argTy = getArg().getType();
+            Type resTy = getRes().getType();
+            auto argFrmTy = argTy.dyn_cast<FrameType>();
+            auto resFrmTy = resTy.dyn_cast<FrameType>();
+            if(argFrmTy && resFrmTy) {
+                // TODO avoid such a special case for frames, represent the optionality of labels in a different
+                // way than a pointer (maybe llvm::Option/std::optiona), sth that supports op== to be true on different instances
+                if(argFrmTy.getColumnTypes() != resFrmTy.getColumnTypes())
+                    return false;
+                if(argFrmTy.getNumRows() != resFrmTy.getNumRows())
+                    return false;
+                if(argFrmTy.getNumCols() != resFrmTy.getNumCols())
+                    return false;
+                std::vector<std::string> * argLabels = argFrmTy.getLabels();
+                std::vector<std::string> * resLabels = resFrmTy.getLabels();
+                if((argLabels == nullptr) != (resLabels == nullptr))
+                    return false;
+                if(argLabels && *argLabels != *resLabels)
+                    return false;
+                return true;
+            } else
+                return argTy == resTy;
         }
+
         /**
          * @brief Checks if this cast just removes detailed properties from a matrix/frame type,
          * to make them unknown instead.
@@ -1444,7 +1495,60 @@ def Daphne_CastOp : Daphne_Op<"cast", [
             return (argMatTy && resMatTy && argMatTy.isSpecializationOf(resMatTy))
                 || (argFrmTy && resFrmTy && argFrmTy.isSpecializationOf(resFrmTy));
         }
+
+        bool mightLoseInformation() {
+            Type argTy = getArg().getType();
+            Type resTy = getRes().getType();
+
+            auto argMatTy = argTy.dyn_cast<daphne::MatrixType>();
+            auto argFrmTy = argTy.dyn_cast<daphne::FrameType>();
+            auto argColTy = argTy.dyn_cast<daphne::ColumnType>();
+
+            auto resMatTy = resTy.dyn_cast<daphne::MatrixType>();
+            auto resFrmTy = resTy.dyn_cast<daphne::FrameType>();
+            auto resColTy = resTy.dyn_cast<daphne::ColumnType>();
+
+            // Note: We only consider data/value types, but not the properties.
+            // TODO what if "b" has more property info that would be important for further inference (is that possible)?
+
+            // If we cast from a matrix to a frame and all columns of the frame have the value type of the matrix, then we certainly do not lose information.
+            if(argMatTy && resFrmTy) {
+                Type argMatValTy = argMatTy.getElementType();
+                std::vector resFrmColTys = resFrmTy.getColumnTypes();
+                for (Type resFrmColTy : resFrmColTys)
+                    // TODO it would be okay if resFrmColTy can represent all values of argMatValTy
+                    if (argMatValTy != resFrmColTy)
+                        return true;
+                return false;
+            }
+            // If we cast from a frame to a matrix and all columns of the frame have the value type of the matrix, then we certainly do not lose information.
+            if(argFrmTy && resMatTy) {
+                std::vector argFrmColTys = argFrmTy.getColumnTypes();
+                Type resMatValTy = resMatTy.getElementType();
+                for (Type argFrmColTy : argFrmColTys)
+                    // TODO it would be okay if resMatValTy can represent all values of argFrmColTy
+                    if (argFrmColTy != resMatValTy)
+                        return true;
+                return false;
+            }
+            // If we cast from a matrix to a column and both have the same value type, then we certainly do not lose information.
+            if (argMatTy && resColTy && argMatTy.getElementType() == resColTy.getColumnType())
+                return false;
+            // If we cast from a column to a matrix and both have the same value type, then we certainly do not lose information.
+            if (argColTy && resMatTy && argColTy.getColumnType() == resMatTy.getElementType())
+                return false;
+            // If we cast from a column to a single-column frame and both have the same value type, then we certainly do not lose information.
+            if (argColTy && resFrmTy && argColTy.getColumnType() == resFrmTy.getColumnTypes()[0])
+                return false;
+            // If we cast from a single-column frame to a column and both have the same value type, then we certainly do not lose information.
+            if (argFrmTy && resColTy && argFrmTy.getColumnTypes()[0] == resColTy.getColumnType())
+                return false;
+
+            return true;
+        }
     }];
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_RenameOp : Daphne_Op<"rename", [
@@ -1467,22 +1571,26 @@ def Daphne_GetColIdxOp : Daphne_Op<"getColIdx", [DataTypeSca, ValueTypeSize]>{
     let results = (outs Size:$res);
 }
 
+// TODO rename to ConvertPosListToBitmapOp
 def Daphne_PositionListBitmapConverterOp : Daphne_Op<"positionListBitmapConverter", [
     TypeFromFirstArg,
     ShapeFromArg,
     Pure
 ]> {
-    let arguments = (ins Matrix:$arg, Size:$numRows);
-    let results = (outs Matrix:$res);
+    let arguments = (ins MatrixOrU:$arg, Size:$numRows);
+    let results = (outs MatrixOrU:$res);
 }
 
+// TODO rename to ConvertBitmapToPosListOp
 def Daphne_BitmapPositionListConverterOp : Daphne_Op<"bitmapPositionListConverter", [
-    TypeFromFirstArg,
+    DataTypeMat, ValueTypeSize,
     ShapeFromArg,
     Pure
 ]> {
-    let arguments = (ins Matrix:$arg);
-    let results = (outs Matrix:$res);
+    let arguments = (ins MatrixOrU:$arg);
+    let results = (outs MatrixOrU:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 // ****************************************************************************

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/Column.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
@@ -83,5 +84,18 @@ template <typename VTRes> struct CastObjSca<VTRes, Frame> {
             throw std::runtime_error("CastObjSca::apply: unknown value type code");
 
         return res;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Scalar <- Column
+// ----------------------------------------------------------------------------
+
+template <typename VTRes, typename VTArg> struct CastObjSca<VTRes, Column<VTArg>> {
+    static VTRes apply(const Column<VTArg> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        if (numRows != 1)
+            throw std::runtime_error("Cast column to scalar: column must have exactly one element");
+        return static_cast<VTRes>(*arg->getValues());
     }
 };

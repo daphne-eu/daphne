@@ -423,7 +423,26 @@
             ["Frame", ["DenseMatrix", "double"]],
             ["Frame", ["DenseMatrix", "int64_t"]],
             ["Frame", ["DenseMatrix", "uint64_t"]],
-
+            [["Column", "double"], ["DenseMatrix", "double"]],
+            [["Column", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["Column", "uint64_t"], ["DenseMatrix", "uint64_t"]],
+            [["Column", "size_t"], ["DenseMatrix", "size_t"]],
+            [["Column", "std::string"], ["DenseMatrix", "std::string"]],
+            [["DenseMatrix", "double"], ["Column", "double"]],
+            [["DenseMatrix", "int64_t"], ["Column", "int64_t"]],
+            [["DenseMatrix", "uint64_t"], ["Column", "uint64_t"]],
+            [["DenseMatrix", "size_t"], ["Column", "size_t"]],
+            [["DenseMatrix", "std::string"], ["Column", "std::string"]],
+            [["Column", "double"], "Frame"],
+            [["Column", "int64_t"], "Frame"],
+            [["Column", "uint64_t"], "Frame"],
+            [["Column", "size_t"], "Frame"],
+            [["Column", "std::string"], "Frame"],
+            ["Frame", ["Column", "double"]],
+            ["Frame", ["Column", "int64_t"]],
+            ["Frame", ["Column", "uint64_t"]],
+            ["Frame", ["Column", "size_t"]],
+            ["Frame", ["Column", "std::string"]],
             [
                 ["DenseMatrix", "double"],
                 ["DenseMatrix", "double"]
@@ -863,21 +882,7 @@
             [
                 ["CSRMatrix", "float"],
                 ["CSRMatrix", "double"]
-            ],
-            
-            [["DenseMatrix", "double"], ["tuddbs::Column", "double"]],
-            [["DenseMatrix", "int64_t"], ["tuddbs::Column", "int64_t"]],
-            [["DenseMatrix", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-            ["Frame", ["tuddbs::Column", "double"]],
-            ["Frame", ["tuddbs::Column", "int64_t"]],
-            ["Frame", ["tuddbs::Column", "uint64_t"]],
-
-            [["tuddbs::Column", "double"], ["DenseMatrix", "double"]],
-            [["tuddbs::Column", "int64_t"], ["DenseMatrix", "int64_t"]],
-            [["tuddbs::Column", "uint64_t"], ["DenseMatrix", "uint64_t"]],
-            [["tuddbs::Column", "double"], "Frame"],
-            [["tuddbs::Column", "int64_t"], "Frame"],
-            [["tuddbs::Column", "uint64_t"], "Frame"]
+            ]
         ]
     },
     {
@@ -992,9 +997,13 @@
             ["size_t", ["DenseMatrix", "uint32_t"]],
             ["size_t", ["DenseMatrix", "uint8_t"]],
             ["size_t", ["DenseMatrix", "size_t"]],
-
+            
             ["double", "Frame"],
-            ["int64_t", "Frame"]
+            ["int64_t", "Frame"],
+
+            ["double", ["Column", "double"]],
+            ["int64_t", ["Column", "int64_t"]],
+            ["uint64_t", ["Column", "uint64_t"]]
         ]
     },
     {
@@ -7042,8 +7051,404 @@
     },
     {
         "kernelTemplate": {
-            "header": "ColumnSelect.h",
-            "opName": "columnSelect",
+            "header": "ColSelectCmp.h",
+            "opName": "colSelectCmp",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTRhsData",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CmpOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTResPos *&",
+                    "name": "resPos"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "VTRhsData",
+                    "name": "rhsData"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "double"], "double"],
+            [["Column", "size_t"], ["Column", "int64_t"], "int64_t"],
+            [["Column", "size_t"], ["Column", "uint64_t"], "uint64_t"],
+            [["Column", "size_t"], ["Column", "std::string"], "const char *"]
+        ],
+        "opCodes": ["EQ", "NEQ", "GT", "GE", "LT", "LE"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColProject.h",
+            "opName": "colProject",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsPos",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResData *&",
+                    "name": "resData"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "const DTRhsPos *",
+                    "name": "rhsPos"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "double"], ["Column", "double"], ["Column", "size_t"]],
+            [["Column", "int64_t"], ["Column", "int64_t"], ["Column", "size_t"]],
+            [["Column", "uint64_t"], ["Column", "uint64_t"], ["Column", "size_t"]],
+            [["Column", "std::string"], ["Column", "std::string"], ["Column", "size_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColIntersect.h",
+            "opName": "colIntersect",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsPos",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResPos *&",
+                    "name": "resPos"
+                },
+                {
+                    "type": "const DTLhsPos *",
+                    "name": "lhsPos"
+                },
+                {
+                    "type": "const DTRhsPos *",
+                    "name": "rhsPos"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "size_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColMerge.h",
+            "opName": "colMerge",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsPos",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResPos *&",
+                    "name": "resPos"
+                },
+                {
+                    "type": "const DTLhsPos *",
+                    "name": "lhsPos"
+                },
+                {
+                    "type": "const DTRhsPos *",
+                    "name": "rhsPos"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "size_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColJoin.h",
+            "opName": "colJoin",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResLhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTResRhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResLhsPos *&",
+                    "name": "resLhsPos"
+                },
+                {
+                    "type": "DTResRhsPos *&",
+                    "name": "resRhsPos"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "const DTRhsData *",
+                    "name": "rhsData"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRes"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "double"], ["Column", "double"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "int64_t"], ["Column", "int64_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "uint64_t"], ["Column", "uint64_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "std::string"], ["Column", "std::string"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColSemiJoin.h",
+            "opName": "colSemiJoin",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResLhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResLhsPos *&",
+                    "name": "resLhsPos"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "const DTRhsData *",
+                    "name": "rhsData"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRes"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "double"], ["Column", "double"]],
+            [["Column", "size_t"], ["Column", "int64_t"], ["Column", "int64_t"]],
+            [["Column", "size_t"], ["Column", "uint64_t"], ["Column", "uint64_t"]],
+            [["Column", "size_t"], ["Column", "std::string"], ["Column", "std::string"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColGroupFirst.h",
+            "opName": "colGroupFirst",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResGrpIds",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTResReprPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResGrpIds *&",
+                    "name": "resGrpIds"
+                },
+                {
+                    "type": "DTResReprPos *&",
+                    "name": "resReprPos"
+                },
+                {
+                    "type": "const DTArgData *",
+                    "name": "argData"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "double"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "int64_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "uint64_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "std::string"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColGroupNext.h",
+            "opName": "colGroupNext",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResGrpIds",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTResReprPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgGrpIds",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResGrpIds *&",
+                    "name": "resGrpIds"
+                },
+                {
+                    "type": "DTResReprPos *&",
+                    "name": "resReprPos"
+                },
+                {
+                    "type": "const DTArgData *",
+                    "name": "argData"
+                },
+                {
+                    "type": "const DTArgGrpIds *",
+                    "name": "argGrpIds"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "double"], ["Column", "size_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "int64_t"], ["Column", "size_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "uint64_t"], ["Column", "size_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "std::string"], ["Column", "size_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColCalcBinary.h",
+            "opName": "colCalcBinary",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "BinaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTResData *&",
+                    "name": "resData"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "const DTRhsData *",
+                    "name": "rhsData"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "double"], ["Column", "double"], ["Column", "double"]],
+            [["Column", "int64_t"], ["Column", "int64_t"], ["Column", "int64_t"]],
+            [["Column", "uint64_t"], ["Column", "uint64_t"], ["Column", "uint64_t"]]
+        ],
+        "opCodes": ["SUB", "MUL"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColAllAgg.h",
+            "opName": "colAllAgg",
             "returnType": "void",
             "templateParams": [
                 {
@@ -7051,17 +7456,13 @@
                     "isDataType": true
                 },
                 {
-                    "name": "DTLhs",
+                    "name": "DTArg",
                     "isDataType": true
-                },
-                {
-                    "name": "VTRhs",
-                    "isDataType": false
                 }
             ],
             "runtimeParams": [
                 {
-                    "type": "SelectOpCode",
+                    "type": "AggOpCode",
                     "name": "opCode"
                 },
                 {
@@ -7069,31 +7470,22 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTLhs *",
-                    "name": "lhs"
-                },
-                {
-                    "type": "VTRhs",
-                    "name": "rhs"
+                    "type": "const DTArg *",
+                    "name": "arg"
                 }
             ]
         },
-        "api": [
-            {
-                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
-                "instantiations": [
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], "uint64_t"],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], "int64_t"],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], "size_t"]
-                ],
-                "opCodes": ["EQ", "NEQ", "LT", "LE", "GT", "GE"]
-            }
-        ]
+        "instantiations": [
+            [["Column", "double"], ["Column", "double"]],
+            [["Column", "int64_t"], ["Column", "int64_t"]],
+            [["Column", "uint64_t"], ["Column", "uint64_t"]]
+        ],
+        "opCodes": ["SUM"]
     },
     {
         "kernelTemplate": {
-            "header": "ColumnProject.h",
-            "opName": "columnProject",
+            "header": "ColGrpAgg.h",
+            "opName": "colGrpAgg",
             "returnType": "void",
             "templateParams": [
                 {
@@ -7105,50 +7497,7 @@
                     "isDataType": true
                 },
                 {
-                    "name": "DTPos",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTData *",
-                    "name": "data"
-                },
-                {
-                    "type": "const DTPos *",
-                    "name": "pos"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
-                "instantiations": [
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "size_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "size_t"]],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
-                ]
-            }
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "ColumnAggregate.h",
-            "opName": "columnAgg",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTData",
+                    "name": "DTGrpIds",
                     "isDataType": true
                 }
             ],
@@ -7164,302 +7513,22 @@
                 {
                     "type": "const DTData *",
                     "name": "data"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
-                "instantiations": [
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
-                ],
-                "opCodes": ["SUM"]
-            }
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "ColumnBetween.h",
-            "opName": "columnBetween",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
                 },
                 {
-                    "name": "DTData",
-                    "isDataType": true
-                },
-                {
-                    "name": "VTL",
-                    "isDataType": false
-                },
-                {
-                    "name": "VTU",
-                    "isDataType": false
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTData *",
-                    "name": "data"
-                },
-                {
-                    "type": "const VTL",
-                    "name": "lower_bound"
-                },
-                {
-                    "type": "const VTU",
-                    "name": "upper_bound"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
-                "instantiations": [
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], "int64_t", "int64_t"]
-                ]
-            }
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "ColumnIntersect.h",
-            "opName": "columnIntersect",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTPosLhs",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTPosRhs",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTPosLhs *",
-                    "name": "pos_lhs"
-                },
-                {
-                    "type": "const DTPosRhs *",
-                    "name": "pos_rhs"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
-                "instantiations": [
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
-                ]
-            }
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "ColumnEquiJoin.h",
-            "opName": "columnEquiJoin",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTResLhs",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTResRhs",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTDataLhs",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTDataRhs",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "DTResLhs *&",
-                    "name": "res_lhs"
-                },
-                {
-                    "type": "DTResRhs *&",
-                    "name": "res_rhs"
-                },
-                {
-                    "type": "const DTDataLhs *",
-                    "name": "data_lhs"
-                },
-                {
-                    "type": "const DTDataRhs *",
-                    "name": "data_rhs"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
-                "instantiations": [
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]]
-                ]
-            }
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "ColumnCalc.h",
-            "opName": "columnBinary",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTLhs",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTRhs",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "BinaryOpCode",
-                    "name": "opCode"
-                },
-                {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTLhs *",
-                    "name": "data_lhs"
-                },
-                {
-                    "type": "const DTRhs *",
-                    "name": "data_rhs"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
-                "instantiations": [
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
-                ],
-                "opCodes": ["ADD", "MUL", "AND", "OR"]
-            }
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "ColumnProjectionPath.h",
-            "opName": "columnProjectionPath",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTData",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTPos",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTData *",
-                    "name": "data"
-                },
-                {
-                    "type": "const DTPos **",
-                    "name": "pos"
+                    "type": "const DTGrpIds *",
+                    "name": "grpIds"
                 },
                 {
                     "type": "size_t",
-                    "name": "num_cols"
+                    "name": "numDistinct"
                 }
             ]
         },
-        "api": [
-            {
-                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
-                "instantiations": [
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "size_t"]],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
-                ]
-            }
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnNumRows.h",
-            "opName": "columnNumRows",
-            "returnType": "size_t",
-            "templateParams": [
-                {
-                    "name": "DTArg",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "const DTArg *",
-                    "name": "arg"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["CPP"],
-                "instantiations": [
-                    [["tuddbs::Column", "uint64_t"]],
-                    [["tuddbs::Column", "int64_t"]],
-                    [["tuddbs::Column", "size_t"]]
-                ]
-            }
-        ]
+        "instantiations": [
+            [["Column", "double"], ["Column", "double"], ["Column", "size_t"]],
+            [["Column", "int64_t"], ["Column", "int64_t"], ["Column", "size_t"]],
+            [["Column", "uint64_t"], ["Column", "uint64_t"], ["Column", "size_t"]]
+        ],
+        "opCodes": ["SUM"]
     }
-
 ]

@@ -15,9 +15,9 @@
 include_directories(${PROJECT_SOURCE_DIR}/test)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
-set(SIMD_PREFIX ${PROJECT_BINARY_DIR}/_deps/simdoperators-src/src)
-message(STATUS "SIMD_PREFIX: ${SIMD_PREFIX}")
-include_directories(${SIMD_PREFIX})
+# set(SIMD_PREFIX ${PROJECT_BINARY_DIR}/_deps/simdoperators-src/src)
+# message(STATUS "SIMD_PREFIX: ${SIMD_PREFIX}")
+# include_directories(${SIMD_PREFIX})
 
 set(TEST_SOURCES
         run_tests.h

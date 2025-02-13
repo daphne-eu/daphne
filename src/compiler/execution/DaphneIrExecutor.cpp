@@ -113,33 +113,26 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addPass(mlir::createCSEPass());
     }
 
-#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
-    if (userConfig_.use_columnar_rewrite) {
-        pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
-    }
-
-    if (userConfig_.use_columnar_reduce) {
-        pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
-        pm.addPass(mlir::createCanonicalizerPass());
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
-    }
-
     if (userConfig_.use_columnar) {
         pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+        if (userConfig_.explain_columnar)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar rewriting:"));
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+        if (userConfig_.explain_columnar)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar rewriting and inference:"));
         pm.addPass(mlir::createCanonicalizerPass());
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
-        pm.addPass(mlir::createCanonicalizerPass());
+        // pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
+        // TODO this pass seems to eliminate only "one row" of dead code at a time, so we need it as many times as the longest chain of ops we reduce
+        // TODO how to do it better
         pm.addPass(mlir::createCSEPass());
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createOptimizeColumnarOpPass());
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::createCSEPass());
+        if (userConfig_.explain_columnar)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar reduction:"));
+        // pm.addPass(mlir::createCanonicalizerPass());
+        // pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createOptimizeColumnarOpPass());
+        // pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
     }
-    if (userConfig_.explain_columnar)
-        pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar rewriting:"));
-#endif
 
     // Note that property inference and canonicalization have already been done
     // in the SpecializeGenericFunctionsPass, so actually, it's not necessary

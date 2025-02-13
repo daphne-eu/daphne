@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
+// #if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
 #include "compiler/utils/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
@@ -46,6 +46,7 @@ void MarkVectorExtensionOpsPass::runOnOperation() {
         OpBuilder builder(op);
         if(checkUseVectorExtension(op)) {
             switch(cfg.vector_extension) {
+                // TODO rename VectorExtensions to VectorExtension (singular)
                 case VectorExtensions::AVX512:
                     op->setAttr("vector_extension", builder.getStringAttr("AVX512"));
                     break;
@@ -58,6 +59,8 @@ void MarkVectorExtensionOpsPass::runOnOperation() {
                 case VectorExtensions::SCALAR:
                     op->setAttr("vector_extension", builder.getStringAttr("SCALAR"));
                     break;
+                case VectorExtensions::INVALID:
+                    throw std::runtime_error("...");
             }
         }
         WalkResult::advance();
@@ -67,4 +70,4 @@ void MarkVectorExtensionOpsPass::runOnOperation() {
 std::unique_ptr<Pass> daphne::createMarkVectorExtensionOpsPass(const DaphneUserConfig& cfg) {
     return std::make_unique<MarkVectorExtensionOpsPass>(cfg);
 }
-#endif 
+// #endif 

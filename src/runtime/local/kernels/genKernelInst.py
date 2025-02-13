@@ -50,6 +50,11 @@ from pathlib import Path
 INDENT = 4 * " "
 DEFAULT_NEWRESPARAM = "res"
 
+def stripNamespaces(cppType):
+    if "::" in cppType:
+        return cppType[(cppType.rfind("::") + 2):]
+    else:
+        return cppType
 
 def toCppType(t):
     if isinstance(t, list):
@@ -134,8 +139,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
     # typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([
-        rp["type"]
-            [((rp["type"].rfind("::") + 2) if "::" in rp["type"] else 0):]
+        stripNamespaces(rp["type"].replace("std::string", "string"))
             .replace("const ", "")
             .replace(" **", "" if rp["isOutput"] else "_variadic")
             .replace(" *", "_variadic" if "isVariadic" in rp and rp["isVariadic"] else "")

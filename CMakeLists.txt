@@ -42,23 +42,23 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g -O3 -fn
 cmake_policy(SET CMP0116 OLD)
 
 
-if( NOT DEFINED THIRDPARTY)
-    set( THIRDPARTY ${PROJECT_SOURCE_DIR}/thirdparty)
-endif()
+# if( NOT DEFINED THIRDPARTY)
+#     set( THIRDPARTY ${PROJECT_SOURCE_DIR}/thirdparty)
+# endif()
 
-# Set include path, if not set
-if( NOT DEFINED CMAKE_PREFIX_PATH )
-    set( CMAKE_PREFIX_PATH ${THIRDPARTY}/installed )
-    set( THIRDPARTY_INSTALLED ${THIRDPARTY}/installed )
-endif()
+# # Set include path, if not set
+# if( NOT DEFINED CMAKE_PREFIX_PATH )
+#     set( CMAKE_PREFIX_PATH ${THIRDPARTY}/installed )
+#     set( THIRDPARTY_INSTALLED ${THIRDPARTY}/installed )
+# endif()
 
-if( NOT DEFINED THIRDPARTY_INSTALLED )
-    set( THIRDPARTY_INSTALLED ${THIRDPARTY}/installed )
-endif()
+# if( NOT DEFINED THIRDPARTY_INSTALLED )
+#     set( THIRDPARTY_INSTALLED ${THIRDPARTY}/installed )
+# endif()
 
-if( NOT DEFINED THIRDPARTY_INCLUDE )
-    set( THIRDPARTY_INCLUDE ${THIRDPARTY_INSTALLED}/include)
-endif()
+# if( NOT DEFINED THIRDPARTY_INCLUDE )
+#     set( THIRDPARTY_INCLUDE ${THIRDPARTY_INSTALLED}/include)
+# endif()
 
 # *****************************************************************************
 # Related to MLIR/LLVM
@@ -117,7 +117,7 @@ find_package(BLAS REQUIRED)
 foreach(path ${CMAKE_PREFIX_PATH})
     message(STATUS "CMAKE_PREFIX_PATH:  ${path}")
     include_directories(${path}/include)
-    include_directories(${path}/include/openblas)
+    # include_directories(${path}/include/openblas)
 endforeach(path)
 
 # check <package>_ROOT env var
@@ -241,15 +241,15 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 # *****************************************************************************
 # Dependency // SIMDOperators
 # *****************************************************************************
-include(FetchContent)
+# include(FetchContent)
 
-FetchContent_Declare(
-  SIMDOperators
-  GIT_REPOSITORY https://github.com/db-tu-dresden/SIMDOperators.git
-  GIT_TAG        daphne_integration # or a later release
-)
+# FetchContent_Declare(
+#   SIMDOperators
+#   GIT_REPOSITORY https://github.com/db-tu-dresden/SIMDOperators.git
+#   GIT_TAG        daphne_integration # or a later release
+# )
 
-FetchContent_MakeAvailable(SIMDOperators)
+# FetchContent_MakeAvailable(SIMDOperators)
 
 option(USE_AVX512 "Whether to activate compilation of AVX512 features" OFF)
 if(USE_AVX512)

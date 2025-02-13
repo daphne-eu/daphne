@@ -150,6 +150,7 @@ def Frame : Daphne_Type<"Frame"> {
     let parameters = (ins
         "std::vector<::mlir::Type>":$columnTypes,
         "ssize_t":$numRows, "ssize_t":$numCols,
+        // TODO dont use a pointer, since it complicates type comparison (logically same labels, but different pointer yields mismatch); try some Optional type
         "std::vector<std::string> *":$labels
     );
 
@@ -326,8 +327,9 @@ def Column : Daphne_Type<"Column"> {
     let summary = "column";
 
     let parameters = (ins
-        "::mlir::Type":$columnType,
+        "::mlir::Type":$columnType, // TODO rename to value type (also for custom methods below)
         "ssize_t":$numRows,
+        // TODO do we really want/need a label here
         "std::string *":$label
     );
 

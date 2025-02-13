@@ -137,7 +137,7 @@ namespace
         pushdownPossibleCastExtract(rewriter, possibleRhsCast, sourceOp);     
     }
 
-    mlir::LogicalResult moveComparisonsBeforeJoin(PatternRewriter &rewriter, Operation * filterRowOp, std::vector<Operation *> comparisons, Operation * firstFilterRowOp) {
+    /*mlir::LogicalResult*/ void moveComparisonsBeforeJoin(PatternRewriter &rewriter, Operation * filterRowOp, std::vector<Operation *> comparisons, Operation * firstFilterRowOp) {
         Operation * joinSourceOp = filterRowOp->getOperand(0).getDefiningOp();
         Operation * inputFrameOpLhs = joinSourceOp->getOperand(0).getDefiningOp();
         Operation * inputFrameOpRhs = joinSourceOp->getOperand(1).getDefiningOp();
@@ -213,7 +213,7 @@ namespace
             moveComparisonsBeforeJoin(rewriter, rhsFilterRowOp, rhsComparisons, firstFilterRowOp);
         }
 
-        return success();
+        // return success();
     }
 
     struct SelectionPushdown : public RewritePattern{
@@ -239,7 +239,7 @@ namespace
                 }
                 comparisons.push_back(currentBitmap); 
                 
-                return moveComparisonsBeforeJoin(rewriter, op, comparisons, op);
+                /*return*/ moveComparisonsBeforeJoin(rewriter, op, comparisons, op);
             }
 
             return success();

@@ -77,7 +77,6 @@ mlir::Type mostGeneralVt(const std::vector<std::vector<mlir::Type>> &vts, size_t
  */
 std::vector<mlir::Type> inferValueTypeFromArgs(const std::vector<DataTypeCode> &argDtc,
                                                std::vector<std::vector<mlir::Type>> &argVts);
-
 /**
  * @brief Infers the type of the result of the given operation based on its
  * type inference traits.

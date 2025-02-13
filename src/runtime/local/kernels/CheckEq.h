@@ -24,7 +24,7 @@
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Matrix.h>
 
-#include <SIMDOperators/datastructures/column.hpp>
+// #include <SIMDOperators/datastructures/column.hpp>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -104,28 +104,28 @@ template <typename VT> struct CheckEq<Matrix<VT>> {
     static bool apply(const Matrix<VT> *lhs, const Matrix<VT> *rhs, DCTX(ctx)) { return *lhs == *rhs; }
 };
 
-// ----------------------------------------------------------------------------
-// Column
-// ----------------------------------------------------------------------------
+// // ----------------------------------------------------------------------------
+// // Column
+// // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct CheckEq<tuddbs::Column<VT>> {
-    static bool apply(const tuddbs::Column<VT> * lhs, const tuddbs::Column<VT> * rhs, DCTX(ctx)) {
-        if(lhs == rhs)
-            return true;
+// template<typename VT>
+// struct CheckEq<tuddbs::Column<VT>> {
+//     static bool apply(const tuddbs::Column<VT> * lhs, const tuddbs::Column<VT> * rhs, DCTX(ctx)) {
+//         if(lhs == rhs)
+//             return true;
         
-        const size_t numRows = lhs->getPopulationCount();
-        const size_t length = lhs->getLength();
+//         const size_t numRows = lhs->getPopulationCount();
+//         const size_t length = lhs->getLength();
         
-        if(numRows != rhs->getPopulationCount() || length != rhs->getLength())
-            return false;
+//         if(numRows != rhs->getPopulationCount() || length != rhs->getLength())
+//             return false;
         
-        const std::shared_ptr<const VT[]> valuesLhs = lhs->getData();
-        const std::shared_ptr<const VT[]> valuesRhs = rhs->getData();
+//         const std::shared_ptr<const VT[]> valuesLhs = lhs->getData();
+//         const std::shared_ptr<const VT[]> valuesRhs = rhs->getData();
         
-        if(valuesLhs.get() == valuesRhs.get())
-            return true;
+//         if(valuesLhs.get() == valuesRhs.get())
+//             return true;
         
-        return !memcmp(valuesLhs.get(), valuesRhs.get(), numRows * sizeof(VT));
-    }
-};
+//         return !memcmp(valuesLhs.get(), valuesRhs.get(), numRows * sizeof(VT));
+//     }
+// };
