@@ -145,7 +145,7 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
                 throw std::runtime_error("Currently reading of sparse matrices requires a number of "
                                          "non zeros to be defined");
             if (fmd.numCols <=0 && fmd.numRows <= 0 && fmd.schema[0] == ValueTypeCode::INVALID){//check if meta data file was read
-                readCsv(res, filename, ',');// TODO: if res= nullptr create new after generating fmd
+                readCsv(res, filename, ',', sampleRows);
             }else{
                 if (res == nullptr)
                     res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);

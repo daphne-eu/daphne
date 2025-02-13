@@ -113,7 +113,7 @@ ValueTypeCode inferValueType(const std::string &valueStr) {
 }
 
 // Function to read the CSV file and determine the FileMetaData
-FileMetaData generateFileMetaData(const std::string &filename, bool isFrame) {
+FileMetaData generateFileMetaData(const std::string &filename, char delim, size_t sampleRows) {
     std::ifstream file(filename);
     std::string line;
     std::vector<ValueTypeCode> schema;
