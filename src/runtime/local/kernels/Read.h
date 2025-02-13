@@ -79,19 +79,15 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx)) {
 
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
-
-        FileMetaData fmd = MetaDataParser::readMetaData(filename, false);
+        size_t sampleRows = ctx->getUserConfig().numberOfSampleRows;
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, ',', sampleRows);
         int extv = extValue(filename);
         switch (extv) {
         case 0:
             // TODO: support other file types for meta data generation
-            if (fmd.numCols <=0 && fmd.numRows <= 0 && fmd.schema[0] == ValueTypeCode::INVALID){//check if meta data file was read
-                readCsv(res, filename, ',');// TODO: if res= nullptr create new after generating fmd
-            }else{
-                if (res == nullptr)
-                    res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
-                readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
-            }
+            if (res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
             break;
         case 1:
             if constexpr (std::is_same<VT, std::string>::value)
@@ -137,21 +133,18 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
 
 template <typename VT> struct Read<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, DCTX(ctx), bool labels = false) {
-        FileMetaData fmd = MetaDataParser::readMetaData(filename, false);
+        size_t sampleRows = ctx->getUserConfig().numberOfSampleRows;
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, ',', sampleRows);
         int extv = extValue(filename);
         switch (extv) {
         case 0:
             if (fmd.numNonZeros == -1)
                 throw std::runtime_error("Currently reading of sparse matrices requires a number of "
                                          "non zeros to be defined");
-            if (fmd.numCols <=0 && fmd.numRows <= 0 && fmd.schema[0] == ValueTypeCode::INVALID){//check if meta data file was read
-                readCsv(res, filename, ',', sampleRows);
-            }else{
-                if (res == nullptr)
-                    res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
-                // FIXME: ensure file is sorted, or set `sorted` argument correctly
-                readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
-            }
+            if (res == nullptr)
+                res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
+            // FIXME: ensure file is sorted, or set `sorted` argument correctly
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
             break;
         case 1:
             readMM(res, filename);
@@ -176,30 +169,26 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 
 template <> struct Read<Frame> {
     static void apply(Frame *&res, const char *filename, DCTX(ctx)) {
-        FileMetaData fmd = MetaDataParser::readMetaData(filename);
+        size_t sampleRows = ctx->getUserConfig().numberOfSampleRows;
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, ',', sampleRows);
+        ValueTypeCode *schema;
+        if (fmd.isSingleValueType) {
+            schema = new ValueTypeCode[fmd.numCols];
+            for (size_t i = 0; i < fmd.numCols; i++)
+                schema[i] = fmd.schema[0];
+        } else
+            schema = fmd.schema.data();
 
-        if (fmd.numCols <=0 && fmd.numRows <= 0 && fmd.schema[0] == ValueTypeCode::INVALID){//check if meta data file was read
-            readCsv(res, filename, ',');// TODO: if res= nullptr create new after generating fmd
-        }else{
-            ValueTypeCode *schema;
-            if (fmd.isSingleValueType) {
-                schema = new ValueTypeCode[fmd.numCols];
-                for (size_t i = 0; i < fmd.numCols; i++)
-                    schema[i] = fmd.schema[0];
-            } else
-                schema = fmd.schema.data();
-
-            std::string *labels;
-            if (fmd.labels.empty())
-                labels = nullptr;
-            else
-                labels = fmd.labels.data();
-            if (res == nullptr)
-                res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
-            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
-            if (fmd.isSingleValueType)
-                delete[] schema;
-        }
+        std::string *labels;
+        if (fmd.labels.empty())
+            labels = nullptr;
+        else
+            labels = fmd.labels.data();
+        if (res == nullptr)
+            res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
+        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
+        if (fmd.isSingleValueType)
+            delete[] schema;
     }
 };
 

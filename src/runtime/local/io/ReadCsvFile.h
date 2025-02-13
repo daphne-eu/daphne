@@ -42,7 +42,7 @@
 
 template <class DTRes> struct ReadCsvFile {
 
-    static void apply(DTRes *&res, const char *filename, char delim, size_t sampleRows) = delete;
+    static void apply(DTRes *&res, const char *filename, char delim) = delete;
 
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim) = delete;
 
@@ -56,8 +56,8 @@ template <class DTRes> struct ReadCsvFile {
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-template <class DTRes> void readCsvFile(DTRes *&res, const char *filename, char delim, size_t sampleRows) {
-    ReadCsvFile<DTRes>::apply(res, filename, delim, sampleRows);
+template <class DTRes> void readCsvFile(DTRes *&res, const char *filename, char delim) {
+    ReadCsvFile<DTRes>::apply(res, filename, delim);
 }
 
 template <class DTRes> void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim) {
@@ -128,9 +128,6 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
             }
         }
     }
-    static void apply(DenseMatrix<VT> *&res, const char *filename, char delim, size_t sampleRows) {
-        throw std::runtime_error("Reading a Frame from a CSV file is not supported");
-    }
 };
 
 template <> struct ReadCsvFile<DenseMatrix<std::string>> {
@@ -161,9 +158,6 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                 valuesRes[cell++] = val;
             }
         }
-    }
-    static void apply(DenseMatrix<std::string> *&res, const char *filename, char delim, size_t sampleRows) {
-        throw std::runtime_error("Reading a Frame from a CSV file is not supported");
     }
 };
 
@@ -196,9 +190,6 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
             }
         }
     }
-    static void apply(DenseMatrix<FixedStr16> *&res, const char *filename, char delim, size_t sampleRows) {
-        throw std::runtime_error("Reading a Frame from a CSV file is not supported");
-    }
 };
 
 // ----------------------------------------------------------------------------
@@ -227,9 +218,6 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
             readCOOUnsorted(res, rowColumnPairs, numRows, numCols, static_cast<size_t>(numNonZeros));
             DataObjectFactory::destroy(rowColumnPairs);
         }
-    }
-    static void apply(CSRMatrix<VT> *&res, const char *filename, char delim, size_t sampleRows) {
-        throw std::runtime_error("not yet implemented for csr");
     }
 
   private:
@@ -420,25 +408,10 @@ template <> struct ReadCsvFile<Frame> {
         delete[] rawCols;
         delete[] colTypes;
     }
-    static void apply(Frame *&res, const char *filename, char delim, size_t sampleRows) {
+    static void apply(Frame *&res, const char *filename, char delim) {
         File *file = openFile(filename);
-        FileMetaData fmd = generateFileMetaData(filename, delim, sampleRows);
-        ValueTypeCode *schema;
-        if (fmd.isSingleValueType) {
-            schema = new ValueTypeCode[fmd.numCols];
-            for (size_t i = 0; i < fmd.numCols; i++)
-                schema[i] = fmd.schema[0];
-        } else
-            schema = fmd.schema.data();
-
-        if (res == nullptr)
-            res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, fmd.labels.data(), false);
-
-        closeFile(file);
-
-        //read csv with generated meta data
-        file = openFile(filename);
-        readCsvFile(res, file, fmd.numRows, fmd.numCols, delim, schema);
+        // apply(res, file, delim, true);// do read without fmd, building meta data in the process
+        //  store
         closeFile(file);
     }
 };
