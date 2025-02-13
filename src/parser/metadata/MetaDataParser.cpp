@@ -22,14 +22,14 @@
 #include <fstream>
 #include <iostream>
 
-FileMetaData MetaDataParser::readMetaData(const std::string &filename_, char delim, size_t sampleRows) {
+FileMetaData MetaDataParser::readMetaData(const std::string &filename_, char delim, bool isMatrix, size_t sampleRows) {
     std::string metaFilename = filename_ + ".meta";
     std::ifstream ifs(metaFilename, std::ios::in);
     if (!ifs.good()) {
         int extv = extValue(&filename_[0]);
         // TODO: Support other file types than csv for metadata generation
         if (extv == 0) {
-            FileMetaData fmd = generateFileMetaData(filename_, delim, sampleRows);
+            FileMetaData fmd = generateFileMetaData(filename_, delim, sampleRows, isMatrix);
             try {
                 writeMetaData(filename_, fmd);
             } catch (std::exception &e) {
