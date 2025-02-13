@@ -94,6 +94,7 @@ struct DaphneUserConfig {
                                                 // might be the optimal.
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
+    int numberOfSampleRows = 100; // TODO: investigate what would be a reasonable default
 
     // hdfs
     bool use_hdfs = false;
