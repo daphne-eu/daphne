@@ -109,7 +109,7 @@ void KernelCatalogParser::mapTypes(const std::vector<std::string> &in, std::vect
     }
 }
 
-void KernelCatalogParser::parseKernelCatalog(const std::string &filePath, KernelCatalog &kc) const {
+void KernelCatalogParser::parseKernelCatalog(const std::string &filePath, KernelCatalog &kc, int64_t priority) const {
     std::filesystem::path dirPath = std::filesystem::path(filePath).parent_path();
     try {
         std::ifstream kernelsConfigFile(filePath);
@@ -130,7 +130,7 @@ void KernelCatalogParser::parseKernelCatalog(const std::string &filePath, Kernel
             mapTypes(kernelData["resTypes"], resTypes, "result", kernelFuncName, opMnemonic, backend);
             std::vector<mlir::Type> argTypes;
             mapTypes(kernelData["argTypes"], argTypes, "argument", kernelFuncName, opMnemonic, backend);
-            kc.registerKernel(opMnemonic, KernelInfo(kernelFuncName, resTypes, argTypes, backend, libPath));
+            kc.registerKernel(opMnemonic, KernelInfo(kernelFuncName, resTypes, argTypes, backend, libPath, priority));
         }
     } catch (std::exception &e) {
         throw std::runtime_error("error while parsing kernel catalog file `" + filePath + "`: " + e.what());

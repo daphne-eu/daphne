@@ -65,6 +65,7 @@ nav:
     - FPGAconfiguration.md
     - MPI-Usage.md
     - Profiling.md
+    - 'Custom Extensions': Extensions.md
   - 'Developers':
     - development/Contributing.md
     - development/BuildingDaphne.md

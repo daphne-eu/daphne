@@ -35,6 +35,7 @@
 #include "llvm/ADT/ArrayRef.h"
 
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -431,7 +432,8 @@ class KernelReplacement : public RewritePattern {
             const size_t numArgs = lookupArgTys.size();
             const size_t numRess = lookupResTys.size();
             int chosenKernelIdx = -1;
-            for (size_t i = 0; i < kernelInfos.size() && chosenKernelIdx == -1; i++) {
+            int64_t chosenKernelPriority = std::numeric_limits<int64_t>::min();
+            for (size_t i = 0; i < kernelInfos.size(); i++) {
                 auto ki = kernelInfos[i];
                 if (ki.backend != backend)
                     continue;
@@ -447,8 +449,11 @@ class KernelReplacement : public RewritePattern {
                 for (size_t i = 0; i < numRess && !mismatch; i++)
                     if (lookupResTys[i] != ki.resTypes[i])
                         mismatch = true;
-                if (!mismatch)
+
+                if (!mismatch && (ki.priority > chosenKernelPriority || chosenKernelIdx == -1)) {
                     chosenKernelIdx = i;
+                    chosenKernelPriority = ki.priority;
+                }
             }
             if (chosenKernelIdx == -1) {
                 std::stringstream s;
