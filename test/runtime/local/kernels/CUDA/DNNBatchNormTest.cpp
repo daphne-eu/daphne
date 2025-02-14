@@ -24,7 +24,7 @@ void check(const DT *in, const DT *gamma, const DT *beta, const DT *ema_mean, co
            DaphneContext *dctx) {
     DT *res = nullptr;
     typename DT::VT epsilon = 1e-5;
-    CUDA::BatchNorm::Forward<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
+    CUDA::BatchNormInferenceForward<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 

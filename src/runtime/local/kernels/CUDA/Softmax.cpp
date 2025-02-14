@@ -17,10 +17,10 @@
 #include "Softmax.h"
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
-namespace CUDA::Softmax {
+namespace CUDA {
 
 template <typename DTRes, typename DTArg>
-void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
+void Softmax<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
     const size_t deviceID = 0; // ToDo: multi device support
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
@@ -47,6 +47,6 @@ void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
                                     d_res));
 }
 
-template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
-template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
+template struct Softmax<DenseMatrix<float>, DenseMatrix<float>>;
+template struct Softmax<DenseMatrix<double>, DenseMatrix<double>>;
 } // namespace CUDA::Softmax

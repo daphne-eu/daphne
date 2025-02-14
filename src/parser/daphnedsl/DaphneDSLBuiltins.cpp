@@ -222,7 +222,7 @@ mlir::Value DaphneDSLBuiltins::createAffineFwdOp(mlir::Location loc, const std::
         builder.create<mlir::daphne::AffineForwardOp>(loc, input_data.getType(), input_data, weights_data, bias_data));
 }
 
-mlir::Value DaphneDSLBuiltins::createBatchNorm2dTestFwdOp(mlir::Location loc, const std::string &func,
+mlir::Value DaphneDSLBuiltins::createBatchNorm2dInferenceFwdOp(mlir::Location loc, const std::string &func,
                                                           const std::vector<mlir::Value> &args) {
     const size_t numArgs = args.size();
     checkNumArgsExact(loc, func, numArgs, 6);
@@ -235,7 +235,7 @@ mlir::Value DaphneDSLBuiltins::createBatchNorm2dTestFwdOp(mlir::Location loc, co
     mlir::Value ema_var = args[4];
     mlir::Value eps = args[5];
 
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::BatchNorm2DTestForwardOp>(
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::BatchNorm2DInferenceForwardOp>(
         loc, input_data.getType(), input_data, gamma, beta, ema_mean, ema_var, eps));
 }
 
@@ -730,7 +730,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     }
 
     if (func == "batch_norm2d") {
-        return createBatchNorm2dTestFwdOp(loc, func, args);
+        return createBatchNorm2dInferenceFwdOp(loc, func, args);
     }
 
     if (func == "biasAdd") {
@@ -738,7 +738,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         mlir::Value input_data = args[0];
         mlir::Value bias = args[1];
         return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::BiasAddForwardOp>(loc, input_data.getType(), input_data, bias));
+            builder.create<mlir::daphne::BiasAddOp>(loc, input_data.getType(), input_data, bias));
     }
 
     if (func == "conv2d") {
@@ -760,7 +760,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value input_data = args[0];
         return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::SoftmaxForwardOp>(loc, input_data.getType(), input_data));
+            builder.create<mlir::daphne::SoftmaxOp>(loc, input_data.getType(), input_data));
     }
 
     if (func == "batch_norm2d_backward") {

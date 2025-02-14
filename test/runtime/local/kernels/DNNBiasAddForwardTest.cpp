@@ -16,7 +16,7 @@
 
 #include "run_tests.h"
 
-#include "runtime/local/kernels/BiasAddForward.h"
+#include "runtime/local/kernels/BiasAdd.h"
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -25,7 +25,7 @@
 
 template <class DT> void checkBiasAddForward(const DT *input, const DT *bias, const DT *exp, DaphneContext *dctx) {
     DT *res = nullptr;
-    BiasAddForward<DT, DT>::apply(res, input, bias, dctx);
+    BiasAdd<DT, DT>::apply(res, input, bias, dctx);
     CHECK(*res == *exp);
 }
 
