@@ -114,6 +114,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         if rp["type"].endswith("*&"):
             rp["type"] = rp["type"][:-2] + "**"
             rp["isOutput"] = True
+        if "isReturnValue" in rp:
+            rp["isOutput"] = True
         if rp["type"].endswith("&"):
             rp["type"] = rp["type"][:-1]
             rp["isOutput"] = True
