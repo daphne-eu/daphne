@@ -59,7 +59,7 @@ ema_var = rand(F, 1, 1.0, 1.0, 1.0, seed);
 eps = 0.00001;
 
 t_start_conv = now();
-X_conv, Hout, Wout = conv2d(X, W, N, F, Isize, Isize, Fsize, Fsize, 1, 1, 1, 1, b);
+X_conv, Hout, Wout = conv2d(X, W, N, C, Isize, Isize, Fsize, Fsize, 1, 1, 1, 1, b);
 t_end_conv = now();
 X_bn = batch_norm2d(X_conv, gamma, beta, ema_mean, ema_var, eps);
 t_end_bn = now();
