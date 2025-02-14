@@ -97,7 +97,8 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
                         cols = 1;
                 }
                 logger->warn("op: {}, opSize: {}, adding dims: {}x{}, bytes: {}\nsetting unknowns to 1 for this test",
-                             op->getName().getStringRef().str(), opSize, rows, cols, rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8);
+                             op->getName().getStringRef().str(), opSize, rows, cols,
+                             rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8);
                 opSize += rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
@@ -117,19 +118,15 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
                     if (cols < 0)
                         cols = 1;
                 }
-                logger->warn("op: {}, opSize: {}, adding dims: {}x{}, bytes: {}\n",
-                             op->getName().getStringRef().str(), opSize, rows, cols, rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8);
+                logger->warn("op: {}, opSize: {}, adding dims: {}x{}, bytes: {}\n", op->getName().getStringRef().str(),
+                             opSize, rows, cols, rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8);
                 opSize += rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
-        logger->debug("Input size: {} KB, Output size: {} KB, Total required: {} MB, Mem budget: {}, required bytes: {}, budget bytes: {}", 
-            inSize / 1024, 
-            (opSize - inSize) / 1024,
-            opSize / 1048576,
-            mem_budget / 1048576,
-            opSize,
-            mem_budget
-        );
+        logger->debug("Input size: {} KB, Output size: {} KB, Total required: {} MB, Mem budget: {}, required bytes: "
+                      "{}, budget bytes: {}",
+                      inSize / 1024, (opSize - inSize) / 1024, opSize / 1048576, mem_budget / 1048576, opSize,
+                      mem_budget);
 
         return opSize < mem_budget;
     }

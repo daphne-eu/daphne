@@ -672,11 +672,14 @@ void daphne::setInferedTypes(Operation *op, bool partialInferenceAllowed) {
     try {
         types = daphne::tryInferType(op);
     } catch (std::runtime_error &re) {
-        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__), opStr + " " + re.what());
+        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__),
+                                         opStr + " " + re.what());
     } catch (std::exception &e) {
-        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__), opStr + " " + e.what());
+        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__),
+                                         opStr + " " + e.what());
     } catch (...) {
-        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__), "Unknown exception in: " + opStr);
+        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__),
+                                         "Unknown exception in: " + opStr);
     }
     const size_t numRes = op->getNumResults();
     if (types.size() != numRes)

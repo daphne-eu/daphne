@@ -109,7 +109,7 @@ class DaphneDSLBuiltins {
     mlir::Value createAffineFwdOp(mlir::Location loc, const std::string &func, const std::vector<mlir::Value> &args);
 
     mlir::Value createBatchNorm2dInferenceFwdOp(mlir::Location loc, const std::string &func,
-                                           const std::vector<mlir::Value> &args);
+                                                const std::vector<mlir::Value> &args);
 
     mlir::ResultRange createConv2dFwdOp(mlir::Location loc, const std::string &func,
                                         const std::vector<mlir::Value> &args);
