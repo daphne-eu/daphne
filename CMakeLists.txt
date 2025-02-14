@@ -222,6 +222,35 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/include)
 # Path to DuckDB libraries (e.g., thirdparty/duckdb/lib)
 link_directories(${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib)
 
+
+if (NOT ODBC_INCLUDE_DIR)
+    set(ODBC_INCLUDE_DIR "/usr/include") # Modify if needed
+endif()
+
+include_directories(${ODBC_INCLUDE_DIR})
+include_directories(/usr/local/include)
+
+find_package(ODBC REQUIRED)
+
+
+find_library(ODBC_LIBRARY
+        NAMES odbc
+        HINTS /usr/lib/x86_64-linux-gnu /usr/local/lib
+        REQUIRED
+)
+
+find_library(ODBCINST_LIBRARY
+        NAMES odbcinst
+        HINTS /usr/lib/x86_64-linux-gnu /usr/local/lib
+        REQUIRED
+)
+
+find_library(DUCKDB_ODBC_LIBRARY
+        NAMES duckdb_odbc
+        HINTS ${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib/duckdb_odbc-linux-amd64
+        REQUIRED
+)
+
 # *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************
