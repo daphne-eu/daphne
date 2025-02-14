@@ -96,23 +96,42 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
                     if (cols < 0)
                         cols = 1;
                 }
+                logger->warn("op: {}, opSize: {}, adding dims: {}x{}, bytes: {}\nsetting unknowns to 1 for this test",
+                             op->getName().getStringRef().str(), opSize, rows, cols, rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8);
                 opSize += rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
         auto inSize = opSize;
-        logger->trace("op in size: {} kb", opSize / 1024);
+        logger->trace("op input size: {} kb", opSize / 1024);
         for (auto result : op->getResults()) {
             auto type = result.getType();
             if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
-                opSize += t.getNumRows() * t.getNumCols() * t.getElementType().getIntOrFloatBitWidth() / 8;
+                auto rows = t.getNumRows();
+                auto cols = t.getNumCols();
+                if (rows < 0 || cols < 0) {
+                    logger->warn("Ignoring unknown dimension in max mem check of {}"
+                                 "dims are: {}x{}\nsetting unknowns to 1 for this test",
+                                 op->getName().getStringRef().str(), rows, cols);
+                    if (rows < 0)
+                        rows = 1;
+                    if (cols < 0)
+                        cols = 1;
+                }
+                logger->warn("op: {}, opSize: {}, adding dims: {}x{}, bytes: {}\n",
+                             op->getName().getStringRef().str(), opSize, rows, cols, rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8);
+                opSize += rows * cols * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
-        logger->debug("op out size: {} kb\ntotal op size: {} mb", (opSize - inSize) / 1024, opSize / 1048576);
+        logger->debug("Input size: {} KB, Output size: {} KB, Total required: {} MB, Mem budget: {}, required bytes: {}, budget bytes: {}", 
+            inSize / 1024, 
+            (opSize - inSize) / 1024,
+            opSize / 1048576,
+            mem_budget / 1048576,
+            opSize,
+            mem_budget
+        );
 
-        if (opSize < mem_budget)
-            return true;
-        else
-            return false;
+        return opSize < mem_budget;
     }
 
     // ToDo: requirements should be set per operator in tablegen
