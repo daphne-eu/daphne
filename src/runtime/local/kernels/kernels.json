@@ -5601,12 +5601,14 @@
                     "name": "res"
                 },
                 {
-                    "type": "size_t&",
-                    "name": "res_h"
+                    "type": "size_t *",
+                    "name": "res_h",
+                    "isReturnValue": true
                 },
                 {
-                    "type": "size_t&",
-                    "name": "res_w"
+                    "type": "size_t *",
+                    "name": "res_w",
+                    "isReturnValue": true
                 },
                 {
                     "type": "const DTArg *",

@@ -19,7 +19,7 @@
 
 namespace CUDA::Convolution {
 template <typename DTRes, typename DTArg>
-void Forward<DTRes, DTArg>::apply(DTRes *&res, size_t &res_h, size_t &res_w, const DTArg *data, const DTArg *filter,
+void Forward<DTRes, DTArg>::apply(DTRes *&res, size_t *res_h, size_t *res_w, const DTArg *data, const DTArg *filter,
                                   const DTArg *bias, const size_t batch_size, const size_t num_channels,
                                   const size_t img_h, const size_t img_w, const size_t filter_h, const size_t filter_w,
                                   const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w,
@@ -29,7 +29,15 @@ void Forward<DTRes, DTArg>::apply(DTRes *&res, size_t &res_h, size_t &res_w, con
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
     using VT = typename DTRes::VT;
-    auto F = filter->getNumRows(); // num filters
+    const auto F = filter->getNumRows(); // num filters
+    const size_t expected_elements = F * num_channels * filter_h * filter_w;
+    if (filter->getNumItems() != expected_elements) {
+        std::ostringstream oss;
+        oss << "Convolution kernel dimension mismatch: expected " << expected_elements << " elements [" << F << "x"
+            << num_channels << "x" << filter_h << "x" << filter_w << "] but got " << filter->getNumItems() << ".";
+        throw std::invalid_argument(oss.str());
+    }
+
     const VT blend_alpha = 1;
     VT blend_beta = 0;
     const VT *d_input = data->getValues(&alloc_desc);
@@ -69,8 +77,8 @@ void Forward<DTRes, DTArg>::apply(DTRes *&res, size_t &res_h, size_t &res_w, con
     int c = tensorOuputDimA[1];
     int h = tensorOuputDimA[2];
     int w = tensorOuputDimA[3];
-    res_h = h;
-    res_w = w;
+    *res_h = h;
+    *res_w = w;
     //        size_t out_buf_size = n * c * h * w * sizeOfDataType;
     CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format,
                                            ctx->template getCUDNNDataType<VT>(), n, c, h, w));
