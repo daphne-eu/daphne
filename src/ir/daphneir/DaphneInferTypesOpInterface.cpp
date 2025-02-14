@@ -16,6 +16,7 @@
 
 #include <compiler/utils/CompilerUtils.h>
 #include <compiler/utils/TypePrinting.h>
+#include <exception>
 #include <ir/daphneir/Daphne.h>
 #include <util/ErrorHandler.h>
 
@@ -52,10 +53,10 @@ Type getFrameColumnTypeByLabel(Operation *op, daphne::FrameType ft, Value labelV
         // Did not find the label.
         throw ErrorHandler::compilerError(op->getLoc(), "InferTypesOpInterface.cpp:" + std::to_string(__LINE__),
                                           "the specified label was not found: '" + labelStr + "'");
-    } else
-        // The column labels are unknown, so we cannot tell what type
-        // the column with the specified label has.
-        return daphne::UnknownType::get(ft.getContext());
+    }
+    // The column labels are unknown, so we cannot tell what type
+    // the column with the specified label has.
+    return daphne::UnknownType::get(ft.getContext());
 }
 
 // ****************************************************************************
@@ -557,37 +558,31 @@ std::vector<Type> daphne::RecodeOp::inferTypes() {
     return {resTy, dictTy};
 }
 
-std::vector<Type> daphne::Conv2DForwardOp::inferTypes() {
+std::vector<Type> daphne::MaxPoolForwardOp::inferTypes() {
     MLIRContext *ctx = getContext();
     Builder builder(ctx);
-    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
-    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
-
+    auto inputType = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
     // output matrix of same type as input, height/width dimensions as
     // size/index type
-    return {restype2, builder.getIndexType(), builder.getIndexType()};
+    return {daphne::MatrixType::get(ctx, inputType.getElementType()), builder.getIndexType(), builder.getIndexType()};
 }
 
 std::vector<Type> daphne::AvgPoolForwardOp::inferTypes() {
     MLIRContext *ctx = getContext();
     Builder builder(ctx);
-    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
-    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
-
+    auto inputType = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
     // output matrix of same type as input, height/width dimensions as
     // size/index type
-    return {restype2, builder.getIndexType(), builder.getIndexType()};
+    return {daphne::MatrixType::get(ctx, inputType.getElementType()), builder.getIndexType(), builder.getIndexType()};
 }
 
-std::vector<Type> daphne::MaxPoolForwardOp::inferTypes() {
+std::vector<Type> daphne::Conv2DForwardOp::inferTypes() {
     MLIRContext *ctx = getContext();
     Builder builder(ctx);
-    auto restype = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
-    auto restype2 = daphne::MatrixType::get(ctx, restype.getElementType());
-
+    auto inputType = llvm::dyn_cast<daphne::MatrixType>(getInput().getType());
     // output matrix of same type as input, height/width dimensions as
     // size/index type
-    return {restype2, builder.getIndexType(), builder.getIndexType()};
+    return {daphne::MatrixType::get(ctx, inputType.getElementType()), builder.getIndexType(), builder.getIndexType()};
 }
 
 std::vector<Type> daphne::CreateListOp::inferTypes() {
@@ -641,13 +636,14 @@ std::vector<Type> daphne::RemoveOp::inferTypes() {
 // ****************************************************************************
 
 std::vector<Type> daphne::tryInferType(Operation *op) {
+    // If the operation implements the type inference interface,
+    // we apply that.
     if (auto inferTypeOp = llvm::dyn_cast<daphne::InferTypes>(op))
-        // If the operation implements the type inference interface,
-        // we apply that.
         return inferTypeOp.inferTypes();
-    else if (op->getNumResults() == 1) {
-        // If the operation does not implement the type inference interface
-        // and has exactly one result, we utilize its type inference traits.
+
+    // If the operation does not implement the type inference interface
+    // and has exactly one result, we utilize its type inference traits.
+    if (op->getNumResults() == 1) {
         mlir::Type resTy;
         try {
             // Note that all our type inference traits assume that the operation
@@ -657,25 +653,30 @@ std::vector<Type> daphne::tryInferType(Operation *op) {
             throw ErrorHandler::rethrowError("InferTypesOpInterface", e.what());
         }
         return {resTy};
-    } else {
-        // If the operation does not implement the type inference interface
-        // and has zero or more than one results, we return unknowns.
-        std::vector<Type> resTys;
-        for (size_t i = 0; i < op->getNumResults(); i++)
-            resTys.push_back(daphne::UnknownType::get(op->getContext()));
-        return resTys;
     }
+
+    // If the operation does not implement the type inference interface
+    // and has zero or more than one results, we return the currently known set of types
+    std::vector<Type> resTys;
+    for (auto t : op->getResultTypes())
+        resTys.push_back(t);
+    return resTys;
 }
 
 void daphne::setInferedTypes(Operation *op, bool partialInferenceAllowed) {
     // Try to infer the types of all results of this operation.
+    std::string opStr;
+    llvm::raw_string_ostream ss(opStr);
+    op->print(ss);
     std::vector<Type> types;
     try {
         types = daphne::tryInferType(op);
     } catch (std::runtime_error &re) {
-        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__), re.what());
+        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__), opStr + " " + re.what());
+    } catch (std::exception &e) {
+        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__), opStr + " " + e.what());
     } catch (...) {
-        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__), "Unknown exception.");
+        throw ErrorHandler::rethrowError("InferTypesOpInterface.cpp:" + std::to_string(__LINE__), "Unknown exception in: " + opStr);
     }
     const size_t numRes = op->getNumResults();
     if (types.size() != numRes)

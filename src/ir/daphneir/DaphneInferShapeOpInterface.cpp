@@ -580,14 +580,16 @@ template <template <size_t> class tryParametricTrait> struct tryParamTraitUntil<
 
 template <size_t i> struct tryNumRowsFromIthScalar {
     static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<NumRowsFromIthScalar<i>::template Impl>())
+        if (op->hasTrait<NumRowsFromIthScalar<i>::template Impl>()) {
             numRows = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
+        }
     }
 };
 template <size_t i> struct tryNumColsFromIthScalar {
     static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<NumColsFromIthScalar<i>::template Impl>())
+        if (op->hasTrait<NumColsFromIthScalar<i>::template Impl>()) {
             numCols = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
+        }
     }
 };
 
