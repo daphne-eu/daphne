@@ -17,9 +17,9 @@
 #include "BatchNorm.h"
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
-namespace CUDA::BatchNorm {
+namespace CUDA {
 template <typename DTRes, typename DTArg>
-void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta,
+void BatchNormInferenceForward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta,
                                   const DTArg *ema_mean, const DTArg *ema_var, const typename DTArg::VT eps,
                                   DCTX(dctx)) {
     const size_t deviceID = 0; // ToDo: multi device support
@@ -54,6 +54,6 @@ void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *g
         ctx->dst_tensor_desc, d_res, ctx->bn_tensor_desc, d_gamma, d_beta, d_ema_mean, d_ema_var, eps));
 }
 
-template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
-template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
-} // namespace CUDA::BatchNorm
+template struct BatchNormInferenceForward<DenseMatrix<float>, DenseMatrix<float>>;
+template struct BatchNormInferenceForward<DenseMatrix<double>, DenseMatrix<double>>;
+} // namespace CUDA

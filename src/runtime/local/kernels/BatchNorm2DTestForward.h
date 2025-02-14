@@ -35,7 +35,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes, class DTArg> struct BatchNorm2DTestForward {
+template <class DTRes, class DTArg> struct BatchNorm2DInferenceForward {
     static void apply(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta, const DTArg *emaMean,
                       const DTArg *emaVar, const typename DTArg::VT eps, DCTX(dctx)) = delete;
 };
@@ -45,9 +45,9 @@ template <class DTRes, class DTArg> struct BatchNorm2DTestForward {
 // ****************************************************************************
 
 template <class DTRes, class DTArg>
-void batchNorm2DTestForward(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta, const DTArg *emaMean,
+void batchNorm2DInferenceForward(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta, const DTArg *emaMean,
                             const DTArg *emaVar, const typename DTArg::VT eps, DCTX(dctx)) {
-    BatchNorm2DTestForward<DTRes, DTArg>::apply(res, in, gamma, beta, emaMean, emaVar, eps, dctx);
+    BatchNorm2DInferenceForward<DTRes, DTArg>::apply(res, in, gamma, beta, emaMean, emaVar, eps, dctx);
 }
 
 // ****************************************************************************
@@ -74,7 +74,7 @@ template <typename VT> static inline VT getVar(const VT *in, uint32_t start, uin
     return ret * plen;
 }
 
-template <typename VTRes, typename VTArg> struct BatchNorm2DTestForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+template <typename VTRes, typename VTArg> struct BatchNorm2DInferenceForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *in, const DenseMatrix<VTArg> *gamma,
                       const DenseMatrix<VTArg> *beta, const DenseMatrix<VTArg> *emaMean,
                       const DenseMatrix<VTArg> *emaVar, const VTArg eps, DCTX(dctx)) {

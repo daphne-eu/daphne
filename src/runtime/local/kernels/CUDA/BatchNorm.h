@@ -22,9 +22,9 @@
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
 
-namespace CUDA::BatchNorm {
-template <typename DTRes, typename DTArg> struct Forward {
+namespace CUDA {
+template <typename DTRes, typename DTArg> struct BatchNormInferenceForward {
     static void apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta, const DTArg *ema_mean,
                       const DTArg *ema_var, typename DTArg::VT eps, DCTX(dctx));
 };
-} // namespace CUDA::BatchNorm
+} // namespace CUDA
