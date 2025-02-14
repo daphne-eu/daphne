@@ -49,4 +49,4 @@ void Softmax<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
 
 template struct Softmax<DenseMatrix<float>, DenseMatrix<float>>;
 template struct Softmax<DenseMatrix<double>, DenseMatrix<double>>;
-} // namespace CUDA::Softmax
+} // namespace CUDA

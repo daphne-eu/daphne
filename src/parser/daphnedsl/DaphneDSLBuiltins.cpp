@@ -223,7 +223,7 @@ mlir::Value DaphneDSLBuiltins::createAffineFwdOp(mlir::Location loc, const std::
 }
 
 mlir::Value DaphneDSLBuiltins::createBatchNorm2dInferenceFwdOp(mlir::Location loc, const std::string &func,
-                                                          const std::vector<mlir::Value> &args) {
+                                                               const std::vector<mlir::Value> &args) {
     const size_t numArgs = args.size();
     checkNumArgsExact(loc, func, numArgs, 6);
 
@@ -759,8 +759,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     if (func == "softmax") {
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value input_data = args[0];
-        return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::SoftmaxOp>(loc, input_data.getType(), input_data));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::SoftmaxOp>(loc, input_data.getType(), input_data));
     }
 
     if (func == "batch_norm2d_backward") {

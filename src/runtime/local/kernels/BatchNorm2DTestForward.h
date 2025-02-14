@@ -45,8 +45,8 @@ template <class DTRes, class DTArg> struct BatchNorm2DInferenceForward {
 // ****************************************************************************
 
 template <class DTRes, class DTArg>
-void batchNorm2DInferenceForward(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta, const DTArg *emaMean,
-                            const DTArg *emaVar, const typename DTArg::VT eps, DCTX(dctx)) {
+void batchNorm2DInferenceForward(DTRes *&res, const DTArg *in, const DTArg *gamma, const DTArg *beta,
+                                 const DTArg *emaMean, const DTArg *emaVar, const typename DTArg::VT eps, DCTX(dctx)) {
     BatchNorm2DInferenceForward<DTRes, DTArg>::apply(res, in, gamma, beta, emaMean, emaVar, eps, dctx);
 }
 

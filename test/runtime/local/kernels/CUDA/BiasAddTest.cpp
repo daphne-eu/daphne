@@ -19,10 +19,8 @@
 #include "runtime/local/datagen/GenGivenVals.h"
 #include "runtime/local/kernels/CUDA/BiasAdd.h"
 
-template <class DT>
-void checkBiasAdd(const DT* data, const DT* bias, const DT* expected, DaphneContext* dctx)
-{
-    DT* res = nullptr;
+template <class DT> void checkBiasAdd(const DT *data, const DT *bias, const DT *expected, DaphneContext *dctx) {
+    DT *res = nullptr;
     CUDA::BiasAdd<DT, DT>::apply(res, data, bias, dctx);
 
     CHECK(Approx(*(res->getValues())).epsilon(1e-6) == *(expected->getValues()));
@@ -45,4 +43,3 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::BiasAdd", TAG_KERNELS, (DenseMatrix), (float, 
     DataObjectFactory::destroy(bias);
     DataObjectFactory::destroy(expected);
 }
-

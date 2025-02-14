@@ -19,9 +19,9 @@
 
 namespace CUDA {
 template <typename DTRes, typename DTArg>
-void BatchNormInferenceForward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta,
-                                  const DTArg *ema_mean, const DTArg *ema_var, const typename DTArg::VT eps,
-                                  DCTX(dctx)) {
+void BatchNormInferenceForward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *gamma,
+                                                    const DTArg *beta, const DTArg *ema_mean, const DTArg *ema_var,
+                                                    const typename DTArg::VT eps, DCTX(dctx)) {
     const size_t deviceID = 0; // ToDo: multi device support
     auto ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
