@@ -9,6 +9,10 @@
       
       
       
+        <link rel="prev" href="../Profiling/">
+      
+      
+        <link rel="next" href="../development/Contributing/">
       
       
       <link rel="icon" href="../assets/logo_small.png">
@@ -16,7 +20,7 @@
     
     
       
-        <title>Extensions - DAPHNE</title>
+        <title>Custom Extensions - DAPHNE</title>
       
     
     
@@ -105,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Extensions
+              Custom Extensions
             
           </span>
         </div>
@@ -222,10 +226,12 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../RunningDaphneLocally/" class="md-tabs__link">
           
   
@@ -399,23 +405,28 @@
       
   
   
+    
   
   
+  
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -427,7 +438,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Users
@@ -905,6 +916,135 @@
 
               
             
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Custom Extensions
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Custom Extensions
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#custom-kernel-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Kernel Extensions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom Kernel Extensions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-implementing-a-kernel-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Implementing a Kernel Extension
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-building-a-kernel-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Building a Kernel Extension
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-using-a-kernel-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Using a Kernel Extension
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3: Using a Kernel Extension">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manual-use-of-custom-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual Use of Custom Kernels
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-use-of-custom-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automatic Use of Custom Kernels
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1327,6 +1467,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step 3: Using a Kernel Extension">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manual-use-of-custom-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual Use of Custom Kernels
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-use-of-custom-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automatic Use of Custom Kernels
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1490,9 +1654,10 @@ Additional details will follow.</p>
 </code></pre></div>
 <h3 id="step-3-using-a-kernel-extension">Step 3: Using a Kernel Extension</h3>
 <p>The kernels in a kernel extension can be used either automatically by DAPHNE or manually by the user.
-Automatic use is currently restricted to the selection of the kernel based on result/argument data/value types, but in the future we plan to support custom cost models as well.
-Besides that, the manual employment of custom kernels is very useful for experimentation, e.g., to see the impact of the kernel in the context of a larger integrated data analysis pipeline.
-To this end, DaphneDSL <a href="/daphne/DaphneDSL/LanguageRef#compiler-hints">compiler hints</a> tell DAPHNE to use a specific kernel, even though DAPHNE's optimizing compiler may not choose the kernel, otherwise.</p>
+The manual use has precedence over the automatic use.</p>
+<h4 id="manual-use-of-custom-kernels">Manual Use of Custom Kernels</h4>
+<p>The manual employment of custom kernels is very useful for experimentation, e.g., to see the impact of a particular kernel at a certain point of a larger integrated data analysis pipeline.
+To this end, DaphneDSL <a href="/daphne/DaphneDSL/LanguageRef#compiler-hints">compiler hints</a> tell DAPHNE to use a specific kernel in a specific place, even though DAPHNE's optimizing compiler may not choose the kernel, otherwise.</p>
 <p><em>Running example:</em></p>
 <p>A minimal example using a summation on a matrix of single-precision floating-point values could look as follows:</p>
 <p><code>demo.daphne</code>:
@@ -1512,7 +1677,7 @@ To this end, DaphneDSL <a href="/daphne/DaphneDSL/LanguageRef#compiler-hints">co
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="o">::</span><span class="nf">mySumSeq</span><span class="p">(</span><span class="n">X</span><span class="p">);</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nf">print</span><span class="p">(</span><span class="n">s</span><span class="p">);</span>
 </code></pre></div></p>
-<p>We execute this script with the following command, whereby the argument <code>--kernel-ext</code> specified the kernel catalog JSON file of the extension to use:
+<p>We execute this script with the following command, whereby the argument <code>--kernel-ext</code> specifies the kernel catalog JSON file of the extension to use:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>bin/daphne<span class="w"> </span>--kernel-ext<span class="w"> </span>scripts/examples/extensions/myKernels/myKernels.json<span class="w"> </span>scripts/examples/extensions/myKernels/demoSeq.daphne
 </code></pre></div></p>
 <p>Alternatively, we can try our custom SIMD-enabled <code>sum</code>-kernel by adapting the compiler hint accordingly:</p>
@@ -1524,6 +1689,21 @@ To this end, DaphneDSL <a href="/daphne/DaphneDSL/LanguageRef#compiler-hints">co
 <p>We execute this script by:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>bin/daphne<span class="w"> </span>--kernel-ext<span class="w"> </span>scripts/examples/extensions/myKernels/myKernels.json<span class="w"> </span>scripts/examples/extensions/myKernels/demoSIMD.daphne
 </code></pre></div></p>
+<h4 id="automatic-use-of-custom-kernels">Automatic Use of Custom Kernels</h4>
+<p>The automatic use of custom kernels is currently restricted to the selection of a kernel based on its result/argument data/value types and its priority level.
+In the future we plan to support custom cost models as well.</p>
+<p><em>Running example:</em></p>
+<p>Continuing the running example from above, we can make DAPHNE use the custom kernels <code>mySumSeq()</code> or <code>mySumSIMD()</code> even without a manual kernel hint by specifying a suitable <em>priority</em> when registering the <code>myKernels</code> extension with DAPHNE.</p>
+<p>Priority levels can optionally be specified with the <code>--kernel-ext</code> command line argument by appending a colon (<code>:</code>) followed by the priority as an integer.
+The default priority of <code>0</code> is used for all built-in kernels and for extension kernels in case no priority is specified.
+When registering a kernel extension, the given priority is assigned to <em>all</em> kernels provided by the extension.
+When multiple kernels are applicable for an operation based on the combination of argument/result data/value types as well as the backend, DAPHNE chooses the kernel with the highest priority.
+If there are multiple kernels with the highest priority, it is not specified which of them is used.</p>
+<p>By registering a kernel extension with a priority greater than zero, one can enforce that the kernels provided by the extension are always preferred over the built-in ones whenever they are applicable.
+For instance, the following command registers the <code>myKernels</code> extension with a priority of <code>1</code>.
+As the <code>myKernels</code> extension provides two kernels for the same operation, argument/result types, and backend, we cannot tell, based on priorities, which of these kernels will be used, but we can be sure that the built-in kernel will not be employed.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>bin/daphne<span class="w"> </span>--kernel-ext<span class="w"> </span>scripts/examples/extensions/myKernels/myKernels.json:1<span class="w"> </span>scripts/examples/extensions/myKernels/demo.daphne
+</code></pre></div>
 
 
 
