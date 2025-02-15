@@ -26,10 +26,10 @@
 #include <runtime/local/io/FileMetaData.h>
 
 // Function to create and save the positional map
-void writePositionalMap(const char *filename, const std::vector<std::pair<std::streampos, std::vector<uint32_t>>> &posMap);
+void writePositionalMap(const char *filename, const std::vector<std::pair<std::streampos, std::vector<uint16_t>>> &posMap);
 
 // Function to read the positional map
-std::vector<std::pair<std::streampos, std::vector<uint32_t>>> readPositionalMap(const char *filename);
+std::vector<std::pair<std::streampos, std::vector<uint16_t>>> readPositionalMap(const char *filename);
 
 // Conversion of std::string.
 

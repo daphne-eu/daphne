@@ -134,7 +134,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                 }
             } else if (usePosMap) {
                 // Read positional map similar to Frame specialization.
-                std::vector<std::pair<std::streampos, std::vector<std::uint32_t>>> posMap = readPositionalMap(filename);
+                std::vector<std::pair<std::streampos, std::vector<std::uint16_t>>> posMap = readPositionalMap(filename);
                 VT *valuesRes = res->getValues();
                 for (size_t r = 0; r < numRows; r++) {
                     file->pos = static_cast<size_t>(posMap[r].first);
@@ -232,7 +232,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
         }
         if (useOptimized) {
             // Read stored positional map.
-            std::vector<std::pair<std::streampos, std::vector<std::uint32_t>>> posMap = readPositionalMap(filename);
+            std::vector<std::pair<std::streampos, std::vector<std::uint16_t>>> posMap = readPositionalMap(filename);
             std::string *valuesRes = res->getValues();
             size_t cell = 0;
             for (size_t r = 0; r < numRows; r++) {
@@ -306,7 +306,7 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
             }
         }
         if (useOptimized) {
-            std::vector<std::pair<std::streampos, std::vector<std::uint32_t>>> posMap = readPositionalMap(filename);
+            std::vector<std::pair<std::streampos, std::vector<std::uint16_t>>> posMap = readPositionalMap(filename);
             FixedStr16 *valuesRes = res->getValues();
             for (size_t r = 0; r < numRows; r++) {
                 file->pos = static_cast<size_t>(posMap[r].first);
@@ -556,6 +556,8 @@ template <> struct ReadCsvFile<Frame> {
             rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
             colTypes[i] = res->getColumnType(i);
         }
+        using clock = std::chrono::high_resolution_clock;
+        auto time = clock::now();
         // Determine if any optimized branch should be used.
         bool useOptimized = false;
         bool useBin = false;
@@ -587,7 +589,7 @@ template <> struct ReadCsvFile<Frame> {
                 }
             } else if (usePosMap) {
                 // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
-                std::vector<std::pair<std::streampos, std::vector<std::uint32_t>>> posMap = readPositionalMap(filename);
+                std::vector<std::pair<std::streampos, std::vector<std::uint16_t>>> posMap = readPositionalMap(filename);
                 std::ifstream ifs(filename, std::ios::binary);
                 if (!ifs.good())
                     throw std::runtime_error("Optimized branch: failed to open file for in-memory buffering");
@@ -668,11 +670,12 @@ template <> struct ReadCsvFile<Frame> {
                 }
                 delete[] rawCols;
                 delete[] colTypes;
+                std::cout << "time reading using posMAp: " << clock::now() - time << std::endl;
                 return;
             }
         }
         // Normal branch: iterate row by row and for each field save its absolute offset.
-        std::vector<std::pair<std::streampos, std::vector<uint32_t>>> posMap;
+        std::vector<std::pair<std::streampos, std::vector<uint16_t>>> posMap;
         if (opt.opt_enabled && opt.posMap)
             posMap.resize(numRows);
         std::streampos currentPos = 0;
@@ -755,6 +758,7 @@ template <> struct ReadCsvFile<Frame> {
             }
             currentPos += ret;
         }
+        std::cout << "time reading without posMap: " << clock::now() - time << std::endl;
         if (opt.opt_enabled) {
             if (opt.posMap)
                 try{
@@ -763,6 +767,7 @@ template <> struct ReadCsvFile<Frame> {
                     // positional map can still be used
                 }
             if (opt.saveBin){
+                time = clock::now();
                 bool hasString = false;
                 // Check if there are any string columns
                 for (size_t i = 0; i < res->getNumCols(); i++) {
@@ -773,7 +778,9 @@ template <> struct ReadCsvFile<Frame> {
                 }
                 if (!hasString){ //daphnes binary format does not support strings yet
                     writeDaphne(res, getDaphneFile(filename).c_str());
+                    std::cout << "time writing daphne: " << clock::now() - time << std::endl;
                 }
+                
             }
         }
         delete[] rawCols;
