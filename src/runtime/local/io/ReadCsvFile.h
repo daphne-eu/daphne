@@ -134,10 +134,10 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                 }
             } else if (usePosMap) {
                 // Read positional map similar to Frame specialization.
-                std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
+                std::vector<std::pair<std::streampos, std::vector<std::uint32_t>>> posMap = readPositionalMap(filename);
                 VT *valuesRes = res->getValues();
                 for (size_t r = 0; r < numRows; r++) {
-                    file->pos = posMap[0][r];
+                    file->pos = static_cast<size_t>(posMap[r].first);
                     if (fseek(file->identifier, file->pos, SEEK_SET) != 0)
                         throw std::runtime_error("Failed to seek to beginning of row");
                     if (getFileLine(file) == -1)
@@ -153,7 +153,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                         pos++; // skip delimiter
                     }
                 }
-                writePositionalMap(filename, posMap);
+                //writePositionalMap(filename, posMap);
                 if (opt.saveBin)
                     try{
                         writeDaphne(res, getDaphneFile(filename).c_str());
@@ -232,18 +232,17 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
         }
         if (useOptimized) {
             // Read stored positional map.
-            std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
+            std::vector<std::pair<std::streampos, std::vector<std::uint32_t>>> posMap = readPositionalMap(filename);
             std::string *valuesRes = res->getValues();
             size_t cell = 0;
             for (size_t r = 0; r < numRows; r++) {
-                file->pos = posMap[0][r];
+                file->pos = static_cast<size_t>(posMap[r].first);
                 if (fseek(file->identifier, file->pos, SEEK_SET) != 0)
                     throw std::runtime_error("Failed to seek to beginning of row");
                 if (getFileLine(file) == -1)
                     throw std::runtime_error("Optimized branch: getFileLine failed");
                 for (size_t c = 0; c < numCols; c++) {
-                    size_t relativeOffset = static_cast<size_t>(posMap[c][r] - posMap[0][r]);
-                    size_t pos = relativeOffset;
+                    size_t pos = static_cast<size_t>(posMap[r].second[c]);
                     std::string val;
                     pos = setCString(file, pos, &val, delim);
                     // For the last column no delimiter is expected.
@@ -253,7 +252,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                 }
             }
             // Update the positional map.
-            writePositionalMap(filename, posMap);
+            //writePositionalMap(filename, posMap);
             return;
         }
         size_t cell = 0;
@@ -276,8 +275,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                 valuesRes[cell++] = val;
             }
         }
-        if(opt.posMap)
-            writePositionalMap(filename, posMap);
+
     }
 };
 
@@ -308,17 +306,16 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
             }
         }
         if (useOptimized) {
-            std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
+            std::vector<std::pair<std::streampos, std::vector<std::uint32_t>>> posMap = readPositionalMap(filename);
             FixedStr16 *valuesRes = res->getValues();
             for (size_t r = 0; r < numRows; r++) {
-                file->pos = posMap[0][r];
+                file->pos = static_cast<size_t>(posMap[r].first);
                 if (fseek(file->identifier, file->pos, SEEK_SET) != 0)
                     throw std::runtime_error("Failed to seek to beginning of row");
                 if (getFileLine(file) == -1)
                     throw std::runtime_error("Optimized branch: getFileLine failed");
                 for (size_t c = 0; c < numCols; c++) {
-                    size_t relativeOffset = static_cast<size_t>(posMap[c][r] - posMap[0][r]);
-                    size_t pos = relativeOffset;
+                    size_t pos = static_cast<size_t>(posMap[r].second[c]);
                     std::string val;
                     pos = setCString(file, pos, &val, delim);
                     if(c < numCols - 1)
@@ -326,7 +323,6 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
                     valuesRes[r].set(val.c_str());
                 }
             }
-            writePositionalMap(filename, posMap);
             return;
         }
         
@@ -349,8 +345,6 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
                 // TODO This assumes that rowSkip == numCols.
                 valuesRes[cell++].set(val.c_str());
             }
-            if(opt.posMap)
-                writePositionalMap(filename, posMap);
         }
     }
 };
@@ -439,7 +433,7 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
                 // Write positional map and binary file if requested.
                 std::vector<std::vector<std::streampos>> posMap;
                 posMap.push_back(lineOffsets);
-                writePositionalMap(filename, posMap);
+                //writePositionalMap(filename, posMap);
                 
                 if (opt.saveBin) {
                     std::cout << "Writing binary file for CSRMatrix: " << getDaphneFile(filename) << std::endl;
@@ -593,76 +587,77 @@ template <> struct ReadCsvFile<Frame> {
                 }
             } else if (usePosMap) {
                 // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
-                std::vector<std::vector<std::streampos>> posMap = readPositionalMap(filename, numCols);
+                std::vector<std::pair<std::streampos, std::vector<std::uint32_t>>> posMap = readPositionalMap(filename);
+                std::ifstream ifs(filename, std::ios::binary);
+                if (!ifs.good())
+                    throw std::runtime_error("Optimized branch: failed to open file for in-memory buffering");
+                std::vector<char> fileBuffer((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
                 for (size_t r = 0; r < numRows; r++) {
                     // Read the entire row by seeking to the beginning of row r (first field)
-                    file->pos = posMap[0][r];
-                    if (fseek(file->identifier, file->pos, SEEK_SET) != 0)
-                        throw std::runtime_error("Failed to seek to beginning of row");
-                    if (getFileLine(file) == -1)
-                        throw std::runtime_error("Optimized branch: getFileLine failed");
+                    size_t baseOffset = static_cast<size_t>(posMap[r].first);
+                    const char *linePtr = fileBuffer.data() + baseOffset;
+
                     // For every column, compute the relative offset within the line
                     for (size_t c = 0; c < numCols; c++) {
-                        size_t relativeOffset = static_cast<size_t>(posMap[c][r] - posMap[0][r]);
-                        size_t pos = relativeOffset;
+                        size_t pos = static_cast<size_t>(posMap[r].second[c]);
                         switch (colTypes[c]) {
                         case ValueTypeCode::SI8: {
                             int8_t val;
-                            convertCstr(file->line + pos, &val);
+                            convertCstr(linePtr + pos, &val);
                             reinterpret_cast<int8_t *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::SI32: {
                             int32_t val;
-                            convertCstr(file->line + pos, &val);
+                            convertCstr(linePtr + pos, &val);
                             reinterpret_cast<int32_t *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::SI64: {
                             int64_t val;
-                            convertCstr(file->line + pos, &val);
+                            convertCstr(linePtr + pos, &val);
                             reinterpret_cast<int64_t *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::UI8: {
                             uint8_t val;
-                            convertCstr(file->line + pos, &val);
+                            convertCstr(linePtr + pos, &val);
                             reinterpret_cast<uint8_t *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::UI32: {
                             uint32_t val;
-                            convertCstr(file->line + pos, &val);
+                            convertCstr(linePtr + pos, &val);
                             reinterpret_cast<uint32_t *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::UI64: {
                             uint64_t val;
-                            convertCstr(file->line + pos, &val);
+                            convertCstr(linePtr + pos, &val);
                             reinterpret_cast<uint64_t *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::F32: {
                             float val;
-                            convertCstr(file->line + pos, &val);
+                            convertCstr(linePtr + pos, &val);
                             reinterpret_cast<float *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::F64: {
                             double val;
-                            convertCstr(file->line + pos, &val);
+                            convertCstr(linePtr + pos, &val);
                             reinterpret_cast<double *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::STR: {
                             std::string val;
-                            pos = setCString(file, pos, &val, delim);
+                            pos = setCString(linePtr, pos, &val, delim);
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::FIXEDSTR16: {
                             std::string val;
-                            pos = setCString(file, pos, &val, delim);
+                            pos = setCString(linePtr, pos, &val, delim);
                             reinterpret_cast<FixedStr16 *>(rawCols[c])[r] = FixedStr16(val);
                             break;
                         }
@@ -677,9 +672,9 @@ template <> struct ReadCsvFile<Frame> {
             }
         }
         // Normal branch: iterate row by row and for each field save its absolute offset.
-        std::vector<std::vector<std::streampos>> posMap;
+        std::vector<std::pair<std::streampos, std::vector<uint32_t>>> posMap;
         if (opt.opt_enabled && opt.posMap)
-            posMap.resize(numCols);
+            posMap.resize(numRows);
         std::streampos currentPos = 0;
         for (size_t row = 0; row < numRows; row++) {
             ssize_t ret = getFileLine(file);
@@ -687,10 +682,14 @@ template <> struct ReadCsvFile<Frame> {
                 break;
             if (ret == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
+            
+            // Save absolute offset for this row.
+            if(opt.posMap)
+                posMap[row].first = currentPos;
             size_t pos = 0;
             for (size_t col = 0; col < numCols; col++) {
                 if (opt.opt_enabled && opt.posMap)
-                    posMap[col].push_back(currentPos + static_cast<std::streamoff>(pos));
+                    posMap[row].second.push_back(static_cast<uint32_t>(pos));
                 switch (colTypes[col]) {
                 case ValueTypeCode::SI8:
                     int8_t val_si8;
