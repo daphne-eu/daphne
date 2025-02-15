@@ -758,7 +758,11 @@ template <> struct ReadCsvFile<Frame> {
         }
         if (opt.opt_enabled) {
             if (opt.posMap)
-                writePositionalMap(filename, posMap);
+                try{
+                    writePositionalMap(filename, posMap);
+                } catch (std::exception &e) {
+                    // positional map can still be used
+                }
             if (opt.saveBin){
                 bool hasString = false;
                 // Check if there are any string columns
