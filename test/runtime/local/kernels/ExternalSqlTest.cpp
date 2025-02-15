@@ -117,3 +117,42 @@ TEST_CASE("externalSql_unsupported_dbms", TAG_KERNELS) {
     CHECK_THROWS_WITH(externalSql(res, query.c_str(), dbms, connection, ctx),
                       Catch::Contains("Unsupported DBMS"));
 }
+
+// Test case where we expect odbc driver not found error
+TEST_CASE("externalSql_odbc_driver_not_found", TAG_KERNELS) {
+    std::string query = "SELECT 1";
+    const char* dbms = "unsupported_dbms";
+    const char* connection = "odbc";
+    DaphneContext* ctx = nullptr;
+    Frame* res = nullptr;
+
+    // The kernel should throw an error indicating that this DBMS is unsupported.
+    CHECK_THROWS_WITH(externalSql(res, query.c_str(), dbms, connection, ctx),
+                      Catch::Contains("Data source name not found"));
+}
+
+// Test case where we expect an empty query error
+TEST_CASE("externalSql_empty_query", TAG_KERNELS) {
+    std::string query = "";
+    const char* dbms = "duckdb";
+    const char* connection = ":memory:";
+    DaphneContext* ctx = nullptr;
+    Frame* res = nullptr;
+
+    // The kernel should throw an error indicating that this DBMS is unsupported.
+    CHECK_THROWS_WITH(externalSql(res, query.c_str(), dbms, connection, ctx),
+                      Catch::Contains("Query is empty"));
+}
+
+// Test case where we expect a Parser error due to an invalid query
+TEST_CASE("externalSql_invalid_query", TAG_KERNELS) {
+    std::string query = "invalid";
+    const char* dbms = "duckdb";
+    const char* connection = ":memory:";
+    DaphneContext* ctx = nullptr;
+    Frame* res = nullptr;
+
+    // The kernel should throw an error indicating that this DBMS is unsupported.
+    CHECK_THROWS_WITH(externalSql(res, query.c_str(), dbms, connection, ctx),
+                      Catch::Contains("Parser Error"));
+}

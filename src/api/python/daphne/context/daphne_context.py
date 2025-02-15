@@ -529,6 +529,6 @@ class DaphneContext(object):
         if dbms and connection:
             dbms_str = f'"{dbms}"'
             connection_str = f'"{connection}"'
-            return Frame(self, 'external_sql', [query_str, dbms_str, connection_str])
+            return Frame(self, 'externalSql', [query_str, dbms_str, connection_str])
 
         return Frame(self, 'sql', [query_str])

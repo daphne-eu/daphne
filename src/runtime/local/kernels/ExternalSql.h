@@ -35,6 +35,9 @@ struct ExternalSql {
 
 void ExternalSql::apply(Frame*& res, const char* query, const char* dbms,
                         const char* connection, DCTX(ctx)) {
+    if (std::string(query) == ""){
+        throw std::runtime_error("Query is empty: please give a valid query.");
+    }
     if (std::string(dbms) == "duckdb" && std::string(connection) != "odbc") {
         try {
             duckdb::DuckDB db(connection);
@@ -122,7 +125,7 @@ void ExternalSql::apply(Frame*& res, const char* query, const char* dbms,
                     std::string* data = colData->getValues();
                     for (size_t row = 0; row < numRows; ++row) {
                         auto val = result->GetValue(col, row);
-                        data[row] = val.IsNull() ? "" : val.ToString();
+                        data[row] = val.ToString();
                     }
                     columns[col] = colData;
                     break;

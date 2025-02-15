@@ -44,6 +44,14 @@ This will access the `csvFile.csv` file and run the query on it, returning the r
 
 When the connection string is empty DuckDB Defaults to In-Memory Mode.
 
+### Conversion logic
+
+1. If a string has NULL value it will show as NULL.
+
+2. If any type of integer, double or float has a NULL value it will show as 0 or 0.0.
+
+3. BOOLEAN is treated like a small integer with true converting to 1 and false converting to 0.
+
 ## ODBC
 
 ODBC is implemented in our kernel to work with any DBMS that supports ODBC. 
@@ -107,3 +115,5 @@ sudo apt install -y unixodbc unixodbc-dev
 ```
 
 2. Everytime we enter the container, we have to setup the `/etc/odbc.ini` and `/etc/odbcinst.ini` files.
+
+3. If the last row in the last column in DuckDB is empty (has a NULL value) then that column schema will be changed to String.
