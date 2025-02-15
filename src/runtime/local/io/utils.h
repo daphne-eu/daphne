@@ -31,6 +31,16 @@ void writePositionalMap(const char *filename, const std::vector<std::vector<std:
 // Function to read the positional map
 std::vector<std::vector<std::streampos>> readPositionalMap(const char *filename, size_t numCols);
 
+std::vector<std::vector<std::streampos>> readRelativePosMap(const char* filename, size_t expectedCols);
+void writeRelativePosMap(const char* filename, const std::vector<std::vector<std::streampos>>& posMap);
+
+
+void writeRelativePosMap(const char* filename,
+                         const std::vector<uint32_t>& rowStartMap,
+                         const std::vector<std::vector<uint16_t>>& relPosMap);
+
+std::pair<std::vector<uint32_t>, std::vector<std::vector<uint16_t>>>
+readRelativePosMap(const char* filename, size_t numRows, size_t numCols);
 // Conversion of std::string.
 
 inline void convertStr(std::string const &x, double *v) {
