@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/ReadCsv.h>
+#include <runtime/local/io/utils.h>
 
 #include <tags.h>
 
@@ -66,7 +67,7 @@ TEST_CASE("ReadCsv, densematrix of doubles using binary optimization", "[TAG_IO]
     DenseMatrix<double>* m_new = nullptr;
     DenseMatrix<double>* m = nullptr;
 
-    std::string binFile = std::string(filename) + ".daphne";
+    std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
 
@@ -813,7 +814,7 @@ TEST_CASE("ReadCsv, frame of floats using binary optimization", "[TAG_IO][binOpt
     char delim = ',';
 
     // Remove any existing .daphne file.
-    std::string binFile = std::string(filename) + ".daphne";
+    std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
 
@@ -865,7 +866,7 @@ TEST_CASE("ReadCsv, frame of uint8s using binary optimization", "[TAG_IO][binOpt
     char filename[] = "test/runtime/local/io/ReadCsv2.csv";
     char delim = ',';
 
-    std::string binFile = std::string(filename) + ".daphne";
+    std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
     if (std::filesystem::exists(filename + std::string(".posmap")))
@@ -925,7 +926,7 @@ TEST_CASE("ReadCsv, frame of numbers and strings using binary optimization", "[T
     char filename[] = "test/runtime/local/io/ReadCsv5.csv";
     char delim = ',';
 
-    std::string binFile = std::string(filename) + ".daphne";
+    std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
 
@@ -985,7 +986,7 @@ TEST_CASE("ReadCsv, frame of INF and NAN parsing using binary optimization", "[T
     char filename[] = "test/runtime/local/io/ReadCsv3.csv";
     char delim = ',';
 
-    std::string binFile = std::string(filename) + ".daphne";
+    std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
 
@@ -1023,7 +1024,7 @@ TEST_CASE("ReadCsv, frame of varying columns using binary optimization", "[TAG_I
     char filename[] = "test/runtime/local/io/ReadCsv4.csv";
     char delim = ',';
 
-    std::string binFile = std::string(filename) + ".daphne";
+    std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
 
@@ -1055,7 +1056,7 @@ TEST_CASE("ReadCsv, CSRMatrix of doubles using binary optimization", "[TAG_IO][c
     char filename[] = "test/runtime/local/io/ReadCsvCSR.csv";
     char delim = ',';
 
-    std::string binFile = std::string(filename) + ".daphne";
+    std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
 
