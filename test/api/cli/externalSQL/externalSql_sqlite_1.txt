@@ -1,0 +1,2 @@
+Frame(1x2, [id:int64_t, name:std::string])
+1 Alice

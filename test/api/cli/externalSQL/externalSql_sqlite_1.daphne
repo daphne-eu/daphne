@@ -1,0 +1,3 @@
+res = externalSql("SELECT * FROM example","SQLite","test/api/cli/externalSQL/examplesqlite.db");
+
+print(res);

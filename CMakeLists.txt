@@ -214,21 +214,21 @@ endif()
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-# ------------------------------------------------------------
+# *****************************************************************************
 # DuckDB Configuration (pre-built)
-# ------------------------------------------------------------
-# Path to DuckDB headers (e.g., thirdparty/duckdb/include)
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/include)
-# Path to DuckDB libraries (e.g., thirdparty/duckdb/lib)
-link_directories(${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib)
+# *****************************************************************************
 
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty/installed/duckdb/include)
 
-if (NOT ODBC_INCLUDE_DIR)
-    set(ODBC_INCLUDE_DIR "/usr/include") # Modify if needed
-endif()
+find_library(DUCKDB_LIBRARY
+        NAMES duckdb
+        HINTS ${PROJECT_SOURCE_DIR}/thirdparty/installed/duckdb/lib
+        REQUIRED
+)
+# *****************************************************************************
+# ODBC Configuration
+# *****************************************************************************
 
-include_directories(${ODBC_INCLUDE_DIR})
-include_directories(/usr/local/include)
 
 find_package(ODBC REQUIRED)
 
@@ -245,11 +245,41 @@ find_library(ODBCINST_LIBRARY
         REQUIRED
 )
 
-find_library(DUCKDB_ODBC_LIBRARY
-        NAMES duckdb_odbc
-        HINTS ${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib/duckdb_odbc-linux-amd64
-        REQUIRED
+#find_library(DUCKDB_ODBC_LIBRARY
+#        NAMES duckdb_odbc
+#        HINTS ${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib
+#        REQUIRED
+#)
+
+# *****************************************************************************
+# sqlite Configuration (pre-built)
+# *****************************************************************************
+
+# Ensure system SQLite is not used
+set(SQLITE3_FOUND OFF)
+
+# Set the path to SQLite headers and source files
+set(SQLITE3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/installed/sqlite-amalgamation-3490000)
+
+# Add SQLite as a static library
+add_library(sqlite3 STATIC
+        ${SQLITE3_INCLUDE_DIR}/sqlite3.c
 )
+
+# Enable additional SQLite features
+target_compile_definitions(sqlite3 PUBLIC
+        SQLITE_ENABLE_MATH_FUNCTIONS  # Enables SQRT, LOG, EXP, etc.
+        SQLITE_ENABLE_JSON1           # Enables JSON functions (JSON_OBJECT, JSON_ARRAY, etc.)
+        SQLITE_ENABLE_FTS5            # Enables Full-Text Search v5 (for text indexing)
+        SQLITE_ENABLE_RTREE           # Enables R-Tree spatial indexes
+        SQLITE_ENABLE_GEOPOLY         # Enables geospatial functions
+        SQLITE_ENABLE_UPDATE_DELETE_LIMIT  # Enables LIMIT in UPDATE and DELETE statements
+        SQLITE_ENABLE_COLUMN_METADATA  # Allows querying metadata of columns
+        SQLITE_ENABLE_STAT4            # Improves SQLite query planner statistics
+)
+
+# Make SQLite headers available to all components
+target_include_directories(sqlite3 PUBLIC ${SQLITE3_INCLUDE_DIR})
 
 # *****************************************************************************
 # Project-specific include directories

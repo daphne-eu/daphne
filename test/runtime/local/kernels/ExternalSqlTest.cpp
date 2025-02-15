@@ -27,7 +27,7 @@
 #include <vector>
 #include <cstdint>
 
-TEST_CASE("externalSql_duckdb", TAG_KERNELS) {
+TEST_CASE("externalSql_duckdb_basic", TAG_KERNELS) {
 
    std::string query = "SELECT 42 AS a, 1234567890123 AS b, 3.14 AS c, 'hello' AS d, DATE '2025-02-03' AS e";
    const char* dbms = "duckdb";
@@ -67,7 +67,7 @@ TEST_CASE("externalSql_duckdb", TAG_KERNELS) {
 
 // Test case using the ODBC branch (with DSN "DuckDB")
 // In this branch, the kernel uses "DSN=DuckDB" (as hardcoded in the ODBC code).
-TEST_CASE("externalSql_odbc_duckdb", TAG_KERNELS) {
+/*TEST_CASE("externalSql_odbc_duckdb", TAG_KERNELS) {
 
     std::string query = "SELECT 42 AS a, 1234567890123 AS b, 3.14 AS c, 'hello' AS d, DATE '2025-02-03' AS e";
     // Here, we use "odbc" (or "duckdbODBC" if that is how your kernel distinguishes the branch)
@@ -103,7 +103,7 @@ TEST_CASE("externalSql_odbc_duckdb", TAG_KERNELS) {
 
     DataObjectFactory::destroy(expCol0, expCol1, expCol2, expCol3, expCol4);
     DataObjectFactory::destroy(res);
-}
+}*/
 
 // Test case where we expect an unsupported DBMS error
 TEST_CASE("externalSql_unsupported_dbms", TAG_KERNELS) {

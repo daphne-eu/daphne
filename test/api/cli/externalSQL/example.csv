@@ -1,3 +1,3 @@
 id,name,value
-1,Alice,42
-2,Bob,99
+1,Alice,true
+2,Bob,false

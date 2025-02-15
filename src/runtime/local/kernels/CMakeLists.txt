@@ -138,5 +138,5 @@ if(USE_HDFS)
         find_library(LIBHDFS3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 endif()
 
-target_link_libraries(KernelObjLib PUBLIC ${ODBC_LIBRARY} ${ODBCINST_LIBRARY} ${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib/libduckdb.so ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
-target_link_libraries(AllKernels PUBLIC ${ODBC_LIBRARY} ${ODBCINST_LIBRARY} ${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib/libduckdb.so ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
+target_link_libraries(KernelObjLib PUBLIC sqlite3 ${ODBC_LIBRARY} ${ODBCINST_LIBRARY} ${DUCKDB_LIBRARY} ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})
+target_link_libraries(AllKernels PUBLIC sqlite3 ${ODBC_LIBRARY} ${ODBCINST_LIBRARY} ${DUCKDB_LIBRARY} ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${HWLOC_LIB} ${LIBHDFS3})

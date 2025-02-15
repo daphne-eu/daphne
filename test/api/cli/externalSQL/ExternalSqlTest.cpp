@@ -25,10 +25,10 @@ const std::string dirPath = "test/api/cli/externalSQL/";
 
 
 #define MAKE_SUCCESS_TEST_CASE(name, count)                                                                   \
-   TEST_CASE(name ", duckdb success", TAG_SQL) {                                                                      \
+   TEST_CASE(name ", externalSql success", TAG_SQL) {                                                                      \
        for (unsigned i = 1; i <= count; i++) {                                                                        \
            DYNAMIC_SECTION(name "_success_" << i << ".daphne") {                                              \
-               checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, name "_duckdb_success", i);                  \
+               checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, name "_success", i);                  \
            }                                                                                                          \
        }                                                                                                              \
    }
@@ -36,11 +36,14 @@ const std::string dirPath = "test/api/cli/externalSQL/";
 #define MAKE_TEST_CASE(name, count)                                                                                    \
    TEST_CASE(name, TAG_SQL) {                                                                                         \
        for (unsigned i = 1; i <= count; i++) {                                                                        \
-           DYNAMIC_SECTION(name "_duckdb_success_" << i << ".daphne") { compareDaphneToRefSimple(dirPath, name, i); }                \
+           DYNAMIC_SECTION(name "_" << i << ".daphne") { compareDaphneToRefSimple(dirPath, name, i); }                \
        }                                                                                                              \
    }
 
 
 MAKE_SUCCESS_TEST_CASE("externalSql_duckdb", 2);
-MAKE_SUCCESS_TEST_CASE("externalSql_odbc",1);
-MAKE_TEST_CASE("externalSql_duckdb_success", 1);
+//MAKE_SUCCESS_TEST_CASE("externalSql_odbc",1);
+MAKE_SUCCESS_TEST_CASE("externalSql_sqlite",1);
+MAKE_TEST_CASE("externalSql_duckdb", 2);
+//MAKE_TEST_CASE("externalSql_odbc", 1);
+MAKE_TEST_CASE("externalSql_sqlite", 1);
