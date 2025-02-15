@@ -569,8 +569,8 @@ template <> struct ReadCsvFile<Frame> {
         std::string fName;
         if (opt.opt_enabled && filename) {
             fName = filename;
-            std::string daphneFile = fName + ".daphne";
-            std::string posmapFile = fName + ".posmap";
+            std::string daphneFile = getDaphneFile(fName.c_str());
+            std::string posmapFile = getPosMapFile(fName.c_str());
             if (opt.saveBin && std::filesystem::exists(daphneFile)) {
                 useOptimized = true;
                 useBin = true;
@@ -584,7 +584,7 @@ template <> struct ReadCsvFile<Frame> {
         if (useOptimized) {
             if (useBin) {
                 try {
-                    readDaphne(res, (std::string(filename) + ".daphne").c_str());
+                    readDaphne(res, fName.c_str());
                     delete[] rawCols;
                     delete[] colTypes;
                     return;
@@ -769,7 +769,7 @@ template <> struct ReadCsvFile<Frame> {
                     }
                 }
                 if (!hasString){ //daphnes binary format does not support strings yet
-                    writeDaphne(res, (std::string(filename) + ".daphne").c_str());
+                    writeDaphne(res, getDaphneFile(filename).c_str());
                 }
             }
         }
