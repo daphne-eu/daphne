@@ -20,44 +20,64 @@
 // create positional map based on csv data
 
 // Function save the positional map
-void writePositionalMap(const char *filename, const std::vector<std::vector<std::streampos>> &posMap) {
-    std::ofstream posMapFile(std::string(filename) + ".posmap", std::ios::binary);
-    if (!posMapFile.is_open()) {
-        throw std::runtime_error("Failed to open positional map file");
-    }
+void writePositionalMap(const char* filename, 
+                        const std::vector<std::pair<std::streampos, std::vector<std::uint16_t>>>& posMap) {
 
-    for (const auto &colPositions : posMap) {
-        for (const auto &pos : colPositions) {
-            posMapFile.write(reinterpret_cast<const char *>(&pos), sizeof(pos));
+    using clock = std::chrono::high_resolution_clock;
+    auto time = clock::now();
+    std::string posMapFile = getPosMapFile(filename);
+    std::ofstream ofs(posMapFile, std::ios::binary);
+    if (!ofs.good())
+        throw std::runtime_error("Unable to open positional map file for writing: " + posMapFile);
+    
+    // Write the number of rows.
+    size_t numRows = posMap.size();
+    ofs.write(reinterpret_cast<const char*>(&numRows), sizeof(numRows));
+    
+    // For each row, we expect (numCols = relative offsets count + 1) columns.
+    size_t numCols = (numRows == 0 ? 0 : posMap[0].second.size() + 1);
+    ofs.write(reinterpret_cast<const char*>(&numCols), sizeof(numCols));
+    
+    // Write for each row:
+    // - the absolute offset (base)
+    // - follow by (numCols - 1) relative offsets stored as uint32_t.
+    for (const auto& row : posMap) {
+        ofs.write(reinterpret_cast<const char*>(&row.first), sizeof(row.first));
+        for (uint16_t offset : row.second) {
+            ofs.write(reinterpret_cast<const char*>(&offset), sizeof(uint16_t));
         }
     }
-
-    posMapFile.close();
+    ofs.close();
+        std::cout << "Positional map written to " << posMapFile << " in " << clock::now() - time << " seconds." << std::endl;
 }
 
-// Function to read or create the positional map
-std::vector<std::vector<std::streampos>> readPositionalMap(const char *filename, size_t numCols) {
-    std::ifstream posMapFile(std::string(filename) + ".posmap", std::ios::binary);
-    if (!posMapFile.is_open()) {
-        std::cerr << "Positional map file not found, creating a new one." << std::endl;
-        return std::vector<std::vector<std::streampos>>(numCols);
-    }
-    posMapFile.seekg(0, std::ios::end);
-    auto fileSize = posMapFile.tellg();
-    posMapFile.seekg(0, std::ios::beg);
-    size_t totalEntries = fileSize / sizeof(std::streampos);
-    if (totalEntries % numCols != 0) {
-        throw std::runtime_error("Incorrect number of entries in posmap file");
-    }
-    size_t numRows = totalEntries / numCols;
-    std::vector<std::vector<std::streampos>> posMap(numCols, std::vector<std::streampos>(numRows));
-    // Read in column-major order:
-    for (size_t col = 0; col < numCols; col++) {
-        for (size_t i = 0; i < numRows; i++) {
-            posMap[col][i] = 0;
-            posMapFile.read(reinterpret_cast<char *>(&posMap[col][i]), sizeof(std::streampos));
+// Updated readPositionalMap: reconstruct full offsets.
+std::vector<std::pair<std::streampos, std::vector<uint16_t>>>
+readPositionalMap(const char* filename) {
+    using clock = std::chrono::high_resolution_clock;
+    auto time = clock::now();
+    std::ifstream ifs(getPosMapFile(filename), std::ios::binary);
+    if (!ifs.good())
+        throw std::runtime_error("Cannot open posMap file");
+    
+    size_t numRows, numCols;
+    ifs.read(reinterpret_cast<char*>(&numRows), sizeof(numRows));
+    ifs.read(reinterpret_cast<char*>(&numCols), sizeof(numCols));
+    
+    std::vector<std::pair<std::streampos, std::vector<uint16_t>>> posMap;
+    posMap.resize(numRows);
+    // For each row, read the base offset and the relative offsets.
+    for (size_t r = 0; r < numRows; r++) {
+        std::streampos base;
+        ifs.read(reinterpret_cast<char*>(&base), sizeof(base));
+        std::vector<uint16_t> relOffsets(numCols - 1);
+        for (size_t c = 0; c < numCols - 1; c++) {
+            uint16_t rel;
+            ifs.read(reinterpret_cast<char*>(&rel), sizeof(rel));
+            relOffsets[c] = rel;
         }
+        posMap[r] = std::make_pair(base, relOffsets);
     }
-    posMapFile.close();
+    std::cout << "Positional map read from " << getPosMapFile(filename) << " in " << clock::now() - time << " seconds." << std::endl;
     return posMap;
 }
