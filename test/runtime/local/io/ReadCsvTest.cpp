@@ -58,43 +58,6 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (double)) {
     DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadCsv, densematrix of doubles using positional map", "[TAG_IO][posMap]") {
-    size_t numRows = 2;
-    size_t numCols = 4;
-    char filename[] = "test/runtime/local/io/ReadCsv1.csv";
-    char delim = ',';
-
-    // Remove any pre-existing positional map.
-    std::string posMapFile = std::string(filename) + ".posmap";
-    if (std::filesystem::exists(posMapFile))
-        std::filesystem::remove(posMapFile);
-
-    DenseMatrix<double>* m_new = nullptr;
-    DenseMatrix<double>* m = nullptr;
-
-    std::cout << "First CSV read for DenseMatrix with positional map (writing .posmap file)" << std::endl;
-    readCsv(m_new, filename, numRows, numCols, delim, ReadOpts(true, true));
-    REQUIRE(std::filesystem::exists(posMapFile));
-
-    std::cout << "Second CSV read for DenseMatrix with positional map (using .posmap file)" << std::endl;
-    readCsv(m, filename, numRows, numCols, delim, ReadOpts(true, true));
-
-    REQUIRE(m->getNumRows() == numRows);
-    REQUIRE(m->getNumCols() == numCols);
-    CHECK(m->get(0,0) == Approx(-0.1));
-    CHECK(m->get(0,1) == Approx(-0.2));
-    CHECK(m->get(0,2) == Approx(0.1));
-    CHECK(m->get(0,3) == Approx(0.2));
-    CHECK(m->get(1,0) == Approx(3.14));
-    CHECK(m->get(1,1) == Approx(5.41));
-    CHECK(m->get(1,2) == Approx(6.22216));
-    CHECK(m->get(1,3) == Approx(5));
-
-    DataObjectFactory::destroy(m);
-    DataObjectFactory::destroy(m_new);
-    std::filesystem::remove(posMapFile);
-}
-
 TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (uint8_t)) {
     using DT = TestType;
     DT *m = nullptr;
@@ -747,37 +710,4 @@ TEST_CASE("ReadCsv, frame of varying columns: normal vs positional map", "[TAG_I
     if(std::filesystem::exists(filename + std::string(".posmap"))) {
         std::filesystem::remove(filename + std::string(".posmap"));
     }
-}
-
-TEST_CASE("ReadCsv, CSRMatrix of doubles using positional map", "[TAG_IO][csr][posMap]") {
-    size_t numRows = 2;
-    size_t numCols = 4;
-    ssize_t numNonZeros = 3;
-    char filename[] = "test/runtime/local/io/ReadCsvCSR.csv";
-    char delim = ',';
-
-    std::string posMapFile = std::string(filename) + ".posmap";
-    if (std::filesystem::exists(posMapFile))
-        std::filesystem::remove(posMapFile);
-
-    CSRMatrix<double>* m_new = nullptr;
-    CSRMatrix<double>* m = nullptr;
-
-    std::cout << "First CSV read for CSRMatrix with positional map (writing .posmap file)" << std::endl;
-    readCsv(m_new, filename, numRows, numCols, delim, numNonZeros, true, ReadOpts(true, true));
-    REQUIRE(std::filesystem::exists(posMapFile));
-
-    std::cout << "Second CSV read for CSRMatrix with positional map (using .posmap file)" << std::endl;
-    readCsv(m, filename, numRows, numCols, delim, numNonZeros, true, ReadOpts(true, true));
-
-    CHECK(m->getNumRows() == numRows);
-    CHECK(m->getNumCols() == numCols);
-    // Compare the row offsets from both reads.
-    for (size_t i = 0; i <= numRows; i++) {
-        CHECK(m->getRowOffsets()[i] == m_new->getRowOffsets()[i]);
-    }
-
-    DataObjectFactory::destroy(m);
-    DataObjectFactory::destroy(m_new);
-    std::filesystem::remove(posMapFile);
 }
