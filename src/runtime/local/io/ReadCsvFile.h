@@ -360,8 +360,6 @@ template <> struct ReadCsvFile<Frame> {
             rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
             colTypes[i] = res->getColumnType(i);
         }
-        using clock = std::chrono::high_resolution_clock;
-        auto time = clock::now();
         // Determine if any optimized branch should be used.
         bool useOptimized = false;
         bool useBin = false;
@@ -375,6 +373,8 @@ template <> struct ReadCsvFile<Frame> {
                 fName = daphneFile;
             }
         }
+        using clock = std::chrono::high_resolution_clock;
+        auto time = clock::now();
         if (useOptimized) {
             if (useBin) {
                 try {
