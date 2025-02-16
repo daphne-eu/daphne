@@ -25,11 +25,14 @@
 
 #include <runtime/local/io/FileMetaData.h>
 
-// Function to create and save the positional map
-void writePositionalMap(const char *filename, const std::vector<std::pair<std::streampos, std::vector<uint16_t>>> &posMap);
-
-// Function to read the positional map
-std::vector<std::pair<std::streampos, std::vector<uint16_t>>> readPositionalMap(const char *filename);
+// Function to check if schema is valid for daphne's binary format
+inline bool hasString(size_t numCols, const ValueTypeCode *schema) {
+    for (size_t i = 0; i < numCols; i++) {
+        if (schema[i] >= ValueTypeCode::STR)
+            return true;
+    }
+    return false;
+}
 
 // Conversion of std::string.
 
@@ -82,10 +85,6 @@ inline void convertCstr(const char *x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
 inline static std::string getDaphneFile(const char* filename) {
     return std::string(filename) + ".dbdf";
-}
-
-inline static std::string getPosMapFile(const char* filename) {
-    return std::string(filename) + ".posmap";
 }
 
 /**

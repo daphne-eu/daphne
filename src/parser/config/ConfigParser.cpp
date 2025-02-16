@@ -59,8 +59,6 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.use_mlir_codegen = jf.at(DaphneConfigJsonParams::USE_MLIR_CODEGEN).get<bool>();
     if(keyExists(jf, DaphneConfigJsonParams::USE_SECOND_READ_OPTIMIZATION))
         config.use_second_read_optimization = jf.at(DaphneConfigJsonParams::USE_SECOND_READ_OPTIMIZATION).get<bool>();
-    if (keyExists(jf, DaphneConfigJsonParams::USE_POSITIONAL_MAP))
-    config.use_positional_map = jf.at(DaphneConfigJsonParams::USE_POSITIONAL_MAP).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::SAVE_CSV_AS_BIN))
     config.save_csv_as_bin = jf.at(DaphneConfigJsonParams::SAVE_CSV_AS_BIN).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS))

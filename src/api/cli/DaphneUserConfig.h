@@ -44,7 +44,6 @@ struct DaphneUserConfig {
     bool use_phy_op_selection = true;
     bool use_mlir_codegen = false;
     bool use_second_read_optimization = false;
-    bool use_positional_map = true;
     bool save_csv_as_bin = true;
     int matmul_vec_size_bits = 0;
     bool matmul_tile = false;
