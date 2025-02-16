@@ -22,27 +22,29 @@
 
 #include <string>
 
+template <typename... Args>
+void runDaphneEval( const std::string &scriptFilePath, Args... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphne(out, err, args..., scriptFilePath.c_str());
+    
+    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
+    // checks of out and err still run and provide useful messages. For err,
+    // don't check empty(), because then catch2 doesn't display the error
+    // output.
+    CHECK(status == StatusCode::SUCCESS);
+    std::cout << out.str() << std::endl;
+    CHECK(err.str() == "");
+}
 const std::string dirPath = "test/api/cli/io/";
 TEST_CASE("evalFrameFromCSVBinOpt", TAG_IO) {
     std::string filename = dirPath + "csv_data1.csv";
-    std::filesystem::remove(filename + ".posmap");
     std::filesystem::remove(filename + ".dbdf");
+    // normal read for comparison
+    runDaphneEval(dirPath + "evalReadFrame.daphne", "--timing");
+    
     // build binary file and positional map on first read
-    compareDaphneToRef(dirPath + "testReadFrame.txt", dirPath + "evalReadFrame.daphne", "--timing", "--second-read-opt");
-    REQUIRE(std::filesystem::exists(filename + ".posmap"));
+    runDaphneEval(dirPath + "evalReadFrame.daphne", "--timing", "--second-read-opt");
     REQUIRE(std::filesystem::exists(filename + ".dbdf"));
-    std::filesystem::remove(filename + ".posmap");
-    compareDaphneToRef(dirPath + "testReadFrame.txt", dirPath + "evalReadFrame.daphne", "--timing", "--second-read-opt");
-}
-
-TEST_CASE("evalFrameFromCSVPosMap", TAG_IO) {
-    std::string filename = dirPath + "csv_data1.csv";
-    std::filesystem::remove(filename + ".posmap");
-    std::filesystem::remove(filename + ".dbdf");
-    // build binary file and positional map on first read
-    compareDaphneToRef(dirPath + "testReadFrame.txt", dirPath + "evalReadFrame.daphne", "--timing", "--second-read-opt");
-    REQUIRE(std::filesystem::exists(filename + ".posmap"));
-    REQUIRE(std::filesystem::exists(filename + ".dbdf"));
-    std::filesystem::remove(filename + ".dbdf");
-    compareDaphneToRef(dirPath + "testReadFrame.txt", dirPath + "evalReadFrame.daphne", "--timing", "--second-read-opt");
+    runDaphneEval(dirPath + "evalReadFrame.daphne", "--timing", "--second-read-opt");
 }
