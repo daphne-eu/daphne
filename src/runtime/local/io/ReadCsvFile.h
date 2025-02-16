@@ -240,11 +240,11 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
         if (useOptimized) {
             if (useBin) {
                 try {
-                    std::cout << "Reading CSRMatrix using binary (.daphne) file: " << fName << std::endl;
+                    //std::cout << "Reading CSRMatrix using binary (.daphne) file: " << fName << std::endl;
                     readDaphne(res, fName.c_str());
                     return;
                 } catch (std::exception &e) {
-                    std::cerr << "Error reading daphne file: " << e.what() << std::endl;
+                        // Fallback to default branch.
                 }
             } 
         }
@@ -461,13 +461,13 @@ template <> struct ReadCsvFile<Frame> {
                 }
             }
         }
-        std::cout << "time reading frame without saving any files " << clock::now() - time << std::endl;
+        //std::cout << "time reading frame without saving any files " << clock::now() - time << std::endl;
         if (opt.opt_enabled) {
             if (opt.saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
                 time = clock::now();
                 if (!hasString(res->getNumCols(), res->getSchema())){ //daphne's binary format does not support strings yet
                     writeDaphne(res, getDaphneFile(filename).c_str());
-                    std::cout << "time writing daphne: " << clock::now() - time << std::endl;
+                    //std::cout << "time writing daphne: " << clock::now() - time << std::endl;
                 }
             }
         }

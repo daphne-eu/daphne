@@ -70,8 +70,7 @@ TEST_CASE("ReadCsv, densematrix of doubles using binary optimization", "[TAG_IO]
     std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
-
-    std::cout << "First CSV read for DenseMatrix with binary optimization (writing .daphne file)" << std::endl;
+    
     readCsv(m_new, filename, numRows, numCols, delim, ReadOpts(true, true));
     REQUIRE(std::filesystem::exists(binFile));
 
@@ -86,8 +85,7 @@ TEST_CASE("ReadCsv, densematrix of doubles using binary optimization", "[TAG_IO]
     CHECK(m_new->get(1,1) == Approx(5.41));
     CHECK(m_new->get(1,2) == Approx(6.22216));
     CHECK(m_new->get(1,3) == Approx(5));
-
-    std::cout << "Second CSV read for DenseMatrix with binary optimization (reading .daphne file)" << std::endl;
+    
     readCsv(m, filename, numRows, numCols, delim, ReadOpts(true, true));
 
     REQUIRE(m->getNumRows() == numRows);
@@ -432,8 +430,7 @@ TEST_CASE("ReadCsv, frame of floats using binary optimization", "[TAG_IO][binOpt
     std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
-
-    std::cout << "First CSV read with binary optimization (writing .daphne file)" << std::endl;
+    
     readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
     REQUIRE(std::filesystem::exists(binFile));
     
@@ -449,8 +446,6 @@ TEST_CASE("ReadCsv, frame of floats using binary optimization", "[TAG_IO][binOpt
     CHECK(m_new->getColumn<double>(2)->get(1, 0) == 6.22216);
     CHECK(m_new->getColumn<double>(3)->get(1, 0) == 5);
     
-    
-    std::cout << "Second CSV read with binary optimization (reading .daphne file)" << std::endl;
     readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
 
     // Verify basic dimensions and cell values.
@@ -484,8 +479,7 @@ TEST_CASE("ReadCsv, frame of uint8s using binary optimization", "[TAG_IO][binOpt
     std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
-
-    std::cout << "First CSV read with binary optimization for uint8s (writing .daphne file)" << std::endl;
+    
     readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
     REQUIRE(std::filesystem::exists(binFile));
     
@@ -501,7 +495,6 @@ TEST_CASE("ReadCsv, frame of uint8s using binary optimization", "[TAG_IO][binOpt
     CHECK(m_new->getColumn<uint8_t>(2)->get(1, 0) == 253);
     CHECK(m_new->getColumn<uint8_t>(3)->get(1, 0) == 252);
     
-    std::cout << "Second CSV read with binary optimization for uint8s (reading .daphne file)" << std::endl;
     readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
 
     REQUIRE(m->getNumRows() == numRows);
@@ -537,8 +530,7 @@ TEST_CASE("ReadCsv, frame of numbers and strings using binary optimization", "[T
     std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
-
-    std::cout << "First CSV read with binary optimization for numbers/strings (writing .daphne file)" << std::endl;
+    
     readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
     //daphne files currently dont support strings
     REQUIRE(!std::filesystem::exists(binFile));
@@ -559,7 +551,6 @@ TEST_CASE("ReadCsv, frame of numbers and strings using binary optimization", "[T
     CHECK(m_new->getColumn<uint64_t>(3)->get(0, 0) == 444);
     CHECK(m_new->getColumn<double>(4)->get(0, 0) == 55.6);
     
-    std::cout << "Second CSV read with binary optimization for numbers/strings (reading .daphne file)" << std::endl;
     readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
 
     REQUIRE(m->getNumRows() == numRows);
@@ -597,12 +588,10 @@ TEST_CASE("ReadCsv, frame of INF and NAN parsing using binary optimization", "[T
     std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
-
-    std::cout << "First CSV read (INF/NAN) with binary optimization (writing .daphne file)" << std::endl;
+    
     readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
     REQUIRE(std::filesystem::exists(binFile));
     
-    std::cout << "Second CSV read (INF/NAN) with binary optimization (reading .daphne file)" << std::endl;
     readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
 
     for (size_t c = 0; c < numCols; ++c) {
@@ -635,12 +624,10 @@ TEST_CASE("ReadCsv, frame of varying columns using binary optimization", "[TAG_I
     std::string binFile = getDaphneFile(filename);
     if (std::filesystem::exists(binFile))
         std::filesystem::remove(binFile);
-
-    std::cout << "First CSV read with binary optimization (varying columns, writing .daphne file)" << std::endl;
+    
     readCsv(m_new, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
     REQUIRE(std::filesystem::exists(binFile));
-
-    std::cout << "Second CSV read with binary optimization (varying columns, reading .daphne file)" << std::endl;
+    
     readCsv(m, filename, numRows, numCols, delim, schema, ReadOpts(true, true));
 
     for(size_t r = 0; r < numRows; r++) {
@@ -670,8 +657,7 @@ TEST_CASE("ReadCsv, CSRMatrix of doubles using binary optimization", "[TAG_IO][c
 
     CSRMatrix<double>* m_new = nullptr;
     CSRMatrix<double>* m = nullptr;
-
-    std::cout << "First CSV read for CSRMatrix with binary optimization (writing .daphne file)" << std::endl;
+    
     readCsv(m_new, filename, numRows, numCols, delim, numNonZeros, true, ReadOpts(true, true));
     REQUIRE(std::filesystem::exists(binFile));
 
@@ -691,8 +677,7 @@ TEST_CASE("ReadCsv, CSRMatrix of doubles using binary optimization", "[TAG_IO][c
         CHECK(colIdxs[i] < numCols);
         CHECK(values[i] == 1);
     }
-
-    std::cout << "Second CSV read for CSRMatrix with binary optimization (reading .daphne file)" << std::endl;
+    
     readCsv(m, filename, numRows, numCols, delim, numNonZeros, true, ReadOpts(true, true));
 
     CHECK(m->getNumRows() == numRows);
