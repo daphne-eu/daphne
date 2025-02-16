@@ -1,0 +1,19 @@
+externalSql("DROP TABLE IF EXISTS numbers;
+             CREATE TABLE numbers (id INTEGER, value INTEGER);
+             INSERT INTO numbers (id, value) VALUES (1, 10), (2, 20), (3, 30), (4, 40);
+             ", "SQLite", "test/api/cli/externalSQL/examplesqlite.db");
+
+res = externalSql("SELECT SUM(value) AS total FROM numbers;", "SQLite", "test/api/cli/externalSQL/examplesqlite.db");
+print(res);
+
+res = externalSql("SELECT AVG(value) AS average FROM numbers;", "SQLite", "test/api/cli/externalSQL/examplesqlite.db");
+print(res);
+
+res = externalSql("SELECT MIN(value) AS min_value, MAX(value) AS max_value FROM numbers;", "SQLite", "test/api/cli/externalSQL/examplesqlite.db");
+print(res);
+
+res = externalSql("SELECT id, value, value * 2 AS doubled FROM numbers;", "SQLite", "test/api/cli/externalSQL/examplesqlite.db");
+print(res);
+
+res = externalSql("SELECT id, value, value * value AS squared FROM numbers;", "SQLite", "test/api/cli/externalSQL/examplesqlite.db");
+print(res);

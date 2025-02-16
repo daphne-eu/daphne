@@ -1,0 +1,16 @@
+Frame(1x1, [total:int64_t])
+100
+Frame(1x1, [average:double])
+25
+Frame(1x2, [min_value:int64_t, max_value:int64_t])
+10 40
+Frame(4x3, [id:int64_t, value:int64_t, doubled:int64_t])
+1 10 20
+2 20 40
+3 30 60
+4 40 80
+Frame(4x3, [id:int64_t, value:int64_t, squared:int64_t])
+1 10 100
+2 20 400
+3 30 900
+4 40 1600

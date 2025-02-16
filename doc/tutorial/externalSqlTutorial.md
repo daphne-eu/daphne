@@ -87,7 +87,6 @@ and write this inside:
 [dbms]
 Driver = DBMS Driver
 Database = /path/to/dataFile.db
-allow_unsigned_extensions = true
 ```
 
 replacing dbms with the desired one, DBMS Driver with the name of the driver as written in the `odbcinst.ini` file and the path to our desired data file in Database. 
@@ -102,8 +101,48 @@ externalSql("SELECT * FROM table", "dbms", "odbc");
 
 This would call ODBC with the DSN `dbms`.
 
+
 ## SQLite
 
+SQLite is also locally embedded in Daphne. For using it we have to set the dbms to "SQLite".
+### Using an existing database
+For using our function with an existing database, we just need to pass the connection to our function as a parameter.
+In following example our database will be called "my_db.db" and the table will be named "example".
+```daphne
+externalSql("SELECT * FROM example", "SQLite", "my_db.db");
+```
+### Creating a new .db file
+If we do not have an existing database, we can create one with a table:
+```daphne
+externalSql("CREATE TABLE IF NOT EXISTS table_name (id INTEGER, name TEXT);", "SQLite", "nameOfMyFile.db");
+```
+This will create a new file called nameOfMyFile.db which we can access later and run queries on it just by putting it as our connection parameter.
+
+To execute CSV files our device needs to have downloaded SQLite3 and enter the sqlite3 shell in our terminal.
+We will call our database "my_db.db". Following command will let us enter our database or, open a new database if one with the name does not exist yet.
+```ubuntu
+sqlite3 my_db.db
+````
+Then we will create a table manually with the headers of our CSV file. We will call it in our example "example.csv".
+```ubuntu
+CREATE TABLE example (
+id INTEGER,
+name TEXT,
+value INTEGER
+);
+```
+We will now import our "example.csv" to our table:
+```ubuntu
+.mode csv
+```
+```ubuntu
+.import --skip 1 test/api/cli/externalSQL/example.csv example
+```
+We just skipped the first line of our CSV file, which contains the headers of the data. SQLite does not detect these automatically and recognizes them as usual data.
+Now we can exit the shell with following command and process our queries in Daphne:
+```ubuntu
+.exit
+```
 
 ## Limitations
 
@@ -116,4 +155,6 @@ sudo apt install -y unixodbc unixodbc-dev
 
 2. Everytime we enter the container, we have to setup the `/etc/odbc.ini` and `/etc/odbcinst.ini` files.
 
-3. If the last row in the last column in DuckDB is empty (has a NULL value) then that column schema will be changed to String.
+3. Only if the column type is not specifically specified, if the last row in the last column in DuckDB is empty (has a NULL value) then that column schema will be changed to String.
+
+5. When queries in SQLite are processed, which do not return a result like "CREATE TABLE" or "DROP TABLE", a 1x1 Frame is returned with a single Integer value of 0. That needs to be done, since returning no result or null will result in an error.

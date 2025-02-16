@@ -43,7 +43,7 @@ const std::string dirPath = "test/api/cli/externalSQL/";
 
 MAKE_SUCCESS_TEST_CASE("externalSql_duckdb", 2);
 //MAKE_SUCCESS_TEST_CASE("externalSql_odbc",1);
-MAKE_SUCCESS_TEST_CASE("externalSql_sqlite",1);
+MAKE_SUCCESS_TEST_CASE("externalSql_sqlite",2);
 MAKE_TEST_CASE("externalSql_duckdb", 2);
 //MAKE_TEST_CASE("externalSql_odbc", 1);
-MAKE_TEST_CASE("externalSql_sqlite", 1);
+MAKE_TEST_CASE("externalSql_sqlite", 2);

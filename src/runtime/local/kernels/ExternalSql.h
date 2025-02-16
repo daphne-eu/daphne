@@ -142,126 +142,150 @@ void ExternalSql::apply(Frame*& res, const char* query, const char* dbms,
         }
     } else if (std::string(dbms) == "SQLite" && std::string(connection) != "odbc") {
         try {
-            // pointer to database connection and statement object
-            sqlite3 *db = nullptr;
-            sqlite3_stmt *stmt = nullptr;
+            sqlite3* db = nullptr;
+            sqlite3_stmt* stmt = nullptr;
+            const char* remainingSql = query;  // Pointer to track remaining queries
 
-            // open connection
             if (sqlite3_open(connection, &db) != SQLITE_OK) {
                 throw std::runtime_error("Failed to open SQLite database: " + std::string(sqlite3_errmsg(db)));
             }
 
-            // prepare query for execution
-            if (sqlite3_prepare_v2(db, query, -1, &stmt, nullptr) != SQLITE_OK) {
-                std::string errorMsg = sqlite3_errmsg(db);
-                sqlite3_close(db);
-                throw std::runtime_error("Failed to prepare SQLite query: " + errorMsg);
-            }
+            while (remainingSql && *remainingSql) {
+                // Prepare the next statement
+                if (sqlite3_prepare_v2(db, remainingSql, -1, &stmt, &remainingSql) != SQLITE_OK) {
+                    std::string errorMsg = sqlite3_errmsg(db);
+                    sqlite3_close(db);
+                    throw std::runtime_error("Failed to prepare SQLite query: " + errorMsg);
+                }
 
-            // count columns and set up of storage of the columns
-            const size_t numCols = sqlite3_column_count(stmt);
-            std::vector<Structure *> columns(numCols);
-            std::vector<const char *> colLabels(numCols);
-            std::vector<std::string> colLabelStorage;
-            colLabelStorage.reserve(numCols);
+                if (stmt == nullptr) {
+                    continue;  // Skip empty statements
+                }
 
-            // storing column names
-            for (size_t col = 0; col < numCols; ++col) {
-                colLabelStorage.push_back(sqlite3_column_name(stmt, col));
-                colLabels[col] = colLabelStorage.back().c_str();
-            }
+                size_t numCols = sqlite3_column_count(stmt);
 
-            // store data of each column as String
-            std::vector<std::vector<std::string>> rowData(numCols);
-            // keep track of each columns data type
-            std::vector<int> colTypes(numCols);
+                // If the statement is not a SELECT (e.g., CREATE, DROP, INSERT)
+                if (numCols == 0) {
+                    auto* noResultCol = DataObjectFactory::create<DenseMatrix<int64_t>>(1, 1, false);
+                    noResultCol->getValues()[0] = 0;
+                    Structure* colArray[1] = {noResultCol};
+                    const char* colNames[1] = {"noResult"};
+                    createFrame(res, colArray, 1, colNames, 1, ctx);
 
-            // fetch rows from result and processing each column's data
-            size_t numRows = 0;
-            int stepResult;
-            while ((stepResult = sqlite3_step(stmt)) == SQLITE_ROW) {
+                    if (sqlite3_step(stmt) != SQLITE_DONE) {
+                        std::string errorMsg = sqlite3_errmsg(db);
+                        sqlite3_finalize(stmt);
+                        sqlite3_close(db);
+                        throw std::runtime_error("SQLite execution error: " + errorMsg);
+                    }
+                    sqlite3_finalize(stmt);
+                    continue;  // Move to the next statement
+                }
+
+                // SELECT Statements: Set up column storage
+                std::vector<Structure *> columns(numCols);
+                std::vector<const char *> colLabels(numCols);
+                std::vector<std::string> colLabelStorage(numCols);
+
                 for (size_t col = 0; col < numCols; ++col) {
-                    int colType = sqlite3_column_type(stmt, col);
-                    colTypes[col] = colType;
+                    colLabelStorage[col] = sqlite3_column_name(stmt, col);
+                    colLabels[col] = colLabelStorage[col].c_str();
+                }
 
-                    switch (colType) {
-                    case SQLITE_INTEGER:
-                        rowData[col].push_back(std::to_string(sqlite3_column_int64(stmt, col)));
-                        break;
-                    case SQLITE_FLOAT:
-                        rowData[col].push_back(std::to_string(sqlite3_column_double(stmt, col)));
-                        break;
-                    case SQLITE_TEXT:
-                        rowData[col].push_back(reinterpret_cast<const char *>(sqlite3_column_text(stmt, col)));
-                        break;
-                    case SQLITE_BLOB: {
-                        const void *blobData = sqlite3_column_blob(stmt, col);
-                        int blobSize = sqlite3_column_bytes(stmt, col);
-                        std::string binaryData(static_cast<const char *>(blobData), blobSize);
-                        rowData[col].push_back(binaryData);
-                        break;
+                std::vector<std::vector<std::string>> rowData(numCols);
+                std::vector<int> colTypes(numCols);
+                size_t numRows = 0;
+
+                // Fetch rows
+                while (sqlite3_step(stmt) == SQLITE_ROW) {
+                    for (size_t col = 0; col < numCols; ++col) {
+                        int colType = sqlite3_column_type(stmt, col);
+                        colTypes[col] = colType;
+
+                        switch (colType) {
+                        case SQLITE_INTEGER:
+                            rowData[col].push_back(std::to_string(sqlite3_column_int64(stmt, col)));
+                            break;
+                        case SQLITE_FLOAT:
+                            rowData[col].push_back(std::to_string(sqlite3_column_double(stmt, col)));
+                            break;
+                        case SQLITE_TEXT:
+                            rowData[col].push_back(reinterpret_cast<const char*>(sqlite3_column_text(stmt, col)));
+                            break;
+                        case SQLITE_BLOB: {
+                            const void* blobData = sqlite3_column_blob(stmt, col);
+                            int blobSize = sqlite3_column_bytes(stmt, col);
+                            std::string binaryData(static_cast<const char*>(blobData), blobSize);
+                            rowData[col].push_back(binaryData);
+                            break;
+                        }
+                        case SQLITE_NULL:
+                            rowData[col].push_back("");  // Store empty string for NULL values
+                            break;
+                        default:
+                            throw std::runtime_error("Unsupported column type in SQLite result processing");
+                        }
                     }
-                    case SQLITE_NULL:
-                        rowData[col].push_back("");
-                        break;
-                    default:
-                        throw std::runtime_error("Unsupported column type in SQLite result processing");
+                    numRows++;
+                }
+
+                sqlite3_finalize(stmt);
+
+                // Convert results to DAPHNE Frame
+                for (size_t col = 0; col < numCols; ++col) {
+                    if (!rowData[col].empty()) {
+                        switch (colTypes[col]) {
+                        case SQLITE_INTEGER: {
+                            auto* colData = DataObjectFactory::create<DenseMatrix<int64_t>>(numRows, 1, false);
+                            int64_t* data = colData->getValues();
+                            for (size_t row = 0; row < numRows; ++row) {
+                                data[row] = rowData[col][row].empty() ? 0 : std::stoll(rowData[col][row]);
+                            }
+                            columns[col] = colData;
+                            break;
+                        }
+                        case SQLITE_FLOAT: {
+                            auto* colData = DataObjectFactory::create<DenseMatrix<double>>(numRows, 1, false);
+                            double* data = colData->getValues();
+                            for (size_t row = 0; row < numRows; ++row) {
+                                data[row] = rowData[col][row].empty() ? 0.0 : std::stod(rowData[col][row]);
+                            }
+                            columns[col] = colData;
+                            break;
+                        }
+                        case SQLITE_TEXT:
+                        case SQLITE_BLOB:
+                        case SQLITE_NULL: {
+                            auto* colData = DataObjectFactory::create<DenseMatrix<std::string>>(numRows, 1, false);
+                            std::string* data = colData->getValues();
+                            for (size_t row = 0; row < numRows; ++row) {
+                                data[row] = rowData[col][row].empty() ? "" : rowData[col][row];
+                            }
+                            columns[col] = colData;
+                            break;
+                        }
+                        default:
+                            throw std::runtime_error("Unsupported column type in SQLite result processing");
+                        }
                     }
                 }
-                numRows++;
-            }
 
-            // finalize statement
-            sqlite3_finalize(stmt);
-
-            // convert data into Objects
-            for (size_t col = 0; col < numCols; ++col) {
-                if (!rowData[col].empty()) {
-                    switch (colTypes[col]) {
-                    case SQLITE_INTEGER: {
-                        auto *colData = DataObjectFactory::create<DenseMatrix<int64_t>>(numRows, 1, false);
-                        int64_t *data = colData->getValues();
-                        for (size_t row = 0; row < numRows; ++row) {
-                            data[row] = std::stoll(rowData[col][row]);
-                        }
-                        columns[col] = colData;
-                        break;
-                    }
-                    case SQLITE_FLOAT: {
-                        auto *colData = DataObjectFactory::create<DenseMatrix<double>>(numRows, 1, false);
-                        double *data = colData->getValues();
-                        for (size_t row = 0; row < numRows; ++row) {
-                            data[row] = std::stod(rowData[col][row]);
-                        }
-                        columns[col] = colData;
-                        break;
-                    }
-                    case SQLITE_NULL:
-                    case SQLITE_BLOB:
-                    case SQLITE_TEXT: {
-                        auto *colData = DataObjectFactory::create<DenseMatrix<std::string>>(numRows, 1, false);
-                        std::string *data = colData->getValues();
-                        for (size_t row = 0; row < numRows; ++row) {
-                            data[row] = rowData[col][row];
-                        }
-                        columns[col] = colData;
-                        break;
-                    }
-                    default:
-                        throw std::runtime_error("Unsupported column type in SQLite result processing");
-                    }
+                if (!columns.empty()) {
+                    createFrame(res, columns.data(), numCols, colLabels.data(), numCols, ctx);
+                } else {
+                    auto* noResultCol = DataObjectFactory::create<DenseMatrix<int64_t>>(1, 1, false);
+                    noResultCol->getValues()[0] = 0;
+                    Structure* colArray[1] = {noResultCol};
+                    const char* colNames[1] = {"noResult"};
+                    createFrame(res, colArray, 1, colNames, 1, ctx);
                 }
+
             }
-
-            // create frame
-
-            createFrame(res, columns.data(), numCols, colLabels.data(), numCols, ctx);
 
             sqlite3_close(db);
         } catch (const std::exception &e) {
             throw std::runtime_error("SQLite Error: " + std::string(e.what()));
         }
-
     } else if (std::string(connection) == "odbc") {
         try {
             SQLHANDLE env;

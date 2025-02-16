@@ -1,3 +1,7 @@
-res = externalSql("SELECT * FROM example","duckdb","test/api/cli/externalSQL/exampleduckdb.db");
+res = externalSql("DROP TABLE IF EXISTS example;
+                   CREATE TABLE example (id INTEGER, name TEXT);
+                   INSERT INTO example VALUES (1,'alice'), (2,'bob');
+                   SELECT * FROM example;
+                   ","duckdb","test/api/cli/externalSQL/exampleduckdb.db");
 
 print(res);
