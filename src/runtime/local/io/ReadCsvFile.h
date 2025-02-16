@@ -378,9 +378,11 @@ template <> struct ReadCsvFile<Frame> {
         if (useOptimized) {
             if (useBin) {
                 try {
+                    auto readTime = clock::now();
                     readDaphne(res, fName.c_str());
                     delete[] rawCols;
                     delete[] colTypes;
+                    std::cout << "read time: " << clock::now() - readTime << std::endl;
                     return;
                 } catch (std::exception &e) {
                     // Fallback to default branch.
@@ -461,13 +463,13 @@ template <> struct ReadCsvFile<Frame> {
                 }
             }
         }
-        //std::cout << "time reading frame without saving any files " << clock::now() - time << std::endl;
+        std::cout << "read time: " << clock::now() - time << std::endl;
         if (opt.opt_enabled) {
             if (opt.saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
                 time = clock::now();
                 if (!hasString(res->getNumCols(), res->getSchema())){ //daphne's binary format does not support strings yet
                     writeDaphne(res, getDaphneFile(filename).c_str());
-                    //std::cout << "time writing daphne: " << clock::now() - time << std::endl;
+                    std::cout << "write time: " << clock::now() - time << std::endl;
                 }
             }
         }
