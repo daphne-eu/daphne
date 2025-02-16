@@ -1,0 +1,3 @@
+Frame(2x3, [id:int32_t, name:std::string, value:int8_t])
+0 alice 1
+2 NULL 0

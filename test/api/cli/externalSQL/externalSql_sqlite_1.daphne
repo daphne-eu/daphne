@@ -1,3 +1,4 @@
+// basic SQLite test
 res = externalSql("DROP TABLE IF EXISTS example;
                    CREATE TABLE example (id INTEGER, name TEXT);
                    INSERT INTO example VALUES (1,'Alice'), (2,'Bob');

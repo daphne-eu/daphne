@@ -1,3 +1,4 @@
+// SQLite math functions test
 externalSql("DROP TABLE IF EXISTS numbers;
              CREATE TABLE numbers (id INTEGER, value INTEGER);
              INSERT INTO numbers (id, value) VALUES (1, 10), (2, 20), (3, 30), (4, 40);

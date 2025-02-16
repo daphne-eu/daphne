@@ -30,7 +30,7 @@
 TEST_CASE("externalSql_duckdb_basic", TAG_KERNELS) {
 
    std::string query = "SELECT 42 AS a, 1234567890123 AS b, 3.14 AS c, 'hello' AS d, DATE '2025-02-03' AS e";
-   const char* dbms = "duckdb";
+   const char* dbms = "DuckDB";
    const char* connection = ":memory:";  // in-memory DuckDB
 
    DaphneContext* ctx = nullptr;
@@ -63,6 +63,40 @@ TEST_CASE("externalSql_duckdb_basic", TAG_KERNELS) {
    // Clean up
    DataObjectFactory::destroy(expCol0, expCol1, expCol2, expCol3, expCol4);
    DataObjectFactory::destroy(res);
+}
+
+// Test to check data type handling in DuckDB
+TEST_CASE("externalSql_duckdb_data_type_handling", TAG_KERNELS) {
+    const char* dbms = "DuckDB";
+    const char* connection = ":memory:";
+    DaphneContext* ctx = nullptr;
+
+    Frame* res = nullptr;
+    std::string multiQuery = "CREATE TABLE test_types (id INTEGER PRIMARY KEY, tiny_val TINYINT, small_val SMALLINT, int_val INTEGER, big_val BIGINT, bool_val BOOLEAN, str_val VARCHAR, date_val DATE, null_val INTEGER); INSERT INTO test_types VALUES (1, 127, 32767, 2147483647, 9223372036854775807, TRUE, 'Test String', '2024-02-07', NULL), (2, -128, -32768, -2147483648, -9223372036854775808, FALSE, 'Another Test', '2025-12-31', NULL); SELECT tiny_val, small_val, int_val, big_val, bool_val, str_val, date_val, null_val FROM test_types;";
+
+    externalSql(res, multiQuery.c_str(), dbms, connection, ctx);
+
+
+    auto tinyExp = genGivenVals<DenseMatrix<int8_t>>(2, {127, -128});
+    auto smallExp = genGivenVals<DenseMatrix<int32_t>>(2, {32767, -32768});
+    auto intExp = genGivenVals<DenseMatrix<int32_t>>(2, {2147483647, -2147483648});
+    auto bigExp = genGivenVals<DenseMatrix<int64_t>>(2, {9223372036854775807, -9223372036854775808});
+    auto boolExp = genGivenVals<DenseMatrix<int8_t>>(2, {1, 0}); // TRUE → 1, FALSE → 0
+    auto strExp = genGivenVals<DenseMatrix<std::string>>(2, {"Test String", "Another Test"});
+    auto dateExp = genGivenVals<DenseMatrix<std::string>>(2, {"2024-02-07", "2025-12-31"});
+    auto nullExp = genGivenVals<DenseMatrix<int32_t>>(2, {0, 0}); // NULL → default value (0)
+
+    CHECK(*(res->getColumn<int8_t>(0)) == *tinyExp);
+    CHECK(*(res->getColumn<int32_t>(1)) == *smallExp);
+    CHECK(*(res->getColumn<int32_t>(2)) == *intExp);
+    CHECK(*(res->getColumn<int64_t>(3)) == *bigExp);
+    CHECK(*(res->getColumn<int8_t>(4)) == *boolExp);
+    CHECK(*(res->getColumn<std::string>(5)) == *strExp);
+    CHECK(*(res->getColumn<std::string>(6)) == *dateExp);
+    CHECK(*(res->getColumn<int32_t>(7)) == *nullExp);
+
+    DataObjectFactory::destroy(tinyExp, smallExp, intExp, bigExp, boolExp, strExp, dateExp, nullExp);
+    DataObjectFactory::destroy(res);
 }
 
 // Test case using the ODBC branch (with DSN "SQLite")
@@ -146,47 +180,13 @@ TEST_CASE("externalSql_empty_query", TAG_KERNELS) {
 // Test case where we expect a Parser error due to an invalid query
 TEST_CASE("externalSql_invalid_query", TAG_KERNELS) {
     std::string query = "invalid";
-    const char* dbms = "duckdb";
+    const char* dbms = "DuckDB";
     const char* connection = ":memory:";
     DaphneContext* ctx = nullptr;
     Frame* res = nullptr;
 
     CHECK_THROWS_WITH(externalSql(res, query.c_str(), dbms, connection, ctx),
                       Catch::Contains("Parser Error"));
-}
-
-// Test to check data type handling in DuckDB
-TEST_CASE("externalSql_duckdb_data_type_handling", TAG_KERNELS) {
-    const char* dbms = "duckdb";
-    const char* connection = ":memory:";
-    DaphneContext* ctx = nullptr;
-
-    Frame* res = nullptr;
-    std::string multiQuery = "CREATE TABLE test_types (id INTEGER PRIMARY KEY, tiny_val TINYINT, small_val SMALLINT, int_val INTEGER, big_val BIGINT, bool_val BOOLEAN, str_val VARCHAR, date_val DATE, null_val INTEGER); INSERT INTO test_types VALUES (1, 127, 32767, 2147483647, 9223372036854775807, TRUE, 'Test String', '2024-02-07', NULL), (2, -128, -32768, -2147483648, -9223372036854775808, FALSE, 'Another Test', '2025-12-31', NULL); SELECT tiny_val, small_val, int_val, big_val, bool_val, str_val, date_val, null_val FROM test_types;";
-
-    externalSql(res, multiQuery.c_str(), dbms, connection, ctx);
-
-
-    auto tinyExp = genGivenVals<DenseMatrix<int8_t>>(2, {127, -128});
-    auto smallExp = genGivenVals<DenseMatrix<int32_t>>(2, {32767, -32768});
-    auto intExp = genGivenVals<DenseMatrix<int32_t>>(2, {2147483647, -2147483648});
-    auto bigExp = genGivenVals<DenseMatrix<int64_t>>(2, {9223372036854775807, -9223372036854775808});
-    auto boolExp = genGivenVals<DenseMatrix<int8_t>>(2, {1, 0}); // TRUE → 1, FALSE → 0
-    auto strExp = genGivenVals<DenseMatrix<std::string>>(2, {"Test String", "Another Test"});
-    auto dateExp = genGivenVals<DenseMatrix<std::string>>(2, {"2024-02-07", "2025-12-31"});
-    auto nullExp = genGivenVals<DenseMatrix<int32_t>>(2, {0, 0}); // NULL → default value (0)
-
-    CHECK(*(res->getColumn<int8_t>(0)) == *tinyExp);
-    CHECK(*(res->getColumn<int32_t>(1)) == *smallExp);
-    CHECK(*(res->getColumn<int32_t>(2)) == *intExp);
-    CHECK(*(res->getColumn<int64_t>(3)) == *bigExp);
-    CHECK(*(res->getColumn<int8_t>(4)) == *boolExp);
-    CHECK(*(res->getColumn<std::string>(5)) == *strExp);
-    CHECK(*(res->getColumn<std::string>(6)) == *dateExp);
-    CHECK(*(res->getColumn<int32_t>(7)) == *nullExp);
-
-    DataObjectFactory::destroy(tinyExp, smallExp, intExp, bigExp, boolExp, strExp, dateExp, nullExp);
-    DataObjectFactory::destroy(res);
 }
 
 TEST_CASE("externalSql_sqlite_basic", TAG_KERNELS) {
@@ -245,11 +245,11 @@ TEST_CASE("externalSql_sqlite_null_values", TAG_KERNELS) {
         CHECK(res->getLabels()[i] == expectedLabels[i]);
     }
 
-    auto expCol0 = genGivenVals<DenseMatrix<std::string>>(1, {""});
-    auto expCol1 = genGivenVals<DenseMatrix<std::string>>(1, {""});
-    auto expCol2 = genGivenVals<DenseMatrix<std::string>>(1, {""});
-    auto expCol3 = genGivenVals<DenseMatrix<std::string>>(1, {""});
-    auto expCol4 = genGivenVals<DenseMatrix<std::string>>(1, {""});
+    auto expCol0 = genGivenVals<DenseMatrix<std::string>>(1, {"NULL"});
+    auto expCol1 = genGivenVals<DenseMatrix<std::string>>(1, {"NULL"});
+    auto expCol2 = genGivenVals<DenseMatrix<std::string>>(1, {"NULL"});
+    auto expCol3 = genGivenVals<DenseMatrix<std::string>>(1, {"NULL"});
+    auto expCol4 = genGivenVals<DenseMatrix<std::string>>(1, {"NULL"});
 
     CHECK(*(res->getColumn<std::string>(0)) == *expCol0);
     CHECK(*(res->getColumn<std::string>(1)) == *expCol1);

@@ -18,18 +18,25 @@ limitations under the License.
 
 At the time of writing, Daphne supports two DBMS: DuckDB and SQLite. In addition, there is the option to use DuckDB through ODBC.
 
-To use these features, we can call the `externalSql()` function as follows:
+To use these features, we can call the `externalSql()` function. 
+
+The `externalSql()` function allows users to execute SQL queries directly on external databases.
+The function *requires three parameters*:
+```cpp
+externalSql("<SQL QUERY>", "<DBMS TYPE>", "<CONNECTION>");
+```
+The following is a list of supported DBMS:
 
 ## DuckDB
 
-DuckDB is locally embedded in Daphne, and to use it we have to set the `dbms` to "duckdb". There many ways to use it, including:
+DuckDB is locally embedded in Daphne, and to use it we have to set the `dbms` to "DuckDB". There many ways to use it, including:
 
 ### Creating a new .db file
 
 If we do not have a file, we can create one using 
 
 ```cpp
-externalSql("CREATE TABLE IF NOT EXISTS table_name (id INTEGER, name VARCHAR);", "duckdb", "nameOfMyFile.db");
+externalSql("CREATE TABLE IF NOT EXISTS table_name (id INTEGER, name VARCHAR);", "DuckDB", "nameOfMyFile.db");
 ```
 
 This will create a new file called `nameOfMyFile.db` which we can access later and run queries on it just by putting it as our `connection` parameter.
@@ -37,7 +44,7 @@ This will create a new file called `nameOfMyFile.db` which we can access later a
 DuckDB could also be called in memory to execute CSV files, for example:
 
 ```cpp
-externalSql("SELECT * FROM read_csv_auto('path/to/csvFile.csv')", "duckdb", ":memory:");
+externalSql("SELECT * FROM read_csv_auto('path/to/csvFile.csv')", "DuckDB", ":memory:");
 ```
 
 This will access the `csvFile.csv` file and run the query on it, returning the result as a frame. 
@@ -50,7 +57,7 @@ When the connection string is empty DuckDB Defaults to In-Memory Mode.
 
 2. If any type of integer, double or float has a NULL value it will show as 0 or 0.0.
 
-3. BOOLEAN is treated like a small integer with true converting to 1 and false converting to 0.
+3. BOOLEAN is treated as a small integer with true converting to 1 and false converting to 0.
 
 ## ODBC
 

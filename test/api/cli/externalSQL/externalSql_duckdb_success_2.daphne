@@ -1,3 +1,4 @@
-res = externalSql("SELECT * FROM read_csv_auto('test/api/cli/externalSQL/example.csv')","duckdb",":memory:");
+// DuckDB read from CSV file test
+res = externalSql("SELECT * FROM read_csv_auto('test/api/cli/externalSQL/example.csv')","DuckDB",":memory:");
 
 print(res);

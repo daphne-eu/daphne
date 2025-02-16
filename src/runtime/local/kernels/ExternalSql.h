@@ -38,10 +38,12 @@ void ExternalSql::apply(Frame*& res, const char* query, const char* dbms,
     if (std::string(query) == ""){
         throw std::runtime_error("Query is empty: please give a valid query.");
     }
-    if (std::string(dbms) == "duckdb" && std::string(connection) != "odbc") {
+    if (std::string(dbms) == "DuckDB" && std::string(connection) != "odbc") {
         try {
+            // Establishing DuckDB connection
             duckdb::DuckDB db(connection);
             duckdb::Connection con(db);
+            // Execute the query
             auto result = con.Query(query);
             if (!result || result->HasError()) {
                 throw std::runtime_error("Query failed: " +
@@ -166,6 +168,7 @@ void ExternalSql::apply(Frame*& res, const char* query, const char* dbms,
 
                 // If the statement is not a SELECT (e.g., CREATE, DROP, INSERT)
                 if (numCols == 0) {
+                    // Create an empty frame as the result so that daphne does not give an error.
                     auto* noResultCol = DataObjectFactory::create<DenseMatrix<int64_t>>(1, 1, false);
                     noResultCol->getValues()[0] = 0;
                     Structure* colArray[1] = {noResultCol};
@@ -200,7 +203,11 @@ void ExternalSql::apply(Frame*& res, const char* query, const char* dbms,
                 while (sqlite3_step(stmt) == SQLITE_ROW) {
                     for (size_t col = 0; col < numCols; ++col) {
                         int colType = sqlite3_column_type(stmt, col);
+
+                        // Make sure that NULL does not change the column type in case it came last
+                        if(colType != SQLITE_NULL || colTypes[col] == 0){
                         colTypes[col] = colType;
+                        }
 
                         switch (colType) {
                         case SQLITE_INTEGER:
@@ -231,6 +238,15 @@ void ExternalSql::apply(Frame*& res, const char* query, const char* dbms,
 
                 sqlite3_finalize(stmt);
 
+                if(numRows == 0){
+                    auto* noResultCol = DataObjectFactory::create<DenseMatrix<int64_t>>(1, 1, false);
+                    noResultCol->getValues()[0] = 0;
+                    Structure* colArray[1] = {noResultCol};
+                    const char* colNames[1] = {"emptyTable"};
+                    createFrame(res, colArray, 1, colNames, 1, ctx);
+                    continue;
+                }
+
                 // Convert results to DAPHNE Frame
                 for (size_t col = 0; col < numCols; ++col) {
                     if (!rowData[col].empty()) {
@@ -259,7 +275,7 @@ void ExternalSql::apply(Frame*& res, const char* query, const char* dbms,
                             auto* colData = DataObjectFactory::create<DenseMatrix<std::string>>(numRows, 1, false);
                             std::string* data = colData->getValues();
                             for (size_t row = 0; row < numRows; ++row) {
-                                data[row] = rowData[col][row].empty() ? "" : rowData[col][row];
+                                data[row] = rowData[col][row].empty() ? "NULL" : rowData[col][row];
                             }
                             columns[col] = colData;
                             break;
