@@ -83,9 +83,7 @@ inline void convertCstr(const char *x, int64_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint8_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
-inline static std::string getDaphneFile(const char* filename) {
-    return std::string(filename) + ".dbdf";
-}
+inline static std::string getDaphneFile(const char *filename) { return std::string(filename) + ".dbdf"; }
 
 /**
  * @brief This function reads a CSV column that contains strings.
@@ -160,7 +158,7 @@ inline size_t setCString(const char *linePtr, size_t start_pos, std::string *res
         if (inQuotes && linePtr[pos] == '"') {
             // Check if this is a doubled quote.
             if (linePtr[pos + 1] == '"') {
-                res->append("\"\"");  // append two quotes
+                res->append("\"\""); // append two quotes
                 pos += 2;
                 continue;
             } else { // closing quote.
@@ -173,7 +171,7 @@ inline size_t setCString(const char *linePtr, size_t start_pos, std::string *res
             break;
         // Handle backslash-escaped quote inside a quoted field.
         if (inQuotes && linePtr[pos] == '\\' && linePtr[pos + 1] == '"') {
-            res->append("\\\"");  // append backslash and quote
+            res->append("\\\""); // append backslash and quote
             pos += 2;
             continue;
         }
