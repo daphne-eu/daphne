@@ -7,11 +7,12 @@ import random
 import string
 
 def random_string(length=5):
-    return ''.join(random.choices(string.ascii_letters, k=length))
+    s = ''.join(random.choices(string.ascii_letters, k=length))
+    return s.replace(',', '\\')
 
 def fixed_str_16():
-    # Generate a fixed 16-character string
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+    s = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+    return s.replace(',', '\\')
 
 def generate_column_data(typ, num_rows):
     if typ == "uint8":
@@ -42,25 +43,32 @@ def main():
     parser = argparse.ArgumentParser(description="Generate a CSV with variable types in each column.")
     parser.add_argument("--rows", type=int, default=10, help="Number of rows")
     parser.add_argument("--cols", type=int, default=7, help="Number of columns")
-    parser.add_argument("--output", type=str, default="output.csv", help="Output CSV file name")
-    parser.add_argument("--header", action="store_true", help="enable header generation")
-    parser.add_argument("--use-str", action="store_true", help="enable string generation")
+    parser.add_argument("--output", type=str, default="", help="Output CSV file name")
+    parser.add_argument("--type", type=str, default="NUMBER", choices=["INT", "FLOAT", "NUMBER", "STR", "FIXEDSTR", "MIXED"],
+                        help="CSV type; allowed values: INT, FLOAT, NUMBER, STR, FIXEDSTR, MIXED")
     args = parser.parse_args()
 
-    # Predefined types to cycle through including additional signed and unsigned integer types.
-    if args.use_str:
-        col_types = [
-            "uint8", "int8",
-            "uint32", "int32", "uint64", "int64",
-            "float32", "float64",
-            "str", "fixedstr16"
-        ]
+
+    # Based on the selected type set the column types for generation.
+    csv_type = args.type.upper()
+    if csv_type == "INT":
+        col_types = ["uint8", "int8", "uint32", "int32", "uint64", "int64"]
+    elif csv_type == "FLOAT":
+        col_types = ["float32", "float64"]
+    elif csv_type == "NUMBER":
+        col_types = ["uint8", "int8", "uint32", "int32", "uint64", "int64", "float32", "float64"]
+    elif csv_type == "STR":
+        col_types = ["str"]
+    elif csv_type == "FIXEDSTR":
+        col_types = ["fixedstr16"]
+    elif csv_type == "MIXED":
+        col_types = ["uint8", "int8", "uint32", "int32", "uint64", "int64", "float32", "float64", "str", "fixedstr16"]
     else:
-        col_types = [
-        "uint8", "int8",
-        "uint32", "int32", "uint64", "int64",
-        "float32", "float64"
-        ]#, "str", "fixedstr16"]
+        raise ValueError(f"Unknown CSV type: {csv_type}")
+
+    # Build output filename such that evaluator can later extract row/col counts and type.
+    if not args.output:
+        args.output = f"data_{args.rows}r_{args.cols}c_{csv_type}.csv"
 
     # Mapping to convert internal type string to meta file valueType.
     type_mapping = {
@@ -82,10 +90,9 @@ def main():
     for c in range(args.cols):
         typ = col_types[c % len(col_types)]
         col_name = f"col_{c}_{typ}"
-        label = col_name if args.header else str(c)
         data[col_name] = generate_column_data(typ, args.rows)
         schema.append({
-            "label": label,
+            "label": col_name,
             "valueType": type_mapping[typ]
         })
 
@@ -93,7 +100,7 @@ def main():
     df = pd.DataFrame(data)
 
     # Write CSV file using pandas which leverages lower-level C code
-    df.to_csv(args.output, index=False, header=args.header)
+    df.to_csv(args.output, index=False, header=False)
     print(f"CSV file '{args.output}' with {args.rows} rows and {args.cols} columns created.")
 
 
