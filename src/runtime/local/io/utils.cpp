@@ -23,8 +23,8 @@
 void writePositionalMap(const char* filename, 
                         const std::vector<std::pair<std::streampos, std::vector<std::uint16_t>>>& posMap) {
 
-    using clock = std::chrono::high_resolution_clock;
-    auto time = clock::now();
+    //using clock = std::chrono::high_resolution_clock;
+    //auto time = clock::now();
     std::string posMapFile = getPosMapFile(filename);
     std::ofstream ofs(posMapFile, std::ios::binary);
     if (!ofs.good())
@@ -48,14 +48,14 @@ void writePositionalMap(const char* filename,
         }
     }
     ofs.close();
-        std::cout << "Positional map written to " << posMapFile << " in " << clock::now() - time << " seconds." << std::endl;
+        //std::cout << "Positional map written to " << posMapFile << " in " << clock::now() - time << " seconds." << std::endl;
 }
 
 // Updated readPositionalMap: reconstruct full offsets.
 std::vector<std::pair<std::streampos, std::vector<uint16_t>>>
 readPositionalMap(const char* filename) {
-    using clock = std::chrono::high_resolution_clock;
-    auto time = clock::now();
+    //using clock = std::chrono::high_resolution_clock;
+    //auto time = clock::now();
     std::ifstream ifs(getPosMapFile(filename), std::ios::binary);
     if (!ifs.good())
         throw std::runtime_error("Cannot open posMap file");
@@ -78,6 +78,6 @@ readPositionalMap(const char* filename) {
         }
         posMap[r] = std::make_pair(base, relOffsets);
     }
-    std::cout << "Positional map read from " << getPosMapFile(filename) << " in " << clock::now() - time << " seconds." << std::endl;
+    //std::cout << "Positional map read from " << getPosMapFile(filename) << " in " << clock::now() - time << " seconds." << std::endl;
     return posMap;
 }
