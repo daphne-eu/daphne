@@ -80,9 +80,6 @@ inline void convertCstr(const char *x, int64_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint8_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
-inline static std::string getDaphneFile(const char* filename) {
-    return std::string(filename) + ".dbdf";
-}
 
 inline static std::string getPosMapFile(const char* filename) {
     return std::string(filename) + ".posmap";
