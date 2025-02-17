@@ -106,9 +106,7 @@ template <> struct ReadCsv<Frame> {
     static void apply(Frame *&res, const char *filename, size_t numRows, size_t numCols, char delim,
                       ValueTypeCode *schema, ReadOpts opt = ReadOpts()) {
         struct File *file = openFile(filename);
-        std::cout << "opened CSV file: " << file->identifier << std::endl;
         readCsvFile(res, file, numRows, numCols, delim, schema, filename, opt);
-        std::cout << "read CSV file: " << file->identifier << std::endl;
         closeFile(file);
     }
 };
