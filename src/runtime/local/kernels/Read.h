@@ -79,10 +79,10 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx)) {
 
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
-        FileMetaData fmd = MetaDataParser::readMetaData(filename);
         ReadOpts read_opt =
             ctx ? ReadOpts(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().use_positional_map)
                 : ReadOpts();
+        FileMetaData fmd = MetaDataParser::readMetaData(filename);
         int extv = extValue(filename);
         switch (extv) {
         case 0:
@@ -144,8 +144,10 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
             if (fmd.numNonZeros == -1)
                 throw std::runtime_error("Currently reading of sparse matrices requires a number of "
                                          "non zeros to be defined");
+
             if (res == nullptr)
                 res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
+
             // FIXME: ensure file is sorted, or set `sorted` argument correctly
             readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true, read_opt);
             break;
@@ -189,9 +191,12 @@ template <> struct Read<Frame> {
             labels = nullptr;
         else
             labels = fmd.labels.data();
+
         if (res == nullptr)
             res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
+
         readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema, read_opt);
+
         if (fmd.isSingleValueType)
             delete[] schema;
     }

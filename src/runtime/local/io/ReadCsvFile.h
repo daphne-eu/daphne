@@ -304,7 +304,6 @@ template <> struct ReadCsvFile<Frame> {
             rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
             colTypes[i] = res->getColumnType(i);
         }
-        
         // Determine if any optimized branch should be used.
         bool useOptimized = false;
         bool usePosMap = false;
@@ -495,15 +494,19 @@ template <> struct ReadCsvFile<Frame> {
         std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
         
         if (opt.opt_enabled) {
-            if (opt.posMap)
-                try{
+            if (opt.posMap) {
+                try {
                     auto writeTime = clock::now();
                     writePositionalMap(filename, posMap);
-                    std::cout << "write time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count() << std::endl;
-                    
+                    std::cout
+                        << "write time: "
+                        << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count()
+                        << std::endl;
+
                 } catch (std::exception &e) {
                     // positional map can still be used
                 }
+            }
         }
         delete[] rawCols;
         delete[] colTypes;
