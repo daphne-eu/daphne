@@ -229,6 +229,59 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<number>,
                                                         FixedStr16("1.1"), FixedStr16("5.1"), FixedStr16("9.1")});
     DTRes *res_FixedStr16 = nullptr;
 
+    auto arg_FixedStr32 =
+        genGivenVals<DenseMatrix<FixedStr32>>(numRows, {FixedStr32("3.1"), FixedStr32("1.1"), FixedStr32("4.1"),
+                                                        FixedStr32("1.1"), FixedStr32("5.1"), FixedStr32("9.1")});
+    DTRes *res_FixedStr32 = nullptr;
+
+    auto arg_FixedStr64 =
+        genGivenVals<DenseMatrix<FixedStr64>>(numRows, {FixedStr64("3.1"), FixedStr64("1.1"), FixedStr64("4.1"),
+                                                        FixedStr64("1.1"), FixedStr64("5.1"), FixedStr64("9.1")});
+    DTRes *res_FixedStr64 = nullptr;
+
+    auto arg_FixedStr128 =
+        genGivenVals<DenseMatrix<FixedStr128>>(numRows, {FixedStr128("3.1"), FixedStr128("1.1"), FixedStr128("4.1"),
+                                                        FixedStr128("1.1"), FixedStr128("5.1"), FixedStr128("9.1")});
+    DTRes *res_FixedStr128 = nullptr;
+
+    auto arg_FixedStr256 =
+        genGivenVals<DenseMatrix<FixedStr256>>(numRows, {FixedStr256("3.1"), FixedStr256("1.1"), FixedStr256("4.1"),
+                                                        FixedStr256("1.1"), FixedStr256("5.1"), FixedStr256("9.1")});
+    DTRes *res_FixedStr256 = nullptr;
+
+    auto arg_Umbra_t =
+        genGivenVals<DenseMatrix<Umbra_t>>(numRows, {
+            Umbra_t("3.1"), Umbra_t("1.1"), Umbra_t("4.1"),
+            Umbra_t("1.1"), Umbra_t("5.1"), Umbra_t("9.1")
+            });
+
+    DTRes *res_Umbra_t = nullptr;
+
+    auto arg_NewUmbra_t =
+        genGivenVals<DenseMatrix<NewUmbra_t>>(numRows, {
+            NewUmbra_t("3.1"), NewUmbra_t("1.1"), NewUmbra_t("4.1"),
+            NewUmbra_t("1.1"), NewUmbra_t("5.1"), NewUmbra_t("9.1")
+            });
+
+    DTRes *res_NewUmbra_t = nullptr;
+
+    auto arg_UnorderedDictionaryEncodedString =
+        genGivenVals<DenseMatrix<UnorderedDictionaryEncodedString>>(numRows, {
+            UnorderedDictionaryEncodedString("3.1"), UnorderedDictionaryEncodedString("1.1"), UnorderedDictionaryEncodedString("4.1"),
+            UnorderedDictionaryEncodedString("1.1"), UnorderedDictionaryEncodedString("5.1"), UnorderedDictionaryEncodedString("9.1")
+            });
+
+    DTRes *res_UnorderedDictionaryEncodedString = nullptr;
+
+    auto arg_OrderedDictionaryEncodedString =
+        genGivenVals<DenseMatrix<OrderedDictionaryEncodedString>>(numRows, {
+            OrderedDictionaryEncodedString("3.1"), OrderedDictionaryEncodedString("1.1"), OrderedDictionaryEncodedString("4.1"),
+            OrderedDictionaryEncodedString("1.1"), OrderedDictionaryEncodedString("5.1"), OrderedDictionaryEncodedString("9.1")
+            });
+
+    DTRes *res_OrderedDictionaryEncodedString = nullptr;
+
+
     auto check = genGivenVals<DenseMatrix<VTRes>>(
         numRows, {VTRes(3.1), VTRes(1.1), VTRes(4.1), VTRes(1.1), VTRes(5.1), VTRes(9.1)});
 
@@ -238,9 +291,33 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<number>,
     castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr16>>(res_FixedStr16, arg_FixedStr16, nullptr);
     CHECK(*res_FixedStr16 == *check);
 
+    castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr32>>(res_FixedStr32, arg_FixedStr32, nullptr);
+    CHECK(*res_FixedStr32 == *check);
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr64>>(res_FixedStr64, arg_FixedStr64, nullptr);
+    CHECK(*res_FixedStr64 == *check);
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr128>>(res_FixedStr128, arg_FixedStr128, nullptr);
+    CHECK(*res_FixedStr128 == *check);
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr256>>(res_FixedStr256, arg_FixedStr256, nullptr);
+    CHECK(*res_FixedStr256 == *check);
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<Umbra_t>>(res_Umbra_t, arg_Umbra_t, nullptr);
+    CHECK(*res_Umbra_t == *check);
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<NewUmbra_t>>(res_NewUmbra_t, arg_NewUmbra_t, nullptr);
+    CHECK(*res_NewUmbra_t == *check);
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<UnorderedDictionaryEncodedString>>(res_UnorderedDictionaryEncodedString, arg_UnorderedDictionaryEncodedString, nullptr);
+    CHECK(*res_UnorderedDictionaryEncodedString == *check);
+
+    castObj<DenseMatrix<VTRes>, DenseMatrix<OrderedDictionaryEncodedString>>(res_OrderedDictionaryEncodedString, arg_OrderedDictionaryEncodedString, nullptr);
+    CHECK(*res_OrderedDictionaryEncodedString == *check);
+
     DataObjectFactory::destroy(check);
-    DataObjectFactory::destroy(res_stdSTR, res_FixedStr16);
-    DataObjectFactory::destroy(arg_stdSTR, arg_FixedStr16);
+    DataObjectFactory::destroy(res_stdSTR, res_FixedStr16, res_FixedStr32, res_FixedStr64, res_FixedStr128, res_FixedStr256, res_Umbra_t, res_NewUmbra_t, res_UnorderedDictionaryEncodedString, res_OrderedDictionaryEncodedString);
+    DataObjectFactory::destroy(arg_stdSTR, arg_FixedStr16, arg_FixedStr32, arg_FixedStr64, arg_FixedStr128, arg_FixedStr256, arg_Umbra_t, arg_NewUmbra_t, arg_UnorderedDictionaryEncodedString, arg_OrderedDictionaryEncodedString);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<int64_t>, int64_t", TAG_KERNELS, (DenseMatrix),
@@ -285,6 +362,152 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, DenseMatrix<string> to DenseMatrix<int64_t>
         DataObjectFactory::destroy(check_FixedStr16);
         DataObjectFactory::destroy(res_FixedStr16);
         DataObjectFactory::destroy(arg_FixedStr16);
+    }
+    
+    SECTION("FixedStr32") {
+        auto arg_FixedStr32 = genGivenVals<DenseMatrix<FixedStr32>>(
+            numRows, {FixedStr32("123456789012345"), FixedStr32("123456789012344"), FixedStr32("123456789012343"),
+                      FixedStr32("123456789012342"), FixedStr32("123456789012341"), FixedStr32("123456789012340")});
+        DTRes *res_FixedStr32 = nullptr;
+        auto check_FixedStr32 =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr32>>(res_FixedStr32, arg_FixedStr32, nullptr);
+
+        CHECK(*res_FixedStr32 == *check_FixedStr32);
+
+        DataObjectFactory::destroy(check_FixedStr32);
+        DataObjectFactory::destroy(res_FixedStr32);
+        DataObjectFactory::destroy(arg_FixedStr32);
+    }
+
+    SECTION("FixedStr64") {
+        auto arg_FixedStr64 = genGivenVals<DenseMatrix<FixedStr64>>(
+            numRows, {FixedStr64("123456789012345"), FixedStr64("123456789012344"), FixedStr64("123456789012343"),
+                      FixedStr64("123456789012342"), FixedStr64("123456789012341"), FixedStr64("123456789012340")});
+        DTRes *res_FixedStr64 = nullptr;
+        auto check_FixedStr64 =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr64>>(res_FixedStr64, arg_FixedStr64, nullptr);
+
+        CHECK(*res_FixedStr64 == *check_FixedStr64);
+
+        DataObjectFactory::destroy(check_FixedStr64);
+        DataObjectFactory::destroy(res_FixedStr64);
+        DataObjectFactory::destroy(arg_FixedStr64);
+    }
+
+    SECTION("FixedStr128") {
+        auto arg_FixedStr128 = genGivenVals<DenseMatrix<FixedStr128>>(
+            numRows, {FixedStr128("123456789012345"), FixedStr128("123456789012344"), FixedStr128("123456789012343"),
+                      FixedStr128("123456789012342"), FixedStr128("123456789012341"), FixedStr128("123456789012340")});
+        DTRes *res_FixedStr128 = nullptr;
+        auto check_FixedStr128 =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr128>>(res_FixedStr128, arg_FixedStr128, nullptr);
+
+        CHECK(*res_FixedStr128 == *check_FixedStr128);
+
+        DataObjectFactory::destroy(check_FixedStr128);
+        DataObjectFactory::destroy(res_FixedStr128);
+        DataObjectFactory::destroy(arg_FixedStr128);
+    }
+
+    SECTION("FixedStr256") {
+        auto arg_FixedStr256 = genGivenVals<DenseMatrix<FixedStr256>>(
+            numRows, {FixedStr256("123456789012345"), FixedStr256("123456789012344"), FixedStr256("123456789012343"),
+                      FixedStr256("123456789012342"), FixedStr256("123456789012341"), FixedStr256("123456789012340")});
+        DTRes *res_FixedStr256 = nullptr;
+        auto check_FixedStr256 =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<FixedStr256>>(res_FixedStr256, arg_FixedStr256, nullptr);
+
+        CHECK(*res_FixedStr256 == *check_FixedStr256);
+
+        DataObjectFactory::destroy(check_FixedStr256);
+        DataObjectFactory::destroy(res_FixedStr256);
+        DataObjectFactory::destroy(arg_FixedStr256);
+    }
+
+    SECTION("Umbra_t") {
+        auto arg_Umbra_t = genGivenVals<DenseMatrix<Umbra_t>>(
+            numRows, {Umbra_t("123456789012345"), Umbra_t("123456789012344"), Umbra_t("123456789012343"),
+                      Umbra_t("123456789012342"), Umbra_t("123456789012341"), Umbra_t("123456789012340")});
+        DTRes *res_Umbra_t = nullptr;
+        auto check_Umbra_t =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<Umbra_t>>(res_Umbra_t, arg_Umbra_t, nullptr);
+
+        CHECK(*res_Umbra_t == *check_Umbra_t);
+
+        DataObjectFactory::destroy(check_Umbra_t);
+        DataObjectFactory::destroy(res_Umbra_t);
+        DataObjectFactory::destroy(arg_Umbra_t);
+    }
+
+    SECTION("NewUmbra_t") {
+        auto arg_NewUmbra_t = genGivenVals<DenseMatrix<NewUmbra_t>>(
+            numRows, {NewUmbra_t("123456789012345"), NewUmbra_t("123456789012344"), NewUmbra_t("123456789012343"),
+                      NewUmbra_t("123456789012342"), NewUmbra_t("123456789012341"), NewUmbra_t("123456789012340")});
+        DTRes *res_NewUmbra_t = nullptr;
+        auto check_NewUmbra_t =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<NewUmbra_t>>(res_NewUmbra_t, arg_NewUmbra_t, nullptr);
+
+        CHECK(*res_NewUmbra_t == *check_NewUmbra_t);
+
+        DataObjectFactory::destroy(check_NewUmbra_t);
+        DataObjectFactory::destroy(res_NewUmbra_t);
+        DataObjectFactory::destroy(arg_NewUmbra_t);
+    }
+
+    SECTION("UnorderedDictionaryEncodedString") {
+        auto arg_UnorderedDictionaryEncodedString = genGivenVals<DenseMatrix<UnorderedDictionaryEncodedString>>(
+            numRows, {
+                UnorderedDictionaryEncodedString("123456789012345"), UnorderedDictionaryEncodedString("123456789012344"), UnorderedDictionaryEncodedString("123456789012343"),
+                UnorderedDictionaryEncodedString("123456789012342"), UnorderedDictionaryEncodedString("123456789012341"), UnorderedDictionaryEncodedString("123456789012340")});
+        DTRes *res_UnorderedDictionaryEncodedString = nullptr;
+        auto check_UnorderedDictionaryEncodedString =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<UnorderedDictionaryEncodedString>>(res_UnorderedDictionaryEncodedString, arg_UnorderedDictionaryEncodedString, nullptr);
+
+        CHECK(*res_UnorderedDictionaryEncodedString == *check_UnorderedDictionaryEncodedString);
+
+        DataObjectFactory::destroy(check_UnorderedDictionaryEncodedString);
+        DataObjectFactory::destroy(res_UnorderedDictionaryEncodedString);
+        DataObjectFactory::destroy(arg_UnorderedDictionaryEncodedString);
+    }
+
+    SECTION("OrderedDictionaryEncodedString") {
+        auto arg_OrderedDictionaryEncodedString = genGivenVals<DenseMatrix<OrderedDictionaryEncodedString>>(
+            numRows, {
+                OrderedDictionaryEncodedString("123456789012345"), OrderedDictionaryEncodedString("123456789012344"), OrderedDictionaryEncodedString("123456789012343"),
+                OrderedDictionaryEncodedString("123456789012342"), OrderedDictionaryEncodedString("123456789012341"), OrderedDictionaryEncodedString("123456789012340")});
+        DTRes *res_OrderedDictionaryEncodedString = nullptr;
+        auto check_OrderedDictionaryEncodedString =
+            genGivenVals<DenseMatrix<VTRes>>(numRows, {123456789012345, 123456789012344, 123456789012343,
+                                                       123456789012342, 123456789012341, 123456789012340});
+
+        castObj<DenseMatrix<VTRes>, DenseMatrix<OrderedDictionaryEncodedString>>(res_OrderedDictionaryEncodedString, arg_OrderedDictionaryEncodedString, nullptr);
+
+        CHECK(*res_OrderedDictionaryEncodedString == *check_OrderedDictionaryEncodedString);
+
+        DataObjectFactory::destroy(check_OrderedDictionaryEncodedString);
+        DataObjectFactory::destroy(res_OrderedDictionaryEncodedString);
+        DataObjectFactory::destroy(arg_OrderedDictionaryEncodedString);
     }
 }
 

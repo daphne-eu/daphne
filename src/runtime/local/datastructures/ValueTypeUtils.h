@@ -16,7 +16,12 @@
 
 #pragma once
 
-#include <runtime/local/datastructures/FixedSizeStringValueType.h>
+#include <runtime/local/datastructures/TemplatedFixedSizeString.h>
+#include <runtime/local/datastructures/Umbra.h>
+#include <runtime/local/datastructures/UmbraNew.h>
+#include <runtime/local/datastructures/UnorderedDictionaryEncodedStringValueType.h>
+#include <runtime/local/datastructures/OrderedDictionaryEncodedStringValueType.h>
+
 #include <runtime/local/datastructures/ValueTypeCode.h>
 
 #include <iostream>
@@ -30,7 +35,11 @@
 // changes to the list of supported data types local.
 #define ALL_VALUE_TYPES int8_t, int32_t, int64_t, uint8_t, uint32_t, uint64_t, float, double
 
-#define ALL_STRING_VALUE_TYPES std::string, FixedStr16
+#define ALL_STRING_VALUE_TYPES                                                                                         \
+    std::string, FixedStr16, FixedStr32, FixedStr64, FixedStr128, FixedStr256, Umbra_t, NewUmbra_t, UnorderedDictionaryEncodedString, OrderedDictionaryEncodedString
+#define FLEXIBLE_SIZE_STRING_VALUE_TYPES std::string, Umbra_t, NewUmbra_t, UnorderedDictionaryEncodedString, OrderedDictionaryEncodedString
+#define FIXED_SIZE_STRING_VALUE_TYPES FixedStr16, FixedStr32, FixedStr64, FixedStr128, FixedStr256
+
 
 struct ValueTypeUtils {
 
@@ -61,6 +70,14 @@ template <> const ValueTypeCode ValueTypeUtils::codeFor<float>;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<double>;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<std::string>;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr16>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr32>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr64>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr128>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr256>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<Umbra_t>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<NewUmbra_t>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<UnorderedDictionaryEncodedString>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<OrderedDictionaryEncodedString>;
 
 template <> const std::string ValueTypeUtils::cppNameFor<int8_t>;
 template <> const std::string ValueTypeUtils::cppNameFor<int32_t>;
@@ -92,4 +109,15 @@ template <> const float ValueTypeUtils::defaultValue<float>;
 template <> const double ValueTypeUtils::defaultValue<double>;
 template <> const std::string ValueTypeUtils::defaultValue<std::string>;
 template <> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16>;
+template <> const FixedStr32 ValueTypeUtils::defaultValue<FixedStr32>;
+template <> const FixedStr64 ValueTypeUtils::defaultValue<FixedStr64>;
+template <> const FixedStr128 ValueTypeUtils::defaultValue<FixedStr128>;
+template <> const FixedStr256 ValueTypeUtils::defaultValue<FixedStr256>;
+template <> const UnorderedDictionaryEncodedString ValueTypeUtils::defaultValue<UnorderedDictionaryEncodedString>;
+template <> const OrderedDictionaryEncodedString ValueTypeUtils::defaultValue<OrderedDictionaryEncodedString>;
+
 template <> const char *ValueTypeUtils::defaultValue<const char *>;
+template <> const Umbra_t ValueTypeUtils::defaultValue<Umbra_t>;
+template <> const NewUmbra_t ValueTypeUtils::defaultValue<NewUmbra_t>;
+
+
