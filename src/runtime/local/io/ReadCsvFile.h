@@ -379,7 +379,7 @@ template <> struct ReadCsvFile<Frame> {
             if (useBin) {
                 try {
                     //auto readTime = clock::now();
-                    //readDaphne(res, fName.c_str());
+                    readDaphne(res, fName.c_str());
                     delete[] rawCols;
                     delete[] colTypes;
                     //std::cout << "read time: " << clock::now() - readTime << std::endl;

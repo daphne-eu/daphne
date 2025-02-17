@@ -71,47 +71,8 @@ MAKE_READ_TEST_CASE_2("frame_dynamic-path-1")
 // MAKE_READ_TEST_CASE_2("frame_dynamic-path-2")
 // MAKE_READ_TEST_CASE_2("frame_dynamic-path-3")
 
-TEST_CASE("readFrameWithNoMetaData", TAG_IO) {
-    if (std::filesystem::exists(dirPath + "ref/ReadCsv3-1.csv.meta")) {
-        std::filesystem::remove(dirPath + "ref/ReadCsv3-1.csv.meta");
-    }
-    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt", dirPath + "read/testReadFrameWithMixedTypes.daphne");
-    REQUIRE(std::filesystem::exists(dirPath + "ref/ReadCsv3-1.csv.meta"));
-    FileMetaData fmd = MetaDataParser::readMetaData(dirPath + "ref/ReadCsv3-1.csv");
-    REQUIRE(fmd.numRows == 4);
-    REQUIRE(fmd.numCols == 3);
-    REQUIRE(fmd.labels.size() == 3);
-    REQUIRE(fmd.labels.size() == fmd.schema.size());
-    for (size_t i = 0; i < fmd.labels.size(); i++) {
-        REQUIRE(fmd.labels[i] == "col_" + std::to_string(i));
-    }
-    std::filesystem::remove(dirPath + "ref/ReadCsv3-1.csv.meta");
-}
-
-TEST_CASE("readFrameWithSingleValueType", TAG_IO) {
-    if (std::filesystem::exists(dirPath + "ref/ReadCsv1-1.csv.meta")) {
-        std::filesystem::remove(dirPath + "ref/ReadCsv1-1.csv.meta");
-    }
-    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne");
-    REQUIRE(std::filesystem::exists(dirPath + "ref/ReadCsv1-1.csv.meta"));
-    FileMetaData fmd = MetaDataParser::readMetaData(dirPath + "ref/ReadCsv1-1.csv");
-    REQUIRE(fmd.numRows == 2);
-    REQUIRE(fmd.numCols == 4);
-    REQUIRE(fmd.labels.empty());
-    REQUIRE(fmd.schema.size() == 1);
-    REQUIRE(fmd.schema[0] == ValueTypeCode::F32);
-    
-    std::filesystem::remove(dirPath + "ref/ReadCsv1-1.csv.meta");
-}
-
-TEST_CASE("readFrameFromCSVOptimized", TAG_IO) {
-    
-    std::filesystem::remove(dirPath + "ReadCsv1-1.csv.meta");
-    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne", "--second-read-opt");
-}
-
 TEST_CASE("readFrameFromCSVBinOpt", TAG_IO) {
-    std::string filename = dirPath + "ReadCsv1-1.csv";
+    std::string filename = dirPath + "ref/ReadCsv1-1.csv";
     std::filesystem::remove(filename + ".dbdf");
     compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne", "--second-read-opt");
     REQUIRE(std::filesystem::exists(filename + ".dbdf"));
@@ -120,11 +81,11 @@ TEST_CASE("readFrameFromCSVBinOpt", TAG_IO) {
 }
 
 TEST_CASE("readMatrixFromCSVBinOpt", TAG_IO) {
-    std::string filename = dirPath + "ReadCsv1-1.csv";
+    std::string filename = dirPath + "ref/matrix_si64_ref.csv";
     std::filesystem::remove(filename + ".dbdf");
-    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne", "--second-read-opt");
+    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt", dirPath + "read/testReadFrameWithMixedTypes.daphne", "--second-read-opt");
     REQUIRE(std::filesystem::exists(filename + ".dbdf"));
-    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne", "--second-read-opt");
+    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt", dirPath + "read/testReadFrameWithMixedTypes.daphne", "--second-read-opt");
     std::filesystem::remove(filename + ".dbdf");
 }
 

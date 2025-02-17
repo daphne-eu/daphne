@@ -3,4 +3,4 @@ def readFrameFromCSV(path: str){
     print(readFrame(path));
 }
 
-readFrameFromCSV("test/api/cli/io/ReadCsv1-1.csv");
+print(readMatrix("test/api/cli/io/ref/matrix_si64_ref.csv"));
