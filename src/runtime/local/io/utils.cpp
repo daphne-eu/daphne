@@ -49,6 +49,13 @@ int generality(ValueTypeCode type) { // similar to generality in TypeInferenceUt
     }
 }
 
+// Helper function to check if a line is empty or contains only whitespace.
+bool isEmptyLine(const std::string &line) {
+    return std::all_of(line.begin(), line.end(), [](unsigned char c) {
+        return std::isspace(c);
+    });
+}
+
 ValueTypeCode inferValueType(const char* line, size_t &pos, char delim) {
     std::string field;
     // Extract field until delimiter
@@ -64,7 +71,6 @@ ValueTypeCode inferValueType(const char* line, size_t &pos, char delim) {
 
 // Function to infer the data type of string value
 ValueTypeCode inferValueType(const std::string &valueStr) {
-    std::cout << "inferred value:" << valueStr <<";"<< std::endl;
     // Check if the string represents an integer
     bool isInteger = true;
     for (char c : valueStr) {
@@ -128,16 +134,19 @@ ValueTypeCode inferValueType(const std::string &valueStr) {
 }
 
 // Function to read the CSV file and determine the FileMetaData
-FileMetaData generateFileMetaData(const std::string &filename, char delim, size_t sampleRows) {
+FileMetaData generateFileMetaData(const std::string &filename, char delim, size_t sampleRows, bool isMatrix) {
     std::ifstream file(filename);
     if (!file.is_open())
         throw std::runtime_error("Cannot open file: " + filename);
-    std::cout << "Reading file: " << filename << std::endl;
     std::string line;
     std::vector<ValueTypeCode> colTypes; // will be resized once we know numCols
     bool firstLine = true;
     size_t row = 0;
     while (std::getline(file, line) && row < sampleRows) {
+        // Discard empty rows.
+        if(isEmptyLine(line))
+            continue;
+
         size_t pos = 0;
         size_t col = 0;
         // On first row, determine number of columns.
@@ -154,7 +163,6 @@ FileMetaData generateFileMetaData(const std::string &filename, char delim, size_
         while (pos < line.size() && col < colTypes.size()) {
             size_t tempPos = pos;
             ValueTypeCode tokenType = inferValueType(line.c_str(), tempPos, delim);
-            std::cout << "inferred Token type: " << static_cast<int>(tokenType) << std::endl;
             // Promote type if needed.
             if (generality(tokenType) > generality(colTypes[col]))
                 colTypes[col] = tokenType;
@@ -167,14 +175,26 @@ FileMetaData generateFileMetaData(const std::string &filename, char delim, size_
     std::vector<std::string> labels;
     size_t numCols=colTypes.size();
     bool isSingleValueType = true;
+    ValueTypeCode firstValueType = colTypes[0];
     ValueTypeCode maxValueType = colTypes[0];
     for (size_t i = 0; i < numCols; i++) {
         labels.push_back("col_" + std::to_string(i));
-        if (maxValueType != colTypes[i]) {
+        if (generality(colTypes[i]) > generality(maxValueType)) {
+            maxValueType = colTypes[i];
+        }
+        if (colTypes[i] != firstValueType) {
             isSingleValueType = false;
         }
     }
-    FileMetaData fmd = FileMetaData(row, colTypes.size(), isSingleValueType, colTypes, labels);
+    if (isSingleValueType) {
+        colTypes.clear();
+        labels.clear();
+        colTypes.push_back(maxValueType);
+    }
+    if (isMatrix) {
+        return FileMetaData(row, numCols, true, {maxValueType}, {});
+    }
+    FileMetaData fmd = FileMetaData(row, numCols, isSingleValueType, colTypes, labels);
     return fmd;
 }
 
