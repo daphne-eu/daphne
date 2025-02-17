@@ -78,6 +78,8 @@ readPositionalMap(const char* filename) {
         }
         posMap[r] = std::make_pair(base, relOffsets);
     }
+    //std::cout << "posmap read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
+    
     //std::cout << "Positional map read from " << getPosMapFile(filename) << " in " << clock::now() - time << " seconds." << std::endl;
     return posMap;
 }

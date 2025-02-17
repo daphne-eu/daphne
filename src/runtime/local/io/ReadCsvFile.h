@@ -304,8 +304,7 @@ template <> struct ReadCsvFile<Frame> {
             rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
             colTypes[i] = res->getColumnType(i);
         }
-        //using clock = std::chrono::high_resolution_clock;
-        //auto time = clock::now();
+        
         // Determine if any optimized branch should be used.
         bool useOptimized = false;
         bool usePosMap = false;
@@ -319,6 +318,8 @@ template <> struct ReadCsvFile<Frame> {
                 fName = posmapFile;
             }
         }
+        using clock = std::chrono::high_resolution_clock;
+        auto time = clock::now();
         if (useOptimized) {
             if (usePosMap) {
                 // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
@@ -403,7 +404,7 @@ template <> struct ReadCsvFile<Frame> {
                 }
                 delete[] rawCols;
                 delete[] colTypes;
-                //std::cout << "time reading using posMAp: " << clock::now() - time << std::endl;
+                std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
                 return;
             }
         }
@@ -491,11 +492,15 @@ template <> struct ReadCsvFile<Frame> {
             }
             currentPos += ret;
         }
-        //std::cout << "time reading without posMap: " << clock::now() - time << std::endl;
+        std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
+        
         if (opt.opt_enabled) {
             if (opt.posMap)
                 try{
+                    auto writeTime = clock::now();
                     writePositionalMap(filename, posMap);
+                    std::cout << "write time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count() << std::endl;
+                    
                 } catch (std::exception &e) {
                     // positional map can still be used
                 }
