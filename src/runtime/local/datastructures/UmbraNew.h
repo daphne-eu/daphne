@@ -130,7 +130,7 @@ class NewUmbra_t {
         }
         return *this;
     }
-
+/*
     NewUmbra_t &operator=(NewUmbra_t &&other) noexcept {
         if (this != &other) {
             if (is_long()) {
@@ -150,6 +150,7 @@ class NewUmbra_t {
         }
         return *this;
     }
+ */
 
     // Destructor
     ~NewUmbra_t() {
