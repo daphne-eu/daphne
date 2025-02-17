@@ -1045,6 +1045,11 @@ def Daphne_SqlOp : Daphne_Op<"sql"> {
     let results = (outs FrameOrU:$res);
 }
 
+def Daphne_ExternalSqlOp : Daphne_Op<"externalSql"> {
+    let arguments = (ins StrScalar:$sql, StrScalar:$dbms, StrScalar:$connection);
+    let results = (outs FrameOrU:$res);
+}
+
 def Daphne_RegisterViewOp : Daphne_Op<"registerView"> {
     let arguments = (ins StrAttr:$view, MatrixOrFrame:$arg);
     let results = (outs); // no results

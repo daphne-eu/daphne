@@ -1,0 +1,4 @@
+// Basic ODBC test with SQLite
+res = externalSql("SELECT * FROM example","SQLite","odbc");
+
+print(res);

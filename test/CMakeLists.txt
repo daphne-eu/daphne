@@ -30,6 +30,7 @@ set(TEST_SOURCES
         api/cli/expressions/MatrixLiteralTest.cpp
         api/cli/extensibility/ExtensionTest.cpp
         api/cli/extensibility/HintTest.cpp
+        api/cli/externalSQL/ExternalSqlTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/import/ImportTest.cpp
@@ -119,6 +120,7 @@ set(TEST_SOURCES
         runtime/local/kernels/EwBinaryScaTest.cpp
         runtime/local/kernels/EwUnaryMatTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
+        runtime/local/kernels/ExternalSqlTest.cpp
         runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp
         runtime/local/kernels/FillTest.cpp
