@@ -80,7 +80,7 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx)) {
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
 
-        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().use_positional_map, ctx->getUserConfig().save_csv_as_bin);
+        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().save_csv_as_bin);
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
         int extv = extValue(filename);
         switch (extv) {
@@ -133,7 +133,7 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
 
 template <typename VT> struct Read<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
-        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().use_positional_map, ctx->getUserConfig().save_csv_as_bin);
+        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().save_csv_as_bin);
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
         int extv = extValue(filename);
         switch (extv) {
@@ -172,7 +172,7 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 template <> struct Read<Frame> {
     static void apply(Frame *&res, const char *filename, DCTX(ctx)) {
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
-        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().use_positional_map, ctx->getUserConfig().save_csv_as_bin);
+        ReadOpts read_opt(ctx->getUserConfig().use_second_read_optimization, ctx->getUserConfig().save_csv_as_bin);
         ValueTypeCode *schema;
         if (fmd.isSingleValueType) {
             schema = new ValueTypeCode[fmd.numCols];

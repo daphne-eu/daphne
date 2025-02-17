@@ -114,7 +114,7 @@ struct CompilerUtils {
      */
     template <typename T> static T constantOrDefault(mlir::Value v, T d);
 
-    [[maybe_unused]] static FileMetaData getFileMetaData(mlir::Value filename, bool isMatrix = false);
+    [[maybe_unused]] static FileMetaData getFileMetaData(mlir::Value filename);
 
     /**
      * @brief Produces a string containing the C++ type name of the

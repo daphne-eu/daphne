@@ -21,6 +21,8 @@
 #include <catch.hpp>
 
 #include <filesystem>
+#include <parser/metadata/MetaDataParser.h>
+#include <runtime/local/io/FileMetaData.h>
 #include <string>
 
 const std::string dirPath = "test/api/cli/io/";
