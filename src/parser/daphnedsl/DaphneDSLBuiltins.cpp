@@ -958,6 +958,19 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         return static_cast<mlir::Value>(
             builder.create<SqlOp>(loc, FrameType::get(builder.getContext(), colTypes), builder.getStringAttr(sql)));
     }
+    if (func == "externalSql") {
+        checkNumArgsExact(loc, func, numArgs, 3);
+        // Create the ExternalSqlOp with the query, DBMS, and connection string.
+        return static_cast<mlir::Value>(
+            builder.create<ExternalSqlOp>(
+                loc,
+                FrameType::get(builder.getContext(), {}),
+                args[0],
+                args[1],
+                args[2]
+                )
+        );
+    }
     if (func == "registerView") {
         checkNumArgsExact(loc, func, numArgs, 2);
 

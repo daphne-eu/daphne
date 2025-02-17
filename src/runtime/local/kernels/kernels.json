@@ -4422,6 +4422,33 @@
     },
     {
         "kernelTemplate": {
+            "header": "ExternalSql.h",
+            "opName": "externalSql",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const char *",
+                    "name": "query"
+                },
+                {
+                    "type": "const char *",
+                    "name": "dbms"
+                },
+                {
+                    "type": "const char *",
+                    "name": "connection"
+                }
+            ]
+        },
+        "instantiations": [[]]
+    },
+    {
+        "kernelTemplate": {
             "header": "Transpose.h",
             "opName": "transpose",
             "returnType": "void",

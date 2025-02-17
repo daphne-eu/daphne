@@ -1,0 +1,7 @@
+// SQLite empty result test
+res = externalSql("DROP TABLE IF EXISTS example;
+                   CREATE TABLE example (id INTEGER, name TEXT);
+                   SELECT * FROM example;
+                   ","SQLite","test/api/cli/externalSQL/examplesqlite.db");
+
+print(res);
