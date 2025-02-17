@@ -21,6 +21,8 @@
 #include <catch.hpp>
 
 #include <filesystem>
+#include <parser/metadata/MetaDataParser.h>
+#include <runtime/local/io/FileMetaData.h>
 #include <string>
 
 const std::string dirPath = "test/api/cli/io/";
@@ -68,6 +70,24 @@ MAKE_READ_TEST_CASE_2("frame_read-in-udf")
 MAKE_READ_TEST_CASE_2("frame_dynamic-path-1")
 // MAKE_READ_TEST_CASE_2("frame_dynamic-path-2")
 // MAKE_READ_TEST_CASE_2("frame_dynamic-path-3")
+
+TEST_CASE("readFrameWithNoMetaData", "[metadata]") {
+    if (std::filesystem::exists(dirPath + "ref/ReadCsv1-1.csv.meta")) {
+        std::filesystem::remove(dirPath + "ref/ReadCsv1-1.csv.meta");
+    }
+    compareDaphneToRef(dirPath + "out/testReadFrameWithNoLabels.txt", dirPath + "read/testReadFrameWithNoLabels.daphne");
+    REQUIRE(std::filesystem::exists(dirPath + "ref/ReadCsv1-1.csv.meta"));
+    FileMetaData fmd = MetaDataParser::readMetaData(dirPath + "ref/ReadCsv1-1.csv");
+    REQUIRE(fmd.numRows == 2);
+    REQUIRE(fmd.numCols == 4);
+    REQUIRE(fmd.labels.size() == 4);
+    REQUIRE(fmd.labels.size() == fmd.schema.size());
+    for (size_t i = 0; i < fmd.labels.size(); i++) {
+        REQUIRE(fmd.labels[i] == "col" + std::to_string(i));
+        REQUIRE(fmd.schema[i] == ValueTypeCode::F32);
+    }
+    std::filesystem::remove(dirPath + "ref/ReadCsv1-1.csv.meta");
+}
 
 // ********************************************************************************
 // Write test cases
