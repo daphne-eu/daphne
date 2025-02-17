@@ -15,35 +15,46 @@
  */
 
 #include "BiasAdd.h"
-#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
-namespace CUDA::BiasAdd {
+namespace CUDA {
 template <typename DTRes, typename DTArg>
-void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *bias, DCTX(dctx)) {
-    const size_t deviceID = 0; // ToDo: multi device support
-    auto ctx = CUDAContext::get(dctx, deviceID);
+void BiasAdd<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *bias, DCTX(dctx)) {
+    const size_t deviceID = 0; // TODO: multi device support
+    auto *ctx = CUDAContext::get(dctx, deviceID);
     AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
     using VT = typename DTRes::VT;
     const size_t nr1 = data->getNumRows();
     const size_t nc1 = data->getNumCols();
-    const VT blend_alpha = 1;
-    const VT blend_beta = 1;
+
     const VT *d_input = data->getValues(&alloc_desc);
     const VT *d_bias = bias->getValues(&alloc_desc);
-    res = const_cast<DTArg *>(data);
-    VT *d_res = const_cast<VT *>(d_input);
 
-    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), nr1,
-                                           nc1, 1, 1));
+    if (!res)
+        res = DataObjectFactory::create<DTRes>(nr1, nc1, /*zero=*/false, &alloc_desc);
+    VT *d_res = res->getValues(&alloc_desc);
 
-    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format,
-                                           ctx->template getCUDNNDataType<VT>(), nr1, nc1, 1, 1));
+    CHECK_CUDART(cudaMemcpy(d_res, d_input, nr1 * nc1 * sizeof(VT), cudaMemcpyDeviceToDevice));
 
-    CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_bias, &blend_beta,
-                               ctx->dst_tensor_desc, d_res));
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
+                                           nr1, // batch size
+                                           nc1, // channels
+                                           1, 1));
+
+    CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
+                                           nr1, // batch size
+                                           nc1, // channels
+                                           1, 1));
+
+    constexpr VT alpha = 1;
+    constexpr VT beta = 1;
+    // res = data
+    // res = alpha*bias + beta*res
+    CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &alpha, ctx->src_tensor_desc, d_bias, &beta, ctx->dst_tensor_desc,
+                               d_res));
 }
 
-template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
-template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
-} // namespace CUDA::BiasAdd
+template struct BiasAdd<DenseMatrix<float>, DenseMatrix<float>>;
+template struct BiasAdd<DenseMatrix<double>, DenseMatrix<double>>;
+
+} // namespace CUDA

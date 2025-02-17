@@ -64,6 +64,7 @@ class KernelCatalogParser {
      *
      * @param filePath The path to the file to extract kernel information from.
      * @param kc The kernel catalog to register the kernels with.
+     * @param priority The kernel priority to use for all kernels parsed from the given file.
      */
-    void parseKernelCatalog(const std::string &filePath, KernelCatalog &kc) const;
+    void parseKernelCatalog(const std::string &filePath, KernelCatalog &kc, int64_t priority) const;
 };

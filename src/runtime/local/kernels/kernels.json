@@ -4182,12 +4182,8 @@
                     "name": "res"
                 },
                 {
-                    "type": "uint32_t",
-                    "name": "upper"
-                },
-                {
-                    "type": "uint32_t",
-                    "name": "lower"
+                    "type": "uint64_t",
+                    "name": "address"
                 },
                 {
                     "type": "int64_t",
@@ -5523,7 +5519,7 @@
     {
         "kernelTemplate": {
             "header": "BatchNorm.h",
-            "opName": "BatchNorm::Forward",
+            "opName": "BatchNormInferenceForward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -5605,12 +5601,14 @@
                     "name": "res"
                 },
                 {
-                    "type": "size_t&",
-                    "name": "res_h"
+                    "type": "size_t *",
+                    "name": "res_h",
+                    "isReturnValue": true
                 },
                 {
-                    "type": "size_t&",
-                    "name": "res_w"
+                    "type": "size_t *",
+                    "name": "res_w",
+                    "isReturnValue": true
                 },
                 {
                     "type": "const DTArg *",
@@ -5685,7 +5683,7 @@
     {
         "kernelTemplate": {
             "header": "Softmax.h",
-            "opName": "Softmax::Forward",
+            "opName": "Softmax",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -5728,7 +5726,7 @@
     {
         "kernelTemplate": {
             "header": "BiasAdd.h",
-            "opName": "BiasAdd::Forward",
+            "opName": "BiasAdd",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -5758,7 +5756,7 @@
         },
         "api": [
             {
-                "name": ["CUDA"],
+                "name": ["CPP", "CUDA"],
                 "instantiations": [
                     [
                         ["DenseMatrix", "float"],
@@ -6764,52 +6762,10 @@
             }
         ]
     },
-
-    {
-        "kernelTemplate": {
-            "header": "BiasAddForward.h",
-            "opName": "biasAddForward",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTArg",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTArg *",
-                    "name": "input"
-                },
-                {
-                    "type": "const DTArg *",
-                    "name": "bias"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["CPP"],
-                "instantiations": [
-                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
-                ]
-            }
-        ]
-    },
-
     {
         "kernelTemplate": {
             "header": "BatchNorm2DTestForward.h",
-            "opName": "batchNorm2DTestForward",
+            "opName": "batchNorm2DInferenceForward",
             "returnType": "void",
             "templateParams": [
                 {

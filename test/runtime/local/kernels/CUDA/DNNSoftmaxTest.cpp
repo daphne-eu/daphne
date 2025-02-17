@@ -21,7 +21,7 @@
 
 template <class DT> void check(const DT *in, const DT *exp, DaphneContext *dctx) {
     DT *res = nullptr;
-    CUDA::Softmax::Forward<DT, DT>::apply(res, in, dctx);
+    CUDA::Softmax<DT, DT>::apply(res, in, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(1e-6) == *(exp->getValues()));
 }
 
