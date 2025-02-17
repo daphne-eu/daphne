@@ -113,7 +113,7 @@ ValueTypeCode inferValueType(const std::string &valueStr) {
 }
 
 // Function to read the CSV file and determine the FileMetaData
-FileMetaData generateFileMetaData(const std::string &filename, bool hasLabels, bool isFrame) {
+FileMetaData generateFileMetaData(const std::string &filename, bool isFrame) {
     std::ifstream file(filename);
     std::string line;
     std::vector<ValueTypeCode> schema;
@@ -127,22 +127,7 @@ FileMetaData generateFileMetaData(const std::string &filename, bool hasLabels, b
 
     if (file.is_open()) {
         if (isFrame) {
-            if (hasLabels) {
-                // extract labels from first line
-                if (std::getline(file, line)) {
-                    std::stringstream ss(line);
-                    std::string label;
-                    while (std::getline(ss, label, ',')) {
-                        // trim any whitespaces for last element in line
-                        //  Remove any newline characters from the end of the value
-                        if (!label.empty() && (label.back() == '\n' || label.back() == '\r')) {
-                            label.pop_back();
-                        }
-                        labels.push_back(label);
-                    }
-                }
-            }
-            // Read the rest of the file to infer the schema
+            // Read the file to infer the schema
             while (std::getline(file, line)) {
                 std::stringstream ss(line);
                 std::string value;

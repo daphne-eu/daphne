@@ -58,15 +58,15 @@ int extValue(const char *filename);
 // ****************************************************************************
 
 template <class DTRes> struct Read {
-    static void apply(DTRes *&res, const char *filename, DCTX(ctx), bool labels = false) = delete;
+    static void apply(DTRes *&res, const char *filename, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx), bool labels = false) {
-    Read<DTRes>::apply(res, filename, ctx, labels);
+template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx)) {
+    Read<DTRes>::apply(res, filename, ctx);
 }
 
 // ****************************************************************************
@@ -78,9 +78,9 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx), b
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Read<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx), bool labels = false) {
+    static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
 
-        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, false);
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, false);
         int extv = extValue(filename);
         switch (extv) {
         case 0:
@@ -132,7 +132,7 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
 
 template <typename VT> struct Read<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, DCTX(ctx), bool labels = false) {
-        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, false);
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, false);
         int extv = extValue(filename);
         switch (extv) {
         case 0:
@@ -168,8 +168,8 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <> struct Read<Frame> {
-    static void apply(Frame *&res, const char *filename, DCTX(ctx), bool labels = false) {
-        FileMetaData fmd = MetaDataParser::readMetaData(filename, labels, true);
+    static void apply(Frame *&res, const char *filename, DCTX(ctx)) {
+        FileMetaData fmd = MetaDataParser::readMetaData(filename, true);
 
         ValueTypeCode *schema;
         if (fmd.isSingleValueType) {
@@ -179,14 +179,14 @@ template <> struct Read<Frame> {
         } else
             schema = fmd.schema.data();
 
-        std::string *fmdLabels;
+        std::string *labels;
         if (fmd.labels.empty())
-            fmdLabels = nullptr;
+            labels = nullptr;
         else
-            fmdLabels = fmd.labels.data();
+            labels = fmd.labels.data();
 
         if (res == nullptr)
-            res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, fmdLabels, false);
+            res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
 
         readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
 
