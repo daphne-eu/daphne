@@ -546,6 +546,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
         auto pppI1Ty = LLVM::LLVMPointerType::get(ptrPtrI1Ty);
 
+        std::string vecFuncName = "_vect";
         LLVM::LLVMFuncOp fOp;
         {
             OpBuilder::InsertionGuard ig(rewriter);
@@ -555,6 +556,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
 
             static auto ix = 0;
             std::string funcName = "_vect" + std::to_string(++ix);
+            vecFuncName = funcName;
 
             // TODO: pass daphne context to function
             auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()),
@@ -568,8 +570,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
             auto returnRef = funcBlock.addArgument(pppI1Ty, rewriter.getUnknownLoc());
             auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty, rewriter.getUnknownLoc());
             auto daphneContext = funcBlock.addArgument(ptrI1Ty, rewriter.getUnknownLoc());
-            // TODO: we should not create a new daphneContext, instead pass the
-            // one created in the main function
+
             for (auto callKernelOp : funcBlock.getOps<daphne::CallKernelOp>()) {
                 callKernelOp.setOperand(callKernelOp.getNumOperands() - 1, daphneContext);
             }
@@ -601,7 +602,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
             }
 
             // Update function block to write return value by reference instead
-            auto oldReturn = funcBlock.getTerminator();
+            auto *oldReturn = funcBlock.getTerminator();
             rewriter.setInsertionPoint(oldReturn);
             for (auto i = 0u; i < oldReturn->getNumOperands(); ++i) {
                 auto retVal = oldReturn->getOperand(i);
@@ -675,7 +676,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
 
                 // Update function block to write return value by reference
                 // instead
-                auto oldReturn = funcBlock.getTerminator();
+                auto *oldReturn = funcBlock.getTerminator();
                 rewriter.setInsertionPoint(oldReturn);
                 for (auto i = 0u; i < oldReturn->getNumOperands(); ++i) {
                     auto retVal = oldReturn->getOperand(i);
@@ -827,10 +828,17 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         // Add ctx
         //        newOperands.push_back(operands.back());
         if (op.getCtx() == nullptr) {
+            // TODO(phil): make ErrorHandler call
             op->emitOpError() << "`DaphneContext` not known";
             return failure();
-        } else
-            newOperands.push_back(op.getCtx());
+        }
+
+        auto kId = rewriter.create<mlir::arith::ConstantOp>(
+            loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(vecFuncName, op)));
+
+        newOperands.push_back(kId);
+        newOperands.push_back(op.getCtx());
+
         // Create a CallKernelOp for the kernel function to call and return
         // success().
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), newOperands, resultTypes);

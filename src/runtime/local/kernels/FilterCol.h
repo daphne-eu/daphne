@@ -73,6 +73,16 @@ template <typename VT, typename VTSel> struct FilterCol<DenseMatrix<VT>, DenseMa
         VT *valuesRes = res->getValues();
         const size_t rowSkipArg = arg->getRowSkip();
         const size_t rowSkipRes = res->getRowSkip();
+
+        // Two alternative approaches for doing the main work.
+        // Note that even though sel is essentially a bit vector, we represent it as a 64-bit integer at the moment, for
+        // simplicity. As both the elements in sel used in approach 1 and the positions in approach 2 are currently
+        // represented as 64-bit integers, approach 2 should always be faster than approach 1, because in approach 2 we
+        // iterate over at most as many 64-bit values as in approach 1 while we can omit the check. Once we change to a
+        // 1-bit representation for the values in sel, we should rethink the trade-off between the two approaches.
+#if 0 // approach 1
+      // For every row in arg, iterate over all elements in sel (one per column in arg), check if the respective
+      // column should be part of the output and if so, copy the value to the output.
         for (size_t r = 0; r < numRows; r++) {
             for (size_t ca = 0, cr = 0; ca < numColsArg; ca++)
                 if (sel->get(ca, 0))
@@ -80,6 +90,22 @@ template <typename VT, typename VTSel> struct FilterCol<DenseMatrix<VT>, DenseMa
             valuesArg += rowSkipArg;
             valuesRes += rowSkipRes;
         }
+#else // approach 2
+      // Once in the beginning, create a vector of the positions of the columns we want to copy to the output.
+      // Negligible effort, unless the number of rows in arg is very small.
+        std::vector<size_t> positions;
+        for (size_t c = 0; c < numColsArg; c++)
+            if (sel->get(c, 0))
+                positions.push_back(c);
+        // For every row in arg, iterate over the array of those positions and copy the value in the respective column
+        // to the output.
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t i = 0; i < positions.size(); i++)
+                valuesRes[i] = valuesArg[positions[i]];
+            valuesArg += rowSkipArg;
+            valuesRes += rowSkipRes;
+        }
+#endif
     }
 };
 

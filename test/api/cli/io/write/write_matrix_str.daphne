@@ -1,0 +1,5 @@
+# Write a matrix of value type str to a file.
+
+X = ["abc", "", "d\"e",
+     "fg\nhi", "jkl", "mn,op"](2, 3);
+write(X, $outPath);

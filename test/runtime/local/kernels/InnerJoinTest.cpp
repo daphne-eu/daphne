@@ -31,25 +31,25 @@
 
 #include <cstdint>
 
-TEST_CASE("innerJoin", TAG_KERNELS) {
+TEST_CASE("InnerJoin", TAG_KERNELS) {
     auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(4, {1, 2, 3, 4});
     auto lhsC1 = genGivenVals<DenseMatrix<double>>(4, {11.0, 22.0, 33.0, 44.00});
     std::vector<Structure *> lhsCols = {lhsC0, lhsC1};
     std::string lhsLabels[] = {"a", "b"};
     auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
 
-    auto rhsC0 = genGivenVals<DenseMatrix<int64_t>>(3, {1, 4, 5});
-    auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(3, {-1, -4, -5});
-    auto rhsC2 = genGivenVals<DenseMatrix<double>>(3, {0.1, 0.2, 0.3});
+    auto rhsC0 = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
+    auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(4, {-1, -4, -5, -6});
+    auto rhsC2 = genGivenVals<DenseMatrix<double>>(4, {0.1, 0.2, 0.3, 0.4});
     std::vector<Structure *> rhsCols = {rhsC0, rhsC1, rhsC2};
     std::string rhsLabels[] = {"c", "d", "e"};
     auto rhs = DataObjectFactory::create<Frame>(rhsCols, rhsLabels);
 
     Frame *res = nullptr;
-    innerJoin(res, lhs, rhs, "a", "c", nullptr);
+    innerJoin(res, lhs, rhs, "a", "c", -1, nullptr);
 
     // Check the meta data.
-    CHECK(res->getNumRows() == 2);
+    CHECK(res->getNumRows() == 3);
     CHECK(res->getNumCols() == 5);
 
     CHECK(res->getColumnType(0) == ValueTypeCode::SI64);
@@ -64,11 +64,11 @@ TEST_CASE("innerJoin", TAG_KERNELS) {
     CHECK(res->getLabels()[3] == "d");
     CHECK(res->getLabels()[4] == "e");
 
-    auto resC0Exp = genGivenVals<DenseMatrix<int64_t>>(2, {1, 4});
-    auto resC1Exp = genGivenVals<DenseMatrix<double>>(2, {11.0, 44.0});
-    auto resC2Exp = genGivenVals<DenseMatrix<int64_t>>(2, {1, 4});
-    auto resC3Exp = genGivenVals<DenseMatrix<int64_t>>(2, {-1, -4});
-    auto resC4Exp = genGivenVals<DenseMatrix<double>>(2, {0.1, 0.2});
+    auto resC0Exp = genGivenVals<DenseMatrix<int64_t>>(3, {1, 4, 4});
+    auto resC1Exp = genGivenVals<DenseMatrix<double>>(3, {11.0, 44.0, 44.0});
+    auto resC2Exp = genGivenVals<DenseMatrix<int64_t>>(3, {1, 4, 4});
+    auto resC3Exp = genGivenVals<DenseMatrix<int64_t>>(3, {-1, -4, -6});
+    auto resC4Exp = genGivenVals<DenseMatrix<double>>(3, {0.1, 0.2, 0.4});
 
     CHECK(*(res->getColumn<int64_t>(0)) == *resC0Exp);
     CHECK(*(res->getColumn<double>(1)) == *resC1Exp);

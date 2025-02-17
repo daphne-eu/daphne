@@ -551,8 +551,11 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(SQLGrammarParser::InnerJoinContext *ctx
         mlir::Value rhsName = valueOrErrorOnVisit(ctx->rhs);
         mlir::Value lhsName = valueOrErrorOnVisit(ctx->lhs);
 
+        mlir::Value numRowRes =
+            static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(queryLoc, static_cast<int64_t>(-1)));
+
         return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::InnerJoinOp>(loc, t, currentFrame, tojoin, rhsName, lhsName));
+            builder.create<mlir::daphne::InnerJoinOp>(loc, t, currentFrame, tojoin, rhsName, lhsName, numRowRes));
     }
 
     std::vector<mlir::Value> rhsNames;
@@ -832,7 +835,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(SQLGrammarParser::GroupAggExprContex
 
         setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
-        mlir::Value expr = valueOrErrorOnVisit(ctx->generalExpr());
+        mlir::Value expr = valueOrErrorOnVisit(ctx->generalExpr2());
         setBit(sqlFlag, (int64_t)SQLBit::agg, 0);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
 
@@ -857,6 +860,22 @@ antlrcpp::Any SQLVisitor::visitParanthesesExpr(SQLGrammarParser::ParanthesesExpr
         return nullptr;
     }
     return utils.valueOrError(utils.getLoc(ctx->generalExpr()->start), vRes);
+}
+
+antlrcpp::Any SQLVisitor::visitParanthesesExpr2(SQLGrammarParser::ParanthesesExpr2Context *ctx) {
+    antlrcpp::Any vRes = visit(ctx->generalExpr2());
+    if (!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)) {
+        return nullptr;
+    }
+    return utils.valueOrError(utils.getLoc(ctx->generalExpr2()->start), vRes);
+}
+
+antlrcpp::Any SQLVisitor::visitDefaultExpr(SQLGrammarParser::DefaultExprContext *ctx) {
+    antlrcpp::Any vRes = visit(ctx->generalExpr2());
+    if (!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)) {
+        return nullptr;
+    }
+    return utils.valueOrError(utils.getLoc(ctx->generalExpr2()->start), vRes);
 }
 
 antlrcpp::Any SQLVisitor::visitMulExpr(SQLGrammarParser::MulExprContext *ctx) {
@@ -929,8 +948,41 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext *ctx) {
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
     if (op == ">=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor (visitCmpExpr)", "unexpected comparision operation symbol");
+}
 
-    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor", "unexpected op symbol");
+antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext *ctx) {
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    antlrcpp::Any vObj = visit(ctx->obj);
+    antlrcpp::Any vLhs = visit(ctx->lhs);
+    antlrcpp::Any vRhs = visit(ctx->rhs);
+
+    if (!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)) {
+        return nullptr;
+    }
+
+    mlir::Value obj = utils.valueOrError(utils.getLoc(ctx->obj->start), vObj);
+    mlir::Value lhs = utils.valueOrError(utils.getLoc(ctx->lhs->start), vLhs);
+    mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
+
+    // first version ->
+    //  we create 7 operations. (greater equal AND less equal) OR (less equal AND greater equal)
+    //  there is a better must be a better and more performant solution but this is the easiest solution
+    //  to get this feature in.
+
+    // lhs <= rhs (lhs <= obj <= rhs) (this will be it in most case but not all)
+    mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, lhs));
+    mlir::Value a2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, rhs));
+    mlir::Value a = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, a1, a2));
+
+    // lhs >= rhs (rhs <= obj <= lhs)
+    mlir::Value b1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, rhs));
+    mlir::Value b2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, lhs));
+    mlir::Value b = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, b1, b2));
+
+    // both combined give the solution
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, a, b));
 }
 
 antlrcpp::Any SQLVisitor::visitAndExpr(SQLGrammarParser::AndExprContext *ctx) {
@@ -1036,11 +1088,26 @@ antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext *ctx) {
         // ToDo: converted from atol to stol for safety -> check perf
         int64_t val = std::stol(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
-    }
-    if (auto lit = ctx->FLOAT_LITERAL()) {
+    } else if (auto lit = ctx->FLOAT_LITERAL()) {
         // ToDo: converted from atof to std::stod for safety -> check perf
         double val = std::stod(lit->getText());
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
+    } else if (auto lit = ctx->STRING_LITERAL()) {
+        std::string val = lit->getText();
+        // Remove quotation marks.
+        val = val.substr(1, val.size() - 2);
+
+        // Replace escape sequences.
+        val = std::regex_replace(val, std::regex(R"(\\b)"), "\b");
+        val = std::regex_replace(val, std::regex(R"(\\f)"), "\f");
+        val = std::regex_replace(val, std::regex(R"(\\n)"), "\n");
+        val = std::regex_replace(val, std::regex(R"(\\r)"), "\r");
+        val = std::regex_replace(val, std::regex(R"(\\t)"), "\t");
+        val = std::regex_replace(val, std::regex(R"(\\\")"), "\"");
+        val = std::regex_replace(val, std::regex(R"(\\')"), "'");
+        val = std::regex_replace(val, std::regex(R"(\\\\)"), "\\");
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
     }
-    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor", "unexpected literal");
+    // this should not be possible to reach since there are only three types for a literal
+    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor (visitLiteral)", "unexpected literal type");
 }

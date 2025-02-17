@@ -1,0 +1,8 @@
+// Grouping and sum aggregation (two grouping columns).
+
+fr = createFrame([ 11, 11, 22, 33, 33 ], [ 1, 1, 2, 3, 4 ],
+                 [ 100, 200, 300, 400, 500 ], "a", "b", "c");
+
+res = groupSum(fr, "a", "b", "c");
+
+print(res);

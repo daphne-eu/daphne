@@ -1,0 +1,8 @@
+# Read a matrix of value type f64 from a file.
+
+import "../check_matrix.daphne";
+
+chk = readMatrix($inPath);
+ref = [1.1, -22.2, 3.3, -44.4, 5.5,
+       -66.6, 0.0, nan, inf, -inf](2, 5);
+check_matrix.checkMatrix(chk, ref, $nanSafe);

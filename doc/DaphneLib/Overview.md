@@ -131,7 +131,7 @@ More precisely, DAPHNE matrices and frames can be obtained in the following ways
 - generating data in DAPHNE (e.g., random data, constants, or sequences)
 - reading files using DAPHNE's readers (e.g., CSV, Matrix Market, Parquet, DAPHNE binary format)
 
-A comprehensive list can be found in the [DaphneLib API reference](/doc/DaphneLib/APIRef.md#daphnecontext).
+A comprehensive list can be found in the [DaphneLib API reference](/doc/DaphneLib/APIRef.md#daphnecontext-api-reference).
 
 ## Building Complex Computations
 
@@ -241,6 +241,10 @@ If the result of the computation in DAPHNE is a matrix, `compute()` returns a `n
 
 So far, DaphneLib can exchange data with numpy, pandas, TensorFlow, and PyTorch.
 By default, the data transfer is via shared memory (and in many cases zero-copy).
+Numpy and pandas are *required* dependencies for DaphneLib, so they should anyway be installed.
+TensorFlow and PyTorch are *optional* for DaphneLib; if these libraries are not installed, DaphneLib cannot exchange data with them, but all remaining features still work.
+In case you run DAPHNE inside the [`daphne-dev` container](/doc/GettingStarted.md), please note that TensorFlow and PyTorch are *not* included in the `daphne-dev` container due to their large footprint.
+Please follow the [instructions](/doc/development/InstallPythonLibsInContainer.md) on installing Python libraries in the `daphne-dev` container if you need them.
 
 ### Data Exchange with numpy
 

@@ -222,8 +222,8 @@ mlir::Value DaphneDSLBuiltins::createAffineFwdOp(mlir::Location loc, const std::
         builder.create<mlir::daphne::AffineForwardOp>(loc, input_data.getType(), input_data, weights_data, bias_data));
 }
 
-mlir::Value DaphneDSLBuiltins::createBatchNorm2dTestFwdOp(mlir::Location loc, const std::string &func,
-                                                          const std::vector<mlir::Value> &args) {
+mlir::Value DaphneDSLBuiltins::createBatchNorm2dInferenceFwdOp(mlir::Location loc, const std::string &func,
+                                                               const std::vector<mlir::Value> &args) {
     const size_t numArgs = args.size();
     checkNumArgsExact(loc, func, numArgs, 6);
 
@@ -235,7 +235,7 @@ mlir::Value DaphneDSLBuiltins::createBatchNorm2dTestFwdOp(mlir::Location loc, co
     mlir::Value ema_var = args[4];
     mlir::Value eps = args[5];
 
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::BatchNorm2DTestForwardOp>(
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::BatchNorm2DInferenceForwardOp>(
         loc, input_data.getType(), input_data, gamma, beta, ema_mean, ema_var, eps));
 }
 
@@ -730,7 +730,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     }
 
     if (func == "batch_norm2d") {
-        return createBatchNorm2dTestFwdOp(loc, func, args);
+        return createBatchNorm2dInferenceFwdOp(loc, func, args);
     }
 
     if (func == "biasAdd") {
@@ -738,7 +738,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         mlir::Value input_data = args[0];
         mlir::Value bias = args[1];
         return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::BiasAddForwardOp>(loc, input_data.getType(), input_data, bias));
+            builder.create<mlir::daphne::BiasAddOp>(loc, input_data.getType(), input_data, bias));
     }
 
     if (func == "conv2d") {
@@ -759,8 +759,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     if (func == "softmax") {
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value input_data = args[0];
-        return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::SoftmaxForwardOp>(loc, input_data.getType(), input_data));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::SoftmaxOp>(loc, input_data.getType(), input_data));
     }
 
     if (func == "batch_norm2d_backward") {
@@ -1006,13 +1005,18 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             builder.create<CartesianOp>(loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1]));
     }
     if (func == "innerJoin") {
-        checkNumArgsExact(loc, func, numArgs, 4);
+        checkNumArgsBetween(loc, func, numArgs, 4, 5);
         std::vector<mlir::Type> colTypes;
+        mlir::Value numRowRes;
         for (int i = 0; i < 2; i++)
             for (mlir::Type t : args[i].getType().dyn_cast<FrameType>().getColumnTypes())
                 colTypes.push_back(t);
+        if (numArgs == 5)
+            numRowRes = utils.castSI64If(args[4]);
+        else
+            numRowRes = builder.create<ConstantOp>(loc, int64_t(-1));
         return static_cast<mlir::Value>(builder.create<InnerJoinOp>(loc, FrameType::get(builder.getContext(), colTypes),
-                                                                    args[0], args[1], args[2], args[3]));
+                                                                    args[0], args[1], args[2], args[3], numRowRes));
     }
     if (func == "fullOuterJoin")
         return createJoinOp<FullOuterJoinOp>(loc, func, args);
@@ -1024,14 +1028,19 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         // TODO Reconcile this with the other join ops, but we need it to work
         // quickly now.
         // return createJoinOp<SemiJoinOp>(loc, func, args);
-        checkNumArgsExact(loc, func, numArgs, 4);
+        checkNumArgsBetween(loc, func, numArgs, 4, 5);
         mlir::Value lhs = args[0];
         mlir::Value rhs = args[1];
         mlir::Value lhsOn = args[2];
         mlir::Value rhsOn = args[3];
+        mlir::Value numRowRes;
+        if (numArgs == 5)
+            numRowRes = utils.castSI64If(args[4]);
+        else
+            numRowRes = builder.create<ConstantOp>(loc, int64_t(-1));
         return builder
             .create<SemiJoinOp>(loc, FrameType::get(builder.getContext(), {utils.unknownType}), utils.matrixOfSizeType,
-                                lhs, rhs, lhsOn, rhsOn)
+                                lhs, rhs, lhsOn, rhsOn, numRowRes)
             .getResults();
     }
     if (func == "groupJoin") {
@@ -1045,6 +1054,45 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             .create<GroupJoinOp>(loc, FrameType::get(builder.getContext(), {utils.unknownType, utils.unknownType}),
                                  utils.matrixOfSizeType, lhs, rhs, lhsOn, rhsOn, rhsAgg)
             .getResults();
+    }
+
+    // --------------------------------------------------------------------
+    // Grouping and aggregation
+    // --------------------------------------------------------------------
+
+    if (func == "groupSum") {
+        // Arbitrary number of columns to group on.
+        // A single column to calculate the sum on.
+        checkNumArgsMin(loc, func, numArgs, 3);
+        mlir::Value currentFrame = args[0];
+        mlir::Value aggCol = args[numArgs - 1];
+        std::vector<mlir::Value> groupName;
+        std::vector<mlir::Value> columnName;
+        std::vector<mlir::Type> colTypes;
+
+        // set aggregaton function to SUM
+        auto aggFunc = static_cast<mlir::Attribute>(
+            mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::SUM));
+        std::vector<mlir::Attribute> functionName;
+        functionName.push_back(aggFunc);
+
+        // get group columns
+        for (size_t i = 1; i < numArgs - 1; i++) {
+            groupName.push_back(args[i]);
+        }
+
+        // get agg column
+        columnName.push_back(aggCol);
+
+        // result column types
+        mlir::Type vt = utils.unknownType;
+        for (size_t i = 0; i < groupName.size() + columnName.size(); i++) {
+            colTypes.push_back(vt);
+        }
+
+        return static_cast<mlir::Value>(builder.create<GroupOp>(loc, FrameType::get(builder.getContext(), colTypes),
+                                                                currentFrame, groupName, columnName,
+                                                                builder.getArrayAttr(functionName)));
     }
 
     // ********************************************************************
@@ -1115,13 +1163,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         return builder.create<WriteOp>(loc, arg, filename).getOperation();
     }
     if (func == "receiveFromNumpy") {
-        checkNumArgsExact(loc, func, numArgs, 5);
+        checkNumArgsExact(loc, func, numArgs, 4);
 
-        mlir::Value upper = utils.castUI32If(args[0]);
-        mlir::Value lower = utils.castUI32If(args[1]);
-        mlir::Value rows = args[2];
-        mlir::Value cols = args[3];
-        mlir::Value valueType = args[4];
+        mlir::Value address = utils.castUI64If(args[0]);
+        mlir::Value rows = args[1];
+        mlir::Value cols = args[2];
+        mlir::Value valueType = args[3];
 
         int64_t valueTypeCode = CompilerUtils::constantOrThrow<int64_t>(
             valueType, "the value type code in ReceiveFromNumpyOp must be a constant");
@@ -1149,7 +1196,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid value type code");
 
         return static_cast<mlir::Value>(
-            builder.create<ReceiveFromNumpyOp>(loc, utils.matrixOf(vt), upper, lower, rows, cols));
+            builder.create<ReceiveFromNumpyOp>(loc, utils.matrixOf(vt), address, rows, cols));
     }
     if (func == "saveDaphneLibResult") {
         checkNumArgsExact(loc, func, numArgs, 1);

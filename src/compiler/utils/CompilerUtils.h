@@ -48,10 +48,9 @@ struct CompilerUtils {
         auto p = isConstantHelper<ValT, AttrT>(v, func);
         if (p.first)
             return p.second;
-        else
-            throw ErrorHandler::compilerError(
-                v.getLoc(), "constantOrThrow",
-                errorMsg.empty() ? ("the given value must be a constant of " + valTypeName + " type") : errorMsg);
+        throw ErrorHandler::compilerError(
+            v.getLoc(), "constantOrThrow",
+            errorMsg.empty() ? ("the given value must be a constant of " + valTypeName + " type") : errorMsg);
     }
 
     template <typename ValT, typename AttrT>
@@ -59,8 +58,7 @@ struct CompilerUtils {
         auto p = isConstantHelper<ValT, AttrT>(v, func);
         if (p.first)
             return p.second;
-        else
-            return d;
+        return d;
     }
 
   public:
@@ -142,57 +140,52 @@ struct CompilerUtils {
                                              bool generalizeToStructure = false) { // NOLINT(misc-no-recursion)
         if (t.isF64())
             return "double";
-        else if (t.isF32())
+        if (t.isF32())
             return "float";
-        else if (t.isSignedInteger(8))
+        if (t.isSignedInteger(8))
             return "int8_t";
-        else if (t.isSignedInteger(32))
+        if (t.isSignedInteger(32))
             return "int32_t";
-        else if (t.isSignedInteger(64))
+        if (t.isSignedInteger(64))
             return "int64_t";
-        else if (t.isUnsignedInteger(8))
+        if (t.isUnsignedInteger(8))
             return "uint8_t";
-        else if (t.isUnsignedInteger(32))
+        if (t.isUnsignedInteger(32))
             return "uint32_t";
-        else if (t.isUnsignedInteger(64))
+        if (t.isUnsignedInteger(64))
             return "uint64_t";
-        else if (t.isSignlessInteger(1))
+        if (t.isSignlessInteger(1))
             return "bool";
-        else if (t.isIndex())
+        if (t.isIndex())
             return "size_t";
-        else if (t.isa<mlir::daphne::StructureType>())
+        if (t.isa<mlir::daphne::StructureType>())
             return "Structure";
-        else if (auto matTy = t.dyn_cast<mlir::daphne::MatrixType>()) {
+        if (auto matTy = t.dyn_cast<mlir::daphne::MatrixType>()) {
             if (generalizeToStructure)
                 return "Structure";
-            else {
-                // For matrices of strings we use `std::string` as the value type, while for string scalars we use
-                // `const char *` as the value type. Thus, we need this special case here. Maybe we can do it without a
-                // special case in the future.
-                std::string vtName;
-                if (matTy.getElementType().isa<mlir::daphne::StringType>())
-                    vtName = "std::string";
-                else
-                    vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
-                switch (matTy.getRepresentation()) {
-                case mlir::daphne::MatrixRepresentation::Dense:
-                    return angleBrackets ? ("DenseMatrix<" + vtName + ">") : ("DenseMatrix_" + vtName);
-                case mlir::daphne::MatrixRepresentation::Sparse:
-                    return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
-                }
-            }
-        } else if (llvm::isa<mlir::daphne::FrameType>(t))
-            if (generalizeToStructure)
-                return "Structure";
+            // For matrices of strings we use `std::string` as the value type, while for string scalars we use
+            // `const char *` as the value type. Thus, we need this special case here. Maybe we can do it without a
+            // special case in the future.
+            std::string vtName;
+            if (matTy.getElementType().isa<mlir::daphne::StringType>())
+                vtName = "std::string";
             else
-                return "Frame";
-        else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
+                vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
+            switch (matTy.getRepresentation()) {
+            case mlir::daphne::MatrixRepresentation::Dense:
+                return angleBrackets ? ("DenseMatrix<" + vtName + ">") : ("DenseMatrix_" + vtName);
+            case mlir::daphne::MatrixRepresentation::Sparse:
+                return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
+            }
+        } else if (llvm::isa<mlir::daphne::FrameType>(t)) {
             if (generalizeToStructure)
                 return "Structure";
-            else {
-                const std::string dtName = mlirTypeToCppTypeName(lstTy.getElementType(), angleBrackets, false);
-                return angleBrackets ? ("List<" + dtName + ">") : ("List_" + dtName);
-            }
+            return "Frame";
+        } else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
+            if (generalizeToStructure)
+                return "Structure";
+            const std::string dtName = mlirTypeToCppTypeName(lstTy.getElementType(), angleBrackets, false);
+            return angleBrackets ? ("List<" + dtName + ">") : ("List_" + dtName);
         } else if (llvm::isa<mlir::daphne::StringType>(t))
             // This becomes "const char *" (which makes perfect sense for
             // strings) when inserted into the typical "const DT *" template of
@@ -290,8 +283,8 @@ struct CompilerUtils {
             return mt.withElementType(vt);
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
-        else // TODO Check if this is really a scalar.
-            return vt;
+        // TODO Check if this is really a scalar.
+        return vt;
     }
 
     /**

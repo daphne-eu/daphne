@@ -36,7 +36,7 @@ void Statistics::stopKernelTimer(int kId) {
     auto const stopTime = std::chrono::high_resolution_clock::now();
     std::lock_guard<std::mutex> lg(m_times);
     std::chrono::duration<double> kernelTime = stopTime - startTimes[kId];
-    kernelExecutionTimes.push_back({kId, kernelTime});
+    kernelExecutionTimes.emplace_back(kId, kernelTime);
 }
 
 size_t getMaxKernelNameLength(KernelDispatchMapping &kdm) {

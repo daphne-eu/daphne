@@ -419,6 +419,7 @@
             [["DenseMatrix", "double"], "Frame"],
             [["DenseMatrix", "int64_t"], "Frame"],
             [["DenseMatrix", "uint64_t"], "Frame"],
+            [["DenseMatrix", "std::string"], "Frame"],
             ["Frame", ["DenseMatrix", "double"]],
             ["Frame", ["DenseMatrix", "int64_t"]],
             ["Frame", ["DenseMatrix", "uint64_t"]],
@@ -2196,6 +2197,11 @@
                         ["DenseMatrix", "std::string"],
                         ["DenseMatrix", "std::string"],
                         "const char *"
+                    ],
+                    [
+                        ["DenseMatrix", "int64_t"],
+                        ["DenseMatrix", "std::string"],
+                        "const char *"
                     ]
                 ],
                 "opCodes": [
@@ -3061,7 +3067,11 @@
                 {
                     "type": "const char *",
                     "name": "rhsOn"
-                }
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRowRes"
+                }   
             ]
         },
         "instantiations": [[]]
@@ -4024,6 +4034,7 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "std::string"]],
             ["Frame"]
         ]
     },
@@ -4171,12 +4182,8 @@
                     "name": "res"
                 },
                 {
-                    "type": "uint32_t",
-                    "name": "upper"
-                },
-                {
-                    "type": "uint32_t",
-                    "name": "lower"
+                    "type": "uint64_t",
+                    "name": "address"
                 },
                 {
                     "type": "int64_t",
@@ -4354,6 +4361,10 @@
                 {
                     "type": "const char *",
                     "name": "rhsOn"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRowRes"
                 }
             ]
         },
@@ -5535,7 +5546,7 @@
     {
         "kernelTemplate": {
             "header": "BatchNorm.h",
-            "opName": "BatchNorm::Forward",
+            "opName": "BatchNormInferenceForward",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -5617,12 +5628,14 @@
                     "name": "res"
                 },
                 {
-                    "type": "size_t&",
-                    "name": "res_h"
+                    "type": "size_t *",
+                    "name": "res_h",
+                    "isReturnValue": true
                 },
                 {
-                    "type": "size_t&",
-                    "name": "res_w"
+                    "type": "size_t *",
+                    "name": "res_w",
+                    "isReturnValue": true
                 },
                 {
                     "type": "const DTArg *",
@@ -5697,7 +5710,7 @@
     {
         "kernelTemplate": {
             "header": "Softmax.h",
-            "opName": "Softmax::Forward",
+            "opName": "Softmax",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -5740,7 +5753,7 @@
     {
         "kernelTemplate": {
             "header": "BiasAdd.h",
-            "opName": "BiasAdd::Forward",
+            "opName": "BiasAdd",
             "returnType": "void",
             "opCodeAsTemplateParam": 1,
             "templateParams": [
@@ -5770,7 +5783,7 @@
         },
         "api": [
             {
-                "name": ["CUDA"],
+                "name": ["CPP", "CUDA"],
                 "instantiations": [
                     [
                         ["DenseMatrix", "float"],
@@ -6776,52 +6789,10 @@
             }
         ]
     },
-
-    {
-        "kernelTemplate": {
-            "header": "BiasAddForward.h",
-            "opName": "biasAddForward",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTArg",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTArg *",
-                    "name": "input"
-                },
-                {
-                    "type": "const DTArg *",
-                    "name": "bias"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["CPP"],
-                "instantiations": [
-                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
-                ]
-            }
-        ]
-    },
-
     {
         "kernelTemplate": {
             "header": "BatchNorm2DTestForward.h",
-            "opName": "batchNorm2DTestForward",
+            "opName": "batchNorm2DInferenceForward",
             "returnType": "void",
             "templateParams": [
                 {

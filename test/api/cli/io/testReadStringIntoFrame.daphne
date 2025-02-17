@@ -1,3 +1,0 @@
-// Test reading frame with string columns.
-
-print(readFrame("test/api/cli/io/ReadCsv3.csv"));

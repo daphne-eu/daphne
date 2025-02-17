@@ -1,0 +1,8 @@
+# Read a matrix of value type str from a file.
+
+import "../check_matrix.daphne";
+
+chk = readMatrix($inPath);
+ref = ["abc", "", "d\"e",
+       "fg\nhi", "jkl", "mn,op"](2, 3);
+check_matrix.checkMatrix(chk, ref, $nanSafe);

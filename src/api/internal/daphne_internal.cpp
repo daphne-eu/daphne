@@ -309,7 +309,6 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
             clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen"),
             clEnumVal(mlir_codegen_sparsity_exploiting_op_fusion,
                       "Show DaphneIR after MLIR codegen (sparsity-exploiting operator fusion)"),
@@ -500,7 +499,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         }
     }
 
-    user_config.statistics = enableStatistics;
+    user_config.enable_statistics = enableStatistics;
 
     if (user_config.use_distributed && distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
 #ifndef USE_MPI
@@ -572,14 +571,48 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     // ************************************************************************
 
     KernelCatalog &kc = executor.getUserConfig().kernelCatalog;
-    // kc.dump();
-    KernelCatalogParser kcp(mctx);
-    kcp.parseKernelCatalog(user_config.libdir + "/catalog.json", kc);
-    if (user_config.use_cuda)
-        kcp.parseKernelCatalog(user_config.libdir + "/CUDAcatalog.json", kc);
-    // kc.dump();
-    if (!kernelExt.empty())
-        kcp.parseKernelCatalog(kernelExt, kc);
+    try {
+        // kc.dump();
+        KernelCatalogParser kcp(mctx);
+        kcp.parseKernelCatalog(user_config.libdir + "/catalog.json", kc, 0);
+        if (user_config.use_cuda)
+            kcp.parseKernelCatalog(user_config.libdir + "/CUDAcatalog.json", kc, 0);
+        // kc.dump();
+        if (!kernelExt.empty()) {
+            std::string extCatalogFile;
+            int64_t extPriority;
+
+            const std::string prioritySep = ":";
+            const size_t pos = kernelExt.rfind(prioritySep);
+            if (pos != std::string::npos) { // a priority was specified for the extension
+                extCatalogFile = kernelExt.substr(0, pos);
+                const std::string extPriorityStr(kernelExt.substr(pos + prioritySep.size()));
+                try {
+                    size_t idx;
+                    extPriority = std::stoll(extPriorityStr, &idx);
+                    if (idx != extPriorityStr.size())
+                        // stoll() did not consume all characters in extPriorityStr, there is some non-integer part at
+                        // the end of the string.
+                        throw std::runtime_error(""); // the error message is generated in the catch-block below
+                } catch (std::exception &e) {
+                    throw std::runtime_error("invalid priority for kernel extension, expected an integer after the '" +
+                                             prioritySep + "', but found '" + extPriorityStr + "': '" + kernelExt +
+                                             "'");
+                }
+            } else { // no priority was specified for the extension
+                extCatalogFile = kernelExt;
+                extPriority = 0;
+            }
+
+            kcp.parseKernelCatalog(extCatalogFile, kc, extPriority);
+        }
+    } catch (std::exception &e) {
+        logErrorDaphneLibAware(daphneLibRes, "Parser error: " + std::string(e.what()));
+        return StatusCode::PARSER_ERROR;
+    } catch (...) {
+        logErrorDaphneLibAware(daphneLibRes, "Parser error: Unknown exception");
+        return StatusCode::PARSER_ERROR;
+    }
 
     // ************************************************************************
     // Parse, compile and execute DaphneDSL script
@@ -672,7 +705,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         std::cerr << "}" << std::endl;
     }
 
-    if (user_config.statistics)
+    if (user_config.enable_statistics)
         Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
 
     // explicitly destroying the moduleOp here due to valgrind complaining about

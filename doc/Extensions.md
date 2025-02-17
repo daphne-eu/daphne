@@ -173,9 +173,12 @@ make
 ### Step 3: Using a Kernel Extension
 
 The kernels in a kernel extension can be used either automatically by DAPHNE or manually by the user.
-Automatic use is currently restricted to the selection of the kernel based on result/argument data/value types, but in the future we plan to support custom cost models as well.
-Besides that, the manual employment of custom kernels is very useful for experimentation, e.g., to see the impact of the kernel in the context of a larger integrated data analysis pipeline.
-To this end, DaphneDSL [compiler hints](/doc/DaphneDSL/LanguageRef.md#compiler-hints) tell DAPHNE to use a specific kernel, even though DAPHNE's optimizing compiler may not choose the kernel, otherwise.
+The manual use has precedence over the automatic use.
+
+#### Manual Use of Custom Kernels
+
+The manual employment of custom kernels is very useful for experimentation, e.g., to see the impact of a particular kernel at a certain point of a larger integrated data analysis pipeline.
+To this end, DaphneDSL [compiler hints](/doc/DaphneDSL/LanguageRef.md#compiler-hints) tell DAPHNE to use a specific kernel in a specific place, even though DAPHNE's optimizing compiler may not choose the kernel, otherwise.
 
 *Running example:*
 
@@ -205,7 +208,7 @@ s = sum::mySumSeq(X);
 print(s);
 ```
 
-We execute this script with the following command, whereby the argument `--kernel-ext` specified the kernel catalog JSON file of the extension to use:
+We execute this script with the following command, whereby the argument `--kernel-ext` specifies the kernel catalog JSON file of the extension to use:
 ```bash
 bin/daphne --kernel-ext scripts/examples/extensions/myKernels/myKernels.json scripts/examples/extensions/myKernels/demoSeq.daphne
 ```
@@ -222,4 +225,27 @@ print(s);
 We execute this script by:
 ```bash
 bin/daphne --kernel-ext scripts/examples/extensions/myKernels/myKernels.json scripts/examples/extensions/myKernels/demoSIMD.daphne
+```
+
+#### Automatic Use of Custom Kernels
+
+The automatic use of custom kernels is currently restricted to the selection of a kernel based on its result/argument data/value types and its priority level.
+In the future we plan to support custom cost models as well.
+
+*Running example:*
+
+Continuing the running example from above, we can make DAPHNE use the custom kernels `mySumSeq()` or `mySumSIMD()` even without a manual kernel hint by specifying a suitable *priority* when registering the `myKernels` extension with DAPHNE.
+
+Priority levels can optionally be specified with the `--kernel-ext` command line argument by appending a colon (`:`) followed by the priority as an integer.
+The default priority of `0` is used for all built-in kernels and for extension kernels in case no priority is specified.
+When registering a kernel extension, the given priority is assigned to *all* kernels provided by the extension.
+When multiple kernels are applicable for an operation based on the combination of argument/result data/value types as well as the backend, DAPHNE chooses the kernel with the highest priority.
+If there are multiple kernels with the highest priority, it is not specified which of them is used.
+
+By registering a kernel extension with a priority greater than zero, one can enforce that the kernels provided by the extension are always preferred over the built-in ones whenever they are applicable.
+For instance, the following command registers the `myKernels` extension with a priority of `1`.
+As the `myKernels` extension provides two kernels for the same operation, argument/result types, and backend, we cannot tell, based on priorities, which of these kernels will be used, but we can be sure that the built-in kernel will not be employed.
+
+```bash
+bin/daphne --kernel-ext scripts/examples/extensions/myKernels/myKernels.json:1 scripts/examples/extensions/myKernels/demo.daphne
 ```

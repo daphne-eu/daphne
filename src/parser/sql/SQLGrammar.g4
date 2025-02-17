@@ -85,17 +85,22 @@ orderInformation:
     (asc=SQL_ASC|desc=SQL_DESC)?;
 
 generalExpr:
-    literal # literalExpr
-    | '*' # starExpr
-    | selectIdent # identifierExpr
-    | func=IDENTIFIER '(' var=generalExpr ')' #groupAggExpr
+    generalExpr2 # defaultExpr
     | '(' generalExpr ')' # paranthesesExpr
-    | lhs=generalExpr op=('*'|'/') rhs=generalExpr # mulExpr
-    | lhs=generalExpr op=('+'|'-') rhs=generalExpr # addExpr
-    | lhs=generalExpr op=CMP_OP rhs=generalExpr # cmpExpr
+    | obj=generalExpr op=SQL_BETWEEN lhs=generalExpr2 SQL_AND rhs=generalExpr2 # betweenExpr 
     | lhs=generalExpr SQL_AND rhs=generalExpr # andExpr
     | lhs=generalExpr SQL_OR rhs=generalExpr # orExpr
     ;
+
+generalExpr2:
+    literal # literalExpr
+    | '*' # starExpr
+    | selectIdent # identifierExpr
+    | '(' generalExpr2 ')' # paranthesesExpr2
+    | func=IDENTIFIER '(' var=generalExpr2 ')' #groupAggExpr
+    | lhs=generalExpr2 op=('*'|'/') rhs=generalExpr2 # mulExpr
+    | lhs=generalExpr2 op=('+'|'-') rhs=generalExpr2 # addExpr
+    | lhs=generalExpr2 op=CMP_OP rhs=generalExpr2 # cmpExpr;
 
 tableReference:
     var=IDENTIFIER (SQL_AS? aka=IDENTIFIER)?;
@@ -107,6 +112,7 @@ selectIdent:
 literal:
     INT_LITERAL
     | FLOAT_LITERAL
+    | STRING_LITERAL
     ;
 
 // ****************************************************************************
@@ -143,6 +149,7 @@ SQL_ASC: A S C;
 SQL_DESC: D E S C;
 SQL_AND: A N D;
 SQL_OR: O R;
+SQL_BETWEEN: B E T W E E N;
 
 fragment A: [aA];
 fragment B: [bB];
@@ -175,6 +182,8 @@ fragment LETTER: [a-zA-Z];
 fragment DIGIT: [0-9];
 fragment NON_ZERO_DIGIT: [1-9];
 
+fragment ESCAPE_SEQ: '\\' [bfnrt"'\\];
+
 IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
@@ -185,6 +194,10 @@ INT_LITERAL:
     '-'? DIGIT+;
 
 FLOAT_LITERAL:
-    '-'? ( DIGIT+ '.' DIGIT+);
+    '-'? (( DIGIT* '.' DIGIT+) | (DIGIT+ '.' DIGIT*));
+
+STRING_LITERAL:
+    ('"' (ESCAPE_SEQ | ~[\\"])* '"') | ('\'' (ESCAPE_SEQ | ~['\\])* '\'');
+
 
 WS: [ \t\r\n]+ -> skip;

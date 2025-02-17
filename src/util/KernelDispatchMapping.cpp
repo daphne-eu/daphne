@@ -24,7 +24,7 @@ KernelDispatchMapping &KernelDispatchMapping::instance() {
     return INSTANCE;
 }
 
-int KernelDispatchMapping::registerKernel(std::string name, mlir::Operation *op) {
+int KernelDispatchMapping::registerKernel(const std::string &name, mlir::Operation *op) {
     std::lock_guard<std::mutex> lg(m_dispatchMapping);
     int kId = kIdCounter++;
     if (auto flcLoc = llvm::dyn_cast<mlir::FileLineColLoc>(op->getLoc())) {
@@ -39,5 +39,7 @@ int KernelDispatchMapping::registerKernel(std::string name, mlir::Operation *op)
 
 KDMInfo KernelDispatchMapping::getKernelDispatchInfo(int kId) {
     std::lock_guard<std::mutex> lg(m_dispatchMapping);
+    if (!kId)
+        return {"NonInstrumentedOp", "unknkown", 0, 0};
     return dispatchMapping.at(kId);
 }

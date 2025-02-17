@@ -826,7 +826,7 @@ def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"NN_Relu_Forward", [ Value
 // Affine
 // ----------------------------------------------------------------------------
 
-def Daphne_AffineForwardOp : Daphne_Op<"NN_Affine_Forward", [ CUDASupport ]> {
+def Daphne_AffineForwardOp : Daphne_Op<"NN_Affine_Forward", [ ValueTypeFromFirstArg, DataTypeFromFirstArg, CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$weights,
             MatrixOf<[FloatScalar]>:$bias);
 
@@ -837,14 +837,14 @@ def Daphne_AffineForwardOp : Daphne_Op<"NN_Affine_Forward", [ CUDASupport ]> {
 // Batch Normalization
 // ----------------------------------------------------------------------------
 
-def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"BatchNorm_Forward_Test", [ CUDASupport ]> {
+def Daphne_BatchNorm2DInferenceForwardOp : Daphne_Op<"BatchNormInferenceForward", [ ValueTypeFromFirstArg, DataTypeFromFirstArg, CUDASupport ]> {
     let arguments = (ins
             MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
             MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps);
     let results = (outs MatrixOf<[FloatScalar]>:$output);
 }
 
-def Daphne_BatchNorm2DTrainForwardOp : Daphne_Op<"BatchNorm_Forward_Train", [ CUDASupport ]> {
+def Daphne_BatchNorm2DTrainForwardOp : Daphne_Op<"BatchNorm_Train_Forward", [ ValueTypeFromFirstArg, DataTypeFromFirstArg, CUDASupport ]> {
     let arguments = (ins
             MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
             MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps, FloatScalar:$mu);
@@ -855,7 +855,7 @@ def Daphne_BatchNorm2DTrainForwardOp : Daphne_Op<"BatchNorm_Forward_Train", [ CU
                         MatrixOf<[FloatScalar]>:$invVar);
 }
 
-def Daphne_BatchNorm2DBackwardOp : Daphne_Op<"BatchNorm_Backward", [ CUDASupport ]> {
+def Daphne_BatchNorm2DBackwardOp : Daphne_Op<"BatchNorm_Backward", [ ValueTypeFromFirstArg, DataTypeFromFirstArg, CUDASupport ]> {
     let arguments = (ins
             MatrixOf<[FloatScalar]>:$mean, MatrixOf<[FloatScalar]>:$invVar, MatrixOf<[FloatScalar]>:$input,
             MatrixOf<[FloatScalar]>:$dout, MatrixOf<[FloatScalar]>:$gamma, FloatScalar:$eps);
@@ -868,7 +868,7 @@ def Daphne_BatchNorm2DBackwardOp : Daphne_Op<"BatchNorm_Backward", [ CUDASupport
 // Bias Addition
 // ----------------------------------------------------------------------------
 
-def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward", [ CUDASupport ]> {
+def Daphne_BiasAddOp : Daphne_Op<"BiasAdd", [ ValueTypeFromFirstArg, DataTypeFromFirstArg, CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$bias);
 
     let results = (outs MatrixOf<[FloatScalar]>:$data);
@@ -879,8 +879,7 @@ def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward", [ CUDASupport ]> {
 // ----------------------------------------------------------------------------
 
 def Daphne_Conv2DForwardOp : Daphne_Op<"Convolution_Forward",
-    [ DeclareOpInterfaceMethods<InferTypesOpInterface>,
-      DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    [ DeclareOpInterfaceMethods<InferTypesOpInterface>, DeclareOpInterfaceMethods<InferShapeOpInterface>,
       CUDASupport ]> {
     let arguments = (ins
         MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter, MatrixOf<[FloatScalar]>:$bias,
@@ -963,7 +962,7 @@ def Daphne_MaxPoolBackwardOp : Daphne_Op<"maxPoolBackward", [ CUDASupport ]> {
 // ----------------------------------------------------------------------------
 // Softmax
 // ----------------------------------------------------------------------------
-def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward", [ CUDASupport ]> {
+def Daphne_SoftmaxOp : Daphne_Op<"Softmax", [ DataTypeFromFirstArg, ValueTypeFromFirstArg, CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
 
     let results = (outs MatrixOf<[FloatScalar]>:$data);
@@ -1102,7 +1101,7 @@ def Daphne_InnerJoinOp : Daphne_Op<"innerJoin", [
     DataTypeFrm, ValueTypesConcat,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
 ]> {
-    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
+    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn, Size:$numRowRes);
     let results = (outs FrameOrU:$res);
 }
 
@@ -1146,7 +1145,7 @@ def Daphne_SemiJoinOp : Daphne_Op<"semiJoin", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     NumColsFromArg
 ]> {
-    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
+    let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn, Size:$numRowRes);
     let results = (outs FrameOrU:$res, MatrixOf<[Size]>:$lhsTids);
 }
 
@@ -1441,7 +1440,7 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
 }
 
 def Daphne_ReceiveFromNumpyOp: Daphne_Op<"receiveFromNumpy">{
-    let arguments = (ins UI32:$upper, UI32:$lower, SI64:$rows, SI64:$cols);
+    let arguments = (ins UI64: $address, SI64:$rows, SI64:$cols);
     let results = (outs MatrixOrU:$res);
 }
 

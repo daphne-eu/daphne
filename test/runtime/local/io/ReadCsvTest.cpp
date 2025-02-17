@@ -226,7 +226,7 @@ TEST_CASE("ReadCsv, frame of numbers and strings", TAG_IO) {
     CHECK(m->getColumn<std::string>(2)->get(1, 0) == "sample,");
     CHECK(m->getColumn<std::string>(2)->get(2, 0) == "line1\nline2");
     CHECK(m->getColumn<std::string>(2)->get(3, 0) == "");
-    CHECK(m->getColumn<std::string>(2)->get(4, 0) == "\"\"\\n\\\"abc\"\"def\\\"");
+    CHECK(m->getColumn<std::string>(2)->get(4, 0) == "\"\\n\\\"abc\"def\\\"");
     CHECK(m->getColumn<std::string>(2)->get(5, 0) == "");
 
     CHECK(m->getColumn<uint64_t>(3)->get(0, 0) == 444);
@@ -337,10 +337,10 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
     CHECK(m->get(0, 0) == "apple, orange");
     CHECK(m->get(1, 0) == "dog, cat");
     CHECK(m->get(2, 0) == "table");
-    CHECK(m->get(3, 0) == "\"\"");
-    CHECK(m->get(4, 0) == "abc\"\"def");
+    CHECK(m->get(3, 0) == "\"");
+    CHECK(m->get(4, 0) == "abc\"def");
     CHECK(m->get(5, 0) == "red, blue\\n");
-    CHECK(m->get(6, 0) == "\\n\\\"abc\"\"def\\\"");
+    CHECK(m->get(6, 0) == "\\n\\\"abc\"def\\\"");
     CHECK(m->get(7, 0) == "line1\nline2");
     CHECK(m->get(8, 0) == "\\\"red, \\\"\\\"");
 

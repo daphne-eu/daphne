@@ -77,7 +77,7 @@ struct DaphneUserConfig {
     bool explain_mlir_codegen_sparsity_exploiting_op_fusion = false;
     bool explain_mlir_codegen_daphneir_to_mlir = false;
     bool explain_mlir_codegen_mlir_specific = false;
-    bool statistics = false;
+    bool enable_statistics = false;
 
     bool force_cuda = false;
 

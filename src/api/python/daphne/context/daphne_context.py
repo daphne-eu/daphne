@@ -32,8 +32,7 @@ from daphne.operator.nodes.while_loop import WhileLoop
 from daphne.operator.nodes.do_while_loop import DoWhileLoop
 from daphne.operator.nodes.multi_return import MultiReturn
 from daphne.operator.operation_node import OperationNode
-from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, \
-    UI32, UI8
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd
@@ -99,8 +98,6 @@ class DaphneContext(object):
         if shared_memory:
             # Data transfer via shared memory.
             address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
-            upper = (address & 0xFFFFFFFF00000000) >> 32
-            lower = (address & 0xFFFFFFFF)
 
             # Change the data type, if int16 or uint16 is handed over.
             # TODO This could change the input DataFrame.
@@ -130,7 +127,7 @@ class DaphneContext(object):
                 # TODO Raise an error here?
                 print("unsupported numpy dtype")
 
-            res = Matrix(self, 'receiveFromNumpy', [upper, lower, rows, cols, vtc], local_data=mat)
+            res = Matrix(self, 'receiveFromNumpy', [address, rows, cols, vtc], local_data=mat)
         else:
             # Data transfer via a file.
             data_path_param = "\"" + TMP_PATH + "/{file_name}.csv\""
@@ -201,13 +198,9 @@ class DaphneContext(object):
 
                 if verbose:
                     # Check if this step was zero copy.
-                    print(
-                        f"from_pandas(): original DataFrame column `{column}` (#{idx}) shares memory with new numpy array: {np.shares_memory(mat, df[column].values)}")
+                    print(f"from_pandas(): original DataFrame column `{column}` (#{idx}) shares memory with new numpy array: {np.shares_memory(mat, df[column].values)}")
 
-                address = mat.ctypes.data_as(
-                    np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
-                upper = (address & 0xFFFFFFFF00000000) >> 32
-                lower = (address & 0xFFFFFFFF)
+                address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
                 d_type = mat.dtype
                 if d_type == np.double or d_type == np.float64:
                     vtc = F64
@@ -227,8 +220,8 @@ class DaphneContext(object):
                     vtc = UI64
                 else:
                     raise TypeError(f'Unsupported numpy dtype in column "{column}" ({idx})')
-
-                args.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1, vtc], local_data=mat))
+     
+                args.append(Matrix(self, 'receiveFromNumpy', [address, len(mat), 1 , vtc], local_data=mat))
 
                 if verbose:
                     print(
