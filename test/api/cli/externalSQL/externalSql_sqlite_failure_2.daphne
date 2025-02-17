@@ -1,6 +1,7 @@
-// SQLite empty result test
-res = externalSql("DROP TABLE IF EXISTS example;
+// typo in SQL query
+res = externalSql("DROP TABBLE IF EXISTS example;
                    CREATE TABLE example (id INTEGER, name TEXT);
+                   INSERT INTO example VALUES (1,'alice'), (2,'bob');
                    SELECT * FROM example;
                    ","SQLite","test/api/cli/externalSQL/examplesqlite.db");
 

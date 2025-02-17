@@ -16,7 +16,7 @@ limitations under the License.
 
 # Using external DBMS in DaphneDSL
 
-At the time of writing, Daphne supports two DBMS: DuckDB and SQLite. In addition, there is the option to use DuckDB through ODBC.
+At the time of writing, Daphne supports two DBMS: DuckDB and SQLite. In addition, there is the option to use ODBC for any DBMS that supports it.
 
 To use these features, we can call the `externalSql()` function. 
 
@@ -25,11 +25,10 @@ The function *requires three parameters*:
 ```cpp
 externalSql("<SQL QUERY>", "<DBMS TYPE>", "<CONNECTION>");
 ```
-The following is a list of supported DBMS:
 
 ## DuckDB
 
-DuckDB is locally embedded in Daphne, and to use it we have to set the `dbms` to "DuckDB". There many ways to use it, including:
+DuckDB is locally embedded in Daphne, and to use it we have to set the `dbms` to "DuckDB". There are many ways to use it, including:
 
 ### Creating a new .db file
 
@@ -50,14 +49,6 @@ externalSql("SELECT * FROM read_csv_auto('path/to/csvFile.csv')", "DuckDB", ":me
 This will access the `csvFile.csv` file and run the query on it, returning the result as a frame. 
 
 When the connection string is empty DuckDB Defaults to In-Memory Mode.
-
-### Conversion logic
-
-1. If a string has NULL value it will show as NULL.
-
-2. If any type of integer, double or float has a NULL value it will show as 0 or 0.0.
-
-3. BOOLEAN is treated as a small integer with true converting to 1 and false converting to 0.
 
 ## ODBC
 
@@ -100,7 +91,7 @@ replacing dbms with the desired one, DBMS Driver with the name of the driver as 
 
 If the query is happening in memory, then we can write `:memory:` as Database. 
 
-With that we have set up a DSN with the name dbms. Now to use ODBC we have to call it like this:
+With that we have set up a DSN with the name dbms. Now to use ODBC we have to call as follows:
 
 ```cpp
 externalSql("SELECT * FROM table", "dbms", "odbc");
@@ -129,7 +120,7 @@ To execute CSV files our device needs to have downloaded SQLite3 and enter the s
 We will call our database "my_db.db". Following command will let us enter our database or, open a new database if one with the name does not exist yet.
 ```ubuntu
 sqlite3 my_db.db
-````
+```
 Then we will create a table manually with the headers of our CSV file. We will call it in our example "example.csv".
 ```ubuntu
 CREATE TABLE example (
@@ -151,6 +142,65 @@ Now we can exit the shell with following command and process our queries in Daph
 .exit
 ```
 
+### Example use of ODBC with SQLite
+
+To set up SQlite's ODBC driver, we first have to download it using: 
+
+```ubuntu
+sudo apt install libsqliteodbc
+```
+
+We then have to edit the required file, as mentioned in the ODBC tutorial above. 
+
+Open `/etc/odbc.ini`: 
+
+```ubuntu
+sudo nano /etc/odbc.ini
+```
+
+Add: 
+
+```nano
+[SQLite]
+Driver = SQLite3
+Database = ./test/api/cli/externalSQL/examplesqlite.db
+```
+
+This Database already exists in daphne, so we can use it.
+
+Open `/etc/odbcinst.ini`:
+
+```ubuntu
+sudo nano /etc/odbcinst.ini
+```
+
+Add:
+
+```nano
+[SQLite3]
+Description=SQLite3 ODBC Driver
+Driver=/usr/lib/x86_64-linux-gnu/odbc/libsqlite3odbc.so
+Setup=/usr/lib/x86_64-linux-gnu/odbc/libsqlite3odbc.so
+UsageCount=1
+```
+
+This works on linux, but we might need to change the path if using IOS.
+
+To find where your library is, in case the path is not the same, use:
+
+````ubuntu
+find / -name "libsqlite3odbc.so" 2>/dev/null
+````
+And insert the given path into `odbcinst.ini`
+
+With that we have set up SQLite to run through ODBC!
+
+We can now execute a query like:
+
+```daphne
+externalSql("SELECT * FROM example", "SQLite", "odbc");
+```
+
 ## Limitations
 
 1. The ODBC libraries are not included in the used container. This means that in order to use/compile daphne, we have to download the libraries after connecting to the container like this: 
@@ -162,6 +212,10 @@ sudo apt install -y unixodbc unixodbc-dev
 
 2. Everytime we enter the container, we have to setup the `/etc/odbc.ini` and `/etc/odbcinst.ini` files.
 
-3. Only if the column type is not specifically specified, if the last row in the last column in DuckDB is empty (has a NULL value) then that column schema will be changed to String.
+3. In SQLite, integer values (INTEGER) are always stored as 64-bit signed integers (int64), regardless of their size. There are no separate data types for smaller integers like int8, int16, or int32.
 
-5. When queries in SQLite are processed, which do not return a result like "CREATE TABLE" or "DROP TABLE", a 1x1 Frame is returned with a single Integer value of 0. That needs to be done, since returning no result or null will result in an error.
+## Things to keep in mind
+
+1. In DuckDB, an empty query result still returns a frame containing the column names and their respective types. In SQLite, the behavior is similar, but all column types are represented as strings instead of their original types.
+2. BOOLEAN is treated as an integer with true converting to 1 and false converting to 0.
+3. If a table includes a NULL value, an error will be thrown, because Daphne does not support the NULL datatype yet.

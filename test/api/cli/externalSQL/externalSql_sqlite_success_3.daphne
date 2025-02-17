@@ -1,7 +1,6 @@
-// SQLite test for NULL and BOOLEAN values
+// SQLite empty result test
 res = externalSql("DROP TABLE IF EXISTS example;
-                   CREATE TABLE example (id INTEGER, name TEXT, value BOOLEAN);
-                   INSERT INTO example VALUES (1,NULL,true), (NULL,'Bob',false);
+                   CREATE TABLE example (id INTEGER, name TEXT);
                    SELECT * FROM example;
                    ","SQLite","test/api/cli/externalSQL/examplesqlite.db");
 

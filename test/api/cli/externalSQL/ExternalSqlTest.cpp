@@ -40,10 +40,18 @@ const std::string dirPath = "test/api/cli/externalSQL/";
        }                                                                                                              \
    }
 
+#define MAKE_FAILURE_TEST_CASE(name, count)                                                                            \
+    TEST_CASE(name ", externalSql failure", TAG_LITERALS) {                                                                        \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { checkDaphneFailsSimple(dirPath, name "_failure", i);}                                                                                                          \
+       }                                                                                                              \
+    }
 
 MAKE_SUCCESS_TEST_CASE("externalSql_duckdb", 3);
 //MAKE_SUCCESS_TEST_CASE("externalSql_odbc",1);
 MAKE_SUCCESS_TEST_CASE("externalSql_sqlite",3);
+MAKE_FAILURE_TEST_CASE("externalSql_duckdb", 2);
+MAKE_FAILURE_TEST_CASE("externalSql_sqlite", 2);
 MAKE_TEST_CASE("externalSql_duckdb", 3);
 //MAKE_TEST_CASE("externalSql_odbc", 1);
 MAKE_TEST_CASE("externalSql_sqlite", 3);

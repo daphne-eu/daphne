@@ -1,3 +1,1 @@
-Frame(2x3, [id:int64_t, name:std::string, value:int64_t])
-1 NULL 1
-0 Bob 0
+Frame(0x2, [id:std::string, name:std::string])

@@ -247,7 +247,7 @@ find_library(ODBCINST_LIBRARY
 
 #find_library(DUCKDB_ODBC_LIBRARY
 #        NAMES duckdb_odbc
-#        HINTS ${PROJECT_SOURCE_DIR}/thirdparty/DuckDB/lib
+#        HINTS ${PROJECT_SOURCE_DIR}/thirdparty/sources/duckdb-odbc/build/release
 #        REQUIRED
 #)
 

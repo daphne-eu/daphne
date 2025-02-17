@@ -1,7 +1,7 @@
-// basic SQLite test
+// SQLite test for NULL value fail
 res = externalSql("DROP TABLE IF EXISTS example;
                    CREATE TABLE example (id INTEGER, name TEXT, value BOOLEAN);
-                   INSERT INTO example VALUES (1,'Alice',false), (2,'Bob',true);
+                   INSERT INTO example VALUES (1,'NULL',true), (1,'Bob',NULL);
                    SELECT * FROM example;
                    ","SQLite","test/api/cli/externalSQL/examplesqlite.db");
 
