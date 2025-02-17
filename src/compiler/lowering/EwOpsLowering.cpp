@@ -610,7 +610,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                                                 locFourtimesNested, ValueRange{newResValuesPtr});
                                         }
                                     );
-                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)});
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)}); 
                                 }
                                 else
                                 {
@@ -647,7 +647,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                                                 locFourtimesNested, ValueRange{newResValuesPtr});
                                         }
                                     );
-                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)});
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)}); 
                                 }
                                 else
                                 {
@@ -670,7 +670,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                                             locFourtimesNested, arith::CmpIPredicate::ult, args[0], lhsColIdxUpperExcl);
                                         auto cond2 = OpBuilderFourtimesNested.create<arith::CmpIOp>(
                                             locFourtimesNested, arith::CmpIPredicate::ult, args[1], rhsColIdxUpperExcl);
-                                        auto cond = OpBuilderFourtimesNested.create<arith::OrIOp>(locNested, cond1, cond2);
+                                        auto cond = OpBuilderFourtimesNested.create<arith::AndIOp>(locFourtimesNested, cond1, cond2);
                                         OpBuilderFourtimesNested.create<scf::ConditionOp>(locFourtimesNested, cond, args);    
                                     },
                                     [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, ValueRange args)
