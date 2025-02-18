@@ -317,8 +317,8 @@ template <> struct ReadCsvFile<Frame> {
                 fName = posmapFile;
             }
         }
-        using clock = std::chrono::high_resolution_clock;
-        auto time = clock::now();
+        //using clock = std::chrono::high_resolution_clock;
+        //auto time = clock::now();
         if (useOptimized) {
             if (usePosMap) {
                 // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
@@ -403,7 +403,7 @@ template <> struct ReadCsvFile<Frame> {
                 }
                 delete[] rawCols;
                 delete[] colTypes;
-                std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
+                //std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
                 return;
             }
         }
@@ -420,7 +420,7 @@ template <> struct ReadCsvFile<Frame> {
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
             
             // Save absolute offset for this row.
-            if(opt.posMap)
+            if(opt.opt_enabled && opt.posMap)
                 posMap[row].first = currentPos;
             size_t pos = 0;
             for (size_t col = 0; col < numCols; col++) {
@@ -491,17 +491,14 @@ template <> struct ReadCsvFile<Frame> {
             }
             currentPos += ret;
         }
-        std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
+        //std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
         
         if (opt.opt_enabled) {
             if (opt.posMap) {
                 try {
-                    auto writeTime = clock::now();
+                    //auto writeTime = clock::now();
                     writePositionalMap(filename, posMap);
-                    std::cout
-                        << "write time: "
-                        << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count()
-                        << std::endl;
+                    //std::cout<< "write time: "<< std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count() << std::endl;
 
                 } catch (std::exception &e) {
                     // positional map can still be used

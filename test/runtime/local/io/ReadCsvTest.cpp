@@ -486,9 +486,9 @@ TEST_CASE("ReadCsv, frame of numbers and strings using positional map", "[TAG_IO
 
     CHECK(m->getColumn<std::string>(2)->get(0, 0) == "world");
     CHECK(m->getColumn<std::string>(2)->get(1, 0) == "sample,");
-    CHECK(m->getColumn<std::string>(2)->get(2, 0) == "line1line2");//"\n" not working
+    CHECK(m->getColumn<std::string>(2)->get(2, 0) == "line1\nline2");
     CHECK(m->getColumn<std::string>(2)->get(3, 0) == "");
-    CHECK(m->getColumn<std::string>(2)->get(4, 0) == "\"\"\\\"abc\"\"def\\\"");//\n removed
+    CHECK(m->getColumn<std::string>(2)->get(4, 0) == "\"\\\n\"abc\"def\\\"");
     CHECK(m->getColumn<std::string>(2)->get(5, 0) == "");
 
     CHECK(m->getColumn<uint64_t>(3)->get(0, 0) == 444);

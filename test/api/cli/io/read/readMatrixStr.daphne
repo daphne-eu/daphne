@@ -1,0 +1,2 @@
+# Read a matrix of value type str from a file.
+print(readMatrix("test/api/cli/io/ref/matrix_str_ref.csv"));
