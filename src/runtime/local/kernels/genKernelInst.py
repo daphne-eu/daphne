@@ -43,6 +43,7 @@ system start-up.
 
 import io
 import json
+import re
 import sys
 from typing import List, Tuple
 from pathlib import Path
@@ -61,6 +62,36 @@ def toCppType(t):
             raise RuntimeError("unexpected nesting level of template types: {}".format(t))
     else:
         return t
+
+pStripNamespaces1 = re.compile(r"^(.*)<.*::(.*)>(.*)$") # matches the last "::" before the ">"
+pStripNamespaces2 = re.compile(r"^.*::(.*)$") # matches the last "::"
+def stripNamespaces(cppType):
+    """Removes namespaces from the passed C++ type, if present.
+
+    Examples:
+    - `const DenseMatrix<std::string> *` -> `const DenseMatrix<string> *`
+    - `const DenseMatrix<double> *` -> `const DenseMatrix<double> *`
+    - `mlir::daphne::GroupEnum` -> `GroupEnum`
+    - `int64_t` -> "int64_t`
+    """
+
+    # Limitation: if cppType is a template type with multiple template parameters, this function would not remove the
+    # namespace for all template parameters individuall. However, this case is not important at the moment.
+
+    res = cppType
+
+    # Step 1: Remove namespace of template parameter.
+    # Example: "const DenseMatrix<std::string> *" -> "const DenseMatrix<string> *" (removed namespace of value type)
+    # Example: "const DenseMatrix<double> *" -> "const DenseMatrix<double> *" (unchanged)
+    # Example: "int64_t" -> "int64_t" (unchanged, because doesn't match the pattern)
+    res = pStripNamespaces1.sub(r"\1<\2>\3", res)
+
+    # Step 2: Remove namespace of overall type.
+    # Example: "mlir::daphne::GroupEnum" -> "GroupEnum" (removed namespace of overall type)
+    # Example: "int64_t" -> "int64_t" (unchanged)
+    res = pStripNamespaces2.sub(r"\1", res)
+
+    return res
 
 def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, outFile, catalogEntries, API):
     # Extract some information.
@@ -134,8 +165,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
     # typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([
-        rp["type"]
-            [((rp["type"].rfind("::") + 2) if "::" in rp["type"] else 0):]
+        stripNamespaces(rp["type"])
             .replace("const ", "")
             .replace(" **", "" if rp["isOutput"] else "_variadic")
             .replace(" *", "_variadic" if "isVariadic" in rp and rp["isVariadic"] else "")
