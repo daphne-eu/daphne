@@ -102,7 +102,7 @@ inline static std::string getPosMapFile(const char* filename) {
  * @param delim The delimiter character separating columns (e.g., a comma `,`).
  * @return The position pointing to the character immediately before the next column in the line.
  */
-inline size_t setCString(struct File *file, size_t start_pos, std::string *res, const char delim) {
+inline size_t setCString(struct File *file, size_t start_pos, std::string *res, const char delim, size_t * offset) {
     size_t pos = 0;
     const char *str = file->line + start_pos;
     bool is_multiLine = (str[0] == '"');
@@ -129,6 +129,7 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
             res->push_back('\n');
             getFileLine(file);
             str = file->line;
+            *offset += pos + 1; // offset in current line + newline char
             pos = 0;
             has_line_break = 1;
         } else {
@@ -140,43 +141,15 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
     if (is_multiLine)
         pos++;
 
-    if (has_line_break)
+    if (has_line_break){
+        *offset += start_pos;
+        std::cout <<"added offset: " << start_pos << std::endl;
+        std::cout << "new pos: " << pos << std::endl;
+        std::cout << "has line break" << std::endl;
         return pos;
-    else
+    }
+    else{
         return pos + start_pos;
-}
-
-inline size_t setCString(const char *linePtr, size_t start_pos, std::string *res, const char delim) {
-    size_t pos = start_pos;
-    bool inQuotes = false;
-    // If the field starts with a quote, we are in a quoted field.
-    if (linePtr[pos] == '"') {
-        inQuotes = true;
-        pos++; // skip opening quote
     }
-    while (linePtr[pos] != '\0') {
-        if (inQuotes && linePtr[pos] == '"') {
-            // Check if this is a doubled quote.
-            if (linePtr[pos + 1] == '"') {
-                res->append("\"\"");  // append two quotes
-                pos += 2;
-                continue;
-            } else { // closing quote.
-                pos++;
-                break;
-            }
-        }
-        // In unquoted fields, stop at the delimiter or newline.
-        if (!inQuotes && (linePtr[pos] == delim || linePtr[pos] == '\n' || linePtr[pos] == '\r'))
-            break;
-        // Handle backslash-escaped quote inside a quoted field.
-        if (inQuotes && linePtr[pos] == '\\' && linePtr[pos + 1] == '"') {
-            res->append("\\\"");  // append backslash and quote
-            pos += 2;
-            continue;
-        }
-        res->push_back(linePtr[pos]);
-        pos++;
-    }
-    return pos;
+        
 }

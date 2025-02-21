@@ -40,8 +40,7 @@ struct ReadOpts {
     bool opt_enabled;
     bool posMap;
 
-    explicit ReadOpts(bool opt_enabled = false, bool posMap = true)
-        : opt_enabled(opt_enabled), posMap(posMap) {}
+    explicit ReadOpts(bool opt_enabled = false, bool posMap = true) : opt_enabled(opt_enabled), posMap(posMap) {}
 };
 
 // ****************************************************************************
@@ -49,13 +48,13 @@ struct ReadOpts {
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsvFile {
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, 
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim,
+                      const char *filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
 
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros, bool sorted = true,
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
+                      const char *filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
 
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, 
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
                       const char *filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
 };
 
@@ -64,7 +63,8 @@ template <class DTRes> struct ReadCsvFile {
 // ****************************************************************************
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, const char *filename = nullptr,
+                 ReadOpts opt = ReadOpts()) {
     ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, filename, opt);
 }
 
@@ -75,8 +75,8 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 }
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true,
-                 const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros,
+                 bool sorted = true, const char *filename = nullptr, ReadOpts opt = ReadOpts()) {
     ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted, filename, opt);
 }
 
@@ -89,19 +89,19 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim, 
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
+                      const char *filename = nullptr, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
             throw std::runtime_error("ReadCsvFile: numCols must be > 0");
-        
+
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         }
-        
+
         size_t cell = 0;
         VT *valuesRes = res->getValues();
         for (size_t r = 0; r < numRows; r++) {
@@ -124,30 +124,31 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
 
 template <> struct ReadCsvFile<DenseMatrix<std::string>> {
     static void apply(DenseMatrix<std::string> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+                      const char *filename = nullptr, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
             throw std::runtime_error("ReadCsvFile: numCols must be > 0");
-        
+
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<std::string>>(numRows, numCols, false);
         }
-        
+
         // non-optimized branch (unchanged)
         size_t cell = 0;
         std::string *valuesRes = res->getValues();
-        
+
         for (size_t r = 0; r < numRows; r++) {
             if (getFileLine(file) == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
 
             size_t pos = 0;
+            size_t offset = 0;
             for (size_t c = 0; c < numCols; c++) {
                 std::string val("");
-                pos = setCString(file, pos, &val, delim) + 1;
+                pos = setCString(file, pos, &val, delim, &offset) + 1;
                 valuesRes[cell++] = val;
             }
         }
@@ -156,14 +157,14 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
 
 template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
     static void apply(DenseMatrix<FixedStr16> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+                      const char *filename = nullptr, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
             throw std::runtime_error("ReadCsvFile: numCols must be > 0");
-        
+
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<FixedStr16>>(numRows, numCols, false);
         }
@@ -173,11 +174,12 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
         for (size_t r = 0; r < numRows; r++) {
             if (getFileLine(file) == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
-            
+
             size_t pos = 0;
+            size_t offset = 0;
             for (size_t c = 0; c < numCols; c++) {
                 std::string val("");
-                pos = setCString(file, pos, &val, delim) + 1;
+                pos = setCString(file, pos, &val, delim, &offset) + 1;
                 valuesRes[cell++].set(val.c_str());
             }
         }
@@ -190,13 +192,15 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
 
 template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ssize_t numNonZeros, bool sorted = true, const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+                      ssize_t numNonZeros, bool sorted = true, const char *filename = nullptr,
+                      ReadOpts opt = ReadOpts()) {
         if (numNonZeros == -1)
-            throw std::runtime_error("ReadCsvFile: Currently, reading of sparse matrices requires a number of non zeros to be defined");
-        
+            throw std::runtime_error(
+                "ReadCsvFile: Currently, reading of sparse matrices requires a number of non zeros to be defined");
+
         if (res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
-        
+
         if (sorted) {
             readCOOSorted(res, file, numRows, numCols, static_cast<size_t>(numNonZeros), delim);
         } else {
@@ -288,7 +292,8 @@ template <> struct ReadCsvFile<Frame> {
     static void apply(Frame *&res, struct File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
                       const char *filename, ReadOpts opt = ReadOpts()) {
         if (file == nullptr)
-            throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr): " + std::string(filename));
+            throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr): " +
+                                     std::string(filename));
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
@@ -311,14 +316,15 @@ template <> struct ReadCsvFile<Frame> {
         if (opt.opt_enabled && filename) {
             fName = filename;
             std::string posmapFile = getPosMapFile(fName.c_str());
-         if (opt.posMap && std::filesystem::exists(posmapFile)) {
+            if (opt.posMap && std::filesystem::exists(posmapFile)) {
                 useOptimized = true;
                 usePosMap = true;
                 fName = posmapFile;
             }
         }
-        //using clock = std::chrono::high_resolution_clock;
-        //auto time = clock::now();
+        std::cout << "file: " << filename << ":>"<< useOptimized<< std::endl;
+        // using clock = std::chrono::high_resolution_clock;
+        // auto time = clock::now();
         if (useOptimized) {
             if (usePosMap) {
                 // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
@@ -385,14 +391,48 @@ template <> struct ReadCsvFile<Frame> {
                             break;
                         }
                         case ValueTypeCode::STR: {
-                            std::string val;
-                            pos = setCString(linePtr, pos, &val, delim);
+                            size_t nextPos;
+                            if (c < numCols -1)
+                                nextPos = static_cast<size_t>(posMap[r].second[c+1]); // skip first offset being 0
+                            else if (r < numRows - 1) // last column 
+                                nextPos = static_cast<size_t>(posMap[r+1].first) - baseOffset;
+                            else // last element
+                                nextPos = fileBuffer.size() - baseOffset;
+                            
+                            if (nextPos < pos){ // multiline string
+                                std::cout << "pos: " << pos << std::endl;
+                                std::cout << "nextPos: " << nextPos << std::endl;
+                                // nextPos holding relOffset for next row, pos for this row
+                                size_t thisRow = static_cast<size_t>(posMap[r+1].first) - baseOffset;
+                                nextPos += thisRow - pos; // add offset from this row to the offset from next row
+                                std::cout << "nextpos after multiline: " << nextPos << std::endl;                        
+                            }
+                            const char posChar =(linePtr + pos)[0] ;
+                            const char nextPosChar = (linePtr + nextPos - 2)[0];
+                                                 std::cout << "pos val: " << posChar << std::endl;
+                            std::cout << "nextPos - pos: " <<  nextPos  - pos << std::endl;
+                            std::cout << "row: " << r << "col: " << c << "pos: " << pos << "nextPos: "<< nextPos << std::endl;
+                            std::cout << "nextPos: " << (linePtr + nextPos - 2)[0] << std::endl;
+                            if (posChar == '\"' && nextPosChar == '\"'){//remove quotes
+                                pos +=1;
+                                nextPos -= 1;
+                            }
+                            std::string val(linePtr + pos, nextPos - pos - 1);
+                            std::cout << "val: " << val << std::endl;
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::FIXEDSTR16: {
-                            std::string val;
-                            pos = setCString(linePtr, pos, &val, delim);
+                            auto nextPos = static_cast<size_t>(posMap[r].second[c+1]);
+                            if (nextPos < pos){ // multiline string
+                                std::cout << "nextPos: " << nextPos << std::endl;
+                                // nextPos holding relOffset for next row, pos for this row
+                                size_t thisRow = static_cast<size_t>(posMap[r+1].first) - baseOffset;
+                                nextPos += thisRow - pos; // add offset from this row to the offset from next row
+                                std::cout << "nextpos after multiline: " << nextPos << std::endl;                        
+                            }
+                            std::string val(linePtr + pos, nextPos - pos - 1);
+                            std::cout << "val: " << val << std::endl;
                             reinterpret_cast<FixedStr16 *>(rawCols[c])[r] = FixedStr16(val);
                             break;
                         }
@@ -403,7 +443,8 @@ template <> struct ReadCsvFile<Frame> {
                 }
                 delete[] rawCols;
                 delete[] colTypes;
-                //std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
+                // std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()
+                // - time).count() << std::endl;
                 return;
             }
         }
@@ -412,20 +453,23 @@ template <> struct ReadCsvFile<Frame> {
         if (opt.opt_enabled && opt.posMap)
             posMap.resize(numRows);
         std::streampos currentPos = 0;
+        uint8_t multiLine = 0;
+        size_t offset = 0;
+        size_t rowOffset = 0;
         for (size_t row = 0; row < numRows; row++) {
             ssize_t ret = getFileLine(file);
             if ((file->read == EOF) || (file->line == NULL))
                 break;
             if (ret == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
-            
+
             // Save absolute offset for this row.
-            if(opt.opt_enabled && opt.posMap)
+            if(opt.opt_enabled && opt.posMap) {
                 posMap[row].first = currentPos;
+                posMap[row].second.push_back(static_cast<uint16_t >(0));
+            }
             size_t pos = 0;
             for (size_t col = 0; col < numCols; col++) {
-                if (opt.opt_enabled && opt.posMap)
-                    posMap[row].second.push_back(static_cast<uint32_t>(pos));
                 switch (colTypes[col]) {
                 case ValueTypeCode::SI8:
                     int8_t val_si8;
@@ -469,36 +513,120 @@ template <> struct ReadCsvFile<Frame> {
                     break;
                 case ValueTypeCode::STR: {
                     std::string val_str = "";
-                    pos = setCString(file, pos, &val_str, delim);
+                    pos = setCString(file, pos, &val_str, delim, &rowOffset);
+                    offset += rowOffset;
                     reinterpret_cast<std::string *>(rawCols[col])[row] = val_str;
                     break;
                 }
                 case ValueTypeCode::FIXEDSTR16: {
                     std::string val_str = "";
-                    pos = setCString(file, pos, &val_str, delim);
+                    pos = setCString(file, pos, &val_str, delim, &rowOffset);
+                    offset += rowOffset;
                     reinterpret_cast<FixedStr16 *>(rawCols[col])[row] = FixedStr16(val_str);
                     break;
                 }
                 default:
                     throw std::runtime_error("ReadCsvFile::apply: unknown value type code");
                 }
+                
                 if (col < numCols - 1) {
                     // Advance pos until next delimiter
                     while (file->line[pos] != delim)
                         pos++;
                     pos++; // skip delimiter
                 }
-            }
-            currentPos += ret;
+                
+                if (opt.opt_enabled && opt.posMap) {
+                    if (col < numCols - 1) {
+                        std::cout << "pos: " << pos << " offset: " << offset << std::endl;
+                        if (offset > 0) {
+                            // size_t startPos = posMap[row].second[col];
+                            // offset += 1; // newline char //startPos + 1;
+                            posMap[row].second.push_back(
+                                static_cast<uint16_t>(pos + offset)); // a´dds offset from possible multiline string
+                        } else
+                            posMap[row].second.push_back(static_cast<uint16_t>(pos));
+                        std::cout << "saved pos: " << posMap[row].second[col + 1] << std::endl;
+                    }
+                    else{ // last column
+                        if (rowOffset > 0) {
+                            std::cout << "rowOffset: " << rowOffset << std::endl;
+                            std::cout << "pos added: " << pos + rowOffset<< std::endl;
+                            currentPos = file->pos ;//+ rowOffset;// + pos;
+                    }else
+                        currentPos = file->pos;
+                    }
+                    
+                }
+                rowOffset = 0;
+                    if (opt.opt_enabled && opt.posMap) {
+                    //posMap[row].second.push_back(static_cast<uint16_t>(pos));
+                }
+                if (multiLine)
+                    //posMap[row].second[0]= static_cast<uint16_t>(1);
+                
+                if (opt.opt_enabled && opt.posMap) {
+                    // ret is the number of characters read in this row.
+                    
+                    /*
+                    if (multiLine){
+                        //add the relative offset to the last column of the previous row
+                        std::cout << "pos: " << posMap[row-1].second[numCols-1] << "+= pos:" << pos << std::endl;
+                        posMap[row].second[0] = static_cast<uint16_t>(pos);
+                        std::cout << "+= pos: " << posMap[row-1].second[numCols-1] << std::endl;
+                        // update the new rel offset for the current column
+                        posMap[row].second.push_back(static_cast<uint16_t>(pos));
+                        std::cout << "overnext pos:  " << pos << std::endl;
+                        multiLine = false;
+                    }
+                    std::cout << "ret: " << ret << std::endl;
+                    if (pos > static_cast<size_t>(ret)){
+                        posMap[row].second.push_back(static_cast<uint16_t>(static_cast<size_t>(ret)));
+                        multiLine = true;
+                    }else{
+                        posMap[row].second.push_back(static_cast<uint16_t>(pos));
+                    }*/
+                }
+            } if (opt.opt_enabled && opt.posMap){
+                auto prevPos = posMap[row].second[numCols - 2];
+                //auto currPos = posMap[row].second[numCols - 1];
+                    
+                // check if multiline offset
+                if (pos < prevPos) {
+                    // save offset part of the next row at first index of this row
+                    //std::cout << "pos: " << pos << " < prevPos: " << prevPos << std::endl;
+                    //posMap[row].second[0] = static_cast<uint16_t>(pos);
+                    // save offset for the rest of the line
+                    //posMap[row].second[numCols - 2] = static_cast<uint16_t>(prevPos);
+                }
+                                    /*if(pos < posMap[row].second[numCols-1]){
+                                        posMap[row].second[0] = static_cast<uint16_t>(pos);
+                                    }*/
+                                   }
+                                   
+                                   /*
+                                   if (offset >0) {
+                                       
+                                       std::cout << "offset: " << offset << std::endl;                                    
+                                      std::cout << "ret +offset: " << static_cast<ssize_t >(currentPos) + (ret + offset) << std::endl;
+                                      std::cout << "file pos: " << file->pos << std::endl; 
+                                      currentPos = file->pos; // currPos not in offset
+                                      
+                                   }else
+                                        currentPos += ret + offset;*/
+            offset = 0;
         }
-        //std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count() << std::endl;
-        
+        // std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() -
+        // time).count() << std::endl;
+
         if (opt.opt_enabled) {
             if (opt.posMap) {
                 try {
-                    //auto writeTime = clock::now();
+                    // auto writeTime = clock::now();
                     writePositionalMap(filename, posMap);
-                    //std::cout<< "write time: "<< std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count() << std::endl;
+                    // std::cout<< "write time: "<<
+                    // std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count() <<
+                    // std::endl;
 
                 } catch (std::exception &e) {
                     // positional map can still be used
