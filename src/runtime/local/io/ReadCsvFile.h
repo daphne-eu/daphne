@@ -169,9 +169,41 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<FixedStr16>>(numRows, numCols, false);
         }
-
+        using clock = std::chrono::high_resolution_clock;
+        auto time = clock::now();
         size_t cell = 0;
         FixedStr16 *valuesRes = res->getValues();
+        if (opt.opt_enabled && opt.posMap) {
+            // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
+            //std::vector<std::pair<std::streampos, std::vector<std::uint16_t>>> posMap = readPositionalMap(filename);
+            std::ifstream ifs(filename, std::ios::binary);
+            if (!ifs.good())
+                throw std::runtime_error("Optimized branch: failed to open file for in-memory buffering");
+            std::vector<char> fileBuffer((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+            const char* linePtr = fileBuffer.data();
+            size_t pos = 0;
+            for (size_t r = 0; r < numRows; r++) {
+                // For every column, compute the relative offset within the line
+                for (size_t c = 0; c < numCols; c++) {
+                    size_t nextPos = pos + 16;
+
+                    const char posChar = (linePtr + pos)[0];
+                    const char nextPosChar = (linePtr + nextPos - 2)[0];
+                    if ((nextPos - pos > 0) && posChar == '\"' && nextPosChar == '\"') { // remove quotes
+                        pos += 1;
+                        nextPos -= 1;
+                    }
+                    std::string val(linePtr + pos, nextPos - pos - 1);
+                    if (opt.useDoubleQuoteEncode) {
+                        valuesRes[cell++].set(convertDoubleQuotes(val).c_str());
+                    } else
+                        valuesRes[cell++].set(val.c_str());
+                    pos = nextPos + 1;
+                }
+            }
+            std::cout << "read time optimized2: " << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - time).count() << " ms" << std::endl;
+            return;
+        }
         for (size_t r = 0; r < numRows; r++) {
             if (getFileLine(file) == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
@@ -184,6 +216,7 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
                 valuesRes[cell++].set(val.c_str());
             }
         }
+        std::cout << "read time2: " << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - time).count() << " ms" << std::endl;
     }
 };
 
@@ -413,10 +446,6 @@ template <> struct ReadCsvFile<Frame> {
                                 nextPos -= 1;
                             }
                             std::string val(linePtr + pos, nextPos - pos - 1);
-                            if (opt.useDoubleQuoteEncode){
-                                reinterpret_cast<std::string *>(rawCols[c])[r] = convertDoubleQuotes(val);
-                            } else 
-                                reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                    
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
