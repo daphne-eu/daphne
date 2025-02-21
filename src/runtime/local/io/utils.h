@@ -143,13 +143,55 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
 
     if (has_line_break){
         *offset += start_pos;
-        std::cout <<"added offset: " << start_pos << std::endl;
-        std::cout << "new pos: " << pos << std::endl;
-        std::cout << "has line break" << std::endl;
         return pos;
     }
     else{
         return pos + start_pos;
     }
         
+}
+
+// Add an optional parameter "endPos" (default to 0) that if set will be used instead
+// of scanning for the delimiter.
+inline void setCString(const char *str, size_t start_pos, std::string *res, const char delim, size_t endPos = 0) {
+    size_t pos = 0;
+    bool is_multiLine = (str[0] == '"');
+    if (is_multiLine)
+        pos++; // skip opening quote
+               
+    // If endPos is provided (nonzero) use that boundary.
+    size_t limit = (endPos > 0) ? (endPos - start_pos) : std::string(str).find_first_of(is_multiLine ? "\"" : std::string()+delim);
+    if (limit == std::string::npos && endPos > 0) 
+        limit = endPos - start_pos;
+    
+    // Process characters up to limit.
+    while (pos < limit && str[pos]) {
+        // Only perform special handling for quotes if in multi-line (quoted) field.
+        if (is_multiLine && str[pos] == '"' && (pos + 1 < limit) && str[pos + 1] == '"') {
+            res->append("\"");
+            pos += 2;
+        } else if (is_multiLine && str[pos] == '\\' && (pos + 1 < limit) && str[pos + 1] == '"') {
+            res->append("\\\"");
+            pos += 2;
+        } if(is_multiLine && (pos == limit - 1) && str[pos] == '"') {                     
+            pos++;
+        }else {
+            res->push_back(str[pos]);
+            pos++;
+        }
+    }
+}
+
+inline std::string convertDoubleQuotes(const std::string &val) {
+    std::string processed;
+    processed.reserve(val.size());
+    for (size_t i = 0; i < val.size(); ++i) {
+        if (val[i] == '"' && (i + 1 < val.size() && val[i + 1] == '"')) {
+            processed.push_back('"'); // replace double quote with single quote
+            ++i;
+        } else {
+            processed.push_back(val[i]);
+        }
+    }
+    return processed;
 }
