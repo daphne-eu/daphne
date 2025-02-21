@@ -361,19 +361,35 @@ template <> struct ReadCsvFile<Frame> {
         if (useOptimized) {
             if (usePosMap) {
                 // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
-                std::vector<std::pair<std::streampos, std::vector<std::uint16_t>>> posMap = readPositionalMap(filename);
+                PosMap posMap = readPositionalMap(filename);
                 std::ifstream ifs(filename, std::ios::binary);
                 if (!ifs.good())
                     throw std::runtime_error("Optimized branch: failed to open file for in-memory buffering");
                 std::vector<char> fileBuffer((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+                std::vector<const char *> rowPointers;
+                rowPointers.resize(numRows);
+                for (size_t r = 0; r < numRows; r++) {
+                    // Compute pointer for row r from posMap’s absolute offset.
+                    rowPointers[r] = fileBuffer.data() + static_cast<size_t>(posMap.rowOffsets[r]);
+                }
+
                 for (size_t r = 0; r < numRows; r++) {
                     // Read the entire row by seeking to the beginning of row r (first field)
-                    size_t baseOffset = static_cast<size_t>(posMap[r].first);
-                    const char *linePtr = fileBuffer.data() + baseOffset;
+                    auto baseOffset = posMap.rowOffsets[r];
+                    const char *linePtr = rowPointers[r];
+                    const uint16_t *relOffsets = posMap.relOffsets + (r * numCols);
 
                     // For every column, compute the relative offset within the line
                     for (size_t c = 0; c < numCols; c++) {
-                        size_t pos = static_cast<size_t>(posMap[r].second[c]);
+                        size_t pos = relOffsets[c];
+                        size_t nextPos;
+                        if (c < numCols - 1)
+                            nextPos = static_cast<size_t>(relOffsets[c + 1]);  // offset of next field in same row
+                        else if (r < numRows - 1)
+                            nextPos = static_cast<size_t>(posMap.rowOffsets[r + 1]) - baseOffset; // first offset of next row
+                        else
+                            nextPos = fileBuffer.size() - baseOffset;  // end of file for last row
+                        
                         switch (colTypes[c]) {
                         case ValueTypeCode::SI8: {
                             int8_t val;
@@ -424,51 +440,25 @@ template <> struct ReadCsvFile<Frame> {
                             break;
                         }
                         case ValueTypeCode::STR: {
-                            size_t nextPos;
-                            if (c < numCols -1)
-                                nextPos = static_cast<size_t>(posMap[r].second[c+1]); // skip first offset being 0
-                            else if (r < numRows - 1) // last column 
-                                nextPos = static_cast<size_t>(posMap[r+1].first) - baseOffset; // first position of next row
-                            else // last element
-                                nextPos = fileBuffer.size() - baseOffset; // end of file
-                            if (opt.useDoubleQuoteEncode){
-                                std::string val ="";
-                                setCString(linePtr + pos, pos, &val, delim, nextPos - 1);
-                                std::cout <<"val: " << val << std::endl;
-                                reinterpret_cast<std::string *>(rawCols[c])[r] = val;
-                                break;
-                            }
-                            
-                            const char posChar =(linePtr + pos)[0] ;
-                            const char nextPosChar = (linePtr + nextPos - 2)[0];
-                            if ((nextPos - pos > 0) && posChar == '\"' && nextPosChar == '\"'){//remove quotes
-                                pos +=1;
-                                nextPos -= 1;
-                            }
-                            std::string val(linePtr + pos, nextPos - pos - 1);
-                   
+                            //if (c >= numCols - 1)    // last column
+                                //nextPos -= baseOffset; // first position of next row
+
+                            std::string val;
+                            setCString(linePtr + pos, pos, &val, delim, nextPos - pos - 1); // needed for double quote encoding
+                            std::string vale(linePtr + pos, nextPos - pos - 1);
+                            std::cout <<"val real: " <<  vale << "end" << std::endl;
+        std::cout <<"val: " << val << std::endl;
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::FIXEDSTR16: {
-                            size_t nextPos;
-                            if (c < numCols -1)
-                                nextPos = static_cast<size_t>(posMap[r].second[c+1]); // skip first offset being 0
-                            else if (r < numRows - 1) // last column 
-                                nextPos = static_cast<size_t>(posMap[r+1].first) - baseOffset; // first position of next row
-                            else // last element
-                                nextPos = fileBuffer.size() - baseOffset; // end of file
-                            const char posChar =(linePtr + pos)[0] ;
-                            const char nextPosChar = (linePtr + nextPos - 2)[0];
-                            if (posChar == '\"' && nextPosChar == '\"'){//remove quotes
-                                pos +=1;
-                                nextPos -= 1;
-                            }
-                            std::string val(linePtr + pos, nextPos - pos - 1);
-                            if (opt.useDoubleQuoteEncode){
-                                reinterpret_cast<std::string *>(rawCols[c])[r] = convertDoubleQuotes(val);
-                            } else
-                                reinterpret_cast<std::string *>(rawCols[c])[r] = val;
+                            if (c >= numCols - 1)       // last column
+                                nextPos -= baseOffset; // first position of next row
+
+                            std::string val;
+                            setCString(linePtr + pos, pos, &val, delim, nextPos - pos - 1); // not passing delimiter to nextPos
+                            // std::cout <<"val: " << val << std::endl;
+                            reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
                         default:
@@ -484,10 +474,10 @@ template <> struct ReadCsvFile<Frame> {
             }
         }
         // Normal branch: iterate row by row and for each field save its absolute offset.
-        std::vector<std::pair<std::streampos, std::vector<uint16_t>>> posMap;
-        if (opt.opt_enabled && opt.posMap)
-            posMap.resize(numRows);
-        std::streampos currentPos = 0;
+        auto *rowOffsets = new uint64_t[numRows];
+        auto *relOffsets = new uint16_t[numRows * numCols + 1];
+        
+        uint64_t currentPos = 0;
         for (size_t row = 0; row < numRows; row++) {
             ssize_t ret = getFileLine(file);
             if ((file->read == EOF) || (file->line == NULL))
@@ -497,8 +487,8 @@ template <> struct ReadCsvFile<Frame> {
 
             // Save absolute offset for this row.
             if(opt.opt_enabled && opt.posMap) {
-                posMap[row].first = currentPos;
-                posMap[row].second.push_back(static_cast<uint16_t >(0));
+                rowOffsets[row] = currentPos;
+                relOffsets[row*numCols] = static_cast<uint16_t >(0);
             }
             size_t offset = 0;
             size_t pos = 0;
@@ -570,24 +560,24 @@ template <> struct ReadCsvFile<Frame> {
                 if (opt.opt_enabled && opt.posMap) {
                     if (col < numCols - 1) {
                         if (offset > 0) {
-                            posMap[row].second.push_back(
-                                static_cast<uint16_t>(pos + offset)); // adds offset from possible multiline string
+                            relOffsets[row * numCols + col + 1] = static_cast<uint16_t>(pos + offset); // adds offset from possible multiline string
                         } else
-                            posMap[row].second.push_back(static_cast<uint16_t>(pos));
+                            relOffsets[row * numCols + col + 1] = static_cast<uint16_t>(pos);
                     }
                 }
                 
             }
-            currentPos = file->pos;
+            currentPos = static_cast<uint64_t >(file->pos);
         }
-        // std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() -
-        // time).count() << std::endl;
+        relOffsets[numRows * numCols] = static_cast<uint16_t>(currentPos - rowOffsets[numRows - 1]); // end of last element
+        std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() -
+        time).count() << std::endl;
 
         if (opt.opt_enabled) {
             if (opt.posMap) {
                 try {
                     // auto writeTime = clock::now();
-                    writePositionalMap(filename, posMap);
+                    writePositionalMap(filename, numRows, numCols, rowOffsets, relOffsets);
                     // std::cout<< "write time: "<<
                     // std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count() <<
                     // std::endl;

@@ -25,11 +25,22 @@
 
 #include <runtime/local/io/FileMetaData.h>
 
+struct PosMap {
+    uint64_t numRows;
+    uint64_t numCols;
+    const uint64_t* rowOffsets;
+    const uint16_t* relOffsets;
+    std::vector<char> buffer;
+};
+
 // Function to create and save the positional map
-void writePositionalMap(const char *filename, const std::vector<std::pair<std::streampos, std::vector<uint16_t>>> &posMap);
+void writePositionalMap(const char* filename, 
+                        uint64_t numRows, uint64_t numCols,
+                        const uint64_t* rowOffsets, 
+                        const uint16_t* flatRelOffsets);
 
 // Function to read the positional map
-std::vector<std::pair<std::streampos, std::vector<uint16_t>>> readPositionalMap(const char *filename);
+PosMap readPositionalMap(const char* filename);
 
 // Conversion of std::string.
 
@@ -160,10 +171,15 @@ inline void setCString(const char *str, size_t start_pos, std::string *res, cons
         pos++; // skip opening quote
                
     // If endPos is provided (nonzero) use that boundary.
-    size_t limit = (endPos > 0) ? (endPos - start_pos) : std::string(str).find_first_of(is_multiLine ? "\"" : std::string()+delim);
-    if (limit == std::string::npos && endPos > 0) 
-        limit = endPos - start_pos;
-    
+    //size_t limit = (endPos > 0) ? (endPos - start_pos) : std::string(str).find_first_of(is_multiLine ? "\"" : std::string()+delim);
+    //if (limit == std::string::npos && endPos > 0) 
+    for (size_t i = 0; i < endPos; i++) {
+        //std::cout << "str[" << i << "]: " << str[i] << std::endl;
+    }
+        size_t limit = endPos;
+
+std::cout << "start_pos: "<< str[start_pos] << std::endl;
+
     // Process characters up to limit.
     while (pos < limit && str[pos]) {
         // Only perform special handling for quotes if in multi-line (quoted) field.
@@ -173,9 +189,11 @@ inline void setCString(const char *str, size_t start_pos, std::string *res, cons
         } else if (is_multiLine && str[pos] == '\\' && (pos + 1 < limit) && str[pos + 1] == '"') {
             res->append("\\\"");
             pos += 2;
-        } if(is_multiLine && (pos == limit - 1) && str[pos] == '"') {                     
-            pos++;
-        }else {
+        } if(is_multiLine && (pos == limit - 1) && str[pos] == '"') {
+            break;
+        } else if (is_multiLine && (pos == limit - 2) && str[pos]=='"' && (str[pos + 1] == '\n' || str[pos + 1] == '\r')) {
+            break;
+        } else {
             res->push_back(str[pos]);
             pos++;
         }
