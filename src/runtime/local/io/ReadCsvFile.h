@@ -39,9 +39,8 @@
 struct ReadOpts {
     bool opt_enabled;
     bool posMap;
-    bool useDoubleQuoteEncode;
 
-    explicit ReadOpts(bool opt_enabled = false, bool posMap = true, bool useDoubleQuoteEncode = true) : opt_enabled(opt_enabled), posMap(posMap), useDoubleQuoteEncode(useDoubleQuoteEncode) {}
+    explicit ReadOpts(bool opt_enabled = false, bool posMap = true) : opt_enabled(opt_enabled), posMap(posMap) {}
 };
 
 // ****************************************************************************
@@ -144,7 +143,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                         nextPos = fileBuffer.size() - baseOffset; // for the last row
 
                     // Extract the field substring and convert.
-                    std::string field(linePtr + pos, nextPos - pos);
+                    std::string field(linePtr + pos, nextPos - pos - 1);
                     VT val;
                     convertCstr(field.c_str(), &val);
                     valuesRes[cell++] = val;
@@ -272,10 +271,8 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                     // Note: since 'linePtr + pos' already points to the field start,
                     // we pass a start_pos of '0' and the boundary as (nextPos - pos - 1)
                     // so that if the field is quoted the trailing quote is removed.
-                    setCString(linePtr + pos, pos, &val, delim, nextPos - pos - 1);
+                    setCString(linePtr + pos, &val, delim, nextPos - pos - 1);
                     std::string vale(linePtr + pos, nextPos - pos - 1);
-                    std::cout <<"val real: " <<  vale << "end" << std::endl;
-                    std::cout << "val: " << val  << std::endl;
 
                     valuesRes[cell++] = val;
                 }
@@ -305,7 +302,8 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                     // Here we call the file–based setCString (which advances pos and updates offset)
                     pos = setCString(file, pos, &val, delim, &offset);
                     valuesRes[cell++] = val;
-                    std::cout << "val: " << val << std::endl;
+                    //std::cout << "val: " << val << std::endl;
+                    //std::cout << "saved: " << valuesRes[cell-1] << std::endl;
                     if (c < numCols - 1) {
                         // Advance pos until we hit the delimiter.
                         while (file->line[pos] != delim)
@@ -331,6 +329,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             }
             delete[] rowOffsets;
             delete[] relOffsets;
+            return;
         }
         else {
             for (size_t r = 0; r < numRows; r++) {
@@ -382,18 +381,10 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
                 // For every column, compute the relative offset within the line
                 for (size_t c = 0; c < numCols; c++) {
                     size_t nextPos = pos + 16;
+                    std::string val;
 
-                    const char posChar = (linePtr + pos)[0];
-                    const char nextPosChar = (linePtr + nextPos - 2)[0];
-                    if ((nextPos - pos > 0) && posChar == '\"' && nextPosChar == '\"') { // remove quotes
-                        pos += 1;
-                        nextPos -= 1;
-                    }
-                    std::string val(linePtr + pos, nextPos - pos - 1);
-                    if (opt.useDoubleQuoteEncode) {
-                        valuesRes[cell++].set(convertDoubleQuotes(val).c_str());
-                    } else
-                        valuesRes[cell++].set(val.c_str());
+                    setCString(linePtr + pos, &val, delim, nextPos - pos - 1);
+                     valuesRes[cell++].set(val.c_str());
                     pos = nextPos + 1;
                 }
             }
@@ -640,10 +631,8 @@ template <> struct ReadCsvFile<Frame> {
                                 //nextPos -= baseOffset; // first position of next row
 
                             std::string val;
-                            setCString(linePtr + pos, pos, &val, delim, nextPos - pos - 1); // needed for double quote encoding
+                            setCString(linePtr + pos, &val, delim, nextPos - pos - 1); // needed for double quote encoding
                             std::string vale(linePtr + pos, nextPos - pos - 1);
-                            std::cout <<"val real: " <<  vale << "end" << std::endl;
-        std::cout <<"val: " << val << std::endl;
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
@@ -652,7 +641,7 @@ template <> struct ReadCsvFile<Frame> {
                                 nextPos -= baseOffset; // first position of next row
 
                             std::string val;
-                            setCString(linePtr + pos, pos, &val, delim, nextPos - pos - 1); // not passing delimiter to nextPos
+                            setCString(linePtr + pos, &val, delim, nextPos - pos - 1); // not passing delimiter to nextPos
                             // std::cout <<"val: " << val << std::endl;
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;

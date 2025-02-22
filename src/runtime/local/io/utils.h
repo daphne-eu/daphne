@@ -28,19 +28,17 @@
 struct PosMap {
     uint64_t numRows;
     uint64_t numCols;
-    const uint64_t* rowOffsets;
-    const uint16_t* relOffsets;
+    const uint64_t *rowOffsets;
+    const uint16_t *relOffsets;
     std::vector<char> buffer;
 };
 
 // Function to create and save the positional map
-void writePositionalMap(const char* filename, 
-                        uint64_t numRows, uint64_t numCols,
-                        const uint64_t* rowOffsets, 
-                        const uint16_t* flatRelOffsets);
+void writePositionalMap(const char *filename, uint64_t numRows, uint64_t numCols, const uint64_t *rowOffsets,
+                        const uint16_t *flatRelOffsets);
 
 // Function to read the positional map
-PosMap readPositionalMap(const char* filename);
+PosMap readPositionalMap(const char *filename);
 
 // Conversion of std::string.
 
@@ -92,9 +90,7 @@ inline void convertCstr(const char *x, uint8_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
 
-inline static std::string getPosMapFile(const char* filename) {
-    return std::string(filename) + ".posmap";
-}
+inline static std::string getPosMapFile(const char *filename) { return std::string(filename) + ".posmap"; }
 
 /**
  * @brief This function reads a CSV column that contains strings.
@@ -113,7 +109,7 @@ inline static std::string getPosMapFile(const char* filename) {
  * @param delim The delimiter character separating columns (e.g., a comma `,`).
  * @return The position pointing to the character immediately before the next column in the line.
  */
-inline size_t setCString(struct File *file, size_t start_pos, std::string *res, const char delim, size_t * offset) {
+inline size_t setCString(struct File *file, size_t start_pos, std::string *res, const char delim, size_t *offset) {
     size_t pos = 0;
     const char *str = file->line + start_pos;
     bool is_multiLine = (str[0] == '"');
@@ -152,33 +148,23 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
     if (is_multiLine)
         pos++;
 
-    if (has_line_break){
+    if (has_line_break) {
         *offset += start_pos;
         return pos;
-    }
-    else{
+    } else {
         return pos + start_pos;
     }
-        
 }
 
 // Add an optional parameter "endPos" (default to 0) that if set will be used instead
 // of scanning for the delimiter.
-inline void setCString(const char *str, size_t start_pos, std::string *res, const char delim, size_t endPos = 0) {
+inline void setCString(const char *str, std::string *res, const char delim, size_t endPos = 0) {
     size_t pos = 0;
     bool is_multiLine = (str[0] == '"');
     if (is_multiLine)
         pos++; // skip opening quote
-               
-    // If endPos is provided (nonzero) use that boundary.
-    //size_t limit = (endPos > 0) ? (endPos - start_pos) : std::string(str).find_first_of(is_multiLine ? "\"" : std::string()+delim);
-    //if (limit == std::string::npos && endPos > 0) 
-    for (size_t i = 0; i < endPos; i++) {
-        //std::cout << "str[" << i << "]: " << str[i] << std::endl;
-    }
-        size_t limit = endPos;
 
-std::cout << "start_pos: "<< str[start_pos] << std::endl;
+    size_t limit = endPos;
 
     // Process characters up to limit.
     while (pos < limit && str[pos]) {
@@ -189,27 +175,14 @@ std::cout << "start_pos: "<< str[start_pos] << std::endl;
         } else if (is_multiLine && str[pos] == '\\' && (pos + 1 < limit) && str[pos + 1] == '"') {
             res->append("\\\"");
             pos += 2;
-        } if(is_multiLine && (pos == limit - 1) && str[pos] == '"') {
+        } else if (is_multiLine && (pos == limit - 1) && str[pos] == '"') {
             break;
-        } else if (is_multiLine && (pos == limit - 2) && str[pos]=='"' && (str[pos + 1] == '\n' || str[pos + 1] == '\r')) {
+        } else if (is_multiLine && (pos == limit - 2) && str[pos] == '"' &&
+                   (str[pos + 1] == '\n' || str[pos + 1] == '\r')) {
             break;
         } else {
             res->push_back(str[pos]);
             pos++;
         }
     }
-}
-
-inline std::string convertDoubleQuotes(const std::string &val) {
-    std::string processed;
-    processed.reserve(val.size());
-    for (size_t i = 0; i < val.size(); ++i) {
-        if (val[i] == '"' && (i + 1 < val.size() && val[i + 1] == '"')) {
-            processed.push_back('"'); // replace double quote with single quote
-            ++i;
-        } else {
-            processed.push_back(val[i]);
-        }
-    }
-    return processed;
 }
