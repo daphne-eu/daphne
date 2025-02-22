@@ -105,21 +105,108 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
 
         size_t cell = 0;
         VT *valuesRes = res->getValues();
-        for (size_t r = 0; r < numRows; r++) {
-            if (getFileLine(file) == -1)
-                throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
-            size_t pos = 0;
-            for (size_t c = 0; c < numCols; c++) {
-                VT val;
-                convertCstr(file->line + pos, &val);
-                valuesRes[cell++] = val;
-                if (c < numCols - 1) {
-                    while (file->line[pos] != delim)
-                        pos++;
-                    pos++; // skip delimiter
-                }
+        bool usePosMap = false;
+        PosMap posMap;
+        // Optimized branch using positional map.
+        if (opt.opt_enabled && opt.posMap) {
+            // Read the positional map from file.
+            try {
+                posMap = readPositionalMap(filename);
+                usePosMap = true;
+            } catch (std::exception &e) {
+                // try to create posMap
             }
         }
+        if (usePosMap) {
+            std::ifstream ifs(filename, std::ios::binary);
+            if (!ifs.good())
+                throw std::runtime_error("Optimized branch: failed to open file for in-memory buffering");
+            std::vector<char> fileBuffer((std::istreambuf_iterator<char>(ifs)),
+                                         std::istreambuf_iterator<char>());
+            // Build row pointers using absolute row offsets from the posmap.
+            std::vector<const char *> rowPointers(numRows);
+            for (size_t r = 0; r < numRows; r++) {
+                rowPointers[r] = fileBuffer.data() + static_cast<size_t>(posMap.rowOffsets[r]);
+            }
+            // For each row, use stored relative offsets to extract each field.
+            for (size_t r = 0; r < numRows; r++) {
+                auto baseOffset = posMap.rowOffsets[r];
+                const char *linePtr = rowPointers[r];
+                const uint16_t *relOffsets = posMap.relOffsets + (r * numCols);
+                for (size_t c = 0; c < numCols; c++) {
+                    size_t pos = relOffsets[c]; // field start relative to linePtr
+                    size_t nextPos;
+                    if (c < numCols - 1)
+                        nextPos = static_cast<size_t>(relOffsets[c + 1]);
+                    else if (r < numRows - 1)
+                        nextPos = static_cast<size_t>(posMap.rowOffsets[r + 1]) - baseOffset;
+                    else
+                        nextPos = fileBuffer.size() - baseOffset; // for the last row
+
+                    // Extract the field substring and convert.
+                    std::string field(linePtr + pos, nextPos - pos);
+                    VT val;
+                    convertCstr(field.c_str(), &val);
+                    valuesRes[cell++] = val;
+                }
+            }
+            return;
+        }
+        
+        if (opt.opt_enabled && opt.posMap) {
+            auto *rowOffsets = new uint64_t[numRows];
+            auto *relOffsets = new uint16_t[numRows * numCols + 1];
+            uint64_t currentPos = 0;
+            for (size_t r = 0; r < numRows; r++) {
+                ssize_t ret = getFileLine(file);
+                if ((file->read == EOF) || (file->line == NULL))
+                    break;
+                if (ret == -1)
+                    throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
+                // Record the absolute offset for this row.
+                rowOffsets[r] = currentPos;
+                relOffsets[r * numCols] = 0;
+                size_t pos = 0;
+                for (size_t c = 0; c < numCols; c++) {
+                    VT val;
+                    convertCstr(file->line + pos, &val);
+                    valuesRes[cell++] = val;
+                    if (c < numCols - 1) {
+                        // Advance pos until the delimiter is found.
+                        while (file->line[pos] != delim)
+                            pos++;
+                        pos++; // skip delimiter
+                        relOffsets[r * numCols + c + 1] = static_cast<uint16_t>(pos);
+                    }
+                }
+                currentPos = static_cast<uint64_t>(file->pos);
+            }
+            relOffsets[numRows * numCols] =
+                static_cast<uint16_t>(currentPos - rowOffsets[numRows - 1]); // end of last field
+            try {
+                writePositionalMap(filename, numRows, numCols, rowOffsets, relOffsets);
+            } catch (std::exception &e) {
+                // Even if posmap writing fails, parsing was successful.
+            }
+            delete[] rowOffsets;
+            delete[] relOffsets;
+        } else {
+            for (size_t r = 0; r < numRows; r++) {
+                if (getFileLine(file) == -1)
+                    throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
+                size_t pos = 0;
+                for (size_t c = 0; c < numCols; c++) {
+                    VT val;
+                    convertCstr(file->line + pos, &val);
+                    valuesRes[cell++] = val;
+                    if (c < numCols - 1) {
+                        while (file->line[pos] != delim)
+                            pos++;
+                        pos++; // skip delimiter
+                    }
+                }
+            }
+         }
     }
 };
 
@@ -465,8 +552,8 @@ template <> struct ReadCsvFile<Frame> {
                 fName = posmapFile;
             }
         }
-        // using clock = std::chrono::high_resolution_clock;
-        // auto time = clock::now();
+        using clock = std::chrono::high_resolution_clock;
+        auto time = clock::now();
         if (useOptimized) {
             if (usePosMap) {
                 // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.

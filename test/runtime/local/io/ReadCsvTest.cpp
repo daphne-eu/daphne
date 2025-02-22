@@ -711,3 +711,111 @@ TEST_CASE("ReadCsv, frame of varying columns: normal vs positional map", "[TAG_I
         std::filesystem::remove(filename + std::string(".posmap"));
     }
 }
+
+TEST_CASE("ReadCsv, dense matrix strings with positional map reused", "[TAG_IO][posMap]") {
+    DenseMatrix<std::string>* m = nullptr;
+    DenseMatrix<std::string>* m_new = nullptr;
+    size_t numRows = 9;
+    size_t numCols = 3;
+    char filename[] = "./test/runtime/local/io/ReadCsvStr.csv";
+    char delim = ',';
+    
+    std::string posmapFile = std::string(filename) + ".posmap";
+    if (std::filesystem::exists(posmapFile))
+        std::filesystem::remove(posmapFile);
+
+    // First call: creates the posmap file.
+    readCsv(m, filename, numRows, numCols, delim, ReadOpts(true, true));
+    REQUIRE(std::filesystem::exists(posmapFile));
+
+    // Second call: should use the existing posmap.
+    readCsv(m_new, filename, numRows, numCols, delim, ReadOpts(true, true));
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+    
+    CHECK(m->get(0, 0) == "apple, orange");
+    CHECK(m->get(1, 0) == "dog, cat");
+    CHECK(m->get(2, 0) == "table");
+    CHECK(m->get(3, 0) == "\"");
+    CHECK(m->get(4, 0) == "abc\"def");
+    CHECK(m->get(5, 0) == "red, blue\\n");
+    CHECK(m->get(6, 0) == "\\n\\\"abc\"def\\\"");
+    CHECK(m->get(7, 0) == "line1\nline2");
+    CHECK(m->get(8, 0) == "\\\"red, \\\"\\\"");
+
+    CHECK(m->get(0, 1) == "35");
+    CHECK(m->get(1, 1) == "30");
+    CHECK(m->get(2, 1) == "27");
+    CHECK(m->get(3, 1) == "22");
+    CHECK(m->get(4, 1) == "33");
+    CHECK(m->get(5, 1) == "50");
+    CHECK(m->get(6, 1) == "28");
+    CHECK(m->get(7, 1) == "27");
+    CHECK(m->get(8, 1) == "41");
+
+    CHECK(m->get(0, 2) == "Fruit Basket");
+    CHECK(m->get(1, 2) == "Pets");
+    CHECK(m->get(2, 2) == "Furniture Set");
+    CHECK(m->get(3, 2) == "Unknown Item");
+    CHECK(m->get(4, 2) == "No Category\\\"");
+    CHECK(m->get(5, 2) == "");
+    CHECK(m->get(6, 2) == "Mixed string");
+    CHECK(m->get(7, 2) == "with newline");
+    CHECK(m->get(8, 2) == "");
+    
+    // Check that both matrices yield identical values.
+    for (size_t r = 0; r < numRows; ++r) {
+        for (size_t c = 0; c < numCols; ++c) {
+            CHECK(m->get(r, c) == m_new->get(r, c));
+        }
+    }
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(posmapFile);
+}
+
+TEST_CASE("ReadCsv, dense matrix numbers with positional map reused", "[TAG_IO][posMap]") {
+    DenseMatrix<double>* m = nullptr;
+    DenseMatrix<double>* m_new = nullptr;
+    size_t numRows = 2;
+    size_t numCols = 4;
+    char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
+    char delim = ',';
+
+    std::string posmapFile = std::string(filename) + ".posmap";
+    if (std::filesystem::exists(posmapFile))
+        std::filesystem::remove(posmapFile);
+
+    // First call: creates the posmap.
+    readCsv(m, filename, numRows, numCols, delim, ReadOpts(true, true));
+    REQUIRE(std::filesystem::exists(posmapFile));
+
+    // Second call: reads using the created posmap.
+    readCsv(m_new, filename, numRows, numCols, delim, ReadOpts(true, true));
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+    
+    CHECK(m->get(0, 0) == -0.1);
+    CHECK(m->get(0, 1) == -0.2);
+    CHECK(m->get(0, 2) == 0.1);
+    CHECK(m->get(0, 3) == 0.2);
+
+    CHECK(m->get(1, 0) == 3.14);
+    CHECK(m->get(1, 1) == 5.41);
+    CHECK(m->get(1, 2) == 6.22216);
+    CHECK(m->get(1, 3) == 5);
+    
+    // Verify that both matrices are equal (using Approx for floating point comparisons).
+    for (size_t r = 0; r < numRows; r++) {
+        for (size_t c = 0; c < numCols; c++) {
+            CHECK(m->get(r, c) == Approx(m_new->get(r, c)));
+        }
+    }
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(posmapFile);
+}
