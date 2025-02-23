@@ -29,17 +29,14 @@
 #include <unordered_map>
 
 #define TEST_NAME(opName) "StringsExperiments (" opName ")"
-#define PARTIAL_STRING_VALUE_TYPES std::string, Umbra_t, NewUmbra_t
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 
-#define LOOP_SIZE 2
-#define NUM_COLS 3
-#define TEST_FILE_1 "./test/data/strings/uniform_unsorted_synthetic_random_strings-2-11.csv"
-#define TEST_FILE_2 "./test/data/strings/skewed_unsorted_synthetic_random_strings-2-11.csv"
+#define LOOP_SIZE 1
+#define NUM_COLS 2
 
 #define DELIM ','
 
-// Place this file into the test directory, add it to the CMakeLists.txt in the test directory and perform and run ./experiments/experiments.sh -nb StringsE* -d yes
+// Place this file into the test directory (./test/runtime/local/datastructures/), add it to the CMakeLists.txt in the test directory and perform and run ./experiments/experiments.sh -nb StringsE* -d yes
 // The results.xml is then used by the analytics jupyter notebook
 
 namespace fs = std::filesystem;
@@ -53,8 +50,6 @@ std::vector<std::string> getCSVFiles(const std::string& folderPath) {
     }
     return csvFiles;
 }
-
-
 
 
 namespace fs = std::filesystem;
@@ -165,7 +160,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
     const std::string& fileName1 = filePair[0];
     const std::string& fileName2 = filePair[1];
 
-    auto numRows = GENERATE(1000, 10000, 100000);
+    auto numRows = GENERATE(100000, 1000000);
 
     // Build an outer section name that embeds the CSV file name.
     std::string outerSectionName =fileName1;
@@ -205,7 +200,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
     const std::string& fileName1 = filePair[0];
 
-    auto numRows = GENERATE(1000, 10000, 100000);
+    auto numRows = GENERATE(100000, 1000000);
 
     // Build an outer section name that embeds the CSV file name.
     std::string outerSectionName =fileName1;
@@ -253,7 +248,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("EwBinaryMat"), TAG_DATASTRUCTURES, (DenseM
     const std::string& fileName1 = filePair[0];
     const std::string& fileName2 = filePair[1];
 
-    auto numRows = GENERATE(1000, 10000, 100000);
+    auto numRows = GENERATE(100000, 1000000);
 
     // Build an outer section name that embeds the CSV file name.
     std::string outerSectionName = fileName1;
@@ -270,26 +265,6 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("EwBinaryMat"), TAG_DATASTRUCTURES, (DenseM
         REQUIRE(m1->getNumCols() == NUM_COLS);
         REQUIRE(m2->getNumRows() == numRows);
         REQUIRE(m2->getNumCols() == NUM_COLS);
-
-        /*
-        SECTION("Test") {
-            EwBinaryScaFuncPtr<int64_t, VT, VT> func = getEwBinaryScaFuncPtr<int64_t, VT, VT>(BinaryOpCode::EQ);
-            DTRes *res = DataObjectFactory::create<DenseMatrix<int64_t>>(NUM_ROWS, NUM_COLS, false);
-            for (size_t i = 0; i < LOOP_SIZE; i++) {
-                const VT *valuesLhs = m1->getValues();
-                const VT *valuesRhs = m2->getValues();
-                int64_t *valuesRes = res->getValues();
-                for (size_t r = 0; r < NUM_ROWS; r++) {
-                    for (size_t c = 0; c < NUM_COLS; c++) {
-                        valuesRes[c] = func(valuesLhs[c], valuesRhs[c], nullptr);
-                    }
-                    valuesLhs += m1->getRowSkip();
-                    valuesRhs += m2->getRowSkip();
-                    valuesRes += res->getRowSkip();
-                }
-            }
-        }
-        */
 
         SECTION("EQ") {
             for (size_t i = 0; i < LOOP_SIZE; i++)
@@ -314,63 +289,8 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("EwBinaryMat"), TAG_DATASTRUCTURES, (DenseM
         DataObjectFactory::destroy(m1);
         DataObjectFactory::destroy(m2);
 
-    }
-
-
-    
-
-        
+    }    
 }
-
-// Not Used
-/*
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("EwBinarySca"), TAG_DATASTRUCTURES, (DenseMatrix),
-                           (ALL_STRING_VALUE_TYPES)) {
-    using DT = TestType;
-    DT *m = nullptr;
-
-    readCsv(m, TEST_FILE_1, NUM_ROWS, NUM_COLS, DELIM);
-
-    SECTION("EQ") {
-        for (size_t i = 0; i < LOOP_SIZE; i++) {
-            for (size_t r = 0; r < NUM_ROWS - 1; ++r) {
-                for (size_t r2 = 0; r2 < NUM_ROWS - 1; ++r2)
-                    StringTestEwBinarySca<BinaryOpCode::EQ>(m->get(r, 0), m->get(r2, 0), 0);
-            }
-        }
-    }
-
-    SECTION("NEQ") {
-        for (size_t i = 0; i < LOOP_SIZE; i++) {
-            for (size_t r = 0; r < NUM_ROWS - 1; ++r) {
-                for (size_t r2 = 0; r2 < NUM_ROWS - 1; ++r2)
-                    StringTestEwBinarySca<BinaryOpCode::NEQ>(m->get(r, 0), m->get(r2, 0), 0);
-            }
-        }
-    }
-
-    SECTION("LT") {
-        for (size_t i = 0; i < LOOP_SIZE; i++) {
-            for (size_t r = 0; r < NUM_ROWS - 1; ++r) {
-                for (size_t r2 = 0; r2 < NUM_ROWS - 1; ++r2)
-                    StringTestEwBinarySca<BinaryOpCode::LT>(m->get(r, 0), m->get(r2, 0), 0);
-            }
-        }
-    }
-
-    SECTION("GT") {
-        for (size_t i = 0; i < LOOP_SIZE; i++) {
-            for (size_t r = 0; r < NUM_ROWS - 1; ++r) {
-                for (size_t r2 = 0; r2 < NUM_ROWS - 1; ++r2)
-                    StringTestEwBinarySca<BinaryOpCode::GT>(m->get(r, 0), m->get(r2, 0), 0);
-            }
-        }
-    }
-
-    DataObjectFactory::destroy(m);
-}
-    */
-
 
     
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Operations"), TAG_DATASTRUCTURES, (DenseMatrix),
@@ -388,7 +308,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Operations"), TAG_DATASTRUCTURES, (DenseMa
 
     const std::string& fileName1 = filePair[0];
 
-    auto numRows = GENERATE(1000, 10000, 100000);
+    auto numRows = GENERATE(100000, 1000000);
 
     // Build an outer section name that embeds the CSV file name.
     std::string outerSectionName = fileName1;
@@ -432,7 +352,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Operations2"), TAG_DATASTRUCTURES, (DenseM
 
     const std::string& fileName1 = filePair[0];
 
-    auto numRows = GENERATE(1000, 10000, 100000);
+    auto numRows = GENERATE(100000, 1000000);
 
     // Build an outer section name that embeds the CSV file name.
     std::string outerSectionName = fileName1;
@@ -440,12 +360,135 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Operations2"), TAG_DATASTRUCTURES, (DenseM
     SECTION(outerSectionName + "_numRowsRead_" + std::to_string(numRows)) {
         DT *m = nullptr;
         readCsv(m, fileName1.c_str(), numRows, NUM_COLS, DELIM);
-        VT resultConcat;
         SECTION("Concat") {
             for (size_t r = 0; r < static_cast<size_t>(numRows); r++) {
-                resultConcat = ewBinarySca<VT, VT, VT>(BinaryOpCode::CONCAT, resultConcat, m->get(r, 0), nullptr);
+                VT resultConcat = ewBinarySca<VT, VT, VT>(BinaryOpCode::CONCAT, m->get(r, 0), m->get(r, 1), nullptr);
             }
         }
         DataObjectFactory::destroy(m);
+    }
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Fill"), TAG_DATASTRUCTURES, (DenseMatrix),
+                           (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto numRows = GENERATE(100000, 1000000);
+
+    DT *m = nullptr;
+    
+    SECTION("FillShortString") {
+        fill(m, VT("abc"), numRows, NUM_COLS, nullptr);
+    }
+
+    SECTION("FillLongString") {
+        fill(m, VT("abcdfgfdgfdgdfgfdgfdgfdggdfgfdgfdgfdjhg34hg3kjghj43hgkj34hgjk34hjkgh34kjgh3j4hgj34hg3jkgh34jkhgj34hjkg34hggdfgfdgdfg"), numRows, NUM_COLS, nullptr);
+    }
+    DataObjectFactory::destroy(m);
+    
+}
+
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Transpose"), TAG_DATASTRUCTURES, (DenseMatrix),
+                           (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+
+    // Specify the folder where your CSV files are located.
+    std::string folderPath = "./experiments/datasets/";
+
+    // Dynamically get all CSV files in that folder.
+    auto csvFiles = getCachedCSVFilePairs();
+
+    // Use Catch2's generator to iterate through CSV file names.
+    auto filePair = GENERATE_COPY(from_range(csvFiles.begin(), csvFiles.end()));
+
+    const std::string& fileName1 = filePair[0];
+
+    auto numRows = GENERATE(100000, 1000000);
+
+    // Build an outer section name that embeds the CSV file name.
+    std::string outerSectionName = fileName1;
+
+    SECTION(outerSectionName + "_numRowsRead_" + std::to_string(numRows)) {
+        DT *m = nullptr;
+        readCsv(m, fileName1.c_str(), numRows, NUM_COLS, DELIM);
+
+        DT *res = nullptr;
+        SECTION("Transpose") {
+            transpose<DT, DT>(res, m, nullptr); 
+        }
+        DataObjectFactory::destroy(m, res);
+    }
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Reverse"), TAG_DATASTRUCTURES, (DenseMatrix),
+                           (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+
+    // Specify the folder where your CSV files are located.
+    std::string folderPath = "./experiments/datasets/";
+
+    // Dynamically get all CSV files in that folder.
+    auto csvFiles = getCachedCSVFilePairs();
+
+    // Use Catch2's generator to iterate through CSV file names.
+    auto filePair = GENERATE_COPY(from_range(csvFiles.begin(), csvFiles.end()));
+
+    const std::string& fileName1 = filePair[0];
+
+    auto numRows = GENERATE(100000, 1000000);
+
+    // Build an outer section name that embeds the CSV file name.
+    std::string outerSectionName = fileName1;
+
+    SECTION(outerSectionName + "_numRowsRead_" + std::to_string(numRows)) {
+        DT *m = nullptr;
+        readCsv(m, fileName1.c_str(), numRows, NUM_COLS, DELIM);
+
+        DT *res = nullptr;
+        SECTION("Reverse") {
+            reverse<DT, DT>(res, m, nullptr); 
+        }
+        DataObjectFactory::destroy(m, res);
+    }
+}
+
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Reshape"), TAG_DATASTRUCTURES, (DenseMatrix),
+                           (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+
+    // Specify the folder where your CSV files are located.
+    std::string folderPath = "./experiments/datasets/";
+
+    // Dynamically get all CSV files in that folder.
+    auto csvFiles = getCachedCSVFilePairs();
+
+    // Use Catch2's generator to iterate through CSV file names.
+    auto filePair = GENERATE_COPY(from_range(csvFiles.begin(), csvFiles.end()));
+
+    const std::string& fileName1 = filePair[0];
+
+    auto numRows = GENERATE(100000, 1000000);
+
+    // Build an outer section name that embeds the CSV file name.
+    std::string outerSectionName = fileName1;
+
+    SECTION(outerSectionName + "_numRowsRead_" + std::to_string(numRows)) {
+        DT *m = nullptr;
+        readCsv(m, fileName1.c_str(), numRows, NUM_COLS, DELIM);
+
+        DT *res = nullptr;
+        SECTION("Reshape") {
+            reshape<DT, DT>(res, m, NUM_COLS, numRows, nullptr);
+        }
+        DataObjectFactory::destroy(m, res);
     }
 }
