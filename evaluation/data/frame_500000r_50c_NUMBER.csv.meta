@@ -1,0 +1,206 @@
+{
+    "numRows": 500000,
+    "numCols": 50,
+    "schema": [
+        {
+            "label": "col_0_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_1_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_2_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_3_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_4_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_5_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_6_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_7_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_8_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_9_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_10_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_11_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_12_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_13_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_14_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_15_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_16_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_17_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_18_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_19_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_20_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_21_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_22_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_23_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_24_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_25_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_26_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_27_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_28_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_29_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_30_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_31_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_32_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_33_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_34_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_35_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_36_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_37_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_38_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_39_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_40_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_41_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_42_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_43_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_44_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_45_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_46_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_47_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_48_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_49_int8",
+            "valueType": "si8"
+        }
+    ]
+}

@@ -134,6 +134,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                 auto baseOffset = posMap.rowOffsets[r];
                 const char *linePtr = rowPointers[r];
                 const uint16_t *relOffsets = posMap.relOffsets + (r * numCols);
+                std::vector<size_t> nextPosArr(numCols);
                 for (size_t c = 0; c < numCols; c++) {
                     size_t pos = relOffsets[c]; // field start relative to linePtr
                     size_t nextPos;
@@ -151,9 +152,10 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                     valuesRes[cell++] = val;
                 }
             }
-            std::cout << "second read time: "
+            
+            std::cout << "READ_TYPE=second,READ_TIME="
                       << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
-                      << std::endl;
+                      << std::endl; std::cout.flush();
             return;
         }
         
@@ -187,9 +189,9 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
             }
             relOffsets[numRows * numCols] =
                 static_cast<uint16_t>(currentPos - rowOffsets[numRows - 1]); // end of last field
-            std::cout << "first read time: "
+            std::cout << "READ_TYPE=first,READ_TIME="
                       << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
-                      << std::endl;
+                      << std::endl; std::cout.flush();
             try {
                 writePositionalMap(filename, numRows, numCols, rowOffsets, relOffsets);
             } catch (std::exception &e) {
@@ -213,9 +215,9 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                     }
                 }
             }
-            std::cout << "normal read time: "
+            std::cout << "READ_TYPE=normal,READ_TIME="
                       << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
-                      << std::endl;
+                      << std::endl; std::cout.flush();
          }
     }
 };
@@ -258,17 +260,17 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                 throw std::runtime_error("Optimized branch: failed to open file for in-memory buffering");
             std::vector<char> fileBuffer((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
             // Build row pointers from posMap offsets.
-            auto t1 = clock::now();
-            std::cout << "Time to load file into buffer: " 
-                      << std::chrono::duration_cast<std::chrono::duration<double>>(t1-t0).count() << " s" << std::endl;
+            //auto t1 = clock::now();
+           // std::cout << "Time to load file into buffer: " 
+                //     << std::chrono::duration_cast<std::chrono::duration<double>>(t1-t0).count() << " s" << std::endl; std::cout.flush();
             
             std::vector<const char *> rowPointers(numRows);
             for (size_t r = 0; r < numRows; r++) {
                 rowPointers[r] = fileBuffer.data() + static_cast<size_t>(posMap.rowOffsets[r]);
             }
-            auto t2 = clock::now();
-            std::cout << "Time to build row pointers: " 
-                      << std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count() << " s" << std::endl;
+            //auto t2 = clock::now();
+            //std::cout << "Time to build row pointers: " 
+                     // << std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count() << " s" << std::endl; std::cout.flush();
             
             // For each row, use the relative offsets stored in posMap.
             // For each row, precompute the nextPos for each field.
@@ -298,10 +300,10 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                 }
             }
             auto t3 = clock::now();
-            std::cout << "Time for field extraction (posmap branch): " 
-                      << std::chrono::duration_cast<std::chrono::duration<double>>(t3-t2).count() << " s" << std::endl;
-            std::cout << "Second read time: "
-                      << std::chrono::duration_cast<std::chrono::duration<double>>(t3-t0).count() << " s" << std::endl;
+            //std::cout << "Time for field extraction (posmap branch): " 
+                      //<< std::chrono::duration_cast<std::chrono::duration<double>>(t3-t2).count() << " s" << std::endl; std::cout.flush();
+            std::cout << "READ_TYPE=second,READ_TIME="
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(t3-t0).count() << " s" << std::endl; std::cout.flush();
             return;
         } 
         if (opt.opt_enabled && opt.posMap) {
@@ -349,8 +351,8 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             }
             delete[] rowOffsets;
             delete[] relOffsets;
-            std::cout << "first read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()
-                - time).count() << std::endl;
+            std::cout << "READ_TYPE=first,READ_TIME=" << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()
+                - time).count() << std::endl; std::cout.flush();
             return;
         }
         else {
@@ -366,9 +368,9 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                     valuesRes[cell++] = val;
                 }
             }
-            std::cout << "normal read time: "
+            std::cout << "READ_TYPE=normal,READ_TIME="
                       << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
-                      << std::endl;
+                      << std::endl; std::cout.flush();
         }
     }
 };
@@ -411,7 +413,7 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
                 }
             }
             std::cout << "read time optimized: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
-                      << std::endl;
+                      << std::endl; std::cout.flush();
             return;
         }
         for (size_t r = 0; r < numRows; r++) {
@@ -427,7 +429,7 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
             }
         }
         std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
-                  << std::endl;
+                  << std::endl; std::cout.flush();
     }
 };
 
@@ -669,8 +671,8 @@ template <> struct ReadCsvFile<Frame> {
                 }
                 delete[] rawCols;
                 delete[] colTypes;
-                std::cout << "first read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()
-                - time).count() << std::endl;
+                std::cout << "READ_TYPE=second,READ_TIME=" << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()
+                - time).count() << std::endl; std::cout.flush();
                 return;
             }
         }
@@ -771,9 +773,9 @@ template <> struct ReadCsvFile<Frame> {
             currentPos = static_cast<uint64_t >(file->pos);
         }
         relOffsets[numRows * numCols] = static_cast<uint16_t>(currentPos - rowOffsets[numRows - 1]); // end of last element
-        std::string message = (opt.opt_enabled && opt.posMap) ? "second read time: " : "normal read time: ";
+        std::string message = (opt.opt_enabled && opt.posMap) ? "READ_TYPE=first,READ_TIME=" : "READ_TYPE=normal,READ_TIME=";
         std::cout << message << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() -
-        time).count() << std::endl;
+        time).count() << std::endl; std::cout.flush();
 
         if (opt.opt_enabled) {
             if (opt.posMap) {

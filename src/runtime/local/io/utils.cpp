@@ -27,26 +27,16 @@
 // • relOffsets points to a contiguous block of numRows*numCols uint16_t values.
 // The buffer member keeps the allocated memory alive.
 
-
 // Writes the positional map to a file as two flattened arrays.
 // The file layout is as follows:
 //   [ header: numRows (uint64_t), numCols (uint64_t) ]
 //   [ rowOffsets: numRows * uint64_t ]
 //   [ relOffsets: (numRows * numCols +1) * uint16_t ]
 
-void writePositionalMap(const char* filename,
-                        size_t numRows,
-                        size_t numCols,
-                        const uint64_t* rowOffsets,
-                        const uint16_t* relOffsets) {
-    
-    // For the last row, we expect that the extra offset equals (fileSize - last_row_offset).
-    // (It is assumed that the file size difference fits in a uint16_t.)
-    // uint64_t lastRowOffset = rowOffsets[numRows - 1];
-    // Optionally verify this (or adjust if desired)
-    // if(relOffsets[relLen - 1] != expectedLast)
-    //    ; // Handle mismatch if needed.
-    
+void writePositionalMap(const char *filename, size_t numRows, size_t numCols, const uint64_t *rowOffsets,
+                        const uint16_t *relOffsets) {
+    using clock = std::chrono::high_resolution_clock;
+    auto writeTime = clock::now();
     // Layout to write:
     // Header: numRows (uint64_t) followed by numCols (uint64_t)
     // Then: rowOffsets array (numRows * sizeof(uint64_t))
@@ -56,60 +46,66 @@ void writePositionalMap(const char* filename,
     // The flattened relOffsets array must have (numRows * numCols) + 1 entries.
     size_t relArraySize = (numRows * numCols + 1) * sizeof(uint16_t);
     size_t totalSize = headerSize + rowArraySize + relArraySize;
-    
+
     std::vector<char> buffer(totalSize);
     size_t offset = 0;
-    
+
     // Write header.
     std::memcpy(buffer.data() + offset, &numRows, sizeof(uint64_t));
     offset += sizeof(uint64_t);
     std::memcpy(buffer.data() + offset, &numCols, sizeof(uint64_t));
     offset += sizeof(uint64_t);
-    
+
     // Write row offsets.
     std::memcpy(buffer.data() + offset, rowOffsets, rowArraySize);
     offset += rowArraySize;
-    
+
     // Write flattened relative offsets.
     std::memcpy(buffer.data() + offset, relOffsets, relArraySize);
-    //offset += relArraySize;
-    
+    // offset += relArraySize;
+
     std::string posmapFile = getPosMapFile(filename);
     std::ofstream ofs(posmapFile, std::ios::binary);
     if (!ofs)
         throw std::runtime_error("Unable to open posmap file for writing: " + posmapFile);
-    
+
     ofs.write(buffer.data(), totalSize);
     ofs.flush();
     ofs.close();
+    std::cout << "OPERATION=write_posmap,WRITE_TIME="
+              << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count()
+              << std::endl;
+    std::cout.flush();
 }
 
-PosMap readPositionalMap(const char* filename) {
+PosMap readPositionalMap(const char *filename) {
+    using clock = std::chrono::high_resolution_clock;
+    auto readTime = clock::now();
     std::string posmapFile = getPosMapFile(filename);
     std::ifstream ifs(posmapFile, std::ios::binary | std::ios::ate);
     if (!ifs)
         throw std::runtime_error("Unable to open posmap file for reading: " + posmapFile);
-    
+
     std::streamsize size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
     std::vector<char> buffer(static_cast<size_t>(size));
     if (!ifs.read(buffer.data(), size))
         throw std::runtime_error("Failed to read posmap file: " + posmapFile);
     ifs.close();
-    
+
     size_t offset = 0;
     uint64_t numRows = 0, numCols = 0;
     std::memcpy(&numRows, buffer.data() + offset, sizeof(uint64_t));
     offset += sizeof(uint64_t);
     std::memcpy(&numCols, buffer.data() + offset, sizeof(uint64_t));
     offset += sizeof(uint64_t);
-    
-    const uint64_t* rowOffsets = reinterpret_cast<const uint64_t*>(buffer.data() + offset);
+
+    const uint64_t *rowOffsets = reinterpret_cast<const uint64_t *>(buffer.data() + offset);
     offset += numRows * sizeof(uint64_t);
-    
+
     // The relOffsets array length is (numRows * numCols) + 1.
-    const uint16_t* relOffsets = reinterpret_cast<const uint16_t*>(buffer.data() + offset);
-    
+    const uint16_t *relOffsets = reinterpret_cast<const uint16_t *>(buffer.data() + offset);
+
     PosMap posMap;
     posMap.numRows = numRows;
     posMap.numCols = numCols;
@@ -117,6 +113,9 @@ PosMap readPositionalMap(const char* filename) {
     posMap.relOffsets = relOffsets;
     // Move the buffer so that its lifetime is tied to posMap.
     posMap.buffer = std::move(buffer);
-    
+    std::cout << "OPERATION=read_posmap,READ_TIME="
+              << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - readTime).count()
+              << std::endl;
+    std::cout.flush();
     return posMap;
 }

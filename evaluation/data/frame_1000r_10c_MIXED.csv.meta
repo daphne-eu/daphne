@@ -1,0 +1,46 @@
+{
+    "numRows": 1000,
+    "numCols": 10,
+    "schema": [
+        {
+            "label": "col_0_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_1_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_2_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_3_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_4_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_5_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_6_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_7_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_8_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_9_fixedstr16",
+            "valueType": "str"
+        }
+    ]
+}
