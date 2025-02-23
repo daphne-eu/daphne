@@ -136,16 +136,16 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                 const uint16_t *relOffsets = posMap.relOffsets + (r * numCols);
                 std::vector<size_t> nextPosArr(numCols);
                 for (size_t c = 0; c < numCols; c++) {
-                    size_t pos = relOffsets[c]; // field start relative to linePtr
-                    size_t nextPos;
                     if (c < numCols - 1)
-                        nextPos = static_cast<size_t>(relOffsets[c + 1]);
+                        nextPosArr[c] = static_cast<size_t>(relOffsets[c + 1]);
                     else if (r < numRows - 1)
-                        nextPos = static_cast<size_t>(posMap.rowOffsets[r + 1]) - baseOffset;
+                        nextPosArr[c] = static_cast<size_t>(posMap.rowOffsets[r + 1]) - baseOffset;
                     else
-                        nextPos = fileBuffer.size() - baseOffset; // for the last row
-
-                    // Extract the field substring and convert.
+                        nextPosArr[c] = fileBuffer.size() - baseOffset;
+                }
+                for (size_t c = 0; c < numCols; c++) {
+                    size_t pos = relOffsets[c];
+                    size_t nextPos = nextPosArr[c];
                     std::string field(linePtr + pos, nextPos - pos - 1);
                     VT val;
                     convertCstr(field.c_str(), &val);
@@ -408,7 +408,7 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
                     std::string val;
 
                     setCString(linePtr + pos, &val, delim, nextPos - pos - 1);
-                     valuesRes[cell++].set(val.c_str());
+                    valuesRes[cell++].set(val.c_str());
                     pos = nextPos + 1;
                 }
             }
@@ -591,18 +591,18 @@ template <> struct ReadCsvFile<Frame> {
                     auto baseOffset = posMap.rowOffsets[r];
                     const char *linePtr = rowPointers[r];
                     const uint16_t *relOffsets = posMap.relOffsets + (r * numCols);
-
+                    std::vector<size_t> nextPosArr(numCols);
+                    for (size_t c = 0; c < numCols; c++) {
+                        if (c < numCols - 1)
+                            nextPosArr[c] = static_cast<size_t>(relOffsets[c + 1]);
+                        else if (r < numRows - 1)
+                            nextPosArr[c] = static_cast<size_t>(posMap.rowOffsets[r + 1]) - baseOffset;
+                        else
+                            nextPosArr[c] = fileBuffer.size() - baseOffset;
+                    }
                     // For every column, compute the relative offset within the line
                     for (size_t c = 0; c < numCols; c++) {
                         size_t pos = relOffsets[c];
-                        size_t nextPos;
-                        if (c < numCols - 1)
-                            nextPos = static_cast<size_t>(relOffsets[c + 1]);  // offset of next field in same row
-                        else if (r < numRows - 1)
-                            nextPos = static_cast<size_t>(posMap.rowOffsets[r + 1]) - baseOffset; // first offset of next row
-                        else
-                            nextPos = fileBuffer.size() - baseOffset;  // end of file for last row
-                        
                         switch (colTypes[c]) {
                         case ValueTypeCode::SI8: {
                             int8_t val;
@@ -654,13 +654,13 @@ template <> struct ReadCsvFile<Frame> {
                         }
                         case ValueTypeCode::STR: {
                             std::string val;
-                            setCString(linePtr + pos, &val, delim, nextPos - pos - 1); // needed for double quote encoding
+                            setCString(linePtr + pos, &val, delim, nextPosArr[c] - pos - 1); // needed for double quote encoding
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::FIXEDSTR16: {
                             std::string val;
-                            setCString(linePtr + pos, &val, delim, nextPos- pos - 1); // not passing delimiter to nextPos
+                            setCString(linePtr + pos, &val, delim, nextPosArr[c] - pos - 1); // not passing delimiter to nextPos
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
