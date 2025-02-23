@@ -106,6 +106,8 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
         VT *valuesRes = res->getValues();
         bool usePosMap = false;
         PosMap posMap;
+        using clock = std::chrono::high_resolution_clock;
+        auto time = clock::now();
         // Optimized branch using positional map.
         if (opt.opt_enabled && opt.posMap) {
             // Read the positional map from file.
@@ -149,6 +151,9 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                     valuesRes[cell++] = val;
                 }
             }
+            std::cout << "second read time: "
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                      << std::endl;
             return;
         }
         
@@ -182,6 +187,9 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
             }
             relOffsets[numRows * numCols] =
                 static_cast<uint16_t>(currentPos - rowOffsets[numRows - 1]); // end of last field
+            std::cout << "first read time: "
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                      << std::endl;
             try {
                 writePositionalMap(filename, numRows, numCols, rowOffsets, relOffsets);
             } catch (std::exception &e) {
@@ -205,6 +213,9 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                     }
                 }
             }
+            std::cout << "normal read time: "
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                      << std::endl;
          }
     }
 };
@@ -241,45 +252,56 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             }
         }
         if (usePosMap) {
+            auto t0 = clock::now();
             std::ifstream ifs(filename, std::ios::binary);
             if (!ifs.good())
                 throw std::runtime_error("Optimized branch: failed to open file for in-memory buffering");
             std::vector<char> fileBuffer((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
             // Build row pointers from posMap offsets.
+            auto t1 = clock::now();
+            std::cout << "Time to load file into buffer: " 
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(t1-t0).count() << " s" << std::endl;
+            
             std::vector<const char *> rowPointers(numRows);
             for (size_t r = 0; r < numRows; r++) {
                 rowPointers[r] = fileBuffer.data() + static_cast<size_t>(posMap.rowOffsets[r]);
             }
+            auto t2 = clock::now();
+            std::cout << "Time to build row pointers: " 
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count() << " s" << std::endl;
+            
             // For each row, use the relative offsets stored in posMap.
+            // For each row, precompute the nextPos for each field.
             for (size_t r = 0; r < numRows; r++) {
                 auto baseOffset = posMap.rowOffsets[r];
                 const char *linePtr = rowPointers[r];
                 // Compute pointer for relative offsets for row r.
                 const uint16_t *relOffsets = posMap.relOffsets + (r * numCols);
+                // Precompute boundaries for every field in this row.
+                std::vector<size_t> nextPosArr(numCols);
                 for (size_t c = 0; c < numCols; c++) {
-                    size_t pos = relOffsets[c]; // relative to current rowPtr
-                    size_t nextPos;
                     if (c < numCols - 1)
-                        nextPos = static_cast<size_t>(relOffsets[c + 1]);
+                        nextPosArr[c] = static_cast<size_t>(relOffsets[c + 1]);
                     else if (r < numRows - 1)
-                        nextPos = static_cast<size_t>(posMap.rowOffsets[r + 1]) - baseOffset;
+                        nextPosArr[c] = static_cast<size_t>(posMap.rowOffsets[r + 1]) - baseOffset;
                     else
-                        nextPos = fileBuffer.size() - baseOffset; // last row: end of file
-
+                        nextPosArr[c] = fileBuffer.size() - baseOffset; // for the last row
+                }
+                // Extract all fields using the precomputed boundaries.
+                for (size_t c = 0; c < numCols; c++) {
+                    size_t pos = relOffsets[c]; // relative to linePtr
+                    size_t nextPos = nextPosArr[c];
                     std::string val;
-                    // Use our setCString version for string extraction.
-                    // Note: since 'linePtr + pos' already points to the field start,
-                    // we pass a start_pos of '0' and the boundary as (nextPos - pos - 1)
-                    // so that if the field is quoted the trailing quote is removed.
+                    // Pass start_pos as 0 since linePtr+pos already points to the field start.
                     setCString(linePtr + pos, &val, delim, nextPos - pos - 1);
-                    std::string vale(linePtr + pos, nextPos - pos - 1);
-
                     valuesRes[cell++] = val;
                 }
             }
-            std::cout << "read time optimized: "
-                      << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - time).count() << " ms"
-                      << std::endl;
+            auto t3 = clock::now();
+            std::cout << "Time for field extraction (posmap branch): " 
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(t3-t2).count() << " s" << std::endl;
+            std::cout << "Second read time: "
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(t3-t0).count() << " s" << std::endl;
             return;
         } 
         if (opt.opt_enabled && opt.posMap) {
@@ -302,8 +324,6 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                     // Here we call the file–based setCString (which advances pos and updates offset)
                     pos = setCString(file, pos, &val, delim, &offset);
                     valuesRes[cell++] = val;
-                    //std::cout << "val: " << val << std::endl;
-                    //std::cout << "saved: " << valuesRes[cell-1] << std::endl;
                     if (c < numCols - 1) {
                         // Advance pos until we hit the delimiter.
                         while (file->line[pos] != delim)
@@ -329,6 +349,8 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             }
             delete[] rowOffsets;
             delete[] relOffsets;
+            std::cout << "first read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()
+                - time).count() << std::endl;
             return;
         }
         else {
@@ -344,8 +366,8 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                     valuesRes[cell++] = val;
                 }
             }
-            std::cout << "read time: "
-                      << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - time).count() << " ms"
+            std::cout << "normal read time: "
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
                       << std::endl;
         }
     }
@@ -388,7 +410,8 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
                     pos = nextPos + 1;
                 }
             }
-            std::cout << "read time optimized2: " << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - time).count() << " ms" << std::endl;
+            std::cout << "read time optimized: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                      << std::endl;
             return;
         }
         for (size_t r = 0; r < numRows; r++) {
@@ -403,7 +426,8 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
                 valuesRes[cell++].set(val.c_str());
             }
         }
-        std::cout << "read time2: " << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - time).count() << " ms" << std::endl;
+        std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                  << std::endl;
     }
 };
 
@@ -627,22 +651,14 @@ template <> struct ReadCsvFile<Frame> {
                             break;
                         }
                         case ValueTypeCode::STR: {
-                            //if (c >= numCols - 1)    // last column
-                                //nextPos -= baseOffset; // first position of next row
-
                             std::string val;
                             setCString(linePtr + pos, &val, delim, nextPos - pos - 1); // needed for double quote encoding
-                            std::string vale(linePtr + pos, nextPos - pos - 1);
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
                         case ValueTypeCode::FIXEDSTR16: {
-                            if (c >= numCols - 1)       // last column
-                                nextPos -= baseOffset; // first position of next row
-
                             std::string val;
-                            setCString(linePtr + pos, &val, delim, nextPos - pos - 1); // not passing delimiter to nextPos
-                            // std::cout <<"val: " << val << std::endl;
+                            setCString(linePtr + pos, &val, delim, nextPos- pos - 1); // not passing delimiter to nextPos
                             reinterpret_cast<std::string *>(rawCols[c])[r] = val;
                             break;
                         }
@@ -653,8 +669,8 @@ template <> struct ReadCsvFile<Frame> {
                 }
                 delete[] rawCols;
                 delete[] colTypes;
-                // std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()
-                // - time).count() << std::endl;
+                std::cout << "first read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()
+                - time).count() << std::endl;
                 return;
             }
         }
@@ -755,18 +771,14 @@ template <> struct ReadCsvFile<Frame> {
             currentPos = static_cast<uint64_t >(file->pos);
         }
         relOffsets[numRows * numCols] = static_cast<uint16_t>(currentPos - rowOffsets[numRows - 1]); // end of last element
-        std::cout << "read time: " << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() -
+        std::string message = (opt.opt_enabled && opt.posMap) ? "second read time: " : "normal read time: ";
+        std::cout << message << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() -
         time).count() << std::endl;
 
         if (opt.opt_enabled) {
             if (opt.posMap) {
                 try {
-                    // auto writeTime = clock::now();
                     writePositionalMap(filename, numRows, numCols, rowOffsets, relOffsets);
-                    // std::cout<< "write time: "<<
-                    // std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count() <<
-                    // std::endl;
-
                 } catch (std::exception &e) {
                     // positional map can still be used
                 }
