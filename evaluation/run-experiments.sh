@@ -45,9 +45,6 @@ for csvfile in "$CSV_DIR"/*.csv; do
     # Experiment 1: Normal Read
     ###########################
     for i in $(seq 1 $((REPS+1))); do
-         if [ "$filename" == "evaluation_results_frame_1000000r_1000c_MIXED.csv" ]; then
-              continue
-          fi
          output=$(stdbuf -oL $DAPHNE --timing "$daphneFile" 2>&1)
          # Discard the first run (warm-up).
          if [ $i -eq 1 ]; then continue; fi
@@ -69,7 +66,7 @@ for csvfile in "$CSV_DIR"/*.csv; do
           posmapFile="${csvfile}.posmap"
          [ -f "$posmapFile" ] && rm -f "$posmapFile"
          # Always use --second-read-opt for posmap creation.
-         output=$(stdbuf -oL $DAPHNE --timing --second-read-opt "$daphneFile" 2>&1)
+         output=$(stdbuf -oL $DAPHNE --timing --use-positional-map "$daphneFile" 2>&1)
          # Discard first run.
          if [ $i -eq 1 ]; then continue; fi
          # Extract overall read time from READ_TYPE=first and write posmap time from OPERATION=write_posmap.
@@ -100,7 +97,7 @@ for csvfile in "$CSV_DIR"/*.csv; do
     $DAPHNE --timing --second-read-opt "$daphneFile" > /dev/null
     # Reuse the posmap for each trial.
     for i in $(seq 1 $((REPS+1))); do
-         output=$(stdbuf -oL $DAPHNE --timing --second-read-opt "$daphneFile" 2>&1)
+         output=$(stdbuf -oL $DAPHNE --timing --use-positional-map "$daphneFile" 2>&1)
          if [ $i -eq 1 ]; then continue; fi
          # Extract posmap read time (this line comes first).
          posmap_line=$(echo "$output" | grep "OPERATION=read_posmap," | head -n1)

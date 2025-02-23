@@ -202,8 +202,8 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                          "execution engine "
                                          "(default is equal to the number of physical cores on the target "
                                          "node that executes the code)"));
-    static opt<bool> secondReadOptimization("second-read-opt", cat(daphneOptions),
-                                             desc("Enable second read optimization"));
+    static opt<bool> usePositionalMap("use-positional-map", cat(daphneOptions),
+                                      desc("Enable second read optimization"));
     static opt<int> minimumTaskSize("grain-size", cat(schedulingOptions),
                                     desc("Define the minimum grain size of a task (default is 1)"), init(1));
     static opt<bool> useVectorizedPipelines("vec", cat(schedulingOptions), desc("Enable vectorized execution engine"));
@@ -429,7 +429,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             spdlog::warn("No backend has been selected. Wiil use the default 'MPI'");
     }
     user_config.max_distributed_serialization_chunk_size = maxDistrChunkSize;
-    user_config.use_second_read_optimization = secondReadOptimization;
+    user_config.use_positional_map = usePositionalMap;
     // only overwrite with non-defaults
     if (use_hdfs) {
         user_config.use_hdfs = use_hdfs;

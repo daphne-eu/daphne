@@ -74,39 +74,47 @@ MAKE_READ_TEST_CASE_2("frame_dynamic-path-1")
 TEST_CASE("readFrameFromCSVPosMap", TAG_IO) {
     std::string filename = dirPath + "ref/ReadCsv1-1.csv";
     std::filesystem::remove(filename + ".posmap");
-    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne", "--second-read-opt");
+    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne",
+                       "--use-positional-map");
     REQUIRE(std::filesystem::exists(filename + ".posmap"));
-    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne", "--second-read-opt");
+    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne",
+                       "--use-positional-map");
     std::filesystem::remove(filename + ".posmap");
 }
 
 TEST_CASE("readStringValuesIntoFrameFromCSVPosMap", TAG_IO) {
     std::string filename = dirPath + "ref/frame_mixed-str_ref.csv";
     std::filesystem::remove(filename + ".posmap");
-    std::cout << "first read"   << std::endl;
-    compareDaphneToRef(dirPath + "out/testReadStringIntoFrame.txt", dirPath + "read/readFrameMixedStr.daphne", "--second-read-opt");
+    std::cout << "first read" << std::endl;
+    compareDaphneToRef(dirPath + "out/testReadStringIntoFrame.txt", dirPath + "read/readFrameMixedStr.daphne",
+                       "--use-positional-map");
     REQUIRE(std::filesystem::exists(filename + ".posmap"));
-    std::cout << "second read"   << std::endl;
-    compareDaphneToRef(dirPath + "out/testReadStringIntoFrame.txt", dirPath + "read/readFrameMixedStr.daphne", "--second-read-opt");
-    std::cout << "second read don"   << std::endl;
+    std::cout << "second read" << std::endl;
+    compareDaphneToRef(dirPath + "out/testReadStringIntoFrame.txt", dirPath + "read/readFrameMixedStr.daphne",
+                       "--use-positional-map");
+    std::cout << "second read don" << std::endl;
     std::filesystem::remove(filename + ".posmap");
 }
 
 TEST_CASE("readMatrixFromCSVPosMap", TAG_IO) {
     std::string filename = dirPath + "ref/matrix_si64_ref.csv";
     std::filesystem::remove(filename + ".posmap");
-    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt", dirPath + "read/testReadFrameWithMixedTypes.daphne", "--second-read-opt");
+    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt",
+                       dirPath + "read/testReadFrameWithMixedTypes.daphne", "--use-positional-map");
     REQUIRE(std::filesystem::exists(filename + ".posmap"));
-    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt", dirPath + "read/testReadFrameWithMixedTypes.daphne", "--second-read-opt");
+    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt",
+                       dirPath + "read/testReadFrameWithMixedTypes.daphne", "--use-positional-map");
     std::filesystem::remove(filename + ".posmap");
 }
 
 TEST_CASE("readStringMatrixFromCSVPosMap", TAG_IO) {
     std::string filename = dirPath + "ref/matrix_str_ref.csv";
     std::filesystem::remove(filename + ".posmap");
-    compareDaphneToRef(dirPath + "out/testReadStringIntoMatrix.txt", dirPath + "read/readMatrixStr.daphne", "--second-read-opt");
+    compareDaphneToRef(dirPath + "out/testReadStringIntoMatrix.txt", dirPath + "read/readMatrixStr.daphne",
+                       "--use-positional-map");
     REQUIRE(std::filesystem::exists(filename + ".posmap"));
-    compareDaphneToRef(dirPath + "out/testReadStringIntoMatrix.txt", dirPath + "read/readMatrixStr.daphne", "--second-read-opt");
+    compareDaphneToRef(dirPath + "out/testReadStringIntoMatrix.txt", dirPath + "read/readMatrixStr.daphne",
+                       "--use-positional-map");
     std::filesystem::remove(filename + ".posmap");
 }
 
