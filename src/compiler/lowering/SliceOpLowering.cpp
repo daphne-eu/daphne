@@ -60,7 +60,6 @@ static constexpr size_t COL = 1;
 template<class SliceOp, size_t sliceAlongDim>
 class SliceOpLowering : public OpConversionPattern<SliceOp> {
   public:
-    //using OpConversionPattern<SliceOp>::OpConversionPattern;
     using OpAdaptor = typename OpConversionPattern<SliceOp>::OpAdaptor;
 
     explicit SliceOpLowering(TypeConverter &typeConverter, MLIRContext *ctx)
@@ -69,9 +68,9 @@ class SliceOpLowering : public OpConversionPattern<SliceOp> {
     }
 
     /**
-     * @brief Replaces a Transpose operation with a Linalg TransposeOp if possible.
+     * @brief Replaces a Slice operation with a MemRef SubviewOp if possible.
      *
-     * @return mlir::success if Transpose has been replaced, else mlir::failure.
+     * @return mlir::success if Slice has been replaced, else mlir::failure.
      */
     LogicalResult matchAndRewrite(SliceOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
@@ -104,17 +103,6 @@ class SliceOpLowering : public OpConversionPattern<SliceOp> {
         DenseI64ArrayAttr sizes = sliceAlongDim == ROW ? rewriter.getDenseI64ArrayAttr({(upperExcl-lowerIncl), numCols})
                                                        : rewriter.getDenseI64ArrayAttr({numRows, (upperExcl-lowerIncl)});                                                
         
-        // if (sliceAlongDim == ROW)
-        // {
-        //     DenseI64ArrayAttr offset = rewriter.getDenseI64ArrayAttr({lowerIncl, 0});
-        //     DenseI64ArrayAttr sizes = rewriter.getDenseI64ArrayAttr({(upperExcl-lowerIncl), numCols});
-        // }
-        // else 
-        // {
-        //     DenseI64ArrayAttr offset = rewriter.getDenseI64ArrayAttr({0, lowerIncl});
-        //     DenseI64ArrayAttr sizes = rewriter.getDenseI64ArrayAttr({numRows, (upperExcl-lowerIncl)});
-        // }
-        
         DenseI64ArrayAttr strides = rewriter.getDenseI64ArrayAttr({1, 1});
         
         Value resMemref = rewriter.create<memref::SubViewOp>(loc, argMemref, offset, sizes, strides);
@@ -132,10 +120,7 @@ using SliceColOpLowering = SliceOpLowering<daphne::SliceColOp, COL>;
 
 namespace {
 /**
- * @brief Lowers the daphne::Transpose operator to a Linalg TransposeOp.
- *
- * This rewrite may enable loop fusion on the affine loops TransposeOp is
- * lowered to by running the loop fusion pass.
+ * @brief Lowers the daphne::Slice operator to a Memref SubviewOp.
  */
 struct SliceLoweringPass : public mlir::PassWrapper<SliceLoweringPass, mlir::OperationPass<mlir::ModuleOp>> {
     explicit SliceLoweringPass() {}

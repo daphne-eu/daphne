@@ -300,7 +300,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         loops.push_back(fmaLoop);
         return loops;
     }
-
+    
     template <typename IOp, typename FOp>
     Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) const {
         Type resType = lhs.getType();
@@ -330,7 +330,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         }
         return res;
     }
-
+    
     Value csrIndex(OpBuilder &rewriter, Location loc, 
         Value valuesMemRef, Value colIdxsMemRef, Value rowOffsetsMemRef, Value row, Value col, Type type) const 
     {
@@ -349,6 +349,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
                 auto getCol = OpBuilderNested.create<memref::LoadOp>(locNested, colIdxsMemRef, ValueRange{loopIdx});
                 auto getValue = OpBuilderNested.create<memref::LoadOp>(locNested, valuesMemRef, ValueRange{loopIdx});
                 auto cond = OpBuilderNested.create<arith::CmpIOp>(locNested, arith::CmpIPredicate::eq, getCol, col);
+                // return the value of non-zero element if exists, else return a zero value
                 auto res = OpBuilderNested.create<scf::IfOp>(
                     locNested, cond,
                     [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested)
@@ -461,6 +462,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
 
                                 auto rhsElemRow = lhsElemCol;
                                 auto rhsElemCol = rhsCol;
+                                // locate the required element in rhs corresponding to the lhs element
                                 auto rhsElemValue = csrIndex(
                                     OpBuilderThreetimesNested, locThreetimesNested, 
                                     rhsValuesMemRef, rhsColIdxsMemRef, rhsRowOffsetsMemRef, 
@@ -477,6 +479,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
                         );
                         auto cond = OpBuilderTwiceNested.create<arith::CmpFOp>(
                             locTwiceNested, arith::CmpFPredicate::OEQ, lhsColLoop.getResult(0), zeroElement);
+                        // store the result if it is not zero
                         auto newPtr = OpBuilderTwiceNested.create<scf::IfOp>(
                             locTwiceNested, cond, 
                             [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested)

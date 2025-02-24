@@ -794,7 +794,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                                     );
                                     OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{rest.getResult(0)});
                                 }
-                                else
+                                else //TODO: Support ops other than add
                                     OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{whileLoop.getResult(2)});
                             }
                         );
