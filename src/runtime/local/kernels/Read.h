@@ -142,8 +142,10 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
             if (fmd.numNonZeros == -1)
                 throw std::runtime_error("Currently reading of sparse matrices requires a number of "
                                          "non zeros to be defined");
+
             if (res == nullptr)
                 res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
+
             // FIXME: ensure file is sorted, or set `sorted` argument correctly
             readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
             break;
@@ -185,9 +187,12 @@ template <> struct Read<Frame> {
             labels = nullptr;
         else
             labels = fmd.labels.data();
+
         if (res == nullptr)
             res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
+
         readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
+
         if (fmd.isSingleValueType)
             delete[] schema;
     }

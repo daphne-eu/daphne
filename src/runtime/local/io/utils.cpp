@@ -20,7 +20,6 @@
 #include <runtime/local/datastructures/FixedSizeStringValueType.h>
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/utils.h>
-#include <sstream>
 #include <string>
 #include <vector>
 

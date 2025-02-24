@@ -33,9 +33,6 @@ ValueTypeCode inferValueType(const std::string &value);
 // Function to read the CSV file and determine the FileMetaData
 FileMetaData generateFileMetaData(const std::string &filename, char delim, size_t sampleRows, bool isMatrix = false);
 
-void readCsvLine(File *file, size_t row, char delim, size_t numCols, uint8_t **rawCols,
-                 ValueTypeCode *colTypes = nullptr);
-
 // Conversion of std::string.
 
 inline void convertStr(std::string const &x, double *v) {
