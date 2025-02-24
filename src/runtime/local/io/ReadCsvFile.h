@@ -42,12 +42,13 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsvFile {
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, 
-                      const char* filename = nullptr, bool saveBin = false) = delete;
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim,
+                      const char *filename = nullptr, bool saveBin = false) = delete;
 
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros, bool sorted = true) = delete;
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros,
+                      bool sorted = true) = delete;
 
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, 
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
                       const char *filename = nullptr, bool saveBin = false) = delete;
 };
 
@@ -56,7 +57,8 @@ template <class DTRes> struct ReadCsvFile {
 // ****************************************************************************
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, const char* filename = nullptr, bool saveBin = false) {
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, const char *filename = nullptr,
+                 bool saveBin = false) {
     ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, filename, saveBin);
 }
 
@@ -67,7 +69,8 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 }
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true) {
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros,
+                 bool sorted = true) {
     ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted);
 }
 
@@ -80,8 +83,8 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim, 
-                      const char* filename = nullptr, bool saveBin = false) {
+    static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
+                      const char *filename = nullptr, bool saveBin = false) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be "
                                      "specified (must not be nullptr)");
@@ -93,18 +96,27 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         }
-        
+
+        using clock = std::chrono::high_resolution_clock;
+        auto time = clock::now();
+
         if (saveBin && filename != nullptr) {
             std::string daphneFile = getDaphneFile(filename);
-            try {
-                readDaphne(res, daphneFile.c_str());
-                return;
-            } catch (std::exception &e) {
-                // Fallback to default branch.
+            if (std::filesystem::exists(daphneFile)) {
+                try {
+
+                    readDaphne(res, daphneFile.c_str());
+                    std::cout << "READ_TYPE=second,READ_TIME="
+                              << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                              << std::endl;
+                    return;
+                } catch (std::exception &e) {
+                    // Fallback to default branch.
+                }
             }
         }
-            
-        // default branch 
+
+        // default branch
         size_t cell = 0;
         VT *valuesRes = res->getValues();
 
@@ -135,9 +147,18 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                 }
             }
         }
-        if (saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
+        if (saveBin) {
+            auto writeTime = clock::now();
             writeDaphne(res, getDaphneFile(filename).c_str());
+            std::cout << "OPERATION=write_bin,WRITE_TIME="
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count()
+                      << std::endl;
+            std::cout.flush();
         }
+        std::string message = (saveBin) ? "READ_TYPE=first,READ_TIME=" : "READ_TYPE=normal,READ_TIME=";
+        std::cout << message << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                  << std::endl;
+        std::cout.flush();
     }
 };
 
@@ -314,7 +335,8 @@ template <> struct ReadCsvFile<Frame> {
     static void apply(Frame *&res, struct File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
                       const char *filename, bool saveBin = false) {
         if (file == nullptr)
-            throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr): " + std::string(filename));
+            throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr): " +
+                                     std::string(filename));
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
@@ -323,14 +345,21 @@ template <> struct ReadCsvFile<Frame> {
         if (res == nullptr) {
             res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
         }
-        
-        if (saveBin && filename) {
-            std::string daphneFile = getDaphneFile(filename);
-            try {
-                readDaphne(res, daphneFile.c_str());
-                return;
-            } catch (std::exception &e) {
-                // Fallback to default branch.
+        using clock = std::chrono::high_resolution_clock;
+        auto time = clock::now();
+        if (saveBin && filename != nullptr) {
+            if (std::filesystem::exists(getDaphneFile(filename))) {
+                try {
+                    std::string daphneFile = getDaphneFile(filename);
+                    readDaphne(res, daphneFile.c_str());
+                    std::cout << "READ_TYPE=second,READ_TIME="
+                              << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                              << std::endl;
+                    std::cout.flush();
+                    return;
+                } catch (std::exception &e) {
+                    // Fallback to default branch.
+                }
             }
         }
 
@@ -340,16 +369,16 @@ template <> struct ReadCsvFile<Frame> {
             rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
             colTypes[i] = res->getColumnType(i);
         }
-        
-        //using clock = std::chrono::high_resolution_clock;
-        //auto time = clock::now();
+
+        // using clock = std::chrono::high_resolution_clock;
+        // auto time = clock::now();
         for (size_t row = 0; row < numRows; row++) {
             ssize_t ret = getFileLine(file);
             if ((file->read == EOF) || (file->line == NULL))
                 break;
             if (ret == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
-            
+
             size_t pos = 0;
             for (size_t col = 0; col < numCols; col++) {
                 switch (colTypes[col]) {
@@ -416,15 +445,22 @@ template <> struct ReadCsvFile<Frame> {
                 }
             }
         }
-        //std::cout << "read time: " << clock::now() - time << std::endl;
+
         if (saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
-            //time = clock::now();
-            if (!hasString(res->getNumCols(), res->getSchema())){ //daphne's binary format does not support strings yet
+            if (!hasString(res->getNumCols(), res->getSchema())) { // daphne's binary format does not support strings
+                                                                   // yet
+                auto writeTime = clock::now();
                 writeDaphne(res, getDaphneFile(filename).c_str());
-                //std::cout << "write time: " << clock::now() - time << std::endl;
+                std::cout << "OPERATION=write_bin,WRITE_TIME="
+                          << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - writeTime).count()
+                          << std::endl;
+                std::cout.flush();
             }
         }
-        
+        std::string message = (saveBin) ? "READ_TYPE=first,READ_TIME=" : "READ_TYPE=normal,READ_TIME=";
+        std::cout << message << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                  << std::endl;
+        std::cout.flush();
         delete[] rawCols;
         delete[] colTypes;
     }
