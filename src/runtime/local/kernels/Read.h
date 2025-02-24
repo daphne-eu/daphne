@@ -79,6 +79,7 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx)) {
 
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
+        bool usePosMap = ctx != nullptr && ctx->getUserConfig().use_positional_map;
 
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
         int extv = extValue(filename);
@@ -86,7 +87,7 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
         case 0:
             if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
-            readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', usePosMap);
             break;
         case 1:
             if constexpr (std::is_same<VT, std::string>::value)
@@ -132,7 +133,7 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
 
 template <typename VT> struct Read<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
-
+        bool usePosMap = ctx != nullptr && ctx->getUserConfig().use_positional_map;
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
         int extv = extValue(filename);
         switch (extv) {
@@ -145,7 +146,7 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
                 res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
 
             // FIXME: ensure file is sorted, or set `sorted` argument correctly
-            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true, usePosMap);
             break;
         case 1:
             readMM(res, filename);
@@ -170,8 +171,8 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 
 template <> struct Read<Frame> {
     static void apply(Frame *&res, const char *filename, DCTX(ctx)) {
+        bool usePosMap = ctx != nullptr && ctx->getUserConfig().use_positional_map;
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
-
         ValueTypeCode *schema;
         if (fmd.isSingleValueType) {
             schema = new ValueTypeCode[fmd.numCols];
@@ -189,7 +190,7 @@ template <> struct Read<Frame> {
         if (res == nullptr)
             res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
 
-        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
+        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema, usePosMap);
 
         if (fmd.isSingleValueType)
             delete[] schema;

@@ -57,6 +57,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::USE_PHY_OP_SELECTION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_MLIR_CODEGEN))
         config.use_mlir_codegen = jf.at(DaphneConfigJsonParams::USE_MLIR_CODEGEN).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_POSITIONAL_MAP))
+        config.use_positional_map = jf.at(DaphneConfigJsonParams::USE_POSITIONAL_MAP).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS))
         config.matmul_vec_size_bits = jf.at(DaphneConfigJsonParams::MATMUL_VEC_SIZE_BITS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MATMUL_TILE))
@@ -125,6 +127,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.numberOfThreads = jf.at(DaphneConfigJsonParams::NUMBER_OF_THREADS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MINIMUM_TASK_SIZE))
         config.minimumTaskSize = jf.at(DaphneConfigJsonParams::MINIMUM_TASK_SIZE).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::NUMBER_OF_SAMPLE_ROWS))
+        config.numberOfSampleRows = jf.at(DaphneConfigJsonParams::NUMBER_OF_SAMPLE_ROWS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_HDFS_))
         config.use_hdfs = jf.at(DaphneConfigJsonParams::USE_HDFS_).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::HDFS_ADDRESS))

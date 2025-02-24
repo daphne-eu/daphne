@@ -41,32 +41,35 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsv {
-    static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim) = delete;
+    static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim,
+                      bool usePosMap = false) = delete;
 
     static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, ssize_t numNonZeros,
-                      bool sorted = true) = delete;
+                      bool sorted = true, bool usePosMap = false) = delete;
 
     static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema) = delete;
+                      ValueTypeCode *schema, bool usePosMap = false) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes> void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim);
+template <class DTRes>
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, bool usePosMap = false) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, usePosMap);
 }
 
 template <class DTRes>
-void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema);
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
+             bool usePosMap = false) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema, usePosMap);
 }
 
 template <class DTRes>
 void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros,
-             bool sorted = true) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, numNonZeros, sorted);
+             bool sorted = true, bool usePosMap = false) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, numNonZeros, sorted, usePosMap);
 }
 
 // ****************************************************************************
@@ -78,9 +81,10 @@ void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, 
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim) {
+    static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim,
+                      bool usePosMap = false) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim);
+        readCsvFile(res, file, numRows, numCols, delim, filename, usePosMap);
         closeFile(file);
     }
 };
@@ -91,9 +95,9 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
 
 template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ssize_t numNonZeros, bool sorted = true) {
+                      ssize_t numNonZeros, bool sorted = true, bool usePosMap = false) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted);
+        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted, filename, usePosMap);
         closeFile(file);
     }
 };
@@ -104,9 +108,9 @@ template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
 
 template <> struct ReadCsv<Frame> {
     static void apply(Frame *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema) {
+                      ValueTypeCode *schema, bool usePosMap = false) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, schema);
+        readCsvFile(res, file, numRows, numCols, delim, schema, filename, usePosMap);
         closeFile(file);
     }
 };
