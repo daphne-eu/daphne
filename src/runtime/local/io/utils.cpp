@@ -195,13 +195,14 @@ FileMetaData generateFileMetaData(const std::string &filename, char delim, size_
             if (col >= colTypes.size())
                 throw std::runtime_error("Number of columns in the file is inconsistent: " + filename);
             
-            size_t tempPos = pos;
             // Extract token using the existing inferValueType helper.
-            ValueTypeCode tokenType = inferValueType(line.c_str(), tempPos, delim);
+            std::string val;
+            pos= setCString(line.c_str(), pos, &val, delim);
+            ValueTypeCode tokenType = inferValueType(val);
             // Promote type if needed.
             if (generality(tokenType) > generality(colTypes[col]))
                 colTypes[col] = tokenType;
-            pos = tempPos;
+            pos++; // Skip delimiter.
             col++;
         }
         row++;
