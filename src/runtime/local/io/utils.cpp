@@ -191,7 +191,10 @@ FileMetaData generateFileMetaData(const std::string &filename, char delim, size_
             firstLine = false;
         }
         // Process each token.
-        while (pos < line.size() && col < colTypes.size()) {
+        while (pos < line.size()) {
+            if (col >= colTypes.size())
+                throw std::runtime_error("Number of columns in the file is inconsistent: " + filename);
+            
             size_t tempPos = pos;
             // Extract token using the existing inferValueType helper.
             ValueTypeCode tokenType = inferValueType(line.c_str(), tempPos, delim);
@@ -204,7 +207,8 @@ FileMetaData generateFileMetaData(const std::string &filename, char delim, size_
         row++;
     }
     file.close();
-
+    if (colTypes.empty())
+        throw std::runtime_error("Cannot infer meta data of an empty file: " + filename);
     std::vector<std::string> labels;
     size_t numCols = colTypes.size();
     bool isSingleValueType = true;

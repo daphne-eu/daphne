@@ -75,7 +75,8 @@ TEST_CASE("readFrameWithNoMetaData", TAG_IO) {
     if (std::filesystem::exists(dirPath + "ref/ReadCsv3-1.csv.meta")) {
         std::filesystem::remove(dirPath + "ref/ReadCsv3-1.csv.meta");
     }
-    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt", dirPath + "read/testReadFrameWithMixedTypes.daphne");
+    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt",
+                       dirPath + "read/testReadFrameWithMixedTypes.daphne");
     REQUIRE(std::filesystem::exists(dirPath + "ref/ReadCsv3-1.csv.meta"));
     FileMetaData fmd = MetaDataParser::readMetaData(dirPath + "ref/ReadCsv3-1.csv");
     REQUIRE(fmd.numRows == 4);
@@ -100,11 +101,9 @@ TEST_CASE("readFrameWithSingleValueType", TAG_IO) {
     REQUIRE(fmd.labels.empty());
     REQUIRE(fmd.schema.size() == 1);
     REQUIRE(fmd.schema[0] == ValueTypeCode::F32);
-    
+
     std::filesystem::remove(dirPath + "ref/ReadCsv1-1.csv.meta");
 }
-
-
 
 // ********************************************************************************
 // Write test cases
