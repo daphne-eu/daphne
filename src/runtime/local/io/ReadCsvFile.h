@@ -106,12 +106,13 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
             // Read the positional map from file.
             try {
                 posMap = readPositionalMap(filename);
-                usePosMap = true;
+                posMapExists = true;
             } catch (std::exception &e) {
                 // try to create posMap
             }
         }
         if (posMapExists) {
+            // Read csv file using positional map
             std::ifstream ifs(filename, std::ios::binary);
             if (!ifs.good())
                 throw std::runtime_error("Optimized branch: failed to open file for in-memory buffering");
@@ -153,6 +154,7 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
         }
 
         if (usePosMap) {
+            // Read csv file saving positional map on the fly
             auto *rowOffsets = new uint64_t[numRows];
             auto *relOffsets = new uint16_t[numRows * numCols + 1];
             uint64_t currentPos = 0;
@@ -189,11 +191,12 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
             try {
                 writePositionalMap(filename, numRows, numCols, rowOffsets, relOffsets);
             } catch (std::exception &e) {
-                // Even if posmap writing fails, parsing was successful.
+                // Even if posMap writing fails, parsing was successful.
             }
             delete[] rowOffsets;
             delete[] relOffsets;
         } else {
+            // Read csv file without positional map
             for (size_t r = 0; r < numRows; r++) {
                 if (getFileLine(file) == -1)
                     throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
@@ -231,7 +234,6 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             res = DataObjectFactory::create<DenseMatrix<std::string>>(numRows, numCols, false);
         }
 
-        // non-optimized branch (unchanged)
         size_t cell = 0;
         std::string *valuesRes = res->getValues();
         using clock = std::chrono::high_resolution_clock;
@@ -249,6 +251,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             }
         }
         if (posMapExists) {
+            // Read csv file using positional map
             auto t0 = clock::now();
             std::ifstream ifs(filename, std::ios::binary);
             if (!ifs.good())
@@ -270,7 +273,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             //  std::cout.flush();
 
             // For each row, use the relative offsets stored in posMap.
-            // For each row, precompute the nextPos for each field.
+            // precompute the nextPos for each field.
             for (size_t r = 0; r < numRows; r++) {
                 auto baseOffset = posMap.rowOffsets[r];
                 const char *linePtr = rowPointers[r];
@@ -299,7 +302,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             auto t3 = clock::now();
             // std::cout << "Time for field extraction (posmap branch): "
             //<< std::chrono::duration_cast<std::chrono::duration<double>>(t3-t2).count() << " s" << std::endl;
-            //std::cout.flush();
+            // std::cout.flush();
             std::cout << "READ_TYPE=second,READ_TIME="
                       << std::chrono::duration_cast<std::chrono::duration<double>>(t3 - t0).count() << " s"
                       << std::endl;
@@ -307,6 +310,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             return;
         }
         if (usePosMap) {
+            // Read csv file saving positional map on the fly
             auto *rowOffsets = new uint64_t[numRows];
             auto *relOffsets = new uint16_t[numRows * numCols + 1];
             uint64_t currentPos = 0;
@@ -322,7 +326,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                 size_t offset = 0;
                 size_t pos = 0;
                 for (size_t c = 0; c < numCols; c++) {
-                    std::string val("");
+                    std::string val;
                     // Here we call the file–based setCString (which advances pos and updates offset)
                     pos = setCString(file, pos, &val, delim, &offset);
                     valuesRes[cell++] = val;
@@ -357,6 +361,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             std::cout.flush();
             return;
         } else {
+            //  read csv file without any positional map
             for (size_t r = 0; r < numRows; r++) {
                 if (getFileLine(file) == -1)
                     throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
@@ -364,7 +369,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
                 size_t pos = 0;
                 size_t offset = 0;
                 for (size_t c = 0; c < numCols; c++) {
-                    std::string val("");
+                    std::string val;
                     pos = setCString(file, pos, &val, delim, &offset) + 1;
                     valuesRes[cell++] = val;
                 }
@@ -427,7 +432,7 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
             size_t pos = 0;
             size_t offset = 0;
             for (size_t c = 0; c < numCols; c++) {
-                std::string val("");
+                std::string val;
                 pos = setCString(file, pos, &val, delim, &offset) + 1;
                 valuesRes[cell++].set(val.c_str());
             }
@@ -555,28 +560,25 @@ template <> struct ReadCsvFile<Frame> {
             res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
         }
 
-        uint8_t **rawCols = new uint8_t *[numCols];
-        ValueTypeCode *colTypes = new ValueTypeCode[numCols];
+        auto **rawCols = new uint8_t *[numCols];
+        auto *colTypes = new ValueTypeCode[numCols];
         for (size_t i = 0; i < numCols; i++) {
             rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
             colTypes[i] = res->getColumnType(i);
         }
         // Determine if any optimized branch should be used.
         bool posMapExists = false;
-        std::string fName;
         if (usePosMap && filename) {
-            fName = filename;
-            std::string posmapFile = getPosMapFile(fName.c_str());
-            if (usePosMap && std::filesystem::exists(posmapFile)) {
+            std::string posMapFile = getPosMapFile(filename);
+            if (std::filesystem::exists(posMapFile)) {
                 posMapExists = true;
-                fName = posmapFile;
             }
         }
         using clock = std::chrono::high_resolution_clock;
         auto time = clock::now();
 
         if (posMapExists) {
-            // posMap is stored as: posMap[c][r] = absolute offset for column c, row r.
+            // Read csv file using positional map
             PosMap posMap = readPositionalMap(filename);
             std::ifstream ifs(filename, std::ios::binary);
             if (!ifs.good())
@@ -683,7 +685,7 @@ template <> struct ReadCsvFile<Frame> {
             return;
         }
 
-        // Normal branch: iterate row by row and for each field save its absolute offset.
+        // save absolute offsets for each row and relative offsets for each column to the beginning of the row
         auto *rowOffsets = new uint64_t[numRows];
         auto *relOffsets = new uint16_t[numRows * numCols + 1];
 

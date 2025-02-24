@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <fstream>
 #include <iostream>
 #include <runtime/local/io/utils.h>
 
@@ -64,10 +65,10 @@ void writePositionalMap(const char *filename, size_t numRows, size_t numCols, co
     std::memcpy(buffer.data() + offset, relOffsets, relArraySize);
     // offset += relArraySize;
 
-    std::string posmapFile = getPosMapFile(filename);
-    std::ofstream ofs(posmapFile, std::ios::binary);
+    std::string posMapFile = getPosMapFile(filename);
+    std::ofstream ofs(posMapFile, std::ios::binary);
     if (!ofs)
-        throw std::runtime_error("Unable to open posmap file for writing: " + posmapFile);
+        throw std::runtime_error("Unable to open posmap file for writing: " + posMapFile);
 
     ofs.write(buffer.data(), totalSize);
     ofs.flush();
@@ -81,16 +82,16 @@ void writePositionalMap(const char *filename, size_t numRows, size_t numCols, co
 PosMap readPositionalMap(const char *filename) {
     using clock = std::chrono::high_resolution_clock;
     auto readTime = clock::now();
-    std::string posmapFile = getPosMapFile(filename);
-    std::ifstream ifs(posmapFile, std::ios::binary | std::ios::ate);
+    std::string posMapFile = getPosMapFile(filename);
+    std::ifstream ifs(posMapFile, std::ios::binary | std::ios::ate);
     if (!ifs)
-        throw std::runtime_error("Unable to open posmap file for reading: " + posmapFile);
+        throw std::runtime_error("Unable to open posmap file for reading: " + posMapFile);
 
     std::streamsize size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
     std::vector<char> buffer(static_cast<size_t>(size));
     if (!ifs.read(buffer.data(), size))
-        throw std::runtime_error("Failed to read posmap file: " + posmapFile);
+        throw std::runtime_error("Failed to read posmap file: " + posMapFile);
     ifs.close();
 
     size_t offset = 0;
@@ -100,11 +101,11 @@ PosMap readPositionalMap(const char *filename) {
     std::memcpy(&numCols, buffer.data() + offset, sizeof(uint64_t));
     offset += sizeof(uint64_t);
 
-    const uint64_t *rowOffsets = reinterpret_cast<const uint64_t *>(buffer.data() + offset);
+    const auto *rowOffsets = reinterpret_cast<const uint64_t *>(buffer.data() + offset);
     offset += numRows * sizeof(uint64_t);
 
     // The relOffsets array length is (numRows * numCols) + 1.
-    const uint16_t *relOffsets = reinterpret_cast<const uint16_t *>(buffer.data() + offset);
+    const auto *relOffsets = reinterpret_cast<const uint16_t *>(buffer.data() + offset);
 
     PosMap posMap;
     posMap.numRows = numRows;

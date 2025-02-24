@@ -203,7 +203,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                          "(default is equal to the number of physical cores on the target "
                                          "node that executes the code)"));
     static opt<bool> usePositionalMap("use-positional-map", cat(daphneOptions),
-                                      desc("Enable second read optimization"));
+                                      desc("Enable multiple read optimization for csv files using positional map"));
     static opt<int> minimumTaskSize("grain-size", cat(schedulingOptions),
                                     desc("Define the minimum grain size of a task (default is 1)"), init(1));
     static opt<bool> useVectorizedPipelines("vec", cat(schedulingOptions), desc("Enable vectorized execution engine"));
