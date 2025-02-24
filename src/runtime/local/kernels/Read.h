@@ -79,14 +79,14 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx)) {
 
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
-
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
+        bool save_csv_as_bin = ctx != nullptr && ctx->getUserConfig().save_csv_as_bin;
         int extv = extValue(filename);
         switch (extv) {
         case 0:
             if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
-            readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', save_csv_as_bin);
             break;
         case 1:
             if constexpr (std::is_same<VT, std::string>::value)
@@ -170,8 +170,8 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 
 template <> struct Read<Frame> {
     static void apply(Frame *&res, const char *filename, DCTX(ctx)) {
+        bool save_csv_as_bin = ctx != nullptr && ctx->getUserConfig().save_csv_as_bin;
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
-
         ValueTypeCode *schema;
         if (fmd.isSingleValueType) {
             schema = new ValueTypeCode[fmd.numCols];
@@ -189,7 +189,7 @@ template <> struct Read<Frame> {
         if (res == nullptr)
             res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
 
-        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
+        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema, save_csv_as_bin);
 
         if (fmd.isSingleValueType)
             delete[] schema;

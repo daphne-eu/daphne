@@ -23,6 +23,17 @@
 #include <runtime/local/io/File.h>
 #include <spdlog/spdlog.h>
 
+#include <runtime/local/io/FileMetaData.h>
+
+// Function to check if schema is valid for daphne's binary format
+inline bool hasString(size_t numCols, const ValueTypeCode *schema) {
+    for (size_t i = 0; i < numCols; i++) {
+        if (schema[i] >= ValueTypeCode::STR)
+            return true;
+    }
+    return false;
+}
+
 // Conversion of std::string.
 
 inline void convertStr(std::string const &x, double *v) {
@@ -72,6 +83,7 @@ inline void convertCstr(const char *x, int64_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint8_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
+inline static std::string getDaphneFile(const char *filename) { return std::string(filename) + ".dbdf"; }
 
 /**
  * @brief This function reads a CSV column that contains strings.
@@ -132,4 +144,39 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
         return pos;
     else
         return pos + start_pos;
+}
+
+inline size_t setCString(const char *linePtr, size_t start_pos, std::string *res, const char delim) {
+    size_t pos = start_pos;
+    bool inQuotes = false;
+    // If the field starts with a quote, we are in a quoted field.
+    if (linePtr[pos] == '"') {
+        inQuotes = true;
+        pos++; // skip opening quote
+    }
+    while (linePtr[pos] != '\0') {
+        if (inQuotes && linePtr[pos] == '"') {
+            // Check if this is a doubled quote.
+            if (linePtr[pos + 1] == '"') {
+                res->append("\"\""); // append two quotes
+                pos += 2;
+                continue;
+            } else { // closing quote.
+                pos++;
+                break;
+            }
+        }
+        // In unquoted fields, stop at the delimiter or newline.
+        if (!inQuotes && (linePtr[pos] == delim || linePtr[pos] == '\n' || linePtr[pos] == '\r'))
+            break;
+        // Handle backslash-escaped quote inside a quoted field.
+        if (inQuotes && linePtr[pos] == '\\' && linePtr[pos + 1] == '"') {
+            res->append("\\\""); // append backslash and quote
+            pos += 2;
+            continue;
+        }
+        res->push_back(linePtr[pos]);
+        pos++;
+    }
+    return pos;
 }
