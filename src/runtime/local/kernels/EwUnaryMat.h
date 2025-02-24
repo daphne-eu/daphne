@@ -110,10 +110,18 @@ template <typename VT> struct EwUnaryMat<CSRMatrix<VT>, CSRMatrix<VT>> {
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNumNonZeros, false);
 
         const VT *valuesArg = arg->getValues();
-        VT *valuesRes = res->getValues();
+        const size_t *colIdxsArg = arg->getColIdxs();
+        const size_t *rowOffsetsArg = arg->getRowOffsets();
 
-        res->getColIdxsSharedPtr() = arg->getColIdxsSharedPtr();
-        res->getRowOffsetsSharedPtr() = arg->getRowOffsetsSharedPtr();
+        VT *valuesRes = res->getValues();
+        size_t *colIdxsRes = res->getColIdxs();
+        size_t *rowOffsetsRes = res->getRowOffsets();
+
+        for (size_t i = 0; i < numNonZeros; i++)
+            colIdxsRes[i] = colIdxsArg[i];
+
+        for (size_t i = 0; i < numRows + 1; i++)
+            rowOffsetsRes[i] = rowOffsetsArg[i];
 
         EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
 

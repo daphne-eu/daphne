@@ -614,7 +614,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
                 OpBuilderNested.create<scf::YieldOp>(locNested, ValueRange{});
             }
         );
-        // Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemRef, op.getType());
+        
         Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resMemRef, rhs.getType());
         rewriter.replaceOp(op, resDenseMatrix);
         return mlir::success();

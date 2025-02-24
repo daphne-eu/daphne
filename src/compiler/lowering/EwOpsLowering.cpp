@@ -88,14 +88,12 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         ssize_t numCols = sparseMatType.getNumCols();
 
         if (numRows < 0 || numCols < 0) {
-            std::cout<<"here 5"<<std::endl;
             throw ErrorHandler::compilerError(
                 loc, "EwOpsLowering (BinaryOp)",
                 "ewOps codegen currently only works with matrix dimensions that are known at compile time");
         }
 
         MemRefType sparseValuesMemRefType =
-            //MemRefType::get({ShapedType::kDynamic}, matrixElementType);
             MemRefType::get({ShapedType::kDynamic}, matrixElementType);
         
         Value argValuesMemref = rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(
@@ -116,8 +114,6 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
                 OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
             });
 
-
-        //rewriter.replaceOp(op, resMemref);
         MemRefType sparseColIdxsMemRefType = MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
         MemRefType sparseRowOffsetsMemRefType = MemRefType::get({numRows + 1}, rewriter.getIndexType());
         
@@ -129,12 +125,11 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, numRows);
         Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, numCols);
         Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, numCols * numRows);
-        //auto resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter, resMemref, op.getType());
 
         auto resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
             resMemref, argColIdxsMemref, argRowOffsetsMemref, 
-            maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType()); 
-            //maxNumRowsValue, numColsValue, maxNumNonZerosValue, adaptor.getArg().getType());
+            //maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType());
+            maxNumRowsValue, numColsValue, maxNumNonZerosValue, adaptor.getArg().getType()); 
 
         rewriter.replaceOp(op, resCSRMatrix);
 
@@ -160,7 +155,6 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         ssize_t numCols = matrixType.getNumCols();
 
         if (numRows < 0 || numCols < 0) {
-            std::cout<<"here 6"<<std::endl;
             throw ErrorHandler::compilerError(
                 loc, "EwOpsLowering (BinaryOp)",
                 "ewOps codegen currently only works with matrix dimensions that are known at compile time");
@@ -230,7 +224,6 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         if (lhsRows != 1 && rhsRows == 1) {
             // rhs is a row vector, broadcast along columns
             if (lhsCols != rhsCols) {
-                std::cout<<"here 7"<<std::endl;
                 throw ErrorHandler::compilerError(
                     loc, "EwOpsLowering (BinaryOp)",
                     "could not broadcast rhs along columns. Rhs must "
@@ -244,7 +237,6 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         } else if (lhsCols != 1 && rhsCols == 1) {
             // rhs is a column vector, broadcast along rows
             if (lhsRows != rhsRows) {
-                std::cout<<"here 8"<<std::endl;
                 throw ErrorHandler::compilerError(
                     loc, "EwOpsLowering (BinaryOp)",
                     "could not broadcast rhs along rows. Rhs must "
@@ -258,7 +250,6 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         } else {
             // rhs is not broadcasted, return identity mapping
             if (lhsRows != rhsRows || lhsCols != rhsCols) {
-                std::cout<<"here 9"<<std::endl;
                 throw ErrorHandler::compilerError(
                     loc, "EwOpsLowering (BinaryOp)",
                     "lhs and rhs must have equal dimensions or allow for broadcasting but operands have dimensions (" +
@@ -388,9 +379,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         auto resSparseMemRef = rewriter.create<memref::AllocOp>(loc, sparseLhsValuesMemRefType, ValueRange{one});
 
         rewriter.create<scf::ForOp>(
-            // loc, rowPtr, nextRowPtr, rewriter.create<arith::ConstantIndexOp>(loc, 1),
             loc, zero, numSparseLhsRowsValue, one, ValueRange{},
-            // [&](OpBuilder &OpBuilderNested, Location locNested, Value loopIdx)
             [&](OpBuilder &OpBuilderNested, Location locNested, Value loopIdx, ValueRange loopInvariants) 
             {
                 auto rowPtr = loopIdx;
@@ -402,12 +391,9 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                     locNested, sparseLhsRowOffsetsMemRef, ValueRange{nextRowPtr});
                 
                 OpBuilderNested.create<scf::ForOp>(
-                    // locNested, colIdxLowerIncl, colIdxUpperExcl, one, ValueRange{rowPtr},
                     locNested, colIdxLowerIncl, colIdxUpperExcl, one, ValueRange{},
-                    // [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested, Value loopIdxNested, ValueRange loopInvariantsNested) 
                     [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested, Value loopIdxNested, ValueRange loopInvariants)
                     {
-                        // auto rowIdx = loopInvariantsNested[0];
                         auto rowIdx = rowPtr;
                         auto colIdx = OpBuilderTwiceNested.create<memref::LoadOp>(
                             locTwiceNested, sparseLhsColIdxsMemRef, ValueRange{loopIdxNested});
@@ -420,33 +406,24 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 
                         Value resValue = binaryFunc(
                             OpBuilderTwiceNested, locTwiceNested, this->typeConverter, sparseLhsValue, denseRhsValue);
-                        
-                        //Value store;
 
                         if (llvm::isa<daphne::EwAddOp>(op))
                         {
-                            // auto store = OpBuilderTwiceNested.create<memref::StoreOp>(
                             OpBuilderTwiceNested.create<memref::StoreOp>(
                                 locTwiceNested, resValue, resDenseMemRef, ValueRange{rowIdx, colIdx});
                         }
                         else if (llvm::isa<daphne::EwMulOp>(op))
                         {
-                            // auto store = OpBuilderTwiceNested.create<memref::StoreOp>(
                             OpBuilderTwiceNested.create<memref::StoreOp>(
                                 locTwiceNested, resValue, resSparseMemRef, ValueRange{loopIdxNested});
                         }
                         else
                         {
-                            std::cout<<"here 10"<<std::endl;
                             throw ErrorHandler::compilerError(loc, "EwOpsLowering (BinaryOp)", "Unsupported ewOps codegen");
                         }
                         OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, resValue);
-                        // OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested);
                     }
                 );
-                
-                // OpBuilderNested.create<scf::YieldOp>(locNested, resValue);
-                // auto resValue = colLoop.getResult(0);
                 OpBuilderNested.create<scf::YieldOp>(locNested);
             }
         );
@@ -454,14 +431,12 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         if (llvm::isa<daphne::EwAddOp>(op))
         {
             Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resDenseMemRef, op.getType());
-            std::cout<<"here 1"<<std::endl;
             rewriter.replaceOp(op, resDenseMatrix);
             
             return mlir::success();
         }
         else if (llvm::isa<daphne::EwMulOp>(op))
         {
-            llvm::errs()<<resSparseMemRef[0]<< "\n";
             Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsRows);
             Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsCols);
             Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsCols * sparseLhsRows);
@@ -473,16 +448,11 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
             if (!resCSRMatrix) {
                 llvm::errs() << "Error: resCSRMatrix is null!\n";
             }
-            std::cout<<"here 2"<<std::endl;
-            op.dump();
             rewriter.replaceOp(op, resCSRMatrix);
-            std::cout<<"here 3"<<std::endl;
-            op.dump();
             return mlir::success();
         }
         else
         {
-            std::cout<<"here 11"<<std::endl;
             throw ErrorHandler::compilerError(loc, "EwOpsLowering (BinaryOp)", "Unsupported ewOps codegen");
         }    
     }
@@ -567,14 +537,11 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                 
                 
                 auto lhsEndFirst = OpBuilderNested.create<arith::CmpIOp>(
-                    // locNested, arith::CmpIPredicate::ult, lhsColIdxLowerIncl, lhsColIdxUpperExcl);
                     locNested, arith::CmpIPredicate::ult, lhsColUpper, rhsColUpper);
                 
                 auto lhsAllZero = OpBuilderNested.create<arith::CmpIOp>(
-                    // locNested, arith::CmpIPredicate::eq, lhsColUpper, rhsColUpper);
                     locNested, arith::CmpIPredicate::eq, lhsColIdxLowerIncl, lhsColIdxUpperExcl);
                 auto rhsAllZero = OpBuilderNested.create<arith::CmpIOp>(
-                    // locNested, arith::CmpIPredicate::eq, lhsColUpper, rhsColUpper);
                     locNested, arith::CmpIPredicate::eq, rhsColIdxLowerIncl, rhsColIdxUpperExcl);
 
                 auto operation = OpBuilderNested.create<scf::IfOp>(
@@ -881,7 +848,6 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         ssize_t rhsCols = rhsMatrixType.getNumCols();
 
         if (lhsRows < 0 || lhsCols < 0 || rhsRows < 0 || rhsCols < 0) {
-            std::cout<<"here 4"<<std::endl;
             throw ErrorHandler::compilerError(
                 loc, "EwOpsLowering (BinaryOp)",
                 "ewOps codegen currently only works with matrix dimensions that are known at compile time");
