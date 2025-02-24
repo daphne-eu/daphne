@@ -15,3 +15,4 @@
 add_library(DaphneMetaDataParser STATIC
         MetaDataParser.cpp
 )
+target_link_libraries(DaphneMetaDataParser PRIVATE IO)

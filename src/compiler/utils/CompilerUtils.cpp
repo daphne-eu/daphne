@@ -164,8 +164,8 @@ template <> bool CompilerUtils::constantOrDefault<bool>(mlir::Value v, bool d) {
 // Other
 // **************************************************************************************************
 
-[[maybe_unused]] FileMetaData CompilerUtils::getFileMetaData(mlir::Value filename) {
-    return MetaDataParser::readMetaData(constantOrThrow<std::string>(filename));
+[[maybe_unused]] FileMetaData CompilerUtils::getFileMetaData(mlir::Value filename, bool isMatrix) {
+    return MetaDataParser::readMetaData(constantOrThrow<std::string>(filename), ',', isMatrix);
 }
 
 bool CompilerUtils::isMatrixComputation(mlir::Operation *v) {

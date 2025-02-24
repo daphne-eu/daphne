@@ -1,6 +1,6 @@
 {
     "numRows": 2,
     "numCols": 4,
-    "valueType": "f64",
+    "valueType": "f32",
     "numNonZeros": 0
 }
