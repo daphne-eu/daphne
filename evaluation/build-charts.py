@@ -92,7 +92,7 @@ plt.yscale("log")  # Added: logarithmic scale on y-axis.
 plt.legend()
 plt.grid(True, which="both", ls="--")
 plt.tight_layout()
-plt.savefig("/fig/overall_read_time.png")
+plt.savefig("fig/overall_read_time.png")
 plt.close()
 
 # Plot 2: Three read comparison per dataset size for each data type.
@@ -114,7 +114,7 @@ for dt in unique_types:
     plt.legend()
     plt.grid(True, which="both", ls="--")
     plt.tight_layout()
-    plt.savefig(f"/fig/overall_read_time_{dt}.png")
+    plt.savefig(f"fig/overall_read_time_{dt}.png")
     plt.close()
     
 # Plot 3: Breakdown for First Read (Create) – Stacked bar: Overall Read Time and dbdf Write Time.
@@ -130,23 +130,8 @@ if not agg_create.empty:
     ax.set_title("First Read Breakdown (Create): Read vs. Write dbdf")
     ax.legend()
     plt.tight_layout()
-    plt.savefig("/fig/create_read_breakdown.png")
+    plt.savefig("fig/create_read_breakdown.png")
     plt.close()
 
-# Plot 4: Breakdown for Second Read (Opt) – Stacked bar: dbdf Read Time and Overall Read Time.
-if not agg_opt.empty:
-    ind = np.arange(len(agg_opt))
-    width = 0.6
-    fig, ax = plt.subplots(figsize=(10,6))
-    p1 = ax.bar(ind, agg_opt["dbdfReadTime"], width, label="dbdf Read Time")
-    p2 = ax.bar(ind, agg_opt["ReadTime"], width, bottom=agg_opt["dbdfReadTime"], label="Overall Read Time")
-    ax.set_xticks(ind)
-    ax.set_xticklabels(agg_opt["CSVFile"], rotation=45, ha="right")
-    ax.set_ylabel("Time (seconds)")
-    ax.set_title("Second Read Breakdown (Opt): dbdf vs. Overall Read")
-    ax.legend()
-    plt.tight_layout()
-    plt.savefig("/fig/opt_read_breakdown.png")
-    plt.close()
 
 print("Charts generated and saved as PNG files.")

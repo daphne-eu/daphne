@@ -95,12 +95,12 @@ bar_data = pd.concat([baseline, avg_main, avg_subtype_frame, avg_subtype_matrix]
 # Now order the bars:
 # We'll place baseline first, then frame: first the main frame (i.e. Type=="frame") then its subtype rows sorted alphabetically,
 # then matrix: first the main matrix value then its subtype rows sorted alphabetically.
-frame_main = bar_data[(bar_data["Group"]=="frame") & (bar_data["Type"]=="frame")]
+#frame_main = bar_data[(bar_data["Group"]=="frame") & (bar_data["Type"]=="frame")]
 frame_sub = bar_data[(bar_data["Group"]=="frame") & (bar_data["Type"]!="frame")].sort_values("Type")
-matrix_main = bar_data[(bar_data["Group"]=="matrix") & (bar_data["Type"]=="matrix")]
+#matrix_main = bar_data[(bar_data["Group"]=="matrix") & (bar_data["Type"]=="matrix")]
 matrix_sub = bar_data[(bar_data["Group"]=="matrix") & (bar_data["Type"]!="matrix")].sort_values("Type")
 
-ordered_bar_data = pd.concat([baseline, frame_main, frame_sub, matrix_main, matrix_sub], ignore_index=True)
+ordered_bar_data = pd.concat([baseline, frame_sub, matrix_sub], ignore_index=True)
 
 # Assign colors: baseline in black, frame group in blue, matrix group in green.
 def assign_color(row):
@@ -129,4 +129,4 @@ plt.ylabel("Average dbdf/CSV Size Ratio (%)")
 plt.title("Comparison: 100% CSV vs. Average dbdf Ratios by Data Type/Subtype")
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig("/fig/avg_ratio_bar_chart.png")
+plt.savefig("fig/avg_ratio_bar_chart.png")
