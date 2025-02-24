@@ -1,0 +1,5 @@
+{
+    "numRows": 50000,
+    "numCols": 100,
+    "valueType": "str"
+}
