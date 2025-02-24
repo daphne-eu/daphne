@@ -26,12 +26,18 @@ FileMetaData MetaDataParser::readMetaData(const std::string &filename_, char del
     std::string metaFilename = filename_ + ".meta";
     std::ifstream ifs(metaFilename, std::ios::in);
     if (!ifs.good()) {
+        using clock = std::chrono::system_clock;
+        auto time = clock::now();
         int extv = extValue(&filename_[0]);
         // TODO: Support other file types than csv for metadata generation
         if (extv == 0) {
             FileMetaData fmd = generateFileMetaData(filename_, delim, sampleRows, isMatrix);
             try {
                 writeMetaData(filename_, fmd);
+                std::cout << "OPERATION=generate_metadata,GEN_TIME="
+                          << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                          << std::endl;
+                std::cout.flush();
             } catch (std::exception &e) {
                 // If we can't write the meta data, we can still use the generated meta data
             }

@@ -79,6 +79,8 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx)) {
 
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
+        using clock = std::chrono::system_clock;
+        auto time = clock::now();
         size_t sampleRows = ctx ? ctx->getUserConfig().numberOfSampleRows : std::numeric_limits<size_t>::max();
         FileMetaData fmd = MetaDataParser::readMetaData(filename, ',', true, sampleRows);
 
@@ -89,6 +91,10 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
             if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
             readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
+            std::cout << "READ_TIME="
+                      << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                      << std::endl;
+            std::cout.flush();
             break;
         case 1:
             if constexpr (std::is_same<VT, std::string>::value)
@@ -172,6 +178,8 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 
 template <> struct Read<Frame> {
     static void apply(Frame *&res, const char *filename, DCTX(ctx)) {
+        using clock = std::chrono::system_clock;
+        auto time = clock::now();
         size_t sampleRows = ctx ? ctx->getUserConfig().numberOfSampleRows : std::numeric_limits<size_t>::max();
         FileMetaData fmd = MetaDataParser::readMetaData(filename, ',', false, sampleRows);
         ValueTypeCode *schema;
@@ -192,7 +200,10 @@ template <> struct Read<Frame> {
             res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
 
         readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
-
+        std::cout << "READ_TIME="
+                  << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                  << std::endl;
+        std::cout.flush();
         if (fmd.isSingleValueType)
             delete[] schema;
     }
