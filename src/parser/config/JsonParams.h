@@ -30,7 +30,6 @@ struct DaphneConfigJsonParams {
     inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
     inline static const std::string USE_PHY_OP_SELECTION = "use_phy_op_selection";
     inline static const std::string USE_MLIR_CODEGEN = "use_mlir_codegen";
-    inline static const std::string USE_SECOND_READ_OPTIMIZATION = "use_second_read_optimization";
     inline static const std::string SAVE_CSV_AS_BIN = "save_csv_as_bin";
     inline static const std::string MATMUL_VEC_SIZE_BITS = "matmul_vec_size_bits";
     inline static const std::string MATMUL_TILE = "matmul_tile";
@@ -118,6 +117,5 @@ struct DaphneConfigJsonParams {
                                                      LOGGING,
                                                      FORCE_CUDA,
                                                      SPARSITY_THRESHOLD,
-                                                     USE_SECOND_READ_OPTIMIZATION,
                                                      SAVE_CSV_AS_BIN};
 };

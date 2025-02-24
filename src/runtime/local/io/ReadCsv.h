@@ -41,32 +41,35 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsv {
-    static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) = delete;
+    static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim,
+                      bool saveBin = false) = delete;
 
     static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, ssize_t numNonZeros,
-                      bool sorted = true, ReadOpts opt = ReadOpts()) = delete;
+                      bool sorted = true) = delete;
 
     static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema, ReadOpts opt = ReadOpts()) = delete;
+                      ValueTypeCode *schema, bool saveBin = false) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes> void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, opt);
+template <class DTRes>
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, bool saveBin = false) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, saveBin);
 }
 
 template <class DTRes>
-void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, ReadOpts opt = ReadOpts()) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema, opt);
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
+             bool saveBin = false) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema, saveBin);
 }
 
 template <class DTRes>
-void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true,
-             ReadOpts opt = ReadOpts()) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, numNonZeros, sorted, opt);
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros,
+             bool sorted = true) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, numNonZeros, sorted);
 }
 
 // ****************************************************************************
@@ -78,9 +81,10 @@ void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols, 
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim, ReadOpts opt = ReadOpts()) {
+    static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim,
+                      bool saveBin = false) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, filename, opt);
+        readCsvFile(res, file, numRows, numCols, delim, filename, saveBin);
         closeFile(file);
     }
 };
@@ -91,9 +95,9 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
 
 template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ssize_t numNonZeros, bool sorted = true, ReadOpts opt = ReadOpts()) {
+                      ssize_t numNonZeros, bool sorted = true) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted, filename, opt);
+        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted);
         closeFile(file);
     }
 };
@@ -104,9 +108,9 @@ template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
 
 template <> struct ReadCsv<Frame> {
     static void apply(Frame *&res, const char *filename, size_t numRows, size_t numCols, char delim,
-                      ValueTypeCode *schema, ReadOpts opt = ReadOpts()) {
+                      ValueTypeCode *schema, bool saveBin = false) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, schema, filename, opt);
+        readCsvFile(res, file, numRows, numCols, delim, schema, filename, saveBin);
         closeFile(file);
     }
 };

@@ -16,35 +16,26 @@
 
 #pragma once
 
-#include <parser/metadata/MetaDataParser.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
-
+#include <runtime/local/io/ReadDaphne.h>
+#include <runtime/local/io/WriteDaphne.h>
 #include <runtime/local/io/utils.h>
 
 #include <util/preprocessor_defs.h>
 
 #include <type_traits>
 
-#include "ReadDaphne.h"
-#include "WriteDaphne.h"
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <queue>
 #include <sstream>
 #include <stdexcept>
-
-struct ReadOpts {
-    bool opt_enabled;
-    bool saveBin;
-
-    explicit ReadOpts(bool opt_enabled = false, bool saveBin = true)
-        : opt_enabled(opt_enabled), saveBin(saveBin) {}
-};
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -52,13 +43,12 @@ struct ReadOpts {
 
 template <class DTRes> struct ReadCsvFile {
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, 
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
+                      const char* filename = nullptr, bool saveBin = false) = delete;
 
-    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros, bool sorted = true,
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
+    static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, ssize_t numNonZeros, bool sorted = true) = delete;
 
     static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema, 
-                      const char *filename = nullptr, ReadOpts opt = ReadOpts()) = delete;
+                      const char *filename = nullptr, bool saveBin = false) = delete;
 };
 
 // ****************************************************************************
@@ -66,20 +56,19 @@ template <class DTRes> struct ReadCsvFile {
 // ****************************************************************************
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
-    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, filename, opt);
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, const char* filename = nullptr, bool saveBin = false) {
+    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, filename, saveBin);
 }
 
 template <class DTRes>
 void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
-                 const char *filename = nullptr, ReadOpts opt = ReadOpts()) {
-    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, schema, filename, opt);
+                 const char *filename = nullptr, bool saveBin = false) {
+    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, schema, filename, saveBin);
 }
 
 template <class DTRes>
-void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true,
-                 const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
-    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted, filename, opt);
+void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true) {
+    ReadCsvFile<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted);
 }
 
 // ****************************************************************************
@@ -92,50 +81,53 @@ void readCsvFile(DTRes *&res, File *file, size_t numRows, size_t numCols, char d
 
 template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim, 
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+                      const char* filename = nullptr, bool saveBin = false) {
         if (file == nullptr)
-            throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
+            throw std::runtime_error("ReadCsvFile: requires a file to be "
+                                     "specified (must not be nullptr)");
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
             throw std::runtime_error("ReadCsvFile: numCols must be > 0");
-        
+
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         }
-
-        bool useOptimized = false;
-        bool useBin = false;
-        std::string fName = "";
-        if (opt.opt_enabled && filename != nullptr) {
+        
+        if (saveBin && filename != nullptr) {
             std::string daphneFile = getDaphneFile(filename);
-            if (opt.saveBin && std::filesystem::exists(daphneFile)) {
-                useOptimized = true;
-                useBin = true;
-                fName = daphneFile;
+            try {
+                readDaphne(res, daphneFile.c_str());
+                return;
+            } catch (std::exception &e) {
+                // Fallback to default branch.
             }
         }
-        if (useOptimized) {
-            if (useBin) {
-                try {
-                    readDaphne(res, fName.c_str());
-                    return;
-                } catch (std::exception &e) {
-                    // Fallback to default branch.
-                }
-            }
-        }
-        // non-optimized branch 
+            
+        // default branch 
         size_t cell = 0;
         VT *valuesRes = res->getValues();
+
         for (size_t r = 0; r < numRows; r++) {
             if (getFileLine(file) == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
+            // TODO Assuming that the given numRows is available, this should
+            // never happen.
+            //      if (line == NULL)
+            //        break;
+
             size_t pos = 0;
             for (size_t c = 0; c < numCols; c++) {
                 VT val;
                 convertCstr(file->line + pos, &val);
+
+                // TODO This assumes that rowSkip == numCols.
                 valuesRes[cell++] = val;
+
+                // TODO We could even exploit the fact that the strtoX functions
+                // can return a pointer to the first character after the parsed
+                // input, then we wouldn't have to search for that ourselves,
+                // just would need to check if it is really the delimiter.
                 if (c < numCols - 1) {
                     while (file->line[pos] != delim)
                         pos++;
@@ -143,32 +135,29 @@ template <typename VT> struct ReadCsvFile<DenseMatrix<VT>> {
                 }
             }
         }
-        if (opt.opt_enabled) {
-            if (opt.saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
-                writeDaphne(res, getDaphneFile(filename).c_str());
-            }
+        if (saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
+            writeDaphne(res, getDaphneFile(filename).c_str());
         }
     }
 };
 
 template <> struct ReadCsvFile<DenseMatrix<std::string>> {
     static void apply(DenseMatrix<std::string> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+                      const char *filename = nullptr, bool saveBin = false) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
             throw std::runtime_error("ReadCsvFile: numCols must be > 0");
-        
+
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<std::string>>(numRows, numCols, false);
         }
-        
-        // non-optimized branch (unchanged)
+
         size_t cell = 0;
         std::string *valuesRes = res->getValues();
-        
+
         for (size_t r = 0; r < numRows; r++) {
             if (getFileLine(file) == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
@@ -177,6 +166,7 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
             for (size_t c = 0; c < numCols; c++) {
                 std::string val("");
                 pos = setCString(file, pos, &val, delim) + 1;
+                // TODO This assumes that rowSkip == numCols.
                 valuesRes[cell++] = val;
             }
         }
@@ -185,28 +175,30 @@ template <> struct ReadCsvFile<DenseMatrix<std::string>> {
 
 template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
     static void apply(DenseMatrix<FixedStr16> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+                      const char *filename = nullptr, bool saveBin = false) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr)");
         if (numRows <= 0)
             throw std::runtime_error("ReadCsvFile: numRows must be > 0");
         if (numCols <= 0)
             throw std::runtime_error("ReadCsvFile: numCols must be > 0");
-        
+
         if (res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<FixedStr16>>(numRows, numCols, false);
         }
 
         size_t cell = 0;
         FixedStr16 *valuesRes = res->getValues();
+
         for (size_t r = 0; r < numRows; r++) {
             if (getFileLine(file) == -1)
                 throw std::runtime_error("ReadCsvFile::apply: getFileLine failed");
-            
+
             size_t pos = 0;
             for (size_t c = 0; c < numCols; c++) {
                 std::string val("");
                 pos = setCString(file, pos, &val, delim) + 1;
+                // TODO This assumes that rowSkip == numCols.
                 valuesRes[cell++].set(val.c_str());
             }
         }
@@ -219,47 +211,25 @@ template <> struct ReadCsvFile<DenseMatrix<FixedStr16>> {
 
 template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, struct File *file, size_t numRows, size_t numCols, char delim,
-                      ssize_t numNonZeros, bool sorted = true, const char* filename = nullptr, ReadOpts opt = ReadOpts()) {
+                      ssize_t numNonZeros, bool sorted = true) {
         if (numNonZeros == -1)
-            throw std::runtime_error("ReadCsvFile: Currently, reading of sparse matrices requires a number of non zeros to be defined");
-        
+            throw std::runtime_error("ReadCsvFile: Currently, reading of sparse matrices requires a "
+                                     "number of non zeros to be defined");
+
         if (res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
 
-        bool useOptimized = false;
-        bool useBin = false;
-        std::string fName = "";
-        if (opt.opt_enabled && filename != nullptr) {
-            std::string daphneFile = getDaphneFile(filename);
-            if (opt.saveBin && std::filesystem::exists(daphneFile)) {
-                useOptimized = true;
-                useBin = true;
-                fName = daphneFile;
-            } 
-        }
-        if (useOptimized) {
-            if (useBin) {
-                try {
-                    //std::cout << "Reading CSRMatrix using binary (.daphne) file: " << fName << std::endl;
-                    readDaphne(res, fName.c_str());
-                    return;
-                } catch (std::exception &e) {
-                        // Fallback to default branch.
-                }
-            } 
-        }
+        // TODO/FIXME: file format should be inferred from file extension or
+        // specified by user
         if (sorted) {
             readCOOSorted(res, file, numRows, numCols, static_cast<size_t>(numNonZeros), delim);
         } else {
+            // this internally sorts, so it might be worth considering just
+            // directly sorting the dense matrix Read file of COO format
             DenseMatrix<uint64_t> *rowColumnPairs = nullptr;
-            readCsvFile(rowColumnPairs, file, static_cast<size_t>(numNonZeros), 2, delim, filename);
+            readCsvFile(rowColumnPairs, file, static_cast<size_t>(numNonZeros), 2, delim);
             readCOOUnsorted(res, rowColumnPairs, numRows, numCols, static_cast<size_t>(numNonZeros));
             DataObjectFactory::destroy(rowColumnPairs);
-        }
-        if (opt.opt_enabled) {
-            if (opt.saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
-                writeDaphne(res, getDaphneFile(filename).c_str());
-            }
         }
     }
 
@@ -342,7 +312,7 @@ template <typename VT> struct ReadCsvFile<CSRMatrix<VT>> {
 
 template <> struct ReadCsvFile<Frame> {
     static void apply(Frame *&res, struct File *file, size_t numRows, size_t numCols, char delim, ValueTypeCode *schema,
-                      const char *filename, ReadOpts opt = ReadOpts()) {
+                      const char *filename, bool saveBin = false) {
         if (file == nullptr)
             throw std::runtime_error("ReadCsvFile: requires a file to be specified (must not be nullptr): " + std::string(filename));
         if (numRows <= 0)
@@ -353,43 +323,26 @@ template <> struct ReadCsvFile<Frame> {
         if (res == nullptr) {
             res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
         }
+        
+        if (saveBin && filename) {
+            std::string daphneFile = getDaphneFile(filename);
+            try {
+                readDaphne(res, daphneFile.c_str());
+                return;
+            } catch (std::exception &e) {
+                // Fallback to default branch.
+            }
+        }
 
-        uint8_t **rawCols = new uint8_t *[numCols];
-        ValueTypeCode *colTypes = new ValueTypeCode[numCols];
+        auto **rawCols = new uint8_t *[numCols];
+        auto *colTypes = new ValueTypeCode[numCols];
         for (size_t i = 0; i < numCols; i++) {
             rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
             colTypes[i] = res->getColumnType(i);
         }
-        // Determine if any optimized branch should be used.
-        bool useOptimized = false;
-        bool useBin = false;
-        std::string fName;
-        if (opt.opt_enabled && filename) {
-            fName = filename;
-            std::string daphneFile = getDaphneFile(fName.c_str());
-            if (opt.saveBin && std::filesystem::exists(daphneFile)) {
-                useOptimized = true;
-                useBin = true;
-                fName = daphneFile;
-            }
-        }
+        
         //using clock = std::chrono::high_resolution_clock;
         //auto time = clock::now();
-        if (useOptimized) {
-            if (useBin) {
-                try {
-                    //auto readTime = clock::now();
-                    readDaphne(res, fName.c_str());
-                    delete[] rawCols;
-                    delete[] colTypes;
-                    //std::cout << "read time: " << clock::now() - readTime << std::endl;
-                    return;
-                } catch (std::exception &e) {
-                    // Fallback to default branch.
-                }
-            }
-        }
-            
         for (size_t row = 0; row < numRows; row++) {
             ssize_t ret = getFileLine(file);
             if ((file->read == EOF) || (file->line == NULL))
@@ -464,15 +417,14 @@ template <> struct ReadCsvFile<Frame> {
             }
         }
         //std::cout << "read time: " << clock::now() - time << std::endl;
-        if (opt.opt_enabled) {
-            if (opt.saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
-                //time = clock::now();
-                if (!hasString(res->getNumCols(), res->getSchema())){ //daphne's binary format does not support strings yet
-                    writeDaphne(res, getDaphneFile(filename).c_str());
-                    //std::cout << "write time: " << clock::now() - time << std::endl;
-                }
+        if (saveBin && !std::filesystem::exists(getDaphneFile(filename))) {
+            //time = clock::now();
+            if (!hasString(res->getNumCols(), res->getSchema())){ //daphne's binary format does not support strings yet
+                writeDaphne(res, getDaphneFile(filename).c_str());
+                //std::cout << "write time: " << clock::now() - time << std::endl;
             }
         }
+        
         delete[] rawCols;
         delete[] colTypes;
     }
