@@ -75,7 +75,6 @@ std::unique_ptr<Pass> createVectorizeComputationsPass();
 std::unique_ptr<Pass> createSliceRowOpLoweringPass();
 std::unique_ptr<Pass> createSliceColOpLoweringPass();
 std::unique_ptr<Pass> createSliceOpLoweringPass();
-std::unique_ptr<Pass> createExtractOpLoweringPass();
 
 #ifdef USE_CUDA
 std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
