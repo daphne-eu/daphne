@@ -1,0 +1,15 @@
+# bench.daph
+size=$size;
+sparsity=$sparsity;
+
+alpha = 2;
+beta = 3;
+A = rand(size, size, 1.0, 1.0, sparsity, -1);
+B = rand(size, size, 1.0, 1.0, sparsity, -1);
+C = rand(size, size, 1.0, 1.0, sparsity, -1);
+start = now();
+D = beta * C + alpha * A @ B  ;
+end = now();
+print((end-start) / 1000000000.0);
+x = aggMax(D);
+print(x);

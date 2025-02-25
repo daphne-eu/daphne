@@ -32,6 +32,7 @@
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
+#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -186,6 +187,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_kernels)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
 
+    pm.addPass(mlir::memref::createExpandStridedMetadataPass());
+    pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
+    
     pm.addPass(mlir::createConvertSCFToCFPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createRequestCWrappersPass());
     pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
@@ -271,6 +275,12 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createAggDimOpLoweringPass());
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
     pm.addPass(mlir::daphne::createTransposeOpLoweringPass());
+
+    //pm.addPass(mlir::daphne::createSliceRowOpLoweringPass());
+    //pm.addPass(mlir::daphne::createSliceColOpLoweringPass());
+    pm.addPass(mlir::daphne::createSliceOpLoweringPass());
+    //pm.addPass(mlir::daphne::createExtractOpLoweringPass());
+
     pm.addPass(mlir::createInlinerPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
@@ -303,6 +313,8 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::createLowerAffinePass());
     mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;
     pm.addPass(mlir::createConvertVectorToLLVMPass(lowerVectorToLLVMOptions));
+
+
 
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after codegen pipeline"));

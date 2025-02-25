@@ -129,6 +129,16 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         rowOffsets = std::shared_ptr<size_t[]>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
 
+    CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, 
+        std::shared_ptr<ValueType[]> &values, std::shared_ptr<size_t[]> &colIdxs, std::shared_ptr<size_t[]> &rowOffsets)
+        : Matrix<ValueType>(maxNumRows, numCols), numRowsAllocated(maxNumRows), isRowAllocatedBefore(false),
+          maxNumNonZeros(maxNumNonZeros), lastAppendedRowIdx(0) {
+
+        this->values = values;
+        this->colIdxs = colIdxs;
+        this->rowOffsets = rowOffsets;
+    }
+
     virtual ~CSRMatrix() {
         // nothing to do
     }
