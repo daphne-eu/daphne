@@ -97,8 +97,12 @@ std::vector<Type> daphne::CastOp::inferTypes() {
 
     // The argument is a scalar, result is a matrix; we use its type for the value type
     // of the result.
-    // TODO double-check if it is really a scalar
-    return {daphne::MatrixType::get(getContext(), argumentType)};
+    if (CompilerUtils::isScaType(argumentType))
+        return {daphne::MatrixType::get(getContext(), argumentType)};
+
+    // The argument is some unsupported type; this is an error.
+    throw std::runtime_error(
+        "CastOp::inferTypes(): the argument is neither a supported data type nor a supported value type");
 }
 
 std::vector<Type> daphne::ExtractColOp::inferTypes() {
@@ -475,7 +479,7 @@ std::vector<Type> daphne::CondOp::inferTypes() {
     } else if (auto condFrmTy = condTy.dyn_cast<daphne::FrameType>())
         throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                           "CondOp does not support frames for the condition yet");
-    else { // cond is a scalar // TODO check if it is really a scalar
+    else if (CompilerUtils::isScaType(condTy)) { // cond is a scalar
         Type thenTy = getThenVal().getType();
         Type elseTy = getElseVal().getType();
 
@@ -501,6 +505,9 @@ std::vector<Type> daphne::CondOp::inferTypes() {
         // value have been removed.
         return {thenTy};
     }
+
+    throw std::runtime_error(
+        "CondOp::inferType(): the condition is neither a supported data type nor a supported value type");
 }
 
 std::vector<Type> daphne::RecodeOp::inferTypes() {
