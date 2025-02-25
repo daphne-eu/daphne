@@ -68,6 +68,8 @@ FileMetaData MetaDataParser::readMetaDataFromString(const std::string &str) {
             }
             std::vector<ValueTypeCode> schema;
             std::vector<std::string> labels;
+            std::vector<size_t> maximumValueFrequencies;
+            std::vector<size_t> distinctValues;    
             auto schemaColumn = jf.at(JsonKeys::SCHEMA).get<std::vector<SchemaColumn>>();
             for (const auto &column : schemaColumn) {
                 auto vtc = column.getValueType();
@@ -80,8 +82,10 @@ FileMetaData MetaDataParser::readMetaDataFromString(const std::string &str) {
                 }
                 schema.emplace_back(vtc);
                 labels.emplace_back(column.getLabel());
+                distinctValues.emplace_back(column.getDistinctValues());
+                maximumValueFrequencies.emplace_back(column.getMaxValueFrequencies());
             }
-            return {numRows, numCols, isSingleValueType, schema, labels, numNonZeros, hdfs};
+            return {numRows, numCols, isSingleValueType, schema, labels, maximumValueFrequencies, distinctValues, numNonZeros, hdfs};
         } else {
             throw std::invalid_argument("A (frame) meta data JSON file should contain the \"" + JsonKeys::SCHEMA +
                                         "\" key.");

@@ -41,15 +41,21 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ValueTypeCode, {{ValueTypeCode::INVALID, nullptr},
  */
 class SchemaColumn {
   public:
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(SchemaColumn, label, valueType)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(SchemaColumn, label, valueType, distinctValues)
     [[nodiscard]] const std::string &getLabel() const { return label; }
     [[nodiscard]] ValueTypeCode getValueType() const { return valueType; }
+    [[nodiscard]] size_t getDistinctValues() const { return distinctValues; }
+    [[nodiscard]] size_t getMaxValueFrequencies() const { return maxValueFrequencies; }
     void setLabel(const std::string &label_) { this->label = label_; }
     void setValueType(ValueTypeCode valueType_) { this->valueType = valueType_; }
+    void setDistinctValues(size_t distinctValues_) { this->distinctValues = distinctValues_; }
+    void setMaxValueFrequencies(size_t maxValueFrequencies_) { this->maxValueFrequencies = maxValueFrequencies_; }
 
   private:
-    std::string label;
-    ValueTypeCode valueType;
+    std::string label = "";
+    ValueTypeCode valueType = ValueTypeCode::INVALID;
+    size_t distinctValues = 0;
+    size_t maxValueFrequencies = 0;
 };
 
 class MetaDataParser {

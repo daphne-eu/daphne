@@ -38,6 +38,8 @@ struct FileMetaData {
     bool isSingleValueType;
     std::vector<ValueTypeCode> schema;
     std::vector<std::string> labels;
+    std::vector<size_t> maximumValueFrequencies;
+    std::vector<size_t> distinctValues;
     const ssize_t numNonZeros;
     HDFSMetaData hdfs;
 
@@ -48,6 +50,13 @@ struct FileMetaData {
                  std::vector<std::string> labels, ssize_t numNonZeros = -1, HDFSMetaData hdfs = {})
         : numRows(numRows), numCols(numCols), isSingleValueType(isSingleValueType), schema(std::move(schema)),
           labels(std::move(labels)), numNonZeros(numNonZeros), hdfs(hdfs) {}
+    
+    FileMetaData(size_t numRows, size_t numCols, bool isSingleValueType, std::vector<ValueTypeCode> schema,
+                 std::vector<std::string> labels, std::vector<size_t> maximumValueFrequencies, 
+                 std::vector<size_t> distinctValues, ssize_t numNonZeros = -1, HDFSMetaData hdfs = {})
+        : numRows(numRows), numCols(numCols), isSingleValueType(isSingleValueType), schema(std::move(schema)),
+          labels(std::move(labels)), maximumValueFrequencies(std::move(maximumValueFrequencies)),
+          distinctValues(std::move(distinctValues)), numNonZeros(numNonZeros), hdfs(hdfs) {}
 
     /**
      * @brief Construct a new File Meta Data object for Matrix

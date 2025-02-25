@@ -32,12 +32,14 @@ If data is written from a DaphneDSL script via ``write()``, the meta data file w
 
 | Name        | Expected Data | Allowed values                                                                                                                                                                                                                                                                                                                               |
 |-------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| numRows     | Integer       | # number of rows                                                                                                                                                                                                                                                                                                                             |
-| numCols     | Integer       | # number of columns                                                                                                                                                                                                                                                                                                                          |
-| valueType   | String        | ``si8, si32, si64, // signed integers (intX_t)``<br />``ui8, ui32, ui64, // unsigned integers (uintx_t)``<br />``f32, f64, // floating point (float, double)``<br /><br/>Contained within schema this may be an empty string. In this case all columns of a data frame will have the same valueType defined outside of the schema data field |
-| numNonZeros | Integer       | # number of non-zeros (optional)                                                                                                                                                                                                                                                                                                             |
-| schema      | JSON          | nested elements of "label" and "valueType" fields                                                                                                                                                                                                                                                                                            |
-| label       | String        | column name/header (optional, may be empty string "")                                                                                                                                                                                                                                                                                        |
+| numRows             | Integer       | # number of rows                                                                                                                                                                                                                                                                                                                             |
+| numCols             | Integer       | # number of columns                                                                                                                                                                                                                                                                                                                          |
+| valueType           | String        | ``si8, si32, si64, // signed integers (intX_t)``<br />``ui8, ui32, ui64, // unsigned integers (uintx_t)``<br />``f32, f64, // floating point (float, double)``<br /><br/>Contained within schema this may be an empty string. In this case all columns of a data frame will have the same valueType defined outside of the schema data field |
+| numNonZeros         | Integer       | # number of non-zeros (optional)                                                                                                                                                                                                                                                                                                             |
+| schema              | JSON          | nested elements of "label" and "valueType" fields                                                                                                                                                                                                                                                                                            |
+| label               | String        | column name/header (optional, may be empty string "")                                                                                                                                                                                                                                                                                        |
+| distinctValues      | Integer       | information per column of howmany distinct values are pressent. (optional)                                                                                                                                                                                                                                                             |
+| maxValueFrequencies | Integer       | information about how often the maximum occuring value occurs (optional)                                                                                                                                                                                                                                                                       |
 
 ## Matrix Example
 
@@ -77,16 +79,20 @@ values in the second column named bar.
 
 ```json
 {
-  "numRows": 2,
+  "numRows": 4,
   "numCols": 2,
   "schema": [
     {
       "label": "foo",
       "valueType": "si64"
+      "distinctValues": 4
+      "maxValueFrequencies": 1
     },
     {
       "label": "bar",
       "valueType": "f64"
+      "distinctValues": 3
+      "maxValueFrequencies": 2
     }
   ]
 }
