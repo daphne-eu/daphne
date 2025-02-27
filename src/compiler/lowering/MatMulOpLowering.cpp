@@ -336,35 +336,54 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     {
         auto zeroElem = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(type));
         auto one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
+        auto zero = rewriter.create<arith::ConstantIndexOp>(loc, 0);
         auto rowPtr = row;
         auto nextRowPtr = rewriter.create<arith::AddIOp>(loc, row, one);
         auto colIdxLowerIncl = rewriter.create<memref::LoadOp>(
             loc, rowOffsetsMemRef, ValueRange{rowPtr});
         auto colIdxUpperExcl = rewriter.create<memref::LoadOp>(
             loc, rowOffsetsMemRef, ValueRange{nextRowPtr});
-        auto search = rewriter.create<scf::ForOp>(
-            loc, colIdxLowerIncl, colIdxUpperExcl, one, ValueRange{zeroElem},
-            [&](OpBuilder &OpBuilderNested, Location locNested, Value loopIdx, ValueRange loopIterArgs)
+
+        auto search = rewriter.create<scf::WhileOp>(
+            loc,TypeRange{
+                rewriter.getIndexType(), 
+                rewriter.getIndexType(),
+                type}, 
+            ValueRange{colIdxLowerIncl, one, zeroElem},
+            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange args)
             {
-                auto getCol = OpBuilderNested.create<memref::LoadOp>(locNested, colIdxsMemRef, ValueRange{loopIdx});
-                auto getValue = OpBuilderNested.create<memref::LoadOp>(locNested, valuesMemRef, ValueRange{loopIdx});
+                auto cond1 = OpBuilderNested.create<arith::CmpIOp>(
+                    locNested, arith::CmpIPredicate::ult, args[0], colIdxUpperExcl);
+                auto cond2 = OpBuilderNested.create<arith::CmpIOp>(
+                    locNested, arith::CmpIPredicate::eq, args[1], one);
+                auto cond = OpBuilderNested.create<arith::AndIOp>(locNested, cond1, cond2);
+                OpBuilderNested.create<scf::ConditionOp>(locNested, cond, args);    
+            },
+            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange args)
+            {
+                auto getCol = OpBuilderNested.create<memref::LoadOp>(locNested, colIdxsMemRef, ValueRange{args[0]});
+                
                 auto cond = OpBuilderNested.create<arith::CmpIOp>(locNested, arith::CmpIPredicate::eq, getCol, col);
                 // return the value of non-zero element if exists, else return a zero value
                 auto res = OpBuilderNested.create<scf::IfOp>(
                     locNested, cond,
                     [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested)
                     {
-                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, ValueRange{getValue});
+                        auto getValue = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, valuesMemRef, ValueRange{args[0]});
+                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, ValueRange{zero, getValue});
                     },
                     [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested)
                     {
-                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, ValueRange{zeroElem});
+                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, ValueRange{one, zeroElem});
                     }
                 );
-                OpBuilderNested.create<scf::YieldOp>(locNested, res.getResult(0));
+                auto nextPtr = OpBuilderNested.create<arith::AddIOp>(locNested, args[0], one);
+                OpBuilderNested.create<scf::YieldOp>(locNested, ValueRange{nextPtr, res.getResult(0), res.getResult(1)});
             }
         );
-        return search.getResult(0);
+        
+        return search.getResult(2);
     }
     
     LogicalResult matchAndRewriteSparseSparseMat(daphne::MatMulOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const {
@@ -389,12 +408,6 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
             MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
         auto lhsRowOffsetsMemRefType = 
             MemRefType::get({lhsRows + 1}, rewriter.getIndexType());
-        auto rhsValuesMemRefType =
-            MemRefType::get({ShapedType::kDynamic}, matrixElementType);
-        auto rhsColIdxsMemRefType = 
-            MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
-        auto rhsRowOffsetsMemRefType = 
-            MemRefType::get({rhsRows + 1}, rewriter.getIndexType());
         auto resValuesMemRefType =
             MemRefType::get({ShapedType::kDynamic}, matrixElementType);
         auto resColIdxsMemRefType = 
@@ -419,8 +432,6 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         auto one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
         auto zeroElement = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(matrixElementType));
         auto numLhsRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsRows);
-        auto numRhsRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, rhsRows);
-        auto numLhsColsValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsCols);
         auto numRhsColsValue = rewriter.create<arith::ConstantIndexOp>(loc, rhsCols);
     
         auto resValuesMemRef = rewriter.create<memref::AllocOp>(loc, resValuesMemRefType, ValueRange{one});
@@ -462,6 +473,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
 
                                 auto rhsElemRow = lhsElemCol;
                                 auto rhsElemCol = rhsCol;
+                                //auto rhsElemCol = lhsElemRow;
                                 // locate the required element in rhs corresponding to the lhs element
                                 auto rhsElemValue = csrIndex(
                                     OpBuilderThreetimesNested, locThreetimesNested, 
