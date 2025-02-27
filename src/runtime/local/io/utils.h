@@ -23,6 +23,23 @@
 #include <runtime/local/io/File.h>
 #include <spdlog/spdlog.h>
 
+#include <runtime/local/io/FileMetaData.h>
+
+struct PosMap {
+    uint64_t numRows;
+    uint64_t numCols;
+    const uint64_t *rowOffsets;
+    const uint16_t *relOffsets;
+    std::vector<char> buffer;
+};
+
+// Function to create and save the positional map
+void writePositionalMap(const char *filename, uint64_t numRows, uint64_t numCols, const uint64_t *rowOffsets,
+                        const uint16_t *flatRelOffsets);
+
+// Function to read the positional map
+PosMap readPositionalMap(const char *filename);
+
 // Conversion of std::string.
 
 inline void convertStr(std::string const &x, double *v) {
@@ -73,6 +90,8 @@ inline void convertCstr(const char *x, uint8_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
 
+inline static std::string getPosMapFile(const char *filename) { return std::string(filename) + ".posmap"; }
+
 /**
  * @brief This function reads a CSV column that contains strings.
  *
@@ -90,7 +109,7 @@ inline void convertCstr(const char *x, uint64_t *v) { *v = atoi(x); }
  * @param delim The delimiter character separating columns (e.g., a comma `,`).
  * @return The position pointing to the character immediately before the next column in the line.
  */
-inline size_t setCString(struct File *file, size_t start_pos, std::string *res, const char delim) {
+inline size_t setCString(struct File *file, size_t start_pos, std::string *res, const char delim, size_t *offset) {
     size_t pos = 0;
     const char *str = file->line + start_pos;
     bool is_multiLine = (str[0] == '"');
@@ -117,6 +136,7 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
             res->push_back('\n');
             getFileLine(file);
             str = file->line;
+            *offset += pos + 1; // offset in current line + newline char
             pos = 0;
             has_line_break = 1;
         } else {
@@ -128,8 +148,41 @@ inline size_t setCString(struct File *file, size_t start_pos, std::string *res, 
     if (is_multiLine)
         pos++;
 
-    if (has_line_break)
+    if (has_line_break) {
+        *offset += start_pos;
         return pos;
-    else
+    } else {
         return pos + start_pos;
+    }
+}
+
+// Add an optional parameter "endPos" (default to 0) that if set will be used instead
+// of scanning for the delimiter.
+inline void setCString(const char *str, std::string *res, const char delim, size_t endPos = 0) {
+    size_t pos = 0;
+    bool is_multiLine = (str[0] == '"');
+    if (is_multiLine)
+        pos++; // skip opening quote
+
+    size_t limit = endPos;
+
+    // Process characters up to limit.
+    while (pos < limit && str[pos]) {
+        // Only perform special handling for quotes if in multi-line (quoted) field.
+        if (is_multiLine && str[pos] == '"' && (pos + 1 < limit) && str[pos + 1] == '"') {
+            res->append("\"");
+            pos += 2;
+        } else if (is_multiLine && str[pos] == '\\' && (pos + 1 < limit) && str[pos + 1] == '"') {
+            res->append("\\\"");
+            pos += 2;
+        } else if (is_multiLine && (pos == limit - 1) && str[pos] == '"') {
+            break;
+        } else if (is_multiLine && (pos == limit - 2) && str[pos] == '"' &&
+                   (str[pos + 1] == '\n' || str[pos + 1] == '\r')) {
+            break;
+        } else {
+            res->push_back(str[pos]);
+            pos++;
+        }
+    }
 }

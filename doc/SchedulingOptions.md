@@ -92,6 +92,7 @@ DAPHNE Options:
   --libdir=<string>     - The directory containing kernel libraries
   --no-obj-ref-mgnt     - Switch off garbage collection by not managing data objects' reference counters
   --select-matrix-repr  - Automatically choose physical matrix representations (e.g., dense/sparse)
+  --use-positional-map  - Enable multiple read optimization for csv files using positional map
 Generic Options:
   --help                - Display available options (--help-hidden for more)
   --help-list           - Display list of available options (--help-list-hidden for more)
