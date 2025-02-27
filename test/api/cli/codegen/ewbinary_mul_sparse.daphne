@@ -1,0 +1,7 @@
+W = rand(5, 5, 1.0, 1.0, 0.1, 1);
+V = rand(5, 5, 1.0, 1.0, 0.1, 2);
+X = rand(5, 5, 1.0, 1.0, 1, 3);
+
+print(W * 2); // sparse * scalar
+print(W * X); // sparse * dense
+print(W * V); // sparse * sparse

@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
@@ -151,6 +152,47 @@ template <typename VT> struct EwBinaryObjSca<Frame, Frame, VT> {
                 throw std::runtime_error("EwBinaryObjSca::apply: unknown value type code");
             }
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- CSRMatrix, scalar
+// ----------------------------------------------------------------------------
+
+template <typename VTRes, typename VTLhs, typename VTRhs>
+struct EwBinaryObjSca<CSRMatrix<VTRes>, CSRMatrix<VTLhs>, VTRhs> {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VTRes> *&res, const CSRMatrix<VTLhs> *lhs, VTRhs rhs,
+                      DCTX(ctx)) {
+        
+        if (opCode != BinaryOpCode::MUL)
+            throw std::runtime_error("EwBinaryObjSca::apply: only support MUL for CSR Matrix");
+
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        const size_t maxNumNonZeros = lhs->getMaxNumNonZeros();
+        const size_t numNonZeros = lhs->getNumNonZeros();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VTLhs>>(numRows, numCols, maxNumNonZeros, false);
+
+        const VTLhs *valuesLhs = lhs->getValues();
+        const size_t *colIdxsLhs = lhs->getColIdxs();
+        const size_t *rowOffsetsLhs = lhs->getRowOffsets();
+        VTRes *valuesRes = res->getValues();
+        size_t *colIdxsRes = res->getColIdxs();
+        size_t *rowOffsetsRes = res->getRowOffsets();
+
+        for (size_t i = 0; i < numNonZeros; i++)
+            colIdxsRes[i] = colIdxsLhs[i];
+
+        for (size_t i = 0; i < numRows + 1; i++)
+            rowOffsetsRes[i] = rowOffsetsLhs[i];
+
+        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
+
+        for (size_t i = 0; i < numNonZeros; i++)
+            valuesRes[i] = func(valuesLhs[i], rhs, ctx);
+
     }
 };
 

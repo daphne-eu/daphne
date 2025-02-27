@@ -31,6 +31,7 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinDialect.h"
@@ -46,6 +47,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
+using namespace std;
 
 // ****************************************************************************
 // Rewriter Templates (Elemwise Unary, Elemwise Binary)
@@ -77,6 +79,63 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         return mlir::success();
     }
 
+    LogicalResult matchAndRewriteSparseMat(UnaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const {
+        
+        Location loc = op->getLoc();
+        auto sparseMatType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
+        Type matrixElementType = sparseMatType.getElementType();
+        ssize_t numRows = sparseMatType.getNumRows();
+        ssize_t numCols = sparseMatType.getNumCols();
+
+        if (numRows < 0 || numCols < 0) {
+            throw ErrorHandler::compilerError(
+                loc, "EwOpsLowering (BinaryOp)",
+                "ewOps codegen currently only works with matrix dimensions that are known at compile time");
+        }
+
+        MemRefType sparseValuesMemRefType =
+            MemRefType::get({ShapedType::kDynamic}, matrixElementType);
+        
+        Value argValuesMemref = rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(
+            loc, sparseValuesMemRefType, adaptor.getArg());
+
+        Value one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
+        Value resMemref = rewriter.create<memref::AllocOp>(
+            loc, sparseValuesMemRefType, ValueRange{one});
+
+        SmallVector<AffineMap, 2> indexMaps = {AffineMap::getMultiDimIdentityMap(1, rewriter.getContext()),
+                                               AffineMap::getMultiDimIdentityMap(1, rewriter.getContext())};
+        SmallVector<utils::IteratorType, 1> iterTypes = {utils::IteratorType::parallel};
+
+        rewriter.create<linalg::GenericOp>(
+            loc, TypeRange{}, ValueRange{argValuesMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
+            [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+                Value resValue = unaryFunc(OpBuilderNested, locNested, this->typeConverter, arg[0]);
+                OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
+            });
+
+        MemRefType sparseColIdxsMemRefType = MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
+        MemRefType sparseRowOffsetsMemRefType = MemRefType::get({numRows + 1}, rewriter.getIndexType());
+        
+        Value argColIdxsMemref = rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(
+            loc, sparseColIdxsMemRefType, adaptor.getArg());
+        Value argRowOffsetsMemref = rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(
+            loc, sparseRowOffsetsMemRefType, adaptor.getArg());
+        
+        Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, numRows);
+        Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, numCols);
+        Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, numCols * numRows);
+
+        auto resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
+            resMemref, argColIdxsMemref, argRowOffsetsMemref, 
+            //maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType());
+            maxNumRowsValue, numColsValue, maxNumNonZerosValue, adaptor.getArg().getType()); 
+
+        rewriter.replaceOp(op, resCSRMatrix);
+
+        return mlir::success();
+    }
+
     LogicalResult matchAndRewrite(UnaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
         Location loc = op->getLoc();
@@ -85,6 +144,10 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
         // Scalar values are handled separately. Otherwise assume input is DenseMatrix.
         if (!matrixType) {
             return matchAndRewriteScalarVal(op, adaptor, rewriter);
+        }
+
+        if (matrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse) {
+            return matchAndRewriteSparseMat(op, adaptor, rewriter);
         }
 
         Type matrixElementType = matrixType.getElementType();
@@ -216,6 +279,44 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 
         Type matrixElementType = lhsMatrixType.getElementType();
 
+        if (lhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse)
+        {
+            MemRefType valuesMemRefType = MemRefType::get({ShapedType::kDynamic}, matrixElementType);
+            MemRefType colIdxsMemRefType = MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
+            MemRefType rowOffsetsMemRefType = MemRefType::get({lhsRows + 1}, rewriter.getIndexType());
+            
+            auto lhsValuesMemref = rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(loc, valuesMemRefType, lhs);
+            auto lhsColIdxsMemref = rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(loc, colIdxsMemRefType, lhs);
+            auto lhsRowOffsetsMemref = rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(loc, rowOffsetsMemRefType, lhs);
+            
+            Value one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
+            Value resMemref = rewriter.create<memref::AllocOp>(loc, valuesMemRefType, ValueRange{one});
+
+            SmallVector<AffineMap, 2> indexMaps = {AffineMap::getMultiDimIdentityMap(1, rewriter.getContext()),
+                                                   AffineMap::getMultiDimIdentityMap(1, rewriter.getContext())};
+            SmallVector<utils::IteratorType, 1> iterTypes = {utils::IteratorType::parallel};
+
+            rewriter.create<linalg::GenericOp>(
+                loc, TypeRange{}, ValueRange{lhsValuesMemref}, ValueRange{resMemref}, indexMaps, iterTypes,
+                [&](OpBuilder &OpBuilderNested, Location locNested, ValueRange arg) {
+                    Value resValue = binaryFunc(OpBuilderNested, locNested, this->typeConverter, arg[0], rhs);
+                    OpBuilderNested.create<linalg::YieldOp>(locNested, resValue);
+                });
+
+            Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsRows);
+            Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsCols);
+            Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, lhsCols * lhsRows);
+
+            auto resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
+                resMemref, lhsColIdxsMemref, lhsRowOffsetsMemref, 
+                maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType()); 
+
+            rewriter.replaceOp(op, resCSRMatrix);
+
+            return mlir::success();
+
+        }
+
         MemRefType argMemRefType = MemRefType::get({lhsRows, lhsCols}, matrixElementType);
         auto lhsMemref = rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, argMemRefType, lhs);
 
@@ -238,6 +339,496 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         return mlir::success();
     }
 
+    LogicalResult matchAndRewriteSparseDenseMat(BinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const {
+        Location loc = op->getLoc();
+        Value lhs = adaptor.getLhs();
+        Value rhs = adaptor.getRhs();
+
+        auto sparseLhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto denseRhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
+        
+        ssize_t sparseLhsRows = sparseLhsMatrixType.getNumRows();
+        ssize_t sparseLhsCols = sparseLhsMatrixType.getNumCols();
+        ssize_t denseRhsRows = denseRhsMatrixType.getNumRows();
+        ssize_t denseRhsCols = denseRhsMatrixType.getNumCols();
+        
+        MemRefType sparseLhsValuesMemRefType =
+            MemRefType::get({ShapedType::kDynamic}, sparseLhsMatrixType.getElementType());
+        MemRefType sparseLhsColIdxsMemRefType = 
+            MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
+        MemRefType sparseLhsRowOffsetsMemRefType = 
+            MemRefType::get({sparseLhsRows + 1}, rewriter.getIndexType());
+        MemRefType denseRhsMemRefType = 
+            MemRefType::get({denseRhsRows, denseRhsCols}, denseRhsMatrixType.getElementType());
+        
+        auto sparseLhsValuesMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(loc, sparseLhsValuesMemRefType, lhs);
+        auto sparseLhsColIdxsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(loc, sparseLhsColIdxsMemRefType, lhs);
+        auto sparseLhsRowOffsetsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(loc, sparseLhsRowOffsetsMemRefType, lhs);
+        auto denseRhsMemRef = 
+            rewriter.create<daphne::ConvertDenseMatrixToMemRef>(loc, denseRhsMemRefType, rhs);
+         
+        auto zero = rewriter.create<arith::ConstantIndexOp>(loc, 0);
+        auto one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
+        auto numSparseLhsRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsRows);
+
+        // return a dense matrix if the op is add
+        auto resDenseMemRef = rewriter.create<memref::AllocOp>(loc, denseRhsMemRefType);
+        rewriter.create<memref::CopyOp>(loc, denseRhsMemRef, resDenseMemRef);
+        // return a sparse matrix if the op is mul
+        auto resSparseMemRef = rewriter.create<memref::AllocOp>(loc, sparseLhsValuesMemRefType, ValueRange{one});
+
+        rewriter.create<scf::ForOp>(
+            loc, zero, numSparseLhsRowsValue, one, ValueRange{},
+            [&](OpBuilder &OpBuilderNested, Location locNested, Value loopIdx, ValueRange loopInvariants) 
+            {
+                auto rowPtr = loopIdx;
+                auto nextRowPtr = OpBuilderNested.create<arith::AddIOp>(locNested, rowPtr, one);
+
+                auto colIdxLowerIncl = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, sparseLhsRowOffsetsMemRef, ValueRange{rowPtr});
+                auto colIdxUpperExcl = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, sparseLhsRowOffsetsMemRef, ValueRange{nextRowPtr});
+                
+                OpBuilderNested.create<scf::ForOp>(
+                    locNested, colIdxLowerIncl, colIdxUpperExcl, one, ValueRange{},
+                    [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested, Value loopIdxNested, ValueRange loopInvariants)
+                    {
+                        auto rowIdx = rowPtr;
+                        auto colIdx = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, sparseLhsColIdxsMemRef, ValueRange{loopIdxNested});
+                        
+                        auto sparseLhsValue = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, sparseLhsValuesMemRef, ValueRange{loopIdxNested});
+                        
+                        auto denseRhsValue = OpBuilderTwiceNested.create<memref::LoadOp>(
+                            locTwiceNested, denseRhsMemRef, ValueRange{rowIdx, colIdx});
+
+                        Value resValue = binaryFunc(
+                            OpBuilderTwiceNested, locTwiceNested, this->typeConverter, sparseLhsValue, denseRhsValue);
+
+                        if (llvm::isa<daphne::EwAddOp>(op))
+                        {
+                            OpBuilderTwiceNested.create<memref::StoreOp>(
+                                locTwiceNested, resValue, resDenseMemRef, ValueRange{rowIdx, colIdx});
+                        }
+                        else if (llvm::isa<daphne::EwMulOp>(op))
+                        {
+                            OpBuilderTwiceNested.create<memref::StoreOp>(
+                                locTwiceNested, resValue, resSparseMemRef, ValueRange{loopIdxNested});
+                        }
+                        else
+                        {
+                            throw ErrorHandler::compilerError(loc, "EwOpsLowering (BinaryOp)", "Unsupported ewOps codegen");
+                        }
+                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, resValue);
+                    }
+                );
+                OpBuilderNested.create<scf::YieldOp>(locNested);
+            }
+        );
+
+        if (llvm::isa<daphne::EwAddOp>(op))
+        {
+            Value resDenseMatrix = convertMemRefToDenseMatrix(loc, rewriter, resDenseMemRef, op.getType());
+            rewriter.replaceOp(op, resDenseMatrix);
+            
+            return mlir::success();
+        }
+        else if (llvm::isa<daphne::EwMulOp>(op))
+        {
+            Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsRows);
+            Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsCols);
+            Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, sparseLhsCols * sparseLhsRows);
+
+            Value resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
+                resSparseMemRef, sparseLhsColIdxsMemRef, sparseLhsRowOffsetsMemRef, 
+                maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType()); 
+
+            if (!resCSRMatrix) {
+                llvm::errs() << "Error: resCSRMatrix is null!\n";
+            }
+            rewriter.replaceOp(op, resCSRMatrix);
+            return mlir::success();
+        }
+        else
+        {
+            throw ErrorHandler::compilerError(loc, "EwOpsLowering (BinaryOp)", "Unsupported ewOps codegen");
+        }    
+    }
+
+    LogicalResult matchAndRewriteSparseSparseMat(BinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const {
+        Location loc = op->getLoc();
+        Value lhs = adaptor.getLhs();
+        Value rhs = adaptor.getRhs();
+
+        auto lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto rhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
+        
+        ssize_t lhsRows = lhsMatrixType.getNumRows();
+        ssize_t lhsCols = lhsMatrixType.getNumCols();
+        ssize_t rhsRows = rhsMatrixType.getNumRows();
+        ssize_t rhsCols = rhsMatrixType.getNumCols();
+
+        if (lhsRows != rhsRows || lhsCols != rhsCols)
+            throw ErrorHandler::compilerError(
+                loc, "EwOpsLowering (BinaryOp Sparse Sparse)", "lhs and rhs must have the same dimensions.");
+        
+        auto numRows = lhsRows;
+        auto numCols = lhsCols;
+
+        MemRefType lhsValuesMemRefType =
+            MemRefType::get({ShapedType::kDynamic}, lhsMatrixType.getElementType());
+        MemRefType rhsValuesMemRefType =
+            MemRefType::get({ShapedType::kDynamic}, rhsMatrixType.getElementType());
+        MemRefType colIdxsMemRefType = 
+            MemRefType::get({ShapedType::kDynamic}, rewriter.getIndexType());
+        MemRefType rowOffsetsMemRefType = 
+            MemRefType::get({numRows + 1}, rewriter.getIndexType());
+        
+        auto lhsValuesMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(loc, lhsValuesMemRefType, lhs);
+        auto lhsColIdxsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(loc, colIdxsMemRefType, lhs);
+        auto lhsRowOffsetsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(loc, rowOffsetsMemRefType, lhs);
+        auto rhsValuesMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToValuesMemRef>(loc, rhsValuesMemRefType, rhs);
+        auto rhsColIdxsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToColIdxsMemRef>(loc, colIdxsMemRefType, rhs);
+        auto rhsRowOffsetsMemRef =
+            rewriter.create<daphne::ConvertCSRMatrixToRowOffsetsMemRef>(loc, rowOffsetsMemRefType, rhs);
+         
+        auto zero = rewriter.create<arith::ConstantIndexOp>(loc, 0);
+        auto one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
+        auto numRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, numRows);
+
+        auto resValuesMemRef = rewriter.create<memref::AllocOp>(loc, lhsValuesMemRefType, ValueRange{one});
+        auto resColIdxsMemRef = rewriter.create<memref::AllocOp>(loc, colIdxsMemRefType, ValueRange{one});
+        auto resRowOffsetsMemRef = rewriter.create<memref::AllocOp>(loc, rowOffsetsMemRefType);
+        rewriter.create<memref::StoreOp>(loc, zero, resRowOffsetsMemRef, ValueRange{zero});
+
+        rewriter.create<scf::ForOp>(
+            loc, zero, numRowsValue, one, ValueRange{zero},
+            [&](OpBuilder &OpBuilderNested, Location locNested, Value loopIdx, ValueRange loopIterArgs) 
+            {
+                auto rowPtr = loopIdx;
+                auto nextRowPtr = OpBuilderNested.create<arith::AddIOp>(locNested, rowPtr, one);
+
+                auto resValuesPtr = loopIterArgs[0];
+
+                auto lhsColIdxLowerIncl = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, lhsRowOffsetsMemRef, ValueRange{rowPtr});
+                auto lhsColIdxUpperExcl = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, lhsRowOffsetsMemRef, ValueRange{nextRowPtr});
+                auto rhsColIdxLowerIncl = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, rhsRowOffsetsMemRef, ValueRange{rowPtr});
+                auto rhsColIdxUpperExcl = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, rhsRowOffsetsMemRef, ValueRange{nextRowPtr});
+
+                auto lhsColIdxUpperIncl = OpBuilderNested.create<arith::SubIOp>(
+                    locNested, lhsColIdxUpperExcl, one);
+                auto lhsColUpper = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, lhsColIdxsMemRef, ValueRange{lhsColIdxUpperIncl});
+                auto rhsColIdxUpperIncl = OpBuilderNested.create<arith::SubIOp>(
+                    locNested, rhsColIdxUpperExcl, one);
+                auto rhsColUpper = OpBuilderNested.create<memref::LoadOp>(
+                    locNested, rhsColIdxsMemRef, ValueRange{rhsColIdxUpperIncl});
+                
+                
+                auto lhsEndFirst = OpBuilderNested.create<arith::CmpIOp>(
+                    locNested, arith::CmpIPredicate::ult, lhsColUpper, rhsColUpper);
+                
+                auto lhsAllZero = OpBuilderNested.create<arith::CmpIOp>(
+                    locNested, arith::CmpIPredicate::eq, lhsColIdxLowerIncl, lhsColIdxUpperExcl);
+                auto rhsAllZero = OpBuilderNested.create<arith::CmpIOp>(
+                    locNested, arith::CmpIPredicate::eq, rhsColIdxLowerIncl, rhsColIdxUpperExcl);
+
+                auto operation = OpBuilderNested.create<scf::IfOp>(
+                    locNested, lhsAllZero,
+                    [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested)
+                    {
+                        auto thenRegion = OpBuilderTwiceNested.create<scf::IfOp>(
+                            locTwiceNested, rhsAllZero,
+                            [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested)
+                            {
+                                //if lhs and rhs are all-zero in this row, move to next row
+                                auto newResValuesPtr = resValuesPtr;
+                                OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{newResValuesPtr});
+                            },
+                            [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested)
+                            {
+                                //if lhs is all-zero in this row but rhs is not
+                                if (llvm::isa<daphne::EwAddOp>(op)){
+                                    auto forLoop = OpBuilderThreetimesNested.create<scf::ForOp>(
+                                        locThreetimesNested, rhsColIdxLowerIncl, rhsColIdxUpperExcl, one, ValueRange{resValuesPtr},
+                                        [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, Value loopIdx, ValueRange loopIterArgs) 
+                                        {
+                                            //copy this row of rhs to the res memref if the op is add
+                                            auto resValue = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                                locFourtimesNested, rhsValuesMemRef, ValueRange{loopIdx});
+                                            auto resCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                                locFourtimesNested, rhsColIdxsMemRef, ValueRange{loopIdx});  
+                                            auto resIndex = loopIterArgs[0];
+                                            OpBuilderFourtimesNested.create<memref::StoreOp>(
+                                                locFourtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                            OpBuilderFourtimesNested.create<memref::StoreOp>(
+                                                locFourtimesNested, resCol, resColIdxsMemRef, ValueRange{resIndex});
+                                            auto newResValuesPtr = OpBuilderFourtimesNested.create<arith::AddIOp>(
+                                                locFourtimesNested, resIndex, one);
+                                            OpBuilderFourtimesNested.create<scf::YieldOp>(
+                                                locFourtimesNested, ValueRange{newResValuesPtr});
+                                        }
+                                    );
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)}); 
+                                }
+                                else
+                                {
+                                    //else move to the next row
+                                    auto newResValuesPtr = resValuesPtr;
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{newResValuesPtr});
+                                }                  
+                            }
+                        );
+                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, ValueRange{thenRegion.getResult(0)});
+                    },
+                    [&](OpBuilder &OpBuilderTwiceNested, Location locTwiceNested)
+                    {
+                        auto elseRegion = OpBuilderTwiceNested.create<scf::IfOp>(
+                            locNested, rhsAllZero,
+                            [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested)
+                            {
+                                if (llvm::isa<daphne::EwAddOp>(op)){
+                                    auto forLoop = OpBuilderThreetimesNested.create<scf::ForOp>(
+                                    locThreetimesNested, lhsColIdxLowerIncl, lhsColIdxUpperExcl, one, ValueRange{resValuesPtr},
+                                        [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, Value loopIdx, ValueRange loopIterArgs) 
+                                        {
+                                            auto resValue = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                                locFourtimesNested, lhsValuesMemRef, ValueRange{loopIdx});
+                                            auto resCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                                locFourtimesNested, lhsColIdxsMemRef, ValueRange{loopIdx});  
+                                            auto resIndex = loopIterArgs[0];
+                                            OpBuilderFourtimesNested.create<memref::StoreOp>(
+                                                locFourtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                            OpBuilderFourtimesNested.create<memref::StoreOp>(
+                                                locFourtimesNested, resCol, resColIdxsMemRef, ValueRange{resIndex});
+                                            auto newResValuesPtr = OpBuilderFourtimesNested.create<arith::AddIOp>(
+                                                locFourtimesNested, resIndex, one);
+                                            OpBuilderFourtimesNested.create<scf::YieldOp>(
+                                                locFourtimesNested, ValueRange{newResValuesPtr});
+                                        }
+                                    );
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{forLoop.getResult(0)}); 
+                                }
+                                else
+                                {
+                                    auto newResValuesPtr = resValuesPtr;
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{newResValuesPtr});
+                                }  
+                            },
+                            [&](OpBuilder &OpBuilderThreetimesNested, Location locThreetimesNested)
+                            {
+                                auto whileLoop = OpBuilderThreetimesNested.create<scf::WhileOp>(
+                                    locThreetimesNested, 
+                                    TypeRange{
+                                        OpBuilderThreetimesNested.getIndexType(), 
+                                        OpBuilderThreetimesNested.getIndexType(),
+                                        OpBuilderThreetimesNested.getIndexType()}, 
+                                    ValueRange{lhsColIdxLowerIncl, rhsColIdxLowerIncl, resValuesPtr},
+                                    [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, ValueRange args)
+                                    {
+                                        auto cond1 = OpBuilderFourtimesNested.create<arith::CmpIOp>(
+                                            locFourtimesNested, arith::CmpIPredicate::ult, args[0], lhsColIdxUpperExcl);
+                                        auto cond2 = OpBuilderFourtimesNested.create<arith::CmpIOp>(
+                                            locFourtimesNested, arith::CmpIPredicate::ult, args[1], rhsColIdxUpperExcl);
+                                        auto cond = OpBuilderFourtimesNested.create<arith::AndIOp>(locFourtimesNested, cond1, cond2);
+                                        OpBuilderFourtimesNested.create<scf::ConditionOp>(locFourtimesNested, cond, args);    
+                                    },
+                                    [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested, ValueRange args)
+                                    {
+                                        auto lhsCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                            locFourtimesNested, lhsColIdxsMemRef, ValueRange{args[0]});
+                                        auto rhsCol = OpBuilderFourtimesNested.create<memref::LoadOp>(
+                                            locFourtimesNested, rhsColIdxsMemRef, ValueRange{args[1]});
+                
+                                        auto case1 = OpBuilderFourtimesNested.create<arith::CmpIOp>(
+                                            locFourtimesNested, arith::CmpIPredicate::ult, lhsCol, rhsCol);
+                                        auto case2 = OpBuilderFourtimesNested.create<arith::CmpIOp>(
+                                            locFourtimesNested, arith::CmpIPredicate::ult, rhsCol, lhsCol);
+                                        // copy the element whose col num is smaller to the res if the op is add
+                                        // then load the next element of that side
+                                        auto newArg = OpBuilderFourtimesNested.create<scf::IfOp>(
+                                            locFourtimesNested, case1, 
+                                            [&](OpBuilder &OpBuilderFivetimesNested, Location locFivetimesNested)
+                                            {
+                                                auto newResValuesPtr = args[2];
+                                                if (llvm::isa<daphne::EwAddOp>(op))
+                                                {
+                                                    auto resValue = OpBuilderFivetimesNested.create<memref::LoadOp>(
+                                                        locFivetimesNested, lhsValuesMemRef, ValueRange{args[0]});
+                                                    auto resIndex = args[2];
+                                                    OpBuilderFivetimesNested.create<memref::StoreOp>(
+                                                        locFivetimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                                    OpBuilderFivetimesNested.create<memref::StoreOp>(
+                                                        locFivetimesNested, lhsCol, resColIdxsMemRef, ValueRange{resIndex});
+                                                    newResValuesPtr = OpBuilderFivetimesNested.create<arith::AddIOp>(
+                                                        locFivetimesNested, resIndex, one);        
+                                                }
+
+                                                auto newArg0 = OpBuilderFivetimesNested.create<arith::AddIOp>(locFivetimesNested, args[0], one);
+                                                auto newArg1 = args[1];
+                                                OpBuilderFivetimesNested.create<scf::YieldOp>(
+                                                    locFivetimesNested, 
+                                                    ValueRange{newArg0, newArg1, newResValuesPtr});
+                                            },
+                                            [&](OpBuilder &OpBuilderFivetimesNested, Location locFivetimesNested)
+                                            {
+                                                auto case2Region = OpBuilderFivetimesNested.create<scf::IfOp>(
+                                                    locFivetimesNested, case2, 
+                                                    [&](OpBuilder &OpBuilderSixtimesNested, Location locSixtimesNested)
+                                                    {
+                                                        auto newResValuesPtr = args[2];
+                                                        if (llvm::isa<daphne::EwAddOp>(op))
+                                                        {
+                                                            auto resValue = OpBuilderSixtimesNested.create<memref::LoadOp>(
+                                                                locSixtimesNested, rhsValuesMemRef, ValueRange{args[1]});
+                                                            auto resIndex = args[2];
+                                                            OpBuilderSixtimesNested.create<memref::StoreOp>(
+                                                                locSixtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                                            OpBuilderSixtimesNested.create<memref::StoreOp>(
+                                                                locSixtimesNested, rhsCol, resColIdxsMemRef, ValueRange{resIndex});
+                                                            newResValuesPtr = OpBuilderSixtimesNested.create<arith::AddIOp>(
+                                                                locSixtimesNested, resIndex, one);     
+                                                        }
+                                                        auto newArg0 = args[0];
+                                                        auto newArg1 = OpBuilderSixtimesNested.create<arith::AddIOp>(locSixtimesNested, args[1], one);
+                                                        OpBuilderSixtimesNested.create<scf::YieldOp>(
+                                                            locSixtimesNested, ValueRange{newArg0, newArg1, newResValuesPtr});
+                                                    },
+                                                    [&](OpBuilder &OpBuilderSixtimesNested, Location locSixtimesNested)
+                                                    {
+                                                        //perform computation on elements if their num col is equal to each other
+                                                        auto lhsValue = OpBuilderSixtimesNested.create<memref::LoadOp>(
+                                                            locSixtimesNested, lhsValuesMemRef, ValueRange{args[0]});
+                                                        auto rhsValue = OpBuilderSixtimesNested.create<memref::LoadOp>(
+                                                            locSixtimesNested, rhsValuesMemRef, ValueRange{args[1]});
+                                                        auto resValue = binaryFunc(
+                                                            OpBuilderSixtimesNested, locSixtimesNested, this->typeConverter, lhsValue, rhsValue);
+                                                        auto resIndex = args[2];
+                                                        OpBuilderSixtimesNested.create<memref::StoreOp>(
+                                                            locSixtimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                                        OpBuilderSixtimesNested.create<memref::StoreOp>(
+                                                            locSixtimesNested, rhsCol, resColIdxsMemRef, ValueRange{resIndex});
+                                                        auto newResValuesPtr = OpBuilderSixtimesNested.create<arith::AddIOp>(
+                                                            locSixtimesNested, resIndex, one);
+                                                        auto newArg0 = OpBuilderSixtimesNested.create<arith::AddIOp>(locSixtimesNested, args[0], one);
+                                                        auto newArg1 = OpBuilderSixtimesNested.create<arith::AddIOp>(locSixtimesNested, args[1], one);
+                                                        OpBuilderSixtimesNested.create<scf::YieldOp>(
+                                                            locSixtimesNested, ValueRange{newArg0, newArg1, newResValuesPtr}); 
+                                                    }
+                                                );
+                                                OpBuilderFivetimesNested.create<scf::YieldOp>(
+                                                    locFivetimesNested, 
+                                                    ValueRange{case2Region.getResult(0), case2Region.getResult(1), case2Region.getResult(2)});
+                                            }
+                                        ); 
+                                        auto newArg0 = newArg.getResult(0);
+                                        auto newArg1 = newArg.getResult(1);
+                                        auto newArg2 = newArg.getResult(2);
+                                        
+                                        OpBuilderFourtimesNested.create<scf::YieldOp>(
+                                            locFourtimesNested, ValueRange{newArg0, newArg1, newArg2});
+                                    }
+                                );
+                                // if lhs ends first, the rest will be in rhs and copy them to the res if the op is add
+                                if (llvm::isa<daphne::EwAddOp>(op))
+                                {
+                                    auto rest = OpBuilderThreetimesNested.create<scf::IfOp>(
+                                        locThreetimesNested, lhsEndFirst,
+                                        [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested)
+                                        {
+                                            auto rhsRest = OpBuilderFourtimesNested.create<scf::ForOp>(
+                                                locFourtimesNested, whileLoop.getResult(1), rhsColIdxUpperExcl, one, ValueRange{whileLoop.getResult(2)},
+                                                [&](OpBuilder &OpBuilderFivetimesNested, Location locFivetimesNested, Value loopIdx, ValueRange loopIterArgs) 
+                                                {
+                                                    auto resValue = OpBuilderFivetimesNested.create<memref::LoadOp>(
+                                                        locFivetimesNested, rhsValuesMemRef, ValueRange{loopIdx});
+                                                    auto resCol = OpBuilderFivetimesNested.create<memref::LoadOp>(
+                                                        locFivetimesNested, rhsColIdxsMemRef, ValueRange{loopIdx});    
+                                                    auto resIndex = loopIterArgs[0];
+                                                    OpBuilderFivetimesNested.create<memref::StoreOp>(
+                                                        locFivetimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                                    OpBuilderFivetimesNested.create<memref::StoreOp>(
+                                                        locFivetimesNested, resCol, resColIdxsMemRef, ValueRange{resIndex});
+                                                    auto newResValuesPtr = OpBuilderFivetimesNested.create<arith::AddIOp>(
+                                                        locFivetimesNested, resIndex, one);
+                                                    OpBuilderFivetimesNested.create<scf::YieldOp>(locFivetimesNested, ValueRange{newResValuesPtr});
+                                                }
+                                            );
+                                            OpBuilderFourtimesNested.create<scf::YieldOp>(locFourtimesNested, ValueRange{rhsRest.getResult(0)});
+                                        },
+                                        [&](OpBuilder &OpBuilderFourtimesNested, Location locFourtimesNested)
+                                        {
+                                            auto lhsRest = OpBuilderFourtimesNested.create<scf::ForOp>(
+                                                locFourtimesNested, whileLoop.getResult(0), lhsColIdxUpperExcl, one, ValueRange{whileLoop.getResult(2)},
+                                                [&](OpBuilder &OpBuilderFivetimesNested, Location locFivetimesNested, Value loopIdx, ValueRange loopIterArgs) 
+                                                {
+                                                    auto resValue = OpBuilderFivetimesNested.create<memref::LoadOp>(
+                                                        locFivetimesNested, lhsValuesMemRef, ValueRange{loopIdx});
+                                                    auto resCol = OpBuilderFivetimesNested.create<memref::LoadOp>(
+                                                        locFivetimesNested, lhsColIdxsMemRef, ValueRange{loopIdx});  
+                                                    auto resIndex = loopIterArgs[0];
+                                                    OpBuilderFivetimesNested.create<memref::StoreOp>(
+                                                        locFivetimesNested, resValue, resValuesMemRef, ValueRange{resIndex});
+                                                    OpBuilderFivetimesNested.create<memref::StoreOp>(
+                                                        locFivetimesNested, resCol, resColIdxsMemRef, ValueRange{resIndex});
+                                                    auto newResValuesPtr = OpBuilderFivetimesNested.create<arith::AddIOp>(
+                                                        locFivetimesNested, resIndex, one);
+                                                    OpBuilderFivetimesNested.create<scf::YieldOp>(locFivetimesNested, ValueRange{newResValuesPtr});
+                                                }
+                                            );
+                                            OpBuilderFourtimesNested.create<scf::YieldOp>(locFourtimesNested, ValueRange{lhsRest.getResult(0)});
+                                        }
+                                    );
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{rest.getResult(0)});
+                                }
+                                else //TODO: Support ops other than add
+                                    OpBuilderThreetimesNested.create<scf::YieldOp>(locThreetimesNested, ValueRange{whileLoop.getResult(2)});
+                            }
+                        );
+                        OpBuilderTwiceNested.create<scf::YieldOp>(locTwiceNested, ValueRange{elseRegion.getResult(0)});
+                    }
+                );
+                
+                OpBuilderNested.create<memref::StoreOp>(
+                    locNested, 
+                    operation.getResult(0),
+                    resRowOffsetsMemRef,
+                    ValueRange{nextRowPtr});
+                
+                OpBuilderNested.create<scf::YieldOp>(locNested, ValueRange{operation.getResult(0)});
+            }
+        );
+
+        Value maxNumRowsValue = rewriter.create<arith::ConstantIndexOp>(loc, numRows);
+        Value numColsValue = rewriter.create<arith::ConstantIndexOp>(loc, numCols);
+        Value maxNumNonZerosValue = rewriter.create<arith::ConstantIndexOp>(loc, numCols * numRows);
+
+        Value resCSRMatrix = convertMemRefToCSRMatrix(loc, rewriter,
+            resValuesMemRef, resColIdxsMemRef, resRowOffsetsMemRef, 
+            maxNumRowsValue, numColsValue, maxNumNonZerosValue, op.getType()); 
+
+        if (!resCSRMatrix) {
+            llvm::errs() << "Error: resCSRMatrix is null!\n";
+        }
+        
+        rewriter.replaceOp(op, resCSRMatrix);
+
+        return mlir::success();   
+    }
+
     LogicalResult matchAndRewrite(BinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
         Location loc = op->getLoc();
         Value lhs = adaptor.getLhs();
@@ -254,6 +845,14 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
             }
             return matchAndRewriteBroadcastScalarRhs(op, adaptor, rewriter, rhs);
         }
+
+        if (lhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse &&
+            rhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Dense)
+            return matchAndRewriteSparseDenseMat(op, adaptor, rewriter);
+
+        if (lhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse &&
+            rhsMatrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse)
+            return matchAndRewriteSparseSparseMat(op, adaptor, rewriter);
 
         Type matrixElementType = lhsMatrixType.getElementType();
 
@@ -467,7 +1066,7 @@ struct EwOpLoweringPass : public mlir::PassWrapper<EwOpLoweringPass, mlir::Opera
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
         registry
             .insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect,
-                    daphne::DaphneDialect, mlir::math::MathDialect, mlir::arith::ArithDialect>();
+                    daphne::DaphneDialect, mlir::math::MathDialect, mlir::arith::ArithDialect, mlir::scf::SCFDialect>();
     }
     void runOnOperation() final;
 
@@ -528,7 +1127,7 @@ void EwOpLoweringPass::runOnOperation() {
 
     target.addLegalDialect<mlir::arith::ArithDialect, memref::MemRefDialect, mlir::AffineDialect,
                            mlir::LLVM::LLVMDialect, daphne::DaphneDialect, mlir::BuiltinDialect,
-                           mlir::math::MathDialect, mlir::linalg::LinalgDialect>();
+                           mlir::math::MathDialect, mlir::linalg::LinalgDialect, mlir::scf::SCFDialect>();
 
     // UnaryOps
     target.addDynamicallyLegalOp<daphne::EwAbsOp, daphne::EwSqrtOp, daphne::EwExpOp, daphne::EwLnOp, daphne::EwSinOp,
@@ -541,7 +1140,7 @@ void EwOpLoweringPass::runOnOperation() {
             return false;
         }
         auto matType = operand.dyn_cast<daphne::MatrixType>();
-        if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
+        if (matType && (matType.getRepresentation() == daphne::MatrixRepresentation::Dense || matType.getRepresentation() == daphne::MatrixRepresentation::Sparse)) {
             return false;
         }
         return true;
@@ -567,6 +1166,22 @@ void EwOpLoweringPass::runOnOperation() {
                     (rhsMatType && rhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense)) {
                     return false;
                 }
+
+                if ((llvm::isa<IntegerType>(rhs) || llvm::isa<FloatType>(rhs)) &&
+                    (lhsMatType && lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Sparse)) {
+                    return false;
+                }
+
+                if ((lhsMatType && lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Sparse) &&
+                    (rhsMatType && rhsMatType.getRepresentation() == daphne::MatrixRepresentation::Dense)) {
+                    return false;
+                }
+
+                if ((lhsMatType && lhsMatType.getRepresentation() == daphne::MatrixRepresentation::Sparse) &&
+                    (rhsMatType && rhsMatType.getRepresentation() == daphne::MatrixRepresentation::Sparse)) {
+                    return false;
+                }
+
                 return true;
             });
 
