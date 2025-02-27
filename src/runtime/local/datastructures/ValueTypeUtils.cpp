@@ -46,6 +46,22 @@ size_t ValueTypeUtils::sizeOf(ValueTypeCode type) {
         return sizeof(std::string);
     case ValueTypeCode::FIXEDSTR16:
         return sizeof(FixedStr16);
+    case ValueTypeCode::FIXEDSTR32:
+        return sizeof(FixedStr32);
+    case ValueTypeCode::FIXEDSTR64:
+        return sizeof(FixedStr64);
+    case ValueTypeCode::FIXEDSTR128:
+        return sizeof(FixedStr128);
+    case ValueTypeCode::FIXEDSTR256:
+        return sizeof(FixedStr256);
+    case ValueTypeCode::UMBRA:
+        return sizeof(Umbra_t);
+    case ValueTypeCode::NEWUMBRA:
+        return sizeof(NewUmbra_t);
+    case ValueTypeCode::UNORDDICENCSTR:
+        return sizeof(UnorderedDictionaryEncodedString);
+        case ValueTypeCode::ORDDICENCSTR:
+        return sizeof(OrderedDictionaryEncodedString);
     default:
         throw std::runtime_error("ValueTypeUtils::sizeOf: unknown value type code");
     }
@@ -97,6 +113,14 @@ template <> const ValueTypeCode ValueTypeUtils::codeFor<float> = ValueTypeCode::
 template <> const ValueTypeCode ValueTypeUtils::codeFor<double> = ValueTypeCode::F64;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<std::string> = ValueTypeCode::STR;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr16> = ValueTypeCode::FIXEDSTR16;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr32> = ValueTypeCode::FIXEDSTR32;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr64> = ValueTypeCode::FIXEDSTR64;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr128> = ValueTypeCode::FIXEDSTR128;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr256> = ValueTypeCode::FIXEDSTR256;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<Umbra_t> = ValueTypeCode::UMBRA;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<NewUmbra_t> = ValueTypeCode::NEWUMBRA;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<UnorderedDictionaryEncodedString> = ValueTypeCode::UNORDDICENCSTR;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<OrderedDictionaryEncodedString> = ValueTypeCode::ORDDICENCSTR;
 
 template <> const std::string ValueTypeUtils::cppNameFor<int8_t> = "int8_t";
 template <> const std::string ValueTypeUtils::cppNameFor<int32_t> = "int32_t";
@@ -110,6 +134,14 @@ template <> const std::string ValueTypeUtils::cppNameFor<bool> = "bool";
 template <> const std::string ValueTypeUtils::cppNameFor<const char *> = "const char*";
 template <> const std::string ValueTypeUtils::cppNameFor<std::string> = "std::string";
 template <> const std::string ValueTypeUtils::cppNameFor<FixedStr16> = "FixedStr";
+template <> const std::string ValueTypeUtils::cppNameFor<FixedStr32> = "FixedStr";
+template <> const std::string ValueTypeUtils::cppNameFor<FixedStr64> = "FixedStr";
+template <> const std::string ValueTypeUtils::cppNameFor<FixedStr128> = "FixedStr";
+template <> const std::string ValueTypeUtils::cppNameFor<FixedStr256> = "FixedStr";
+template <> const std::string ValueTypeUtils::cppNameFor<Umbra_t> = "Umbra";
+template <> const std::string ValueTypeUtils::cppNameFor<NewUmbra_t> = "NewUmbra";
+template <> const std::string ValueTypeUtils::cppNameFor<UnorderedDictionaryEncodedString> = "UnorderedDictionaryEncodedString";
+template <> const std::string ValueTypeUtils::cppNameFor<OrderedDictionaryEncodedString> = "OrderedDictionaryEncodedString";
 
 template <> const std::string ValueTypeUtils::irNameFor<int8_t> = "si8";
 template <> const std::string ValueTypeUtils::irNameFor<int32_t> = "si32";
@@ -132,6 +164,14 @@ template <> const bool ValueTypeUtils::defaultValue<bool> = false;
 template <> const char *ValueTypeUtils::defaultValue<const char *> = "";
 template <> const std::string ValueTypeUtils::defaultValue<std::string> = std::string("");
 template <> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16> = FixedStr16();
+template <> const FixedStr32 ValueTypeUtils::defaultValue<FixedStr32> = FixedStr32();
+template <> const FixedStr64 ValueTypeUtils::defaultValue<FixedStr64> = FixedStr64();
+template <> const FixedStr128 ValueTypeUtils::defaultValue<FixedStr128> = FixedStr128();
+template <> const FixedStr256 ValueTypeUtils::defaultValue<FixedStr256> = FixedStr256();
+template <> const Umbra_t ValueTypeUtils::defaultValue<Umbra_t> = Umbra_t();
+template <> const NewUmbra_t ValueTypeUtils::defaultValue<NewUmbra_t> = NewUmbra_t();
+template <> const UnorderedDictionaryEncodedString ValueTypeUtils::defaultValue<UnorderedDictionaryEncodedString> = UnorderedDictionaryEncodedString();
+template <> const OrderedDictionaryEncodedString ValueTypeUtils::defaultValue<OrderedDictionaryEncodedString> = OrderedDictionaryEncodedString();
 
 const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
     switch (type) {
@@ -153,6 +193,14 @@ const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
         return cppNameFor<double>;
     case ValueTypeCode::STR:
         return cppNameFor<std::string>;
+    case ValueTypeCode::UMBRA:
+        return cppNameFor<Umbra_t>;
+    case ValueTypeCode::NEWUMBRA:
+        return cppNameFor<NewUmbra_t>;
+    case ValueTypeCode::UNORDDICENCSTR:
+        return cppNameFor<UnorderedDictionaryEncodedString>;
+        case ValueTypeCode::ORDDICENCSTR:
+        return cppNameFor<OrderedDictionaryEncodedString>;
     default:
         throw std::runtime_error("ValueTypeUtils::cppNameForCode: unknown value type code");
     }

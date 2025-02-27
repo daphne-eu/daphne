@@ -73,4 +73,92 @@ TEST_CASE("castSca, actual casts strings to numbers", TAG_KERNELS) {
     CHECK(castSca<int64_t, FixedStr16>("-12345678901234", nullptr) == -12345678901234ll);
     CHECK(castSca<uint64_t, FixedStr16>("123456789012345", nullptr) == 123456789012345ull);
     CHECK(castSca<uint64_t, FixedStr16>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, FixedStr32>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, FixedStr32>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, FixedStr32>("0", nullptr) == 0);
+    CHECK(castSca<double, FixedStr32>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, FixedStr32>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, FixedStr32>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, FixedStr32>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, FixedStr32>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, FixedStr32>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, FixedStr32>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, FixedStr64>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, FixedStr64>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, FixedStr64>("0", nullptr) == 0);
+    CHECK(castSca<double, FixedStr64>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, FixedStr64>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, FixedStr64>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, FixedStr64>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, FixedStr64>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, FixedStr64>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, FixedStr64>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, FixedStr128>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, FixedStr128>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, FixedStr128>("0", nullptr) == 0);
+    CHECK(castSca<double, FixedStr128>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, FixedStr128>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, FixedStr128>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, FixedStr128>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, FixedStr128>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, FixedStr128>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, FixedStr128>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, FixedStr256>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, FixedStr256>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, FixedStr256>("0", nullptr) == 0);
+    CHECK(castSca<double, FixedStr256>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, FixedStr256>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, FixedStr256>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, FixedStr256>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, FixedStr256>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, FixedStr256>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, FixedStr256>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, Umbra_t>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, Umbra_t>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, Umbra_t>("0", nullptr) == 0);
+    CHECK(castSca<double, Umbra_t>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, Umbra_t>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, Umbra_t>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, Umbra_t>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, Umbra_t>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, Umbra_t>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, Umbra_t>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, NewUmbra_t>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, NewUmbra_t>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, NewUmbra_t>("0", nullptr) == 0);
+    CHECK(castSca<double, NewUmbra_t>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, NewUmbra_t>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, NewUmbra_t>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, NewUmbra_t>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, NewUmbra_t>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, NewUmbra_t>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, NewUmbra_t>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, UnorderedDictionaryEncodedString>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, UnorderedDictionaryEncodedString>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, UnorderedDictionaryEncodedString>("0", nullptr) == 0);
+    CHECK(castSca<double, UnorderedDictionaryEncodedString>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, UnorderedDictionaryEncodedString>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, UnorderedDictionaryEncodedString>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, UnorderedDictionaryEncodedString>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, UnorderedDictionaryEncodedString>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, UnorderedDictionaryEncodedString>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, UnorderedDictionaryEncodedString>("0", nullptr) == std::numeric_limits<uint64_t>::min());
+
+    CHECK(castSca<int64_t, OrderedDictionaryEncodedString>("123", nullptr) == 123);
+    CHECK(castSca<int64_t, OrderedDictionaryEncodedString>("-123", nullptr) == -123);
+    CHECK(castSca<int64_t, OrderedDictionaryEncodedString>("0", nullptr) == 0);
+    CHECK(castSca<double, OrderedDictionaryEncodedString>("123.4", nullptr) == 123.4);
+    CHECK(castSca<double, OrderedDictionaryEncodedString>("-123.4", nullptr) == -123.4);
+    CHECK(castSca<double, OrderedDictionaryEncodedString>("0.0", nullptr) == 0.0);
+    CHECK(castSca<int64_t, OrderedDictionaryEncodedString>("123456789012345", nullptr) == 123456789012345ll);
+    CHECK(castSca<int64_t, OrderedDictionaryEncodedString>("-12345678901234", nullptr) == -12345678901234ll);
+    CHECK(castSca<uint64_t, OrderedDictionaryEncodedString>("123456789012345", nullptr) == 123456789012345ull);
+    CHECK(castSca<uint64_t, OrderedDictionaryEncodedString>("0", nullptr) == std::numeric_limits<uint64_t>::min());
 }
