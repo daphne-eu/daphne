@@ -83,17 +83,17 @@ class Matrix(OperationNode):
             return "f32"
         elif d_type == np.dtype('f8'):
             return "f64"
-        elif d_type == np.dtype('si2'):
+        elif d_type == np.dtype('i2'):
             return "si8"
-        elif d_type == np.dtype('si4'):
+        elif d_type == np.dtype('i4'):
             return "si32"
-        elif d_type == np.dtype('si8'):
+        elif d_type == np.dtype('i8'):
             return "si64"
-        elif d_type == np.dtype('ui2'):
+        elif d_type == np.dtype('u2'):
             return "ui8"
-        elif d_type == np.dtype('ui4'):
+        elif d_type == np.dtype('u4'):
             return "ui8"
-        elif d_type == np.dtype('ui8'):
+        elif d_type == np.dtype('u8'):
             return "ui8"
         else:
             print("Error")

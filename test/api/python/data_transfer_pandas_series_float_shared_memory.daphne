@@ -1,0 +1,5 @@
+ser1 = createFrame([10.0, 12.0, 14.0], "0");
+ser2 = createFrame([16.0, 18.0, 20.0, 22.0], "0");
+
+print(ser1);
+print(ser2);
