@@ -1,0 +1,3 @@
+Frame(2x2, [id:int64_t, name:std::string])
+1 Alice
+2 Bob

@@ -1,0 +1,8 @@
+// basic SQLite test
+res = externalSql("DROP TABLE IF EXISTS example;
+                   CREATE TABLE example (id INTEGER, name TEXT, value BOOLEAN);
+                   INSERT INTO example VALUES (1,'Alice',false), (2,'Bob',true);
+                   SELECT * FROM example;
+                   ","SQLite","test/api/cli/externalSQL/examplesqlite.db");
+
+print(res);

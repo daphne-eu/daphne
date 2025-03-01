@@ -36,6 +36,7 @@ from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PAT
 
 import numpy as np
 import pandas as pd
+
 try:
     import torch as torch
 except ImportError as e:
@@ -48,9 +49,10 @@ except ImportError as e:
 import time
 from typing import Sequence, Dict, Union, List, Callable, Tuple, Optional, Iterable
 
+
 class DaphneContext(object):
     _functions: dict
-    
+
     def __init__(self):
         self._functions = dict()
 
@@ -59,17 +61,17 @@ class DaphneContext(object):
         :param file: The path to the file containing the data.
         :return: The data in the file as a Matrix.
         """
-        unnamed_params = ['\"'+file+'\"']
+        unnamed_params = ['\"' + file + '\"']
         return Matrix(self, 'readMatrix', unnamed_params)
-        
+
     def readFrame(self, file: str) -> Frame:
         """Reads a frame from a file.
         :param file: The path to the file containing the data.
         :return: The data in the file as a Frame.
         """
-        unnamed_params = ['\"'+file+'\"']
+        unnamed_params = ['\"' + file + '\"']
         return Frame(self, 'readFrame', unnamed_params)
-    
+
     def from_numpy(self, mat: np.array, shared_memory=True, verbose=False, return_shape=False):
         """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
         :param mat: The numpy array.
@@ -83,7 +85,7 @@ class DaphneContext(object):
 
         if verbose:
             start_time = time.time()
-        
+
         # Handle the dimensionality of the matrix.
         if mat.ndim == 1:
             rows = mat.shape[0]
@@ -150,7 +152,7 @@ class DaphneContext(object):
 
         if verbose:
             start_time = time.time()
-        
+
         if keepIndex:
             # Reset the index, moving it to a new column.
             # TODO We should not modify the input data frame here.
@@ -173,8 +175,8 @@ class DaphneContext(object):
 
         if verbose:
             print(f"from_pandas(): Python-side type-check execution time: {(time.time() - start_time):.10f} seconds")
-           
-        if shared_memory: # data transfer via shared memory
+
+        if shared_memory:  # data transfer via shared memory
             # Convert DataFrame and labels to column arrays and label arrays.
             args = []
 
@@ -186,7 +188,7 @@ class DaphneContext(object):
                     col_start_time = time.time()
 
                 mat = df[column].values
-                
+
                 # Change the data type, if int16 or uint16 is handed over.
                 # TODO This could change the input DataFrame.
                 if mat.dtype == np.int16:
@@ -218,27 +220,29 @@ class DaphneContext(object):
                     vtc = UI64
                 else:
                     raise TypeError(f'Unsupported numpy dtype in column "{column}" ({idx})')
-                
+     
                 args.append(Matrix(self, 'receiveFromNumpy', [address, len(mat), 1 , vtc], local_data=mat))
 
                 if verbose:
-                    print(f"from_pandas(): Python-side execution time for column `{column}` (#{idx}): {(time.time() - col_start_time):.10f} seconds")
-            
+                    print(
+                        f"from_pandas(): Python-side execution time for column `{column}` (#{idx}): {(time.time() - col_start_time):.10f} seconds")
+
             if verbose:
-                print(f"from_pandas(): Python-side execution time for all columns: {(time.time() - frame_start_time):.10f} seconds")
+                print(
+                    f"from_pandas(): Python-side execution time for all columns: {(time.time() - frame_start_time):.10f} seconds")
 
             labels = df.columns
-            for label in labels: 
+            for label in labels:
                 labelstr = f'"{label}"'
                 args.append(labelstr)
-            
+
             if verbose:
                 print(f"from_pandas(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
 
             # Return the Frame.
             return Frame(self, 'createFrame', unnamed_input_nodes=args, local_data=df)
-        
-        else: # data transfer via files
+
+        else:  # data transfer via files
             data_path_param = "\"" + TMP_PATH + "/{file_name}.csv\""
             unnamed_params = [data_path_param]
             named_params = []
@@ -247,11 +251,12 @@ class DaphneContext(object):
                 print(f"from_pandas(): total Python-side execution time: {(time.time() - start_time)::.10f} seconds")
 
             # Return the Frame.
-            return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
-    
-    # This feature is only available if TensorFlow is available.
+            return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)
+
+            # This feature is only available if TensorFlow is available.
+
     if isinstance(tf, ImportError):
-        def from_tensorflow(self, tensor           , shared_memory=True, verbose=False, return_shape=False):
+        def from_tensorflow(self, tensor, shared_memory=True, verbose=False, return_shape=False):
             raise tf
     else:
         def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False):
@@ -265,7 +270,7 @@ class DaphneContext(object):
 
             # Store the original shape for later use.
             original_shape = tensor.shape
-            
+
             if verbose:
                 start_time = time.time()
 
@@ -299,7 +304,7 @@ class DaphneContext(object):
 
     # This feature is only available if PyTorch is available.
     if isinstance(torch, ImportError):
-        def from_pytorch(self, tensor              , shared_memory=True, verbose=False, return_shape=False):
+        def from_pytorch(self, tensor, shared_memory=True, verbose=False, return_shape=False):
             raise torch
     else:
         def from_pytorch(self, tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False):
@@ -313,7 +318,7 @@ class DaphneContext(object):
 
             # Store the original shape for later use.
             original_shape = tensor.size()
-            
+
             if verbose:
                 start_time = time.time()
 
@@ -346,11 +351,11 @@ class DaphneContext(object):
             # Return the matrix, and the original shape if return_shape is set to True.
             return (matrix, original_shape) if return_shape else matrix
 
-    def fill(self, arg, rows:int, cols:int) -> Matrix:
-        named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
+    def fill(self, arg, rows: int, cols: int) -> Matrix:
+        named_input_nodes = {'arg': arg, 'rows': rows, 'cols': cols}
         return Matrix(self, 'fill', [], named_input_nodes=named_input_nodes)
-    
-    def createFrame(self, columns: List[Matrix], labels:List[str] = None) -> 'Frame':
+
+    def createFrame(self, columns: List[Matrix], labels: List[str] = None) -> 'Frame':
         if labels is None:
             labels = []
         if len(labels) != 0 and len(columns) != len(labels):
@@ -358,15 +363,15 @@ class DaphneContext(object):
                 "createFrame: specifying labels is optional, but if labels are given, "
                 "then their number must match that of the given columns"
             )
-        
+
         # If a label is a Python string, then wrap it into quotation marks, such that
         # is becomes a string literal in DaphneDSL.
         labels = list(map(lambda l: f'"{l}"' if isinstance(l, str) else l, labels))
 
         return Frame(self, 'createFrame', [*columns, *labels])
-    
-    def seq(self, start, end, inc = 1) -> Matrix:
-        named_input_nodes = {'start':start, 'end':end, 'inc':inc}
+
+    def seq(self, start, end, inc=1) -> Matrix:
+        named_input_nodes = {'start': start, 'end': end, 'inc': inc}
         return Matrix(self, 'seq', [], named_input_nodes=named_input_nodes)
 
     def rand(self,
@@ -374,7 +379,7 @@ class DaphneContext(object):
              min: Union[float, int] = None, max: Union[float, int] = None,
              sparsity: Union[float, int] = 0,
              seed: Union[float, int] = 0
-    ) -> Matrix:
+             ) -> Matrix:
         """Generates a matrix filled with random values.
         :param rows: number of rows
         :param cols: number of columns
@@ -387,22 +392,23 @@ class DaphneContext(object):
         # TODO Why should we validate here, happens later in DAPHNE.
         if rows < 0:
             raise ValueError("In rand statement, can only assign rows a long (integer) value >= 0 "
-                            "-- attempted to assign value: {r}".format(r=rows))
+                             "-- attempted to assign value: {r}".format(r=rows))
         if cols < 0:
             raise ValueError("In rand statement, can only assign cols a long (integer) value >= 0 "
-                            "-- attempted to assign value: {c}".format(c=cols))
+                             "-- attempted to assign value: {c}".format(c=cols))
         named_input_nodes = {
-            'rows': rows, 'cols': cols, 'min': min, 'max':max, 'sparsity':sparsity, 'seed':seed}
+            'rows': rows, 'cols': cols, 'min': min, 'max': max, 'sparsity': sparsity, 'seed': seed}
 
-        return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
-    
-    def sample(self, range, size, withReplacement: bool, seed = -1) -> 'Matrix':
+        return Matrix(self, 'rand', [], named_input_nodes=named_input_nodes)
+
+    def sample(self, range, size, withReplacement: bool, seed=-1) -> 'Matrix':
         return Matrix(self, 'sample', [range, size, withReplacement, seed])
 
     def diagMatrix(self, arg: Matrix) -> 'Matrix':
         return Matrix(self, 'diagMatrix', [arg])
 
-    def for_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], callback: Callable, start: int, end: int, step: Optional[int] = None) -> Tuple[VALID_COMPUTED_TYPES]:
+    def for_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], callback: Callable, start: int, end: int,
+                 step: Optional[int] = None) -> Tuple[VALID_COMPUTED_TYPES]:
         """
         Generates a for-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -415,13 +421,14 @@ class DaphneContext(object):
         :return: manipulated matrices (length n)
         """
         named_input_nodes = {
-            "start": start, 
+            "start": start,
             "end": end,
             "step": step
         }
         return tuple(ForLoop(self, callback, input_nodes, named_input_nodes))
 
-    def cond(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], pred: Callable, then_fn: Callable, else_fn: Callable = None) -> Tuple[VALID_COMPUTED_TYPES]:
+    def cond(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], pred: Callable, then_fn: Callable,
+             else_fn: Callable = None) -> Tuple[VALID_COMPUTED_TYPES]:
         """
         Generates an if-then-else statement block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -433,8 +440,9 @@ class DaphneContext(object):
         :return: manipulated matrices (length n)
         """
         return tuple(Cond(self, pred, then_fn, else_fn, input_nodes))
-    
-    def while_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[VALID_COMPUTED_TYPES]:
+
+    def while_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[
+        VALID_COMPUTED_TYPES]:
         """
         Generates a while-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -445,8 +453,9 @@ class DaphneContext(object):
         :return: manipulated matrices (length n)
         """
         return tuple(WhileLoop(self, cond, callback, input_nodes))
-    
-    def do_while_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[VALID_COMPUTED_TYPES]:
+
+    def do_while_loop(self, input_nodes: Iterable[VALID_COMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[
+        VALID_COMPUTED_TYPES]:
         """
         Generates a do-while-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -466,7 +475,7 @@ class DaphneContext(object):
         :return new Scalar
         """
         return Scalar(self, '&&', [left_operand, right_operand])
-    
+
     def logical_or(self, left_operand: 'Scalar', right_operand: 'Scalar'):
         """
         Logical OR operation for lazy evaluation. 
@@ -475,7 +484,7 @@ class DaphneContext(object):
         :return new Scalar
         """
         return Scalar(self, '||', [left_operand, right_operand])
-    
+
     def function(self, callback: Callable):
         """
         Generates a user-defined function for lazy evaluation. 
@@ -487,6 +496,7 @@ class DaphneContext(object):
         """
         # generate function definition
         function_name, callback_outputs = MultiReturn.define_function(self, callback)
+
         # generate function for calling
         def dctx_function(*args):
             output_nodes = list()
@@ -498,15 +508,20 @@ class DaphneContext(object):
                 elif isinstance(node, Scalar):
                     output_nodes.append(Scalar(self, ''))
             return tuple(MultiReturn(self, function_name, output_nodes, args))
-        
+
         return dctx_function
-    
-    def sql(self, query) -> Frame: 
+
+    def sql(self, query: str, dbms: Optional[str] = None, connection: Optional[str] = None) -> Frame:
         """
         Forwards and executes a sql query in Daphne
         :param query: The full SQL Query to be executed
         :return: A Frame based on the SQL Result
         """
         query_str = f'"{query}"'
+
+        if dbms and connection:
+            dbms_str = f'"{dbms}"'
+            connection_str = f'"{connection}"'
+            return Frame(self, 'externalSql', [query_str, dbms_str, connection_str])
 
         return Frame(self, 'sql', [query_str])

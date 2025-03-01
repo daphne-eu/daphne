@@ -1,0 +1,8 @@
+// Basic ODBC test with SQLite
+res = externalSql("DROP TABLE IF EXISTS example;
+                   CREATE TABLE example (id INTEGER, name TEXT);
+                   INSERT INTO example VALUES (1,'Alice'), (2,'Bob');
+                   SELECT * FROM example;
+                   ","SQLite","odbc");
+
+print(res);
