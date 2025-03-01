@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/ReadCsv.h>
+#include <runtime/local/io/utils.h>
 
 #include <tags.h>
 
@@ -55,6 +56,52 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (double)) {
     CHECK(m->get(1, 3) == 5);
 
     DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("ReadCsv, densematrix of doubles using binary optimization", "[TAG_IO][binOpt]") {
+    size_t numRows = 2;
+    size_t numCols = 4;
+    char filename[] = "test/runtime/local/io/ReadCsv1.csv";
+    char delim = ',';
+
+    DenseMatrix<double> *m_new = nullptr;
+    DenseMatrix<double> *m = nullptr;
+
+    std::string binFile = getDaphneFile(filename);
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+
+    readCsv(m_new, filename, numRows, numCols, delim, true);
+    REQUIRE(std::filesystem::exists(binFile));
+
+    // Verify dimensions and cell values.
+    REQUIRE(m_new->getNumRows() == numRows);
+    REQUIRE(m_new->getNumCols() == numCols);
+    CHECK(m_new->get(0, 0) == Approx(-0.1));
+    CHECK(m_new->get(0, 1) == Approx(-0.2));
+    CHECK(m_new->get(0, 2) == Approx(0.1));
+    CHECK(m_new->get(0, 3) == Approx(0.2));
+    CHECK(m_new->get(1, 0) == Approx(3.14));
+    CHECK(m_new->get(1, 1) == Approx(5.41));
+    CHECK(m_new->get(1, 2) == Approx(6.22216));
+    CHECK(m_new->get(1, 3) == Approx(5));
+
+    readCsv(m, filename, numRows, numCols, delim, true);
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+    CHECK(m->get(0, 0) == Approx(-0.1));
+    CHECK(m->get(0, 1) == Approx(-0.2));
+    CHECK(m->get(0, 2) == Approx(0.1));
+    CHECK(m->get(0, 3) == Approx(0.2));
+    CHECK(m->get(1, 0) == Approx(3.14));
+    CHECK(m->get(1, 1) == Approx(5.41));
+    CHECK(m->get(1, 2) == Approx(6.22216));
+    CHECK(m->get(1, 3) == Approx(5));
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(binFile);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (uint8_t)) {
@@ -365,4 +412,226 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
     CHECK(m->get(8, 2) == "");
 
     DataObjectFactory::destroy(m);
+}
+
+// Test case: binary optimization for frame of floats (.daphne expected)
+// The first read writes the .daphne file; the second read uses it.
+TEST_CASE("ReadCsv, frame of floats using binary optimization", "[TAG_IO][binOpt]") {
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64};
+    Frame *m_new = nullptr;
+    Frame *m = nullptr;
+    size_t numRows = 2;
+    size_t numCols = 4;
+    char filename[] = "test/runtime/local/io/ReadCsv1.csv";
+    char delim = ',';
+
+    // Remove any existing .daphne file.
+    std::string binFile = getDaphneFile(filename);
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+
+    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    REQUIRE(std::filesystem::exists(binFile));
+
+    // Verify basic dimensions and cell values.
+    REQUIRE(m_new->getNumRows() == numRows);
+    REQUIRE(m_new->getNumCols() == numCols);
+    CHECK(m_new->getColumn<double>(0)->get(0, 0) == -0.1);
+    CHECK(m_new->getColumn<double>(1)->get(0, 0) == -0.2);
+    CHECK(m_new->getColumn<double>(2)->get(0, 0) == 0.1);
+    CHECK(m_new->getColumn<double>(3)->get(0, 0) == 0.2);
+    CHECK(m_new->getColumn<double>(0)->get(1, 0) == 3.14);
+    CHECK(m_new->getColumn<double>(1)->get(1, 0) == 5.41);
+    CHECK(m_new->getColumn<double>(2)->get(1, 0) == 6.22216);
+    CHECK(m_new->getColumn<double>(3)->get(1, 0) == 5);
+
+    readCsv(m, filename, numRows, numCols, delim, schema, true);
+
+    // Verify basic dimensions and cell values.
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+    CHECK(m->getColumn<double>(0)->get(0, 0) == -0.1);
+    CHECK(m->getColumn<double>(1)->get(0, 0) == -0.2);
+    CHECK(m->getColumn<double>(2)->get(0, 0) == 0.1);
+    CHECK(m->getColumn<double>(3)->get(0, 0) == 0.2);
+    CHECK(m->getColumn<double>(0)->get(1, 0) == 3.14);
+    CHECK(m->getColumn<double>(1)->get(1, 0) == 5.41);
+    CHECK(m->getColumn<double>(2)->get(1, 0) == 6.22216);
+    CHECK(m->getColumn<double>(3)->get(1, 0) == 5);
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(binFile);
+}
+
+// Test case: binary optimization for frame of uint8s (.daphne expected)
+TEST_CASE("ReadCsv, frame of uint8s using binary optimization", "[TAG_IO][binOpt]") {
+    ValueTypeCode schema[] = {ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8};
+    Frame *m_new = nullptr;
+    Frame *m = nullptr;
+    size_t numRows = 2;
+    size_t numCols = 4;
+    char filename[] = "test/runtime/local/io/ReadCsv2.csv";
+    char delim = ',';
+
+    std::string binFile = getDaphneFile(filename);
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+
+    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    REQUIRE(std::filesystem::exists(binFile));
+
+    REQUIRE(m_new->getNumRows() == numRows);
+    REQUIRE(m_new->getNumCols() == numCols);
+    CHECK(m_new->getColumn<uint8_t>(0)->get(0, 0) == 1);
+    CHECK(m_new->getColumn<uint8_t>(1)->get(0, 0) == 2);
+    CHECK(m_new->getColumn<uint8_t>(2)->get(0, 0) == 3);
+    CHECK(m_new->getColumn<uint8_t>(3)->get(0, 0) == 4);
+    // Negative numbers wrapped around.
+    CHECK(m_new->getColumn<uint8_t>(0)->get(1, 0) == 255);
+    CHECK(m_new->getColumn<uint8_t>(1)->get(1, 0) == 254);
+    CHECK(m_new->getColumn<uint8_t>(2)->get(1, 0) == 253);
+    CHECK(m_new->getColumn<uint8_t>(3)->get(1, 0) == 252);
+
+    readCsv(m, filename, numRows, numCols, delim, schema, true);
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+    CHECK(m->getColumn<uint8_t>(0)->get(0, 0) == 1);
+    CHECK(m->getColumn<uint8_t>(1)->get(0, 0) == 2);
+    CHECK(m->getColumn<uint8_t>(2)->get(0, 0) == 3);
+    CHECK(m->getColumn<uint8_t>(3)->get(0, 0) == 4);
+    // Negative numbers wrapped around.
+    CHECK(m->getColumn<uint8_t>(0)->get(1, 0) == 255);
+    CHECK(m->getColumn<uint8_t>(1)->get(1, 0) == 254);
+    CHECK(m->getColumn<uint8_t>(2)->get(1, 0) == 253);
+    CHECK(m->getColumn<uint8_t>(3)->get(1, 0) == 252);
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+}
+
+// Test case: binary optimization for frame of numbers and strings (.daphne expected)
+TEST_CASE("ReadCsv, frame of numbers and strings using binary optimization", "[TAG_IO][binOpt]") {
+    ValueTypeCode schema[] = {ValueTypeCode::UI64, ValueTypeCode::F64, ValueTypeCode::STR, ValueTypeCode::UI64,
+                              ValueTypeCode::F64};
+    Frame *m_new = nullptr;
+    Frame *m = nullptr;
+    size_t numRows = 6;
+    size_t numCols = 5;
+    char filename[] = "test/runtime/local/io/ReadCsv5.csv";
+    char delim = ',';
+
+    std::string binFile = getDaphneFile(filename);
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+
+    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    // daphne files currently dont support strings
+    REQUIRE(!std::filesystem::exists(binFile));
+
+    REQUIRE(m_new->getNumRows() == numRows);
+    REQUIRE(m_new->getNumCols() == numCols);
+    // Test several cells along different columns.
+    CHECK(m_new->getColumn<uint64_t>(0)->get(0, 0) == 222);
+    CHECK(m_new->getColumn<uint64_t>(0)->get(1, 0) == 444);
+    CHECK(m_new->getColumn<uint64_t>(0)->get(2, 0) == 555);
+    CHECK(m_new->getColumn<uint64_t>(0)->get(3, 0) == 777);
+    CHECK(m_new->getColumn<uint64_t>(0)->get(4, 0) == 111);
+    CHECK(m_new->getColumn<uint64_t>(0)->get(5, 0) == 222);
+    CHECK(m_new->getColumn<double>(1)->get(0, 0) == 11.5);
+    CHECK(m_new->getColumn<double>(1)->get(1, 0) == 19.3);
+    CHECK(m_new->getColumn<std::string>(2)->get(0, 0) == "world");
+    CHECK(m_new->getColumn<std::string>(2)->get(1, 0) == "sample,");
+    CHECK(m_new->getColumn<uint64_t>(3)->get(0, 0) == 444);
+    CHECK(m_new->getColumn<double>(4)->get(0, 0) == 55.6);
+
+    readCsv(m, filename, numRows, numCols, delim, schema, true);
+
+    REQUIRE(m->getNumRows() == numRows);
+    REQUIRE(m->getNumCols() == numCols);
+    // Test several cells along different columns.
+    CHECK(m->getColumn<uint64_t>(0)->get(0, 0) == 222);
+    CHECK(m->getColumn<uint64_t>(0)->get(1, 0) == 444);
+    CHECK(m->getColumn<uint64_t>(0)->get(2, 0) == 555);
+    CHECK(m->getColumn<uint64_t>(0)->get(3, 0) == 777);
+    CHECK(m->getColumn<uint64_t>(0)->get(4, 0) == 111);
+    CHECK(m->getColumn<uint64_t>(0)->get(5, 0) == 222);
+    CHECK(m->getColumn<double>(1)->get(0, 0) == 11.5);
+    CHECK(m->getColumn<double>(1)->get(1, 0) == 19.3);
+    CHECK(m->getColumn<std::string>(2)->get(0, 0) == "world");
+    CHECK(m->getColumn<std::string>(2)->get(1, 0) == "sample,");
+    CHECK(m->getColumn<uint64_t>(3)->get(0, 0) == 444);
+    CHECK(m->getColumn<double>(4)->get(0, 0) == 55.6);
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(binFile);
+}
+
+// Test case: binary optimization for frame handling INF and NAN (.daphne expected)
+TEST_CASE("ReadCsv, frame of INF and NAN parsing using binary optimization", "[TAG_IO][binOpt]") {
+    ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64};
+    Frame *m_new = nullptr;
+    Frame *m = nullptr;
+    size_t numRows = 2;
+    size_t numCols = 4;
+    char filename[] = "test/runtime/local/io/ReadCsv3.csv";
+    char delim = ',';
+
+    std::string binFile = getDaphneFile(filename);
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+
+    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    REQUIRE(std::filesystem::exists(binFile));
+
+    readCsv(m, filename, numRows, numCols, delim, schema, true);
+
+    for (size_t c = 0; c < numCols; ++c) {
+        double valNew = m_new->getColumn<double>(c)->get(0, 0);
+        double val = m->getColumn<double>(c)->get(0, 0);
+        if (c % 2 == 0) { // first row: INF variations
+            CHECK(val == valNew);
+        } else {
+            // second row should contain NaN values.
+            CHECK(std::isnan(m_new->getColumn<double>(c)->get(1, 0)));
+            CHECK(std::isnan(m->getColumn<double>(c)->get(1, 0)));
+        }
+    }
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(binFile);
+}
+
+// Test case: binary optimization with varying columns
+TEST_CASE("ReadCsv, frame of varying columns using binary optimization", "[TAG_IO][binOpt]") {
+    ValueTypeCode schema[] = {ValueTypeCode::SI8, ValueTypeCode::F32};
+    Frame *m_new = nullptr;
+    Frame *m = nullptr;
+    size_t numRows = 2;
+    size_t numCols = 2;
+    char filename[] = "test/runtime/local/io/ReadCsv4.csv";
+    char delim = ',';
+
+    std::string binFile = getDaphneFile(filename);
+    if (std::filesystem::exists(binFile))
+        std::filesystem::remove(binFile);
+
+    readCsv(m_new, filename, numRows, numCols, delim, schema, true);
+    REQUIRE(std::filesystem::exists(binFile));
+    
+    readCsv(m, filename, numRows, numCols, delim, schema, true);
+
+    for (size_t r = 0; r < numRows; r++) {
+        CHECK(m_new->getColumn<int8_t>(0)->get(r, 0) == m->getColumn<int8_t>(0)->get(r, 0));
+        CHECK(m_new->getColumn<float>(1)->get(r, 0) == m->getColumn<float>(1)->get(r, 0));
+    }
+
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(m_new);
+    std::filesystem::remove(binFile);
 }

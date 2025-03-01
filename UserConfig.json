@@ -1,4 +1,5 @@
 {
+    "save_csv_as_bin": false,
     "matmul_vec_size_bits": 0,
     "matmul_tile": false,
     "matmul_use_fixed_tile_sizes": true,
