@@ -32,6 +32,16 @@ test_cases = [
     (np.random.rand(2, 3, 4, 5), "float64_4d"),
     (np.random.rand(2, 2, 3, 4, 5), "float64_5d"),
     
+    # Very large arrays
+    (np.random.rand(1000000).reshape(-1, 1), "float64_1d_large"),
+    (np.random.rand(1000, 1000), "float64_2d_large"),
+    
+    # Sparse arrays
+    (np.zeros((1000, 1000)), "sparse_np_array"),  
+    (np.random.choice([0, 1.0], size=(1000, 1000), p=[0.99, 0.01]), "sparse_np_array_1_percent"),  # 1% non-zero
+    (np.random.choice([0, 1.0], size=(1000, 1000), p=[0.95, 0.05]), "sparse_np_array_5_percent"),  # 5% non-zero
+    (np.random.choice([0, 1.0], size=(1000, 1000), p=[0.9, 0.1]), "sparse_np_array_10_percent"),  # 10% non-zero
+    
     # Categorical data (using float representation)
     (np.array([0, 1, 2, 0, 1, 2], dtype=np.float64).reshape(-1, 1), "categorical_1d"),
     (np.array([0, 1, 2, 3, 4, 5], dtype=np.int32).reshape(-1, 1), "categorical_1d_more_categories"),
@@ -42,6 +52,11 @@ test_cases = [
     # Different data types
     (np.array([1, 2, 3], dtype=np.int64).reshape(-1, 1), "int64_1d"),
     (np.array([1, 2, 3], dtype=np.uint8).reshape(-1, 1), "uint8_1d"),
+    
+    # Non-standard shapes
+    (np.random.rand(1, 1000), "float64_1x1000"),
+    (np.random.rand(1000, 1), "float64_1000x1"),
+
     (np.array(["apple", "banana", "cherry"], dtype=object).reshape(-1, 1), "string_fruits")
 ]
 
