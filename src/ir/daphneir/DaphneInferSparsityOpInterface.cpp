@@ -38,11 +38,17 @@ using namespace mlir::OpTrait;
 
 double getSparsityOrUnknownFromType(Value v) {
     Type t = v.getType();
-    if (auto mt = t.dyn_cast<daphne::MatrixType>())
+    if (auto mt = t.dyn_cast<daphne::MatrixType>()) // matrix
         return mt.getSparsity();
-    else // scalar or frame
+    if (CompilerUtils::isObjType(t) || CompilerUtils::isScaType(t)) // other data type (e.g., frame) or value type
         // TODO: read scalar value (if 0 -> sparsity 0.0)
         return -1.0;
+
+    std::stringstream s;
+    s << "getSparsityOrUnknownFromType(): the given value has neither a supported data type nor a supported value "
+         "type: `"
+      << t << '`';
+    throw std::runtime_error(s.str());
 }
 
 // ****************************************************************************

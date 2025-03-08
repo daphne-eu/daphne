@@ -1,0 +1,12 @@
+# String equality and multi-character strings.
+
+f = createFrame(
+    [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
+    [ "Europe", "America", "Africa", "Asia", "Europe", "a", "Oceania", "Europe", "Asia", "Antarctica"],
+    "a", "b");
+
+registerView("f", f);
+
+res = sql("SELECT f.a, f.b FROM f WHERE f.b = 'Europe';");
+
+print(res);

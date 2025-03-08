@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <mlir/IR/OpDefinition.h>
@@ -47,6 +48,8 @@ enum class DataTypeCode : uint8_t {
     MATRIX,
     FRAME,
     UNKNOWN // most general
+
+    // The list type is deliberately not included here, see getDataTypeCode().
 };
 
 /**
@@ -65,6 +68,8 @@ mlir::Type mostGeneralVt(const std::vector<mlir::Type> &vt);
  * @return
  */
 mlir::Type mostGeneralVt(const std::vector<std::vector<mlir::Type>> &vts, size_t num = 0);
+
+DataTypeCode getDataTypeCode(mlir::Type t);
 
 /**
  * @brief Infers the value type assuming the type inference trait
@@ -99,26 +104,23 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
     // Extract data types and value types
     // --------------------------------------------------------------------
 
+    std::vector<bool> argIsList;
     std::vector<DataTypeCode> argDtc;
     std::vector<std::vector<Type>> argVts;
     for (Type t : op->getOperandTypes()) {
-        if (llvm::isa<daphne::UnknownType>(t)) {
-            argDtc.push_back(DataTypeCode::UNKNOWN);
-            argVts.push_back({u});
-        } else if (auto ft = t.dyn_cast<daphne::FrameType>()) {
-            argDtc.push_back(DataTypeCode::FRAME);
-            argVts.push_back(ft.getColumnTypes());
-        } else if (auto mt = t.dyn_cast<daphne::MatrixType>()) {
-            argDtc.push_back(DataTypeCode::MATRIX);
-            argVts.push_back({mt.getElementType()});
-        } else { // TODO Check if this is really a supported scalar type!
-            argDtc.push_back(DataTypeCode::SCALAR);
-            argVts.push_back({t});
-        }
+        argIsList.push_back(llvm::isa<daphne::ListType>(t));
+        argDtc.push_back(getDataTypeCode(t));
+        argVts.push_back(CompilerUtils::getValueTypes(t));
     }
 
     // --------------------------------------------------------------------
-    // Infer the data type
+    // Infer if the result shall be a list
+    // --------------------------------------------------------------------
+
+    bool resIsList = op->template hasTrait<TypeFromFirstArg>() ? argIsList[0] : false;
+
+    // --------------------------------------------------------------------
+    // Infer the result data type
     // --------------------------------------------------------------------
 
     DataTypeCode resDtc = DataTypeCode::UNKNOWN;
@@ -138,7 +140,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
         resDtc = DataTypeCode::FRAME;
 
     // --------------------------------------------------------------------
-    // Infer the value type
+    // Infer the result value type
     // --------------------------------------------------------------------
 
     // TODO What about the #cols, if the data type is a frame (see #421)?
@@ -296,11 +298,13 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
     case DataTypeCode::MATRIX:
         resTy = daphne::MatrixType::get(ctx, mostGeneralVt(resVts));
         break;
-    case DataTypeCode::FRAME: {
+    case DataTypeCode::FRAME:
         resTy = daphne::FrameType::get(ctx, resVts);
         break;
     }
-    }
+
+    if (resIsList)
+        resTy = daphne::ListType::get(ctx, resTy);
 
     // Note that all our type inference traits assume that the operation has
     // exactly one result (which is the case for most DaphneIR ops).

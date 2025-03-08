@@ -35,6 +35,7 @@
 #include "llvm/ADT/ArrayRef.h"
 
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -431,7 +432,8 @@ class KernelReplacement : public RewritePattern {
             const size_t numArgs = lookupArgTys.size();
             const size_t numRess = lookupResTys.size();
             int chosenKernelIdx = -1;
-            for (size_t i = 0; i < kernelInfos.size() && chosenKernelIdx == -1; i++) {
+            int64_t chosenKernelPriority = std::numeric_limits<int64_t>::min();
+            for (size_t i = 0; i < kernelInfos.size(); i++) {
                 auto ki = kernelInfos[i];
                 if (ki.backend != backend)
                     continue;
@@ -447,8 +449,11 @@ class KernelReplacement : public RewritePattern {
                 for (size_t i = 0; i < numRess && !mismatch; i++)
                     if (lookupResTys[i] != ki.resTypes[i])
                         mismatch = true;
-                if (!mismatch)
+
+                if (!mismatch && (ki.priority > chosenKernelPriority || chosenKernelIdx == -1)) {
                     chosenKernelIdx = i;
+                    chosenKernelPriority = ki.priority;
+                }
             }
             if (chosenKernelIdx == -1) {
                 std::stringstream s;
@@ -476,20 +481,19 @@ class KernelReplacement : public RewritePattern {
         // *****************************************************************************
         // Add kernel id and DAPHNE context as arguments
         // *****************************************************************************
-
         auto kId = rewriter.create<mlir::arith::ConstantOp>(
             loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(kernelFuncName, op)));
 
-        // NOTE: kId has to be added before CreateDaphneContextOp because
-        // there is an assumption that the CTX is the last argument
-        // (LowerToLLVMPass.cpp::623,702). This means the kId is expected to
-        // be the second to last argument.
-        kernelArgs.push_back(kId);
-
         // Inject the current DaphneContext as the last input parameter to
         // all kernel calls, unless it's a CreateDaphneContextOp.
-        if (!llvm::isa<daphne::CreateDaphneContextOp>(op))
+        if (!llvm::isa<daphne::CreateDaphneContextOp>(op)) {
+            // NOTE: kId has to be added before CreateDaphneContextOp because
+            // there is an assumption that the CTX is the last argument
+            // (LowerToLLVMPass.cpp::623,702). This means the kId is expected to
+            // be the second to last argument.
+            kernelArgs.push_back(kId);
             kernelArgs.push_back(dctx);
+        }
 
         // *****************************************************************************
         // Create the CallKernelOp

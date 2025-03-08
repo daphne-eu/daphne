@@ -60,9 +60,18 @@ struct KernelInfo {
      */
     const std::string libPath;
 
+    /**
+     * @brief The priority of this kernel.
+     *
+     * If there are multiple applicable kernels, the one with the highest priority will be preferred.
+     */
+    const int64_t priority;
+
     KernelInfo(const std::string kernelFuncName, const std::vector<mlir::Type> resTypes,
-               const std::vector<mlir::Type> argTypes, const std::string backend, const std::string libPath)
-        : kernelFuncName(kernelFuncName), resTypes(resTypes), argTypes(argTypes), backend(backend), libPath(libPath) {
+               const std::vector<mlir::Type> argTypes, const std::string backend, const std::string libPath,
+               int64_t priority)
+        : kernelFuncName(kernelFuncName), resTypes(resTypes), argTypes(argTypes), backend(backend), libPath(libPath),
+          priority(priority) {
         //
     }
 };

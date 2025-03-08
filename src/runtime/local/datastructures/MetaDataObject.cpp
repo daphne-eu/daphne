@@ -30,7 +30,7 @@ auto MetaDataObject::getDataPlacementByType(ALLOCATION_TYPE type) const
 
 DataPlacement *MetaDataObject::getDataPlacementByLocation(const std::string &location) const {
     for (const auto &_omdType : data_placements) {
-        for (auto &_omd : _omdType) {
+        for (const auto &_omd : _omdType) {
             if (_omd->allocation->getLocation() == location)
                 return const_cast<DataPlacement *>(_omd.get());
         }
@@ -51,7 +51,7 @@ void MetaDataObject::updateRangeDataPlacementByID(size_t id, Range *r) {
 
 DataPlacement *MetaDataObject::getDataPlacementByID(size_t id) const {
     for (const auto &_omdType : data_placements) {
-        for (auto &_omd : _omdType) {
+        for (const auto &_omd : _omdType) {
             if (_omd->dp_id == id)
                 return const_cast<DataPlacement *>(_omd.get());
         }
@@ -61,20 +61,17 @@ DataPlacement *MetaDataObject::getDataPlacementByID(size_t id) const {
 
 const DataPlacement *MetaDataObject::findDataPlacementByType(const IAllocationDescriptor *alloc_desc,
                                                              const Range *range) const {
-    auto res = getDataPlacementByType(alloc_desc->getType());
+    const auto *res = getDataPlacementByType(alloc_desc->getType());
     if (res->empty())
         return nullptr;
-    else {
-        for (size_t i = 0; i < res->size(); ++i) {
-            if ((*res)[i]->allocation->operator==(alloc_desc)) {
-                if (((*res)[i]->range == nullptr && range == nullptr) ||
-                    ((*res)[i]->range != nullptr && (*res)[i]->range->operator==(range))) {
-                    return (*res)[i].get();
-                }
+    for (const auto &re : *res) {
+        if (re->allocation->operator==(alloc_desc)) {
+            if ((re->range == nullptr && range == nullptr) || (re->range != nullptr && re->range->operator==(range))) {
+                return re.get();
             }
         }
-        return nullptr;
     }
+    return nullptr;
 }
 
 bool MetaDataObject::isLatestVersion(size_t placement) const {

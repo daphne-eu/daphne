@@ -15,6 +15,7 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <util/ErrorHandler.h>
@@ -42,9 +43,12 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
         return std::make_pair(mt.getNumRows(), mt.getNumCols());
     if (auto ft = t.dyn_cast<daphne::FrameType>())
         return std::make_pair(ft.getNumRows(), ft.getNumCols());
-    // TODO Maybe check if it is really a scalar type.
-    else // scalar
+    if (CompilerUtils::isScaType(t))
         return std::make_pair(1, 1);
+
+    std::stringstream s;
+    s << "getShape(): the given value has neither a supported data type nor a supported value type: `" << t << '`';
+    throw std::runtime_error(s.str());
 }
 
 ssize_t inferNumRowsFromArgs(Operation *op, ValueRange vs) {
@@ -276,7 +280,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
     else if (auto condFrmTy = condTy.dyn_cast<daphne::FrameType>())
         throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::CondOp::inferShape)",
                                           "CondOp does not support frames for the condition yet");
-    else { // cond is a scalar // TODO check if it is really a scalar
+    else if (CompilerUtils::isScaType(condTy)) { // cond is a scalar
         Type thenTy = getThenVal().getType();
         Type elseTy = getElseVal().getType();
 
@@ -309,6 +313,10 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
             // Then-value or else-value is a scalar.
             return {{-1, -1}};
     }
+
+    std::stringstream s;
+    s << "CondOp::inferShape(): the condition is neither a supported data type nor a supported value type";
+    throw std::runtime_error(s.str());
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::Conv2DForwardOp::inferShape() {
@@ -580,14 +588,16 @@ template <template <size_t> class tryParametricTrait> struct tryParamTraitUntil<
 
 template <size_t i> struct tryNumRowsFromIthScalar {
     static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<NumRowsFromIthScalar<i>::template Impl>())
+        if (op->hasTrait<NumRowsFromIthScalar<i>::template Impl>()) {
             numRows = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
+        }
     }
 };
 template <size_t i> struct tryNumColsFromIthScalar {
     static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<NumColsFromIthScalar<i>::template Impl>())
+        if (op->hasTrait<NumColsFromIthScalar<i>::template Impl>()) {
             numCols = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
+        }
     }
 };
 

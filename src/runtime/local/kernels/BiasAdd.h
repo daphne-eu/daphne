@@ -19,18 +19,9 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes, class DTArg> struct BiasAddForward {
+template <class DTRes, class DTArg> struct BiasAdd {
     static void apply(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dctx)) = delete;
 };
-
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template <class DTRes, class DTArg>
-void biasAddForward(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dctx)) {
-    BiasAddForward<DTRes, DTArg>::apply(res, input, bias, dctx);
-}
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -40,7 +31,7 @@ void biasAddForward(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dct
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VTRes, typename VTArg> struct BiasAddForward<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+template <typename VTRes, typename VTArg> struct BiasAdd<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *input, const DenseMatrix<VTArg> *bias,
                       DCTX(dctx)) {
         auto start = 0;

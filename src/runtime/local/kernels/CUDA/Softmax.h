@@ -28,8 +28,8 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace CUDA::Softmax {
-template <typename DTRes, typename DTArg> struct Forward {
+namespace CUDA {
+template <typename DTRes, typename DTArg> struct Softmax {
     static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
 };
-} // namespace CUDA::Softmax
+} // namespace CUDA

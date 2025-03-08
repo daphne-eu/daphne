@@ -23,7 +23,7 @@ template <class DT> void check(const DT *in, const DT *filter, const DT *exp, Da
     DT *res = nullptr;
     size_t out_h;
     size_t out_w;
-    CUDA::Convolution::Forward<DT, DT>::apply(res, out_h, out_w, in, filter, nullptr, in->getNumRows(), 1, 3, 3, 2, 2,
+    CUDA::Convolution::Forward<DT, DT>::apply(res, &out_h, &out_w, in, filter, nullptr, in->getNumRows(), 1, 3, 3, 2, 2,
                                               1, 1, 0, 0, dctx);
     CHECK(*res == *exp);
 }
