@@ -91,7 +91,7 @@ class OperationNode(DAGNode):
         current_index = self._unnamed_input_nodes.index(current_node)
         self._unnamed_input_nodes[current_index] = new_node
 
-    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False):
+    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False) -> Union[np.array, pd.DataFrame, 'tf.Tensor', 'torch.Tensor', float]:
         """
         Compute function for processing the Daphne Object or operation node and returning the results.
         The function builds a DaphneDSL script from the node and its context, executes it, and processes the results
@@ -110,8 +110,8 @@ class OperationNode(DAGNode):
             - A scalar value for scalar outputs.
             - TensorFlow or PyTorch tensors if `asTensorFlow` or `asPyTorch` is set to True respectively.
         """
-        
         if self._result_var is None:
+
             if verbose:
                 start_time = time.time()
 
@@ -129,13 +129,12 @@ class OperationNode(DAGNode):
             if verbose:
                 print(f"compute(): Python-side execution time of the execute() function: {(time.time() - exec_start_time):.10f} seconds")
             
-            if self._output_type == OutputType.FRAME and type=="shared memory":
+            if self._output_type == OutputType.FRAME and type == "shared memory":
                 if verbose:
                     dt_start_time = time.time()
 
                 daphneLibResult = DaphneLib.getResult()
                 
-                # Read the frame's address into a numpy array.
                 if daphneLibResult.columns is not None:
                     # Read the column labels and dtypes from the Frame's labels and dtypes directly.
                     labels = [ctypes.cast(daphneLibResult.labels[i], ctypes.c_char_p).value.decode() for i in range(daphneLibResult.cols)]
@@ -179,22 +178,31 @@ class OperationNode(DAGNode):
 
                 if verbose:
                     print(f"compute(): time for Python side data transfer (Frame, shared memory): {(time.time() - dt_start_time):.10f} seconds")
-            elif self._output_type == OutputType.FRAME and type=="files":
+            elif self._output_type == OutputType.FRAME and type == "files":
                 df = pd.read_csv(result)
                 with open(result + ".meta", "r") as f:
                     fmd = json.load(f)
                     df.columns = [x["label"] for x in fmd["schema"]]
                 result = df
                 self.clear_tmp()
-            elif self._output_type == OutputType.MATRIX and type=="shared memory":
+            elif self._output_type == OutputType.MATRIX and type == "shared memory":
                 daphneLibResult = DaphneLib.getResult()
                 result = np.ctypeslib.as_array(
                     ctypes.cast(daphneLibResult.address, ctypes.POINTER(self.getType(daphneLibResult.vtc))),
                     shape=[daphneLibResult.rows, daphneLibResult.cols]
                 )
                 self.clear_tmp()
-            elif self._output_type == OutputType.MATRIX and type=="files":
-                arr = np.genfromtxt(result, delimiter=',')
+            elif self._output_type == OutputType.MATRIX and type == "files":
+                # Ensure string data is handled correctly
+                arr = np.genfromtxt(result, delimiter=',', dtype=None, encoding='utf-8')
+                meta_file_name = result + ".meta"
+                if os.path.exists(meta_file_name):
+                    with open(meta_file_name, "r") as meta_file:
+                        meta_data = json.load(meta_file)
+                        if meta_data.get("valueType") == "string":
+                            arr = arr.astype(str)
+                else:
+                    print(f"Metadata file not found: {meta_file_name}")
                 self.clear_tmp()
                 return arr
             elif self._output_type == OutputType.SCALAR:
@@ -249,6 +257,23 @@ class OperationNode(DAGNode):
                 return
             return result
 
+        # Handle the 'print' operation
+        if self.operation == 'print':
+            if self._result_var is not None:
+                if isinstance(self._result_var, np.ndarray):
+                    print("Matrix content:")
+                    print(self._result_var)
+                elif isinstance(self._result_var, pd.DataFrame):
+                    print("DataFrame content:")
+                    print(self._result_var)
+                else:
+                    print("Result content:")
+                    print(self._result_var)
+            else:
+                print("No result to print.")
+            return None
+
+    
     def clear_tmp(self):
        for f in os.listdir(TMP_PATH):
           os.remove(os.path.join(TMP_PATH, f))

@@ -17,6 +17,7 @@
 #pragma once
 
 // clang-format off
+#include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/metadata/MetaDataParser.h>
 #include "util/ErrorHandler.h"
@@ -243,48 +244,136 @@ struct CompilerUtils {
         return dctx;
     }
 
+    /**
+     * @brief Returns `true` if the given type is a DAPHNE data object type; or `false`, otherwise.
+     */
     [[maybe_unused]] static bool isObjType(mlir::Type t) {
-        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(t);
+        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>(t);
     }
 
+    /**
+     * @brief Returns `true` if the given value is a DAPHNE data object; or `false`, otherwise.
+     */
     [[maybe_unused]] static bool hasObjType(mlir::Value v) { return isObjType(v.getType()); }
 
     /**
-     * @brief Returns the value type of the given scalar/matrix/frame type.
-     *
-     * For matrices and frames, the value type is extracted. For scalars,
-     * the type itself is the value type.
-     *
-     * @param t the given scalar/matrix/frame type
-     * @return the value type of the given type
+     * @brief Returns `true` if the given type is a DAPHNE scalar type (or: value type); or `false`, otherwise.
      */
-    static mlir::Type getValueType(mlir::Type t) {
-        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
-            return mt.getElementType();
-        if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
-            throw std::runtime_error("getValueType() doesn't support frames yet"); // TODO
-        else // TODO Check if this is really a scalar.
-            return t;
+    static bool isScaType(mlir::Type t) {
+        return
+            // floating-point types
+            t.isF64() || t.isF32() ||
+            // signed integer types
+            t.isSignedInteger(64) || t.isSignedInteger(32) || t.isSignedInteger(8) ||
+            // unsigned integer types
+            t.isUnsignedInteger(64) || t.isUnsignedInteger(32) || t.isUnsignedInteger(8) ||
+            // index type
+            t.isIndex() ||
+            // boolean type
+            t.isSignlessInteger(1) ||
+            // string type
+            llvm::isa<mlir::daphne::StringType>(t);
     }
 
     /**
-     * @brief Sets the value type of the given scalar/matrix/frame type to the
+     * @brief Returns `true` if the given value is a DAPHNE scalar; or `false`, otherwise.
+     */
+    static bool hasScaType(mlir::Value v) { return isScaType(v.getType()); }
+
+    /**
+     * @brief Returns the value type of the given type.
+     *
+     * - For the unknown type, the unknown type is returned.
+     * - For matrices, the value type is extracted.
+     * - For frames, an error is thrown.
+     * - For lists, this function is called recursively on the element type.
+     * - For scalars, the type itself is returned.
+     * - For anything else, an error is thrown.
+     *
+     * @param t the given type
+     * @return the value type of the given type
+     */
+    static mlir::Type getValueType(mlir::Type t) {
+        if (llvm::isa<mlir::daphne::UnknownType>(t))
+            return t;
+        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+            return mt.getElementType();
+        if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+            throw std::runtime_error(
+                "getValueType() doesn't support frames yet"); // TODO maybe use the most general value type
+        if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+            return getValueType(lt.getElementType());
+        if (isScaType(t))
+            return t;
+
+        std::stringstream s;
+        s << "getValueType(): the given type is neither a supported data type nor a supported value type: `" << t
+          << '`';
+        throw std::runtime_error(s.str());
+    }
+
+    /**
+     * @brief Returns the value types of the given type as a sequence.
+     *
+     * - For the unknown type, the unknown type is returned (single-element sequence).
+     * - For matrices, the value type is extracted (single-element sequence).
+     * - For frames, the sequence of column types is returned.
+     * - For lists, this function is called recursively on the element type.
+     * - For scalars, the type itself is returned (single-element sequence).
+     * - For anything else, an error is thrown.
+     *
+     * @param t the given type
+     * @return the value types of the given type as a sequence
+     */
+    static std::vector<mlir::Type> getValueTypes(mlir::Type t) {
+        if (llvm::isa<mlir::daphne::UnknownType>(t))
+            return {t};
+        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+            return {mt.getElementType()};
+        if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+            return ft.getColumnTypes();
+        if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+            return getValueTypes(lt.getElementType());
+        if (isScaType(t))
+            return {t};
+
+        std::stringstream s;
+        s << "getValueTypes(): the given type is neither a supported data type nor a supported value type: `" << t
+          << '`';
+        throw std::runtime_error(s.str());
+    }
+
+    /**
+     * @brief Sets the value type of the given type to the
      * given value type and returns this derived type.
      *
-     * For matrices and frames, the value type is set to the given value type.
-     * For scalars, the given value type itself is returned.
+     * - For the unknown type, an error is thrown.
+     * - For matrices, the value type is set to the given value type.
+     * - For frames, an error is thrown.
+     * - For lists, this function is called recursively on the element type.
+     * - For scalars, the given value type is returned.
+     * - For anything else, an error is thrown.
      *
-     * @param t the scalar/matrix/frame type whose value type shall be set
+     * @param t the type whose value type shall be set
      * @param vt the value type to use
-     * @return the derived scalar/matrix/frame type
+     * @return the derived type
      */
     static mlir::Type setValueType(mlir::Type t, mlir::Type vt) {
+        if (llvm::isa<mlir::daphne::UnknownType>(t))
+            throw std::runtime_error("setValueType(): cannot set the set the value type of an unknown type");
         if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
             return mt.withElementType(vt);
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
-        // TODO Check if this is really a scalar.
-        return vt;
+        if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+            return setValueType(lt.getElementType(), vt);
+        if (isScaType(t))
+            return vt;
+
+        std::stringstream s;
+        s << "setValueType(): the given type is neither a supported data type nor a supported value type: `" << t
+          << '`';
+        throw std::runtime_error(s.str());
     }
 
     /**

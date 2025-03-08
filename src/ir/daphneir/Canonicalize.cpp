@@ -305,8 +305,8 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
 mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
-    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwAddOp>(
             op, op.getResult().getType(),
@@ -333,8 +333,8 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
 mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
-    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(op, op.getResult().getType(), rhs, lhs);
         return mlir::success();
@@ -358,8 +358,8 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
 mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
-    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool rhsIsFP = llvm::isa<mlir::FloatType>(CompilerUtils::getValueType(rhs.getType()));
     if (lhsIsSca && !rhsIsSca && rhsIsFP) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(
@@ -404,14 +404,13 @@ void mlir::daphne::DistributeOp::getCanonicalizationPatterns(RewritePatternSet &
 
 mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op, mlir::PatternRewriter &rewriter) {
     mlir::Value cond = op.getCond();
-    if (llvm::isa<mlir::daphne::UnknownType, mlir::daphne::MatrixType, mlir::daphne::FrameType>(cond.getType()))
+    if (CompilerUtils::hasObjType(cond) || llvm::isa<mlir::daphne::UnknownType>(cond.getType()))
         // If the condition is not a scalar, we cannot rewrite the operation
         // here.
         return mlir::failure();
-    else {
+    if (CompilerUtils::hasScaType(cond)) {
         // If the condition is a scalar, we rewrite the operation to an
         // if-then-else construct using the SCF dialect.
-        // TODO Check if it is really a scalar.
 
         mlir::Location loc = op.getLoc();
 
@@ -482,6 +481,10 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op, 
 
         return mlir::success();
     }
+
+    std::stringstream s;
+    s << "CondOp::canonicalize(): the condition has neither a supported data type nor a supported value type";
+    throw std::runtime_error(s.str());
 }
 
 mlir::LogicalResult mlir::daphne::ConvertDenseMatrixToMemRef::canonicalize(mlir::daphne::ConvertDenseMatrixToMemRef op,
