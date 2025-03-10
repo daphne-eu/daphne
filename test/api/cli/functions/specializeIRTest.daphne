@@ -1,0 +1,34 @@
+// This test script tests 3 aspects simultaneously by comparing the IR with the expected IR output (specializeIRTest.txt), which are the following: 
+// Similar Function detection and prevention (c is expected to be replaced with b)
+// Recursion detection and prevention (a is expected to only have 5 recursive calls, meaning 6 specializations)
+// Naming Convention (All function names in the IR should follow the naming convention)
+
+
+def a(n: si64) -> si64 {
+	if(n<=0) {
+		return 1;
+	} else {
+		return a(n-1)+a(n-2);
+	}
+
+}
+
+def b(n: si64) -> si64 {
+	if(n>=2) {
+		return 2*n;
+	} else {
+		return n*n;
+	} 
+}
+
+def c(n: si64) -> si64 {
+	if(n>=5) {
+		return n*2;
+	} else {
+		return n;
+	}
+}
+
+print(a(10));
+print(b(10));
+print(c(10));
