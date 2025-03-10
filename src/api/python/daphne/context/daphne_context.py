@@ -72,6 +72,56 @@ class DaphneContext(object):
         """
         unnamed_params = ['\"'+file+'\"']
         return Frame(self, 'readFrame', unnamed_params)
+
+    def from_python(self, list: [], shared_memory=True, verbose=False, return_shape=False):
+        """Generates a `DAGNode` representing a matrix with data given by a python `list`.
+        :param list: The python list.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether to print timing information (True) or not (False).
+        :param return_shape: Whether to return the original shape of the input array.
+        :return: The data from python as a Matrix.
+        """
+
+        original_list_length = len(list)
+        original_list_dim2_length = None
+        original_list_dim3_length = None
+
+        # check if list has one, two or more dimensions
+        try:
+            original_list_dim2_length = len(list[0])
+            original_list_dim3_length = len(list[0][0])
+        except TypeError:
+            pass
+
+        if verbose:
+            start_time = time.time()
+
+        # Check if the python list is 2d or higher dimensional.
+        if original_list_dim2_length is not None and original_list_dim3_length is None:
+            # If 2d, handle as a matrix, convert to numpy array.
+            mat = np.array(list)
+            # Using the existing from_numpy method for 2d arrays.
+            matrix = self.from_numpy(mat, shared_memory, verbose)
+        else:
+            # If higher dimensional, reshape to 2d and handle as a matrix.
+            # Store the original numpy representation.
+            original_list = np.array(list)
+            # Reshape to 2d using numpy's zero copy reshape.
+            reshaped_list = original_list.reshape((original_list_length, -1))
+
+            if verbose:
+                # Check if the original and reshaped lists share memory.
+                shares_memory = np.shares_memory(list, reshaped_list)
+                print(f"from_python(): original and reshaped lists share memory: {shares_memory}")
+
+            # Use the existing from_numpy method for the reshaped 2D array
+            matrix = self.from_numpy(mat=reshaped_list, shared_memory=shared_memory, verbose=verbose)
+
+        if verbose:
+            print(f"from_python(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
+
+        # Return the matrix, and the original shape if return_shape is set to True.
+        return (matrix, (original_list_length, original_list_dim2_length, original_list_dim3_length)) if return_shape else matrix
     
     def from_numpy_numerical(self, mat: np.array, shared_memory=True, verbose=False, return_shape=False):
         """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
