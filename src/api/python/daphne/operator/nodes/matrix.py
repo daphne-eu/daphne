@@ -48,6 +48,7 @@ class Matrix(OperationNode):
                 local_data: np.array = None, brackets:bool = False, left_brackets: bool = False, copy: bool = False,
                 consumer_list: List['OperationNode'] = None)->'Matrix':
         self.__copy = copy
+
         if local_data is not None:
             self._np_array = local_data
             is_python_local_data = True
@@ -96,6 +97,7 @@ class Matrix(OperationNode):
                         },
                         f, indent=2
                     )
+        print(f"Code line: {code_line}")
         return code_line
 
     def _is_numpy(self):

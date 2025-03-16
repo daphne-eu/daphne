@@ -101,6 +101,9 @@ template <uint64_t depth, template <typename...> typename TExec, typename... TLi
             case ValueTypeCode::F64:
                 DeduceValueType_Helper<depth - 1, TExec, TList..., double>::apply(std::forward<TArgs>(args)...);
                 return;
+            case ValueTypeCode::STR: // added for testing
+                DeduceValueType_Helper<depth - 1, TExec, TList..., std::string>::apply(std::forward<TArgs>(args)...);
+                return;
             default:
                 throw std::runtime_error("DeduceValueType_Helper::apply: unknown value type code");
             }

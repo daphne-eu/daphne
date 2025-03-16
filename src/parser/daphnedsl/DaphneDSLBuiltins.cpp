@@ -1181,6 +1181,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             vt = builder.getIntegerType(32, false);
         else if (valueTypeCode == (int64_t)ValueTypeCode::UI64)
             vt = builder.getIntegerType(64, false);
+        else if (valueTypeCode == (int64_t)ValueTypeCode::STR) // added for testing
+            vt = mlir::daphne::StringType::get(builder.getContext());
         else
             throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid value type code");
 

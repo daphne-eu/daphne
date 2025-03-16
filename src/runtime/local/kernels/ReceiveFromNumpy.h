@@ -62,12 +62,12 @@ template <typename VT> struct ReceiveFromNumpy<DenseMatrix<VT>> {
     }
 };
 
-template <> struct ReceiveFromNumpy<DenseMatrix<std::string>> {
-    static void apply(DenseMatrix<std::string> *&res, uint32_t upper, uint32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
-        //res = DataObjectFactory::create<DenseMatrix<VT>>(
-        //    rows, cols, std::shared_ptr<VT[]>((VT *)(((uint64_t)upper << 32) | lower), NoOpDeleter<VT>()));
-        std::cerr << "ReceiveFromNumpy<DenseMatrix<std::string>> not implemented yet" << std::endl;
-    }
-};
+//template <> struct ReceiveFromNumpy<DenseMatrix<std::string>> {
+ //   static void apply(DenseMatrix<std::string> *&res, uint32_t upper, uint32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
+ //       //res = DataObjectFactory::create<DenseMatrix<VT>>(
+ //       //    rows, cols, std::shared_ptr<VT[]>((VT *)(((uint64_t)upper << 32) | lower), NoOpDeleter<VT>()));
+ //       std::cerr << "ReceiveFromNumpy<DenseMatrix<std::string>> not implemented yet" << std::endl;
+ //   }
+//};
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
