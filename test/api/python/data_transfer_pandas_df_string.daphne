@@ -1,0 +1,3 @@
+m1 = reshape(["red", "green", "blue","circle", "square", "triangle"], 3, 2);
+
+print(m1);
