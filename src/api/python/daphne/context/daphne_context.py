@@ -141,6 +141,7 @@ class DaphneContext(object):
         if mat.ndim == 1:
             rows = mat.shape[0]
             cols = 1
+            mat = mat.reshape(-1, 1)
         elif mat.ndim >= 2:
             if mat.ndim > 2:
                 mat = mat.reshape((original_shape[0], -1))
@@ -222,6 +223,7 @@ class DaphneContext(object):
             if mat.ndim == 1:
                 rows = mat.shape[0]
                 cols = 1
+                mat = mat.reshape(-1, 1)
             elif mat.ndim >= 2:
                 if mat.ndim > 2:
                     mat = mat.reshape((original_shape[0], -1))
