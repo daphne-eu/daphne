@@ -177,9 +177,9 @@ for size in [100, 1000, 5000]:
     benchmark_data_exchange(size, size, exchange=False)
     benchmark_data_exchange(size, size, shared_memory=False, exchange=False)
 
-    # run benchmark for nxn matrix for data exchange
-    benchmark_data_exchange(size, size)
-    benchmark_data_exchange(size, size, shared_memory=False)
+    # # run benchmark for nxn matrix for data exchange
+    # benchmark_data_exchange(size, size)
+    # benchmark_data_exchange(size, size, shared_memory=False)
 
 # objects that store data for the different graphs that are created at the end of the file
 results_exchange_5000 = {
@@ -271,48 +271,48 @@ for i in range(len(results_transfer["numpy"])):
 
 
 # create graphs with results
-create_bar_plot(results_transfer_5000, "Data Exchange of Matrix with size 5000x5000", "benchmarks/api/python/data_transfer_5000_matrix_results.png", "shared_memory", "Data Transfer Type")
-create_bar_plot(results_transfer_1000, "Data Exchange of Matrix with size 1000x1000", "benchmarks/api/python/data_transfer_1000_matrix_results.png", "shared_memory", "Data Transfer Type")
-create_bar_plot(results_transfer_100, "Data Exchange of Matrix with size 100x100", "benchmarks/api/python/data_transfer_100_matrix_results.png", "shared_memory", "Data Transfer Type")
+create_bar_plot(results_transfer_5000, "Data Transfer of Matrix with size 5000x5000", "benchmarks/api/python/data_transfer_5000_matrix_results.png", "shared_memory", "Data Transfer Type")
+create_bar_plot(results_transfer_1000, "Data Transfer of Matrix with size 1000x1000", "benchmarks/api/python/data_transfer_1000_matrix_results.png", "shared_memory", "Data Transfer Type")
+create_bar_plot(results_transfer_100, "Data Transfer of Matrix with size 100x100", "benchmarks/api/python/data_transfer_100_matrix_results.png", "shared_memory", "Data Transfer Type")
 
 ##########################
 
-print("\nData Exchange Results:")
-print(f"{'Shared memory': <15}{'Size':<15}{'NumPy (s)':<15}{'TensorFlow (s)':<15}{'Pandas (s)':<15}{'Pytorch (s)':<15}{'Python (s)':<15}")
-print("-" * 100)
-
-for i in range(len(results_exchange["numpy"])):
-    print(f"{results_exchange['shared_memory'][i]:<15}{results_exchange['size'][i][0]}x{results_exchange['size'][i][1]: <10}{results_exchange['numpy'][i]:<15.6f}{results_exchange['tensorflow'][i]:<15.6f}{results_exchange['pandas'][i]:<15.6f}{results_exchange['pytorch'][i]:<15.6f}{results_exchange['python'][i]:<15.6f}")
-
-    if 5000 in results_exchange['size'][i]:
-        results_exchange_5000["shared_memory"].append("Shared Memory" if results_exchange['shared_memory'][i] else "File Transfer")
-        results_exchange_5000["numpy"].append(results_exchange['numpy'][i])
-        results_exchange_5000["tensorflow"].append(results_exchange['tensorflow'][i])
-        results_exchange_5000["pandas"].append(results_exchange['pandas'][i])
-        results_exchange_5000["pytorch"].append(results_exchange['pytorch'][i])
-        results_exchange_5000["python"].append(results_exchange['python'][i])
-
-    if 1000 in results_exchange['size'][i]:
-        results_exchange_1000["shared_memory"].append("Shared Memory" if results_exchange['shared_memory'][i] else "File Transfer")
-        results_exchange_1000["numpy"].append(results_exchange['numpy'][i])
-        results_exchange_1000["tensorflow"].append(results_exchange['tensorflow'][i])
-        results_exchange_1000["pandas"].append(results_exchange['pandas'][i])
-        results_exchange_1000["pytorch"].append(results_exchange['pytorch'][i])
-        results_exchange_1000["python"].append(results_exchange['python'][i])
-
-    if 100 in results_exchange['size'][i]:
-        results_exchange_100["shared_memory"].append("Shared Memory" if results_exchange['shared_memory'][i] else "File Transfer")
-        results_exchange_100["numpy"].append(results_exchange['numpy'][i])
-        results_exchange_100["tensorflow"].append(results_exchange['tensorflow'][i])
-        results_exchange_100["pandas"].append(results_exchange['pandas'][i])
-        results_exchange_100["pytorch"].append(results_exchange['pytorch'][i])
-        results_exchange_100["python"].append(results_exchange['python'][i])
-
-
-# create graphs with results
-create_bar_plot(results_exchange_5000, "Data Exchange of Matrix with size 5000x5000", "benchmarks/api/python/data_exchange_5000_matrix_results.png", "shared_memory", "Data Transfer Type")
-create_bar_plot(results_exchange_1000, "Data Exchange of Matrix with size 1000x1000", "benchmarks/api/python/data_exchange_1000_matrix_results.png", "shared_memory", "Data Transfer Type")
-create_bar_plot(results_exchange_100, "Data Exchange of Matrix with size 100x100", "benchmarks/api/python/data_exchange_100_matrix_results.png", "shared_memory", "Data Transfer Type")
+# print("\nData Exchange Results:")
+# print(f"{'Shared memory': <15}{'Size':<15}{'NumPy (s)':<15}{'TensorFlow (s)':<15}{'Pandas (s)':<15}{'Pytorch (s)':<15}{'Python (s)':<15}")
+# print("-" * 100)
+#
+# for i in range(len(results_exchange["numpy"])):
+#     print(f"{results_exchange['shared_memory'][i]:<15}{results_exchange['size'][i][0]}x{results_exchange['size'][i][1]: <10}{results_exchange['numpy'][i]:<15.6f}{results_exchange['tensorflow'][i]:<15.6f}{results_exchange['pandas'][i]:<15.6f}{results_exchange['pytorch'][i]:<15.6f}{results_exchange['python'][i]:<15.6f}")
+#
+#     if 5000 in results_exchange['size'][i]:
+#         results_exchange_5000["shared_memory"].append("Shared Memory" if results_exchange['shared_memory'][i] else "File Transfer")
+#         results_exchange_5000["numpy"].append(results_exchange['numpy'][i])
+#         results_exchange_5000["tensorflow"].append(results_exchange['tensorflow'][i])
+#         results_exchange_5000["pandas"].append(results_exchange['pandas'][i])
+#         results_exchange_5000["pytorch"].append(results_exchange['pytorch'][i])
+#         results_exchange_5000["python"].append(results_exchange['python'][i])
+#
+#     if 1000 in results_exchange['size'][i]:
+#         results_exchange_1000["shared_memory"].append("Shared Memory" if results_exchange['shared_memory'][i] else "File Transfer")
+#         results_exchange_1000["numpy"].append(results_exchange['numpy'][i])
+#         results_exchange_1000["tensorflow"].append(results_exchange['tensorflow'][i])
+#         results_exchange_1000["pandas"].append(results_exchange['pandas'][i])
+#         results_exchange_1000["pytorch"].append(results_exchange['pytorch'][i])
+#         results_exchange_1000["python"].append(results_exchange['python'][i])
+#
+#     if 100 in results_exchange['size'][i]:
+#         results_exchange_100["shared_memory"].append("Shared Memory" if results_exchange['shared_memory'][i] else "File Transfer")
+#         results_exchange_100["numpy"].append(results_exchange['numpy'][i])
+#         results_exchange_100["tensorflow"].append(results_exchange['tensorflow'][i])
+#         results_exchange_100["pandas"].append(results_exchange['pandas'][i])
+#         results_exchange_100["pytorch"].append(results_exchange['pytorch'][i])
+#         results_exchange_100["python"].append(results_exchange['python'][i])
+#
+#
+# # create graphs with results
+# create_bar_plot(results_exchange_5000, "Data Exchange of Matrix with size 5000x5000", "benchmarks/api/python/data_exchange_5000_matrix_results.png", "shared_memory", "Data Transfer Type")
+# create_bar_plot(results_exchange_1000, "Data Exchange of Matrix with size 1000x1000", "benchmarks/api/python/data_exchange_1000_matrix_results.png", "shared_memory", "Data Transfer Type")
+# create_bar_plot(results_exchange_100, "Data Exchange of Matrix with size 100x100", "benchmarks/api/python/data_exchange_100_matrix_results.png", "shared_memory", "Data Transfer Type")
 
 
 
