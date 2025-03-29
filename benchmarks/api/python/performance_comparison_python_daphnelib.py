@@ -1,4 +1,6 @@
-from cProfile import label
+# In this file we compare the speed with which pandas, numpy, tensorflow, pytorch and daphnelib
+# do matrix multiplication and addition. We use different sizes of matrices in order to make a more accurate comparison.
+# Lastly, 4 graphs are created, that compare the different libraries.
 
 import numpy as np
 import pandas as pd
