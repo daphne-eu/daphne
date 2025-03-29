@@ -39,6 +39,9 @@ import pandas as pd
 import os
 import json
 import mmap
+import struct
+import ctypes
+
 
 try:
     import torch as torch
@@ -230,21 +233,25 @@ class DaphneContext(object):
             return None
         
     def from_numpy2(self, mat, shared_memory=True, verbose=False, return_shape=False):
-        """Generates a `DAGNode` representing a matrix with data given by a numpy `array` or pandas `Series`/`DataFrame`.
+        """
+        Generates a `DAGNode` representing a matrix with data given by a numpy `array` or pandas `Series`/`DataFrame`.
+
         :param mat: The numpy array or pandas Series/DataFrame.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
         :param verbose: Whether to print timing information (True) or not (False).
         :param return_shape: Whether to return the original shape of the input array.
         :return: The data from numpy as a Matrix.
         """
+<<<<<<< HEAD
         print(f"from_numpy2()")
 
+=======
+>>>>>>> 1237b6e5 (update)
         if isinstance(mat, (pd.Series, pd.DataFrame)):
-            print("Series or DataFrame detected, converting to numpy array")
             mat = mat.to_numpy()
-            print(f"from_numpy(): mat={mat}")
 
         original_shape = mat.shape
+<<<<<<< HEAD
         print(f"Original shape: {original_shape}")
         
         if mat.ndim == 1:
@@ -256,16 +263,41 @@ class DaphneContext(object):
         print(f"Reshaped matrix: {mat.shape}")
 
         print(f"from_numpy(): dtype={mat.dtype}")
+=======
+
+        # Ensure the matrix is 2D
+        if mat.ndim == 1:
+            mat = mat.reshape(-1, 1)
+        elif mat.ndim > 2:
+            mat = mat.reshape((original_shape[0], -1))
+        rows, cols = mat.shape
+>>>>>>> 1237b6e5 (update)
 
         # Assign value type code (vtc) based on dtype
-        try:
-            vtc = mat.dtype
-            print(f"Value type code: {vtc}")
-        except ValueError as e:
-            print(f"Unsupported numpy dtype: {mat.dtype}")
-            return None
+        d_type = mat.dtype
+        if d_type == np.float64:
+            vtc = "F64"
+        elif d_type == np.float32:
+            vtc = "F32"
+        elif d_type == np.int8:
+            vtc = "SI8"
+        elif d_type == np.int32:
+            vtc = "SI32"
+        elif d_type == np.int64:
+            vtc = "SI64"
+        elif d_type == np.uint8:
+            vtc = "UI8"
+        elif d_type == np.uint32:
+            vtc = "UI32"
+        elif d_type == np.uint64:
+            vtc = "UI64"
+        elif d_type.kind in {'O', 'U', 'S'}:  # Handle string data
+            vtc = "STR"
+        else:
+            raise ValueError(f"Unsupported numpy dtype: {d_type}")
 
         if shared_memory:
+<<<<<<< HEAD
             if mat.dtype.kind in {'O', 'U', 'S'}:
                 print("Data transfer via shared memory for string data.")
                 # Serialize the string data
@@ -336,13 +368,46 @@ class DaphneContext(object):
                     vtc = "UI32"
                 elif d_type == np.uint64:
                     vtc = "UI64"
-                else:
-                    print("unsupported numpy dtype")
-                    return None
+                    
+            if vtc == "STR":  # Handle string data
+                # Convert Unicode strings to bytes
+                if mat.dtype.kind == 'U':
+                    mat = np.char.encode(mat, 'utf-8')
 
+                else:
+                    mat = mat.astype('S')
+
+                # Serialize strings with null delimiters
+                serialized = b'\0'.join(
+                    x.item() if isinstance(x, np.bytes_) else str(x).encode()
+                    for x in mat.flatten()
+                ) + b'\0'
+
+                # Create shared memory
+                shm = mmap.mmap(-1, len(serialized))
+                shm.write(serialized)
+
+                # Get address of shared memory
+                buf = memoryview(shm)
+                address = ctypes.addressof(ctypes.c_char.from_buffer(buf))
+                upper = (address >> 32) & 0xFFFFFFFF
+                lower = address & 0xFFFFFFFF
+
+                # Create Matrix with handle to keep memory alive
+                res = Matrix(self, 'receiveFromNumpy', [upper, lower, rows, cols, 8])
+            else:  # Handle numerical data
+                # Ensure data is C-contiguous
+                mat = np.ascontiguousarray(mat)
+
+                # Get address of the data
+                address = mat.ctypes.data
+                upper = (address >> 32) & 0xFFFFFFFF
+                lower = address & 0xFFFFFFFF
+
+                # Create Matrix
                 res = Matrix(self, 'receiveFromNumpy', [upper, lower, rows, cols, vtc], local_data=mat)
         else:
-            # Fallback to file-based transfer if shared memory is not used
+            # Fallback to file-based transfer
             file_name = os.path.join(TMP_PATH, "numpy_data")
             csv_file_path = file_name + ".csv"
             meta_file_path = file_name + ".meta"
@@ -354,62 +419,54 @@ class DaphneContext(object):
             print(f"String data: {string_data}")
 
             # Write the string data to a temporary CSV file
+
             try:
                 np.savetxt(csv_file_path, mat, delimiter=",", fmt='%s')
-                print(f"CSV file created at: {csv_file_path}")
             except IOError as e:
                 print(f"Error writing to file {csv_file_path}: {e}")
                 return None
 
-            # Verify if the file was created
-            if not os.path.exists(csv_file_path):
-                print(f"Error: CSV file {csv_file_path} does not exist.")
-                return None
-
-            # Write metadata to a temporary JSON file
+            # Write metadata to JSON
             try:
                 with open(meta_file_path, "w") as f:
                     meta_content = {
-                        "numRows": mat.shape[0],
-                        "numCols": mat.shape[1],
+                        "numRows": rows,
+                        "numCols": cols,
                         "valueType": vtc
                     }
                     json.dump(meta_content, f, indent=2)
-                print(f"Metadata file created at: {meta_file_path}")
-                print(f"Metadata file content: {json.dumps(meta_content, indent=2)}")
+
             except IOError as e:
                 print(f"Error writing to file {meta_file_path}: {e}")
                 return None
 
-            # Verify if the metadata file was created
-            if not os.path.exists(meta_file_path):
-                print(f"Error: Metadata file {meta_file_path} does not exist.")
+            # Verify files exist
+            if not os.path.exists(csv_file_path) or not os.path.exists(meta_file_path):
+                print(f"Error: Required files for data transfer do not exist.")
                 return None
 
-            # Data transfer via a file
+            # Data transfer via file
             data_path_param = f"\"{csv_file_path}\""
             unnamed_params = [data_path_param]
             named_params = []
 
-            print(f"from_numpy(): dtype={mat.dtype}")
-
-            print("Creating Matrix object for readMatrix")
             try:
                 res = Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
-                print("Matrix object created successfully")
             except Exception as e:
                 print(f"Error creating Matrix object: {e}")
                 return None
-        print(f"from_numpy(): Matrix object created: {res}")
-        return res
-    
+
+        if return_shape:
+            return res, original_shape
+        return res  
+  
     def store_metadata(self, var_name: str, meta_content: dict):
         """Store metadata for later use."""
         metadata_path = os.path.join(TMP_PATH, f"{var_name}_metadata.json")
         try:
             with open(metadata_path, "w") as f:
                 json.dump(meta_content, f, indent=2)
-            print(f"Metadata stored at: {metadata_path}")
+            #print(f"Metadata stored at: {metadata_path}")
         except IOError as e:
             print(f"Error storing metadata: {e}")
 

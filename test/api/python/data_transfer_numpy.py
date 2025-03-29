@@ -31,20 +31,17 @@ test_cases_string_pandas = [
 for X, name in test_cases:
     try:
         result = dctx.from_numpy(X, shared_memory=True).print().compute()
-        print(f"Result for {name}: {result}")
     except Exception as e:
         print(f"Error for {name}: {e}")
 
 for X, name in test_cases_string:
     try:
         result = dctx.from_numpy2(X, shared_memory=True).print().compute()
-        print(f"Result for {name}: {result}")
     except Exception as e:
         print(f"Error for {name}: {e}")
 
 for X, name in test_cases_string_pandas:
     try:
         result = dctx.from_pandas(X, shared_memory=True).print().compute()
-        print(f"Result for {name}: {result}")
     except Exception as e:
         print(f"Error for {name}: {e}")

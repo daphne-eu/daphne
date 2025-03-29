@@ -1158,6 +1158,15 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         mlir::Value rows = args[2];
         mlir::Value cols = args[3];
         mlir::Value valueType = args[4];
+        mlir::Value itemsize = args[5]; // added for testing
+
+        //std::cerr << "Arguments received: " << std::endl;
+        //std::cerr << "  Upper: " << upper << std::endl;
+        //std::cerr << "  Lower: " << lower << std::endl;
+        //std::cerr << "  Rows: " << rows << std::endl;
+        //std::cerr << "  Cols: " << cols << std::endl;
+        //std::cerr << "  ValueType: " << valueType << std::endl;
+
 
         int64_t valueTypeCode = CompilerUtils::constantOrThrow<int64_t>(
             valueType, "the value type code in ReceiveFromNumpyOp must be a constant");
@@ -1185,6 +1194,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             vt = mlir::daphne::StringType::get(builder.getContext());
         else
             throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid value type code");
+
+        //std::cerr << "Creating ReceiveFromNumpyOp with the following parameters:" << std::endl;
+        //std::cerr << "  Matrix Type: " << vt << std::endl;
+        //std::cerr << "  Rows: " << rows << ", Cols: " << cols << std::endl;
 
         return static_cast<mlir::Value>(
             builder.create<ReceiveFromNumpyOp>(loc, utils.matrixOf(vt), upper, lower, rows, cols));

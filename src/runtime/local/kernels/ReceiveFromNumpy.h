@@ -57,17 +57,56 @@ template <typename VT> struct NoOpDeleter {
 
 template <typename VT> struct ReceiveFromNumpy<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, uint32_t upper, uint32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
+        std::cerr << "ReceiveFromNumpy: Extracting data from shared memory" << std::endl;
         res = DataObjectFactory::create<DenseMatrix<VT>>(
             rows, cols, std::shared_ptr<VT[]>((VT *)(((uint64_t)upper << 32) | lower), NoOpDeleter<VT>()));
     }
 };
 
-//template <> struct ReceiveFromNumpy<DenseMatrix<std::string>> {
- //   static void apply(DenseMatrix<std::string> *&res, uint32_t upper, uint32_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
- //       //res = DataObjectFactory::create<DenseMatrix<VT>>(
- //       //    rows, cols, std::shared_ptr<VT[]>((VT *)(((uint64_t)upper << 32) | lower), NoOpDeleter<VT>()));
- //       std::cerr << "ReceiveFromNumpy<DenseMatrix<std::string>> not implemented yet" << std::endl;
- //   }
-//};
+template <>
+struct ReceiveFromNumpy<DenseMatrix<std::string>> {
+    static void apply(DenseMatrix<std::string> *&res, 
+                    uint32_t upper, 
+                    uint32_t lower, 
+                    int64_t rows, 
+                    int64_t cols, 
+                    DCTX(ctx)) {
+        try {
+            // Calculate shared memory address
+            char* shared_mem = reinterpret_cast<char*>(
+                (static_cast<uint64_t>(upper) << 32) | lower;
+
+            // Create result matrix
+            res = DataObjectFactory::create<DenseMatrix<std::string>>(rows, cols, false);
+            
+            // Parse NULL-delimited strings
+            for (int64_t r = 0; r < rows; ++r) {
+                for (int64_t c = 0; c < cols; ++c) {
+                    const char* str_start = shared_mem;
+                    
+                    // Find string length (until NULL terminator)
+                    size_t len = 0;
+                    while (shared_mem[len] != '\0' && len < 256) { // 256 = max expected string length
+                        len++;
+                    }
+                    
+                    // Construct string properly
+                    res->set(r, c, std::string(str_start, len));
+                    
+                    // Move to next string (skip NULL terminator)
+                    shared_mem += len + 1;
+                }
+            }
+        }
+        catch (const std::exception& e) {
+            if (res) {
+                DataObjectFactory::destroy(res);
+                res = nullptr;
+            }
+            std::cerr << "String transfer error: " << e.what() << std::endl;
+            throw;
+        }
+    }
+};
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
