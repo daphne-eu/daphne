@@ -63,9 +63,19 @@ template <typename VT> struct ReceiveFromNumpy<DenseMatrix<VT>> {
 
 template <> struct ReceiveFromNumpy<DenseMatrix<std::string>> {
     static void apply(DenseMatrix<std::string> *&res, uint64_t address, int64_t rows, int64_t cols, DCTX(ctx)) {
-        //res = DataObjectFactory::create<DenseMatrix<VT>>(
-        //    rows, cols, std::shared_ptr<VT[]>((VT *)(((uint64_t)upper << 32) | lower), NoOpDeleter<VT>()));
-        std::cerr << "ReceiveFromNumpy<DenseMatrix<std::string>> not implemented yet" << std::endl;
+
+        // Calculate shared memory address
+        char* shared_mem = reinterpret_cast<char*>(static_cast<uint64_t>(address));
+
+        res = DataObjectFactory::create<DenseMatrix<std::string>>(rows, 1, false);
+
+        for (int i = 0; i < rows; i++) {
+            char* start = shared_mem + (i * cols);  // Get start of the row
+            size_t actual_length = strnlen(start, cols);  // Find actual string length
+            std::string str(start, actual_length);  // Extract the string
+
+            res->set(i, 0, str);  // Store in matrix
+        }
     }
 };
 

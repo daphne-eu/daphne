@@ -32,8 +32,8 @@ from daphne.operator.nodes.while_loop import WhileLoop
 from daphne.operator.nodes.do_while_loop import DoWhileLoop
 from daphne.operator.nodes.multi_return import MultiReturn
 from daphne.operator.operation_node import OperationNode
-from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
-
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8, STR
+import ctypes
 import numpy as np
 import pandas as pd
 import os
@@ -234,41 +234,50 @@ class DaphneContext(object):
             meta_file_path = csv_file_path + ".meta"
 
             if shared_memory:
-                shared_memory = False
+                # Data transfer via shared memory.
+                max_length = max(len(s) for s in mat.flat) + 1  # Max string length + null terminator
+                encoded_strings = [s.encode('utf-8').ljust(max_length, b'\0') for s in mat.flat]
+                global buf
+                buf = ctypes.create_string_buffer(b''.join(encoded_strings))  # Fixed-width buffer
+                address = ctypes.addressof(buf)
+                vtc = STR
+                res = Matrix(self, 'receiveFromNumpy', [address, rows, max_length, vtc], local_data=mat)
 
-            string_data = mat.astype(str).tolist()
+            else:
 
-            try:
-                np.savetxt(csv_file_path, mat, delimiter=",", fmt='%s')
-            except IOError as e:
-                print(f"Error writing to file {csv_file_path}: {e}")
-                return None
+                string_data = mat.astype(str).tolist()
 
-            try:
-                with open(meta_file_path, "w") as f:
-                    meta_content = {
-                        "numRows": mat.shape[0],
-                        "numCols": mat.shape[1],
-                        "valueType": "str",
-                    }
-                    json.dump(meta_content, f, indent=2)
-            except IOError as e:
-                print(f"Error writing to file {meta_file_path}: {e}")
-                return None
+                try:
+                    np.savetxt(csv_file_path, mat, delimiter=",", fmt='%s')
+                except IOError as e:
+                    print(f"Error writing to file {csv_file_path}: {e}")
+                    return None
+
+                try:
+                    with open(meta_file_path, "w") as f:
+                        meta_content = {
+                            "numRows": mat.shape[0],
+                            "numCols": mat.shape[1],
+                            "valueType": "str",
+                        }
+                        json.dump(meta_content, f, indent=2)
+                except IOError as e:
+                    print(f"Error writing to file {meta_file_path}: {e}")
+                    return None
             
-            if not os.access(meta_file_path, os.R_OK):
-                print(f"Metadata file is not readable: {meta_file_path}")
-                return None
+                if not os.access(meta_file_path, os.R_OK):
+                    print(f"Metadata file is not readable: {meta_file_path}")
+                    return None
 
-            data_path_param = f"\"{csv_file_path}\""
-            unnamed_params = [data_path_param]
-            named_params = []
+                data_path_param = f"\"{csv_file_path}\""
+                unnamed_params = [data_path_param]
+                named_params = []
 
-            try:
-                res = Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
-            except Exception as e:
-                print(f"Error creating Matrix object: {e}")
-                return None
+                try:
+                    res = Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
+                except Exception as e:
+                    print(f"Error creating Matrix object: {e}")
+                    return None
         else:
             return self.from_numpy_numerical(mat, shared_memory, verbose, return_shape)
 
