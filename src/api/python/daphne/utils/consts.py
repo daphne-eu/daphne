@@ -36,7 +36,7 @@ BINARY_OPERATIONS = ['+', '-', '/', '*', '^', '%', '<', '<=', '>', '>=', '==', '
 VALID_ARITHMETIC_TYPES = Union['DAGNode', int, float]
 VALID_COMPUTED_TYPES = Union['Matrix', 'Frame', 'Scalar']
 
-TMP_PATH = os.path.join("home", "krzywnicka", "DaphneLib")
+TMP_PATH = os.path.join("/tmp/", "DaphneLib")
 os.makedirs(TMP_PATH, exist_ok=True)
 
 _PROTOTYPE_PATH_ENV_VAR_NAME = "DAPHNELIB_DIR_PATH"
