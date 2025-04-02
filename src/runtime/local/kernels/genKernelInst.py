@@ -155,7 +155,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
     isCreateDaphneContext = opName == "createDaphneContext"
     def isInstrumentedOp(op :str):
-        if op in ["map", "createDaphneContext"]:
+        if op in ["map", "createDaphneContext", "destroyDaphneContext"]:
             return False
         # TODO: KernelDispatchMapping currently does not support distributed ops
         if "distributed" in op:

@@ -484,16 +484,18 @@ class KernelReplacement : public RewritePattern {
         auto kId = rewriter.create<mlir::arith::ConstantOp>(
             loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(kernelFuncName, op)));
 
-        // Inject the current DaphneContext as the last input parameter to
-        // all kernel calls, unless it's a CreateDaphneContextOp.
-        if (!llvm::isa<daphne::CreateDaphneContextOp>(op)) {
+        // Inject the KernelDispatchMapping id as the second to last input parameter to
+        // all kernel calls, unless it's a non-instrumented operation (CreateDaphneContextOp, DestroyDaphneContextOp).
+        if (!llvm::isa<daphne::CreateDaphneContextOp, daphne::DestroyDaphneContextOp>(op))
             // NOTE: kId has to be added before CreateDaphneContextOp because
             // there is an assumption that the CTX is the last argument
             // (LowerToLLVMPass.cpp::623,702). This means the kId is expected to
             // be the second to last argument.
             kernelArgs.push_back(kId);
+        // Inject the current DaphneContext as the last input parameter to
+        // all kernel calls, unless it's a CreateDaphneContextOp.
+        if (!llvm::isa<daphne::CreateDaphneContextOp>(op))
             kernelArgs.push_back(dctx);
-        }
 
         // *****************************************************************************
         // Create the CallKernelOp
