@@ -154,8 +154,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             rp["isOutput"] = False
 
     isCreateDaphneContext = opName == "createDaphneContext"
+    isDestroyDaphneContext = opName == "destroyDaphneContext"
     def isInstrumentedOp(op :str):
-        if op in ["map", "createDaphneContext"]:
+        if op in ["map", "createDaphneContext", "destroyDaphneContext"]:
             return False
         # TODO: KernelDispatchMapping currently does not support distributed ops
         if "distributed" in op:
@@ -179,8 +180,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     if typesForName != "":
         typesForName = "__" + typesForName
     params = ", ".join(
-        ["{} {}".format(rtp["type"], rtp["name"]) for rtp in
-         extendedRuntimeParams] + ([] if not isInstrumented else ["int kId"]) + ([] if isCreateDaphneContext else ["DCTX(ctx)"])
+        ["{} {}".format(rtp["type"], rtp["name"]) for rtp in extendedRuntimeParams]
+        + ([] if (not isInstrumented and not isDestroyDaphneContext) else ["int kId"])
+        + ([] if isCreateDaphneContext else ["DCTX(ctx)"])
     )
 
     def generateFunction(opCode):
