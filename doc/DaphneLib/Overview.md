@@ -239,12 +239,64 @@ A comprehensive list of these methods can be found in the [DaphneLib API referen
 The data transfer from DaphneLib back to Python happens during the call to `compute()`.
 If the result of the computation in DAPHNE is a matrix, `compute()` returns a `numpy.ndarray` (or optionally a `tensorflow.Tensor` or `torch.Tensor`); if the result is a frame, it returns a `pandas.DataFrame`; and if the result is a scalar, it returns a plain Python scalar.
 
-So far, DaphneLib can exchange data with numpy, pandas, TensorFlow, and PyTorch.
+So far, DaphneLib can exchange data with plain python using lists, numpy, pandas, TensorFlow, and PyTorch.
 By default, the data transfer is via shared memory (and in many cases zero-copy).
 Numpy and pandas are *required* dependencies for DaphneLib, so they should anyway be installed.
 TensorFlow and PyTorch are *optional* for DaphneLib; if these libraries are not installed, DaphneLib cannot exchange data with them, but all remaining features still work.
 In case you run DAPHNE inside the [`daphne-dev` container](/doc/GettingStarted.md), please note that TensorFlow and PyTorch are *not* included in the `daphne-dev` container due to their large footprint.
 Please follow the [instructions](/doc/development/InstallPythonLibsInContainer.md) on installing Python libraries in the `daphne-dev` container if you need them.
+
+### Data Exchange with plain python
+
+*Example:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+
+dc = DaphneContext()
+
+# Create a python list.
+a = [10, 20, 30, 40, 50, 60]
+
+# Transfer data to DaphneLib (lazily evaluated).
+X = dc.from_python(a)
+
+print("How DAPHNE sees the data:")
+X.print().compute()
+
+# Add 100 to each value in X.
+X = X + 150.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100 to each value, back in Python:")
+print(X.compute())
+```
+
+*Run by:*
+```shell
+python3 scripts/examples/daphnelib/data-exchange-python.py
+```
+
+*Output:*
+```text
+How DAPHNE sees the data:
+DenseMatrix(6x1, int64_t)
+10
+20
+30
+40
+50
+60
+
+Result of adding 100 to each value, back in Python:
+[[160.]
+ [170.]
+ [180.]
+ [190.]
+ [200.]
+ [210.]]
+```
+
 
 ### Data Exchange with numpy
 
