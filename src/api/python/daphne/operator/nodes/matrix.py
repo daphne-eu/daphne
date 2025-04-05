@@ -48,55 +48,82 @@ class Matrix(OperationNode):
                 local_data: np.array = None, brackets:bool = False, left_brackets: bool = False, copy: bool = False,
                 consumer_list: List['OperationNode'] = None)->'Matrix':
         self.__copy = copy
-        is_python_local_data = False
         if local_data is not None:
-           
             self._np_array = local_data
             is_python_local_data = True
         else:
             self._np_array = None
+            is_python_local_data = False
+
         super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets, left_brackets, consumer_list)
 
-    def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
-                  named_input_vars: Dict[str, str]) -> str:
+        # Debug statements to verify input parameters and file paths
+        # print(f"Unnamed input nodes: {unnamed_input_nodes}")
+        # print(f"Named input nodes: {named_input_nodes}")
+        # print(f"Local data: {local_data}")
+
+    def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
         if self.__copy:
             return f'{var_name}={unnamed_input_vars[0]};'
         
-        code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH)
-        
+        code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH=TMP_PATH)
         if self._is_numpy() and self.operation == "readMatrix":
-            with open(TMP_PATH+"/"+var_name+".csv", "wb") as f:
-                np.savetxt(f, self._np_array, delimiter=",")
-            with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
-                json.dump(
-                    {
-                        "numRows": np.shape(self._np_array)[0],
-                        "numCols": np.shape(self._np_array)[1],
-                        "valueType": self.getDType(self._np_array.dtype),
-                    },
-                    f, indent=2
-                )
+            if self._np_array.dtype.kind in {'U', 'S', 'O'}:
+                json_file_path = f"{TMP_PATH}/{var_name}.json"
+                json_meta_file_path = f"{TMP_PATH}/{var_name}.json.meta"
+                with open(json_file_path, "w", encoding='utf-8') as f:
+                    json.dump(self._np_array.tolist(), f, ensure_ascii=False)
+                with open(json_meta_file_path, "w") as f:
+                    json.dump(
+                        {
+                            "numRows": np.shape(self._np_array)[0],
+                            "numCols": np.shape(self._np_array)[1],
+                            "valueType": self.getDType(self._np_array.dtype),
+                        },
+                        f, indent=2
+                    )
+            else:
+                csv_file_path = f"{TMP_PATH}/{var_name}.csv"
+                csv_meta_file_path = f"{TMP_PATH}/{var_name}.csv.meta"
+                with open(csv_file_path, "wb") as f:
+                    np.savetxt(f, self._np_array, delimiter=",")
+                with open(csv_meta_file_path, "w") as f:
+                    json.dump(
+                        {
+                            "numRows": np.shape(self._np_array)[0],
+                            "numCols": np.shape(self._np_array)[1],
+                            "valueType": self.getDType(self._np_array.dtype),
+                        },
+                        f, indent=2
+                    )
         return code_line
 
+    def _is_numpy(self):
+        return isinstance(self._np_array, np.ndarray)
+
     def getDType(self, d_type):
-        if d_type == np.dtype('f4'):
+        if d_type == np.dtype('float32'):
             return "f32"
-        elif d_type == np.dtype('f8'):
+        elif d_type == np.dtype('float64'):
             return "f64"
-        elif d_type == np.dtype('si2'):
-            return "si8"
-        elif d_type == np.dtype('si4'):
+        elif d_type == np.dtype('int16'):
+            return "si16"
+        elif d_type == np.dtype('int32'):
             return "si32"
-        elif d_type == np.dtype('si8'):
+        elif d_type == np.dtype('int64'):
             return "si64"
-        elif d_type == np.dtype('ui2'):
+        elif d_type == np.dtype('uint8'):
             return "ui8"
-        elif d_type == np.dtype('ui4'):
-            return "ui8"
-        elif d_type == np.dtype('ui8'):
-            return "ui8"
+        elif d_type == np.dtype('uint16'):
+            return "ui16"
+        elif d_type == np.dtype('uint32'):
+            return "ui32"
+        elif d_type == np.dtype('uint64'):
+            return "ui64"
+        elif d_type == np.dtype("S")  or d_type == np.dtype('U'):
+            return "str"
         else:
-            print("Error")
+            return "object"
 
     def _is_numpy(self) -> bool:
         return self._np_array is not None

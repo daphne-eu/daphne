@@ -1,0 +1,3 @@
+m1 = as.f64([inf, -inf, inf]);
+
+print(m1);

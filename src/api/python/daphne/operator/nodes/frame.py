@@ -73,7 +73,7 @@ class Frame(OperationNode):
                         "numCols": self._pd_dataframe.shape[1],
                         "schema": [
                             {
-                                "label": self._pd_dataframe.columns[i],
+                                "label": str(self._pd_dataframe.columns[i]),
                                 "valueType": self.getDType(self._pd_dataframe.dtypes.iloc[i])
                             }
                             for i in range(self._pd_dataframe.shape[1])
