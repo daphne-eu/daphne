@@ -14,50 +14,42 @@
  * limitations under the License.
  */
 
-#include <bits/stdint-uintn.h>
-#include <catch.hpp>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/IsSymmetric.h>
-#include <stdexcept>
+
 #include <tags.h>
+
+#include <catch.hpp>
+
+#include <stdexcept>
 
 TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix, Matrix), (double, uint32_t)) {
 
     using DT = TestType;
 
     auto symMat = genGivenVals<DT>(4, {0, 1, 2, 3, 1, 1, 0, 6, 2, 0, 2, 7, 3, 6, 7, 3});
-
     auto asymMat = genGivenVals<DT>(4, {0, 1, 2, 3, 0, 1, 4, 6, 2, 4, 2, 7, 3, 6, 7, 3});
-
     auto nonSquareMat = genGivenVals<DT>(3, {0, 1, 2, 3, 0, 1, 4, 6, 2, 4, 2, 7});
-
     auto squareZeroExceptCenterMat = genGivenVals<DT>(4, {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0});
-
     auto squareZeroMat = genGivenVals<DT>(4, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-
     auto squareUpperTriangleMat = genGivenVals<DT>(4, {0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0});
-
     auto squareLowerTriangleMat = genGivenVals<DT>(4, {0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0});
+    auto oneByOneMat = genGivenVals<DT>(1, {1});
 
-    auto singularMat = genGivenVals<DT>(1, {1});
-
-    SECTION("isSymmetric check for symmetrie.") {
-        CHECK(isSymmetric<DT>(symMat, nullptr));
-        CHECK(isSymmetric<DT>(squareZeroExceptCenterMat, nullptr));
-        CHECK(isSymmetric<DT>(squareZeroMat, nullptr));
-        CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat, nullptr), std::runtime_error);
-        CHECK_FALSE(isSymmetric<DT>(asymMat, nullptr));
-        CHECK(isSymmetric<DT>(singularMat, nullptr));
-        CHECK_FALSE(isSymmetric<DT>(squareUpperTriangleMat, nullptr));
-        CHECK_FALSE(isSymmetric<DT>(squareLowerTriangleMat, nullptr));
-    }
+    CHECK(isSymmetric<DT>(symMat, nullptr));
+    CHECK(isSymmetric<DT>(squareZeroExceptCenterMat, nullptr));
+    CHECK(isSymmetric<DT>(squareZeroMat, nullptr));
+    CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat, nullptr), std::runtime_error);
+    CHECK_FALSE(isSymmetric<DT>(asymMat, nullptr));
+    CHECK(isSymmetric<DT>(oneByOneMat, nullptr));
+    CHECK_FALSE(isSymmetric<DT>(squareUpperTriangleMat, nullptr));
+    CHECK_FALSE(isSymmetric<DT>(squareLowerTriangleMat, nullptr));
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("isSymmetric - DenseMatrix-Submatrix", TAG_KERNELS, DenseMatrix, (double, uint32_t)) {
-
     using DT = TestType;
 
     auto centerSymMat =
@@ -66,22 +58,16 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric - DenseMatrix-Submatrix", TAG_KERNELS, D
     auto symSubMat = DataObjectFactory::create<DT>(centerSymMat, 1, centerSymMat->getNumRows() - 1, 1,
                                                    centerSymMat->getNumCols() - 1);
 
-    SECTION("isSymmetric with submatrix.") {
-        CHECK_FALSE(isSymmetric(centerSymMat, nullptr));
-        CHECK(isSymmetric(symSubMat, nullptr));
-    }
+    CHECK_FALSE(isSymmetric(centerSymMat, nullptr));
+    CHECK(isSymmetric(symSubMat, nullptr));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("isSymmetric - CSRMatrix-Submatrix", TAG_KERNELS, CSRMatrix, (double, uint32_t)) {
-
+TEMPLATE_PRODUCT_TEST_CASE("isSymmetric - CSRMatrix-submatrix", TAG_KERNELS, CSRMatrix, (double, uint32_t)) {
     using DT = TestType;
 
     auto centerSymMat = genGivenVals<DT>(5, {1, 0, 1, 0, 1, 2, 1, 0, 3, 2, 3, 0, 4, 0, 4});
-
     auto symSubMat = DataObjectFactory::create<DT>(centerSymMat, 1, centerSymMat->getNumRows() - 1);
 
-    SECTION("isSymmetric with submatrix.") {
-        CHECK_THROWS_AS(isSymmetric(centerSymMat, nullptr), std::runtime_error);
-        CHECK(isSymmetric(symSubMat, nullptr));
-    }
+    CHECK_THROWS_AS(isSymmetric(centerSymMat, nullptr), std::runtime_error);
+    CHECK(isSymmetric(symSubMat, nullptr));
 }

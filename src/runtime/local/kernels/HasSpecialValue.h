@@ -24,15 +24,13 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
-#include <string>
-#include <type_traits>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTArg, typename TestType> struct HasSpecialValue {
-    static bool apply(const DTArg *arg, TestType testVal, DCTX(ctx)) = delete;
+template <class DTArg, typename VTVal> struct HasSpecialValue {
+    static bool apply(const DTArg *arg, VTVal val, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -40,16 +38,16 @@ template <class DTArg, typename TestType> struct HasSpecialValue {
 // ****************************************************************************
 
 /**
- * @brief Checks each element of the matrix against a value testVal. Returns
- * true oppon finding the first matching element in the matrix.
+ * @brief Checks each element of the matrix against a value `val`. Returns `true` upon finding the first matching
+ * element in the matrix. This operation is nan-aware, i.e., if nan is given as the special value to search, the
+ * elements in the matrix will be checked for nan.
  *
- * @param
- * @param arg Pointer to a matrix.
- * @param testVal The value to test for in the matrix.
- * @return Returns true when finding a matchin element.
+ * @param arg the matrix to check
+ * @param val the special value to search
+ * @return `true` if `val` is contained in `arg`; `false`, otherwise
  */
-template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg, TestType testVal, DCTX(ctx)) {
-    return HasSpecialValue<DTArg, TestType>::apply(arg, testVal, ctx);
+template <class DTArg, typename VTVal> bool hasSpecialValue(const DTArg *arg, VTVal val, DCTX(ctx)) {
+    return HasSpecialValue<DTArg, VTVal>::apply(arg, val, ctx);
 }
 
 // ****************************************************************************
@@ -57,44 +55,36 @@ template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg,
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
-// Bool <- DenseMatrix, scalar
+// bool <- DenseMatrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>, TestType> {
-    static bool apply(const DenseMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
+template <typename VT> struct HasSpecialValue<DenseMatrix<VT>, VT> {
+    static bool apply(const DenseMatrix<VT> *arg, VT val, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
         auto numCols = arg->getNumCols();
 
-        if (std::isnan(testVal)) {
-            for (auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
+        if (std::isnan(val))
+            for (auto rowIdx = 0ul; rowIdx < numRows; rowIdx++)
                 for (auto colIdx = 0ul; colIdx < numCols; colIdx++) {
-                    auto val = arg->get(rowIdx, colIdx);
-                    if (std::isnan(val)) {
+                    if (std::isnan(arg->get(rowIdx, colIdx)))
                         return true;
-                    }
                 }
-            }
-        } else {
-            for (auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
-                for (auto colIdx = 0ul; colIdx < numCols; colIdx++) {
-                    auto val = arg->get(rowIdx, colIdx);
-                    if (val == testVal) {
+        else
+            for (auto rowIdx = 0ul; rowIdx < numRows; rowIdx++)
+                for (auto colIdx = 0ul; colIdx < numCols; colIdx++)
+                    if (arg->get(rowIdx, colIdx) == val)
                         return true;
-                    }
-                }
-            }
-        }
 
         return false;
     }
 };
 
 // ----------------------------------------------------------------------------
-// Bool <- CSRMatrix, scalar
+// bool <- CSRMatrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, TestType> {
-    static bool apply(const CSRMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
+template <typename VT> struct HasSpecialValue<CSRMatrix<VT>, VT> {
+    static bool apply(const CSRMatrix<VT> *arg, VT val, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
         auto numCols = arg->getNumCols();
         auto numNonZeros = arg->getNumNonZeros();
@@ -104,55 +94,40 @@ template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, 
         auto hasZeroes = numNonZeros < numElements;
         auto zero = VT(0);
 
-        if (std::isnan(testVal)) {
-            for (auto it = vBegin; it != vEnd; it++) {
-                if (std::isnan(*it)) {
+        if (std::isnan(val)) {
+            for (auto it = vBegin; it != vEnd; it++)
+                if (std::isnan(*it))
                     return true;
-                }
-            }
         } else {
-            if (hasZeroes) { // test zero;
-                if ((zero) == testVal) {
+            if (hasZeroes && zero == val) // test zero
+                return true;
+            for (auto it = vBegin; it != vEnd; it++)
+                if (*it == val)
                     return true;
-                }
-            }
-            for (auto it = vBegin; it != vEnd; it++) {
-                if ((*it) == testVal) {
-                    return true;
-                }
-            }
         }
         return false;
     }
 };
 
 // ----------------------------------------------------------------------------
-// Bool <- Matrix, scalar
+// bool <- Matrix, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename TestType> struct HasSpecialValue<Matrix<VT>, TestType> {
-    static bool apply(const Matrix<VT> *arg, TestType testVal, DCTX(ctx)) {
+template <typename VT> struct HasSpecialValue<Matrix<VT>, VT> {
+    static bool apply(const Matrix<VT> *arg, VT val, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        if (std::isnan(testVal)) {
-            for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx) {
-                for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
-                    const VT val = arg->get(rowIdx, colIdx);
-                    if (std::isnan(val)) {
+        if (std::isnan(val)) {
+            for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx)
+                for (size_t colIdx = 0; colIdx < numCols; ++colIdx)
+                    if (std::isnan(arg->get(rowIdx, colIdx)))
                         return true;
-                    }
-                }
-            }
         } else {
-            for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx) {
-                for (size_t colIdx = 0; colIdx < numCols; ++colIdx) {
-                    const VT val = arg->get(rowIdx, colIdx);
-                    if (val == testVal) {
+            for (size_t rowIdx = 0; rowIdx < numRows; ++rowIdx)
+                for (size_t colIdx = 0; colIdx < numCols; ++colIdx)
+                    if (arg->get(rowIdx, colIdx) == val)
                         return true;
-                    }
-                }
-            }
         }
 
         return false;
