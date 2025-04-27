@@ -175,20 +175,6 @@ mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast) {
     }
 }
 
-mlir::Value SQLVisitor::castToIntMatrixColumn(mlir::Value toCast) {
-    mlir::Value toCastMatrix = castToMatrixColumn(toCast);
-    mlir::Type vt = utils.getValueTypeByName("si64");
-    mlir::Type resType = utils.matrixOf(vt);
-
-    if (toCastMatrix.getType() != resType) {
-        mlir::Value toCastFrame = matrixToFrame(toCastMatrix, "TempCol"); // We need this step because castOp can't
-                                                                          // cast a matrix to a matrix
-
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(queryLoc, resType, toCastFrame));
-    }
-    return toCastMatrix;
-}
-
 mlir::Value SQLVisitor::matrixToFrame(mlir::Value matrix, std::string newColumnName) {
     if (llvm::isa<mlir::daphne::MatrixType>(matrix.getType())) {
         // make a Frame from the Matrix.
@@ -998,8 +984,9 @@ antlrcpp::Any SQLVisitor::visitAndExpr(SQLGrammarParser::AndExprContext *ctx) {
     mlir::Value lhs = utils.valueOrError(utils.getLoc(ctx->lhs->start), vLhs);
     mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
 
-    lhs = castToIntMatrixColumn(lhs);
-    rhs = castToIntMatrixColumn(rhs);
+    // TODO castToMatrixColumn may unnecessarily expand scalars to column matrices.
+    lhs = castToMatrixColumn(lhs);
+    rhs = castToMatrixColumn(rhs);
 
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
 }
@@ -1017,8 +1004,9 @@ antlrcpp::Any SQLVisitor::visitOrExpr(SQLGrammarParser::OrExprContext *ctx) {
     mlir::Value lhs = utils.valueOrError(utils.getLoc(ctx->lhs->start), vLhs);
     mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
 
-    lhs = castToIntMatrixColumn(lhs);
-    rhs = castToIntMatrixColumn(rhs);
+    // TODO castToMatrixColumn may unnecessarily expand scalars to column matrices.
+    lhs = castToMatrixColumn(lhs);
+    rhs = castToMatrixColumn(rhs);
 
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
 }
