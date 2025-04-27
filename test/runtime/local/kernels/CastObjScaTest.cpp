@@ -15,63 +15,103 @@
  */
 
 #include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/kernels/CastObjSca.h>
 #include <runtime/local/kernels/CheckEq.h>
 
-#include <catch.hpp>
-#include <cstdint>
 #include <tags.h>
+
+#include <catch.hpp>
+
 #include <vector>
 
-TEMPLATE_TEST_CASE("castObjSca, matrix to scalar", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+#include <cstdint>
+
+TEMPLATE_TEST_CASE("castObjSca, matrix to scalar, single-element", TAG_KERNELS, double, float, int64_t, uint64_t,
+                   int32_t, uint32_t) {
     using VTRes = TestType;
 
-    VTRes res = VTRes(0);
     SECTION("DenseMatrix<int64_t> to VTRes") {
-        VTRes exp = 2;
-        auto m0 = genGivenVals<DenseMatrix<int64_t>>(1, {static_cast<int64_t>(exp)});
-        res = castObjSca<VTRes, DenseMatrix<int64_t>>(m0, nullptr);
+        auto arg = genGivenVals<DenseMatrix<int64_t>>(1, {static_cast<int64_t>(2)});
+        VTRes exp = VTRes(2);
+        VTRes res = castObjSca<VTRes, DenseMatrix<int64_t>>(arg, nullptr);
         CHECK(res == exp);
-        DataObjectFactory::destroy(m0);
+        DataObjectFactory::destroy(arg);
     }
-
     SECTION("DenseMatrix<double> to VTRes") {
-        VTRes exp = 2.2;
-        auto m0 = genGivenVals<DenseMatrix<double>>(1, {static_cast<double>(exp)});
-        res = castObjSca<VTRes, DenseMatrix<double>>(m0, nullptr);
+        auto arg = genGivenVals<DenseMatrix<double>>(1, {static_cast<double>(2.2)});
+        VTRes exp = VTRes(2.2);
+        VTRes res = castObjSca<VTRes, DenseMatrix<double>>(arg, nullptr);
         CHECK(res == exp);
-        DataObjectFactory::destroy(m0);
+        DataObjectFactory::destroy(arg);
     }
 }
 
-TEMPLATE_TEST_CASE("castObjSca, frame to scalar", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+TEMPLATE_TEST_CASE("castObjSca, matrix to scalar, non-single-element", TAG_KERNELS, double, int64_t, uint32_t) {
+    using VT = TestType;
+
+    DenseMatrix<VT> *arg;
+    SECTION("zero-element") { arg = DataObjectFactory::create<DenseMatrix<VT>>(0, 0, false); }
+    SECTION("multi-element (nx1)") { arg = genGivenVals<DenseMatrix<VT>>(2, {VT(1), VT(2)}); }
+    SECTION("multi-element (1xm)") { arg = genGivenVals<DenseMatrix<VT>>(1, {VT(1), VT(2)}); }
+    SECTION("multi-element (nxm)") { arg = genGivenVals<DenseMatrix<VT>>(2, {VT(1), VT(2), VT(3), VT(4)}); }
+    VT res;
+    CHECK_THROWS(res = castObjSca<VT, DenseMatrix<VT>>(arg, nullptr));
+    DataObjectFactory::destroy(arg);
+}
+
+TEMPLATE_TEST_CASE("castObjSca, frame to scalar, single-element", TAG_KERNELS, double, float, int64_t, uint64_t,
+                   int32_t, uint32_t) {
     using VTRes = TestType;
 
-    Frame *arg = nullptr;
-    SECTION("Frame[double] to VTRes") {
-        VTRes exp = 2.2;
-
-        auto m0 = genGivenVals<DenseMatrix<double>>(1, {static_cast<double>(exp)});
-        std::vector<Structure *> cols = {m0};
-        arg = DataObjectFactory::create<Frame>(cols, nullptr);
-
-        VTRes res = castObjSca<VTRes, Frame>(arg, nullptr);
-        CHECK(res == exp);
-        DataObjectFactory::destroy(m0);
-    }
-
     SECTION("Frame[int64_t] to VTRes") {
-        VTRes exp = 2;
-
-        auto m0 = genGivenVals<DenseMatrix<int64_t>>(1, {static_cast<int64_t>(exp)});
-        std::vector<Structure *> cols = {m0};
-        arg = DataObjectFactory::create<Frame>(cols, nullptr);
-
+        auto argC0 = genGivenVals<DenseMatrix<int64_t>>(1, {static_cast<int64_t>(2)});
+        std::vector<Structure *> cols = {argC0};
+        auto arg = DataObjectFactory::create<Frame>(cols, nullptr);
+        VTRes exp = VTRes(2);
         VTRes res = castObjSca<VTRes, Frame>(arg, nullptr);
         CHECK(res == exp);
-        DataObjectFactory::destroy(m0);
+        DataObjectFactory::destroy(argC0, arg);
     }
-    DataObjectFactory::destroy(arg);
+    SECTION("Frame[double] to VTRes") {
+        auto argC0 = genGivenVals<DenseMatrix<double>>(1, {static_cast<double>(2.2)});
+        std::vector<Structure *> cols = {argC0};
+        auto arg = DataObjectFactory::create<Frame>(cols, nullptr);
+        VTRes exp = VTRes(2.2);
+        VTRes res = castObjSca<VTRes, Frame>(arg, nullptr);
+        CHECK(res == exp);
+        DataObjectFactory::destroy(argC0, arg);
+    }
+}
+
+TEMPLATE_TEST_CASE("castObjSca, frame to scalar, non-single-element", TAG_KERNELS, double, int64_t, uint32_t) {
+    using VT = TestType;
+
+    Frame *arg;
+    DenseMatrix<VT> *argC0;
+    SECTION("zero-element") {
+        argC0 = DataObjectFactory::create<DenseMatrix<VT>>(0, 1, false);
+        std::vector<Structure *> cols = {argC0};
+        arg = DataObjectFactory::create<Frame>(cols, nullptr);
+    }
+    SECTION("multi-element (nx1)") {
+        argC0 = genGivenVals<DenseMatrix<VT>>(2, {VT(1), VT(2)});
+        std::vector<Structure *> cols = {argC0};
+        arg = DataObjectFactory::create<Frame>(cols, nullptr);
+    }
+    SECTION("multi-element (1xm)") {
+        argC0 = genGivenVals<DenseMatrix<VT>>(1, {VT(1)});
+        std::vector<Structure *> cols = {argC0, argC0};
+        arg = DataObjectFactory::create<Frame>(cols, nullptr);
+    }
+    SECTION("multi-element (nxm)") {
+        argC0 = genGivenVals<DenseMatrix<VT>>(2, {VT(1), VT(2)});
+        std::vector<Structure *> cols = {argC0, argC0};
+        arg = DataObjectFactory::create<Frame>(cols, nullptr);
+    }
+    VT res;
+    CHECK_THROWS(res = castObjSca<VT, Frame>(arg, nullptr));
+    DataObjectFactory::destroy(argC0, arg);
 }
