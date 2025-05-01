@@ -1290,7 +1290,9 @@ def Daphne_GroupOp : Daphne_Op<"group", [
 // TODO These columnar operations (plus the Column type) could become a separate dialect.
 
 class Daphne_ColSelectCmpOp<string name, list<Trait> traits = []>
-: Daphne_Op<name, traits> {
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeSize
+])> {
     let summary = "Selection on columnar data; input: data; output: sorted positions.";
     let description = [{
         Compares each value of the left-hand-side input column to the right-hand-side input scalar using the concrete
@@ -1311,7 +1313,9 @@ def Daphne_ColSelectGeOp : Daphne_ColSelectCmpOp<"colSelectGe">;
 def Daphne_ColSelectLtOp : Daphne_ColSelectCmpOp<"colSelectLt">;
 def Daphne_ColSelectLeOp : Daphne_ColSelectCmpOp<"colSelectLe">;
 
-def Daphne_ColProjectOp : Daphne_Op<"colProject", []> {
+def Daphne_ColProjectOp : Daphne_Op<"colProject", [
+    DataTypeCol, ValueTypeFromFirstArg
+]> {
     let summary = "Projection on columnar data; input: data, positions; output: data.";
     let description = [{
         Extracts the data elements addressed by the positions in the right-hand-side input column from the
@@ -1326,7 +1330,9 @@ def Daphne_ColProjectOp : Daphne_Op<"colProject", []> {
 }
 
 class Daphne_ColSetOp<string name, list<Trait> traits = []>
-: Daphne_Op<name, traits> {
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeSize
+])> {
     let arguments = (ins ColumnOrU:$lhsPos, ColumnOrU:$rhsPos);
     let results = (outs ColumnOrU:$resPos);
 }
@@ -1347,7 +1353,9 @@ def Daphne_ColMergeOp : Daphne_ColSetOp<"colMerge"> {
     }];
 }
 
-def Daphne_ColJoinOp : Daphne_Op<"colJoin", []> {
+def Daphne_ColJoinOp : Daphne_Op<"colJoin", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     let summary = "N:1 equi-join on columnar data; input: data, unique data; output: sorted positions, positions.";
     let description = [{
         Compares each element in the left-hand-side input column to each element in the right-hand-side input column.
@@ -1361,7 +1369,9 @@ def Daphne_ColJoinOp : Daphne_Op<"colJoin", []> {
     let results = (outs ColumnOrU:$resLhsPos, ColumnOrU:$resRhsPos);
 }
 
-def Daphne_ColSemiJoinOp : Daphne_Op<"colSemiJoin", []> {
+def Daphne_ColSemiJoinOp : Daphne_Op<"colSemiJoin", [
+    DataTypeCol, ValueTypeSize
+]> {
     let summary = "Semi-join on columnar data; input: data, data, output: sorted positions.";
     let description = [{
         Outputs the position of each element in the left-hand-side input column for which there is a matching element
@@ -1372,7 +1382,9 @@ def Daphne_ColSemiJoinOp : Daphne_Op<"colSemiJoin", []> {
     let results = (outs ColumnOrU:$resLhsPos);
 }
 
-def Daphne_ColGroupFirstOp : Daphne_Op<"colGroupFirst", []> {
+def Daphne_ColGroupFirstOp : Daphne_Op<"colGroupFirst", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     let summary = "Initial grouping step on columnar data; input: data; output: positions (group ids), positions (of representatives).";
     let description = [{
         Maps each distinct value in the input data column to a unique group id. Group ids are consecutive integers
@@ -1386,7 +1398,9 @@ def Daphne_ColGroupFirstOp : Daphne_Op<"colGroupFirst", []> {
     let results = (outs ColumnOrU:$resGrpIds, ColumnOrU:$resReprPos);
 }
 
-def Daphne_ColGroupNextOp : Daphne_Op<"colGroupNext", []> {
+def Daphne_ColGroupNextOp : Daphne_Op<"colGroupNext", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     let summary = "Subsequent grouping step on columnar data; input: data, positions (group ids); output: positions (group ids), positions (of representatives).";
     let description = [{
         Maps each distinct combination of a value in the left-hand-side input data column and the right-hand-side group
@@ -1402,7 +1416,9 @@ def Daphne_ColGroupNextOp : Daphne_Op<"colGroupNext", []> {
 }
 
 class Daphne_ColCalcBinaryOp<string name, list<Trait> traits = []>
-: Daphne_Op<name, traits> {
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromArgs
+])> {
     let summary = "Elementwise binary operation on columnar data; input: data; output: data.";
     let description = [{
         Applies the given binary operation to all corresponding pairs in the two input data columns. The two input data
@@ -1417,7 +1433,9 @@ def Daphne_ColCalcSubOp : Daphne_ColCalcBinaryOp<"colCalcSub">;
 def Daphne_ColCalcMulOp : Daphne_ColCalcBinaryOp<"colCalcMul">;
 
 class Daphne_ColAllAggOp<string name, list<Trait> traits = []>
-: Daphne_Op<name, traits> {
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromFirstArg
+])> {
     let summary = "Full aggregation of columnar data; input: data; output: data.";
     let description = [{
         Aggregates all elements in the input data column using the given aggregation function. The result is a column
@@ -1430,7 +1448,9 @@ class Daphne_ColAllAggOp<string name, list<Trait> traits = []>
 def Daphne_ColAllAggSumOp : Daphne_ColAllAggOp<"colSumAll">;
 
 class Daphne_ColGrpAggOp<string name, list<Trait> traits = []>
-: Daphne_Op<name, traits> {
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromFirstArg
+])> {
     let summary = "Grouped aggregation of columnar data; input: data, positions (group ids); output: data.";
     let description = [{
         Aggregates all elements in the input data column according to the input group ids using the specified
