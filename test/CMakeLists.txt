@@ -113,6 +113,8 @@ set(TEST_SOURCES
         runtime/local/kernels/CondMatMatScaTest.cpp
         runtime/local/kernels/CondMatScaMatTest.cpp
         runtime/local/kernels/CondMatScaScaTest.cpp
+        runtime/local/kernels/ConvertBitmapToPosListTest.cpp
+        runtime/local/kernels/ConvertPosListToBitmapTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/CTableTest.cpp
         runtime/local/kernels/DiagMatrixTest.cpp
