@@ -7486,5 +7486,71 @@
             [["Column", "uint64_t"], ["Column", "uint64_t"], ["Column", "size_t"]]
         ],
         "opCodes": ["SUM"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ConvertPosListToBitmap.h",
+            "opName": "convertPosListToBitmap",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numRowsRes"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ConvertBitmapToPosList.h",
+            "opName": "convertBitmapToPosList",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
     }
 ]
