@@ -230,6 +230,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                            "(e.g., dense/sparse)"));
     static alias selectMatrixReprAlias( // to still support the longer old form
         "select-matrix-representations", aliasopt(selectMatrixRepr), desc("Alias for --select-matrix-repr"));
+    static opt<bool> useColumnar("columnar", cat(daphneOptions),
+                                 desc("Use columnar operations instead of frame/matrix operations for relational query "
+                                      "processing where possible"));
     static opt<bool> cuda("cuda", cat(daphneOptions), desc("Use CUDA"));
     static opt<bool> fpgaopencl("fpgaopencl", cat(daphneOptions), desc("Use FPGAOPENCL"));
     static opt<string> libDir("libdir", cat(daphneOptions),
@@ -276,6 +279,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                       "(path to a kernel catalog JSON file)."));
 
     enum ExplainArgs {
+        columnar,
         kernels,
         llvm,
         parsing,
@@ -301,6 +305,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             clEnumVal(parsing, "Show DaphneIR after parsing"),
             clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
+            clEnumVal(columnar, "Show DaphneIR after lowering to columnar operations"),
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
             clEnumVal(select_matrix_repr, "Show DaphneIR after selecting "
                                           "physical matrix representations"),
@@ -420,6 +425,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     user_config.debugMultiThreading = debugMultiThreading;
     user_config.prePartitionRows = prePartitionRows;
     user_config.distributedBackEndSetup = distributedBackEndSetup;
+    user_config.use_columnar = useColumnar;
     if (user_config.use_distributed) {
         if (user_config.distributedBackEndSetup != ALLOCATION_TYPE::DIST_MPI &&
             user_config.distributedBackEndSetup != ALLOCATION_TYPE::DIST_GRPC_SYNC &&
@@ -451,6 +457,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
 
     for (auto explain : explainArgList) {
         switch (explain) {
+        case columnar:
+            user_config.explain_columnar = true;
+            break;
         case kernels:
             user_config.explain_kernels = true;
             break;

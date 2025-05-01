@@ -36,6 +36,8 @@ class DaphneLogger;
  */
 struct DaphneUserConfig {
     // Remember to update UserConfig.json accordingly!
+
+    bool use_columnar = false;
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
@@ -62,6 +64,7 @@ struct DaphneUserConfig {
     bool enable_profiling = false;
 
     bool debug_llvm = false;
+    bool explain_columnar = false;
     bool explain_kernels = false;
     bool explain_llvm = false;
     bool explain_parsing = false;

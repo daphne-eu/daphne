@@ -258,6 +258,14 @@ struct CompilerUtils {
     [[maybe_unused]] static bool hasObjType(mlir::Value v) { return isObjType(v.getType()); }
 
     /**
+     * @brief Returns `true` if the given type is a DAPHNE matrix that has exactly one column; or `false`, otherwise.
+     */
+    static bool isMatTypeWithSingleCol(mlir::Type t) {
+        auto mt = t.dyn_cast<mlir::daphne::MatrixType>();
+        return mt && mt.getNumCols() == 1;
+    }
+
+    /**
      * @brief Returns `true` if the given type is a DAPHNE scalar type (or: value type); or `false`, otherwise.
      */
     static bool isScaType(mlir::Type t) {
