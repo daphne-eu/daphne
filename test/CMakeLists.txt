@@ -46,6 +46,7 @@ set(TEST_SOURCES
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/secondorder/SecondOrderTest.cpp
+        api/cli/sql/ColumnarTest.cpp
         api/cli/sql/SQLTest.cpp
         api/cli/sql/SQLResultTest.cpp
         api/cli/syntax/SyntaxTest.cpp
