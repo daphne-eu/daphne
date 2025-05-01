@@ -1550,6 +1550,27 @@ def Daphne_GetColIdxOp : Daphne_Op<"getColIdx", [DataTypeSca, ValueTypeSize]>{
     let arguments = (ins Frame:$frame, StrScalar:$columnName);
     let results = (outs Size:$res);
 }
+
+def Daphne_ConvertPosListToBitmapOp : Daphne_Op<"convertPosListToBitmap", [
+    TypeFromFirstArg,
+    ShapeFromArg
+]> {
+    let summary = "Creates a single-column matrix of zero/one entries (bit vector), where the entries addressed by the numbers in the single-column input matrix (position list) are set to one.";
+
+    let arguments = (ins MatrixOrU:$arg, Size:$numRowsRes);
+    let results = (outs MatrixOrU:$res);
+}
+
+def Daphne_ConvertBitmapToPosListOp : Daphne_Op<"convertBitmapToPosList", [
+    DataTypeMat, ValueTypeSize,
+    ShapeFromArg
+]> {
+    let summary = "Given a single-column matrix with only zero/one entries (bit vector), creates a sorted single-column matrix of the positions of ones in the input (position list).";
+
+    let arguments = (ins MatrixOrU:$arg);
+    let results = (outs MatrixOrU:$res);
+}
+
 // ****************************************************************************
 // Distributed Operations
 // ****************************************************************************

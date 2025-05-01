@@ -24,6 +24,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     LowerToLLVMPass.cpp
     PhyOperatorSelectionPass.cpp
     RewriteToCallKernelOpPass.cpp
+    RewriteToColumnarOpsPass.cpp
     SpecializeGenericFunctionsPass.cpp
     VectorizeComputationsPass.cpp
     DaphneOptPass.cpp

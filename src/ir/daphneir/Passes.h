@@ -65,6 +65,7 @@ std::unique_ptr<Pass> createPhyOperatorSelectionPass();
 std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
 std::unique_ptr<Pass> createProfilingPass();
 std::unique_ptr<Pass> createRewriteSqlOpPass();
+std::unique_ptr<Pass> createRewriteToColumnarOpsPass();
 std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig &cfg,
                                                       std::unordered_map<std::string, bool> &usedLibPaths);
 std::unique_ptr<Pass> createSelectMatrixRepresentationsPass(const DaphneUserConfig &cfg);
