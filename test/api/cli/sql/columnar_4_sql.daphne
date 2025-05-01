@@ -1,0 +1,13 @@
+// One table, group-by on a single columns with a single aggregate.
+
+r = {
+    "a": [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8],
+    "b": [ 10,   5,  20,  15,   5,  25,  20,   5],
+    "c": ["x", "x", "y", "x", "z", "z", "x", "y"]
+};
+
+registerView("r", r);
+
+res = sql("SELECT r.c AS key, sum(r.b) AS agg FROM r GROUP by r.c;");
+
+print(res);

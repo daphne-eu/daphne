@@ -1,0 +1,25 @@
+// Join of two tables (both with filters), full aggregation.
+
+f = {
+    "a"  : [ 1,  1,  4,  3,  2,  1,  1,  0,  1,  2,  0,  4],
+    "b"  : [10, 30, 20, 10, 20, 30, 30, 20, 10, 20, 30, 10],
+    "did": [ 3,  0,  2,  1,  4,  3,  2,  2,  0,  1,  2,  1]
+};
+d = {
+    "id": [ 0,  1,  2,  3,  4],
+    "x" : [10, 20, 10, 20, 30]
+};
+
+selD = as.matrix(d[, "x"]) == 10;
+d = d[, "id"];
+d = d[[selD, ]];
+
+selF = as.matrix(f[, "a"]) < 3;
+f = cbind(f[, "b"], f[, "did"]);
+f = f[[selF, ]];
+
+f = innerJoin(f, d, "did", "id");
+
+res = createFrame(as.matrix(sum(as.matrix(f[, "b"]))), "foo");
+
+print(res);
