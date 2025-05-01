@@ -182,6 +182,18 @@ struct CompilerUtils {
             if (generalizeToStructure)
                 return "Structure";
             return "Frame";
+        } else if (auto colTy = t.dyn_cast<mlir::daphne::ColumnType>()) {
+            if (generalizeToStructure)
+                return "Structure";
+            // For columns of strings we use `std::string` as the value type, while for string scalars we use
+            // `const char *` as the value type. Thus, we need this special case here. Maybe we can do it without a
+            // special case in the future.
+            std::string vtName;
+            if (colTy.getValueType().isa<mlir::daphne::StringType>())
+                vtName = "std::string";
+            else
+                vtName = mlirTypeToCppTypeName(colTy.getValueType(), angleBrackets, false);
+            return angleBrackets ? ("Column<" + vtName + ">") : ("Column_" + vtName);
         } else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
             if (generalizeToStructure)
                 return "Structure";
