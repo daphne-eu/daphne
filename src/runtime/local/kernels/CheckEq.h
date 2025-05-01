@@ -19,6 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/ChunkedTensor.h>
+#include <runtime/local/datastructures/Column.h>
 #include <runtime/local/datastructures/ContiguousTensor.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -100,4 +101,12 @@ template <typename VT> struct CheckEq<ChunkedTensor<VT>> {
 
 template <typename VT> struct CheckEq<Matrix<VT>> {
     static bool apply(const Matrix<VT> *lhs, const Matrix<VT> *rhs, DCTX(ctx)) { return *lhs == *rhs; }
+};
+
+// ----------------------------------------------------------------------------
+// Column
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct CheckEq<Column<VT>> {
+    static bool apply(const Column<VT> *lhs, const Column<VT> *rhs, DCTX(ctx)) { return *lhs == *rhs; }
 };
