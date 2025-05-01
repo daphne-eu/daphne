@@ -1285,6 +1285,166 @@ def Daphne_GroupOp : Daphne_Op<"group", [
 }
 
 // ****************************************************************************
+// Columnar algebra
+// ****************************************************************************
+// TODO These columnar operations (plus the Column type) could become a separate dialect.
+
+class Daphne_ColSelectCmpOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, traits> {
+    let summary = "Selection on columnar data; input: data; output: sorted positions.";
+    let description = [{
+        Compares each value of the left-hand-side input column to the right-hand-side input scalar using the concrete
+        comparison operation. The output column contains the positions (counting starts at zero) of the matching
+        values in the left-hand-side input column. The output column is sorted.
+
+        Note that this operation can only compare a column to a scalar. To compare two columns, consider using
+        `ColCalcBinaryOp`.
+    }];
+
+    let arguments = (ins ColumnOrU:$lhsData, AnyTypeOf<[AnyScalar, Unknown]>:$rhsData);
+    let results = (outs ColumnOrU:$resPos);
+}
+def Daphne_ColSelectEqOp : Daphne_ColSelectCmpOp<"colSelectEq">;
+def Daphne_ColSelectNeqOp : Daphne_ColSelectCmpOp<"colSelectNeq">;
+def Daphne_ColSelectGtOp : Daphne_ColSelectCmpOp<"colSelectGt">;
+def Daphne_ColSelectGeOp : Daphne_ColSelectCmpOp<"colSelectGe">;
+def Daphne_ColSelectLtOp : Daphne_ColSelectCmpOp<"colSelectLt">;
+def Daphne_ColSelectLeOp : Daphne_ColSelectCmpOp<"colSelectLe">;
+
+def Daphne_ColProjectOp : Daphne_Op<"colProject", []> {
+    let summary = "Projection on columnar data; input: data, positions; output: data.";
+    let description = [{
+        Extracts the data elements addressed by the positions in the right-hand-side input column from the
+        left-hand-side input column. The input positions must be valid positions in the input data column (not out of
+        bounds); other than that, there are no restrictions, i.e., the positions do not need to be sorted and may
+        contain duplicates. The elements in the output data column correspond to the input positions, i.e., are in the
+        same order.
+    }];
+
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsPos);
+    let results = (outs ColumnOrU:$resData);
+}
+
+class Daphne_ColSetOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, traits> {
+    let arguments = (ins ColumnOrU:$lhsPos, ColumnOrU:$rhsPos);
+    let results = (outs ColumnOrU:$resPos);
+}
+def Daphne_ColIntersectOp : Daphne_ColSetOp<"colIntersect"> {
+    let summary = "Set intersection of columnar positions lists; input: sorted and unique positions; output: sorted and unique positions.";
+    let description = [{
+        Intersects the two given position list columns, i.e., returns a column containing the positions present in both
+        inputs. Both inputs must be sorted and unique (i.e., must not contain duplicates). The output positions are
+        sorted and unique, too.
+    }];
+}
+def Daphne_ColMergeOp : Daphne_ColSetOp<"colMerge"> {
+    let summary = "Set union of columnar positions lists; input: sorted and unique positions; output: sorted and unique positions.";
+    let description = [{
+        Merges the two given position list columns, i.e., returns a column containing the positions present in any
+        input. Both inputs must be sorted and unique (i.e., must not contain duplicates). The output positions are
+        sorted and unique, too.
+    }];
+}
+
+def Daphne_ColJoinOp : Daphne_Op<"colJoin", []> {
+    let summary = "N:1 equi-join on columnar data; input: data, unique data; output: sorted positions, positions.";
+    let description = [{
+        Compares each element in the left-hand-side input column to each element in the right-hand-side input column.
+        For each match, outputs the pair of positions of the matching elements in the left-hand-side input and
+        right-hand-side input. The values the in right-hand-side input must be unique (no duplicates). The two output
+        positions lists have the same length. When used for a primary-key foreign-key join, the left-hand-side input
+        is the foreign key column and the right-hand-side input is the primary key column.
+    }];
+
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsData, Size:$numRes);
+    let results = (outs ColumnOrU:$resLhsPos, ColumnOrU:$resRhsPos);
+}
+
+def Daphne_ColSemiJoinOp : Daphne_Op<"colSemiJoin", []> {
+    let summary = "Semi-join on columnar data; input: data, data, output: sorted positions.";
+    let description = [{
+        Outputs the position of each element in the left-hand-side input column for which there is a matching element
+        in the right-hand-side input column. The output positions are sorted.
+    }];
+
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsData, Size:$numRes);
+    let results = (outs ColumnOrU:$resLhsPos);
+}
+
+def Daphne_ColGroupFirstOp : Daphne_Op<"colGroupFirst", []> {
+    let summary = "Initial grouping step on columnar data; input: data; output: positions (group ids), positions (of representatives).";
+    let description = [{
+        Maps each distinct value in the input data column to a unique group id. Group ids are consecutive integers
+        starting at zero. Outputs (1) a column of group ids for each element in the input data column (same length as
+        the input data column), and (2) a column of positions of one representative data element per group (the i-th
+        element is the position of any input data element belonging to group id i). This operation is the first step
+        when grouping by one or multiple columns.
+    }];
+
+    let arguments = (ins ColumnOrU:$argData);
+    let results = (outs ColumnOrU:$resGrpIds, ColumnOrU:$resReprPos);
+}
+
+def Daphne_ColGroupNextOp : Daphne_Op<"colGroupNext", []> {
+    let summary = "Subsequent grouping step on columnar data; input: data, positions (group ids); output: positions (group ids), positions (of representatives).";
+    let description = [{
+        Maps each distinct combination of a value in the left-hand-side input data column and the right-hand-side group
+        id column to a unique group id. The two input columns must have the same length. Group ids are consecutive
+        integers starting at zero. Outputs (1) a column of group ids for each element in the input data column (same
+        length as the input data column), and (2) a column of positions of one representative data element per group
+        (the i-th element is the position of any input data element belonging to group id i). When grouping by multiple
+        columns, this operation is applied after `colGroupFirst` to add one more key column to the grouping.
+    }];
+
+    let arguments = (ins ColumnOrU:$argData, ColumnOrU:$argGrpIds);
+    let results = (outs ColumnOrU:$resGrpIds, ColumnOrU:$resReprPos);
+}
+
+class Daphne_ColCalcBinaryOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, traits> {
+    let summary = "Elementwise binary operation on columnar data; input: data; output: data.";
+    let description = [{
+        Applies the given binary operation to all corresponding pairs in the two input data columns. The two input data
+        columns must have the same length. The output data column has the same length as the inputs.
+    }];
+
+    // TODO Support scalars as arguments.
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsData);
+    let results = (outs ColumnOrU:$resData);
+}
+def Daphne_ColCalcSubOp : Daphne_ColCalcBinaryOp<"colCalcSub">;
+def Daphne_ColCalcMulOp : Daphne_ColCalcBinaryOp<"colCalcMul">;
+
+class Daphne_ColAllAggOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, traits> {
+    let summary = "Full aggregation of columnar data; input: data; output: data.";
+    let description = [{
+        Aggregates all elements in the input data column using the given aggregation function. The result is a column
+        containing a single data element.
+    }];
+
+    let arguments = (ins ColumnOrU:$arg);
+    let results = (outs ColumnOrU:$res);
+}
+def Daphne_ColAllAggSumOp : Daphne_ColAllAggOp<"colSumAll">;
+
+class Daphne_ColGrpAggOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, traits> {
+    let summary = "Grouped aggregation of columnar data; input: data, positions (group ids); output: data.";
+    let description = [{
+        Aggregates all elements in the input data column according to the input group ids using the specified
+        aggregation function. The two input columns must have the same length. The input group ids are typically the
+        output of the `colGroupFirst` or `colGroupNext` operation. The output column has one element per input group
+        (the i-th element is the aggregate for group id i).
+    }];
+
+    let arguments = (ins ColumnOrU:$data, ColumnOrU:$groupIds, Size:$numDistinct);
+    let results = (outs ColumnOrU:$res);
+}
+def Daphne_ColGrpAggSumOp : Daphne_ColGrpAggOp<"colSumGrp">;
+
+// ****************************************************************************
 // Frame label manipulation
 // ****************************************************************************
 
@@ -1323,8 +1483,8 @@ def Daphne_CastOp : Daphne_Op<"cast", [
 ]> {
     // Note that the requested result type is not an argument, but should be
     // specified as the output type when creating a CastOp.
-    let arguments = (ins AnyTypeOf<[MatrixOrFrame, AnyScalar, Unknown]>:$arg);
-    let results = (outs AnyTypeOf<[MatrixOrFrame, AnyScalar, Unknown]>:$res);
+    let arguments = (ins AnyTypeOf<[MatrixOrFrame, ColumnOrU, AnyScalar, Unknown]>:$arg);
+    let results = (outs AnyTypeOf<[MatrixOrFrame, ColumnOrU, AnyScalar, Unknown]>:$res);
     let hasFolder = 1;
 
     let extraClassDeclaration = [{
