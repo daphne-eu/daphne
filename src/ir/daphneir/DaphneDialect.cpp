@@ -206,6 +206,22 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         return mlir::daphne::HandleType::get(parser.getBuilder().getContext(), dataType);
     } else if (keyword == "String") {
         return StringType::get(parser.getBuilder().getContext());
+    } else if (keyword == "Column") {
+        if (parser.parseLess())
+            return nullptr;
+        ssize_t numRows = -1;
+        if (parser.parseOptionalQuestion())
+            // Parse #rows if there was no '?'.
+            if (parser.parseInteger<ssize_t>(numRows))
+                return nullptr;
+        if (parser.parseXInDimensionList())
+            return nullptr;
+        mlir::Type vt;
+        if (parser.parseType(vt))
+            return nullptr;
+        if (parser.parseGreater())
+            return nullptr;
+        return ColumnType::get(parser.getBuilder().getContext(), vt, numRows);
     } else if (keyword == "DaphneContext") {
         return mlir::daphne::DaphneContextType::get(parser.getBuilder().getContext());
     } else {
@@ -257,6 +273,8 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPri
         } else
             os << '?';
         os << '>';
+    } else if (auto t = type.dyn_cast<mlir::daphne::ColumnType>()) {
+        os << "Column<" << unknownStrIf(t.getNumRows()) << "x" << t.getValueType() << '>';
     } else if (auto t = type.dyn_cast<mlir::daphne::ListType>()) {
         os << "List<" << t.getElementType() << '>';
     } else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
@@ -404,4 +422,13 @@ MatrixRepresentation MatrixType::getRepresentation() const { return getImpl()->r
         return mlir::success();
     } else
         return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
+}
+
+::mlir::LogicalResult mlir::daphne::ColumnType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+                                                       Type valueType, ssize_t numRows) {
+    if (!CompilerUtils::isScaType(valueType) && !llvm::isa<mlir::daphne::UnknownType>(valueType))
+        return mlir::failure();
+    if (numRows < -1)
+        return mlir::failure();
+    return mlir::success();
 }

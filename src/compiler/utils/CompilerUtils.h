@@ -248,7 +248,8 @@ struct CompilerUtils {
      * @brief Returns `true` if the given type is a DAPHNE data object type; or `false`, otherwise.
      */
     [[maybe_unused]] static bool isObjType(mlir::Type t) {
-        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>(t);
+        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ColumnType,
+                         mlir::daphne::ListType>(t);
     }
 
     /**
@@ -286,6 +287,7 @@ struct CompilerUtils {
      * - For the unknown type, the unknown type is returned.
      * - For matrices, the value type is extracted.
      * - For frames, an error is thrown.
+     * - For columns, the value type is extracted.
      * - For lists, this function is called recursively on the element type.
      * - For scalars, the type itself is returned.
      * - For anything else, an error is thrown.
@@ -301,6 +303,8 @@ struct CompilerUtils {
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error(
                 "getValueType() doesn't support frames yet"); // TODO maybe use the most general value type
+        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.getValueType();
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return getValueType(lt.getElementType());
         if (isScaType(t))
@@ -318,6 +322,7 @@ struct CompilerUtils {
      * - For the unknown type, the unknown type is returned (single-element sequence).
      * - For matrices, the value type is extracted (single-element sequence).
      * - For frames, the sequence of column types is returned.
+     * - For columns, the value type is extracted (single-element sequence).
      * - For lists, this function is called recursively on the element type.
      * - For scalars, the type itself is returned (single-element sequence).
      * - For anything else, an error is thrown.
@@ -332,6 +337,8 @@ struct CompilerUtils {
             return {mt.getElementType()};
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             return ft.getColumnTypes();
+        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return {ct.getValueType()};
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return getValueTypes(lt.getElementType());
         if (isScaType(t))
@@ -350,6 +357,7 @@ struct CompilerUtils {
      * - For the unknown type, an error is thrown.
      * - For matrices, the value type is set to the given value type.
      * - For frames, an error is thrown.
+     * - For columns, the value type is set to the given value type.
      * - For lists, this function is called recursively on the element type.
      * - For scalars, the given value type is returned.
      * - For anything else, an error is thrown.
@@ -365,6 +373,8 @@ struct CompilerUtils {
             return mt.withElementType(vt);
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
+        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.withValueType(vt);
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return setValueType(lt.getElementType(), vt);
         if (isScaType(t))
