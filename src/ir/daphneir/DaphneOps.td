@@ -136,7 +136,8 @@ def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
     SameVariadicOperandSize,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    Pure
 ]> {
     let arguments = (ins Variadic<MatrixOrU>:$cols, Variadic<StrScalar>:$labels);
     let results = (outs FrameOrU:$res);
@@ -663,7 +664,7 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>, CUDASupport
+    DeclareOpInterfaceMethods<InferShapeOpInterface>, CUDASupport, Pure
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -684,6 +685,8 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
 
     let arguments = (ins MatrixOrFrame:$source, AnyTypeOf<[Selection, StrScalar, Unknown]>:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
@@ -760,7 +763,8 @@ def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
     ValueTypesConcat,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport
+    NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport,
+    Pure
 ]>;
 
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind", [
@@ -1206,7 +1210,7 @@ def Daphne_QueryOp : Daphne_Op<"query", [
 def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
-    NumColsFromArg
+    NumColsFromArg, Pure
 ]> {
     let summary = "Filters the rows of a data object according to a bit vector";
 
@@ -1471,10 +1475,13 @@ def Daphne_ColGrpAggSumOp : Daphne_ColGrpAggOp<"colSumGrp">;
 def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let arguments = (ins FrameOrU:$arg, Variadic<StrScalar>:$labels);
     let results = (outs FrameOrU:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix", [
@@ -1499,7 +1506,8 @@ def Daphne_ToStringOp : Daphne_Op<"toString", [DataTypeSca, ValueTypeStr]> {
 
 def Daphne_CastOp : Daphne_Op<"cast", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     // Note that the requested result type is not an argument, but should be
     // specified as the output type when creating a CastOp.
@@ -1509,8 +1517,30 @@ def Daphne_CastOp : Daphne_Op<"cast", [
 
     let extraClassDeclaration = [{
         bool isTrivialCast() {
-            return getArg().getType() == getRes().getType();
+            Type argTy = getArg().getType();
+            Type resTy = getRes().getType();
+            auto argFrmTy = argTy.dyn_cast<FrameType>();
+            auto resFrmTy = resTy.dyn_cast<FrameType>();
+            if(argFrmTy && resFrmTy) {
+                // TODO avoid such a special case for frames, represent the optionality of labels in a different
+                // way than a pointer (maybe llvm::Option/std::optional), sth that supports op== to be true on different instances
+                if(argFrmTy.getColumnTypes() != resFrmTy.getColumnTypes())
+                    return false;
+                if(argFrmTy.getNumRows() != resFrmTy.getNumRows())
+                    return false;
+                if(argFrmTy.getNumCols() != resFrmTy.getNumCols())
+                    return false;
+                std::vector<std::string> *argLabels = argFrmTy.getLabels();
+                std::vector<std::string> *resLabels = resFrmTy.getLabels();
+                if((argLabels == nullptr) != (resLabels == nullptr))
+                    return false;
+                if(argLabels && *argLabels != *resLabels)
+                    return false;
+                return true;
+            } else
+                return argTy == resTy;
         }
+
         /**
          * @brief Checks if this cast just removes detailed properties from a matrix/frame type,
          * to make them unknown instead.
@@ -1528,7 +1558,60 @@ def Daphne_CastOp : Daphne_Op<"cast", [
             return (argMatTy && resMatTy && argMatTy.isSpecializationOf(resMatTy))
                 || (argFrmTy && resFrmTy && argFrmTy.isSpecializationOf(resFrmTy));
         }
+
+        bool mightLoseInformation() {
+            Type argTy = getArg().getType();
+            Type resTy = getRes().getType();
+
+            auto argMatTy = argTy.dyn_cast<daphne::MatrixType>();
+            auto argFrmTy = argTy.dyn_cast<daphne::FrameType>();
+            auto argColTy = argTy.dyn_cast<daphne::ColumnType>();
+
+            auto resMatTy = resTy.dyn_cast<daphne::MatrixType>();
+            auto resFrmTy = resTy.dyn_cast<daphne::FrameType>();
+            auto resColTy = resTy.dyn_cast<daphne::ColumnType>();
+
+            // Note: We only consider data/value types, but not the properties.
+            // TODO What if "b" has more property info that would be important for further inference (is that possible)?
+
+            // If we cast from a matrix to a frame and all columns of the frame have the value type of the matrix, then we certainly do not lose information.
+            if(argMatTy && resFrmTy) {
+                Type argMatValTy = argMatTy.getElementType();
+                std::vector resFrmColTys = resFrmTy.getColumnTypes();
+                for (Type resFrmColTy : resFrmColTys)
+                    // TODO It would be okay if resFrmColTy can represent all values of argMatValTy.
+                    if (argMatValTy != resFrmColTy)
+                        return true;
+                return false;
+            }
+            // If we cast from a frame to a matrix and all columns of the frame have the value type of the matrix, then we certainly do not lose information.
+            if(argFrmTy && resMatTy) {
+                std::vector argFrmColTys = argFrmTy.getColumnTypes();
+                Type resMatValTy = resMatTy.getElementType();
+                for (Type argFrmColTy : argFrmColTys)
+                    // TODO It would be okay if resMatValTy can represent all values of argFrmColTy.
+                    if (argFrmColTy != resMatValTy)
+                        return true;
+                return false;
+            }
+            // If we cast from a matrix to a column and both have the same value type, then we certainly do not lose information.
+            if (argMatTy && resColTy && argMatTy.getElementType() == resColTy.getValueType())
+                return false;
+            // If we cast from a column to a matrix and both have the same value type, then we certainly do not lose information.
+            if (argColTy && resMatTy && argColTy.getValueType() == resMatTy.getElementType())
+                return false;
+            // If we cast from a column to a single-column frame and both have the same value type, then we certainly do not lose information.
+            if (argColTy && resFrmTy && argColTy.getValueType() == resFrmTy.getColumnTypes()[0])
+                return false;
+            // If we cast from a single-column frame to a column and both have the same value type, then we certainly do not lose information.
+            if (argFrmTy && resColTy && argFrmTy.getColumnTypes()[0] == resColTy.getValueType())
+                return false;
+
+            return true;
+        }
     }];
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_RenameOp : Daphne_Op<"rename", [
@@ -1553,7 +1636,8 @@ def Daphne_GetColIdxOp : Daphne_Op<"getColIdx", [DataTypeSca, ValueTypeSize]>{
 
 def Daphne_ConvertPosListToBitmapOp : Daphne_Op<"convertPosListToBitmap", [
     TypeFromFirstArg,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let summary = "Creates a single-column matrix of zero/one entries (bit vector), where the entries addressed by the numbers in the single-column input matrix (position list) are set to one.";
 
@@ -1563,12 +1647,15 @@ def Daphne_ConvertPosListToBitmapOp : Daphne_Op<"convertPosListToBitmap", [
 
 def Daphne_ConvertBitmapToPosListOp : Daphne_Op<"convertBitmapToPosList", [
     DataTypeMat, ValueTypeSize,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let summary = "Given a single-column matrix with only zero/one entries (bit vector), creates a sorted single-column matrix of the positions of ones in the input (position list).";
 
     let arguments = (ins MatrixOrU:$arg);
     let results = (outs MatrixOrU:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 // ****************************************************************************
