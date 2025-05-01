@@ -52,7 +52,7 @@ TEMPLATE_TEST_CASE("castObjSca, matrix to scalar, single-element", TAG_KERNELS, 
 TEMPLATE_TEST_CASE("castObjSca, matrix to scalar, non-single-element", TAG_KERNELS, double, int64_t, uint32_t) {
     using VT = TestType;
 
-    DenseMatrix<VT> *arg;
+    DenseMatrix<VT> *arg = nullptr;
     SECTION("zero-element") { arg = DataObjectFactory::create<DenseMatrix<VT>>(0, 0, false); }
     SECTION("multi-element (nx1)") { arg = genGivenVals<DenseMatrix<VT>>(2, {VT(1), VT(2)}); }
     SECTION("multi-element (1xm)") { arg = genGivenVals<DenseMatrix<VT>>(1, {VT(1), VT(2)}); }
@@ -89,8 +89,8 @@ TEMPLATE_TEST_CASE("castObjSca, frame to scalar, single-element", TAG_KERNELS, d
 TEMPLATE_TEST_CASE("castObjSca, frame to scalar, non-single-element", TAG_KERNELS, double, int64_t, uint32_t) {
     using VT = TestType;
 
-    Frame *arg;
-    DenseMatrix<VT> *argC0;
+    Frame *arg = nullptr;
+    DenseMatrix<VT> *argC0 = nullptr;
     SECTION("zero-element") {
         argC0 = DataObjectFactory::create<DenseMatrix<VT>>(0, 1, false);
         std::vector<Structure *> cols = {argC0};
