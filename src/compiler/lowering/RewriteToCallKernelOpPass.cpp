@@ -127,12 +127,15 @@ class KernelReplacement : public RewritePattern {
 
     mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
         MLIRContext *mctx = t.getContext();
-        if (generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>())
+        if (generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ColumnType,
+                                           mlir::daphne::ListType>())
             return mlir::daphne::StructureType::get(mctx);
         if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
             return mt.withSameElementTypeAndRepr();
         if (t.isa<mlir::daphne::FrameType>())
             return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
+        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.withSameValueType();
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
         if (auto mrt = t.dyn_cast<mlir::MemRefType>()) {
