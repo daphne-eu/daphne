@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/Column.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -451,4 +452,129 @@ TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, double, floa
     DataObjectFactory::destroy(m0, d0, res0);
     DataObjectFactory::destroy(m1, d1, res1);
     DataObjectFactory::destroy(m2, d2, res2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, column to matrix", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTRes = TestType;
+    using VT = typename DTRes::VT;
+
+    std::vector<VT> vals = {VT(0.0), VT(1.1), VT(2.2), VT(3.3)};
+
+    auto arg = genGivenVals<Column<VT>>(vals.size(), vals);
+    auto exp = genGivenVals<DenseMatrix<VT>>(vals.size(), vals);
+
+    DTRes *res = nullptr;
+    castObj<DTRes, Column<VT>>(res, arg, nullptr);
+
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(arg, exp, res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to column, single-column", TAG_KERNELS, (DenseMatrix),
+                           (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+
+    std::vector<VT> vals = {VT(0.0), VT(1.1), VT(2.2), VT(3.3)};
+
+    auto arg = genGivenVals<DTArg>(vals.size(), vals);
+    auto exp = genGivenVals<Column<VT>>(vals.size(), vals);
+
+    Column<VT> *res = nullptr;
+    castObj<Column<VT>, DTArg>(res, arg, nullptr);
+
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(arg, exp, res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to column, single-column, view", TAG_KERNELS, (DenseMatrix),
+                           (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+
+    std::vector<VT> valsArgOrig = {VT(0.0), VT(1.1), VT(2.2), VT(3.3), VT(4.4), VT(5.5)};
+    std::vector<VT> valsExp = {VT(3.3), VT(5.5)};
+
+    auto argOrig = genGivenVals<DTArg>(valsArgOrig.size() / 2, valsArgOrig);
+    auto arg = DataObjectFactory::create<DTArg>(argOrig, 1, 3, 1, 2); // view into argOrig
+    auto exp = genGivenVals<Column<VT>>(valsExp.size(), valsExp);
+
+    Column<VT> *res = nullptr;
+    castObj<Column<VT>, DTArg>(res, arg, nullptr);
+
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(arg, exp, res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to column, multi-column", TAG_KERNELS, (DenseMatrix),
+                           (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VT = typename DTArg::VT;
+
+    std::vector<VT> vals = {VT(0.0), VT(1.1), VT(2.2), VT(3.3)};
+
+    auto arg = genGivenVals<DTArg>(vals.size() / 2, vals);
+
+    Column<VT> *res = nullptr;
+    CHECK_THROWS(castObj<Column<VT>, DTArg>(res, arg, nullptr));
+
+    DataObjectFactory::destroy(arg);
+    if (res)
+        DataObjectFactory::destroy(res);
+}
+
+TEMPLATE_TEST_CASE("castObj, column to frame", TAG_KERNELS, double, int64_t, uint32_t) {
+    using VT = TestType;
+
+    std::vector<VT> vals = {VT(0.0), VT(1.1), VT(2.2), VT(3.3)};
+
+    auto arg = genGivenVals<Column<VT>>(vals.size(), vals);
+    auto expC0 = genGivenVals<DenseMatrix<VT>>(vals.size(), vals);
+    std::vector<Structure *> expCs = {expC0};
+    auto exp = DataObjectFactory::create<Frame>(expCs, nullptr);
+
+    Frame *res = nullptr;
+    castObj<Frame, Column<VT>>(res, arg, nullptr);
+
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(arg, expC0, exp, res);
+}
+
+TEMPLATE_TEST_CASE("castObj, frame to column, single-column", TAG_KERNELS, double, int64_t, uint32_t) {
+    using VT = TestType;
+
+    std::vector<VT> vals = {VT(0.0), VT(1.1), VT(2.2), VT(3.3)};
+
+    auto argC0 = genGivenVals<DenseMatrix<VT>>(vals.size(), vals);
+    std::vector<Structure *> expCs = {argC0};
+    auto arg = DataObjectFactory::create<Frame>(expCs, nullptr);
+    auto exp = genGivenVals<Column<VT>>(vals.size(), vals);
+
+    Column<VT> *res = nullptr;
+    castObj<Column<VT>, Frame>(res, arg, nullptr);
+
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(argC0, arg, exp, res);
+}
+
+TEMPLATE_TEST_CASE("castObj, frame to column, multi-column", TAG_KERNELS, double, int64_t, uint32_t) {
+    using VT = TestType;
+
+    std::vector<VT> vals = {VT(0.0), VT(1.1), VT(2.2), VT(3.3)};
+
+    auto argC0 = genGivenVals<DenseMatrix<VT>>(vals.size(), vals);
+    std::vector<Structure *> expCs = {argC0, argC0};
+    auto arg = DataObjectFactory::create<Frame>(expCs, nullptr);
+
+    Column<VT> *res = nullptr;
+    CHECK_THROWS(castObj<Column<VT>, Frame>(res, arg, nullptr));
+
+    DataObjectFactory::destroy(argC0, arg);
+    if (res)
+        DataObjectFactory::destroy(res);
 }

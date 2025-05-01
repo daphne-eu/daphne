@@ -115,3 +115,36 @@ TEMPLATE_TEST_CASE("castObjSca, frame to scalar, non-single-element", TAG_KERNEL
     CHECK_THROWS(res = castObjSca<VT, Frame>(arg, nullptr));
     DataObjectFactory::destroy(argC0, arg);
 }
+
+TEMPLATE_TEST_CASE("castObjSca, column to scalar, single-element", TAG_KERNELS, double, float, int64_t, uint64_t,
+                   int32_t, uint32_t) {
+    using VTRes = TestType;
+
+    SECTION("Column<int64_t> to VTRes") {
+        auto arg = genGivenVals<Column<int64_t>>(1, {static_cast<int64_t>(2)});
+        VTRes exp = VTRes(2);
+        VTRes res = castObjSca<VTRes, Column<int64_t>>(arg, nullptr);
+        CHECK(res == exp);
+        DataObjectFactory::destroy(arg);
+    }
+    SECTION("Column<double> to VTRes") {
+        auto arg = genGivenVals<Column<double>>(1, {static_cast<double>(2.2)});
+        VTRes exp = VTRes(2.2);
+        VTRes res = castObjSca<VTRes, Column<double>>(arg, nullptr);
+        CHECK(res == exp);
+        DataObjectFactory::destroy(arg);
+    }
+}
+
+TEMPLATE_TEST_CASE("castObjSca, column to scalar, non-single-element", TAG_KERNELS, double, int64_t, uint32_t) {
+    using VT = TestType;
+
+    Column<VT> *arg = nullptr;
+    SECTION("zero-element") { arg = DataObjectFactory::create<Column<VT>>(0, false); }
+    SECTION("multi-element (nx1)") { arg = genGivenVals<Column<VT>>(2, {VT(1), VT(2)}); }
+    // 1xm column is not possible
+    // nxm column is not possible
+    VT res;
+    CHECK_THROWS(res = castObjSca<VT, Column<VT>>(arg, nullptr));
+    DataObjectFactory::destroy(arg);
+}

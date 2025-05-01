@@ -423,7 +423,26 @@
             ["Frame", ["DenseMatrix", "double"]],
             ["Frame", ["DenseMatrix", "int64_t"]],
             ["Frame", ["DenseMatrix", "uint64_t"]],
-
+            [["Column", "double"], ["DenseMatrix", "double"]],
+            [["Column", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["Column", "uint64_t"], ["DenseMatrix", "uint64_t"]],
+            [["Column", "size_t"], ["DenseMatrix", "size_t"]],
+            [["Column", "std::string"], ["DenseMatrix", "std::string"]],
+            [["DenseMatrix", "double"], ["Column", "double"]],
+            [["DenseMatrix", "int64_t"], ["Column", "int64_t"]],
+            [["DenseMatrix", "uint64_t"], ["Column", "uint64_t"]],
+            [["DenseMatrix", "size_t"], ["Column", "size_t"]],
+            [["DenseMatrix", "std::string"], ["Column", "std::string"]],
+            [["Column", "double"], "Frame"],
+            [["Column", "int64_t"], "Frame"],
+            [["Column", "uint64_t"], "Frame"],
+            [["Column", "size_t"], "Frame"],
+            [["Column", "std::string"], "Frame"],
+            ["Frame", ["Column", "double"]],
+            ["Frame", ["Column", "int64_t"]],
+            ["Frame", ["Column", "uint64_t"]],
+            ["Frame", ["Column", "size_t"]],
+            ["Frame", ["Column", "std::string"]],
             [
                 ["DenseMatrix", "double"],
                 ["DenseMatrix", "double"]
@@ -980,7 +999,11 @@
             ["size_t", ["DenseMatrix", "size_t"]],
 
             ["double", "Frame"],
-            ["int64_t", "Frame"]
+            ["int64_t", "Frame"],
+
+            ["double", ["Column", "double"]],
+            ["int64_t", ["Column", "int64_t"]],
+            ["uint64_t", ["Column", "uint64_t"]]
         ]
     },
     {
