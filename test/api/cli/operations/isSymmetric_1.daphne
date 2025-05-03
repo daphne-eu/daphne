@@ -1,0 +1,5 @@
+X = [1, 2, 2, 1](2, 2);
+Y = [1, 2, 3, 4](2, 2);
+
+print(isSymmetric(X));
+print(isSymmetric(Y));
