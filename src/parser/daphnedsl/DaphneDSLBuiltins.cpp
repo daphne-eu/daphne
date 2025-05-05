@@ -933,6 +933,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         mlir::Value vec = args[1];
         return utils.retValWithInferedType(builder.create<GemvOp>(loc, utils.unknownType, mat, vec));
     }
+    if (func == "isSymmetric") {
+        // Check the function receives exactly one argument
+        checkNumArgsExact(loc, func, numArgs, 1);
+
+        // Create the IsSymmetricOp in the IR
+        mlir::Value arg = args[0];
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::IsSymmetricOp>(loc, builder.getI1Type(), arg));
+    }
 
     // ********************************************************************
     // Extended relational algebra
