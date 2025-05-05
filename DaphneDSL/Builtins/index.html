@@ -2281,6 +2281,11 @@ This is the product of the number of rows and the number of columns.</p>
 <p>Returns the DAPHNE compiler's <em>estimate</em> of the argument's sparsity.
 Note that this value may deviate from the <em>actual</em> sparsity of the data at run-time.</p>
 </li>
+<li>
+<p><strong><code>isSymmetric</code></strong><code>(arg:matrix)</code></p>
+<p>Returns <code>true</code> if and only if the given <em>(n x n)</em> matrix is symmetric, i.e., for any <em>i in {0, 1, ..., n-1}</em> and <em>j in {0, 1, ..., n-1}</em>, the value at position <em>(i, j)</em> is the same as the value at position <em>(j, i)</em>.
+The given matrix must be a square matrix.</p>
+</li>
 </ul>
 <h2 id="elementwise-unary">Elementwise unary</h2>
 <p>The following built-in functions all follow the same scheme:</p>
