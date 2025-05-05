@@ -347,8 +347,6 @@ mlir::Type mlirTypeForCode(ValueTypeCode type, Builder builder) {
         return builder.getF64Type();
     case ValueTypeCode::STR:
         return mlir::daphne::StringType::get(builder.getContext());
-    case ValueTypeCode::BOOL: 
-        return builder.getI1Type();  
     default:
         throw std::runtime_error("mlirTypeForCode: unknown value type code");
     }

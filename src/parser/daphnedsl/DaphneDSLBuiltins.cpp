@@ -938,10 +938,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         checkNumArgsExact(loc, func, numArgs, 1);
 
         // Create the IsSymmetricOp in the IR
-        mlir::Value input_data = args[0];
-        return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::IsSymmetricOp>(loc, builder.getI1Type(), input_data)
-        );
+        mlir::Value arg = args[0];
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::IsSymmetricOp>(loc, builder.getI1Type(), arg));
     }
 
     // ********************************************************************

@@ -207,6 +207,15 @@ def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
   let hasCanonicalizeMethod = 1;
 }
 
+def Daphne_IsSymmetricOp : Daphne_Op<"isSymmetric"> {
+    let summary = "Checks if a matrix is symmetric";
+    let description = [{
+        This operation checks if the input matrix is symmetric.
+    }];
+    let arguments = (ins MatrixOrU:$arg);
+    let results = (outs BoolScalar:$res);
+}
+
 // ****************************************************************************
 // Matrix multiplication
 // ****************************************************************************
@@ -1030,15 +1039,6 @@ def Daphne_GemvOp : Daphne_Op<"gemv", [
     let summary = [{Performs the operation `t(A) @ x`}];
     let arguments = (ins MatrixOrU:$mat, MatrixOrU:$vec);
     let results = (outs MatrixOrU:$res);
-}
-
-def Daphne_IsSymmetricOp : Daphne_Op<"isSymmetric"> {
-    let summary = "Checks if a matrix is symmetric";
-    let description = [{
-        This operation checks if the input matrix is symmetric.
-    }];
-    let arguments = (ins MatrixOrU:$arg);
-    let results = (outs BoolScalar:$res);
 }
 
 // ****************************************************************************
