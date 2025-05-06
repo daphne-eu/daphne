@@ -32,10 +32,13 @@ from daphne.operator.nodes.while_loop import WhileLoop
 from daphne.operator.nodes.do_while_loop import DoWhileLoop
 from daphne.operator.nodes.multi_return import MultiReturn
 from daphne.operator.operation_node import OperationNode
-from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
-
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8, STR
+import ctypes
 import numpy as np
 import pandas as pd
+import os
+import json
+
 try:
     import torch as torch
 except ImportError as e:
@@ -69,8 +72,58 @@ class DaphneContext(object):
         """
         unnamed_params = ['\"'+file+'\"']
         return Frame(self, 'readFrame', unnamed_params)
+
+    def from_python(self, list: [], shared_memory=True, verbose=False, return_shape=False):
+        """Generates a `DAGNode` representing a matrix with data given by a python `list`.
+        :param list: The python list.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether to print timing information (True) or not (False).
+        :param return_shape: Whether to return the original shape of the input array.
+        :return: The data from python as a Matrix.
+        """
+
+        original_list_length = len(list)
+        original_list_dim2_length = None
+        original_list_dim3_length = None
+
+        # check if list has one, two or more dimensions
+        try:
+            original_list_dim2_length = len(list[0])
+            original_list_dim3_length = len(list[0][0])
+        except TypeError:
+            pass
+
+        if verbose:
+            start_time = time.time()
+
+        # Check if the python list is 2d or higher dimensional.
+        if original_list_dim2_length is not None and original_list_dim3_length is None:
+            # If 2d, handle as a matrix, convert to numpy array.
+            mat = np.array(list)
+            # Using the existing from_numpy method for 2d arrays.
+            matrix = self.from_numpy(mat, shared_memory, verbose)
+        else:
+            # If higher dimensional, reshape to 2d and handle as a matrix.
+            # Store the original numpy representation.
+            original_list = np.array(list)
+            # Reshape to 2d using numpy's zero copy reshape.
+            reshaped_list = original_list.reshape((original_list_length, -1))
+
+            if verbose:
+                # Check if the original and reshaped lists share memory.
+                shares_memory = np.shares_memory(list, reshaped_list)
+                print(f"from_python(): original and reshaped lists share memory: {shares_memory}")
+
+            # Use the existing from_numpy method for the reshaped 2D array
+            matrix = self.from_numpy(mat=reshaped_list, shared_memory=shared_memory, verbose=verbose)
+
+        if verbose:
+            print(f"from_python(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
+
+        # Return the matrix, and the original shape if return_shape is set to True.
+        return (matrix, (original_list_length, original_list_dim2_length, original_list_dim3_length)) if return_shape else matrix
     
-    def from_numpy(self, mat: np.array, shared_memory=True, verbose=False, return_shape=False):
+    def from_numpy_numerical(self, mat: np.array, shared_memory=True, verbose=False, return_shape=False):
         """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
         :param mat: The numpy array.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
@@ -88,6 +141,7 @@ class DaphneContext(object):
         if mat.ndim == 1:
             rows = mat.shape[0]
             cols = 1
+            mat = mat.reshape(-1, 1)
         elif mat.ndim >= 2:
             if mat.ndim > 2:
                 mat = mat.reshape((original_shape[0], -1))
@@ -138,8 +192,103 @@ class DaphneContext(object):
             print(f"from_numpy(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
 
         return (res, original_shape) if return_shape else res
+    
+    def from_numpy(self, mat, shared_memory=True, verbose=False, return_shape=False):
+        """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
+        :param mat: The numpy array.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether to print timing information (True) or not (False).
+        :param return_shape: Whether to return the original shape of the input array.
+        :return: The data from numpy as a Matrix.
+        """
 
-    def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame:
+        if isinstance(mat, (pd.Series, pd.DataFrame)):
+            mat = mat.to_numpy()
+        
+            original_shape = mat.shape
+            if mat.ndim == 1:
+                mat = mat.reshape(-1, 1)
+            elif mat.ndim >= 2:
+                if mat.ndim > 2:
+                    mat = mat.reshape((original_shape[0], -1))
+                rows, cols = mat.shape
+
+        if mat.dtype.kind in {'U', 'S', 'O'}:
+            
+            original_shape = mat.shape
+        
+            if verbose:
+                start_time = time.time()
+        
+            if mat.ndim == 1:
+                rows = mat.shape[0]
+                cols = 1
+                mat = mat.reshape(-1, 1)
+            elif mat.ndim >= 2:
+                if mat.ndim > 2:
+                    mat = mat.reshape((original_shape[0], -1))
+                rows, cols = mat.shape
+            
+            file_name = os.path.join(TMP_PATH, "numpy_data")
+            csv_file_path = file_name + ".csv"
+            meta_file_path = csv_file_path + ".meta"
+
+            if shared_memory:
+                # Data transfer via shared memory.
+                max_length = max(len(s) for s in mat.flat) + 1  # Max string length + null terminator
+                encoded_strings = [s.encode('utf-8').ljust(max_length, b'\0') for s in mat.flat]
+                global buf
+                buf = ctypes.create_string_buffer(b''.join(encoded_strings))  # Fixed-width buffer
+                address = ctypes.addressof(buf)
+                vtc = STR
+                res = Matrix(self, 'receiveFromNumpy', [address, rows, max_length, vtc], local_data=mat)
+
+            else:
+
+                string_data = mat.astype(str).tolist()
+
+                try:
+                    np.savetxt(csv_file_path, mat, delimiter=",", fmt='%s')
+                except IOError as e:
+                    print(f"Error writing to file {csv_file_path}: {e}")
+                    return None
+
+                try:
+                    with open(meta_file_path, "w") as f:
+                        meta_content = {
+                            "numRows": mat.shape[0],
+                            "numCols": mat.shape[1],
+                            "valueType": "str",
+                        }
+                        json.dump(meta_content, f, indent=2)
+                except IOError as e:
+                    print(f"Error writing to file {meta_file_path}: {e}")
+                    return None
+            
+                if not os.access(meta_file_path, os.R_OK):
+                    print(f"Metadata file is not readable: {meta_file_path}")
+                    return None
+
+                data_path_param = f"\"{csv_file_path}\""
+                unnamed_params = [data_path_param]
+                named_params = []
+
+                try:
+                    res = Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
+                except Exception as e:
+                    print(f"Error creating Matrix object: {e}")
+                    return None
+        else:
+            return self.from_numpy_numerical(mat, shared_memory, verbose, return_shape)
+
+        try:
+            return (res, original_shape) if return_shape else res    
+        except Exception as e:
+            print(f"Error in return statement: {e}")
+            return None
+            
+        
+    def from_pandas_numerical(self, df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame:
         """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
         :param df: The pandas DataFrame.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
@@ -147,7 +296,7 @@ class DaphneContext(object):
         :param keepIndex: Whether the frame should keep its index from pandas within DAPHNE
         :return: A Frame
         """
-
+       
         if verbose:
             start_time = time.time()
         
@@ -249,9 +398,35 @@ class DaphneContext(object):
             # Return the Frame.
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
     
+    def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame:
+        """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
+        :param df: The pandas DataFrame.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether the execution time and further information should be output to the console.
+        :param keepIndex: Whether the frame should keep its index from pandas within DAPHNE
+        :return: A Frame
+        """
+        if verbose:
+            start_time = time.time()
+
+        # Handle pandas Series separately
+        if isinstance(df, pd.Series):
+            if df.dtype.kind in {'O', 'U', 'S'}:
+                return self.from_numpy(df, shared_memory=shared_memory, verbose=verbose, return_shape=False)
+
+        # Check if any column in DataFrame contains string data
+        if isinstance(df, pd.DataFrame):
+            for col in df.columns:
+                if df[col].dtype.kind in {'O', 'U', 'S'}:
+                    return self.from_numpy(df, shared_memory=shared_memory, verbose=verbose, return_shape=False)
+
+        # Existing logic for handling non-string data
+        return self.from_pandas_numerical(df, shared_memory=shared_memory, verbose=verbose, keepIndex=keepIndex)
+
+
     # This feature is only available if TensorFlow is available.
     if isinstance(tf, ImportError):
-        def from_tensorflow(self, tensor           , shared_memory=True, verbose=False, return_shape=False):
+        def from_tensorflow(self, tensor, shared_memory=True, verbose=False, return_shape=False):
             raise tf
     else:
         def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False):
@@ -345,7 +520,7 @@ class DaphneContext(object):
 
             # Return the matrix, and the original shape if return_shape is set to True.
             return (matrix, original_shape) if return_shape else matrix
-
+           
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
         return Matrix(self, 'fill', [], named_input_nodes=named_input_nodes)

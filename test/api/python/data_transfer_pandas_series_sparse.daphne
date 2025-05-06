@@ -1,0 +1,4 @@
+m = fill(0.0, 1000, 1);
+ser1 = createFrame(m, "0");
+
+print(ser1);
