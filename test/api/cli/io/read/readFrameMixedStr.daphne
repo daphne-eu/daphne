@@ -1,0 +1,2 @@
+# Read a matrix of value type str from a file.
+print(readFrame("test/api/cli/io/ref/frame_mixed-str_ref.csv"));
