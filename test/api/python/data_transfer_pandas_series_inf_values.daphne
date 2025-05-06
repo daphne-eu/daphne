@@ -1,0 +1,3 @@
+ser1 = createFrame([inf, -inf, inf], "0");
+
+print(ser1);
