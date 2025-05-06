@@ -43,6 +43,7 @@ struct DaphneUserConfig {
     bool use_ipa_const_propa = true;
     bool use_phy_op_selection = true;
     bool use_mlir_codegen = false;
+    bool save_csv_as_bin = false;
     int matmul_vec_size_bits = 0;
     bool matmul_tile = false;
     int matmul_unroll_factor = 1;

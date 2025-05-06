@@ -1,0 +1,406 @@
+{
+    "numRows": 5000000,
+    "numCols": 100,
+    "schema": [
+        {
+            "label": "col_0_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_1_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_2_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_3_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_4_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_5_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_6_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_7_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_8_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_9_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_10_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_11_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_12_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_13_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_14_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_15_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_16_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_17_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_18_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_19_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_20_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_21_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_22_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_23_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_24_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_25_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_26_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_27_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_28_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_29_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_30_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_31_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_32_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_33_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_34_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_35_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_36_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_37_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_38_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_39_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_40_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_41_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_42_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_43_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_44_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_45_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_46_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_47_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_48_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_49_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_50_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_51_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_52_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_53_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_54_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_55_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_56_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_57_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_58_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_59_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_60_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_61_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_62_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_63_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_64_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_65_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_66_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_67_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_68_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_69_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_70_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_71_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_72_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_73_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_74_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_75_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_76_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_77_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_78_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_79_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_80_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_81_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_82_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_83_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_84_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_85_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_86_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_87_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_88_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_89_fixedstr16",
+            "valueType": "str"
+        },
+        {
+            "label": "col_90_uint8",
+            "valueType": "ui8"
+        },
+        {
+            "label": "col_91_int8",
+            "valueType": "si8"
+        },
+        {
+            "label": "col_92_uint32",
+            "valueType": "ui32"
+        },
+        {
+            "label": "col_93_int32",
+            "valueType": "si32"
+        },
+        {
+            "label": "col_94_uint64",
+            "valueType": "ui64"
+        },
+        {
+            "label": "col_95_int64",
+            "valueType": "si64"
+        },
+        {
+            "label": "col_96_float32",
+            "valueType": "f32"
+        },
+        {
+            "label": "col_97_float64",
+            "valueType": "f64"
+        },
+        {
+            "label": "col_98_str",
+            "valueType": "str"
+        },
+        {
+            "label": "col_99_fixedstr16",
+            "valueType": "str"
+        }
+    ]
+}

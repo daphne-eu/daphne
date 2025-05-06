@@ -202,6 +202,8 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                          "execution engine "
                                          "(default is equal to the number of physical cores on the target "
                                          "node that executes the code)"));
+    static opt<bool> dbdfReadOptimization("use-dbdf-optimization", cat(daphneOptions),
+                                          desc("Enable optimization of multiple csv reads by saving file as dbdf."));
     static opt<int> minimumTaskSize("grain-size", cat(schedulingOptions),
                                     desc("Define the minimum grain size of a task (default is 1)"), init(1));
     static opt<bool> useVectorizedPipelines("vec", cat(schedulingOptions), desc("Enable vectorized execution engine"));
@@ -427,7 +429,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             spdlog::warn("No backend has been selected. Wiil use the default 'MPI'");
     }
     user_config.max_distributed_serialization_chunk_size = maxDistrChunkSize;
-
+    user_config.save_csv_as_bin = dbdfReadOptimization;
     // only overwrite with non-defaults
     if (use_hdfs) {
         user_config.use_hdfs = use_hdfs;

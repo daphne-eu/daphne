@@ -1,0 +1,2 @@
+#./bin/daphne --timing --second-read-opt test/api/cli/io/evalReadFrame.daphne
+readFrame("evaluation/data_1000r_10c_NUMBER.csv");
