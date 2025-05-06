@@ -1,0 +1,143 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications 2024 The DAPHNE Consortium.
+#
+#-------------------------------------------------------------
+
+# vwLine: Implementation of the Visvalingam-Whyatt algorithm
+# See https://martinfleischmann.net/line-simplification-algorithms/
+#
+# INPUT:
+# ------------------------------------------------------------------------------
+# x_data          Single column matrix with x values
+# y_data          Single column matrix with y values
+# min_points      Min points to keep after reduction, must be >=2
+# max_points      Max points to keep after reduction
+# tolerance       Area of the triangle spanned by three points,
+#                 if smaller than tolerance, the middle point gets dropped
+# ------------------------------------------------------------------------------
+#
+# OUTPUT:
+# ------------------------------------------------------------------------------
+# reduced_idxs    Indexes of the reduced points
+# ------------------------------------------------------------------------------
+
+def calcTriangles(x_data: matrix<f64>, y_data: matrix<f64>) -> matrix<f64> {
+
+    // compose matrix with three neighboring points (triple) in a row
+    points = cbind(x_data, y_data);
+    lhsIdx = nrow(points) - 2;
+    mhsIdx = nrow(points) - 1; // middle index
+    triples = cbind(points[:lhsIdx,], points[1:mhsIdx,]);
+    triples = cbind(triples, points[2:,]);
+
+    // calculate every area of the triangles which is spanned by every triple
+    triangle_areas = triples[,0] * (triples[,3] - triples[,5]) + triples[,2] * (triples[,5] - triples[,1]) + triples[,4] * (triples[,1] - triples[,3]);
+    triangle_areas = abs(triangle_areas * 0.5);
+
+    return triangle_areas;
+}
+
+
+def toTerminate(significance: matrix, min_points: si64, max_points: si64, tolerance: f64, tolerance_reached_before: bool) -> bool, bool {
+    to_terminate = false;
+    tolerance_reached = false;
+
+    min_points_exceeded = (nrow(significance) + 2) <= min_points; // +2 because of first and last point
+    if (min_points_exceeded) {
+        //print("TERM VW min points reached");
+        to_terminate = true;
+    }
+
+    above_max_points = ((nrow(significance)) + 2) > max_points; // +2 because of first and last point
+
+    tolerance_undershot = aggMin(significance) > tolerance;
+    if (tolerance_undershot) {
+        if (above_max_points) {
+            //if (tolerance_reached_before == 0)
+                //print("Tolerance reached, continue till max_points is satisfied");
+        }
+        else {
+            //print("TERM VW tolerance reached and max points satisfied");
+            to_terminate = true;
+        }
+        tolerance_reached = true;
+    }
+
+    return to_terminate, tolerance_reached;
+}
+
+
+def vwLine(x_data: matrix<f64>, y_data: matrix<f64>, min_points: si64, max_points: si64, tolerance: f64) -> matrix<si64> {
+
+    significance = calcTriangles(x_data, y_data);
+
+    to_terminate, tolerance_reached_before = toTerminate(significance, min_points, max_points, tolerance, false);
+    dropped_idxs = as.matrix<si64>([inf]); // idxs which are dropped, empty right now, inf has to be removed later
+    reduced_idxs = seq(0, nrow(y_data) - 1, 1); // idxs which are left after reduction steps
+    while(to_terminate == 0) {
+
+        argmin_significance = idxMin(significance, 1); // get idx of smallest triangle area
+
+        dropped_point = reduced_idxs[argmin_significance + 1,]; // +1 because first triangle/significance represents 2nd point
+        dropped_idxs = rbind(dropped_idxs, dropped_point); // TODO is not used, could be removed
+
+        // argmin_asScalar = argmin_significance[0,0] // WISH
+        argmin_asScalar = sum(as.matrix<si64>(argmin_significance)[0,0]); // HACK cast to unsigned that sum works, use sum() to get scalar
+
+        reduced_idxs = rbind(reduced_idxs[:(argmin_asScalar + 1),], reduced_idxs[(argmin_asScalar + 2):,]); // drop min significance
+        reduced_x = x_data[reduced_idxs,];
+        reduced_y = y_data[reduced_idxs,];
+
+        // TODO recalc triangles around dropped point
+        //if (argmin_asScalar == 0) { // if first triangle / second point of current reduced points gets dropped
+        //}
+        //else if (argmin_asScalar == (nrow(significance) - 1)) { // if last triangle / point before last point of current reduced points gets dropped
+        //}
+        //else { // if a point in between with two neighbors gets dropped
+            //print(x_data);
+            //new_x_left = x_data[(dropped_point_asScalar - 2) : dropped_point_asScalar,];
+            //new_x_right = x_data[(dropped_point_asScalar + 1), (dropped_point_asScalar + 2)];
+            //current_reduced_x = rbind(new_x_left, new_x_right);
+            //print(current_reduced_x);
+            //new_triangles = calcTriangles(x_data[,]);
+        //}
+
+        significance = calcTriangles(reduced_x, reduced_y);
+
+        to_terminate, tolerance_reached = toTerminate(significance, min_points, max_points, tolerance, tolerance_reached_before);
+        if (tolerance_reached)
+            tolerance_reached_before = true;
+    }
+
+    return reduced_idxs;
+}
+
+
+def cumTrapz(x_data: matrix<f64>, y_data: matrix<f64>) -> f64 {
+    // uses trapezoidal rule to approximate the area under curve
+    // expects both args wit same dims mx1
+
+    //TODO is this algo correct OR use abs around x_data subtract ???
+
+    max_idx = nrow(x_data) - 1;
+    trapz = (x_data[1:,] - x_data[:max_idx,]) * 0.5 * (y_data[:max_idx,] + y_data[1:,]); // trapezoidal rule
+    return sum(trapz);
+}

@@ -1,0 +1,158 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications 2024 The DAPHNE Consortium.
+#
+#-------------------------------------------------------------
+
+# rdpLine: Implementation of the Ramer-Douglas-Peucker algorithm
+# See https://martinfleischmann.net/line-simplification-algorithms/
+#
+# INPUT:
+# ------------------------------------------------------------------------------
+# x_data          Single column matrix with x values
+# y_data          Single column matrix with y values
+# max_points      Max points to keep after reduction
+# tolerance       Width of the band around the auxiliary line
+# ------------------------------------------------------------------------------
+#
+# OUTPUT:
+# ------------------------------------------------------------------------------
+# reduced_idxs    Indexes of the reduced points
+# ------------------------------------------------------------------------------
+
+def crossProduct2R(lhs: matrix<f64>, rhs: matrix<f64>) -> matrix<f64> {
+    // specific implementation of a cross prod in R2
+    // calculates the cross product for several R2 vectors at once
+    // expects lhs matrix with dimensions 1x2 and rhs matrix with dim nx2
+    z = rhs[,1] * lhs[0,0] - rhs[,0] * lhs[0,1];
+    return z;
+}
+
+
+def frobeniusNormR2(vec: matrix<f64>) -> matrix<f64> {
+    // calcs norm for 1x2 matrix (vector)
+    return sqrt(pow(vec[0,0], 2) + pow(vec[0,1], 2));
+}
+
+
+def normalDistance(points: matrix<f64>) -> matrix<f64> {
+    // calculates the max distance of all points to the line between the first and the last point
+    // normal distance means distance of point to line where distance vector has rect angle to aux line
+    // line between p1 and p2; normal distance from that line to p3
+    // uses formular: abs(cross(p2-p1, p1-p3)) / norm(p2-p1)
+    // expects input shape: num_points X 2
+    // returns output shape: (num_points - 2) X 1
+
+    line = points[(nrow(points) - 1),] - points[0,]; // vector from 1st point to last point
+    vector_diffs = (points[1:(nrow(points) - 1),] - points[0,]) * -1; // p1-p3 for all p3 between p1 and p2
+    // for(i in 0:(nrow(points)-1)) { TODO not possible
+
+    cross = crossProduct2R(line, vector_diffs); // calc cross product for all p3
+    abs_cross = abs(cross);
+
+
+    line_frobenius_norm = frobeniusNormR2(line);
+    dist_norm = abs_cross / line_frobenius_norm; // abs_cross/norm(p2-p1)
+    return dist_norm;
+}
+
+
+def rdpLine(x_data: matrix<f64>, y_data: matrix<f64>, max_points: si64, tolerance: f64) {
+
+    // normalize data
+    x_data_norm = (x_data - aggMin(x_data)) / (aggMax(x_data) - aggMin(x_data));
+    y_data_norm = (y_data - aggMin(y_data)) / (aggMax(y_data) - aggMin(y_data));
+
+    // compose matrix with (x,y) doubles
+    points = cbind(x_data_norm, y_data_norm);
+
+    // slices -> max points -1
+    // values need only calculated for one slice less since then termination criterion is fullfilled
+    // hence -2
+    state_arrays_size = max_points-2;
+
+    last_idx = nrow(x_data_norm) - 1;
+    slices = fill(last_idx, state_arrays_size+2, 2); // having one dummy slice in the end for the last point
+    slices[0, :] = transpose(as.matrix([0, last_idx]));
+
+    if (max_points <= 2)
+        return slices;
+
+    num_slices = 1;
+    new_slice_one = 0;
+    new_slice_two = -1;
+
+    max_distance_of_all_slices = fill(-1.0, state_arrays_size, 1); // instanciate empty matrix, neg. value ensures that this wont be a max
+    abs_arg_max_distance_of_all_slices = as.matrix<si64>(fill(inf, state_arrays_size, 1)); // same trick like line above, value will never be accessed
+
+    to_terminate = false;
+    while (to_terminate == false) {
+        // 1st new slice
+        slice_start = as.scalar<si64>(slices[new_slice_one,0]);
+        slice_end = as.scalar<si64>(slices[new_slice_one,1]);
+        if ((slice_end - slice_start) > 1){ // if points are right next to each other there is no distance to calc of points in between
+            slice_dist_norm = normalDistance(points[slice_start:(slice_end+1),]);
+            // calculate max/argmax normal distance of current slice
+            slice_dist_max = aggMax(slice_dist_norm);
+            max_distance_of_all_slices[new_slice_one, 0] = as.matrix(slice_dist_max);
+            // calc abs. idx of slice distance max: add slice_start to get absolute idx, +1 cause normalDistance returns withidx -1
+            slice_dist_absoluteArgMax = idxMax(slice_dist_norm, 1) + slice_start + 1;
+            abs_arg_max_distance_of_all_slices[new_slice_one, 0] = as.matrix(slice_dist_absoluteArgMax);
+        }
+        else {
+            max_distance_of_all_slices[new_slice_one, 0] = as.matrix([-1.0]);
+        }
+
+        // 2nd new slice
+        if (num_slices > 1){
+            slice_start = as.scalar<si64>(slices[new_slice_two,0]);
+            slice_end = as.scalar<si64>(slices[new_slice_two,1]);
+            if ((slice_end - slice_start) > 1){ // if points are right next to each other there is no distance to calc of points in between
+                slice_dist_norm = normalDistance(points[slice_start:(slice_end+1),]);
+                // calculate max/argmax normal distance of current slice
+                slice_dist_max = aggMax(slice_dist_norm);
+                max_distance_of_all_slices[new_slice_two, 0] = as.matrix(slice_dist_max);
+                // calc abs. idx of slice distance max: add slice_start to get absolute idx, +1 cause normalDistance returns withidx -1
+                slice_dist_absoluteArgMax = idxMax(slice_dist_norm, 1) + slice_start + 1;
+                abs_arg_max_distance_of_all_slices[new_slice_two, 0] = as.matrix(slice_dist_absoluteArgMax);
+            }
+        }
+        max_over_max_distance_of_all_slices = aggMax(max_distance_of_all_slices[:num_slices,0]);
+
+        if (max_over_max_distance_of_all_slices < tolerance) { // if the max dist of every slice is already below tolerance, abort
+            to_terminate = true;
+        }
+        else {
+            argMax_over_max_distance_of_all_slices = as.scalar<si64>(idxMax(max_distance_of_all_slices[:num_slices,0], 1));
+            idx_to_be_added = abs_arg_max_distance_of_all_slices[argMax_over_max_distance_of_all_slices,];
+            discarded_slice_end = slices[argMax_over_max_distance_of_all_slices, 1];
+            slices[argMax_over_max_distance_of_all_slices, 1] = idx_to_be_added;
+            slices[num_slices, 0] = idx_to_be_added;
+            slices[num_slices, 1] = discarded_slice_end;
+            new_slice_one = argMax_over_max_distance_of_all_slices;
+            new_slice_two = num_slices;
+            num_slices = num_slices + 1;
+        }
+        if ((num_slices+1) == max_points) {
+            to_terminate = true;
+        }
+    }
+    return order(slices[:(num_slices+1),0], 0, true, false);
+}
