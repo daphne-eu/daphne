@@ -1666,6 +1666,26 @@ def Daphne_DecRefOp : Daphne_Op<"decRef"> {
 }
 
 // ****************************************************************************
+// Kernel Hints
+// ****************************************************************************
+def Daphne_RepresentationHintOp : Daphne_Op<"representationHint"> {
+
+  let summary = "Provides a hint to change the matrix representation (Dense or Sparse)";
+  
+  let description = [{
+    This operation provides a hint to change the representation of a matrix between Dense and Sparse.
+    }];
+  
+  // Arguments: input matrix and the representation hint (0 = Dense, 1 = Sparse)
+  let arguments = (ins AnyTypeOf<[Matrix]>:$matrix);
+  
+  // Result: output matrix with potentially new representation
+  let results = (outs AnyTypeOf<[Matrix]>:$result);
+
+  let hasCanonicalizeMethod = 1;
+}
+
+// ****************************************************************************
 // Profiling
 // ****************************************************************************
 

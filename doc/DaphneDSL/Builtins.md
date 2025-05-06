@@ -702,3 +702,14 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 
     Removes the element at position `idx` (counting starts at zero) from the given list `lst`.
     Returns (1) the result as a new list (the argument list stays unchanged), and (2) the removed element.
+
+
+## Data Representation
+
+- **`Dense`**`(elm:matrix)`
+
+    Converts the representation of the given matrix element to a dense format.
+
+- **`CSR`**`(elm:matrix)`
+
+    Converts the representation of the given matrix element to the CSR (Compressed Sparse Row) format.
