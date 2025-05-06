@@ -13,19 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include <parser/metadata/JsonKeys.h>
 #include <parser/metadata/MetaDataParser.h>
+#include <runtime/local/io/utils.h>
+#include <runtime/local/kernels/Read.h>
 
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
-FileMetaData MetaDataParser::readMetaData(const std::string &filename_) {
+FileMetaData MetaDataParser::readMetaData(const std::string &filename_, char delim, bool isMatrix, size_t sampleRows) {
     std::string metaFilename = filename_ + ".meta";
     std::ifstream ifs(metaFilename, std::ios::in);
-    if (!ifs.good())
-        throw std::runtime_error("Could not open file '" + metaFilename + "' for reading meta data.");
+    if (!ifs.good()) {
+        using clock = std::chrono::system_clock;
+        auto time = clock::now();
+        int extv = extValue(&filename_[0]);
+        // TODO: Support other file types than csv for metadata generation
+        if (extv == 0) {
+            FileMetaData fmd = generateFileMetaData(filename_, delim, sampleRows, isMatrix);
+            try {
+                writeMetaData(filename_, fmd);
+                std::cout << "OPERATION=generate_metadata,GEN_TIME="
+                          << std::chrono::duration_cast<std::chrono::duration<double>>(clock::now() - time).count()
+                          << std::endl;
+                std::cout.flush();
+            } catch (std::exception &e) {
+                // If we can't write the meta data, we can still use the generated meta data
+            }
+            return fmd;
+        }
+        throw std::runtime_error("Could not open file '" + metaFilename + "' for reading meta data. \n" +
+                                 "Note: meta data file generation is currently only supported for csv files");
+    }
+
     std::stringstream buffer;
     buffer << ifs.rdbuf();
     return MetaDataParser::readMetaDataFromString(buffer.str());

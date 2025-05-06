@@ -21,6 +21,8 @@
 #include <catch.hpp>
 
 #include <filesystem>
+#include <parser/metadata/MetaDataParser.h>
+#include <runtime/local/io/FileMetaData.h>
 #include <string>
 
 const std::string dirPath = "test/api/cli/io/";
@@ -68,6 +70,40 @@ MAKE_READ_TEST_CASE_2("frame_read-in-udf")
 MAKE_READ_TEST_CASE_2("frame_dynamic-path-1")
 // MAKE_READ_TEST_CASE_2("frame_dynamic-path-2")
 // MAKE_READ_TEST_CASE_2("frame_dynamic-path-3")
+
+TEST_CASE("readFrameWithNoMetaData", TAG_IO) {
+    if (std::filesystem::exists(dirPath + "ref/ReadCsv3-1.csv.meta")) {
+        std::filesystem::remove(dirPath + "ref/ReadCsv3-1.csv.meta");
+    }
+    compareDaphneToRef(dirPath + "out/testReadStringIntoFrameNoMeta.txt",
+                       dirPath + "read/testReadFrameWithMixedTypes.daphne");
+    REQUIRE(std::filesystem::exists(dirPath + "ref/ReadCsv3-1.csv.meta"));
+    FileMetaData fmd = MetaDataParser::readMetaData(dirPath + "ref/ReadCsv3-1.csv");
+    REQUIRE(fmd.numRows == 4);
+    REQUIRE(fmd.numCols == 3);
+    REQUIRE(fmd.labels.size() == 3);
+    REQUIRE(fmd.labels.size() == fmd.schema.size());
+    for (size_t i = 0; i < fmd.labels.size(); i++) {
+        REQUIRE(fmd.labels[i] == "col_" + std::to_string(i));
+    }
+    std::filesystem::remove(dirPath + "ref/ReadCsv3-1.csv.meta");
+}
+
+TEST_CASE("readFrameWithSingleValueType", TAG_IO) {
+    if (std::filesystem::exists(dirPath + "ref/ReadCsv1-1.csv.meta")) {
+        std::filesystem::remove(dirPath + "ref/ReadCsv1-1.csv.meta");
+    }
+    compareDaphneToRef(dirPath + "out/testReadFrameWithNoMeta.txt", dirPath + "read/testReadFrameWithNoMeta.daphne");
+    REQUIRE(std::filesystem::exists(dirPath + "ref/ReadCsv1-1.csv.meta"));
+    FileMetaData fmd = MetaDataParser::readMetaData(dirPath + "ref/ReadCsv1-1.csv");
+    REQUIRE(fmd.numRows == 2);
+    REQUIRE(fmd.numCols == 4);
+    REQUIRE(fmd.labels.empty());
+    REQUIRE(fmd.schema.size() == 1);
+    REQUIRE(fmd.schema[0] == ValueTypeCode::F32);
+
+    std::filesystem::remove(dirPath + "ref/ReadCsv1-1.csv.meta");
+}
 
 // ********************************************************************************
 // Write test cases

@@ -18,15 +18,23 @@ limitations under the License.
 
 Reading and writing (meta) data in Daphne.
 
-When loading data with ``read()`` in a DaphneDSL script, the system expects a file with the same file name in the same
+When loading non csv data with ``read()`` in a DaphneDSL script, the system expects a file with the same file name in the same
 directory as the data file with an additional extension ``.meta``. This file contains a description of meta data stored
-in JSON format.
+in JSON format. 
 
 There are two slightly varying ways of specifying meta data depending on whether there is a schema for the columns (e.g.,
 a data frame - the corresponding C++ type is the Frame class) or not (this data can currently (as of version 0.1) be
 loaded as `DenseMatrix<VT>` or `CSRMatrix<VT>` where `VT` is the value type template parameter).
 
 If data is written from a DaphneDSL script via ``write()``, the meta data file will be written to the corresponding ``filename.meta``.
+Below is an updated version of the documentation in the same style, now including details on the new meta data generation mechanism and its integration with the read/write functionalities.
+
+## Generation of meta data
+
+When the source file is in csv format and no meta data file is provided, the meta data file can be inferred from the data itself.
+But please be aware that the initial read time will be more than doubled compared to providing a meta data file.
+To mitigate that meta data generation is based on sampling rows from the data file, which can lead to incomplete meta data.
+The exact number can be changed in the user configuration via `numberOfSampleRows`.
 
 ## Currently supported JSON fields
 

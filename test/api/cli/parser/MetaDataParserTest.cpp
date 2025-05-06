@@ -19,7 +19,6 @@
 #include <tags.h>
 
 #include <catch.hpp>
-
 #include <parser/metadata/MetaDataParser.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -72,6 +71,42 @@ TEST_CASE("Frame meta data file with default \"valueType\"", TAG_PARSER) {
     auto dctx = setupContextAndLogger();
     const std::string metaDataFile = dirPath + "MetaData8";
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
+}
+
+TEST_CASE("Missing meta data file that can be generated", TAG_PARSER) {
+    const std::string metaDataFile = dirPath + "ReadCsv1.csv";
+    if (std::filesystem::exists(metaDataFile + ".meta")) {
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
+    REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
+    REQUIRE(std::filesystem::exists(metaDataFile + ".meta"));
+    if (std::filesystem::exists(metaDataFile + ".meta")) {
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
+}
+
+TEST_CASE("Empty meta data file", TAG_PARSER) {
+    const std::string metaDataFile = dirPath + "ReadCsv.csv";
+    if (std::filesystem::exists(metaDataFile + ".meta")) {
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
+    REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
+    REQUIRE(!std::filesystem::exists(metaDataFile + ".meta"));
+    if (std::filesystem::exists(metaDataFile + ".meta")) {
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
+}
+
+TEST_CASE("Malformed meta data file", TAG_PARSER) {
+    const std::string metaDataFile = dirPath + "ReadCsv2.csv";
+    if (std::filesystem::exists(metaDataFile + ".meta")) {
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
+    REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
+    REQUIRE(!std::filesystem::exists(metaDataFile + ".meta"));
+    if (std::filesystem::exists(metaDataFile + ".meta")) {
+        std::filesystem::remove(metaDataFile + ".meta");
+    }
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER, (DenseMatrix, CSRMatrix), (double)) {
