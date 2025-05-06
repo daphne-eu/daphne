@@ -71,6 +71,11 @@ std::unique_ptr<Pass> createSelectMatrixRepresentationsPass(const DaphneUserConf
 std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createTransposeOpLoweringPass();
 std::unique_ptr<Pass> createVectorizeComputationsPass();
+
+std::unique_ptr<Pass> createSliceRowOpLoweringPass();
+std::unique_ptr<Pass> createSliceColOpLoweringPass();
+std::unique_ptr<Pass> createSliceOpLoweringPass();
+
 #ifdef USE_CUDA
 std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);
 #endif

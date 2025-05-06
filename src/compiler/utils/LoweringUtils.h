@@ -43,6 +43,10 @@ void affineFillMemRef(mlir::Value value, mlir::ConversionPatternRewriter &rewrit
 mlir::Value convertMemRefToDenseMatrix(mlir::Location, mlir::ConversionPatternRewriter &, mlir::Value memRef,
                                        mlir::Type);
 
+mlir::Value convertMemRefToCSRMatrix(mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
+    mlir::Value valuesMemRef, mlir::Value colIdxsMemRef, mlir::Value rowOffsetsMemRef, 
+    mlir::Value maxNumRows, mlir::Value numCols, mlir::Value maxNumNonZeros, mlir::Type type); 
+
 llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
                                                        mlir::ValueRange inputs, mlir::Location loc);
 

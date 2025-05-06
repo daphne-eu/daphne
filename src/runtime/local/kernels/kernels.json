@@ -1513,6 +1513,60 @@
     },
     {
         "kernelTemplate": {
+            "header": "ConvertMemRefToCSRMatrix.h",
+            "opName": "convertMemRefToCSRMatrix",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CSRMatrix<VT> *&",
+                    "name": "result"
+                },
+                {
+                    "type": "size_t",
+                    "name": "baseValuesPtr"
+                },
+                {
+                    "type": "size_t",
+                    "name": "baseColIdxsPtr"
+                },
+                {
+                    "type": "size_t",
+                    "name": "baseRowOffsetsPtr"
+                },
+                {
+                    "type": "size_t",
+                    "name": "maxNumRows"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numCols"
+                },
+                {
+                    "type": "size_t",
+                    "name": "maxNumNonZeros"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["size_t"],
+            ["uint64_t"],
+            ["uint32_t"],
+            ["uint8_t"],
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "ConvertDenseMatrixToMemRef.h",
             "opName": "convertDenseMatrixToMemRef",
             "returnType": "StridedMemRefType<VT,2>",
@@ -2068,6 +2122,16 @@
                         ["DenseMatrix", "int64_t"],
                         ["DenseMatrix", "std::string"],
                         ["DenseMatrix", "std::string"]
+                    ],
+                    [
+                        ["DenseMatrix", "double"],
+                        ["CSRMatrix", "double"],
+                        ["DenseMatrix", "double"]
+                    ],
+                    [
+                        ["DenseMatrix", "float"],
+                        ["CSRMatrix", "float"],
+                        ["DenseMatrix", "float"]
                     ]
                 ],
                 "opCodes": [
@@ -2163,6 +2227,36 @@
                     [
                         ["DenseMatrix", "uint64_t"],
                         ["DenseMatrix", "uint64_t"],
+                        "uint64_t"
+                    ],
+                    [
+                        ["CSRMatrix", "float"],
+                        ["CSRMatrix", "float"],
+                        "float"
+                    ],
+                    [
+                        ["CSRMatrix", "double"],
+                        ["CSRMatrix", "double"],
+                        "double"
+                    ],
+                    [
+                        ["CSRMatrix", "int64_t"],
+                        ["CSRMatrix", "int64_t"],
+                        "int64_t"
+                    ],
+                    [
+                        ["CSRMatrix", "int32_t"],
+                        ["CSRMatrix", "int32_t"],
+                        "int32_t"
+                    ],
+                    [
+                        ["CSRMatrix", "uint32_t"],
+                        ["CSRMatrix", "uint32_t"],
+                        "uint32_t"
+                    ],
+                    [
+                        ["CSRMatrix", "uint64_t"],
+                        ["CSRMatrix", "uint64_t"],
                         "uint64_t"
                     ]
                 ],
@@ -4530,6 +4624,18 @@
             [
                 ["DenseMatrix", "std::string"],
                 ["DenseMatrix", "std::string"]
+            ],
+            [
+                ["CSRMatrix", "double"],
+                ["CSRMatrix", "double"]
+            ],
+            [
+                ["CSRMatrix", "float"],
+                ["CSRMatrix", "float"]
+            ],
+            [
+                ["CSRMatrix", "int64_t"],
+                ["CSRMatrix", "int64_t"]
             ]
         ],
         "opCodes": [
