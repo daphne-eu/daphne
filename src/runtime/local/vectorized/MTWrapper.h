@@ -36,6 +36,7 @@
 #include <utility>
 
 #include <hwloc.h>
+#include <llvm/Support/ThreadPool.h>
 
 // TODO generalize for arbitrary inputs (not just binary)
 
@@ -55,6 +56,11 @@ template <typename DT> class MTWrapperBase {
     int _totalNumaDomains;
     PipelineHWlocInfo _topology;
     DCTX(_ctx);
+
+    llvm::ThreadPool &getThreadPool() {
+        static llvm::ThreadPool pool(llvm::hardware_concurrency(_numCPPThreads));
+        return pool;
+    }
 
     std::pair<size_t, size_t> getInputProperties(Structure **inputs, size_t numInputs, VectorSplit *splits) {
         auto len = 0ul;
@@ -85,6 +91,7 @@ template <typename DT> class MTWrapperBase {
                                 _topology.physicalIds.size());
             w = std::make_unique<WorkerCPU>(qvector, _topology.physicalIds, _topology.uniqueThreads, _ctx, verbose, 0,
                                             batchSize, i, numQueues, queueMode, this->_victimSelection, pinWorkers);
+            this->getThreadPool().async([&w]() { w->run(); });
             i++;
         }
     }
@@ -129,8 +136,7 @@ template <typename DT> class MTWrapperBase {
                                 DCTX(ctx)) = 0;
 
     void joinAll() {
-        for (auto &w : cpp_workers)
-            w->join();
+        this->getThreadPool().wait();
         for (auto &w : cuda_workers)
             w->join();
     }
