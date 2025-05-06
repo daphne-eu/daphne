@@ -1,0 +1,88 @@
+IR after inference:
+module {
+  func.func @"b-2(10)"(%arg0: si64) -> si64 {
+    %0 = "daphne.constant"() {value = 20 : si64} : () -> si64
+    "daphne.return"(%0) : (si64) -> ()
+  }
+  func.func @"a-1(10)"(%arg0: si64) -> si64 {
+    %0 = "daphne.constant"() {value = 8 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = 9 : si64} : () -> si64
+    %2 = "daphne.generic_call"(%1) {callee = "a-1(9)"} : (si64) -> si64
+    %3 = "daphne.generic_call"(%0) {callee = "a-1"} : (si64) -> si64
+    %4 = "daphne.ewAdd"(%2, %3) : (si64, si64) -> si64
+    "daphne.return"(%4) : (si64) -> ()
+  }
+  func.func @"a-1(9)"(%arg0: si64) -> si64 {
+    %0 = "daphne.constant"() {value = 7 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = 8 : si64} : () -> si64
+    %2 = "daphne.generic_call"(%1) {callee = "a-1(8)"} : (si64) -> si64
+    %3 = "daphne.generic_call"(%0) {callee = "a-1"} : (si64) -> si64
+    %4 = "daphne.ewAdd"(%2, %3) : (si64, si64) -> si64
+    "daphne.return"(%4) : (si64) -> ()
+  }
+  func.func @"a-1(8)"(%arg0: si64) -> si64 {
+    %0 = "daphne.constant"() {value = 6 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = 7 : si64} : () -> si64
+    %2 = "daphne.generic_call"(%1) {callee = "a-1(7)"} : (si64) -> si64
+    %3 = "daphne.generic_call"(%0) {callee = "a-1"} : (si64) -> si64
+    %4 = "daphne.ewAdd"(%2, %3) : (si64, si64) -> si64
+    "daphne.return"(%4) : (si64) -> ()
+  }
+  func.func @"a-1(7)"(%arg0: si64) -> si64 {
+    %0 = "daphne.constant"() {value = 5 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = 6 : si64} : () -> si64
+    %2 = "daphne.generic_call"(%1) {callee = "a-1(6)"} : (si64) -> si64
+    %3 = "daphne.generic_call"(%0) {callee = "a-1"} : (si64) -> si64
+    %4 = "daphne.ewAdd"(%2, %3) : (si64, si64) -> si64
+    "daphne.return"(%4) : (si64) -> ()
+  }
+  func.func @"a-1(6)"(%arg0: si64) -> si64 {
+    %0 = "daphne.constant"() {value = 4 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = 5 : si64} : () -> si64
+    %2 = "daphne.generic_call"(%1) {callee = "a-1(5)"} : (si64) -> si64
+    %3 = "daphne.generic_call"(%0) {callee = "a-1"} : (si64) -> si64
+    %4 = "daphne.ewAdd"(%2, %3) : (si64, si64) -> si64
+    "daphne.return"(%4) : (si64) -> ()
+  }
+  func.func @"a-1(5)"(%arg0: si64) -> si64 {
+    %0 = "daphne.constant"() {value = 3 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = 4 : si64} : () -> si64
+    %2 = "daphne.generic_call"(%1) {callee = "a-1"} : (si64) -> si64
+    %3 = "daphne.generic_call"(%0) {callee = "a-1"} : (si64) -> si64
+    %4 = "daphne.ewAdd"(%2, %3) : (si64, si64) -> si64
+    "daphne.return"(%4) : (si64) -> ()
+  }
+  func.func @"a-1"(%arg0: si64) -> si64 {
+    %0 = "daphne.constant"() {value = 2 : si64} : () -> si64
+    %1 = "daphne.constant"() {value = 1 : si64} : () -> si64
+    %2 = "daphne.constant"() {value = 0 : si64} : () -> si64
+    %3 = "daphne.ewLe"(%arg0, %2) : (si64, si64) -> si64
+    %4 = "daphne.cast"(%3) : (si64) -> i1
+    %5 = scf.if %4 -> (si64) {
+      scf.yield %1 : si64
+    } else {
+      %6 = "daphne.ewSub"(%arg0, %1) : (si64, si64) -> si64
+      %7 = "daphne.generic_call"(%6) {callee = "a-1"} : (si64) -> si64
+      %8 = "daphne.ewSub"(%arg0, %0) : (si64, si64) -> si64
+      %9 = "daphne.generic_call"(%8) {callee = "a-1"} : (si64) -> si64
+      %10 = "daphne.ewAdd"(%7, %9) : (si64, si64) -> si64
+      scf.yield %10 : si64
+    }
+    "daphne.return"(%5) : (si64) -> ()
+  }
+  func.func @main() {
+    %0 = "daphne.constant"() {value = false} : () -> i1
+    %1 = "daphne.constant"() {value = true} : () -> i1
+    %2 = "daphne.constant"() {value = 10 : si64} : () -> si64
+    %3 = "daphne.generic_call"(%2) {callee = "a-1(10)"} : (si64) -> si64
+    "daphne.print"(%3, %1, %0) : (si64, i1, i1) -> ()
+    %4 = "daphne.generic_call"(%2) {callee = "b-2(10)"} : (si64) -> si64
+    "daphne.print"(%4, %1, %0) : (si64, i1, i1) -> ()
+    %5 = "daphne.generic_call"(%2) {callee = "b-2(10)"} : (si64) -> si64
+    "daphne.print"(%5, %1, %0) : (si64, i1, i1) -> ()
+    "daphne.return"() : () -> ()
+  }
+}
+144
+20
+20
