@@ -26,6 +26,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <fstream>
+#include <sstream>
+
 const std::string dirPath = "test/api/python/";
 
 #define MAKE_TEST_CASE(name)                                                                                           \
@@ -64,6 +67,19 @@ const std::string dirPath = "test/api/python/";
     TEST_CASE(name ".py", TAG_DAPHNELIB) {                                                                             \
         const std::string prefix = dirPath + name;                                                                     \
         compareDaphneLibToStr(str, prefix + ".py");                                                                    \
+    }
+#define MAKE_TEST_CASE_FILE(name)                                                                                      \
+    TEST_CASE(name ".py", TAG_DAPHNELIB) {                                                                             \
+        const std::string prefix = dirPath + name;                                                                     \
+        std::ifstream fileStream(prefix + ".txt");                                                                     \
+        std::stringstream buffer;                                                                                      \
+        buffer << fileStream.rdbuf();                                                                                  \
+        std::stringstream out;                                                                                         \
+        std::stringstream err;                                                                                         \
+        int status = runDaphneLib(out, err, (prefix + ".py").c_str());                                                 \
+        CHECK(status == StatusCode::SUCCESS);                                                                          \
+        CHECK(err.str() != "");                                                                                        \
+        CHECK(out.str() == buffer.str());                                                                              \
     }
 
 MAKE_TEST_CASE("data_transfer_numpy_1")
@@ -158,3 +174,4 @@ MAKE_TEST_CASE("user_def_func_3_inputs")
 // MAKE_TEST_CASE_PARAMETRIZED("user_def_func_with_condition", "param=3.8")
 // MAKE_TEST_CASE("user_def_func_with_for_loop")
 // MAKE_TEST_CASE("user_def_func_with_while_loop")
+MAKE_TEST_CASE_FILE("daphne_args")

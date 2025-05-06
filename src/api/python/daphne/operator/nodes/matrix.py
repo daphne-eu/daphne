@@ -101,8 +101,8 @@ class Matrix(OperationNode):
     def _is_numpy(self) -> bool:
         return self._np_array is not None
     
-    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None) -> Union[np.array]:
-        return super().compute(type=type, verbose=verbose, asTensorFlow=asTensorFlow, asPyTorch=asPyTorch, shape=shape)
+    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, daphne_args=None) -> Union[np.array]:
+        return super().compute(type=type, verbose=verbose, asTensorFlow=asTensorFlow, asPyTorch=asPyTorch, shape=shape, daphne_args=daphne_args)
 
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '+', [self, other])
