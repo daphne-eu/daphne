@@ -90,7 +90,7 @@ file(GLOB CODEGEN_CPP_FILES CONFIGURE_DEPENDS
      "${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels_*.cpp")
 # message("CODEGEN_CPP_FILES: ${CODEGEN_CPP_FILES}")
 
-list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
+list(APPEND LIBS DataStructures IO IO_URING_LIB BLAS::BLAS MLIRParser)
 
 set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels
@@ -115,14 +115,14 @@ set_target_properties(KernelObjLib PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT
 add_library(AllKernels SHARED $<TARGET_OBJECTS:KernelObjLib>)
 set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
+set(ALLKERNELS_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/thirdparty/installed/include" /usr/local/include)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+    list(APPEND ALLKERNELS_INCLUDE_DIRS ${CUDAToolkit_INCLUDE_DIRS})
     list(APPEND LIBS CUDAKernels)
 else()
     # This can only appear once, so it's either included in CUDAKernels or appended here to AllKernels directly
     list(APPEND LIBS LLVMSupport Util MLIRDaphneInference)
 endif()
-
 
 list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared)
@@ -134,7 +134,6 @@ endif()
 find_library(HWLOC_LIB NAMES libhwloc.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 
 if(USE_HDFS)
-        target_include_directories(AllKernels PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/hdfs)
         find_library(LIBHDFS3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 endif()
 

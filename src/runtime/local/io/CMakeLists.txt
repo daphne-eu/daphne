@@ -16,3 +16,12 @@ add_library(IO
         utils.cpp
 )
 target_link_libraries(IO)
+
+add_library(IO_URING_LIB
+        io_uring/IO_URing.cpp
+        io_uring/IO_Threadpool.cpp)
+target_link_libraries(IO_URING_LIB PRIVATE liburing.a Threads::Threads)
+## linking liburing here is more troublesome than linking with libAllKernels, so this is moved there
+#target_link_libraries(IO_URING_LIB PRIVATE liburing.a Threads::Threads)
+#target_link_directories(IO_URING_LIB PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/installed/lib" /usr/local/lib)
+#target_include_directories(IO_URING_LIB PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/installed/include" /usr/local/include)
