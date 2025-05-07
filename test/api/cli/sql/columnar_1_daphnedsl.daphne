@@ -1,0 +1,10 @@
+// Super simple query.
+
+r = {
+    "a": [1, 2, 3],
+    "b": ["x", "y", "z"]
+};
+
+res = createFrame(as.matrix(r[, "a"]), as.matrix(r[, "b"]), "foo", "bar");
+
+print(res);

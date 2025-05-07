@@ -1,0 +1,32 @@
+// Join of three tables (each with filters, one semi-join), group-by on multiple columns with multiple aggregates,
+// order-by on multiple columns, calculation in the projection (inside an aggregatin function).
+
+f = {
+    "a"   : [ 1,  1,  4,  3,  2,  1,  1,  0,  1,  2,  0,  4],
+    "b"   : [10, 30, 20, 10, 20, 30, 30, 20, 10, 20, 30, 10],
+    "d1id": [ 3,  0,  2,  1,  4,  3,  2,  2,  0,  1,  2,  1],
+    "d2id": [30, 20, 50, 40,  0, 60, 10,  0, 10, 40, 60, 50]
+};
+d1 = {
+    "id": [ 0,  1,  2,  3,  4],
+    "x" : [10, 20, 10, 20, 30]
+};
+d2 = {
+    "id": [  0,  10,  20,  30,  40,  50,  60],
+    "y" : ["a", "b", "a", "a", "c", "b", "a"],
+    "z" : [1.1, 2.2, 1.1, 3.3, 2.2, 1.1, 2.2]
+};
+
+registerView("f", f);
+registerView("d1", d1);
+registerView("d2", d2);
+
+res = sql("
+    SELECT f.a AS key, sum(f.b + d1.x) AS agg
+    FROM f INNER JOIN d1 ON f.d1id = d1.id INNER JOIN d2 ON f.d2id = d2.id
+    WHERE d1.x = 10 AND (d2.y = 'b' OR d2.z = 1.1) AND f.a < 3
+    GROUP BY f.a
+    ORDER BY f.a;
+");
+
+print(res);

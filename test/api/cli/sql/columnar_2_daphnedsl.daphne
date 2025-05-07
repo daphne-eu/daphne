@@ -1,0 +1,15 @@
+// One table, multiple filters (AND, OR, BETWEEN), including a filter on a string column.
+
+r = {
+    "a": [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8],
+    "b": [ 10,   5,  20,  15,   5,  25,  20,   5],
+    "c": ["x", "x", "y", "x", "z", "z", "x", "y"]
+};
+
+rb = as.matrix(r[, "b"]);
+rc = as.matrix(r[, "c"]);
+selR = (rb >= 10 && rc == "x") || (rb >= 20 && rb <= 30);
+r = createFrame(as.matrix(r[, "a"]), "foo");
+res = r[[selR, ]];
+
+print(res);

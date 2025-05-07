@@ -1,0 +1,12 @@
+// Super simple query.
+
+r = {
+    "a": [1, 2, 3],
+    "b": ["x", "y", "z"]
+};
+
+registerView("r", r);
+
+res = sql("SELECT r.a AS foo, r.b AS bar FROM r;");
+
+print(res);

@@ -1,0 +1,11 @@
+// One table, full aggregation.
+
+r = {
+    "a": [1.1, 2.2, 3.3],
+    "b": [ 10,   5,  20]
+};
+
+s = sum(as.matrix(r[, "b"]));
+res = createFrame(as.matrix(s), "foo");
+
+print(res);

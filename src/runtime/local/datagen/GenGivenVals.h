@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_DATAGEN_GENGIVENVALS_H
 
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/Column.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -42,10 +43,10 @@ template <class DT> struct GenGivenVals {
 // ****************************************************************************
 
 /**
- * @brief A very simple data generator which populates a matrix with the
+ * @brief A very simple data generator which populates a nxm data object (e.g., a matrix) with the
  * elements of the given `std::vector`.
  *
- * Meant only for small matrices, mainly as a utility for testing and
+ * Meant only for small data objects, mainly as a utility for testing and
  * debugging. Note that it can easily be used with an initializer list as
  * follows:
  *
@@ -56,16 +57,41 @@ template <class DT> struct GenGivenVals {
  * ```
  *
  * @param numRows The number of rows.
- * @param elements The data elements to populate the matrix with. Their number
+ * @param elements The data elements to populate the data object with. Their number
  * must be divisible by `numRows`.
  * @param minNumNonZeros The minimum number of non-zeros to reserve space for
  * in a sparse matrix.
- * @return A matrix of the specified data type `DT` containing the provided
+ * @return A data object of the specified data type `DT` containing the provided
  * data elements.
  */
 template <class DT>
 DT *genGivenVals(size_t numRows, const std::vector<typename DT::VT> &elements, size_t minNumNonZeros = 0) {
     return GenGivenVals<DT>::generate(numRows, elements, minNumNonZeros);
+}
+
+/**
+ * @brief A very simple data generator which populates a nx1 data object (e.g., a matrix) with the
+ * elements of the given `std::vector`.
+ *
+ * Meant only for small data objects, mainly as a utility for testing and
+ * debugging. Note that it can easily be used with an initializer list as
+ * follows:
+ *
+ * ```c++
+ * // Generates the matrix  3
+ * //                       1
+ * //                       4
+ * auto m = genGivenVals<DenseMatrix<double>>({3, 1, 4});
+ * ```
+ *
+ * @param elements The data elements to populate the data object with.
+ * @param minNumNonZeros The minimum number of non-zeros to reserve space for
+ * in a sparse matrix.
+ * @return A data object of the specified data type `DT` with a single column containing the provided
+ * data elements.
+ */
+template <class DT> DT *genGivenVals(const std::vector<typename DT::VT> &elements, size_t minNumNonZeros = 0) {
+    return genGivenVals<DT>(elements.size(), elements, minNumNonZeros);
 }
 
 // ****************************************************************************
@@ -169,6 +195,21 @@ template <typename VT> struct GenGivenVals<Matrix<VT>> {
         // this is to simplify generating test matrices for the "Matrix" kernel
         // specializations
         return GenGivenVals<DenseMatrix<VT>>::generate(numRows, elements, minNumNonZeros);
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Column
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct GenGivenVals<Column<VT>> {
+    static Column<VT> *generate(size_t numRows, const std::vector<VT> &elements, size_t minNumNonZeros = 0) {
+        if (numRows != elements.size())
+            throw std::runtime_error("GenGivenVals<Column<VT>>: the given number of rows must match the number of "
+                                     "elements in the given vector");
+        auto res = DataObjectFactory::create<Column<VT>>(numRows, false);
+        std::copy(elements.begin(), elements.end(), res->getValues());
+        return res;
     }
 };
 

@@ -46,6 +46,7 @@ set(TEST_SOURCES
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/secondorder/SecondOrderTest.cpp
+        api/cli/sql/ColumnarTest.cpp
         api/cli/sql/SQLTest.cpp
         api/cli/sql/SQLResultTest.cpp
         api/cli/syntax/SyntaxTest.cpp
@@ -97,11 +98,24 @@ set(TEST_SOURCES
         runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
+        runtime/local/kernels/ColAggAllTest.cpp
+        runtime/local/kernels/ColAggGrpTest.cpp
         runtime/local/kernels/ColBindTest.cpp
+        runtime/local/kernels/ColCalcBinaryTest.cpp
+        runtime/local/kernels/ColGroupFirstTest.cpp
+        runtime/local/kernels/ColGroupNextTest.cpp
+        runtime/local/kernels/ColIntersectTest.cpp
+        runtime/local/kernels/ColJoinTest.cpp
+        runtime/local/kernels/ColMergeTest.cpp
+        runtime/local/kernels/ColProjectTest.cpp
+        runtime/local/kernels/ColSelectCmpTest.cpp
+        runtime/local/kernels/ColSemiJoinTest.cpp
         runtime/local/kernels/CondMatMatMatTest.cpp
         runtime/local/kernels/CondMatMatScaTest.cpp
         runtime/local/kernels/CondMatScaMatTest.cpp
         runtime/local/kernels/CondMatScaScaTest.cpp
+        runtime/local/kernels/ConvertBitmapToPosListTest.cpp
+        runtime/local/kernels/ConvertPosListToBitmapTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/CTableTest.cpp
         runtime/local/kernels/DiagMatrixTest.cpp
@@ -160,8 +174,6 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
-
-#        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)

@@ -43,6 +43,8 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
         return std::make_pair(mt.getNumRows(), mt.getNumCols());
     if (auto ft = t.dyn_cast<daphne::FrameType>())
         return std::make_pair(ft.getNumRows(), ft.getNumCols());
+    if (auto ct = t.dyn_cast<daphne::ColumnType>())
+        return std::make_pair(ct.getNumRows(), 1);
     if (CompilerUtils::isScaType(t))
         return std::make_pair(1, 1);
 

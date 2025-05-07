@@ -226,6 +226,74 @@ def MatrixOrFrame : AnyTypeOf<[Matrix, Frame, Unknown]>;
 def MatrixOrU : AnyTypeOf<[Matrix, Unknown]>;
 def FrameOrU : AnyTypeOf<[Frame, Unknown]>;
 
+def Column : Daphne_Type<"Column"> {
+    let summary = "column";
+
+    let parameters = (ins "::mlir::Type":$valueType, "ssize_t":$numRows);
+
+    let genVerifyDecl = 1;
+
+    let builders = [
+        // Creates a ColumnType from mere value type information, with all other parameters reset.
+        TypeBuilder<(ins "::mlir::Type":$valueType), [{
+            return Base::get($_ctxt, valueType, -1);
+        }]>,
+    ];
+
+    let extraClassDeclaration =  [{
+        // The following methods return a ColumnType with the same parameters
+        // as this ColumnType, except for one parameter, which is replaced by a
+        // new value.
+
+        ::mlir::daphne::ColumnType withValueType(::mlir::Type valueType) {
+            return get(getContext(), valueType, getNumRows());
+        }
+
+        ::mlir::daphne::ColumnType withShape(ssize_t numRows) {
+            return get(getContext(), getValueType(), numRows);
+        }
+
+        // The following method returns a ColumnType with the same value type
+        // as this ColumnType, but all other parameters reset.
+
+        ::mlir::daphne::ColumnType withSameValueType() {
+            return get(getContext(), getValueType());
+        }
+
+        /**
+         * @brief Check if `other` has strictly less information than this column type.
+         * @param other the other column type to compare to
+         * @return true if this type has more information, false otherwise
+         */
+        bool isSpecializationOf(::mlir::daphne::ColumnType other) {
+            auto valueType = getValueType();
+            auto otherValueType = other.getValueType();
+            if(!otherValueType.isa<mlir::daphne::UnknownType>() && valueType != otherValueType)
+                return false;
+
+            if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())
+                return false;
+
+            return true;
+        }
+    }];
+}
+def ColumnOrU : AnyTypeOf<[Column, Unknown]>;
+
+// TODO We could omit the "Of" and have it default to ScalarType.
+// A type constraint checking if a type is a column whose value type is one of
+// the given types (whereby Unknown is always allowed automatically).
+// Reuses MLIR's ContainerType constraint in a way inspired by MLIR's VectorOf.
+class ColumnOf<list<Type> allowedTypes> : AnyTypeOf<[
+        ContainerType<
+                AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
+                Column.predicate,
+                "$_self.dyn_cast<::mlir::daphne::ColumnType>().getValueType()",
+                "column"
+        >,
+        Unknown
+]>;
+
 def List : Daphne_Type<"List"> {
     let summary = "list";
 

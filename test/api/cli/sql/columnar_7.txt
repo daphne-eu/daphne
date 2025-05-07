@@ -1,0 +1,3 @@
+Frame(2x2, [key:int64_t, agg:int64_t])
+0 30
+1 100
