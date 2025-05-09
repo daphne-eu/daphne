@@ -1,0 +1,3 @@
+# Write a frame to a file without an extension.
+
+write({"a": [1]}, "test/api/cli/io/failure/test_out");
