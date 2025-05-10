@@ -22,6 +22,7 @@
 # -------------------------------------------------------------
 from __future__ import annotations
 import os
+from pathlib import Path
 from typing import Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ BINARY_OPERATIONS = ['+', '-', '/', '*', '^', '%', '<', '<=', '>', '>=', '==', '
 VALID_ARITHMETIC_TYPES = Union['DAGNode', int, float]
 VALID_COMPUTED_TYPES = Union['Matrix', 'Frame', 'Scalar']
 
-TMP_PATH = os.path.join("/tmp/", "DaphneLib")
+TMP_PATH = str(Path.home() / ".daphnelib")
 os.makedirs(TMP_PATH, exist_ok=True)
 
 _PROTOTYPE_PATH_ENV_VAR_NAME = "DAPHNELIB_DIR_PATH"
