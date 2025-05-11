@@ -1,0 +1,3 @@
+# Read a frame from a file without an extension.
+
+print(readFrame("test/api/cli/io/failure/test_in"));

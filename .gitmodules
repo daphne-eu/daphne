@@ -1,3 +1,6 @@
 [submodule "thirdparty/llvm-project"]
 	path = thirdparty/llvm-project
 	url = https://github.com/llvm/llvm-project.git
+[submodule "src/tools/web-ui"]
+	path = src/tools/web-ui
+	url = https://github.com/daphne-eu/web-ui.git

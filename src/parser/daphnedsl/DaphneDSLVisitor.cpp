@@ -736,7 +736,7 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
         }
     } catch (std::exception &e) {
         throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor",
-                                          "Invalid literal value for argument '" + arg + "': " + argValue);
+                                          "invalid literal value for argument '" + arg + "': " + argValue);
     }
 
     mlir::Value lit = visitLiteral(literalCtx);

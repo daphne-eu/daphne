@@ -102,10 +102,27 @@ MAKE_READ_TEST_CASE_2("frame_dynamic-path-1")
                            ("chkPath=\"" + outPath + "\",refPath=\"" + refPath + "\",nanSafe=" + nanSafe).c_str());    \
     }
 
-// TODO The commented out test cases don't work yet, as the CSV writer doesn't support strings yet.
 MAKE_WRITE_TEST_CASE("matrix", "si64", "false")
 MAKE_WRITE_TEST_CASE("matrix", "f64", "true")
 MAKE_WRITE_TEST_CASE("matrix", "str", "false")
 MAKE_WRITE_TEST_CASE("matrix", "view", "false")
 MAKE_WRITE_TEST_CASE("frame", "mixed-no-str", "false")
 MAKE_WRITE_TEST_CASE("frame", "mixed-str", "false")
+
+// ********************************************************************************
+// Failure test cases
+// ********************************************************************************
+
+// These tests check if wrong uses of read/write fail as expected.
+
+#define MAKE_FAILURE_TEST_CASE(name, count)                                                                            \
+    TEST_CASE(name ", failure", TAG_IO) {                                                                              \
+        for (unsigned i = 1; i <= count; i++) {                                                                        \
+            DYNAMIC_SECTION("failure/" name "_failure_" << i << ".daphne") {                                           \
+                checkDaphneStatusCodeSimple(StatusCode::EXECUTION_ERROR, dirPath, "failure/" name "_failure", i);      \
+            }                                                                                                          \
+        }                                                                                                              \
+    }
+
+MAKE_FAILURE_TEST_CASE("read", 4)
+MAKE_FAILURE_TEST_CASE("write", 4)

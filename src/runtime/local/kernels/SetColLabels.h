@@ -33,8 +33,9 @@
 inline void setColLabels(Frame *&res, const Frame *arg, const char **labels, size_t numLabels, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     if (numLabels != numCols)
-        throw std::runtime_error("the number of given labels does not match "
-                                 "the number of columns of the given frame");
+        throw std::runtime_error("the number of given labels (" + std::to_string(numLabels) +
+                                 ") does not match the number of columns of the given frame (" +
+                                 std::to_string(numCols) + ")");
     std::string *labelsStr = new std::string[numCols];
     for (size_t c = 0; c < numCols; c++)
         labelsStr[c] = labels[c];

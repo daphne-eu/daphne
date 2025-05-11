@@ -16,6 +16,12 @@
 
 #pragma once
 
+#include <runtime/local/datastructures/FixedSizeStringValueType.h>
+
+#include <cstdint>
+#include <string>
+#include <string_view>
+
 // ****************************************************************************
 // Enum for binary op codes and their names
 // ****************************************************************************

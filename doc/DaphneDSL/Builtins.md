@@ -113,6 +113,11 @@ The following built-in functions allow to find out meta data of matrices and fra
 
     Returns the DAPHNE compiler's *estimate* of the argument's sparsity.
     Note that this value may deviate from the *actual* sparsity of the data at run-time.
+  
+- **`isSymmetric`**`(arg:matrix)`
+
+    Returns `true` if and only if the given *(n x n)* matrix is symmetric, i.e., for any *i in {0, 1, ..., n-1}* and *j in {0, 1, ..., n-1}*, the value at position *(i, j)* is the same as the value at position *(j, i)*.
+    The given matrix must be a square matrix.
 
 ## Elementwise unary
 

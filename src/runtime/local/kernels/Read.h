@@ -30,28 +30,9 @@
 #if USE_HDFS
 #include <runtime/local/io/HDFS/ReadHDFS.h>
 #endif
-#include <map>
-#include <regex>
+
+#include <filesystem>
 #include <string>
-
-struct FileExt {
-    static std::map<std::string, int> create_map() {
-        std::map<std::string, int> m;
-        m["csv"] = 0;
-        m["mtx"] = 1;
-        m["parquet"] = 2;
-        m["dbdf"] = 3;
-#if USE_HDFS
-        m["hdfs"] = 4;
-#endif
-        return m;
-    }
-    static const std::map<std::string, int> map;
-};
-
-inline const std::map<std::string, int> FileExt::map = FileExt::create_map();
-
-int extValue(const char *filename);
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -79,22 +60,19 @@ template <class DTRes> void read(DTRes *&res, const char *filename, DCTX(ctx)) {
 
 template <typename VT> struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
-
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
-        int extv = extValue(filename);
-        switch (extv) {
-        case 0:
+        std::string ext(std::filesystem::path(filename).extension());
+
+        if (ext == ".csv") {
             if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
             readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
-            break;
-        case 1:
+        } else if (ext == ".mtx") {
             if constexpr (std::is_same<VT, std::string>::value)
                 throw std::runtime_error("reading string-valued MatrixMarket files is not supported (yet)");
             else
                 readMM(res, filename);
-            break;
-        case 2:
+        } else if (ext == ".parquet") {
             if constexpr (std::is_same<VT, std::string>::value)
                 throw std::runtime_error("reading string-valued Parquet files is not supported (yet)");
             else {
@@ -102,15 +80,14 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
                     res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
                 readParquet(res, filename, fmd.numRows, fmd.numCols);
             }
-            break;
-        case 3:
+        } else if (ext == ".dbdf") {
             if constexpr (std::is_same<VT, std::string>::value)
                 throw std::runtime_error("reading string-valued DAPHNE binary format files is not supported (yet)");
             else
                 readDaphne(res, filename);
-            break;
+        }
 #if USE_HDFS
-        case 4:
+        else if (ext == ".hdfs") {
             if constexpr (std::is_same<VT, std::string>::value)
                 throw std::runtime_error("reading string-valued HDFS files is not supported (yet)");
             else {
@@ -118,11 +95,10 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
                     res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
                 readHDFS(res, filename, ctx);
             }
-            break;
-#endif
-        default:
-            throw std::runtime_error("file extension not supported");
         }
+#endif
+        else
+            throw std::runtime_error("file extension not supported: '" + ext + "'");
     }
 };
 
@@ -132,13 +108,12 @@ template <typename VT> struct Read<DenseMatrix<VT>> {
 
 template <typename VT> struct Read<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, DCTX(ctx)) {
-
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
-        int extv = extValue(filename);
-        switch (extv) {
-        case 0:
+        std::string ext(std::filesystem::path(filename).extension());
+
+        if (ext == ".csv") {
             if (fmd.numNonZeros == -1)
-                throw std::runtime_error("Currently reading of sparse matrices requires a number of "
+                throw std::runtime_error("currently reading of sparse matrices requires a number of "
                                          "non zeros to be defined");
 
             if (res == nullptr)
@@ -146,21 +121,16 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 
             // FIXME: ensure file is sorted, or set `sorted` argument correctly
             readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
-            break;
-        case 1:
+        } else if (ext == ".mtx") {
             readMM(res, filename);
-            break;
-        case 2:
+        } else if (ext == ".parquet") {
             if (res == nullptr)
                 res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
             readParquet(res, filename, fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
-            break;
-        case 3:
+        } else if (ext == ".dbdf")
             readDaphne(res, filename);
-            break;
-        default:
-            throw std::runtime_error("File extension not supported");
-        }
+        else
+            throw std::runtime_error("file extension not supported: '" + ext + "'");
     }
 };
 
@@ -171,42 +141,33 @@ template <typename VT> struct Read<CSRMatrix<VT>> {
 template <> struct Read<Frame> {
     static void apply(Frame *&res, const char *filename, DCTX(ctx)) {
         FileMetaData fmd = MetaDataParser::readMetaData(filename);
+        std::string ext(std::filesystem::path(filename).extension());
 
-        ValueTypeCode *schema;
-        if (fmd.isSingleValueType) {
-            schema = new ValueTypeCode[fmd.numCols];
-            for (size_t i = 0; i < fmd.numCols; i++)
-                schema[i] = fmd.schema[0];
+        if (ext == ".csv") {
+            ValueTypeCode *schema;
+            if (fmd.isSingleValueType) {
+                schema = new ValueTypeCode[fmd.numCols];
+                for (size_t i = 0; i < fmd.numCols; i++)
+                    schema[i] = fmd.schema[0];
+            } else
+                schema = fmd.schema.data();
+
+            std::string *labels;
+            if (fmd.labels.empty())
+                labels = nullptr;
+            else
+                labels = fmd.labels.data();
+
+            if (res == nullptr)
+                res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
+
+            readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
+
+            if (fmd.isSingleValueType)
+                delete[] schema;
         } else
-            schema = fmd.schema.data();
-
-        std::string *labels;
-        if (fmd.labels.empty())
-            labels = nullptr;
-        else
-            labels = fmd.labels.data();
-
-        if (res == nullptr)
-            res = DataObjectFactory::create<Frame>(fmd.numRows, fmd.numCols, schema, labels, false);
-
-        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
-
-        if (fmd.isSingleValueType)
-            delete[] schema;
+            throw std::runtime_error("file extension not supported: '" + ext + "'");
     }
 };
-
-inline int extValue(const char *filename) {
-    int extv;
-    std::string fn(filename);
-    auto pos = fn.find_last_of('.');
-    std::string ext(fn.substr(pos + 1));
-    if (FileExt::map.count(ext) > 0) {
-        extv = FileExt::map.find(ext)->second;
-    } else {
-        extv = -1;
-    }
-    return extv;
-}
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_READ_H

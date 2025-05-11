@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container: daphneeu/github-action:latest
     env:
       # fix usage of tput in build script:
