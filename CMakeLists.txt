@@ -213,6 +213,74 @@ endif()
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+
+# *****************************************************************************
+# DuckDB Configuration (pre-built)
+# *****************************************************************************
+
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty/installed/duckdb/include)
+
+find_library(DUCKDB_LIBRARY
+        NAMES duckdb
+        HINTS ${PROJECT_SOURCE_DIR}/thirdparty/installed/duckdb/lib
+        REQUIRED
+)
+# *****************************************************************************
+# ODBC Configuration
+# *****************************************************************************
+
+
+find_package(ODBC REQUIRED)
+
+
+find_library(ODBC_LIBRARY
+        NAMES odbc
+        HINTS /usr/lib/x86_64-linux-gnu /usr/local/lib
+        REQUIRED
+)
+
+find_library(ODBCINST_LIBRARY
+        NAMES odbcinst
+        HINTS /usr/lib/x86_64-linux-gnu /usr/local/lib
+        REQUIRED
+)
+
+#find_library(DUCKDB_ODBC_LIBRARY
+#        NAMES duckdb_odbc
+#        HINTS ${PROJECT_SOURCE_DIR}/thirdparty/sources/duckdb-odbc/build/release
+#        REQUIRED
+#)
+
+# *****************************************************************************
+# sqlite Configuration (pre-built)
+# *****************************************************************************
+
+# Ensure system SQLite is not used
+set(SQLITE3_FOUND OFF)
+
+# Set the path to SQLite headers and source files
+set(SQLITE3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/installed/sqlite-amalgamation-3490000)
+
+# Add SQLite as a static library
+add_library(sqlite3 STATIC
+        ${SQLITE3_INCLUDE_DIR}/sqlite3.c
+)
+
+# Enable additional SQLite features
+target_compile_definitions(sqlite3 PUBLIC
+        SQLITE_ENABLE_MATH_FUNCTIONS  # Enables SQRT, LOG, EXP, etc.
+        SQLITE_ENABLE_JSON1           # Enables JSON functions (JSON_OBJECT, JSON_ARRAY, etc.)
+        SQLITE_ENABLE_FTS5            # Enables Full-Text Search v5 (for text indexing)
+        SQLITE_ENABLE_RTREE           # Enables R-Tree spatial indexes
+        SQLITE_ENABLE_GEOPOLY         # Enables geospatial functions
+        SQLITE_ENABLE_UPDATE_DELETE_LIMIT  # Enables LIMIT in UPDATE and DELETE statements
+        SQLITE_ENABLE_COLUMN_METADATA  # Allows querying metadata of columns
+        SQLITE_ENABLE_STAT4            # Improves SQLite query planner statistics
+)
+
+# Make SQLite headers available to all components
+target_include_directories(sqlite3 PUBLIC ${SQLITE3_INCLUDE_DIR})
+
 # *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************

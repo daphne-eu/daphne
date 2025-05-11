@@ -473,6 +473,10 @@ On the other hand, built-in functions for individual operations of extended rela
 - **`sql`**`(query:str)`
 
     Executes the SQL query `query` on the frames previously registered with `registerView()` and returns the result as a frame.
+
+- **`externalSql`**`(query:str, dbms:str, connection:str)`
+
+    Uses an external `dbms` to execute the `query` with the necessary `connection`to the data.
   
 ### Set Operations
 

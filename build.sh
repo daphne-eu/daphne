@@ -572,6 +572,71 @@ fi
 #******************************************************************************
 # #8 Download and install third-party dependencies if requested (default is yes, omit with --no-deps))
 #******************************************************************************
+
+#------------------------------------------------------------------------------
+# DuckDB (Embedded Database) - Build from Source
+#------------------------------------------------------------------------------
+duckdbDirName="duckdb-$duckdbVersion"
+duckdbInstDir="$installPrefix/duckdb"
+dep_duckdb=("duckdb_v$duckdbVersion" "v1")
+
+if ! is_dependency_downloaded "${dep_duckdb[@]}"; then
+    daphne_msg "Cloning DuckDB version ${duckdbVersion}"
+
+    # Clone the repository (shallow clone for faster download)
+    git clone --depth 1 --branch v${duckdbVersion} https://github.com/duckdb/duckdb.git "$sourcePrefix/$duckdbDirName"
+
+    dependency_download_success "${dep_duckdb[@]}"
+fi
+
+if ! is_dependency_installed "${dep_duckdb[@]}"; then
+    cd "$sourcePrefix/$duckdbDirName"
+
+    mkdir -p "$duckdbInstDir"
+
+    # Build DuckDB
+    cmake -S . -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$duckdbInstDir"
+
+    cmake --build build --parallel "$(nproc)"
+    cmake --install build
+
+    dependency_install_success "${dep_duckdb[@]}"
+else
+    daphne_msg "No need to build DuckDB again."
+fi
+
+
+sqliteDirName="sqlite-$sqliteVersion"
+sqliteZipName="sqlite-amalgamation-$sqliteVersion.zip"
+
+dep_sqlite=("sqlite_v$sqliteVersion" "v1")
+
+if ! is_dependency_downloaded "${dep_sqlite[@]}"; then
+    daphne_msg "Downloading SQLite Amalgamation version $sqliteVersion"
+
+    # Download SQLite Amalgamation ZIP
+    wget "https://www.sqlite.org/2025/${sqliteZipName}" -qO "$cacheDir/$sqliteZipName"
+
+    # Extract the downloaded file into the source directory
+    unzip -q "$cacheDir/$sqliteZipName" -d "$sourcePrefix/$sqliteDirName"
+
+    dependency_download_success "${dep_sqlite[@]}"
+fi
+
+if ! is_dependency_installed "${dep_sqlite[@]}"; then
+    cd "$sourcePrefix/$sqliteDirName"
+
+    # No need to configure, just moving it to the installation directory
+    mkdir -p "$installPrefix"
+    cp -r * "$installPrefix"
+
+    dependency_install_success "${dep_sqlite[@]}"
+else
+    daphne_msg "No need to install SQLite Amalgamation again."
+fi
+
 if [ $WITH_DEPS -gt 0 ]; then
     LLVM_ARCH=X86
     # optimizes for multiple x86_64 architectures

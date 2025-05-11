@@ -1,0 +1,7 @@
+// SQLite empty result test
+res = externalSql("DROP TABLE IF EXISTS example;
+                   CREATE TABLE example (id INTEGER, name TEXT);
+                   SELECT * FROM example;
+                   ","DuckDB","test/api/cli/externalSQL/exampleduckdb.db");
+
+print(res);
