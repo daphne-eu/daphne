@@ -1,0 +1,3 @@
+m1 = as.f64([nan, nan, nan]);
+
+print(m1);

@@ -4200,7 +4200,8 @@
             [["DenseMatrix", "int8_t"]],
             [["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint32_t"]],
-            [["DenseMatrix", "uint8_t"]]
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "std::string"]]
         ]
     },
     {
