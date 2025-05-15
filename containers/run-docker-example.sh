@@ -22,7 +22,7 @@ DOCKER_IMAGE=daphneeu/daphne-dev
 DOCKER_TAG=latest_${ARCH}_BASE
 #DOCKER_TAG=latest_${ARCH}_CUDA
 if [[ "$(arch)" == arm*  ]] || [ $(arch) == 'aarch64' ]; then
-    DOCKER_TAG=latest_ARMV8_BASE
+    DOCKER_TAG=latest_AArch64
 fi
 
 #on some installations docker can only be run with sudo

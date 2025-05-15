@@ -33,7 +33,7 @@ If required, you can find more details for custom setups later in this document.
 **Option 1: Use a binary release**
 
 Download and extract the file `daphne-<flavor>-<version>-bin.tgz` from the [release page](https://github.com/daphne-eu/daphne/releases).
-It is recommended to use the latest version and to choose the flavor based on your platform and needs (e.g., `X86-64`, `cuda-X86-64`, or `ARMV8`).
+It is recommended to use the latest version and to choose the flavor based on your platform and needs (e.g., `X86-64`, `cuda-X86-64`, or `AArch64`).
 Using DAPHNE with CUDA requires Nvidia Pascal hardware or newer.
 
 **Option 2: Build from sources**
@@ -132,9 +132,16 @@ The development container image already contains all necessary (¹) dependencies
 ```bash
 docker pull daphneeu/daphne-dev:latest_X86-64_BASE
 ```
+
+or
+
+```bash
+docker pull daphneeu/daphne-dev:latest_AArch64
+```
+
 ***Hint:** In case of Docker permission errors, try prepending `sudo` to the command.*
 
-***Hint:** You may want to choose another image tag based on your platform and needs, e.g., `latest_X86-64_CUDA` (for GPU support) or `latest_ARMV8_BASE` (for ARM support).*
+***Hint:** You may want to choose another image tag based on your platform and needs, e.g., `latest_X86-64_CUDA` (for GPU support) or `latest_AArch64` (for ARM support).*
 
 ***Hint:** (¹) TensorFlow and PyTorch are *optional* for DaphneLib and *not included* in the `daphne-dev`container due to their footprint of several gigabytes. Please follow the [instructions](/doc/development/InstallPythonLibsInContainer.md) on installing Python libraries in the `daphne-dev` container if you need these libraries.*
 
