@@ -1,3 +1,0 @@
-m1 = reshape(as.si64([1, 2, 3]), 3, 1);
-
-print(m1);

@@ -57,49 +57,34 @@ class Matrix(OperationNode):
 
         super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets, left_brackets, consumer_list)
 
-        # Debug statements to verify input parameters and file paths
-        # print(f"Unnamed input nodes: {unnamed_input_nodes}")
-        # print(f"Named input nodes: {named_input_nodes}")
-        # print(f"Local data: {local_data}")
-
-    def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
+    def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
+                  named_input_vars: Dict[str, str]) -> str:
         if self.__copy:
             return f'{var_name}={unnamed_input_vars[0]};'
         
-        code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH=TMP_PATH)
+        code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH)
+        
         if self._is_numpy() and self.operation == "readMatrix":
-            if self._np_array.dtype.kind in {'U', 'S', 'O'}:
-                json_file_path = f"{TMP_PATH}/{var_name}.json"
-                json_meta_file_path = f"{TMP_PATH}/{var_name}.json.meta"
-                with open(json_file_path, "w", encoding='utf-8') as f:
-                    json.dump(self._np_array.tolist(), f, ensure_ascii=False)
-                with open(json_meta_file_path, "w") as f:
-                    json.dump(
-                        {
-                            "numRows": np.shape(self._np_array)[0],
-                            "numCols": np.shape(self._np_array)[1],
-                            "valueType": self.getDType(self._np_array.dtype),
-                        },
-                        f, indent=2
-                    )
-            else:
-                csv_file_path = f"{TMP_PATH}/{var_name}.csv"
-                csv_meta_file_path = f"{TMP_PATH}/{var_name}.csv.meta"
-                with open(csv_file_path, "wb") as f:
-                    np.savetxt(f, self._np_array, delimiter=",")
-                with open(csv_meta_file_path, "w") as f:
-                    json.dump(
-                        {
-                            "numRows": np.shape(self._np_array)[0],
-                            "numCols": np.shape(self._np_array)[1],
-                            "valueType": self.getDType(self._np_array.dtype),
-                        },
-                        f, indent=2
-                    )
+            with open(TMP_PATH+"/"+var_name+".csv", "wb") as f:
+                if self._np_array.dtype in [np.float32, np.float64]:
+                    fmt = "%.18e"
+                elif self._np_array.dtype in [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]:
+                    fmt = "%i"
+                elif self._np_array.dtype.kind in {'U', 'S', 'O'}:
+                    fmt = "%s"
+                else:
+                    raise RuntimeError("unsupport numpy dtype")
+                np.savetxt(f, self._np_array, delimiter=",", fmt=fmt)
+            with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
+                json.dump(
+                    {
+                        "numRows": np.shape(self._np_array)[0],
+                        "numCols": np.shape(self._np_array)[1],
+                        "valueType": self.getDType(self._np_array.dtype),
+                    },
+                    f, indent=2
+                )
         return code_line
-
-    def _is_numpy(self):
-        return isinstance(self._np_array, np.ndarray)
 
     def getDType(self, d_type):
         if d_type == np.dtype('float32'):
@@ -120,10 +105,10 @@ class Matrix(OperationNode):
             return "ui32"
         elif d_type == np.dtype('uint64'):
             return "ui64"
-        elif d_type == np.dtype("S")  or d_type == np.dtype('U'):
+        elif d_type.kind in {'U', 'S', 'O'}:
             return "str"
         else:
-            return "object"
+            raise RuntimeError("unsupported numpy dtype")
 
     def _is_numpy(self) -> bool:
         return self._np_array is not None

@@ -1,14 +1,10 @@
-# Data transfer from numpy to DAPHNE and back, via files.
+# Data transfer from numpy to DAPHNE and back, via shared memory.
 
 import numpy as np
 from daphne.context.daphne_context import DaphneContext
 
-m1 = [1.0, 2.0, 3.0]
-m2 = [4.0, 5.0, 6.0, 7.0]
-m3 = [8.0, 9.0, 10.0, 11.0, 12.0]
+m = [np.nan, 0.0, 1.0, -1.0, 12.3, -12.3, 2e-10, -2e-10, 2e10, -2e10, np.inf, -np.inf]
     
 dctx = DaphneContext()
 
-(dctx.from_python(m1, shared_memory=True).print().compute())
-(dctx.from_python(m2, shared_memory=True).print().compute())
-(dctx.from_python(m3, shared_memory=True).print().compute())
+(dctx.from_python(m, shared_memory=True).print().compute())

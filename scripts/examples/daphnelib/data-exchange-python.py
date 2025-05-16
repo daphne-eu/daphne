@@ -1,4 +1,4 @@
-# Copyright 2023 The DAPHNE Consortium
+# Copyright 2025 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ print("How DAPHNE sees the data:")
 X.print().compute()
 
 # Add 100 to each value in X.
-X = X + 150.0
+X = X + 100.0
 
 # Compute in DAPHNE, transfer result back to Python.
 print("\nResult of adding 100 to each value, back in Python:")

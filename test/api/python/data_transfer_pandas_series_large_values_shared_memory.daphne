@@ -1,3 +1,0 @@
-ser1 = createFrame([1e10, 2e10, 3e10], "0");
-
-print(ser1);

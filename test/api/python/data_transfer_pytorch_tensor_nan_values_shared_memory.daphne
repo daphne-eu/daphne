@@ -1,3 +1,0 @@
-t1 = reshape(as.f64([nan, nan, nan]), 3, 1);
-
-print(t1);

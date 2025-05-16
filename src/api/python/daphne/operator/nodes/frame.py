@@ -94,6 +94,8 @@ class Frame(OperationNode):
             return "si64"
         elif d_type == "float64":
             return "f64"
+        elif d_type.kind in {'U', 'S', 'O'}:
+            return "str"
         else:
             print("Error")
 

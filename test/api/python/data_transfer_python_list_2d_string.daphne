@@ -1,3 +1,0 @@
-m1 = reshape(["apple","banana","cherry","fig"] , 2, 2);
-
-print(m1);
