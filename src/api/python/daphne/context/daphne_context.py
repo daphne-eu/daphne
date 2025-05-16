@@ -32,7 +32,7 @@ from daphne.operator.nodes.while_loop import WhileLoop
 from daphne.operator.nodes.do_while_loop import DoWhileLoop
 from daphne.operator.nodes.multi_return import MultiReturn
 from daphne.operator.operation_node import OperationNode
-from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8, STR
 
 import numpy as np
 import pandas as pd
@@ -69,6 +69,55 @@ class DaphneContext(object):
         """
         unnamed_params = ['\"'+file+'\"']
         return Frame(self, 'readFrame', unnamed_params)
+
+    def from_python(self, mat: [], shared_memory=True, verbose=False, return_shape=False):
+        """Generates a `DAGNode` representing a matrix with data given by a Python `list`.
+        :param mat: The Python list.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether to print timing information (True) or not (False).
+        :param return_shape: Whether to return the original shape of the input array.
+        :return: The data from Python as a Matrix.
+        """
+
+        original_mat_length = len(mat)
+        original_mat_dim2_length = None
+        original_mat_dim3_length = None
+
+        # check if mat has one, two or more dimensions
+        if isinstance(mat[0], list):
+            original_list_dim2_length = len(mat[0])
+            if isinstance(mat[0][0], list):
+                original_list_dim3_length = len(mat[0][0])
+
+        if verbose:
+            start_time = time.time()
+
+        # Check if the python list is 2d or higher dimensional.
+        if original_mat_dim2_length is not None and original_mat_dim3_length is None:
+            # If 2d, handle as a matrix, convert to numpy array.
+            mat = np.array(mat)
+            # Using the existing from_numpy method for 2d arrays.
+            matrix = self.from_numpy(mat, shared_memory, verbose)
+        else:
+            # If higher dimensional, reshape to 2d and handle as a matrix.
+            # Store the original numpy representation.
+            original_mat = np.array(mat)
+            # Reshape to 2d using numpy's zero copy reshape.
+            reshaped_mat = original_mat.reshape((original_mat_length, -1))
+
+            if verbose:
+                # Check if the original and reshaped lists share memory.
+                shares_memory = np.shares_memory(mat, reshaped_mat)
+                print(f"from_python(): original and reshaped lists share memory: {shares_memory}")
+
+            # Use the existing from_numpy method for the reshaped 2D array
+            matrix = self.from_numpy(mat=reshaped_mat, shared_memory=shared_memory, verbose=verbose)
+
+        if verbose:
+            print(f"from_python(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
+
+        # Return the matrix, and the original shape if return_shape is set to True.
+        return (matrix, (original_mat_length, original_mat_dim2_length, original_mat_dim3_length)) if return_shape else matrix
     
     def from_numpy(self, mat: np.array, shared_memory=True, verbose=False, return_shape=False):
         """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
@@ -88,6 +137,7 @@ class DaphneContext(object):
         if mat.ndim == 1:
             rows = mat.shape[0]
             cols = 1
+            mat = mat.reshape(-1, 1)
         elif mat.ndim >= 2:
             if mat.ndim > 2:
                 mat = mat.reshape((original_shape[0], -1))
@@ -121,6 +171,8 @@ class DaphneContext(object):
                 vtc = UI32
             elif d_type == np.uint64:
                 vtc = UI64
+            elif mat.dtype.kind in {'U', 'S', 'O'}:
+                raise RuntimeError("transfering a numpy array of strings to DAPHNE via shared memory is not supported yet")
             else:
                 # TODO Raise an error here?
                 print("unsupported numpy dtype")
@@ -216,6 +268,8 @@ class DaphneContext(object):
                     vtc = UI32
                 elif d_type == np.uint64:
                     vtc = UI64
+                elif mat.dtype.kind in {'U', 'S', 'O'}:
+                    vtc = STR
                 else:
                     raise TypeError(f'Unsupported numpy dtype in column "{column}" ({idx})')
                 
@@ -251,7 +305,7 @@ class DaphneContext(object):
     
     # This feature is only available if TensorFlow is available.
     if isinstance(tf, ImportError):
-        def from_tensorflow(self, tensor           , shared_memory=True, verbose=False, return_shape=False):
+        def from_tensorflow(self, tensor, shared_memory=True, verbose=False, return_shape=False):
             raise tf
     else:
         def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False):

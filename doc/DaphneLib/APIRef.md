@@ -29,6 +29,10 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 
 ### `DaphneContext` API Reference
 
+**Importing data from Python lists:**
+
+- **`from_python`**`(mat: [], shared_memory=True, verbose=False, return_shape=False) -> Matrix`
+
 **Importing data from other Python libraries:**
 
 - **`from_numpy`**`(mat: np.array, shared_memory=True, verbose=False, return_shape=False) -> Matrix`
