@@ -70,6 +70,26 @@ class Daphne_Op<string mnemonic, list<Trait> traits = []> :
         Op<Daphne_Dialect, mnemonic, traits>;
 
 // ****************************************************************************
+// DAPHNE SCF
+// ****************************************************************************
+
+def Daphne_ParForOp : Daphne_Op<"parfor"> {
+    let summary = "Parallel for loop";
+    // todo: add description for features 
+    let description = [{
+        Represents a parallel loop construct that can execute iterations in parallel.
+
+    }];
+    let arguments = (ins
+        AnyInteger:$from,
+        AnyInteger:$to,
+        AnyInteger:$step
+        // todo: add additional parameter?
+  );
+  let regions = (region AnyRegion:$bodyStmt);
+}
+
+// ****************************************************************************
 // DAPHNE Runtime Interoperability
 // ****************************************************************************
 
