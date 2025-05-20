@@ -690,6 +690,16 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     return nullptr;
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::ParForStatementContext *ctx) {
+
+    // todo: parfor implement 
+
+    // Create the actual ForOp.
+    // auto forOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, body);
+    return visitChildren(ctx); 
+}
+
+
 antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext *ctx) {
     return visitChildren(ctx);
 }
