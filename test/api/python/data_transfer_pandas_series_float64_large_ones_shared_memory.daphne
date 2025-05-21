@@ -1,0 +1,2 @@
+s = createFrame(fill(1.0, 100000, 1), "0");
+print(s);

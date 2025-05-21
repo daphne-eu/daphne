@@ -1,0 +1,2 @@
+s = {"0": ["apple", "banana", "cherry"]};
+print(s);
