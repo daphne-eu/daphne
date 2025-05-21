@@ -691,14 +691,61 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::ParForStatementContext *ctx) {
+    mlir::Location loc = utils.getLoc(ctx->start);
 
-    // todo: parfor implement 
+    // The type we assume for from, to, and step.
+    mlir::Type t = builder.getIntegerType(64, true);
 
-    // Create the actual ForOp.
-    // auto forOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, body);
-    return visitChildren(ctx); 
+    // Parse from, to, and step.
+    mlir::Value from = utils.castIf(t, valueOrErrorOnVisit(ctx->from));
+    mlir::Value to = utils.castIf(t, valueOrErrorOnVisit(ctx->to));
+    mlir::Value step; // TODO : for simplicity step is left blank for now
+
+    auto ip = builder.saveInsertionPoint();
+
+    // A block for the body of the for-loop.
+    mlir::Block bodyBlock;
+    builder.setInsertionPointToEnd(&bodyBlock);
+    symbolTable.pushScope();
+
+    // A placeholder for the loop's induction variable, since we do not know it
+    // yet; will be replaced later.
+    mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexType(), builder.getIndexAttr(123));
+    // Make the induction variable available by the specified name.
+    symbolTable.put(ctx->var->getText(), ScopedSymbolTable::SymbolInfo(ph, true));
+
+    // Parse the loop's body.
+    visit(ctx->bodyStmt);
+
+    // TODO : popScope also exactly returns the dependency candidates
+    // Determine which variables created before the loop are updated in the
+    // loop's body. These become the arguments and results of the ForOp.
+    ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
+    std::vector<mlir::Value> resVals;
+    std::vector<mlir::Value> forOperands;
+    for (auto it = ow.begin(); it != ow.end(); it++) {
+        resVals.push_back(it->second.value);
+        forOperands.push_back(symbolTable.get(it->first).value);
+    }
+
+    builder.create<mlir::scf::YieldOp>(loc, resVals);
+
+    builder.restoreInsertionPoint(ip);
+
+    // Helper function for moving the operations in the block created above
+    // into the actual body of the ForOp.
+    auto insertBodyBlock = [&](mlir::OpBuilder &nested, mlir::Location loc, mlir::Value iv, mlir::ValueRange lcv) {
+        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), bodyBlock.getOperations());
+    };
+
+    // Create the actual ParForOp.
+    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, forOperands);
+    parforOp.getBodyStmt().push_back(&bodyBlock);
+
+    // TODO : Substitute the induction variable, now that we know it.
+
+    return nullptr;
 }
-
 
 antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext *ctx) {
     return visitChildren(ctx);
