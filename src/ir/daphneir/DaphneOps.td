@@ -83,7 +83,8 @@ def Daphne_ParForOp : Daphne_Op<"parfor"> {
     let arguments = (ins
         AnyInteger:$from,
         AnyInteger:$to,
-        AnyInteger:$step
+        AnyInteger:$step,
+        AnyVectorOfAnyRank:$args
         // todo: add additional parameter?
   );
   let regions = (region AnyRegion:$bodyStmt);
