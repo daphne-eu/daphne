@@ -249,6 +249,25 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
+    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // of it
+    auto lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    if (lhsFill) {
+        auto lhsOp = lhs.getDefiningOp();
+        auto fillValue = lhsOp->getOperand(0);
+        auto width = lhsOp->getOperand(1);
+        auto height = lhsOp->getOperand(2);
+        const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+        if (rhsIsSca) {
+            mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, rhs);
+            mlir::daphne::FillOp newFill =
+                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
+            rewriter.replaceOp(op, {newFill});
+            // releasing the old fill operation
+            rewriter.eraseOp(lhsOp);
+            return mlir::success();
+        }
+    }
 
     const bool lhsIsStr = llvm::isa<mlir::daphne::StringType>(lhs.getType());
     const bool rhsIsStr = llvm::isa<mlir::daphne::StringType>(rhs.getType());
