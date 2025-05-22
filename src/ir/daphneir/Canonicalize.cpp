@@ -235,6 +235,8 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
  * and (2) `a + X` by `X + a` (`a` scalar, `X` matrix/frame).
  *
+ * AMLS_TODO: expand docs
+ *
  * (1) is important, since we use the `+`-operator for both addition and
  * string concatenation in DaphneDSL, while the types of the operands might be
  * known only after type inference.
@@ -251,20 +253,19 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
     mlir::Value rhs = op.getRhs();
     // This will check for the fill operation on the left hand side to push down the arithmetic inside
     // of it
-    auto lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
     if (lhsFill) {
-        auto lhsOp = lhs.getDefiningOp();
-        auto fillValue = lhsOp->getOperand(0);
-        auto width = lhsOp->getOperand(1);
-        auto height = lhsOp->getOperand(2);
-        const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+        auto fillValue = lhsFill->getOperand(0);
+        auto height = lhsFill->getOperand(1);
+        auto width = lhsFill->getOperand(2);
+        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
         if (rhsIsSca) {
             mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, rhs);
             mlir::daphne::FillOp newFill =
                 rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
             rewriter.replaceOp(op, {newFill});
             // releasing the old fill operation
-            rewriter.eraseOp(lhsOp);
+            rewriter.eraseOp(lhsFill);
             return mlir::success();
         }
     }
