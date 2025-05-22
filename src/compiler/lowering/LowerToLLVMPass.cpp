@@ -487,6 +487,121 @@ class StoreVariadicPackOpLowering : public OpConversionPattern<daphne::StoreVari
     }
 };
 
+class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
+  public:
+    explicit ParForOpLowering(TypeConverter &typeConverter, MLIRContext *context)
+        : OpConversionPattern(typeConverter, context) {}
+
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult matchAndRewrite(daphne::ParForOp op, OpAdaptor adaptor,
+                                  ConversionPatternRewriter &rewriter) const override {
+        auto loc = op->getLoc();
+        auto module = op->getParentOfType<ModuleOp>();
+        
+        auto idx = 0;
+        // Steps of parfor loop conversion loop to kernel call:
+        // 1. convert variables from outer scope of the loop to struct
+        // 2. replace references to variables throw references to structure entries
+        // 3. create out of loop body an function
+        // 4. parametrise kernel call with function pointer, loop parameter and function arguments
+        
+        SmallVector<Type> llvmTypes;
+        for (Value v : op.getArgs()) {
+            llvmTypes.push_back(typeConverter->convertType(v.getType()));
+        }
+        auto structTy = LLVM::LLVMStructType::getLiteral(rewriter.getContext(), llvmTypes);
+        Value structPtr;
+        {
+            std::string structName = "_parfor_capture_" + std::to_string(idx);
+            auto global = rewriter.create<LLVM::GlobalOp>(
+                loc, 
+                structTy,
+                false,
+                LLVM::Linkage::Private,
+                structName,
+                Attribute()
+            );
+            structPtr = rewriter.create<LLVM::AddressOfOp>(loc, global);
+        }
+        for (auto [i, captured] : llvm::enumerate(op.getArgs())) {
+            Value gep = rewriter.create<LLVM::GEPOp>(
+                loc,
+                LLVM::LLVMPointerType::get(llvmTypes[i]),
+                structPtr,
+                ArrayRef<Value>{
+                    rewriter.create<LLVM::ConstantOp>(
+                        loc, rewriter.getI64Type(),
+                        rewriter.getI64IntegerAttr(i)
+                    )
+                }
+            );
+            rewriter.create<LLVM::StoreOp>(loc, captured, gep);
+        }
+
+        // transform parfor loop body to function
+        LLVM::LLVMFuncOp fOp;
+        {
+            // naming
+            std::string funcName = "_parfor_" + std::to_string(++idx);
+
+            // create an llvm function and place on top of module
+            auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {LLVM::LLVMPointerType::get(structTy)}, false);
+            //PatternRewriter::InsertionGuard guard(rewriter);
+            rewriter.setInsertionPointToStart(module.getBody());
+            fOp = rewriter.create<LLVM::LLVMFuncOp>(loc, funcName, funcType);
+
+            // replace the empty body of function with parfor loop body
+            fOp.getBody().takeBody(op.getBodyStmt());
+            auto &funcBlock = fOp.getBody().front();
+            // create a parameter structure and place it on top of function
+            // also rewrite accordingly all data access to vars from outer space
+            rewriter.setInsertionPointToStart(&funcBlock);
+            
+            Value funcStructPtr = funcBlock.getArgument(1);
+            for (auto [i, captured] : llvm::enumerate(op.getArgs())) {
+                Value gep = rewriter.create<LLVM::GEPOp>(
+                    loc,
+                    LLVM::LLVMPointerType::get(llvmTypes[i]),
+                    funcStructPtr,
+                    ArrayRef<Value>{
+                        rewriter.create<LLVM::ConstantOp>(
+                            loc, rewriter.getI64Type(),
+                            rewriter.getI64IntegerAttr(i)
+                        )
+                    }
+                );
+                Value loaded = rewriter.create<LLVM::LoadOp>(loc, gep);
+                captured.replaceAllUsesWith(loaded);
+            }
+
+            // add return to the function
+            // TODO: we actually need to setup return variable to do aggregation after computation 
+            if (funcBlock.empty() || !funcBlock.back().mightHaveTrait<OpTrait::IsTerminator>()) {
+                rewriter.setInsertionPointToEnd(&funcBlock);
+                 rewriter.create<LLVM::ReturnOp>(loc, std::nullopt);
+            }
+
+            //op.getBodyStmt().getBlocks().clear();
+        };
+
+        // create function pointer
+        auto funcPtr = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
+
+        // build kernel call for parfor which gets
+        std::stringstream callee;
+        // TODO : idk, but (probably) we need kernel with generic parameters
+        callee << "_parfor__int64_t__int64_t__int64_t__void__void";
+
+        // rewriter.setInsertionPointToStart(op);
+        std::vector<Value> kernelOperands{op.getFrom(), op.getTo(), op.getStep(), structPtr, funcPtr};
+        auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, fOp->getResultTypes());
+        rewriter.replaceOp(op, kernel.getResults());
+       
+        return success();
+    }
+};
+
 class MapOpLowering : public OpConversionPattern<daphne::MapOp> {
   public:
     using OpConversionPattern::OpConversionPattern;
@@ -947,9 +1062,8 @@ void DaphneLowerToLLVMPass::runOnOperation() {
 
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
-    patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering>(typeConverter, &getContext());
+    patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering, ParForOpLowering>(typeConverter, &getContext());
     patterns.insert<VectorizedPipelineOpLowering>(typeConverter, &getContext(), cfg);
-
     patterns.insert<ConstantOpLowering, ReturnOpLowering, StoreVariadicPackOpLowering, GenericCallOpLowering,
                     MapOpLowering>(&getContext());
 

@@ -37,6 +37,7 @@ statement:
     | ifStatement
     | whileStatement
     | forStatement
+    | parForStatement
     | functionStatement
     | returnStatement
     | importStatement

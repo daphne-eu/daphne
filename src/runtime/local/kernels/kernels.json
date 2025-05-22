@@ -3574,6 +3574,37 @@
     },
     {
         "kernelTemplate": {
+            "header": "ParFor.h",
+            "opName": "parfor",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "int64_t",
+                    "name": "from"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "to"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "step"
+                },
+                {
+                    "type" : "void *",
+                    "name" : "args"
+                },
+                {
+                    "type" : "void *",
+                    "name" : "func"
+                }
+            ]
+        },
+        "instantiations": [[]]
+    },
+    {
+        "kernelTemplate": {
             "header": "OneHot.h",
             "opName": "oneHot",
             "returnType": "void",
