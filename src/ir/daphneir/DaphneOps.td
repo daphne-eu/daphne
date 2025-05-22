@@ -31,6 +31,7 @@ include "ir/daphneir/DaphneVectorizableOpInterface.td"
 include "ir/daphneir/DaphneShapeInferenceTraits.td"
 include "ir/daphneir/DaphneTypeAdaptationTraits.td"
 include "ir/daphneir/DaphneTypeInferenceTraits.td"
+include "ir/daphneir/DaphneDynamicFirstArgumentOpTraits.td"
 include "ir/daphneir/CUDASupport.td"
 include "ir/daphneir/FPGAOPENCLSupport.td"
 
@@ -118,7 +119,7 @@ def Daphne_ConvertCSRMatrixToRowOffsetsMemRef : Daphne_Op<"convertCSRMatrixToRow
 
 def Daphne_FillOp : Daphne_Op<"fill", [
     DataTypeMat, ValueTypeFromFirstArg,
-    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport, Pure
+    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport, Pure, DynamicFirstArgument
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
     let results = (outs MatrixOrU:$res);

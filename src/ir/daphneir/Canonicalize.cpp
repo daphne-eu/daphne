@@ -18,6 +18,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
+#include <iostream>
 
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
                                                                      mlir::PatternRewriter &rewriter) {
@@ -253,18 +254,18 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
     mlir::Value rhs = op.getRhs();
     // This will check for the fill operation on the left hand side to push down the arithmetic inside
     // of it
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    if (lhsFill) {
-        auto fillValue = lhsFill.getArg();
-        auto height = lhsFill.getNumRows();
-        auto width = lhsFill.getNumCols();
-        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-        if (rhsIsSca) {
-            mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, rhs);
-            mlir::daphne::FillOp newFill =
-                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
-            rewriter.replaceOp(op, {newFill});
-            return mlir::success();
+    auto lhsOp = lhs.getDefiningOp();
+    if (lhsOp) {
+        bool lhsOpHasScalarFirstArgument = lhsOp->hasTrait<OpTrait::DynamicFirstArgument>();
+        if (lhsOpHasScalarFirstArgument) {
+            auto value = lhsOp->getOperand(0);
+            const bool rhsIsScalar = CompilerUtils::isScaType(rhs.getType());
+            if (rhsIsScalar) {
+                auto newAdd = rewriter.create<mlir::daphne::EwAddOp>(op->getLoc(), value, rhs);
+                lhsOp->setOperand(0, newAdd);
+                rewriter.replaceOp(op, lhsOp);
+                return mlir::success();
+            }
         }
     }
 

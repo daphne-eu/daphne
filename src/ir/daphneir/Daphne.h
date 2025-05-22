@@ -66,6 +66,7 @@
 
 #include <ir/daphneir/DaphneAdaptTypesToKernelsTraits.h>
 #include <ir/daphneir/DaphneDistributableOpInterface.h>
+#include <ir/daphneir/DaphneDynamicFirstArgumentOpTraits.h>
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
 #include <ir/daphneir/DaphneInferShapeOpInterface.h>
 #include <ir/daphneir/DaphneInferSparsityOpInterface.h>
