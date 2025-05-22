@@ -296,6 +296,7 @@ The following built-in functions all follow the same scheme:
     Full aggregation over all elements of the matrix `arg` using aggregation function `agg` (see table below).
     Returns a scalar.
 
+// TODO(#520)
 - **`agg`**`(arg:matrix, axis:si64)`
 
     Row or column aggregation over a *(n x m)* matrix `arg` using aggregation function `agg` (see table below).

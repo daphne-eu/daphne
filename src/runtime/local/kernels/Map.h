@@ -64,6 +64,7 @@ template <typename VTRes, typename VTArg> struct Map<DenseMatrix<VTRes>, DenseMa
         const VTArg *valuesArg = arg->getValues();
         VTRes *valuesRes = res->getValues();
 
+        // TODO(#520)
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++)
                 valuesRes[c] = udf(valuesArg[c]);

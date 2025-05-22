@@ -362,6 +362,7 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
         });
 
         // Specialize all functions called by MapOp
+        // TODO(#520)
         function.walk([&](daphne::MapOp mapOp) {
             auto calledFunction = functions[mapOp.getFunc().str()];
             if (isFunctionTemplate(calledFunction)) {

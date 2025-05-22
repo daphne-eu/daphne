@@ -880,6 +880,7 @@ DaphneDSLVisitor::findMatchingUnaryUDF(mlir::Location loc, const std::string &fu
     return std::nullopt;
 }
 
+// TODO(#520)
 antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExprContext *ctx) {
     std::string func;
     const auto &identifierVec = ctx->IDENTIFIER();
