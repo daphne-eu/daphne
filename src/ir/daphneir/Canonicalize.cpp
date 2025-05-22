@@ -255,9 +255,9 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
     // of it
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
     if (lhsFill) {
-        auto fillValue = lhsFill->getOperand(0);
-        auto height = lhsFill->getOperand(1);
-        auto width = lhsFill->getOperand(2);
+        auto fillValue = lhsFill.getArg();
+        auto height = lhsFill.getNumRows();
+        auto width = lhsFill.getNumCols();
         const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
         if (rhsIsSca) {
             mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, rhs);
