@@ -264,8 +264,6 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
             mlir::daphne::FillOp newFill =
                 rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
             rewriter.replaceOp(op, {newFill});
-            // releasing the old fill operation
-            rewriter.eraseOp(lhsFill);
             return mlir::success();
         }
     }
