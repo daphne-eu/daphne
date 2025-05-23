@@ -9,10 +9,8 @@
       
       
       
-        <link rel="prev" href="../ImplementBuiltinKernel/">
+        <link rel="prev" href="../InstallPythonLibsInContainer/">
       
-      
-        <link rel="next" href="../WriteDocs/">
       
       
       <link rel="icon" href="../../assets/logo_small.png">
@@ -20,7 +18,7 @@
     
     
       
-        <title>Profiling - DAPHNE</title>
+        <title>PropertyRecording - DAPHNE</title>
       
     
     
@@ -74,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#profiling-in-daphne" class="md-skip">
+        <a href="#recording-data-properties" class="md-skip">
           Skip to content
         </a>
       
@@ -109,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Profiling
+              PropertyRecording
             
           </span>
         </div>
@@ -1257,32 +1255,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Profiling
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../Profiling/" class="md-nav__link">
         
   
   
@@ -1293,35 +1269,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#known-issues-todo" class="md-nav__link">
-    <span class="md-ellipsis">
-      Known Issues / TODO
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1400,10 +1347,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../PropertyRecording/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    PropertyRecording
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1414,6 +1383,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#possible-uses-of-this-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      Possible Uses of this Feature
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Current Limitations
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1453,9 +1460,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#known-issues-todo" class="md-nav__link">
+  <a href="#possible-uses-of-this-feature" class="md-nav__link">
     <span class="md-ellipsis">
-      Known Issues / TODO
+      Possible Uses of this Feature
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Current Limitations
     </span>
   </a>
   
@@ -1480,24 +1496,27 @@
   
 
 
-<h1 id="profiling-in-daphne">Profiling in DAPHNE</h1>
-<p>For a general overview of the profiling support in DAPHNE see the <a href="/daphne/Profiling">user
-profiling documentation</a>.</p>
-<p>Profiling is implemented via an instrumentation pass that injects calls to the
-<code>StartProfiling</code> and <code>StopProfiling</code> kernels at the start and end of
-each block. In turn, the kernels call the PAPI-HL API start and stop functions.</p>
-<h2 id="known-issues-todo">Known Issues / TODO</h2>
+<h1 id="recording-data-properties">Recording Data Properties</h1>
+<p>There is an experimental feature for recording the true data properties of intermediate results at run-time and re-inserting them in a subsequent run of DAPHNE.</p>
+<p>By default, this feature is turned off.
+Recording data properties can be turned on by invoking <code>daphne</code> with <code>--enable-property-recording</code>.
+Inserting data properties recorded in a previous execution of <code>daphne</code> can be turned on with <code>--enable-property-insert</code>.
+These two options are mutually exclusive.
+The recorded true data properties are stored to/loaded from a simple JSON file whose path is specified by <code>--properties-file-path</code> (default: <code>properties.json</code>).
+See also <code>daphne --help</code> for some help on these options.</p>
+<h2 id="possible-uses-of-this-feature">Possible Uses of this Feature</h2>
 <ul>
-<li>For scripts with multiple blocks (e.g. UDFs), the compiler will generate
-  profiling passes for each block separately instead of a single script-wide
-  profiling pass.</li>
-<li>The profiling kernels should be exposed at the DSL / IR level, so that users
-  can instrument / profile specific parts of their script. This will also need
-  compiler cooperation, to make sure that the profiled bock is not rearranged /
-  fused with other operations.</li>
-<li>To aid with the development and regression tracking of the runtime, the
-  profiling kernels could also be extended to support profiling specific
-  kernels or parts of kernels.</li>
+<li>Recording: Detailed insights into the data properties of intermediate results to find potential for optimizations by exploiting these data properties.</li>
+<li>Insertion: Find out how DAPHNE performs when it has precise knowledge of the true data properties (no unknowns, no inaccurate compile-time estimates).</li>
+<li>...</li>
+</ul>
+<h2 id="current-limitations">Current Limitations</h2>
+<ul>
+<li>Only one data property is recorded: sparsity; more properties could be added in the future.</li>
+<li>Only matrix-typed intermediate results are considered; scalars and frames could be added in the future.</li>
+<li>Only intermediates produced in the <code>main</code> function of DaphneIR are considered; intermediates inside UDFs could be considered in the future.</li>
+<li>Control-flow constructs like if-then-else and loops are viewed as black boxes, i.e., the data properties of their results are recorded/inserted, but not those of intermediates created <em>inside</em> these constructs; in the future, we could consider those, too.</li>
+<li>...</li>
 </ul>
 
 
