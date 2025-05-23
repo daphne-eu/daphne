@@ -70,7 +70,6 @@ struct DaphneConfigJsonParams {
     inline static const std::string ENABLE_PROPERTY_INSERT = "enable_property_insert";
     inline static const std::string PROPERTIES_FILE_PATH = "properties_file_path";
 
-
     inline static const std::string JSON_PARAMS[] = {MATMUL_VEC_SIZE_BITS,
                                                      MATMUL_TILE,
                                                      MATMUL_FIXED_TILE_SIZES,
@@ -99,7 +98,7 @@ struct DaphneConfigJsonParams {
                                                      EXPLAIN_TYPE_ADAPTATION,
                                                      EXPLAIN_VECTORIZED,
                                                      EXPLAIN_MLIR_CODEGEN,
-                                                     EXPLAIN_OBJ_REF_MGNT,	
+                                                     EXPLAIN_OBJ_REF_MGNT,
                                                      ENABLE_PROPERTY_INSERT,
                                                      ENABLE_PROPERTY_RECORDING,
                                                      PROPERTIES_FILE_PATH,

@@ -20,25 +20,23 @@
 #include <cstddef>
 #include <memory>
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
-struct RecordProperties {
-    static void apply(const DT * arg, uint32_t valueId, DCTX(ctx)) = delete;
+template <class DT> struct RecordProperties {
+    static void apply(const DT *arg, uint32_t valueId, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-void recordProperties(const DT * arg, uint32_t valueId, DCTX(ctx)) {
+template <class DT> void recordProperties(const DT *arg, uint32_t valueId, DCTX(ctx)) {
     RecordProperties<DT>::apply(arg, valueId, ctx);
 }
 
@@ -50,12 +48,11 @@ void recordProperties(const DT * arg, uint32_t valueId, DCTX(ctx)) {
 // DenseMatrix Record Implementation
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct RecordProperties<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT>* arg, uint32_t valueId, DCTX(ctx)) {
+template <typename VT> struct RecordProperties<DenseMatrix<VT>> {
+    static void apply(const DenseMatrix<VT> *arg, uint32_t valueId, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        
+
         size_t nnz = 0;
         for (size_t r = 0; r < numRows; r++)
             for (size_t c = 0; c < numCols; c++)
@@ -71,15 +68,15 @@ struct RecordProperties<DenseMatrix<VT>> {
 // CSRMatrix Record Implementation
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct RecordProperties<CSRMatrix<VT>> {
-    static void apply(const CSRMatrix<VT>* arg, uint32_t valueId, DCTX(ctx)) {
+template <typename VT> struct RecordProperties<CSRMatrix<VT>> {
+    static void apply(const CSRMatrix<VT> *arg, uint32_t valueId, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
         size_t nnz = 0;
         const VT *values = arg->getValues();
-        // Even a matrix in CSR representation might store some zero values explicitly. Thus, we check for non-zeros here.
+        // Even a matrix in CSR representation might store some zero values explicitly. Thus, we check for non-zeros
+        // here.
         for (size_t i = 0; i < arg->getNumNonZeros(); i++)
             if (values[i] != 0)
                 nnz++;
@@ -89,4 +86,4 @@ struct RecordProperties<CSRMatrix<VT>> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_RECORD_PROPERTIES_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_RECORD_PROPERTIES_H

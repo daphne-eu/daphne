@@ -63,6 +63,7 @@ set(TEST_SOURCES
         api/cli/codegen/AggAllTest.cpp
         api/cli/codegen/MapOpTest.cpp
 
+
         ir/daphneir/InferTypesTest.cpp
         api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
 

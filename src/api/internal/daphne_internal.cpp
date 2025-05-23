@@ -31,8 +31,8 @@
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include <util/DaphneLogger.h>
 #include <util/KernelDispatchMapping.h>
-#include <util/Statistics.h>
 #include <util/PropertyLogger.h>
+#include <util/Statistics.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -311,39 +311,32 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                                    "e.g., `--args x=1,y=2.2`"),
                                               CommaSeparated);
     const std::string configFileInitValue = "-";
-    static opt<string> configFile(
-        "config", cat(daphneOptions),
-        desc("A JSON file that contains the DAPHNE configuration"),
-        value_desc("filename"),
-        llvm::cl::init(configFileInitValue)
-    );
+    static opt<string> configFile("config", cat(daphneOptions),
+                                  desc("A JSON file that contains the DAPHNE configuration"), value_desc("filename"),
+                                  llvm::cl::init(configFileInitValue));
 
-    static opt<bool> enableStatistics(
-        "statistics", cat(daphneOptions),
-        desc("Enables runtime statistics output."));
+    static opt<bool> enableStatistics("statistics", cat(daphneOptions), desc("Enables runtime statistics output."));
 
     static opt<bool> enablePropertyRecording(
         "enable-property-recording", cat(daphneOptions),
-        desc("Record data properties of all matrix-typed intermediate results at run-time and save them in the JSON file specified by --properties-file-path"));
+        desc("Record data properties of all matrix-typed intermediate results at run-time and save them in the JSON "
+             "file specified by --properties-file-path"));
 
     static opt<bool> enablePropertyInsert(
         "enable-property-insert", cat(daphneOptions),
-        desc("Load data properties previously recorded by --enable-property-recording from the JSON file specified by --properties-file-path and insert them into the IR for further optimization based on the true data properties"));
+        desc("Load data properties previously recorded by --enable-property-recording from the JSON file specified by "
+             "--properties-file-path and insert them into the IR for further optimization based on the true data "
+             "properties"));
 
     static opt<std::string> propertiesFilePath(
         "properties-file-path", cat(daphneOptions),
         llvm::cl::desc("The path to the JSON file used by --enable-property-recording and --enable-property-insert"),
-        llvm::cl::init("properties.json")
-    );
+        llvm::cl::init("properties.json"));
 
-    static opt<bool> enableProfiling (
-            "enable-profiling", cat(daphneOptions),
-            desc("Enable profiling support")
-    );
-    static opt<bool> timing (
-            "timing", cat(daphneOptions),
-            desc("Enable timing of high-level steps (start-up, parsing, compilation, execution) and print the times to stderr in JSON format")
-    );
+    static opt<bool> enableProfiling("enable-profiling", cat(daphneOptions), desc("Enable profiling support"));
+    static opt<bool> timing("timing", cat(daphneOptions),
+                            desc("Enable timing of high-level steps (start-up, parsing, compilation, execution) and "
+                                 "print the times to stderr in JSON format"));
 
     // Positional arguments ---------------------------------------------------
 
@@ -504,8 +497,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     user_config.enable_property_recording = enablePropertyRecording;
     user_config.enable_property_insert = enablePropertyInsert;
     user_config.properties_file_path = propertiesFilePath.getValue();
-    if(user_config.enable_property_recording && user_config.enable_property_insert)
-        throw std::runtime_error("--enable-property-recording and --enable-property-insert are mutually exclusive, specify at most one of them");
+    if (user_config.enable_property_recording && user_config.enable_property_insert)
+        throw std::runtime_error("--enable-property-recording and --enable-property-insert are mutually exclusive, "
+                                 "specify at most one of them");
 
     if (user_config.use_distributed && distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
 #ifndef USE_MPI
