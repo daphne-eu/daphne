@@ -31,12 +31,19 @@ uint32_t generateUniqueID() {
     return currentID++;
 }
 
+/**
+ * @brief Inserts a `mlir::daphne::RecordPropertiesOp` for each matrix-typed intermediate result (with certain
+ * exceptions) in order to record the true data properties at run-time.
+ */
 class RecordPropertiesPass : public PassWrapper<RecordPropertiesPass, OperationPass<func::FuncOp>> {
   public:
     RecordPropertiesPass() = default;
 
     StringRef getArgument() const final { return "record-properties"; }
-    StringRef getDescription() const final { return "Record properties of different operations"; }
+    StringRef getDescription() const final {
+        return "Inserts a `mlir::daphne::RecordPropertiesOp` for each matrix-typed intermediate result (with certain "
+               "exceptions) in order to record the true data properties at run-time.";
+    }
 
     void runOnOperation() override {
         func::FuncOp func = getOperation();
@@ -44,55 +51,43 @@ class RecordPropertiesPass : public PassWrapper<RecordPropertiesPass, OperationP
 
         auto recordResults = [&](Operation *op) {
             SmallVector<Attribute, 4> valueIDs;
-            for (Value result : op->getResults()) {
+            for (Value result : op->getResults())
                 if (result.getType().isa<daphne::MatrixType>()) {
                     uint32_t id = generateUniqueID();
                     valueIDs.push_back(builder.getUI32IntegerAttr(id));
-
                     builder.setInsertionPointAfter(op);
-
-                    auto idConstant = builder.create<mlir::daphne::ConstantOp>(
-                        op->getLoc(), builder.getIntegerType(32, /*isSigned=*/false), builder.getUI32IntegerAttr(id));
-
+                    auto idConstant = builder.create<daphne::ConstantOp>(op->getLoc(), id);
                     builder.create<daphne::RecordPropertiesOp>(op->getLoc(), result, idConstant);
                 }
-            }
 
-            if (!valueIDs.empty()) {
+            if (!valueIDs.empty())
                 op->setAttr("daphne.value_ids", builder.getArrayAttr(valueIDs));
-            }
         };
 
         func.walk<WalkOrder::PreOrder>([&](Operation *op) -> WalkResult {
-            // Skip specific ops that should not be processed
+            // Skip specific ops that should not be processed.
             if (isa<daphne::RecordPropertiesOp>(op) || op->hasAttr("daphne.value_ids"))
                 return WalkResult::advance();
-
-            if (auto castOp = dyn_cast<daphne::CastOp>(op)) {
-                if (castOp.isRemovePropertyCast()) {
+            if (auto castOp = dyn_cast<daphne::CastOp>(op))
+                if (castOp.isRemovePropertyCast())
                     return WalkResult::advance();
-                }
-            }
 
-            // Handle loops (scf.for and scf.while) and If blocks as black boxes
+            // Handle loops (scf.for and scf.while) and if-blocks as black boxes.
             if (isa<scf::ForOp>(op) || isa<scf::WhileOp>(op) || isa<scf::IfOp>(op)) {
                 recordResults(op);
                 return WalkResult::skip();
             }
 
-            else if (auto funcOp = llvm::dyn_cast<func::FuncOp>(op)) {
-                // Check if this is the @main function or a UDF
-                if (funcOp.getName() == "main") {
+            // Check if this is the @main function or a UDF.
+            if (auto funcOp = llvm::dyn_cast<func::FuncOp>(op)) {
+                if (funcOp.getName() == "main")
                     return WalkResult::advance();
-                } else {
-                    return WalkResult::skip();
-                }
+                return WalkResult::skip();
             }
-            // Process other operations with Matrix Output type
-            else {
-                recordResults(op);
-                return WalkResult::advance();
-            }
+
+            // Process other operations with matrix-typed results.
+            recordResults(op);
+            return WalkResult::advance();
         });
     }
 };

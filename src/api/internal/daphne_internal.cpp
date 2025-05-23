@@ -741,7 +741,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
 
     if (user_config.enable_property_recording)
-        PropertyLogger::instance().savePropertiesAsJson("properties.json");
+        PropertyLogger::instance().savePropertiesAsJson(user_config.properties_file_path);
 
     // explicitly destroying the moduleOp here due to valgrind complaining about
     // a memory leak otherwise.

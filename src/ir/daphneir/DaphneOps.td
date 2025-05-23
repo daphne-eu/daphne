@@ -2047,6 +2047,10 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, Pure]> {
             Type t = $_builder.getIntegerType(64, true);
             build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));
         }]>,
+        OpBuilder<(ins "uint32_t":$value), [{
+            Type t = $_builder.getIntegerType(32, false);
+            build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));
+        }]>,
         OpBuilder<(ins "uint64_t":$value), [{
             Type t = $_builder.getIntegerType(64, false);
             build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));

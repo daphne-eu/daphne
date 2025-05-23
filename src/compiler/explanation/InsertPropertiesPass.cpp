@@ -43,9 +43,8 @@ using namespace mlir;
 
 nlohmann::json readPropertiesFromFile(const std::string &filename) {
     std::ifstream file(filename);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file: " + filename);
-    }
+    if (!file.is_open())
+        throw std::runtime_error("failed to open file: '" + filename + "'");
 
     nlohmann::json properties;
     file >> properties;
@@ -60,6 +59,10 @@ struct PropertyEntry {
 };
 
 namespace {
+/**
+ * @brief Inserts the true data properties of each matrix-typed intermediate result (with certain exceptions) recorded
+ * in a previous run of DAPHNE into the IR by inserting `mlir::daphne::CastOp`s that add these data properties.
+ */
 struct InsertPropertiesPass : public impl::InsertPropertiesPassBase<InsertPropertiesPass> {
     InsertPropertiesPass() = default;
 
@@ -89,7 +92,7 @@ void InsertPropertiesPass::runOnOperation() {
 
     auto insertRecordedProperties = [&](Operation *op) {
         size_t numResults = op->getNumResults();
-        for (unsigned i = 0; i < numResults && propertyIndex < properties.size(); ++i) {
+        for (size_t i = 0; i < numResults && propertyIndex < properties.size(); ++i) {
             Value res = op->getResult(i);
             nlohmann::json &prop = properties[propertyIndex].properties;
             auto it = prop.begin();
@@ -98,49 +101,42 @@ void InsertPropertiesPass::runOnOperation() {
                 const nlohmann::json &value = it.value();
                 if (key == "sparsity") {
                     if (value.is_null()) {
-                        llvm::errs() << "Error: 'sparsity' is null for property index " << propertyIndex << "\n";
+                        llvm::errs() << "error: 'sparsity' is null for property index " << propertyIndex << "\n";
                         ++it;
                         continue;
                     } else if (!value.is_number()) {
-                        llvm::errs() << "Error: 'sparsity' is not a number for property index " << propertyIndex
+                        llvm::errs() << "error: 'sparsity' is not a number for property index " << propertyIndex
                                      << "\n";
                         ++it;
                         continue;
                     }
 
-                    if (res.getType().isa<daphne::MatrixType>()) {
-                        auto mt = res.getType().dyn_cast<daphne::MatrixType>();
+                    if (auto mt = res.getType().dyn_cast<daphne::MatrixType>()) {
                         double sparsity = value.get<double>();
-                        if (mt) {
-                            if ((llvm::isa<scf::ForOp>(op) || llvm::isa<scf::WhileOp>(op) ||
-                                 llvm::isa<scf::IfOp>(op))) {
-                                builder.setInsertionPointAfter(op);
-                                builder.create<daphne::CastOp>(op->getLoc(), mt.withSparsity(sparsity), res);
-                            }
+                        if ((llvm::isa<scf::ForOp>(op) || llvm::isa<scf::WhileOp>(op) || llvm::isa<scf::IfOp>(op))) {
+                            builder.setInsertionPointAfter(op);
+                            builder.create<daphne::CastOp>(op->getLoc(), mt.withSparsity(sparsity), res);
+                        } else {
+                            for (auto &use : res.getUses()) {
+                                Operation *userOp = use.getOwner();
+                                if (isa<scf::ForOp>(userOp) || isa<scf::IfOp>(userOp) || isa<scf::WhileOp>(userOp)) {
+                                    auto key = std::make_pair(res, userOp);
 
-                            else {
-                                for (auto &use : res.getUses()) {
-                                    Operation *userOp = use.getOwner();
-                                    if (isa<scf::ForOp>(userOp) || isa<scf::IfOp>(userOp) ||
-                                        isa<scf::WhileOp>(userOp)) {
-                                        auto key = std::make_pair(res, userOp);
-
-                                        Value castOpValue;
-                                        if (castOpMap.count(key)) {
-                                            castOpValue = castOpMap[key];
-                                        } else {
-                                            builder.setInsertionPoint(userOp);
-                                            castOpValue = builder.create<daphne::CastOp>(op->getLoc(), mt, res);
-                                            castOpMap[key] = castOpValue;
-                                        }
-
-                                        userOp->setOperand(use.getOperandNumber(), castOpValue);
+                                    Value castOpValue;
+                                    if (castOpMap.count(key)) {
+                                        castOpValue = castOpMap[key];
+                                    } else {
+                                        builder.setInsertionPoint(userOp);
+                                        castOpValue = builder.create<daphne::CastOp>(op->getLoc(), mt, res);
+                                        castOpMap[key] = castOpValue;
                                     }
+
+                                    userOp->setOperand(use.getOperandNumber(), castOpValue);
                                 }
                             }
-
-                            ++propertyIndex;
                         }
+
+                        ++propertyIndex;
                     }
                 }
                 ++it;
@@ -152,40 +148,33 @@ void InsertPropertiesPass::runOnOperation() {
         if (propertyIndex >= properties.size())
             return WalkResult::advance();
 
-        // Skip specific ops that should not be processed
+        // Skip specific ops that should not be processed.
         if (isa<daphne::RecordPropertiesOp>(op) || op->hasAttr("daphne.value_ids"))
             return WalkResult::advance();
-
-        if (auto castOp = dyn_cast<daphne::CastOp>(op)) {
-            if (castOp.isRemovePropertyCast()) {
+        if (auto castOp = dyn_cast<daphne::CastOp>(op))
+            if (castOp.isRemovePropertyCast())
                 return WalkResult::advance();
-            }
-        }
 
-        // Handle loops (scf.for and scf.while) and If blocks as black boxes
+        // Handle loops (scf.for and scf.while) and if-blocks as black boxes.
         if (isa<scf::ForOp>(op) || isa<scf::WhileOp>(op) || isa<scf::IfOp>(op)) {
             insertRecordedProperties(op);
             return WalkResult::skip();
         }
 
+        // Check if this is the @main function or a UDF.
         if (auto funcOp = llvm::dyn_cast<func::FuncOp>(op)) {
-            // Check if this is the @main function or a UDF
-            if (funcOp.getName() == "main") {
+            if (funcOp.getName() == "main")
                 return WalkResult::advance();
-            } else {
-                return WalkResult::skip();
-            }
+            return WalkResult::skip();
         }
 
-        // Process all other operations that output matrix types
+        // Process other operations with matrix-typed results.
         insertRecordedProperties(op);
         return WalkResult::advance();
     });
 
-    if (propertyIndex < properties.size()) {
-        llvm::errs() << "Warning: Not all properties were applied."
-                     << "\n";
-    }
+    if (propertyIndex < properties.size())
+        llvm::errs() << "warning: not all properties were applied\n";
 }
 
 std::unique_ptr<OperationPass<func::FuncOp>> mlir::daphne::createInsertPropertiesPass(std::string propertiesFilePath) {
