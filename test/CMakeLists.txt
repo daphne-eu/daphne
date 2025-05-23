@@ -174,6 +174,8 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
+
+        util/RecordPropertiesTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)

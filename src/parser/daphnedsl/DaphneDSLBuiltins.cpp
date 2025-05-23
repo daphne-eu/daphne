@@ -19,6 +19,7 @@
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/FileMetaData.h>
+#include <util/ErrorHandler.h>
 
 #include "antlr4-runtime.h"
 

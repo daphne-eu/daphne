@@ -81,3 +81,4 @@ nav:
     - development/WriteDocs.md
     - development/Testing.md
     - development/InstallPythonLibsInContainer.md
+    - development/PropertyRecording.md

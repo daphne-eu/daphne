@@ -49,6 +49,8 @@ std::unique_ptr<Pass> createDistributePipelinesPass();
 std::unique_ptr<Pass> createEwOpLoweringPass();
 std::unique_ptr<Pass> createSparsityExploitationPass();
 std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
+std::unique_ptr<Pass> createRecordPropertiesPass();
+std::unique_ptr<OperationPass<func::FuncOp>> createInsertPropertiesPass(std::string properties_file_path = "");
 std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createLowerToLLVMPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createManageObjRefsPass();

@@ -117,6 +117,12 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC))
         config.explain_mlir_codegen_mlir_specific =
             jf.at(DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::ENABLE_PROPERTY_RECORDING))
+        config.enable_property_recording = jf.at(DaphneConfigJsonParams::ENABLE_PROPERTY_RECORDING).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::ENABLE_PROPERTY_INSERT))
+        config.enable_property_insert = jf.at(DaphneConfigJsonParams::ENABLE_PROPERTY_INSERT).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::PROPERTIES_FILE_PATH))
+        config.properties_file_path = jf.at(DaphneConfigJsonParams::PROPERTIES_FILE_PATH).get<std::string>();
     if (keyExists(jf, DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME)) {
         config.taskPartitioningScheme =
             jf.at(DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME).get<SelfSchedulingScheme>();
