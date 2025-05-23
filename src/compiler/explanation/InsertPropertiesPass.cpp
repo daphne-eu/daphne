@@ -1,18 +1,37 @@
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/IR/Value.h"
-#include "mlir/IR/Visitors.h"
-#include "mlir/Pass/Pass.h"
-#include "llvm/Support/Casting.h"
-#include "llvm/Support/raw_ostream.h"
-#include <algorithm>
-#include <cstdint>
-#include <fstream>
+/*
+ * Copyright 2025 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+
+#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/IR/Builders.h>
+#include <mlir/IR/Value.h>
+#include <mlir/IR/Visitors.h>
+#include <mlir/Pass/Pass.h>
+#include <llvm/Support/Casting.h>
+#include <llvm/Support/raw_ostream.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <nlohmannjson/json.hpp>
+
+#include <algorithm>
+#include <fstream>
 #include <string>
+
+#include <cstdint>
 
 namespace mlir {
 #define GEN_PASS_DECL_INSERTPROPERTIESPASS

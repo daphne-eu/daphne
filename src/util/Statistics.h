@@ -83,7 +83,7 @@ class Statistics {
     using Time = std::chrono::time_point<std::chrono::high_resolution_clock>;
     using KernelStats = std::vector<std::tuple<int, std::chrono::duration<double>>>;
 
-    static constexpr int MAX_STATS_COUNT = 100;
+    static constexpr int MAX_STATS_COUNT = 10;
     std::mutex m_times;
     KernelStats kernelExecutionTimes;
     std::unordered_map<int, Time> startTimes;

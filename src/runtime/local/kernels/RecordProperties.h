@@ -30,7 +30,7 @@
 
 template<class DT>
 struct RecordProperties {
-    static void apply(const DT * arg, uint32_t value_id, DCTX(ctx)) = delete;
+    static void apply(const DT * arg, uint32_t valueId, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -38,8 +38,8 @@ struct RecordProperties {
 // ****************************************************************************
 
 template<class DT>
-void recordProperties(const DT * arg, uint32_t value_id, DCTX(ctx)) {
-    RecordProperties<DT>::apply(arg, value_id, ctx);
+void recordProperties(const DT * arg, uint32_t valueId, DCTX(ctx)) {
+    RecordProperties<DT>::apply(arg, valueId, ctx);
 }
 
 // ****************************************************************************
@@ -52,21 +52,18 @@ void recordProperties(const DT * arg, uint32_t value_id, DCTX(ctx)) {
 
 template<typename VT>
 struct RecordProperties<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT>* arg, uint32_t value_id, DCTX(ctx)) {
+    static void apply(const DenseMatrix<VT>* arg, uint32_t valueId, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
+        
         size_t nnz = 0;
-
-        for (size_t r = 0; r < numRows; r++) {
-            for (size_t c = 0; c < numCols; c++) {
-                if (arg->get(r, c) != 0) {
-                    ++nnz;
-                }
-            }
-        }
+        for (size_t r = 0; r < numRows; r++)
+            for (size_t c = 0; c < numCols; c++)
+                if (arg->get(r, c) != 0)
+                    nnz++;
 
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
-        ctx->propertyLogger.logProperty(value_id, std::make_unique<SparsityProperty>(sparsity));
+        ctx->propertyLogger.logProperty(valueId, std::make_unique<SparsityProperty>(sparsity));
     }
 };
 
@@ -76,13 +73,19 @@ struct RecordProperties<DenseMatrix<VT>> {
 
 template<typename VT>
 struct RecordProperties<CSRMatrix<VT>> {
-    static void apply(const CSRMatrix<VT>* arg, uint32_t value_id, DCTX(ctx)) {
+    static void apply(const CSRMatrix<VT>* arg, uint32_t valueId, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        const size_t nnz = arg->getNumNonZeros();
+
+        size_t nnz = 0;
+        const VT *values = arg->getValues();
+        // Even a matrix in CSR representation might store some zero values explicitly. Thus, we check for non-zeros here.
+        for (size_t i = 0; i < arg->getNumNonZeros(); i++)
+            if (values[i] != 0)
+                nnz++;
 
         const double sparsity = static_cast<double>(nnz) / (numRows * numCols);
-        ctx->propertyLogger.logProperty(value_id, std::make_unique<SparsityProperty>(sparsity));
+        ctx->propertyLogger.logProperty(valueId, std::make_unique<SparsityProperty>(sparsity));
     }
 };
 

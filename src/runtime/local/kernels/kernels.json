@@ -3234,7 +3234,7 @@
                 },
                 {
                     "type": "uint32_t",
-                    "name": "value_id"
+                    "name": "valueId"
                 }
             ]
         },
@@ -3251,7 +3251,12 @@
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "float"]],
             [["CSRMatrix", "int64_t"]],
-            [["CSRMatrix", "uint8_t"]]
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]],
+            [["CSRMatrix", "size_t"]]
         ]
     },
     {

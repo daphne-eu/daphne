@@ -66,8 +66,8 @@ struct DaphneConfigJsonParams {
     inline static const std::string LOGGING = "logging";
     inline static const std::string FORCE_CUDA = "force_cuda";
     inline static const std::string SPARSITY_THRESHOLD = "sparsity_threshold";
-    inline static const std::string PROPERTY_RECORDING = "enable_property_recording";
-    inline static const std::string PROPERTY_INSERT = "enable_property_insert";
+    inline static const std::string ENABLE_PROPERTY_RECORDING = "enable_property_recording";
+    inline static const std::string ENABLE_PROPERTY_INSERT = "enable_property_insert";
     inline static const std::string PROPERTIES_FILE_PATH = "properties_file_path";
 
 
@@ -100,8 +100,8 @@ struct DaphneConfigJsonParams {
                                                      EXPLAIN_VECTORIZED,
                                                      EXPLAIN_MLIR_CODEGEN,
                                                      EXPLAIN_OBJ_REF_MGNT,	
-                                                     PROPERTY_INSERT,
-                                                     PROPERTY_RECORDING,
+                                                     ENABLE_PROPERTY_INSERT,
+                                                     ENABLE_PROPERTY_RECORDING,
                                                      PROPERTIES_FILE_PATH,
                                                      TASK_PARTITIONING_SCHEME,
                                                      NUMBER_OF_THREADS,

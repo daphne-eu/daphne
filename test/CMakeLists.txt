@@ -63,8 +63,6 @@ set(TEST_SOURCES
         api/cli/codegen/AggAllTest.cpp
         api/cli/codegen/MapOpTest.cpp
 
-        codegen/CodegenTest.cpp
-
         ir/daphneir/InferTypesTest.cpp
         api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
 
@@ -163,6 +161,8 @@ set(TEST_SOURCES
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
+
+        util/RecordPropertiesTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)

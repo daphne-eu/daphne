@@ -20,7 +20,6 @@
 
 #include <ir/daphneir/DaphneOpsEnums.cpp.inc>
 
-#include "mlir/IR/Attributes.h"
 #include "mlir/Support/LogicalResult.h"
 #define GET_OP_CLASSES
 #include <ir/daphneir/DaphneOps.cpp.inc>

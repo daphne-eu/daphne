@@ -1688,13 +1688,10 @@ def Daphne_RemoveOp : Daphne_Op<"remove", [
 // ****************************************************************************
 
 def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
-    let arguments = (ins MatrixOrU:$arg, UI32:$value_id);
+    let arguments = (ins MatrixOrU:$arg, UI32:$valueId);
     let results = (outs);
 
-    let summary = "Records properties of an operation.";
-    let description = [{
-        This operation records properties of an operation.
-    }];
+    let summary = "Records the data properties of the given matrix.";
 }
 
 // ****************************************************************************

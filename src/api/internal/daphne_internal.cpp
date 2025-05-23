@@ -323,16 +323,16 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         desc("Enables runtime statistics output."));
 
     static opt<bool> enablePropertyRecording(
-        "enable_property_recording", cat(daphneOptions),
-        desc("records runtime properties and outputs it in JSON."));
+        "enable-property-recording", cat(daphneOptions),
+        desc("Record data properties of all matrix-typed intermediate results at run-time and save them in the JSON file specified by --properties-file-path"));
 
     static opt<bool> enablePropertyInsert(
-        "enable_property_insert", cat(daphneOptions),
-        desc("inserts runtime properties from properties.json of previous run."));
+        "enable-property-insert", cat(daphneOptions),
+        desc("Load data properties previously recorded by --enable-property-recording from the JSON file specified by --properties-file-path and insert them into the IR for further optimization based on the true data properties"));
 
-    static opt<std::string> properties_file_path(
-        "properties_file_path", cat(daphneOptions),
-        llvm::cl::desc("Path to the Properties File in JSON for the Property insert."),
+    static opt<std::string> propertiesFilePath(
+        "properties-file-path", cat(daphneOptions),
+        llvm::cl::desc("The path to the JSON file used by --enable-property-recording and --enable-property-insert"),
         llvm::cl::init("properties.json")
     );
 
@@ -408,7 +408,6 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         user_config.matmul_tile = true;
     }
     user_config.use_mlir_hybrid_codegen = performHybridCodegen;
-    
 
     if (!libDir.getValue().empty())
         user_config.libdir = libDir.getValue();
@@ -504,9 +503,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     user_config.statistics = enableStatistics;
     user_config.enable_property_recording = enablePropertyRecording;
     user_config.enable_property_insert = enablePropertyInsert;
-
-    if (user_config.enable_property_insert)
-        user_config.properties_file_path = properties_file_path.getValue();
+    user_config.properties_file_path = propertiesFilePath.getValue();
+    if(user_config.enable_property_recording && user_config.enable_property_insert)
+        throw std::runtime_error("--enable-property-recording and --enable-property-insert are mutually exclusive, specify at most one of them");
 
     if (user_config.use_distributed && distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
 #ifndef USE_MPI
@@ -684,9 +683,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     if (user_config.enable_property_recording)
         PropertyLogger::instance().savePropertiesAsJson("properties.json");
 
-    // explicitly destroying the moduleOp here due to valgrind complaining about a memory leak otherwise.
+    // explicitly destroying the moduleOp here due to valgrind complaining about
+    // a memory leak otherwise.
     moduleOp->destroy();
-
     return StatusCode::SUCCESS;
 }
 

@@ -37,7 +37,6 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <iostream>
 #include <memory>

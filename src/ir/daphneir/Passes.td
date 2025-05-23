@@ -52,16 +52,12 @@ def InsertPropertiesPass : Pass<"insert-properties", "::mlir::func::FuncOp"> {
   let options = [
     Option<"properties_file_path", "properties_file_path", "std::string", 
             /*default=*/"\"properties.json\"",
-            "Specify the path to the properties file.">
+            "The path to the JSON file storing the data properties.">
   ];
 }
 
 def RewriteSqlOpPass : Pass<"rewrite-sqlop", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
-}
-
-def WhileLoopInvariantCodeMotionPass : Pass<"while-loop-invariant-code-motion", "::mlir::func::FuncOp"> {
-    let constructor = "mlir::daphne::createWhileLoopInvariantCodeMotionPass()";
 }
 
 def AggAllLoweringPass : Pass<"lower-agg", "::mlir::func::FuncOp"> {
