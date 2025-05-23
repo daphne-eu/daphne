@@ -140,10 +140,22 @@ class Frame : public Structure {
             this->schema[i] = schema[i];
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            this->columns[i] =
-                std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc], std::default_delete<ColByteType[]>());
-            if (zero)
-                memset(this->columns[i].get(), 0, sizeAlloc);
+
+            if (this->schema[i] == ValueTypeCode::STR) {
+                // If this is a string column, we must make sure that the column array contains only valid std::string
+                // objects.
+                this->columns[i] =
+                    std::shared_ptr<ColByteType>(reinterpret_cast<ColByteType *>(new std::string[maxNumRows]),
+                                                 [](ColByteType *p) { delete[] reinterpret_cast<std::string *>(p); });
+                if (zero)
+                    std::fill(reinterpret_cast<std::string *>(this->columns[i].get()),
+                              reinterpret_cast<std::string *>(this->columns[i].get()) + maxNumRows, std::string(""));
+            } else {
+                this->columns[i] =
+                    std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc], std::default_delete<ColByteType[]>());
+                if (zero)
+                    memset(this->columns[i].get(), 0, sizeAlloc);
+            }
         }
         initLabels2Idxs();
     }
@@ -226,6 +238,7 @@ class Frame : public Structure {
             found = found || tryValueType<uint64_t>(colMat, schema + c, columns + c);
             found = found || tryValueType<float>(colMat, schema + c, columns + c);
             found = found || tryValueType<double>(colMat, schema + c, columns + c);
+            found = found || tryValueType<std::string>(colMat, schema + c, columns + c);
             if (!found)
                 throw std::runtime_error("unsupported value type");
         }

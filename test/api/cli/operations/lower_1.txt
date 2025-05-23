@@ -1,0 +1,12 @@
+input matrix
+DenseMatrix(2x1, std::string)
+abCD
+eFgH
+result
+DenseMatrix(2x1, std::string)
+abcd
+efgh
+input scalar
+ABCDefg
+result
+abcdefg

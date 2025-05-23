@@ -44,8 +44,8 @@ fi
 $USE_SUDO docker push -a daphneeu/github-action
 
 # cuda dev image
-$USE_SUDO docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion} daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}
-$USE_SUDO docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-devel-ubuntu${ubuntuVersion}
+$USE_SUDO docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_${cudaVersion}-cudnn-devel-ubuntu${ubuntuVersion} daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn-devel-ubuntu${ubuntuVersion}
+$USE_SUDO docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn-devel-ubuntu${ubuntuVersion}
 $USE_SUDO docker push daphneeu/daphne-dev:latest_${ARCH}_CUDA
 
 # base dev image
@@ -54,8 +54,8 @@ $USE_SUDO docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE_ubuntu${ubuntu
 $USE_SUDO docker push daphneeu/daphne-dev:latest_${ARCH}_BASE
 
 # cuda run image
-$USE_SUDO docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_CUDA_${cudaVersion}-cudnn8-runtime-ubuntu${ubuntuVersion} daphneeu/daphne:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-runtime-ubuntu${ubuntuVersion}
-$USE_SUDO docker push daphneeu/daphne:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn8-runtime-ubuntu${ubuntuVersion}
+$USE_SUDO docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_CUDA_${cudaVersion}-cudnn-runtime-ubuntu${ubuntuVersion} daphneeu/daphne:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn-runtime-ubuntu${ubuntuVersion}
+$USE_SUDO docker push daphneeu/daphne:${VERSION}_${ARCH}_CUDA_${cudaVersion}-cudnn-runtime-ubuntu${ubuntuVersion}
 $USE_SUDO docker push daphneeu/daphne:latest_${ARCH}_CUDA
 
 # base run image

@@ -151,6 +151,59 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)
     DataObjectFactory::destroy(arg, ins);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE("InsertRow - string specific", TAG_KERNELS, (DATA_TYPES), (ALL_STRING_VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    auto arg = genGivenVals<DT>(4, {VT("a"), VT(""), VT("1"), VT("abc"), VT("abc"), VT("abcd"), VT(" "), VT("a"),
+                                    VT("ABC"), VT("34ab"), VT("ac"), VT("b")});
+
+    auto ins = genGivenVals<DT>(2, {VT("a"), VT("b"), VT("c"), VT("d"), VT("e"), VT("f")});
+
+    SECTION("multiple insertions, lower bound") {
+        size_t lowerIncl = 0;
+        size_t upperExcl = 2;
+        DT *exp = genGivenVals<DT>(4, {VT("a"), VT("b"), VT("c"), VT("d"), VT("e"), VT("f"), VT(" "), VT("a"),
+                                       VT("ABC"), VT("34ab"), VT("ac"), VT("b")});
+
+        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
+    }
+
+    SECTION("multiple insertion, middle") {
+        size_t lowerIncl = 1;
+        size_t upperExcl = 3;
+        DT *exp = genGivenVals<DT>(4, {VT("a"), VT(""), VT("1"), VT("a"), VT("b"), VT("c"), VT("d"), VT("e"), VT("f"),
+                                       VT("34ab"), VT("ac"), VT("b")});
+
+        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
+    }
+
+    SECTION("multiple insertions, upper bound") {
+        size_t lowerIncl = 2;
+        size_t upperExcl = 4;
+        DT *exp = genGivenVals<DT>(4, {VT("a"), VT(""), VT("1"), VT("abc"), VT("abc"), VT("abcd"), VT("a"), VT("b"),
+                                       VT("c"), VT("d"), VT("e"), VT("f")});
+
+        checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
+    }
+
+    SECTION("out of bounds - negative") {
+        size_t lowerIncl = -1;
+        size_t upperExcl = 1;
+
+        checkInsertRowThrow(arg, ins, lowerIncl, upperExcl);
+    }
+
+    SECTION("out of bounds - too high") {
+        size_t lowerIncl = 3;
+        size_t upperExcl = 5;
+
+        checkInsertRowThrow(arg, ins, lowerIncl, upperExcl);
+    }
+
+    DataObjectFactory::destroy(arg, ins);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE("InsertRow - FP specific", TAG_KERNELS, (DATA_TYPES), (double)) {
     using DT = TestType;
     using VT = typename DT::VT;

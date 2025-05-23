@@ -1,7 +1,32 @@
 // '+' for string concatenation.
+
+print("scalar+scalar");
 print("a" + "b");
 print("a" + 1);
 print(1 + "a");
 print("1" + "2");
 print("a" + (1 + 2));
 print((1 + 2) + "a");
+
+print("");
+
+# TODO Not supported by the kernel yet.
+# print("scalar+matrix");
+
+print("matrix+scalar");
+print(["a"] + "b");
+print(["a"] + 1);
+print([1] + "a");
+print(["1"] + "2");
+print(["a"] + (1 + 2));
+print(([1] + [2]) + "a");
+
+print("");
+
+print("matrix+matrix");
+print(["a"] + ["b"]);
+print(["a"] + [1]);
+print([1] + ["a"]);
+print(["1"] + ["2"]);
+print(["a"] + ([1] + [2]));
+print(([1] + [2]) + ["a"]);

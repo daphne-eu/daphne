@@ -166,15 +166,19 @@ struct CompilerUtils {
             if (generalizeToStructure)
                 return "Structure";
             else {
+                // For matrices of strings we use `std::string` as the value type, while for string scalars we use
+                // `const char *` as the value type. Thus, we need this special case here. Maybe we can do it without a
+                // special case in the future.
+                std::string vtName;
+                if (matTy.getElementType().isa<mlir::daphne::StringType>())
+                    vtName = "std::string";
+                else
+                    vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
                 switch (matTy.getRepresentation()) {
-                case mlir::daphne::MatrixRepresentation::Dense: {
-                    const std::string vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
+                case mlir::daphne::MatrixRepresentation::Dense:
                     return angleBrackets ? ("DenseMatrix<" + vtName + ">") : ("DenseMatrix_" + vtName);
-                }
-                case mlir::daphne::MatrixRepresentation::Sparse: {
-                    const std::string vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
+                case mlir::daphne::MatrixRepresentation::Sparse:
                     return angleBrackets ? ("CSRMatrix<" + vtName + ">") : ("CSRMatrix_" + vtName);
-                }
                 }
             }
         } else if (llvm::isa<mlir::daphne::FrameType>(t))

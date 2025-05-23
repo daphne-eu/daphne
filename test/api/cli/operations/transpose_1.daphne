@@ -1,0 +1,9 @@
+// test transpose on a matrix of strings.
+
+X = [ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ](4, 3);
+Y = transpose(X);
+
+print("input matrix");
+print(X);
+print("result");
+print(Y);

@@ -18,6 +18,14 @@ print(as.si64(m1));
 m2 = [2];
 print(as.f64(m2));
 
+//matrix<str>->matrix<f64>
+m3 = ["1.1"];
+print(as.f64(m3));
+
+//matrix<str>->matrix<si64>
+m4 = ["1"];
+print(as.si64(m4));
+
 //-- Specify DataType and ValueType
 f0 = createFrame([20, 21, 22]);
 print(as.matrix<f64>(f0));

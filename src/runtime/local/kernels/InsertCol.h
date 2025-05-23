@@ -119,10 +119,9 @@ template <typename VTArg, typename VTSel> struct InsertCol<DenseMatrix<VTArg>, D
 
         // TODO Can be simplified/more efficient in certain cases.
         for (size_t r = 0; r < numRowsArg; r++) {
-            memcpy(valuesRes, valuesArg, colLowerIncl_Size * sizeof(VTArg));
-            memcpy(valuesRes + colLowerIncl_Size, valuesIns, numColsIns * sizeof(VTArg));
-            memcpy(valuesRes + colUpperExcl_Size, valuesArg + colUpperExcl_Size,
-                   (numColsArg - colUpperExcl_Size) * sizeof(VTArg));
+            std::copy(valuesArg, valuesArg + colLowerIncl_Size, valuesRes);
+            std::copy(valuesIns, valuesIns + numColsIns, valuesRes + colLowerIncl_Size);
+            std::copy(valuesArg + colUpperExcl_Size, valuesArg + numColsArg, valuesRes + colUpperExcl_Size);
             valuesRes += rowSkipRes;
             valuesArg += rowSkipArg;
             valuesIns += rowSkipIns;

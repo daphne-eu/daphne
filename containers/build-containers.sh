@@ -85,6 +85,7 @@ DAPHNE_TARGET=daphne-deps
 BASE_IMAGE=ubuntu:${ubuntuVersion}
 DAPHNE_TAG=$TIMESTAMP_DATE_${ARCH}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
+DAPHNE_BUILD_FLAGS="--hdfs --mpi"
 #bulid deps stage
 build_daphne -deps
 
@@ -106,7 +107,6 @@ BASE_IMAGE=ubuntu:${ubuntuVersion}
 DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu${ubuntuVersion}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
-
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_BASE
 
 #------------------------------------------------------------------------------
@@ -118,18 +118,7 @@ BASE_IMAGE=nvidia/cuda:$CUDA_TAG
 DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
-
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_CUDA
-
-#-----------------------------------------------------------------------------
-# Images for DAPHNE development (OneAPI)
-#------------------------------------------------------------------------------
-#DAPHNE_TARGET=daphne-dev
-#ONEAPI_TAG=2023.1.0-devel-ubuntu${ubuntuVersion}
-#BASE_IMAGE=intel/oneapi:$ONEAPI_TAG
-#DAPHNE_TAG=${TIMESTAMP_DATE}_${ONEAPI_TAG}
-#IMAGE_REPO=daphneeu/$DAPHNE_TARGET
-#build_daphne -dev
 
 #------------------------------------------------------------------------------
 # Images for running DAPHNE
@@ -139,7 +128,7 @@ BASE_IMAGE=daphneeu/daphne-deps
 FINAL_BASE_IMAGE=ubuntu:${ubuntuVersion}
 DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu${ubuntuVersion}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
-DAPHNE_BUILD_FLAGS="--mpi"
+DAPHNE_BUILD_FLAGS="--hdfs --mpi"
 build_daphne
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_${ARCH}_BASE
 
@@ -152,8 +141,19 @@ DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 BASE_IMAGE=daphneeu/daphne-dev
 FINAL_BASE_IMAGE=nvidia/cuda:$CUDA_TAG
-DAPHNE_BUILD_FLAGS="--mpi --cuda"
+DAPHNE_BUILD_FLAGS="--hdfs --mpi --cuda"
 build_daphne
 $USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_${ARCH}_CUDA
+
+#-----------------------------------------------------------------------------
+# Images for conversion to singularity for DAPHNE compilation
+#------------------------------------------------------------------------------
+DAPHNE_TARGET=daphne-dev-hpc
+CUDA_TAG=${cudaVersion}-cudnn-devel-ubuntu${ubuntuVersion}
+BASE_IMAGE=nvidia/cuda:$CUDA_TAG
+DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
+IMAGE_REPO=daphneeu/$DAPHNE_TARGET
+build_daphne -dev-hpc
+$USE_SUDO docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_HPC
 
 set +e

@@ -1,0 +1,2 @@
+# Comparison of string matrices.
+print(["a", "c", "e", "abc"] < ["A", "c", "abcd", ""]);
