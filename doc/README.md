@@ -23,6 +23,7 @@
 
 * [Creating release artifacts](ReleaseScripts.md)
 * [Maintaining GPG signing keys](GPG-signing-keys.md)
+* [Recording Data Properties](/doc/development/PropertyRecording.md)
 
 ### How-tos and Guidelines
 
