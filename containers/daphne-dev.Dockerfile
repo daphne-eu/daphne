@@ -34,6 +34,7 @@ RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recom
     vim nano rsync sudo iputils-ping virtualenv openssh-server iproute2 git htop gdb lldb lld gpg-agent net-tools \
     software-properties-common ca-certificates file unzip wget tar zstd \
     ccache python3-pip python3-networkx python3-dev graphviz-dev clang-format \
+    libbz2-dev libnsl-dev libncurses5-dev libncursesw5-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=daphneeu/daphne-deps /usr/local/bin/ /usr/local/bin/

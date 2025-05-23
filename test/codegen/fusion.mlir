@@ -1,4 +1,4 @@
-// RUN: daphne-opt -pass-pipeline="builtin.module(lower-ew, canonicalize, func.func(affine-loop-fusion))" %s | FileCheck %s""""
+// RUN: daphne-opt -pass-pipeline="builtin.module(lower-ew, func.func(linalg-generalize-named-ops), func.func(convert-linalg-to-affine-loops), canonicalize, func.func(affine-loop-fusion))" %s | FileCheck %s
 
 func.func @main() {
   %0 = "daphne.constant"() {value = 2 : index} : () -> index

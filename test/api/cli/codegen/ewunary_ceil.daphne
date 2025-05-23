@@ -1,0 +1,10 @@
+// Performs an CeilOp. Used to compare precompiled kernel with codegen.
+// Value is extracted as scalar to avoid being optimized out of
+// the calculation with constant folding or similar.
+
+// f64
+X = [1.5, -2.2, 4.9](1,);
+a = as.scalar(X[0:1, 2:3]); // 4.9
+
+print(ceil(X));
+print(ceil(a));

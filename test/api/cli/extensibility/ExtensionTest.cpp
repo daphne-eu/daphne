@@ -52,13 +52,74 @@ TEST_CASE("extension_kernel", TAG_EXTENSIBILITY) {
     REQUIRE(status == 0);
 
     // *************************************************************************
-    // Use the custom kernel extension.
+    // Use the custom kernel extension based on hints or priority.
     // *************************************************************************
-    // Run a DaphneDSL script which uses a kernel from the extension through a
-    // kernel hint. The extension is registered with DAPHNE at run-time. DAPHNE
-    // itself is not re-built or anything.
-    compareDaphneToStr("hello from mySumAll\n2\n", std::string(dirPath + "extension_kernel_usage.daphne").c_str(),
-                       "--kernel-ext", std::string(dirPath + "kernel_extension_test/myKernels.json").c_str());
+    // All of the following invocations of DAPHNE register the extension with DAPHNE at run-time. DAPHNE itself is not
+    // re-built or anything. This extension provides a custom kernel for a case (DaphneIR operation, input/output types,
+    // backend) that is already covered by an existing built-in kernel.
+
+    // If a kernel hint is given, this kernel must always be used, irrespective of its priority.
+    // Run a DaphneDSL script which uses a kernel from the extension through a kernel hint.
+    SECTION("hint, no priority") { // must use the custom kernel
+        compareDaphneToStr("hello from mySumAll\n2\n",
+                           std::string(dirPath + "extension_kernel_usage_hint.daphne").c_str(), "--kernel-ext",
+                           std::string(dirPath + "kernel_extension_test/myKernels.json").c_str());
+    }
+    SECTION("hint, default priority") { // must use the custom kernel
+        compareDaphneToStr("hello from mySumAll\n2\n",
+                           std::string(dirPath + "extension_kernel_usage_hint.daphne").c_str(), "--kernel-ext",
+                           std::string(dirPath + "kernel_extension_test/myKernels.json:0").c_str());
+    }
+    SECTION("hint, higher priority") { // must use the custom kernel
+        compareDaphneToStr("hello from mySumAll\n2\n",
+                           std::string(dirPath + "extension_kernel_usage_hint.daphne").c_str(), "--kernel-ext",
+                           std::string(dirPath + "kernel_extension_test/myKernels.json:1").c_str());
+    }
+    SECTION("hint, lower priority") { // must use the custom kernel
+        compareDaphneToStr("hello from mySumAll\n2\n",
+                           std::string(dirPath + "extension_kernel_usage_hint.daphne").c_str(), "--kernel-ext",
+                           std::string(dirPath + "kernel_extension_test/myKernels.json:-1").c_str());
+    }
+    // If no kernel hint is given, the kernel must be used when it has a higher-than-default priority and must not be
+    // used if it has a lower-than-default priority. For "no hint, no priority" and "no hint, default priority",
+    // DAPHNE's choice whether to use the custom or the built-in kernel is unspecified, so we don't test these cases
+    // here.
+    // Run a DaphneDSL script which does not use a kernel hint.
+    SECTION("no hint, higher priority") { // must use the custom kernel
+        compareDaphneToStr("hello from mySumAll\n2\n",
+                           std::string(dirPath + "extension_kernel_usage_nohint.daphne").c_str(), "--kernel-ext",
+                           std::string(dirPath + "kernel_extension_test/myKernels.json:1").c_str());
+    }
+    SECTION("no hint, lower priority") { // must NOT use the custom kernel
+        compareDaphneToStr("2\n", std::string(dirPath + "extension_kernel_usage_nohint.daphne").c_str(), "--kernel-ext",
+                           std::string(dirPath + "kernel_extension_test/myKernels.json:-1").c_str());
+    }
+    // If an invalid value is specified for the priority, DAPHNE must stop, even if the kernel extension itself exists.
+    SECTION("no hint, invalid priority (empty)") {
+        checkDaphneStatusCode(StatusCode::PARSER_ERROR,
+                              std::string(dirPath + "extension_kernel_usage_nohint.daphne").c_str(), "--kernel-ext",
+                              std::string(dirPath + "kernel_extension_test/myKernels.json:").c_str());
+    }
+    SECTION("no hint, invalid priority (float)") {
+        checkDaphneStatusCode(StatusCode::PARSER_ERROR,
+                              std::string(dirPath + "extension_kernel_usage_nohint.daphne").c_str(), "--kernel-ext",
+                              std::string(dirPath + "kernel_extension_test/myKernels.json:0.1").c_str());
+    }
+    SECTION("no hint, invalid priority (string)") {
+        checkDaphneStatusCode(StatusCode::PARSER_ERROR,
+                              std::string(dirPath + "extension_kernel_usage_nohint.daphne").c_str(), "--kernel-ext",
+                              std::string(dirPath + "kernel_extension_test/myKernels.json:abc").c_str());
+    }
+    SECTION("no hint, invalid priority (integer and string)") {
+        checkDaphneStatusCode(StatusCode::PARSER_ERROR,
+                              std::string(dirPath + "extension_kernel_usage_nohint.daphne").c_str(), "--kernel-ext",
+                              std::string(dirPath + "kernel_extension_test/myKernels.json:123abc").c_str());
+    }
+    SECTION("no hint, invalid priority (too huge integer)") {
+        checkDaphneStatusCode(
+            StatusCode::PARSER_ERROR, std::string(dirPath + "extension_kernel_usage_nohint.daphne").c_str(),
+            "--kernel-ext", std::string(dirPath + "kernel_extension_test/myKernels.json:99999999999999999999").c_str());
+    }
 
     // Clear the streams.
     out.clear();

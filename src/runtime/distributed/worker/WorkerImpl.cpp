@@ -75,9 +75,9 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
 
     KernelCatalog &kc = executor.getUserConfig().kernelCatalog;
     KernelCatalogParser kcp(executor.getContext());
-    kcp.parseKernelCatalog(cfg.libdir + "/catalog.json", kc);
+    kcp.parseKernelCatalog(cfg.libdir + "/catalog.json", kc, 0);
     if (executor.getUserConfig().use_cuda)
-        kcp.parseKernelCatalog(cfg.libdir + "/CUDAcatalog.json", kc);
+        kcp.parseKernelCatalog(cfg.libdir + "/CUDAcatalog.json", kc, 0);
 
     mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, executor.getContext()));
     if (!module) {

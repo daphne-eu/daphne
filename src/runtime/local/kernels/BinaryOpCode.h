@@ -16,6 +16,12 @@
 
 #pragma once
 
+#include <runtime/local/datastructures/FixedSizeStringValueType.h>
+
+#include <cstdint>
+#include <string>
+#include <string_view>
+
 // ****************************************************************************
 // Enum for binary op codes and their names
 // ****************************************************************************
@@ -132,16 +138,20 @@ static constexpr bool supportsBinaryOp = false;
     SUPPORT(BITWISE_AND, VT)
 
 // Generates code specifying that all binary operations of a certain category should be
-// supported on the given argument value type `VTArg` (for the left and right-hand-side
-// arguments, for simplicity) and the given result value type `VTRes`.
-#define SUPPORT_COMPARISONS_RA(VTRes, VTArg)                                                                           \
+// supported on the given argument value types `VTLhs` and `VTRhs` (for the left and right-hand-side
+// arguments, respectively) and the given result value type `VTRes`.
+#define SUPPORT_COMPARISONS_RLR(VTRes, VTLhs, VTRhs)                                                                   \
     /* string Comparisons operations. */                                                                               \
-    SUPPORT_RLR(LT, VTRes, VTArg, VTArg)                                                                               \
-    SUPPORT_RLR(GT, VTRes, VTArg, VTArg)
-#define SUPPORT_EQUALITY_RA(VTRes, VTArg)                                                                              \
+    SUPPORT_RLR(LT, VTRes, VTLhs, VTRhs)                                                                               \
+    SUPPORT_RLR(GT, VTRes, VTLhs, VTRhs)
+#define SUPPORT_COMPARISONS_EQUAL_RLR(VTRes, VTLhs, VTRhs)                                                             \
     /* string Comparisons operations. */                                                                               \
-    SUPPORT_RLR(EQ, VTRes, VTArg, VTArg)                                                                               \
-    SUPPORT_RLR(NEQ, VTRes, VTArg, VTArg)
+    SUPPORT_RLR(LE, VTRes, VTLhs, VTRhs)                                                                               \
+    SUPPORT_RLR(GE, VTRes, VTLhs, VTRhs)
+#define SUPPORT_EQUALITY_RLR(VTRes, VTLhs, VTRhs)                                                                      \
+    /* string Comparisons operations. */                                                                               \
+    SUPPORT_RLR(EQ, VTRes, VTLhs, VTRhs)                                                                               \
+    SUPPORT_RLR(NEQ, VTRes, VTLhs, VTRhs)
 #define SUPPORT_STRING_RLR(VTRes, VTLhs, VTRhs)                                                                        \
     /* string concatenation operations. */                                                                             \
     /*  Since the result may not fit in FixedStr16,*/                                                                  \
@@ -165,6 +175,7 @@ static constexpr bool supportsBinaryOp = false;
 
 // Concise specification of which binary operations should be supported on
 // which value types.
+SUPPORT_EQUALITY(bool)
 SUPPORT_NUMERIC_FP(double)
 SUPPORT_NUMERIC_FP(float)
 SUPPORT_NUMERIC_INT(int64_t)
@@ -174,11 +185,15 @@ SUPPORT_NUMERIC_INT(uint64_t)
 SUPPORT_NUMERIC_INT(uint32_t)
 SUPPORT_NUMERIC_INT(uint8_t)
 // Strings binary operations.
-SUPPORT_EQUALITY_RA(int64_t, std::string)
-SUPPORT_EQUALITY_RA(int64_t, FixedStr16)
-SUPPORT_EQUALITY_RA(int64_t, const char *)
-SUPPORT_COMPARISONS_RA(int64_t, std::string)
-SUPPORT_COMPARISONS_RA(int64_t, FixedStr16)
+SUPPORT_EQUALITY_RLR(int64_t, std::string, std::string)
+SUPPORT_EQUALITY_RLR(int64_t, FixedStr16, FixedStr16)
+SUPPORT_EQUALITY_RLR(int64_t, const char *, const char *)
+SUPPORT_EQUALITY_RLR(int64_t, std::string, const char *)
+SUPPORT_COMPARISONS_RLR(int64_t, std::string, std::string)
+SUPPORT_COMPARISONS_RLR(int64_t, FixedStr16, FixedStr16)
+SUPPORT_COMPARISONS_RLR(int64_t, std::string, const char *)
+SUPPORT_COMPARISONS_EQUAL_RLR(int64_t, std::string, std::string)
+SUPPORT_COMPARISONS_EQUAL_RLR(int64_t, std::string, const char *)
 SUPPORT_STRING_RLR(std::string, std::string, std::string)
 SUPPORT_STRING_RLR(std::string, FixedStr16, FixedStr16)
 SUPPORT_STRING_RLR(const char *, const char *, const char *)
@@ -194,6 +209,7 @@ SUPPORT_STRING_RLR(std::string, std::string, const char *)
 #undef SUPPORT_BITWISE
 #undef SUPPORT_NUMERIC_FP
 #undef SUPPORT_NUMERIC_INT
-#undef SUPPORT_EQUALITY_RA
-#undef SUPPORT_COMPARISONS_RA
+#undef SUPPORT_EQUALITY_RLR
+#undef SUPPORT_COMPARISONS_RLR
+#undef SUPPORT_COMPARISONS_EQUAL_RLR
 #undef SUPPORT_STRING_RLR

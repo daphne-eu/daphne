@@ -37,7 +37,7 @@ template <typename VT>
 
     std::vector<TaskQueue *> tmp_q{q.get()};
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(tmp_q, batchSize8M, verbose, 1, 0, false);
+    this->initCPPWorkers(tmp_q, batchSize8M, verbose, 1, QueueTypeOption::CENTRALIZED, false);
 
 #ifdef USE_CUDA
     if (this->_numCUDAThreads) {
@@ -57,14 +57,14 @@ template <typename VT>
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
-    int method = ctx->config.taskPartitioningScheme;
+    SelfSchedulingScheme schedulingScheme = ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if (chunkParam <= 0)
         chunkParam = 1;
     bool autoChunk = false;
-    if (method == AUTO)
+    if (schedulingScheme == SelfSchedulingScheme::AUTO)
         autoChunk = true;
-    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, autoChunk);
+    LoadPartitioning lp(schedulingScheme, len, chunkParam, this->_numThreads, autoChunk);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
         q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(
@@ -121,8 +121,8 @@ template <typename VT>
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
     uint64_t currentItr = 0;
-    uint64_t target;
-    int method = ctx->config.taskPartitioningScheme;
+    uint64_t target = 0;
+    SelfSchedulingScheme schedulingScheme = ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if (chunkParam <= 0)
         chunkParam = 1;
@@ -130,21 +130,20 @@ template <typename VT>
         uint64_t oneChunk = len / this->_numQueues;
         int remainder = len - (oneChunk * this->_numQueues);
         std::vector<LoadPartitioning> lps;
-        lps.emplace_back(method, oneChunk + remainder, chunkParam, this->_numThreads, false);
+        lps.emplace_back(schedulingScheme, oneChunk + remainder, chunkParam, this->_numThreads, false);
         for (int i = 1; i < this->_numQueues; i++) {
-            lps.emplace_back(method, oneChunk, chunkParam, this->_numThreads, false);
+            lps.emplace_back(schedulingScheme, oneChunk, chunkParam, this->_numThreads, false);
         }
         if (ctx->getUserConfig().pinWorkers) {
             for (int i = 0; i < this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    qvector[i]->enqueueTaskPinned(
-                        new CompiledPipelineTask<DenseMatrix<VT>>(
-                            CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar, inputs, numInputs, numOutputs,
-                                                                      outRows, outCols, splits, combines, startChunk,
-                                                                      endChunk, outRows, outCols, 0, ctx},
-                            resLock, res),
-                        this->topologyResponsibleThreads[i]);
+                    qvector[i]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(
+                                                CompiledPipelineTaskData<DenseMatrix<VT>>{
+                                                    funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                                    splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
+                                                resLock, res),
+                                            this->_topology.responsibleThreads[i]);
                     startChunk = endChunk;
                 }
             }
@@ -163,20 +162,19 @@ template <typename VT>
         }
     } else {
         bool autoChunk = false;
-        if (method == AUTO)
+        if (schedulingScheme == SelfSchedulingScheme::AUTO)
             autoChunk = true;
-        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, autoChunk);
+        LoadPartitioning lp(schedulingScheme, len, chunkParam, this->_numThreads, autoChunk);
         if (ctx->getUserConfig().pinWorkers) {
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
                 target = currentItr % this->_numQueues;
-                qvector[target]->enqueueTaskPinned(
-                    new CompiledPipelineTask<DenseMatrix<VT>>(
-                        CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar, inputs, numInputs, numOutputs,
-                                                                  outRows, outCols, splits, combines, startChunk,
-                                                                  endChunk, outRows, outCols, 0, ctx},
-                        resLock, res),
-                    this->topologyUniqueThreads[target]);
+                qvector[target]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(
+                                                 CompiledPipelineTaskData<DenseMatrix<VT>>{
+                                                     funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                                     splits, combines, startChunk, endChunk, outRows, outCols, 0, ctx},
+                                                 resLock, res),
+                                             this->_topology.uniqueThreads[target]);
                 startChunk = endChunk;
                 currentItr++;
             }
@@ -296,13 +294,13 @@ template <typename VT>
         uint64_t startChunk = device_task_len;
         uint64_t endChunk = device_task_len;
         uint64_t currentItr = 0;
-        uint64_t target;
-        int method = ctx->config.taskPartitioningScheme;
+        uint64_t target = 0;
+        SelfSchedulingScheme method = ctx->config.taskPartitioningScheme;
         int chunkParam = ctx->config.minimumTaskSize;
         if (chunkParam <= 0)
             chunkParam = 1;
         bool autoChunk = false;
-        if (method == AUTO)
+        if (method == SelfSchedulingScheme::AUTO)
             autoChunk = true;
 
         LoadPartitioning lp(method, cpu_task_len, chunkParam, this->_numCPPThreads, autoChunk);

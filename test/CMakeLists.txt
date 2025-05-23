@@ -32,12 +32,10 @@ set(TEST_SOURCES
         api/cli/extensibility/HintTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
-        api/cli/io/ReadTest.cpp
-        api/cli/io/WriteTest.cpp
         api/cli/import/ImportTest.cpp
         api/cli/indexing/IndexingTest.cpp
         api/cli/inference/InferenceTest.cpp
-        api/cli/io/ReadTest.cpp
+        api/cli/io/ReadWriteTest.cpp
         api/cli/lists/ListsTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/ConstantFoldingTest.cpp
@@ -48,6 +46,7 @@ set(TEST_SOURCES
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/secondorder/SecondOrderTest.cpp
+        api/cli/sql/ColumnarTest.cpp
         api/cli/sql/SQLTest.cpp
         api/cli/sql/SQLResultTest.cpp
         api/cli/syntax/SyntaxTest.cpp
@@ -57,12 +56,14 @@ set(TEST_SOURCES
 
         api/python/DaphneLibTest.cpp
 
-        api/cli/codegen/EwBinaryScalarTest.cpp
-        api/cli/codegen/MatMulTest.cpp
-        api/cli/codegen/EwOpLoopFusionTest.cpp
         api/cli/codegen/AggAllTest.cpp
+        api/cli/codegen/AggDimTest.cpp
+        api/cli/codegen/EwBinaryTest.cpp
+        api/cli/codegen/EwUnaryTest.cpp
+        api/cli/codegen/EwOpLoopFusionTest.cpp
         api/cli/codegen/MapOpTest.cpp
-
+        api/cli/codegen/SparsityExploitTest.cpp
+        api/cli/codegen/TransposeTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
         api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
@@ -97,11 +98,24 @@ set(TEST_SOURCES
         runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
+        runtime/local/kernels/ColAggAllTest.cpp
+        runtime/local/kernels/ColAggGrpTest.cpp
         runtime/local/kernels/ColBindTest.cpp
+        runtime/local/kernels/ColCalcBinaryTest.cpp
+        runtime/local/kernels/ColGroupFirstTest.cpp
+        runtime/local/kernels/ColGroupNextTest.cpp
+        runtime/local/kernels/ColIntersectTest.cpp
+        runtime/local/kernels/ColJoinTest.cpp
+        runtime/local/kernels/ColMergeTest.cpp
+        runtime/local/kernels/ColProjectTest.cpp
+        runtime/local/kernels/ColSelectCmpTest.cpp
+        runtime/local/kernels/ColSemiJoinTest.cpp
         runtime/local/kernels/CondMatMatMatTest.cpp
         runtime/local/kernels/CondMatMatScaTest.cpp
         runtime/local/kernels/CondMatScaMatTest.cpp
         runtime/local/kernels/CondMatScaScaTest.cpp
+        runtime/local/kernels/ConvertBitmapToPosListTest.cpp
+        runtime/local/kernels/ConvertPosListToBitmapTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/CTableTest.cpp
         runtime/local/kernels/DiagMatrixTest.cpp
@@ -161,13 +175,12 @@ set(TEST_SOURCES
         
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
 
-#        runtime/local/kernels/Morphstore/ProjectTest.cpp
-
         util/RecordPropertiesTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     list(APPEND TEST_SOURCES
+            runtime/local/kernels/CUDA/BiasAddTest.cpp
             runtime/local/kernels/CUDA/FillTest.cpp
             runtime/local/kernels/CUDA/MatMulTest.cpp
             runtime/local/kernels/CUDA_ContextTest.cpp

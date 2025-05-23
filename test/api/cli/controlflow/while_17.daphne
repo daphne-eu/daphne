@@ -1,0 +1,11 @@
+A = rand(1,1, 0.0, 1.0, 1.0, -1);
+x = as.scalar<f64>(A[0,0]);
+
+terminate = false;
+while (terminate == false) {
+	if (x > 0.5) {
+		terminate = true;
+	}
+	x = x + 0.5;
+}
+print("done.");

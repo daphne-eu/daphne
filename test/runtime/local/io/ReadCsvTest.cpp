@@ -192,12 +192,13 @@ TEST_CASE("ReadCsv, frame of uint8s", TAG_IO) {
     DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadCsv, frame of uint8s and strings", TAG_IO) {
-    ValueTypeCode schema[] = {ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::STR};
+TEST_CASE("ReadCsv, frame of numbers and strings", TAG_IO) {
+    ValueTypeCode schema[] = {ValueTypeCode::UI64, ValueTypeCode::F64, ValueTypeCode::STR, ValueTypeCode::UI64,
+                              ValueTypeCode::F64};
     Frame *m = NULL;
 
-    size_t numRows = 4;
-    size_t numCols = 3;
+    size_t numRows = 6;
+    size_t numCols = 5;
 
     char filename[] = "./test/runtime/local/io/ReadCsv5.csv";
     char delim = ',';
@@ -207,21 +208,40 @@ TEST_CASE("ReadCsv, frame of uint8s and strings", TAG_IO) {
     REQUIRE(m->getNumRows() == numRows);
     REQUIRE(m->getNumCols() == numCols);
 
-    CHECK(m->getColumn<uint8_t>(0)->get(0, 0) == 1);
-    CHECK(m->getColumn<uint8_t>(0)->get(1, 0) == 2);
-    CHECK(m->getColumn<uint8_t>(0)->get(2, 0) == 3);
-    CHECK(m->getColumn<uint8_t>(0)->get(3, 0) == 4);
+    CHECK(m->getColumn<uint64_t>(0)->get(0, 0) == 222);
+    CHECK(m->getColumn<uint64_t>(0)->get(1, 0) == 444);
+    CHECK(m->getColumn<uint64_t>(0)->get(2, 0) == 555);
+    CHECK(m->getColumn<uint64_t>(0)->get(3, 0) == 777);
+    CHECK(m->getColumn<uint64_t>(0)->get(4, 0) == 111);
+    CHECK(m->getColumn<uint64_t>(0)->get(5, 0) == 222);
 
-    /* File contains negative numbers. Expect cast to positive */
-    CHECK(m->getColumn<uint8_t>(1)->get(0, 0) == 255);
-    CHECK(m->getColumn<uint8_t>(1)->get(1, 0) == 254);
-    CHECK(m->getColumn<uint8_t>(1)->get(2, 0) == 253);
-    CHECK(m->getColumn<uint8_t>(1)->get(3, 0) == 252);
+    CHECK(m->getColumn<double>(1)->get(0, 0) == 11.5);
+    CHECK(m->getColumn<double>(1)->get(1, 0) == 19.3);
+    CHECK(m->getColumn<double>(1)->get(2, 0) == 29.9);
+    CHECK(m->getColumn<double>(1)->get(3, 0) == 15.2);
+    CHECK(m->getColumn<double>(1)->get(4, 0) == 31.8);
+    CHECK(m->getColumn<double>(1)->get(5, 0) == 13.9);
 
-    CHECK(m->getColumn<std::string>(2)->get(0, 0) == "");
-    CHECK(m->getColumn<std::string>(2)->get(1, 0) == "");
-    CHECK(m->getColumn<std::string>(2)->get(2, 0) == "multi-line,");
-    CHECK(m->getColumn<std::string>(2)->get(3, 0) == "simple string");
+    CHECK(m->getColumn<std::string>(2)->get(0, 0) == "world");
+    CHECK(m->getColumn<std::string>(2)->get(1, 0) == "sample,");
+    CHECK(m->getColumn<std::string>(2)->get(2, 0) == "line1\nline2");
+    CHECK(m->getColumn<std::string>(2)->get(3, 0) == "");
+    CHECK(m->getColumn<std::string>(2)->get(4, 0) == "\"\\n\\\"abc\"def\\\"");
+    CHECK(m->getColumn<std::string>(2)->get(5, 0) == "");
+
+    CHECK(m->getColumn<uint64_t>(3)->get(0, 0) == 444);
+    CHECK(m->getColumn<uint64_t>(3)->get(1, 0) == 666);
+    CHECK(m->getColumn<uint64_t>(3)->get(2, 0) == 777);
+    CHECK(m->getColumn<uint64_t>(3)->get(3, 0) == 999);
+    CHECK(m->getColumn<uint64_t>(3)->get(4, 0) == 333);
+    CHECK(m->getColumn<uint64_t>(3)->get(5, 0) == 444);
+
+    CHECK(m->getColumn<double>(4)->get(0, 0) == 55.6);
+    CHECK(m->getColumn<double>(4)->get(1, 0) == 77.8);
+    CHECK(m->getColumn<double>(4)->get(2, 0) == 88.9);
+    CHECK(m->getColumn<double>(4)->get(3, 0) == 10.1);
+    CHECK(m->getColumn<double>(4)->get(4, 0) == 16.9);
+    CHECK(m->getColumn<double>(4)->get(5, 0) == 18.2);
 
     DataObjectFactory::destroy(m);
 }
@@ -317,10 +337,10 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (ALL_STRING_VALUE_T
     CHECK(m->get(0, 0) == "apple, orange");
     CHECK(m->get(1, 0) == "dog, cat");
     CHECK(m->get(2, 0) == "table");
-    CHECK(m->get(3, 0) == "\"\"");
-    CHECK(m->get(4, 0) == "abc\"\"def");
+    CHECK(m->get(3, 0) == "\"");
+    CHECK(m->get(4, 0) == "abc\"def");
     CHECK(m->get(5, 0) == "red, blue\\n");
-    CHECK(m->get(6, 0) == "\\n\\\"abc\"\"def\\\"");
+    CHECK(m->get(6, 0) == "\\n\\\"abc\"def\\\"");
     CHECK(m->get(7, 0) == "line1\nline2");
     CHECK(m->get(8, 0) == "\\\"red, \\\"\\\"");
 

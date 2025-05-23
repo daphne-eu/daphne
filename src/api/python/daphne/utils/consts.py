@@ -22,6 +22,7 @@
 # -------------------------------------------------------------
 from __future__ import annotations
 import os
+from pathlib import Path
 from typing import Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -30,13 +31,13 @@ if TYPE_CHECKING:
     from daphne.operator.nodes.frame import Frame
     from daphne.operator.nodes.scalar import Scalar
 
-VALID_INPUT_TYPES = Union['DAGNode', str, int, float, bool]
+VALID_INPUT_TYPES = Union['DAGNode', str, int, float, bool, object]
 # These are the operator symbols used in DaphneDSL (not in Python).
 BINARY_OPERATIONS = ['+', '-', '/', '*', '^', '%', '<', '<=', '>', '>=', '==', '!=', '@', '&&', '||']
 VALID_ARITHMETIC_TYPES = Union['DAGNode', int, float]
 VALID_COMPUTED_TYPES = Union['Matrix', 'Frame', 'Scalar']
 
-TMP_PATH = os.path.join("/tmp/", "DaphneLib")
+TMP_PATH = str(Path.home() / ".daphnelib")
 os.makedirs(TMP_PATH, exist_ok=True)
 
 _PROTOTYPE_PATH_ENV_VAR_NAME = "DAPHNELIB_DIR_PATH"
@@ -55,3 +56,4 @@ UI32 = 4
 UI64 = 5
 F32 = 6
 F64 = 7
+STR = 8

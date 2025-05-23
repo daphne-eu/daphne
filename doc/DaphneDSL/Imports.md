@@ -40,6 +40,8 @@ print(utils.x);
     }
 ```
 
+NOTE: to use a user config, the json file path needs to be passed as CLI arg to the DAPHNE binary `daphne --config=<filename>`
+
 NOTE: `default_dirs` can hold many paths and it will look for the **one** specified file in each, whereas any other library names have a list consisting of **one** directory,  from which **all** files will be imported (can be easily extended to multiple directories).
 
 Example:

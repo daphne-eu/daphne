@@ -69,13 +69,18 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
         mlir::Type ltCSR = mlir::daphne::ListType::get(mctx, mtCSR);
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(ltCSR), ltCSR);
 
+        // Column type.
+        mlir::Type ct = mlir::daphne::ColumnType::get(mctx, st);
+        typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(ct), ct);
+
         // MemRef type.
         if (!st.isa<mlir::daphne::StringType>()) {
             // DAPHNE's StringType is not supported as the element type of a
-            // MemRef. The dimensions of the MemRef are irrelevant here, so we
-            // use {0, 0}.
+            // MemRef. The dimensions of the MemRef are irrelevant here.
             mlir::Type mrt = mlir::MemRefType::get({0, 0}, st);
             typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mrt), mrt);
+            typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mlir::MemRefType::get({0}, st)),
+                            mlir::MemRefType::get({0}, st));
         }
     }
 
@@ -108,7 +113,7 @@ void KernelCatalogParser::mapTypes(const std::vector<std::string> &in, std::vect
     }
 }
 
-void KernelCatalogParser::parseKernelCatalog(const std::string &filePath, KernelCatalog &kc) const {
+void KernelCatalogParser::parseKernelCatalog(const std::string &filePath, KernelCatalog &kc, int64_t priority) const {
     std::filesystem::path dirPath = std::filesystem::path(filePath).parent_path();
     try {
         std::ifstream kernelsConfigFile(filePath);
@@ -129,7 +134,7 @@ void KernelCatalogParser::parseKernelCatalog(const std::string &filePath, Kernel
             mapTypes(kernelData["resTypes"], resTypes, "result", kernelFuncName, opMnemonic, backend);
             std::vector<mlir::Type> argTypes;
             mapTypes(kernelData["argTypes"], argTypes, "argument", kernelFuncName, opMnemonic, backend);
-            kc.registerKernel(opMnemonic, KernelInfo(kernelFuncName, resTypes, argTypes, backend, libPath));
+            kc.registerKernel(opMnemonic, KernelInfo(kernelFuncName, resTypes, argTypes, backend, libPath, priority));
         }
     } catch (std::exception &e) {
         throw std::runtime_error("error while parsing kernel catalog file `" + filePath + "`: " + e.what());

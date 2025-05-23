@@ -336,7 +336,22 @@ class Frame : public Structure {
         auto it = labels2idxs.find(label);
         if (it != labels2idxs.end())
             return it->second;
-        throw std::runtime_error("column label not found: '" + label + "'");
+        std::stringstream msg;
+        msg << "column label not found: '" + label + "', available labels: ";
+        if (numCols == 0)
+            msg << "(none) (zero columns)";
+        else {
+            const size_t numLabelsPrintMax = 5;
+            const size_t numLabelsPrint = std::min(numCols, numLabelsPrintMax);
+            for (size_t i = 0; i < numLabelsPrint; i++) {
+                msg << '\'' << labels[i] << '\'';
+                if (i < numLabelsPrint - 1)
+                    msg << ", ";
+            }
+            if (numCols > numLabelsPrintMax)
+                msg << " (plus " << (numCols - numLabelsPrintMax) << " more)";
+        }
+        throw std::runtime_error(msg.str());
     }
 
     ValueTypeCode getColumnType(size_t idx) const {

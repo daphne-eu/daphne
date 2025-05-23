@@ -1,0 +1,20 @@
+// One table, group-by on multiple columns with multiple aggregates.
+
+r = {
+    "a": [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8],
+    "b": [ 10,   5,  20,  15,   5,  25,  20,   5],
+    "c": ["x", "x", "y", "x", "z", "z", "x", "y"],
+    "d": [  0,   1,   0,   1,   1,   1,   0,   0]
+};
+
+resA = groupSum(r, "c", "d", "a");
+resB = groupSum(r, "c", "d", "b");
+resAc = as.matrix(resA[, "c"]);
+resAd = as.matrix(resA[, "d"]);
+resBc = as.matrix(resB[, "c"]);
+resBd = as.matrix(resB[, "d"]);
+if (sum(resAc != resBc) || sum(resAd != resBd))
+    stop();
+res = createFrame(resAc, resAd, as.matrix(resA[, "SUM(a)"]), as.matrix(resB[, "SUM(b)"]), "r.c", "r.d", "sum(r.a)", "sum(r.b)");
+
+print(res);

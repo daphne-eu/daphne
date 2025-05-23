@@ -305,8 +305,8 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
 mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
-    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwAddOp>(
             op, op.getResult().getType(),
@@ -333,8 +333,8 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
 mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
-    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(op, op.getResult().getType(), rhs, lhs);
         return mlir::success();
@@ -358,8 +358,8 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
 mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
-    const bool rhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool rhsIsFP = llvm::isa<mlir::FloatType>(CompilerUtils::getValueType(rhs.getType()));
     if (lhsIsSca && !rhsIsSca && rhsIsFP) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(
@@ -404,14 +404,13 @@ void mlir::daphne::DistributeOp::getCanonicalizationPatterns(RewritePatternSet &
 
 mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op, mlir::PatternRewriter &rewriter) {
     mlir::Value cond = op.getCond();
-    if (llvm::isa<mlir::daphne::UnknownType, mlir::daphne::MatrixType, mlir::daphne::FrameType>(cond.getType()))
+    if (CompilerUtils::hasObjType(cond) || llvm::isa<mlir::daphne::UnknownType>(cond.getType()))
         // If the condition is not a scalar, we cannot rewrite the operation
         // here.
         return mlir::failure();
-    else {
+    if (CompilerUtils::hasScaType(cond)) {
         // If the condition is a scalar, we rewrite the operation to an
         // if-then-else construct using the SCF dialect.
-        // TODO Check if it is really a scalar.
 
         mlir::Location loc = op.getLoc();
 
@@ -482,6 +481,10 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op, 
 
         return mlir::success();
     }
+
+    std::stringstream s;
+    s << "CondOp::canonicalize(): the condition has neither a supported data type nor a supported value type";
+    throw std::runtime_error(s.str());
 }
 
 mlir::LogicalResult mlir::daphne::ConvertDenseMatrixToMemRef::canonicalize(mlir::daphne::ConvertDenseMatrixToMemRef op,
@@ -512,6 +515,66 @@ mlir::LogicalResult mlir::daphne::ConvertMemRefToDenseMatrix::canonicalize(mlir:
     return mlir::success();
 }
 
+/**
+ * @brief Replaces `floor(a)` with `a` if `a` is an integer
+ * or a matrix of integers.
+ *
+ * @param op
+ * @param rewriter
+ * @return
+ */
+mlir::LogicalResult mlir::daphne::EwFloorOp::canonicalize(mlir::daphne::EwFloorOp op, mlir::PatternRewriter &rewriter) {
+    mlir::Value operand = op.getOperand();
+    auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
+    mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
+
+    if (llvm::isa<mlir::IntegerType>(elemType)) {
+        rewriter.replaceOp(op, operand);
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
+ * @brief Replaces `ceil(a)` with `a` if `a` is an integer
+ * or a matrix of integers.
+ *
+ * @param op
+ * @param rewriter
+ * @return
+ */
+mlir::LogicalResult mlir::daphne::EwCeilOp::canonicalize(mlir::daphne::EwCeilOp op, mlir::PatternRewriter &rewriter) {
+    mlir::Value operand = op.getOperand();
+    auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
+    mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
+
+    if (llvm::isa<mlir::IntegerType>(elemType)) {
+        rewriter.replaceOp(op, operand);
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
+ * @brief Replaces `round(a)` with `a` if `a` is an integer
+ * or a matrix of integers.
+ *
+ * @param op
+ * @param rewriter
+ * @return
+ */
+mlir::LogicalResult mlir::daphne::EwRoundOp::canonicalize(mlir::daphne::EwRoundOp op, mlir::PatternRewriter &rewriter) {
+    mlir::Value operand = op.getOperand();
+    auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
+    mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
+
+    if (llvm::isa<mlir::IntegerType>(elemType)) {
+        rewriter.replaceOp(op, operand);
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
 mlir::LogicalResult mlir::daphne::RenameOp::canonicalize(mlir::daphne::RenameOp op, mlir::PatternRewriter &rewriter) {
     // Replace the RenameOp by its argument, since we only need
     // this operation during DaphneDSL parsing.
@@ -530,6 +593,199 @@ mlir::LogicalResult mlir::daphne::EwMinusOp::canonicalize(mlir::daphne::EwMinusO
     if (auto innerOp = op.getOperand().getDefiningOp<mlir::daphne::EwMinusOp>()) {
         rewriter.replaceOp(op, innerOp.getOperand());
         return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
+ * @brief Eliminates redundant conversions of a position list to a bitmap and back to a position list.
+ *
+ * This pattern frequently occurs during lowering to columnar operations. This simplification rewrite avoids the
+ * unnecessary creation of the intermediate bitmap.
+ */
+mlir::LogicalResult mlir::daphne::ConvertBitmapToPosListOp::canonicalize(mlir::daphne::ConvertBitmapToPosListOp bmplcOp,
+                                                                         PatternRewriter &rewriter) {
+    if (auto plbmcOp = bmplcOp.getArg().getDefiningOp<mlir::daphne::ConvertPosListToBitmapOp>()) {
+        // The ConvertPosListToBitmapOp has a second argument for the number of rows (bitmap size). No matter what this
+        // size is, we always get back the original position list. The only exception would be if the bitmap size is
+        // less than the greatest position in the original position list (information loss or error during conversion
+        // from position list to bitmap). However, this case is not relevant to us at the moment.
+        rewriter.replaceOp(bmplcOp, plbmcOp.getArg());
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
+ * @brief Simplifies the extraction of a single column (by its label) from a frame in various situations.
+ */
+mlir::LogicalResult mlir::daphne::ExtractColOp::canonicalize(mlir::daphne::ExtractColOp ecOp,
+                                                             PatternRewriter &rewriter) {
+    Value src = ecOp.getSource();
+    Value sel = ecOp.getSelectedCols();
+    if (auto srcFrmTy = src.getType().dyn_cast<mlir::daphne::FrameType>()) {
+        if (sel.getType().isa<mlir::daphne::StringType>()) {
+            if (srcFrmTy.getNumCols() == 1) {
+                // Eliminate the extraction of a single column (by its label) from a frame with a single column which
+                // has exactly that label.
+
+                if (std::vector<std::string> *labels = srcFrmTy.getLabels()) {
+                    std::pair<bool, std::string> selConst = CompilerUtils::isConstant<std::string>(sel);
+                    if (selConst.first && selConst.second == (*labels)[0]) {
+                        rewriter.replaceOp(ecOp, src);
+                        return mlir::success();
+                    }
+                }
+            } else if (auto cfOp = src.getDefiningOp<mlir::daphne::CreateFrameOp>()) {
+                // Replace the extraction of a single column (by its label) from the result of a CreateFrameOp, by the
+                // respective input column of the CreateFrameOp. This simplification rewrite can help us avoid the
+                // unnecessary creation of frames when we are interested only in certain columns later on. It can lead
+                // to the elimination of the operations creating later unused input columns of the CreateFrameOp.
+
+                // CreateFrameOp always has an even number of arguments. The first half are the columns and the second
+                // half are the labels.
+                const size_t cfNumCols = cfOp->getNumOperands() / 2;
+                // Search for the column with the specified label.
+                for (size_t i = 0; i < cfNumCols; i++) {
+                    Value label = cfOp->getOperand(cfNumCols + i);
+                    if (label == sel) {
+                        // We need to insert an additional cast of the CreateFrameOp's input column to the result type
+                        // of the ExtractColOp, because usually, the arguments to CreateFrameOp are single-column
+                        // *matrices*, while the result of ExtractColOp on a frame is a single-column *frame*. Such
+                        // additional casts will often be eliminated through the canonicalization of CastOp later.
+                        Type resTy = ecOp.getResult().getType();
+                        if (auto resFrmTy = resTy.dyn_cast<mlir::daphne::FrameType>()) {
+                            // Reset the labels to unknown, because TODO
+                            Value casted = rewriter
+                                               .create<mlir::daphne::CastOp>(
+                                                   ecOp.getLoc(), resFrmTy.withLabels(nullptr), cfOp->getOperand(i))
+                                               .getResult();
+                            // If the result of the ExtractColOp is a (single-column) frame (typically the case), we
+                            // must make sure that it gets the right column label after the rewrite. The label is an
+                            // argument to the CreateFrameOp and might not be known as a compile-time constant at the
+                            // point in time when this rewrite happens (the label could be the result of a complex
+                            // string expression, which is resolved later during compile-time through constant folding
+                            // or only at run-time). Thus, we additionally insert a SetColLabelsOp which reuses exactly
+                            // the same input as the CreateFrameOp for the label.
+                            Value labeled =
+                                rewriter.create<mlir::daphne::SetColLabelsOp>(ecOp.getLoc(), resTy, casted, label)
+                                    .getResult();
+                            rewriter.replaceOp(ecOp, labeled);
+                            return success();
+                        }
+                    }
+                }
+            } else if (auto cbOp = src.getDefiningOp<mlir::daphne::ColBindOp>()) {
+                // Push down the extraction of a single column (by its label) from the result of a ColBindOp to the
+                // argument of the ColBindOp that has the column with the desired label.
+
+                std::pair<bool, std::string> selConst = CompilerUtils::isConstant<std::string>(sel);
+                if (selConst.first) {
+                    auto tryOneArg = [&](Value arg) {
+                        if (auto argFrmTy = arg.getType().dyn_cast<mlir::daphne::FrameType>())
+                            if (argFrmTy.getLabels() != nullptr)
+                                for (std::string label : *(argFrmTy.getLabels()))
+                                    if (label == selConst.second) {
+                                        rewriter.replaceOpWithNewOp<mlir::daphne::ExtractColOp>(ecOp, ecOp.getType(),
+                                                                                                arg, sel);
+                                        return true;
+                                    }
+                        return false;
+                    };
+                    if (tryOneArg(cbOp.getLhs()) || tryOneArg(cbOp.getRhs()))
+                        return mlir::success();
+                }
+            } else if (auto ecOp2 = src.getDefiningOp<mlir::daphne::ExtractColOp>()) {
+                // Eliminate two subsequent extractions of a single column (by its label) with the same label.
+
+                if (ecOp2.getSelectedCols() == sel) {
+                    rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(ecOp, ecOp.getResult().getType(),
+                                                                      ecOp2.getResult());
+                    return mlir::success();
+                }
+            }
+        }
+    }
+    return mlir::failure();
+}
+
+/**
+ * @brief Simplifies various patterns of ops that end with a CastOp.
+ *
+ * Simple examples include the elimination of trivial casts (casting from A to A) and the simplification of chains of
+ * casts (e.g., casting from A to B to C becomes casting from A to C, in case there is no information loss). Besides
+ * that, there are patterns that by-pass ops that create the input of a CastOp and patterns that by-pass the CastOp
+ * itself.
+ */
+mlir::LogicalResult mlir::daphne::CastOp::canonicalize(mlir::daphne::CastOp cOp, PatternRewriter &rewriter) {
+    // TODO Maybe skip property casts, or separate them, combine multiple property casts.
+
+    // Replace cast "a -> a".
+    if (cOp.isTrivialCast()) {
+        rewriter.replaceOp(cOp, cOp.getArg());
+        return mlir::success();
+    }
+
+    // Replace cast "a -> b -> c" to cast "a -> c", if the cast "a -> b" does not lose information, because if "b"
+    // contains the same information as "a", we could directly cast from "a" to "c".
+    // It does not matter if "b -> c" may lose information, because "b" does not have more information than "a".
+    if (auto cOp0 = cOp.getArg().getDefiningOp<mlir::daphne::CastOp>()) {
+        if (!cOp0.mightLoseInformation()) {
+            rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(cOp, cOp.getRes().getType(), cOp0.getArg());
+            return mlir::success();
+        }
+    }
+
+    // Bypass operations manipulating frame column labels in case their result is casted to a data type that does not
+    // support column labels (matrix/column). This is sound, since the column label information from the frame would be
+    // gone after the cast anyway.
+    if (cOp.getArg().getType().isa<mlir::daphne::FrameType>() &&
+        cOp.getRes().getType().isa<mlir::daphne::MatrixType, mlir::daphne::ColumnType>()) {
+        if (auto sclOp = cOp.getArg().getDefiningOp<mlir::daphne::SetColLabelsOp>()) {
+            rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(cOp, cOp.getRes().getType(), sclOp.getArg());
+            return mlir::success();
+        }
+        if (auto sclpOp = cOp.getArg().getDefiningOp<mlir::daphne::SetColLabelsPrefixOp>()) {
+            rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(cOp, cOp.getRes().getType(), sclpOp.getArg());
+            return mlir::success();
+        }
+    }
+
+    // Bypass CreateFrameOp (with a single input matrix) followed by CastOp to the same matrix type as the
+    // CreateFrameOp's input matrix. In such cases, the result of the CastOp is simply the argument of the
+    // CreateFrameOp.
+    // TODO check if the matrix has a single column, otherwise, we would bypass the check in createframe
+    if (cOp.getArg().getType().isa<mlir::daphne::FrameType>() && cOp.getRes().getType().isa<mlir::daphne::MatrixType>())
+        if (auto cfOp = cOp.getArg().getDefiningOp<mlir::daphne::CreateFrameOp>())
+            if (cfOp.getCols().size() == 1 && cfOp.getCols()[0].getType() == cOp.getRes().getType()) {
+                rewriter.replaceOp(cOp, cfOp.getCols()[0]);
+                return mlir::success();
+            }
+
+    return mlir::failure();
+}
+
+/**
+ * @brief Eliminates a SetColLabelsOp if the input frame already has the new column labels.
+ */
+mlir::LogicalResult mlir::daphne::SetColLabelsOp::canonicalize(mlir::daphne::SetColLabelsOp sclOp,
+                                                               PatternRewriter &rewriter) {
+    if (auto argFrmTy = sclOp.getArg().getType().dyn_cast<mlir::daphne::FrameType>()) { // if the arg is a frame
+        if (std::vector<std::string> *argLabels = argFrmTy.getLabels()) {               // if the arg's labels are known
+            // Compare the arg's labels with the new labels.
+            mlir::ValueRange newLabels = sclOp.getLabels();
+            if (argLabels->size() != newLabels.size())
+                return mlir::failure();
+            for (size_t i = 0; i < newLabels.size(); i++) {
+                std::pair<bool, std::string> labelConst = CompilerUtils::isConstant<std::string>(newLabels[i]);
+                if (!labelConst.first ||
+                    labelConst.second != (*argLabels)[i]) // the new label is not known or differs from the arg label
+                    return mlir::failure();
+            }
+            // The arg frame already has the new labels, so we can replace this SetColLabelsOp by its arg.
+            rewriter.replaceOp(sclOp, sclOp.getArg());
+            return mlir::success();
+        }
     }
     return mlir::failure();
 }

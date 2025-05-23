@@ -29,7 +29,8 @@ class TaskQueue {
     virtual ~TaskQueue() = default;
 
     virtual void enqueueTask(Task *t) = 0;
-    virtual void enqueueTaskPinned(Task *t, int targetCPU) = 0;
+    // overload to pin a Task to a certain CPU
+    virtual void enqueueTask(Task *t, int targetCPU) = 0;
     virtual Task *dequeueTask() = 0;
     virtual uint64_t size() = 0;
     virtual void closeInput() = 0;
@@ -46,10 +47,7 @@ class BlockingTaskQueue : public TaskQueue {
 
   public:
     BlockingTaskQueue() : BlockingTaskQueue(DEFAULT_MAX_SIZE) {}
-    explicit BlockingTaskQueue(uint64_t capacity) {
-        _closedInput = false;
-        _capacity = capacity;
-    }
+    explicit BlockingTaskQueue(uint64_t capacity) : _capacity(capacity), _closedInput(false) {}
     ~BlockingTaskQueue() override = default;
 
     void enqueueTask(Task *t) override {
@@ -65,18 +63,13 @@ class BlockingTaskQueue : public TaskQueue {
         _cv.notify_one();
     }
 
-    void enqueueTaskPinned(Task *t, int targetCPU) override {
+    void enqueueTask(Task *t, int targetCPU) override {
         // Change CPU pinning before enqueue to utilize NUMA first-touch policy
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
         CPU_SET(targetCPU, &cpuset);
         sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
-        std::unique_lock<std::mutex> lk(_qmutex);
-        while (_data.size() + 1 > _capacity)
-            _cv.wait(lk);
-        _data.push_back(t);
-        lk.unlock();
-        _cv.notify_one();
+        enqueueTask(t);
     }
 
     Task *dequeueTask() override {
@@ -86,8 +79,7 @@ class BlockingTaskQueue : public TaskQueue {
         while (_data.empty()) {
             if (_closedInput)
                 return &_eof;
-            else
-                _cv.wait(lk);
+            _cv.wait(lk);
         }
         // obtain next task
         Task *t = _data.front();

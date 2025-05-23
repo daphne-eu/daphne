@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/Column.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -68,7 +69,7 @@ template <typename VTRes> class CastObj<DenseMatrix<VTRes>, Frame> {
         const size_t numRows = argFrm->getNumRows();
         const DenseMatrix<VTArg> *argCol = argFrm->getColumn<VTArg>(c);
         for (size_t r = 0; r < numRows; r++)
-            res->set(r, c, static_cast<VTRes>(argCol->get(r, 0)));
+            res->set(r, c, castSca<VTRes, VTArg>(argCol->get(r, 0), nullptr));
         DataObjectFactory::destroy(argCol);
     }
 
@@ -125,6 +126,9 @@ template <typename VTRes> class CastObj<DenseMatrix<VTRes>, Frame> {
                     break;
                 case ValueTypeCode::UI8:
                     castCol<uint8_t>(res, arg, c);
+                    break;
+                case ValueTypeCode::STR:
+                    castCol<std::string>(res, arg, c);
                     break;
                 default:
                     throw std::runtime_error("CastObj::apply: unknown value type code");
@@ -312,5 +316,93 @@ template <typename VTRes, typename VTArg> class CastObj<Matrix<VTRes>, Matrix<VT
             for (size_t c = 0; c < numCols; ++c)
                 res->append(r, c, static_cast<VTRes>(arg->get(r, c)));
         res->finishAppend();
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Column <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> class CastObj<Column<VT>, DenseMatrix<VT>> {
+
+  public:
+    static void apply(Column<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        if (numCols == 1) {
+            // The input matrix has a single column.
+            const size_t rowSkipArg = arg->getRowSkip();
+            if (rowSkipArg == 1) {
+                // The input's single column is stored contiguously.
+                // Reuse the input's memory for the result (zero-copy).
+                res = DataObjectFactory::create<Column<VT>>(numRows, arg->getValuesSharedPtr());
+            } else {
+                // The input's single column is not stored contiguosly.
+                // Copy the input data to the result.
+                res = DataObjectFactory::create<Column<VT>>(numRows, false);
+                const VT *valuesArg = arg->getValues();
+                VT *valuesRes = res->getValues();
+                for (size_t r = 0; r < numRows; r++) {
+                    valuesRes[r] = *valuesArg;
+                    valuesArg += rowSkipArg;
+                }
+            }
+        } else {
+            // The input matrix has zero or multiple columns.
+            throw std::runtime_error("CastObj::apply: cannot cast a matrix with zero or mutliple columns to Column");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  DenseMatrix <- Column
+// ----------------------------------------------------------------------------
+
+template <typename VT> class CastObj<DenseMatrix<VT>, Column<VT>> {
+
+  public:
+    static void apply(DenseMatrix<VT> *&res, const Column<VT> *arg, DCTX(ctx)) {
+        res = DataObjectFactory::create<DenseMatrix<VT>>(arg->getNumRows(), 1, arg->getValuesSharedPtr());
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Column <- Frame
+// ----------------------------------------------------------------------------
+
+template <typename VT> class CastObj<Column<VT>, Frame> {
+
+  public:
+    static void apply(Column<VT> *&res, const Frame *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        if (numCols == 1 && arg->getColumnType(0) == ValueTypeUtils::codeFor<VT>) {
+            // The input frame has a single column of the result's value type.
+            // Zero-cost cast from frame to Column.
+            // TODO This case could even be used for (un)signed integers of the
+            // same width, involving a reinterpret cast of the pointers.
+            // TODO Can we avoid this const_cast?
+            res = DataObjectFactory::create<Column<VT>>(numRows, arg->getColumn<VT>(0)->getValuesSharedPtr());
+        } else {
+            // The input frame has multiple columns and/or other value types
+            // than the result.
+            throw std::runtime_error("CastObj::apply: cannot cast Frame with mutliple columns to Column");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Frame <- Column
+// ----------------------------------------------------------------------------
+
+template <typename VT> class CastObj<Frame, Column<VT>> {
+
+  public:
+    static void apply(Frame *&res, const Column<VT> *arg, DCTX(ctx)) {
+        std::vector<Structure *> colMats;
+        DenseMatrix<VT> *argMat = nullptr;
+        castObj<DenseMatrix<VT>>(argMat, arg, ctx);
+        colMats.push_back(argMat);
+        res = DataObjectFactory::create<Frame>(colMats, nullptr);
     }
 };

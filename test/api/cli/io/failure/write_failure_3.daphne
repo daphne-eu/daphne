@@ -1,0 +1,3 @@
+# Write a matrix to a file without an extension.
+
+write([1], "test/api/cli/io/failure/test_out");

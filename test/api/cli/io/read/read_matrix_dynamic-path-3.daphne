@@ -1,0 +1,7 @@
+# Read a matrix from a file when the file path is the result of an expression (string/casted number concat).
+
+import "../check_matrix.daphne";
+
+chk = readMatrix("test/api/cli/io/ref/matrix_" + as.str(123) + "_ref.csv");
+ref = [1];
+check_matrix.checkMatrix(chk, ref, false);

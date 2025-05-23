@@ -118,16 +118,23 @@ template <typename VTSel> struct ExtractRow<Frame, Frame, VTSel> {
                 throw std::out_of_range(errMsg.str());
             }
             for (size_t c = 0; c < numCols; c++) {
-                // We always copy in units of 8 bytes (uint64_t). If the
-                // actual element size is lower, the superfluous bytes will
-                // be overwritten by the next match. With this approach, we
-                // do not need to call memcpy for each element, nor
-                // interpret the types for a L/S of fitting size.
-                // TODO Don't multiply by elementSize, but left-shift by
-                // ld(elementSize).
-                *reinterpret_cast<uint64_t *>(resCols[c]) =
-                    *reinterpret_cast<const uint64_t *>(argCols[c] + pos * elementSizes[c]);
-                resCols[c] += elementSizes[c];
+                if (schema[c] == ValueTypeCode::STR) {
+                    // Handle std::string column
+                    *reinterpret_cast<std::string *>(resCols[c]) =
+                        *reinterpret_cast<const std::string *>(argCols[c] + pos * elementSizes[c]);
+                    resCols[c] += elementSizes[c];
+                } else {
+                    // We always copy in units of 8 bytes (uint64_t). If the
+                    // actual element size is lower, the superfluous bytes will
+                    // be overwritten by the next match. With this approach, we
+                    // do not need to call memcpy for each element, nor
+                    // interpret the types for a L/S of fitting size.
+                    // TODO Don't multiply by elementSize, but left-shift by
+                    // ld(elementSize).
+                    *reinterpret_cast<uint64_t *>(resCols[c]) =
+                        *reinterpret_cast<const uint64_t *>(argCols[c] + pos * elementSizes[c]);
+                    resCols[c] += elementSizes[c];
+                }
             }
         }
         res->shrinkNumRows(numRowsSel);

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "mlir/ExecutionEngine/CRunnerUtils.h"
+#include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
 
 template <typename T>

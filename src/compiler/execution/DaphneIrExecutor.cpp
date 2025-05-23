@@ -26,6 +26,7 @@
 #include <filesystem>
 
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
@@ -39,6 +40,7 @@
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/MemRef/Transforms/Passes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
@@ -117,18 +119,32 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     if (userConfig_.enable_property_recording)
         pm.addPass(mlir::daphne::createRecordPropertiesPass());
-
     if (userConfig_.enable_property_insert) {
         pm.addPass(mlir::daphne::createInsertPropertiesPass(userConfig_.properties_file_path));
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
     }
 
+    if (userConfig_.use_columnar) {
+        // Rewrite certain matrix/frame ops from linear/relational algebra to columnar ops from column algebra.
+        pm.addPass(mlir::daphne::createRewriteToColumnarOpsPass());
+        // Infer the result types of the newly created columnar ops.
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+        // Simplify the IR.
+        pm.addPass(mlir::createCanonicalizerPass());
+        // Remove unused ops after simplifications.
+        // TODO The CSE pass seems to eliminate only "one row" of dead code at a time, so we need it as many times as
+        // the longest chain of ops we reduce; how to apply CSE until a fixpoint?
+        for (size_t i = 0; i < 5; i++)
+            pm.addPass(mlir::createCSEPass());
+    }
+    if (userConfig_.explain_columnar)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after lowering to columnar ops:"));
+
     if (selectMatrixRepresentations_) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
         pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
     }
-
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
 
@@ -265,9 +281,19 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         pm.addPass(mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
 
     pm.addPass(mlir::daphne::createDaphneOptPass());
+
+    pm.addPass(mlir::daphne::createSparsityExploitationPass());
+    // SparseExploit fuses multiple operations which only need to be lowered if still needed elsewhere.
+    // Todo: if possible, run only if SparseExploitLowering was successful.
+    pm.addPass(mlir::createCanonicalizerPass());
+    if (userConfig_.explain_mlir_codegen_sparsity_exploiting_op_fusion)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (sparsity-exploiting operator fusion):"));
+
     pm.addPass(mlir::daphne::createEwOpLoweringPass());
     pm.addPass(mlir::daphne::createAggAllOpLoweringPass());
+    pm.addPass(mlir::daphne::createAggDimOpLoweringPass());
     pm.addPass(mlir::daphne::createMapOpLoweringPass());
+    pm.addPass(mlir::daphne::createTransposeOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
@@ -282,10 +308,20 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
             pm.addPass(mlir::daphne::createPrintIRPass("IR directly after lowering MatMulOp."));
     }
 
+    if (userConfig_.explain_mlir_codegen_daphneir_to_mlir)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (DaphneIR to MLIR):"));
+
     pm.addPass(mlir::createConvertMathToLLVMPass());
     pm.addPass(mlir::daphne::createModOpLoweringPass());
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
+
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgGeneralizationPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::createConvertLinalgToAffineLoopsPass());
+
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::memref::createFoldMemRefAliasOpsPass());
+    pm.addPass(mlir::memref::createNormalizeMemRefsPass());
+
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createAffineScalarReplacementPass());
     pm.addPass(mlir::createLowerAffinePass());
     mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;
@@ -293,4 +329,6 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
 
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after codegen pipeline"));
+    if (userConfig_.explain_mlir_codegen_mlir_specific)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after MLIR codegen (MLIR-specific):"));
 }

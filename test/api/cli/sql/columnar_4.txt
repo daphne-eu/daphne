@@ -1,0 +1,4 @@
+Frame(3x2, [key:std::string, agg:int64_t])
+x 50
+y 25
+z 30

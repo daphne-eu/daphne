@@ -36,6 +36,7 @@
 - [Logging in DAPHNE](/doc/development/Logging.md)
 - [Profiling in DAPHNE](/doc/development/Profiling.md)
 - [Testing](/doc/development/Testing.md)
+- [Installing Python Libraries in the `daphne-dev` Container](/doc/development/InstallPythonLibsInContainer.md)
 
 ### Source Code Documentation
 

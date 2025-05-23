@@ -18,16 +18,15 @@
 #include <tags.h>
 
 #include <catch.hpp>
-#include <sstream>
 #include <string>
-
-#include "api/cli/StatusCode.h"
 
 const std::string dirPath = "test/api/cli/codegen/";
 
-TEST_CASE("aggAll", TAG_CODEGEN) {
-    std::string result = "100\n";
-
-    compareDaphneToStr(result, dirPath + "sum_aggall.daphne");
-    compareDaphneToStr(result, dirPath + "sum_aggall.daphne", "--mlir-codegen");
+void testAggAllResult(const std::string result, const std::string op) {
+    compareDaphneToStr(result, dirPath + "aggall_" + op + ".daphne");
+    compareDaphneToStr(result, dirPath + "aggall_" + op + ".daphne", "--mlir-codegen");
 }
+
+TEST_CASE("aggAll sum", TAG_CODEGEN) { testAggAllResult("100\n100\n100\n", "sum"); }
+TEST_CASE("aggAll min", TAG_CODEGEN) { testAggAllResult("1\n1\n1\n", "min"); }
+TEST_CASE("aggAll max", TAG_CODEGEN) { testAggAllResult("6\n6\n6\n", "max"); }

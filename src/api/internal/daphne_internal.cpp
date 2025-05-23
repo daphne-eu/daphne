@@ -165,6 +165,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                      init(""));
 
     // Scheduling options
+    using enum SelfSchedulingScheme;
+    using enum QueueTypeOption;
+    using enum VictimSelectionLogic;
 
     static opt<SelfSchedulingScheme> taskPartitioningScheme(
         "partitioning", cat(schedulingOptions), desc("Choose task partitioning scheme:"),
@@ -180,11 +183,13 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                "i.e., MFSC does not require profiling information as FSC"),
                clEnumVal(PSS, "Probabilistic self-scheduling"), clEnumVal(AUTO, "Automatic partitioning")),
         init(STATIC));
+
     static opt<QueueTypeOption> queueSetupScheme(
         "queue_layout", cat(schedulingOptions), desc("Choose queue setup scheme:"),
         values(clEnumVal(CENTRALIZED, "One queue (default)"), clEnumVal(PERGROUP, "One queue per CPU group"),
                clEnumVal(PERCPU, "One queue per CPU core")),
         init(CENTRALIZED));
+
     static opt<VictimSelectionLogic> victimSelection(
         "victim_selection", cat(schedulingOptions), desc("Choose work stealing victim selection logic:"),
         values(clEnumVal(SEQ, "Steal from next adjacent worker (default)"),
@@ -226,6 +231,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                            "(e.g., dense/sparse)"));
     static alias selectMatrixReprAlias( // to still support the longer old form
         "select-matrix-representations", aliasopt(selectMatrixRepr), desc("Alias for --select-matrix-repr"));
+    static opt<bool> useColumnar("columnar", cat(daphneOptions),
+                                 desc("Use columnar operations instead of frame/matrix operations for relational query "
+                                      "processing where possible"));
     static opt<bool> cuda("cuda", cat(daphneOptions), desc("Use CUDA"));
     static opt<bool> fpgaopencl("fpgaopencl", cat(daphneOptions), desc("Use FPGAOPENCL"));
     static opt<string> libDir("libdir", cat(daphneOptions),
@@ -272,6 +280,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                       "(path to a kernel catalog JSON file)."));
 
     enum ExplainArgs {
+        columnar,
         kernels,
         llvm,
         parsing,
@@ -283,26 +292,35 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         type_adaptation,
         vectorized,
         obj_ref_mgnt,
-        mlir_codegen
+        mlir_codegen,
+        mlir_codegen_sparsity_exploiting_op_fusion,
+        mlir_codegen_daphneir_to_mlir,
+        mlir_codegen_mlir_specific
     };
 
     static llvm::cl::list<ExplainArgs> explainArgList(
         "explain", cat(daphneOptions),
         llvm::cl::desc("Show DaphneIR after certain compiler passes (separate "
                        "multiple values by comma, the order is irrelevant)"),
-        llvm::cl::values(clEnumVal(parsing, "Show DaphneIR after parsing"),
-                         clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
-                         clEnumVal(sql, "Show DaphneIR after SQL parsing"),
-                         clEnumVal(property_inference, "Show DaphneIR after property inference"),
-                         clEnumVal(select_matrix_repr, "Show DaphneIR after selecting "
-                                                       "physical matrix representations"),
-                         clEnumVal(phy_op_selection, "Show DaphneIR after selecting physical operators"),
-                         clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
-                         clEnumVal(vectorized, "Show DaphneIR after vectorization"),
-                         clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
-                         clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-                         clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
-                         clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen")),
+        llvm::cl::values(
+            clEnumVal(parsing, "Show DaphneIR after parsing"),
+            clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
+            clEnumVal(sql, "Show DaphneIR after SQL parsing"),
+            clEnumVal(columnar, "Show DaphneIR after lowering to columnar operations"),
+            clEnumVal(property_inference, "Show DaphneIR after property inference"),
+            clEnumVal(select_matrix_repr, "Show DaphneIR after selecting "
+                                          "physical matrix representations"),
+            clEnumVal(phy_op_selection, "Show DaphneIR after selecting physical operators"),
+            clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
+            clEnumVal(vectorized, "Show DaphneIR after vectorization"),
+            clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
+            clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
+            clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen"),
+            clEnumVal(mlir_codegen_sparsity_exploiting_op_fusion,
+                      "Show DaphneIR after MLIR codegen (sparsity-exploiting operator fusion)"),
+            clEnumVal(mlir_codegen_daphneir_to_mlir, "Show DaphneIR after MLIR codegen (DaphneIR to MLIR)"),
+            clEnumVal(mlir_codegen_mlir_specific, "Show DaphneIR after MLIR codegen (MLIR-specific)"),
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
         CommaSeparated);
 
     static llvm::cl::list<string> scriptArgs1("args", cat(daphneOptions),
@@ -423,6 +441,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     user_config.debugMultiThreading = debugMultiThreading;
     user_config.prePartitionRows = prePartitionRows;
     user_config.distributedBackEndSetup = distributedBackEndSetup;
+    user_config.use_columnar = useColumnar;
     if (user_config.use_distributed) {
         if (user_config.distributedBackEndSetup != ALLOCATION_TYPE::DIST_MPI &&
             user_config.distributedBackEndSetup != ALLOCATION_TYPE::DIST_GRPC_SYNC &&
@@ -454,6 +473,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
 
     for (auto explain : explainArgList) {
         switch (explain) {
+        case columnar:
+            user_config.explain_columnar = true;
+            break;
         case kernels:
             user_config.explain_kernels = true;
             break;
@@ -490,16 +512,26 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         case mlir_codegen:
             user_config.explain_mlir_codegen = true;
             break;
+        case mlir_codegen_sparsity_exploiting_op_fusion:
+            user_config.explain_mlir_codegen_sparsity_exploiting_op_fusion = true;
+            break;
+        case mlir_codegen_daphneir_to_mlir:
+            user_config.explain_mlir_codegen_daphneir_to_mlir = true;
+            break;
+        case mlir_codegen_mlir_specific:
+            user_config.explain_mlir_codegen_mlir_specific = true;
+            break;
         }
     }
 
-    user_config.statistics = enableStatistics;
     user_config.enable_property_recording = enablePropertyRecording;
     user_config.enable_property_insert = enablePropertyInsert;
     user_config.properties_file_path = propertiesFilePath.getValue();
     if (user_config.enable_property_recording && user_config.enable_property_insert)
         throw std::runtime_error("--enable-property-recording and --enable-property-insert are mutually exclusive, "
                                  "specify at most one of them");
+
+    user_config.enable_statistics = enableStatistics;
 
     if (user_config.use_distributed && distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
 #ifndef USE_MPI
@@ -571,14 +603,48 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     // ************************************************************************
 
     KernelCatalog &kc = executor.getUserConfig().kernelCatalog;
-    // kc.dump();
-    KernelCatalogParser kcp(mctx);
-    kcp.parseKernelCatalog(user_config.libdir + "/catalog.json", kc);
-    if (user_config.use_cuda)
-        kcp.parseKernelCatalog(user_config.libdir + "/CUDAcatalog.json", kc);
-    // kc.dump();
-    if (!kernelExt.empty())
-        kcp.parseKernelCatalog(kernelExt, kc);
+    try {
+        // kc.dump();
+        KernelCatalogParser kcp(mctx);
+        kcp.parseKernelCatalog(user_config.libdir + "/catalog.json", kc, 0);
+        if (user_config.use_cuda)
+            kcp.parseKernelCatalog(user_config.libdir + "/CUDAcatalog.json", kc, 0);
+        // kc.dump();
+        if (!kernelExt.empty()) {
+            std::string extCatalogFile;
+            int64_t extPriority;
+
+            const std::string prioritySep = ":";
+            const size_t pos = kernelExt.rfind(prioritySep);
+            if (pos != std::string::npos) { // a priority was specified for the extension
+                extCatalogFile = kernelExt.substr(0, pos);
+                const std::string extPriorityStr(kernelExt.substr(pos + prioritySep.size()));
+                try {
+                    size_t idx;
+                    extPriority = std::stoll(extPriorityStr, &idx);
+                    if (idx != extPriorityStr.size())
+                        // stoll() did not consume all characters in extPriorityStr, there is some non-integer part at
+                        // the end of the string.
+                        throw std::runtime_error(""); // the error message is generated in the catch-block below
+                } catch (std::exception &e) {
+                    throw std::runtime_error("invalid priority for kernel extension, expected an integer after the '" +
+                                             prioritySep + "', but found '" + extPriorityStr + "': '" + kernelExt +
+                                             "'");
+                }
+            } else { // no priority was specified for the extension
+                extCatalogFile = kernelExt;
+                extPriority = 0;
+            }
+
+            kcp.parseKernelCatalog(extCatalogFile, kc, extPriority);
+        }
+    } catch (std::exception &e) {
+        logErrorDaphneLibAware(daphneLibRes, "Parser error: " + std::string(e.what()));
+        return StatusCode::PARSER_ERROR;
+    } catch (...) {
+        logErrorDaphneLibAware(daphneLibRes, "Parser error: Unknown exception");
+        return StatusCode::PARSER_ERROR;
+    }
 
     // ************************************************************************
     // Parse, compile and execute DaphneDSL script
@@ -671,7 +737,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         std::cerr << "}" << std::endl;
     }
 
-    if (user_config.statistics)
+    if (user_config.enable_statistics)
         Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
 
     if (user_config.enable_property_recording)

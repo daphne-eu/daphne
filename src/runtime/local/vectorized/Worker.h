@@ -30,7 +30,7 @@ class Worker {
 
     // Worker only used as derived class, which starts the thread after the
     // class has been constructed (order matters).
-    explicit Worker(DCTX(dctx)) : t(), ctx(dctx) {}
+    explicit Worker(DCTX(dctx)) : ctx(dctx) {}
 
   public:
     // Worker is move only due to std::thread. Therefore, we delete the copy

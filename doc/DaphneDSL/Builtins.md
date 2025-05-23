@@ -113,6 +113,11 @@ The following built-in functions allow to find out meta data of matrices and fra
 
     Returns the DAPHNE compiler's *estimate* of the argument's sparsity.
     Note that this value may deviate from the *actual* sparsity of the data at run-time.
+  
+- **`isSymmetric`**`(arg:matrix)`
+
+    Returns `true` if and only if the given *(n x n)* matrix is symmetric, i.e., for any *i in {0, 1, ..., n-1}* and *j in {0, 1, ..., n-1}*, the value at position *(i, j)* is the same as the value at position *(j, i)*.
+    The given matrix must be a square matrix.
 
 ## Elementwise unary
 
@@ -490,22 +495,38 @@ We will support set operations such as **`intersect`**, **`merge`**, and **`exce
 
 - **`cartesian`**`(lhs:frame, rhs:frame)`
 
-    Calculates the cartesian (cross) product of the two input frames.
+    Calculates the cartesian product of the two input frames.
 
-- **`innerJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)`
+- **`innerJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str[, numRowRes:si64])`
 
     Performs an inner join of the two input frames on `lhs`.`lhsOn` == `rhs`.`rhsOn`.
 
-- **`semiJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)`
+    The parameter `numRowRes` is an optional hint for an upper bound of the number or result rows.
+    If specified, it determines the number of rows that will be allocated for the result, whereby `-1` stands for an automatically chosen size.
+    Otherwise, it defaults to `-1`.
+
+- **`semiJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str[, numRowRes:si64])`
 
     Performs a semi join of the two input frames on `lhs`.`lhsOn` == `rhs`.`rhsOn`.
     Returns only the columns belonging to `lhs`.
+    
+    The parameter `numRowRes` is an optional hint for an upper bound of the number or result rows.
+    If specified, it determines the number of rows that will be allocated for the result, whereby `-1` stands for an automatically chosen size.
+    Otherwise, it defaults to `-1`.
 
 - **`groupJoin`**`(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str, rhsAgg:str)`
 
     Group-join of `lhs` and `rhs` on `lhs.lhsOn == rhs.rhsOn` with summation of `rhs.rhsAgg`.
   
 We will support more variants of joins, including (left/right) outer joins, theta joins, anti-joins, etc.
+
+### Grouping and aggregation
+
+- **`groupSum`**`(arg:frame, grpColNames:str[, grpColNames, ...], sumColName:str)`
+
+    Groups the rows in the given frame `arg` by the specified columns `grpColNames` (at least one column) and calculates the per-group sum of the column denoted by `sumColName`.
+
+    *This built-in function is currently limited in terms of functionality (aggregation only on a single column, sum as the only aggregation function). It will be extended in the future. Meanwhile, consider using DAPHNE's `sql()` built-in function for more comprehensive grouping and aggregation support.*
 
 ### Frame label manipulation
 

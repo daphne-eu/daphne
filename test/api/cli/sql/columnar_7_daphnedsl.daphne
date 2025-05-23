@@ -1,0 +1,43 @@
+// Join of three tables (each with filters, one semi-join), group-by on multiple columns with multiple aggregates,
+// order-by on multiple columns, calculation in the projection (inside an aggregatin function).
+
+f = {
+    "a"   : [ 1,  1,  4,  3,  2,  1,  1,  0,  1,  2,  0,  4],
+    "b"   : [10, 30, 20, 10, 20, 30, 30, 20, 10, 20, 30, 10],
+    "d1id": [ 3,  0,  2,  1,  4,  3,  2,  2,  0,  1,  2,  1],
+    "d2id": [30, 20, 50, 40,  0, 60, 10,  0, 10, 40, 60, 50]
+};
+d1 = {
+    "id": [ 0,  1,  2,  3,  4],
+    "x" : [10, 20, 10, 20, 30]
+};
+d2 = {
+    "id": [  0,  10,  20,  30,  40,  50,  60],
+    "y" : ["a", "b", "a", "a", "c", "b", "a"],
+    "z" : [1.1, 2.2, 1.1, 3.3, 2.2, 1.1, 2.2]
+};
+
+selD1 = as.matrix(d1[, "x"]) == 10;
+d1 = d1[[selD1, ]];
+
+selD2 = as.matrix(d2[, "y"]) == "b" || as.matrix(d2[, "z"]) == 1.1;
+d2 = d2[, "id"];
+d2 = d2[[selD2, ]];
+
+selF = as.matrix(f[, "a"]) < 3;
+f = f[[selF, ]];
+
+keys, tids = semiJoin(f, d2, "d2id", "id");
+f = cbind(f[, "a"], cbind(f[, "b"], f[, "d1id"]));
+f = f[tids, ];
+
+f = innerJoin(f, d1, "d1id", "id");
+
+tmp = createFrame(as.matrix(f[, "b"]) + as.matrix(f[, "x"]), "tmp");
+f = cbind(f, tmp);
+
+res = groupSum(f, "a", "tmp");
+res = order(res, 0, true, false);
+res = setColLabels(res, "key", "agg");
+
+print(res);

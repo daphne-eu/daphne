@@ -36,6 +36,8 @@ class DaphneLogger;
  */
 struct DaphneUserConfig {
     // Remember to update UserConfig.json accordingly!
+
+    bool use_columnar = false;
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
@@ -62,6 +64,7 @@ struct DaphneUserConfig {
     bool enable_profiling = false;
 
     bool debug_llvm = false;
+    bool explain_columnar = false;
     bool explain_kernels = false;
     bool explain_llvm = false;
     bool explain_parsing = false;
@@ -74,16 +77,19 @@ struct DaphneUserConfig {
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
     bool explain_mlir_codegen = false;
-    bool statistics = false;
+    bool explain_mlir_codegen_sparsity_exploiting_op_fusion = false;
+    bool explain_mlir_codegen_daphneir_to_mlir = false;
+    bool explain_mlir_codegen_mlir_specific = false;
     bool enable_property_recording = false;
     bool enable_property_insert = false;
     std::string properties_file_path = "properties.json";
+    bool enable_statistics = false;
 
     bool force_cuda = false;
 
-    SelfSchedulingScheme taskPartitioningScheme = STATIC;
-    QueueTypeOption queueSetupScheme = CENTRALIZED;
-    VictimSelectionLogic victimSelection = SEQPRI;
+    SelfSchedulingScheme taskPartitioningScheme = SelfSchedulingScheme::STATIC;
+    QueueTypeOption queueSetupScheme = QueueTypeOption::CENTRALIZED;
+    VictimSelectionLogic victimSelection = VictimSelectionLogic::SEQPRI;
     ALLOCATION_TYPE distributedBackEndSetup = ALLOCATION_TYPE::DIST_MPI; // default value
     size_t max_distributed_serialization_chunk_size =
         std::numeric_limits<int>::max() - 1024; // 2GB (-1KB to make up for gRPC headers etc.) - which is the

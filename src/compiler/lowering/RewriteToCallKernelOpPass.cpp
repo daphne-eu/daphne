@@ -32,12 +32,14 @@
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/Location.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/ADT/ArrayRef.h"
 
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-#include <string_view>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -125,18 +127,30 @@ class KernelReplacement : public RewritePattern {
 
     mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
         MLIRContext *mctx = t.getContext();
-        if (generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>())
+        if (generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ColumnType,
+                                           mlir::daphne::ListType>())
             return mlir::daphne::StructureType::get(mctx);
         if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
             return mt.withSameElementTypeAndRepr();
         if (t.isa<mlir::daphne::FrameType>())
             return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
+        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.withSameValueType();
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
-        if (auto mrt = t.dyn_cast<mlir::MemRefType>())
-            // Remove any dimension information ({0, 0}), but retain the element
-            // type.
-            return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+        if (auto mrt = t.dyn_cast<mlir::MemRefType>()) {
+            // Remove any specific dimension information ({0}), but retain the rank and element type.
+            int64_t mrtRank = mrt.getRank();
+            if (mrtRank == 1) {
+                return mlir::MemRefType::get({0}, mrt.getElementType());
+            } else if (mrtRank == 2) {
+                return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+            } else {
+                throw std::runtime_error(
+                    "RewriteToCallKernelOpPass: expected MemRef to be of rank 1 or 2 but was given " +
+                    std::to_string(mrtRank));
+            }
+        }
         return t;
     }
 
@@ -421,7 +435,8 @@ class KernelReplacement : public RewritePattern {
             const size_t numArgs = lookupArgTys.size();
             const size_t numRess = lookupResTys.size();
             int chosenKernelIdx = -1;
-            for (size_t i = 0; i < kernelInfos.size() && chosenKernelIdx == -1; i++) {
+            int64_t chosenKernelPriority = std::numeric_limits<int64_t>::min();
+            for (size_t i = 0; i < kernelInfos.size(); i++) {
                 auto ki = kernelInfos[i];
                 if (ki.backend != backend)
                     continue;
@@ -437,8 +452,11 @@ class KernelReplacement : public RewritePattern {
                 for (size_t i = 0; i < numRess && !mismatch; i++)
                     if (lookupResTys[i] != ki.resTypes[i])
                         mismatch = true;
-                if (!mismatch)
+
+                if (!mismatch && (ki.priority > chosenKernelPriority || chosenKernelIdx == -1)) {
                     chosenKernelIdx = i;
+                    chosenKernelPriority = ki.priority;
+                }
             }
             if (chosenKernelIdx == -1) {
                 std::stringstream s;
@@ -466,16 +484,17 @@ class KernelReplacement : public RewritePattern {
         // *****************************************************************************
         // Add kernel id and DAPHNE context as arguments
         // *****************************************************************************
-
         auto kId = rewriter.create<mlir::arith::ConstantOp>(
             loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(kernelFuncName, op)));
 
-        // NOTE: kId has to be added before CreateDaphneContextOp because
-        // there is an assumption that the CTX is the last argument
-        // (LowerToLLVMPass.cpp::623,702). This means the kId is expected to
-        // be the second to last argument.
-        kernelArgs.push_back(kId);
-
+        // Inject the KernelDispatchMapping id as the second to last input parameter to
+        // all kernel calls, unless it's a non-instrumented operation (CreateDaphneContextOp, DestroyDaphneContextOp).
+        if (!llvm::isa<daphne::CreateDaphneContextOp, daphne::DestroyDaphneContextOp>(op))
+            // NOTE: kId has to be added before CreateDaphneContextOp because
+            // there is an assumption that the CTX is the last argument
+            // (LowerToLLVMPass.cpp::623,702). This means the kId is expected to
+            // be the second to last argument.
+            kernelArgs.push_back(kId);
         // Inject the current DaphneContext as the last input parameter to
         // all kernel calls, unless it's a CreateDaphneContextOp.
         if (!llvm::isa<daphne::CreateDaphneContextOp>(op))

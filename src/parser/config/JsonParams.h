@@ -30,6 +30,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
     inline static const std::string USE_PHY_OP_SELECTION = "use_phy_op_selection";
     inline static const std::string USE_MLIR_CODEGEN = "use_mlir_codegen";
+    inline static const std::string USE_COLUMNAR = "use_columnar";
     inline static const std::string MATMUL_VEC_SIZE_BITS = "matmul_vec_size_bits";
     inline static const std::string MATMUL_TILE = "matmul_tile";
     inline static const std::string MATMUL_FIXED_TILE_SIZES = "matmul_fixed_tile_sizes";
@@ -42,6 +43,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
     inline static const std::string DEBUG_LLVM = "debug_llvm";
+    inline static const std::string EXPLAIN_COLUMNAR = "explain_columnar";
     inline static const std::string EXPLAIN_KERNELS = "explain_kernels";
     inline static const std::string EXPLAIN_LLVM = "explain_llvm";
     inline static const std::string EXPLAIN_PARSING = "explain_parsing";
@@ -54,6 +56,10 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
     inline static const std::string EXPLAIN_OBJ_REF_MGNT = "explain_obj_ref_mgnt";
     inline static const std::string EXPLAIN_MLIR_CODEGEN = "explain_mlir_codegen";
+    inline static const std::string EXPLAIN_MLIR_CODEGEN_SPARSITY_EXPLOITING_OP_FUSION =
+        "explain_mlir_codegen_sparsity_exploiting_op_fusion";
+    inline static const std::string EXPLAIN_MLIR_CODEGEN_DAPHNEIR_TO_MLIR = "explain_mlir_codegen_daphneir_to_mlir";
+    inline static const std::string EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC = "explain_mlir_codegen_mlir_specific";
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
@@ -84,9 +90,11 @@ struct DaphneConfigJsonParams {
                                                      USE_IPA_CONST_PROPA,
                                                      USE_PHY_OP_SELECTION,
                                                      USE_MLIR_CODEGEN,
+                                                     USE_COLUMNAR,
                                                      CUDA_FUSE_ANY,
                                                      VECTORIZED_SINGLE_QUEUE,
                                                      DEBUG_LLVM,
+                                                     EXPLAIN_COLUMNAR,
                                                      EXPLAIN_KERNELS,
                                                      EXPLAIN_LLVM,
                                                      EXPLAIN_PARSING,
@@ -98,6 +106,9 @@ struct DaphneConfigJsonParams {
                                                      EXPLAIN_TYPE_ADAPTATION,
                                                      EXPLAIN_VECTORIZED,
                                                      EXPLAIN_MLIR_CODEGEN,
+                                                     EXPLAIN_MLIR_CODEGEN_SPARSITY_EXPLOITING_OP_FUSION,
+                                                     EXPLAIN_MLIR_CODEGEN_DAPHNEIR_TO_MLIR,
+                                                     EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC,
                                                      EXPLAIN_OBJ_REF_MGNT,
                                                      ENABLE_PROPERTY_INSERT,
                                                      ENABLE_PROPERTY_RECORDING,

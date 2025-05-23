@@ -65,6 +65,7 @@ nav:
     - FPGAconfiguration.md
     - MPI-Usage.md
     - Profiling.md
+    - 'Custom Extensions': Extensions.md
   - 'Developers':
     - development/Contributing.md
     - development/BuildingDaphne.md
@@ -79,3 +80,4 @@ nav:
     - development/Profiling.md
     - development/WriteDocs.md
     - development/Testing.md
+    - development/InstallPythonLibsInContainer.md
