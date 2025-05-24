@@ -630,7 +630,7 @@ void RewriteToCallKernelOpPass::runOnOperation() {
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<daphne::ConstantOp, daphne::ReturnOp, daphne::CallKernelOp, daphne::CreateVariadicPackOp,
                       daphne::StoreVariadicPackOp, daphne::VectorizedPipelineOp, scf::ForOp, memref::LoadOp,
-                      daphne::GenericCallOp, daphne::MapOp>();
+                      daphne::GenericCallOp, daphne::MapOp, daphne::ParForOp>();
     target.addDynamicallyLegalOp<daphne::CastOp>(
         [](daphne::CastOp op) { return op.isTrivialCast() || op.isRemovePropertyCast(); });
 

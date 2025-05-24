@@ -3574,8 +3574,8 @@
     },
     {
         "kernelTemplate": {
-            "header": "ParFor.h",
-            "opName": "parfor",
+            "header": "ParForLoop.h",
+            "opName": "parforLoop",
             "returnType": "void",
             "templateParams": [],
             "runtimeParams": [
