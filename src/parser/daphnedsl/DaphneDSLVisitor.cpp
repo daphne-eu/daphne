@@ -719,7 +719,7 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
 
     // TODO : popScope also exactly returns the dependency candidates
     // Determine which variables created before the loop are updated in the
-    // loop's body. These become the arguments and results of the ForOp.
+    // loop's body. These become the arguments and results of the ParForOp.
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
     std::vector<mlir::Value> resVals;
     std::vector<mlir::Value> forOperands;
@@ -732,17 +732,43 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
 
     builder.restoreInsertionPoint(ip);
 
-    // Helper function for moving the operations in the block created above
-    // into the actual body of the ForOp.
-    auto insertBodyBlock = [&](mlir::OpBuilder &nested, mlir::Location loc, mlir::Value iv, mlir::ValueRange lcv) {
-        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), bodyBlock.getOperations());
-    };
+    // add arguments for the body to it (induction variable and non local variables)
+    bodyBlock.addArgument(builder.getIndexType(), loc); // TODO : correct for IV ?
+    for (mlir::Value v : forOperands)
+        bodyBlock.addArgument(v.getType(), v.getLoc());
 
     // Create the actual ParForOp.
     auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, forOperands);
-    parforOp.getBodyStmt().push_back(&bodyBlock);
 
-    // TODO : Substitute the induction variable, now that we know it.
+    // Moving the operations in the block created above
+    // into the actual body of the ParForOp.
+    mlir::Region &targetRegion = parforOp.getRegion();
+    mlir::Block &targetBlock = targetRegion.front();
+    targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
+
+    // TODO : do we have to substitute the IV (here) ?
+    // - leave it out -> would require not needing ph i.e. can we create the block earlier ?
+    // - move it -> bring it closer to the addArgument that sets IV i.e. is that even possible ?
+    // Substitute the induction variable, now that we know it.
+    ph.replaceAllUsesWith(parforOp->getBlock()->getArguments()[0]);
+
+    size_t i = 0;
+    auto regionIterArgs = parforOp->getBlock()->getArguments().drop_front(1); // only one induction variable as of now
+    for (auto it = ow.begin(); it != ow.end(); it++) {
+        // Replace usages of the variables updated in the loop's body by the
+        // corresponding block arguments.
+        forOperands[i].replaceUsesWithIf(regionIterArgs[i], [&](mlir::OpOperand &operand) {
+            auto parentRegion = operand.getOwner()->getBlock()->getParent();
+            return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
+        });
+
+        // TODO : are regionIterArgs actually the result ? will we need the result field in the OP in the future i.e. is
+        // this workaround valid ? 
+        // Rewire the results of the ForOp to their variable names.
+        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(regionIterArgs[i], false));
+
+        i++;
+    }
 
     return nullptr;
 }
