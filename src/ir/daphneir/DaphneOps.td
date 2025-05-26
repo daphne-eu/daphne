@@ -89,7 +89,7 @@ def Daphne_ParForOp : Daphne_Op<"parfor"> {
         // todo: add additional parameter?
     );
 
-    let regions = (region SizedRegion<1>);
+    let regions = (region SizedRegion<1>:$bodyStmt);
 }
 
 // ****************************************************************************
