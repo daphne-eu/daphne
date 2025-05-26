@@ -15,15 +15,18 @@
  */
 
 #include "CreateDaphneContext.h"
-#include "util/KernelDispatchMapping.h"
+#include <util/KernelDispatchMapping.h>
+#include <util/PropertyLogger.h>
+#include <util/StringRefCount.h>
 
 void createDaphneContext(DaphneContext *&res, uint64_t configPtr, uint64_t dispatchMappingPtr, uint64_t statisticsPtr,
-                         uint64_t stringRefCountPtr) {
+                         uint64_t propertyLoggerPtr, uint64_t stringRefCountPtr) {
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
     auto dispatchMapping = reinterpret_cast<KernelDispatchMapping *>(dispatchMappingPtr);
     auto statistics = reinterpret_cast<Statistics *>(statisticsPtr);
+    auto propertyLogger = reinterpret_cast<PropertyLogger *>(propertyLoggerPtr);
     auto stringRefCounter = reinterpret_cast<StringRefCounter *>(stringRefCountPtr);
     if (config->log_ptr != nullptr)
         config->log_ptr->registerLoggers();
-    res = new DaphneContext(*config, *dispatchMapping, *statistics, *stringRefCounter);
+    res = new DaphneContext(*config, *dispatchMapping, *statistics, *propertyLogger, *stringRefCounter);
 }

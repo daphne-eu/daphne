@@ -202,7 +202,7 @@ def Daphne_NumRowsOp : Daphne_NumOp<"numRows">;
 def Daphne_NumColsOp : Daphne_NumOp<"numCols">;
 def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 
-def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
+def Daphne_SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
   let arguments = (ins MatrixOf<[AnyScalar]>:$arg);
   let results = (outs FloatScalar:$res);
 
@@ -1844,7 +1844,9 @@ def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
                     UI64 : $userConfigPtr,
                     UI64 : $dispatchMappingPtr,
                     UI64 : $statisticsPtr,
-                    UI64 : $stringRefCountPtr);
+                    UI64 : $propertyLoggerPtr,
+                    UI64 : $stringRefCountPtr
+                    );
     let results = (outs DaphneContext : $ctx);
 }
 
@@ -2013,6 +2015,17 @@ def Daphne_RemoveOp : Daphne_Op<"remove", [
 }
 
 // ****************************************************************************
+// Property Recording
+// ****************************************************************************
+
+def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
+    let arguments = (ins MatrixOrU:$arg, UI32:$valueId);
+    let results = (outs);
+
+    let summary = "Records the data properties of the given matrix.";
+}
+
+// ****************************************************************************
 // Old operations
 // ****************************************************************************
 // These are currently still need for the prototype to work. They will be
@@ -2033,6 +2046,10 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, Pure]> {
         }]>,
         OpBuilder<(ins "int64_t":$value), [{
             Type t = $_builder.getIntegerType(64, true);
+            build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));
+        }]>,
+        OpBuilder<(ins "uint32_t":$value), [{
+            Type t = $_builder.getIntegerType(32, false);
             build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));
         }]>,
         OpBuilder<(ins "uint64_t":$value), [{

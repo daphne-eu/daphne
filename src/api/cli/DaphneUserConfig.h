@@ -80,6 +80,9 @@ struct DaphneUserConfig {
     bool explain_mlir_codegen_sparsity_exploiting_op_fusion = false;
     bool explain_mlir_codegen_daphneir_to_mlir = false;
     bool explain_mlir_codegen_mlir_specific = false;
+    bool enable_property_recording = false;
+    bool enable_property_insert = false;
+    std::string properties_file_path = "properties.json";
     bool enable_statistics = false;
 
     bool force_cuda = false;
