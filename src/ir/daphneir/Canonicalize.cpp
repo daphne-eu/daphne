@@ -18,6 +18,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
+#include <iostream>
 
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
                                                                      mlir::PatternRewriter &rewriter) {
@@ -235,6 +236,8 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
  * and (2) `a + X` by `X + a` (`a` scalar, `X` matrix/frame).
  *
+ * AMLS_TODO: expand docs
+ *
  * (1) is important, since we use the `+`-operator for both addition and
  * string concatenation in DaphneDSL, while the types of the operands might be
  * known only after type inference.
@@ -249,6 +252,22 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
+    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // of it
+    auto lhsOp = lhs.getDefiningOp();
+    if (lhsOp) {
+        bool lhsOpHasScalarFirstArgument = lhsOp->hasTrait<OpTrait::DynamicFirstArgument>();
+        if (lhsOpHasScalarFirstArgument) {
+            auto value = lhsOp->getOperand(0);
+            const bool rhsIsScalar = CompilerUtils::isScaType(rhs.getType());
+            if (rhsIsScalar) {
+                auto newAdd = rewriter.create<mlir::daphne::EwAddOp>(op->getLoc(), value, rhs);
+                lhsOp->setOperand(0, newAdd);
+                rewriter.replaceOp(op, lhsOp);
+                return mlir::success();
+            }
+        }
+    }
 
     const bool lhsIsStr = llvm::isa<mlir::daphne::StringType>(lhs.getType());
     const bool rhsIsStr = llvm::isa<mlir::daphne::StringType>(rhs.getType());
