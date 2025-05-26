@@ -80,14 +80,16 @@ def Daphne_ParForOp : Daphne_Op<"parfor"> {
         Represents a parallel loop construct that can execute iterations in parallel.
 
     }];
+    
     let arguments = (ins
         AnyInteger:$from,
         AnyInteger:$to,
         AnyInteger:$step,
         Variadic<AnyType>:$args
         // todo: add additional parameter?
-  );
-  let regions = (region AnyRegion:$bodyStmt);
+    );
+
+    let regions = (region SizedRegion<1>);
 }
 
 // ****************************************************************************
