@@ -29,10 +29,11 @@
 #include "DaphneDSLGrammarParser.h"
 #include "antlr4-runtime.h"
 
-#include <mlir/Dialect/SCF/IR/SCF.h>
-
+#include "llvm/ADT/SetVector.h"
 #include <limits>
 #include <memory>
+#include <mlir/Dialect/SCF/IR/SCF.h>
+#include <mlir/Transforms/RegionUtils.h>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -651,7 +652,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
     std::vector<mlir::Value> resVals;
     std::vector<mlir::Value> forOperands;
-    
+
     for (auto it = ow.begin(); it != ow.end(); it++) {
         resVals.push_back(it->second.value);
         forOperands.push_back(symbolTable.get(it->first).value);
@@ -701,22 +702,22 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     mlir::Value from = utils.castIf(t, valueOrErrorOnVisit(ctx->from));
     mlir::Value to = utils.castIf(t, valueOrErrorOnVisit(ctx->to));
     // TODO : for simplicity step is left constant for now
-    mlir::Value step = builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, 1)); 
+    mlir::Value step = builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, 1));
 
     auto ip = builder.saveInsertionPoint();
 
     // A placeholder for the loop's induction variable, since we do not know it
     // yet; will be replaced later.
-    // (D) : i think we dont need an placeholder for IV at all - placeholder produces crashes 
-    //mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexType(), builder.getIndexAttr(123));
+    // (D) : i think we dont need an placeholder for IV at all - placeholder produces crashes
+    // mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexType(),
+    // builder.getIndexAttr(123));
     // Make the induction variable available by the specified name.
-    //symbolTable.put(ctx->var->getText(), ScopedSymbolTable::SymbolInfo(ph, true));
+    // symbolTable.put(ctx->var->getText(), ScopedSymbolTable::SymbolInfo(ph, true));
 
     // A block for the body of the for-loop.
     mlir::Block bodyBlock;
     builder.setInsertionPointToEnd(&bodyBlock);
     symbolTable.pushScope();
-
 
     // Parse the loop's body.
     visit(ctx->bodyStmt);
@@ -725,14 +726,19 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the ParForOp.
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
-    std::vector<mlir::Value> resVals;
-    std::vector<mlir::Value> forOperands;
+    std::vector<mlir::Value> resVals = {};
+    std::vector<mlir::Value> forOperands = {};
     for (auto it = ow.begin(); it != ow.end(); it++) {
-        resVals.push_back(it->second.value);
-        forOperands.push_back(symbolTable.get(it->first).value);
+
+        auto symbolName = it->first;
+        auto bodyVal = it->second.value;
+        auto outerVal = symbolTable.get(symbolName).value;
+
+        resVals.push_back(bodyVal);
+        forOperands.push_back(outerVal);
     }
 
-    //builder.create<mlir::scf::YieldOp>(loc, resVals); - we dont need yield, since we will drop it anyways later 
+    // builder.create<mlir::scf::YieldOp>(loc, resVals); - we dont need yield, since we will drop it anyways later
 
     builder.restoreInsertionPoint(ip);
 
@@ -741,38 +747,45 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     for (mlir::Value v : forOperands)
         bodyBlock.addArgument(v.getType(), v.getLoc());
 
+    bodyBlock.walk([&](mlir::daphne::ConstantOp constOp) {
+        forOperands.push_back(constOp.getResult());
+    });
+    // mlir::getUsedValuesDefinedAbove(parforOp.getRegion(), parforOp.getRegion(), usedValues);
+    llvm::errs() << "for operands " << std::to_string(forOperands.size());
+    llvm::errs() << "res values " << std::to_string(resVals.size());
+    
     // Create the actual ParForOp.
     auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, forOperands);
     // Moving the operations in the block created above
     // into the actual body of the ParForOp.
     mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();
     targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
-    
-  
-    // (D) : that produce crash - front of region is not initialized.
-    //mlir::Region &targetRegion = parforOp.getRegion();
-    //mlir::Block &targetBlock = targetRegion.front();
-    //targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
 
-    // TODO : do we have to substitute the IV (here) ? (D)- see above 
+    
+    // (D) : that produce crash - front of region is not initialized.
+    // mlir::Region &targetRegion = parforOp.getRegion();
+    // mlir::Block &targetBlock = targetRegion.front();
+    // targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
+
+    // TODO : do we have to substitute the IV (here) ? (D)- see above
     // - leave it out -> would require not needing ph i.e. can we create the block earlier ?
     // - move it -> bring it closer to the addArgument that sets IV i.e. is that even possible ?
     // Substitute the induction variable, now that we know it.
-    //ph.replaceAllUsesWith(parforOp->getBlock()->getArguments()[0]);
+    // ph.replaceAllUsesWith(parforOp->getBlock()->getArguments()[0]);
     size_t i = 0;
 
     auto regionIterArgs = bodyBlock.getArguments().drop_front(1); // only one induction variable as of now
     for (auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
         // corresponding block arguments.
-       
+
         forOperands[i].replaceUsesWithIf(regionIterArgs[i], [&](mlir::OpOperand &operand) {
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
         });
-        
+
         // TODO : are regionIterArgs actually the result ? will we need the result field in the OP in the future i.e. is
-        // this workaround valid ? 
+        // this workaround valid ?
         // Rewire the results of the ForOp to their variable names.
         symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(regionIterArgs[i], false));
 

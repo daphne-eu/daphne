@@ -512,6 +512,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
         auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
         auto pppI1Ty = LLVM::LLVMPointerType::get(ptrPtrI1Ty);
+       
         
         auto module = op->getParentOfType<ModuleOp>();
         Block *moduleBody = module.getBody();
@@ -522,22 +523,61 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         {  
             auto ip = rewriter.saveInsertionPoint();
             OpBuilder::InsertionGuard ig(rewriter);
-            
+
             rewriter.setInsertionPointToStart(moduleBody);
             auto funcType = LLVM::LLVMFunctionType::get(
                 LLVM::LLVMVoidType::get(rewriter.getContext()),
                 {
                     rewriter.getI64Type(),
-                    ptrPtrI1Ty
+                    ptrPtrI1Ty,
+                    ptrI1Ty
                 }
             );
             fOp = rewriter.create<LLVM::LLVMFuncOp>(loc, funcName, funcType);
-            fOp.getBody().takeBody(op.getBodyStmt());
-            auto &funcBlock = fOp.getBody().front();
+             // Get the function's body block
+            mlir::Block &funcBlock = fOp.getBody().emplaceBlock(); 
+            mlir::Block &sourceBlock = op.getBodyStmt().front();
+            // Optional debug output
+            // moduleBody->dump();
             
-
+            
             auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty, rewriter.getUnknownLoc());
+            
+            rewriter.restoreInsertionPoint(ip);
+            auto cst = Value(rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(op.getArgs().size())));
+            args = rewriter.create<LLVM::AllocaOp>(
+                loc, 
+                ptrPtrI1Ty,
+                cst 
+            ); 
+            // Save captured values of parfor into an array 
+            for (auto [i, captured] : llvm::enumerate(op.getArgs())) {
+                Value gep = rewriter.create<LLVM::GEPOp>(
+                    loc, ptrPtrI1Ty, args,
+                    ArrayRef<Value>{
+                        rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(i))
+                    });
+                 // Allocate and store pointer to value
+                Value ptr;
+                Type capturedType = captured.getType();
+                auto llvmCapturedType = typeConverter->convertType(captured.getType());
+                if (capturedType.isa<LLVM::LLVMPointerType>()) {
+                    // Already a pointer, cast it
+                    ptr = rewriter.create<LLVM::BitcastOp>(loc, ptrI1Ty, captured);
+                } else {
+                    // Allocate stack space and store the captured value
+                    // Value alloca = rewriter.create<LLVM::AllocaOp>(
+                    //    loc, LLVM::LLVMPointerType::get(llvmCapturedType), 
+                    //    rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(1)), 1); // allocate 1 element
+                    // rewriter.create<LLVM::StoreOp>(loc, captured, alloca);
+                    // Bitcast to i1* for storage
+                    ptr = rewriter.create<LLVM::BitcastOp>(loc, ptrI1Ty, captured);
+                }
+                //Value ptr = rewriter.create<LLVM::BitcastOp>(loc, ptrI1Ty, captured);
+                rewriter.create<LLVM::StoreOp>(loc, ptr, gep);
+            }
 
+            ip = rewriter.saveInsertionPoint();
             // create a parameter structure and place it on top of function
             // also rewrite accordingly all data access to vars from outer space
             rewriter.setInsertionPointToStart(&funcBlock);
@@ -561,10 +601,11 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                         throw ErrorHandler::compilerError(loc, "LowerToLLVMPass", "expTy is an unsupported type");
                     }
                 }
-                captured.dump();
                 captured.replaceAllUsesWith(val);
             }
-            
+            funcBlock.getOperations().splice(funcBlock.end(), sourceBlock.getOperations());
+
+            auto daphneContext = funcBlock.addArgument(ptrI1Ty, rewriter.getUnknownLoc());
             // add return to the function
             // TODO: we actually need to setup return variable to do aggregation after computation
             if (funcBlock.empty() || !funcBlock.back().mightHaveTrait<OpTrait::IsTerminator>()) {
@@ -573,14 +614,8 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             }
 
             // now allocate arguments 
-            rewriter.setInsertionPoint(op);
-            ip = rewriter.saveInsertionPoint();
-            auto cst = Value(rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(op.getArgs().size())));
-            args = rewriter.create<LLVM::AllocaOp>(
-                loc, 
-                pppI1Ty,
-                cst 
-            ); 
+            rewriter.restoreInsertionPoint(ip);
+            
             func = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
 
             for (auto [i, captured] : llvm::enumerate(op.getArgs())) {
@@ -588,6 +623,10 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                 auto addr = rewriter.create<LLVM::GEPOp>(loc, ptrPtrI1Ty, args, ArrayRef<Value>({cstI}));
                 rewriter.create<LLVM::StoreOp>(loc, captured, addr);
             }
+            for (auto callKernelOp : funcBlock.getOps<daphne::CallKernelOp>()) {
+                callKernelOp.setOperand(callKernelOp.getNumOperands() - 1, daphneContext);
+            }
+
         };
         //rewriter.restoreInsertionPoint(ip);
         // create function pointer
