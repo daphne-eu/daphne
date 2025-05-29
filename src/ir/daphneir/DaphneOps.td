@@ -85,11 +85,13 @@ def Daphne_ParForOp : Daphne_Op<"parfor"> {
         AnyInteger:$from,
         AnyInteger:$to,
         AnyInteger:$step,
+        Optional<DaphneContext>:$ctx,
         Variadic<AnyType>:$args
         // todo: add additional parameter?
     );
 
     let regions = (region SizedRegion<1>:$bodyStmt);
+    let traits = [AttrSizedOperandSegments];
 }
 
 // ****************************************************************************

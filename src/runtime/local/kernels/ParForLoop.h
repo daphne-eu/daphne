@@ -14,14 +14,12 @@ void parforLoop(int64_t from, int64_t to, int64_t step, void *args, void *func, 
     //TODO : 2. create threads - distinct worker implementation?
     //TODO : 3. return results - meta-programming templates for EACH type? 
     
-    
-    ctx->logger->trace("[parforLoop] from = %ld, to = %ld, step = %ld\n", from, to, step);
-    ctx->logger->trace("[parforLoop] func = %p, args = %p\n", func, args);
+    ctx->logger->info("[parforLoop] from = %ld, to = %ld, step = %ld\n", from, to, step);
+    ctx->logger->info("[parforLoop] func = %p, args = %p\n", func, args);
     auto body = reinterpret_cast<void (*)(int64_t, void*, DaphneContext*)>(func);
-    auto argsC = reinterpret_cast<void**>(args);
     for(int64_t i = from; i < to; i+=step) {
-      printf("[parforLoop] Iteration i = %ld\n", i);
-      //body(i, argsC, ctx);
+      //printf("[parforLoop] Iteration i = %ld\n", i);
+      body(i, args, ctx);
     }
 }
 

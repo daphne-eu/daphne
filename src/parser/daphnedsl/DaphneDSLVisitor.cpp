@@ -747,15 +747,13 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     for (mlir::Value v : forOperands)
         bodyBlock.addArgument(v.getType(), v.getLoc());
 
+    // todo: we definetly need to catch more 
     bodyBlock.walk([&](mlir::daphne::ConstantOp constOp) {
         forOperands.push_back(constOp.getResult());
     });
-    // mlir::getUsedValuesDefinedAbove(parforOp.getRegion(), parforOp.getRegion(), usedValues);
-    llvm::errs() << "for operands " << std::to_string(forOperands.size());
-    llvm::errs() << "res values " << std::to_string(resVals.size());
     
     // Create the actual ParForOp.
-    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, forOperands);
+    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, mlir::Value(), forOperands);
     // Moving the operations in the block created above
     // into the actual body of the ParForOp.
     mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();

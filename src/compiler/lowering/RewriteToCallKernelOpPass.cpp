@@ -637,7 +637,8 @@ void RewriteToCallKernelOpPass::runOnOperation() {
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = CompilerUtils::getDaphneContext(func);
     func->walk([&](daphne::VectorizedPipelineOp vpo) { vpo.getCtxMutable().assign(dctx); });
-
+    func->walk([&](daphne::ParForOp vpo) { vpo.getCtxMutable().assign(dctx); });
+    
     // Apply conversion to CallKernelOps.
     patterns.insert<KernelReplacement, DistributedPipelineKernelReplacement>(&getContext(), dctx, userConfig,
                                                                              usedLibPaths);
