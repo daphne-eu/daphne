@@ -749,7 +749,7 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
 
     // todo: we definetly need to catch more 
     bodyBlock.walk([&](mlir::daphne::ConstantOp constOp) {
-        forOperands.push_back(constOp.getResult());
+        //forOperands.push_back(constOp.getResult());
     });
     
     // Create the actual ParForOp.

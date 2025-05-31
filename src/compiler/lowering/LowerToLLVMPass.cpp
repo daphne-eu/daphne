@@ -542,14 +542,14 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                 auto llvmCapturedType = typeConverter->convertType(captured.getType());
                 auto fieldPtrTy = LLVM::LLVMPointerType::get(llvmCapturedType);
                 Value fieldPtr = rewriter.create<LLVM::GEPOp>(
-                    loc, LLVM::LLVMPointerType::get(fieldPtrTy), structPtrTy, structPtr,
+                    loc, fieldPtrTy, structPtrTy, structPtr,
                     ArrayRef<Value>{
                         rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI32Type(), rewriter.getI32IntegerAttr(0)),
                         rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI32Type(), rewriter.getI32IntegerAttr(i))});
                 
-               
-                if (llvmCapturedType.isa<LLVM::LLVMPointerType>()) {
-                     rewriter.create<LLVM::StoreOp>(loc, captured, fieldPtr);
+                rewriter.create<LLVM::StoreOp>(loc, captured, fieldPtr);
+                /*if (llvmCapturedType.isa<LLVM::LLVMPointerType>()) {
+                    
                 } else {
                     auto valueAlloca = rewriter.create<LLVM::AllocaOp>(
                         loc, fieldPtrTy, llvmCapturedType,
@@ -557,7 +557,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                         8);
                     rewriter.create<LLVM::StoreOp>(loc, captured, valueAlloca);
                     rewriter.create<LLVM::StoreOp>(loc, valueAlloca, fieldPtr);
-                } 
+                } */
             }
            
             rewriter.setInsertionPointToStart(moduleBody);
@@ -582,17 +582,20 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                 auto llvmCapturedType = typeConverter->convertType(captured.getType());
                 // pointer to structure i-th entry
                 Value fieldPtr = rewriter.create<LLVM::GEPOp>(
-                    loc, LLVM::LLVMPointerType::get(llvmCapturedType), structArg,
+                    loc, 
+                    LLVM::LLVMPointerType::get(llvmCapturedType), 
+                    structPtrTy, 
+                    structArg,
                     ArrayRef<Value>{rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI32IntegerAttr(0)),
                                     rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI32IntegerAttr(i))});
 
                 // Type origType = typeConverter->convertType(captured.getType());
 
                 // load pointer
-                Value loaded =
-                    rewriter.create<LLVM::LoadOp>(loc, LLVM::LLVMPointerType::get(llvmCapturedType), fieldPtr);
+                //Value loaded =
+                //    rewriter.create<LLVM::LoadOp>(loc, LLVM::LLVMPointerType::get(llvmCapturedType), fieldPtr);
                 // load value
-                Value val = rewriter.create<LLVM::LoadOp>(loc, llvmCapturedType, loaded);
+                Value val = rewriter.create<LLVM::LoadOp>(loc, llvmCapturedType, fieldPtr);
                 captured.replaceAllUsesWith(val);
             }
            
@@ -1083,7 +1086,7 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     target.addLegalOp<ModuleOp>();
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
-    patterns.insert<ParForOpLowering>(typeConverter, &getContext());
+    //patterns.insert<ParForOpLowering>(typeConverter, &getContext());
     patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering>(typeConverter, &getContext());
     patterns.insert<VectorizedPipelineOpLowering>(typeConverter, &getContext(), cfg);
     patterns.insert<ConstantOpLowering, ReturnOpLowering, StoreVariadicPackOpLowering, GenericCallOpLowering,
