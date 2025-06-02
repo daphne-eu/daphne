@@ -26,6 +26,7 @@
 #include <api/daphnelib/DaphneLibResult.h>
 #include <api/internal/daphne_internal.h>
 #include <parser/catalog/KernelCatalogParser.h>
+#include "runtime/local/io/FileIOCatalogParser.h"
 #include <parser/config/ConfigParser.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
