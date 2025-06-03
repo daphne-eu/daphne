@@ -30,7 +30,22 @@ using namespace mlir::OpTrait;
 // Inference interface implementations
 // ****************************************************************************
 
-// (none so far)
+std::vector<mlir::daphne::BoolOrUnknown> daphne::FillOp::inferSymmetric() {
+    // The result of FillOp is symmetric iff it is square.
+    std::pair numRows = CompilerUtils::isConstant<ssize_t>(getNumRows());
+    std::pair numCols = CompilerUtils::isConstant<ssize_t>(getNumCols());
+    if (numRows.first && numCols.first) // the shape is known
+        return {numRows.second == numCols.second ? BoolOrUnknown::True : BoolOrUnknown::False};
+    else // the shape is unknown
+        return {BoolOrUnknown::Unknown};
+}
+
+std::vector<mlir::daphne::BoolOrUnknown> daphne::TransposeOp::inferSymmetric() {
+    // TransposeOp retains the symmetry of its argument.
+    if (auto mt = getArg().getType().dyn_cast<daphne::MatrixType>())
+        return {mt.getSymmetric()};
+    return {BoolOrUnknown::Unknown};
+}
 
 // ****************************************************************************
 // Inference function

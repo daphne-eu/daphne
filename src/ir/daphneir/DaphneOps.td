@@ -119,7 +119,8 @@ def Daphne_ConvertCSRMatrixToRowOffsetsMemRef : Daphne_Op<"convertCSRMatrixToRow
 
 def Daphne_FillOp : Daphne_Op<"fill", [
     DataTypeMat, ValueTypeFromFirstArg,
-    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport
+    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport,
+    DeclareOpInterfaceMethods<InferSymmetricOpInterface>
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
     let results = (outs MatrixOrU:$res);
@@ -739,6 +740,7 @@ def Daphne_TransposeOp : Daphne_Op<"transpose", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg, CUDASupport,
+    DeclareOpInterfaceMethods<InferSymmetricOpInterface>,
     Pure
 ]> {
     let arguments = (ins MatrixOrU:$arg);
