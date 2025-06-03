@@ -74,7 +74,7 @@ namespace mlir::daphne {
 enum class BoolOrUnknown { Unknown = -1, False = 0, True = 1 };
 std::string boolOrUnknownToString(BoolOrUnknown rep);
 BoolOrUnknown stringToBoolOrUnknown(const std::string &str);
-}
+} // namespace mlir::daphne
 
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
 #include <ir/daphneir/DaphneInferShapeOpInterface.h>
