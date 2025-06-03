@@ -66,12 +66,17 @@
 
 #include <ir/daphneir/DaphneAdaptTypesToKernelsTraits.h>
 #include <ir/daphneir/DaphneDistributableOpInterface.h>
+#include <ir/daphneir/DaphneOpsEnums.h.inc>
+#include <ir/daphneir/DaphneVectorizableOpInterface.h>
+
+// Enum classes used by inference interfaces must be declared before including these interfaces.
+namespace mlir::daphne {
+}
+
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
 #include <ir/daphneir/DaphneInferShapeOpInterface.h>
 #include <ir/daphneir/DaphneInferSparsityOpInterface.h>
 #include <ir/daphneir/DaphneInferTypesOpInterface.h>
-#include <ir/daphneir/DaphneOpsEnums.h.inc>
-#include <ir/daphneir/DaphneVectorizableOpInterface.h>
 
 #include <string>
 #include <utility>
