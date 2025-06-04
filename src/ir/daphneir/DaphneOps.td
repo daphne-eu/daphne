@@ -86,10 +86,10 @@ def Daphne_ParForOp : Daphne_Op<"parfor"> {
         AnyInteger:$to,
         AnyInteger:$step,
         Optional<DaphneContext>:$ctx,
+        OptionalAttr<FlatSymbolRefAttr>:$funcName,
         Variadic<AnyType>:$args
         // todo: add additional parameter?
     );
-
     let regions = (region SizedRegion<1>:$bodyStmt);
     let traits = [AttrSizedOperandSegments];
 }
@@ -2079,7 +2079,7 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, Pure]> {
     let hasFolder = 1;
 }
 
-def Daphne_ReturnOp : Daphne_Op<"return", [Pure, Terminator, ReturnLike, ParentOneOf<["func::FuncOp", "DistributedComputeOp", "VectorizedPipelineOp"]>]> {
+def Daphne_ReturnOp : Daphne_Op<"return", [Pure, Terminator, ReturnLike, ParentOneOf<["func::FuncOp", "ParForOp", "DistributedComputeOp", "VectorizedPipelineOp"]>]> {
     let summary = "return operation";
 
     let arguments = (ins Variadic<AnyType>:$operands);

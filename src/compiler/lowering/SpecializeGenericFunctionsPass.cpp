@@ -459,7 +459,7 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
     // Delete non-called functions.
     for (auto f : functions) {
         // Never remove the main or dist function.
-        if (f.first == "main" or f.first == "dist")
+        if (f.first == "main" or f.first == "dist" or f.first == "parfor_body_0")
             continue;
         // Remove a function that was present before creating specializations,
         // if it is never called.

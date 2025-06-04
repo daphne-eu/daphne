@@ -497,132 +497,24 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
     LogicalResult matchAndRewrite(daphne::ParForOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
-
-        // Steps of parfor loop conversion loop to kernel call:
-        // 1. convert variables from outer scope of the loop to struct
-        // 2. replace references to variables throw references to structure entries
-        // 3. create out of loop body an function
-        // 4. parametrise kernel call with function pointer, loop parameter and function arguments
-
-        // transform parfor loop body to function
-        // naming
-        static auto idx = 0;
-        std::string funcName = "_parfor_" + std::to_string(++idx);
-        auto i1Ty = IntegerType::get(getContext(), 1);
-        auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
-        auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
-        auto pppI1Ty = LLVM::LLVMPointerType::get(ptrPtrI1Ty);
-
         auto module = op->getParentOfType<ModuleOp>();
-        Block *moduleBody = module.getBody();
-        auto ip = rewriter.saveInsertionPoint();
-        OpBuilder::InsertionGuard ig(rewriter);
-
-        Value structPtr;
-        Value func;
-
-        LLVM::LLVMFuncOp fOp;
-        {
-
-            llvm::SmallVector<Type> structTypes;
-            for (Value arg : adaptor.getArgs()) {
-                Type convertedType = typeConverter->convertType(arg.getType());
-                structTypes.push_back(LLVM::LLVMPointerType::get(convertedType));
-            }
-            auto structType = LLVM::LLVMStructType::getLiteral(getContext(), structTypes);
-            auto structPtrTy = LLVM::LLVMPointerType::get(structType);
-            structPtr = rewriter.create<LLVM::AllocaOp>(
-                loc,
-                structPtrTy, 
-                structType, rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(1)),
-                /*alignment=*/8
-            );
-
-            for (auto [i, captured] : llvm::enumerate(op.getArgs())) {
-                auto llvmCapturedType = typeConverter->convertType(captured.getType());
-                auto fieldPtrTy = LLVM::LLVMPointerType::get(llvmCapturedType);
-                Value fieldPtr = rewriter.create<LLVM::GEPOp>(
-                    loc, fieldPtrTy, structPtrTy, structPtr,
-                    ArrayRef<Value>{
-                        rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI32Type(), rewriter.getI32IntegerAttr(0)),
-                        rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI32Type(), rewriter.getI32IntegerAttr(i))});
-                
-                rewriter.create<LLVM::StoreOp>(loc, captured, fieldPtr);
-                /*if (llvmCapturedType.isa<LLVM::LLVMPointerType>()) {
-                    
-                } else {
-                    auto valueAlloca = rewriter.create<LLVM::AllocaOp>(
-                        loc, fieldPtrTy, llvmCapturedType,
-                        rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(1)),
-                        8);
-                    rewriter.create<LLVM::StoreOp>(loc, captured, valueAlloca);
-                    rewriter.create<LLVM::StoreOp>(loc, valueAlloca, fieldPtr);
-                } */
-            }
-           
-            rewriter.setInsertionPointToStart(moduleBody);
-            auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()),
-                                                        {rewriter.getI64Type(), structPtrTy, ptrI1Ty});
-            fOp = rewriter.create<LLVM::LLVMFuncOp>(loc, funcName, funcType);
-            // Get the function's body block
-            mlir::Block &funcBlock = fOp.getBody().emplaceBlock();
-            mlir::Block &sourceBlock = op.getBodyStmt().front();
-            funcBlock.getOperations().splice(funcBlock.end(), sourceBlock.getOperations());
-            funcBlock.addArgument(rewriter.getI64Type(), loc); // induction variable
-            funcBlock.addArgument(structPtrTy, loc);           // captured args struct
-            auto daphneContext = funcBlock.addArgument(ptrI1Ty, rewriter.getUnknownLoc());
-
-            // create a parameter structure and place it on top of function
-            // also rewrite accordingly all data access to vars from outer space
-            rewriter.setInsertionPointToStart(&funcBlock);
-            Value structArg = fOp.getArgument(1);
-            llvm::SmallVector<std::pair<Value, Value>> replacements;
-            // now dereference structure elements (pointer to actuall values)
-            for (auto [i, captured] : llvm::enumerate(op.getArgs())) {
-                auto llvmCapturedType = typeConverter->convertType(captured.getType());
-                // pointer to structure i-th entry
-                Value fieldPtr = rewriter.create<LLVM::GEPOp>(
-                    loc, 
-                    LLVM::LLVMPointerType::get(llvmCapturedType), 
-                    structPtrTy, 
-                    structArg,
-                    ArrayRef<Value>{rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI32IntegerAttr(0)),
-                                    rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI32IntegerAttr(i))});
-
-                // Type origType = typeConverter->convertType(captured.getType());
-
-                // load pointer
-                //Value loaded =
-                //    rewriter.create<LLVM::LoadOp>(loc, LLVM::LLVMPointerType::get(llvmCapturedType), fieldPtr);
-                // load value
-                Value val = rewriter.create<LLVM::LoadOp>(loc, llvmCapturedType, fieldPtr);
-                captured.replaceAllUsesWith(val);
-            }
-           
-            // add return to the function
-            // TODO: we actually need to setup return variable to do aggregation after computation
-            if (funcBlock.empty() || !funcBlock.back().mightHaveTrait<OpTrait::IsTerminator>()) {
-                rewriter.setInsertionPointToEnd(&funcBlock);
-                rewriter.create<LLVM::ReturnOp>(loc, std::nullopt);
-            }
-
-            rewriter.restoreInsertionPoint(ip);
-
-            func = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
-            for (auto callKernelOp : funcBlock.getOps<daphne::CallKernelOp>()) {
-                callKernelOp.setOperand(callKernelOp.getNumOperands() - 1, daphneContext);
-            }
-        };
-        // rewriter.restoreInsertionPoint(ip);
-        //  create function pointer
-        //  build kernel call for parfor which gets
+        module.dump();
+        Operation *bodyFuncOpRaw = SymbolTable::lookupSymbolIn(module, op.getFuncName().value());
+        auto llvmFuncOp = dyn_cast_or_null<LLVM::LLVMFuncOp>(bodyFuncOpRaw);
+        if (!llvmFuncOp) {
+            op->emitError("Expected LLVM::LLVMFuncOp, but got: ") << bodyFuncOpRaw->getName();
+            return failure();
+        }
+        llvm::errs() << "func is correct";
+        auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, llvmFuncOp);
+        llvm::errs() << "func ptr is created";
         std::stringstream callee;
-        // TODO : idk, but (probably) we need kernel with generic parameters
-        callee << "_parforLoop__int64_t__int64_t__int64_t__void__void";
-        std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), structPtr, func,
-                                          adaptor.getCtx()};
+        callee << "_parfor__int64_t__int64_t__int64_t__void";
+        auto kId = rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel("parfor_body_0", op)));
+        std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), fnPtr, kId, adaptor.getCtx()};
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, op->getResultTypes());
         rewriter.replaceOp(op, kernel.getResults());
+        llvm::errs() << "kernel op is created";
         return success();
     }
 };
@@ -1086,12 +978,12 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     target.addLegalOp<ModuleOp>();
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
-    //patterns.insert<ParForOpLowering>(typeConverter, &getContext());
     patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering>(typeConverter, &getContext());
     patterns.insert<VectorizedPipelineOpLowering>(typeConverter, &getContext(), cfg);
     patterns.insert<ConstantOpLowering, ReturnOpLowering, StoreVariadicPackOpLowering, GenericCallOpLowering,
                     MapOpLowering>(&getContext());
 
+    patterns.insert<ParForOpLowering>(typeConverter, &getContext());
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.
     if (failed(applyFullConversion(module, target, std::move(patterns))))

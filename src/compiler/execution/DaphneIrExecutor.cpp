@@ -84,16 +84,16 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     // This flag is really useful to figure out why the lowering failed
     llvm::DebugFlag = userConfig_.debug_llvm;
-
+    context_.disableMultithreading();
     mlir::PassManager pm(&context_);
-    // TODO Enable the verifier for all passes where it is possible.
-    // Originally, it was only turned off for the
-    // SpecializeGenericFunctionsPass.
-    pm.enableVerifier(false);
-
+    pm.enableIRPrinting();
+  
     if (userConfig_.explain_parsing)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
 
+     
+    pm.addPass(mlir::daphne::createParForOpLoweringPass());    
+    pm.addPass(mlir::daphne::createPrintIRPass("IR after parfor lowering:"));
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
     if (userConfig_.explain_parsing_simplified)
@@ -116,7 +116,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     // run only three iterations of both passes (see #173).
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
     pm.addPass(mlir::createCanonicalizerPass());
-
+   
+    
     if (userConfig_.use_columnar) {
         // Rewrite certain matrix/frame ops from linear/relational algebra to columnar ops from column algebra.
         pm.addPass(mlir::daphne::createRewriteToColumnarOpsPass());
@@ -124,6 +125,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
         // Simplify the IR.
         pm.addPass(mlir::createCanonicalizerPass());
+       
         // Remove unused ops after simplifications.
         // TODO The CSE pass seems to eliminate only "one row" of dead code at a time, so we need it as many times as
         // the longest chain of ops we reduce; how to apply CSE until a fixpoint?

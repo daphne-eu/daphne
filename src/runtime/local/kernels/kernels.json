@@ -3590,6 +3590,10 @@
                 {
                     "type": "int64_t",
                     "name": "step"
+                },
+                {
+                    "type" : "void *",
+                    "name": "func"
                 }
             ]
         },

@@ -1,0 +1,4 @@
+j = 123;
+parfor(i in 1:1)
+    j = i + 1
+    print(j);

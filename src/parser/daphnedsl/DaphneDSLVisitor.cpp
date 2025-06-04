@@ -24,7 +24,7 @@
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <util/ErrorHandler.h>
-
+#include "mlir/IR/BuiltinAttributes.h"
 #include "DaphneDSLGrammarLexer.h"
 #include "DaphneDSLGrammarParser.h"
 #include "antlr4-runtime.h"
@@ -706,14 +706,6 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
 
     auto ip = builder.saveInsertionPoint();
 
-    // A placeholder for the loop's induction variable, since we do not know it
-    // yet; will be replaced later.
-    // (D) : i think we dont need an placeholder for IV at all - placeholder produces crashes
-    // mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexType(),
-    // builder.getIndexAttr(123));
-    // Make the induction variable available by the specified name.
-    // symbolTable.put(ctx->var->getText(), ScopedSymbolTable::SymbolInfo(ph, true));
-
     // A block for the body of the for-loop.
     mlir::Block bodyBlock;
     builder.setInsertionPointToEnd(&bodyBlock);
@@ -729,16 +721,14 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     std::vector<mlir::Value> resVals = {};
     std::vector<mlir::Value> forOperands = {};
     for (auto it = ow.begin(); it != ow.end(); it++) {
-
-        auto symbolName = it->first;
-        auto bodyVal = it->second.value;
-        auto outerVal = symbolTable.get(symbolName).value;
-
-        resVals.push_back(bodyVal);
-        forOperands.push_back(outerVal);
+        resVals.push_back(it->second.value);
+        forOperands.push_back(symbolTable.get(it->first).value);
     }
-
-    // builder.create<mlir::scf::YieldOp>(loc, resVals); - we dont need yield, since we will drop it anyways later
+    llvm::errs() << "forOperands : " << std::to_string(forOperands.size()) << "\n";
+    llvm::errs() << " resVals : " << std::to_string(resVals.size()) << "\n";
+    exit(-1);
+    // block terminator for parfor 
+    builder.create<mlir::daphne::ReturnOp>(loc, resVals);
 
     builder.restoreInsertionPoint(ip);
 
@@ -747,13 +737,8 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     for (mlir::Value v : forOperands)
         bodyBlock.addArgument(v.getType(), v.getLoc());
 
-    // todo: we definetly need to catch more 
-    bodyBlock.walk([&](mlir::daphne::ConstantOp constOp) {
-        //forOperands.push_back(constOp.getResult());
-    });
-    
     // Create the actual ParForOp.
-    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, mlir::Value(), forOperands);
+    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, from, to, step, mlir::Value(),  nullptr, forOperands);
     // Moving the operations in the block created above
     // into the actual body of the ParForOp.
     mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();
