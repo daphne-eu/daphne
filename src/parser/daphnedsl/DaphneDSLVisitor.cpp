@@ -724,9 +724,6 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
         resVals.push_back(it->second.value);
         forOperands.push_back(symbolTable.get(it->first).value);
     }
-    llvm::errs() << "forOperands : " << std::to_string(forOperands.size()) << "\n";
-    llvm::errs() << " resVals : " << std::to_string(resVals.size()) << "\n";
-    exit(-1);
     // block terminator for parfor 
     builder.create<mlir::daphne::ReturnOp>(loc, resVals);
 
