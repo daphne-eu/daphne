@@ -505,16 +505,13 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             op->emitError("Expected LLVM::LLVMFuncOp, but got: ") << bodyFuncOpRaw->getName();
             return failure();
         }
-        llvm::errs() << "func is correct";
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, llvmFuncOp);
-        llvm::errs() << "func ptr is created";
         std::stringstream callee;
         callee << "_parfor__int64_t__int64_t__int64_t__void";
         auto kId = rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel("parfor_body_0", op)));
         std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), fnPtr, kId, adaptor.getCtx()};
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, op->getResultTypes());
         rewriter.replaceOp(op, kernel.getResults());
-        llvm::errs() << "kernel op is created";
         return success();
     }
 };

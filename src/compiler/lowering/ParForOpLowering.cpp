@@ -46,6 +46,9 @@ class ParForOpLoweringPattern : public RewritePattern {
             }
         }
         llvm::errs() << "forOperands captured size: " << parForOp.getArgs().size() << "\n";
+        // store variadic arguments of different types in a tuple to be passed to the function
+        //auto tupleType = rewriter.getTupleType(argTypes);
+        //auto tuple = rewriter.create<mlir::TupleOp>(loc, tupleType, parForOp.getArgs());
 
         // Save insertion point and move to module start
         auto ip = rewriter.saveInsertionPoint();
@@ -57,9 +60,8 @@ class ParForOpLoweringPattern : public RewritePattern {
 
         // Move loop body into new function
         auto &funcBlock = funcOp.getBody().emplaceBlock();
-
-        // Move operations into the function
         funcBlock.getOperations().splice(funcBlock.end(), parForOp.getBodyStmt().front().getOperations());
+        //replace usages of outer scope variables with function arguments
         for (auto operand : parForOp.getArgs()) {
             auto funcArg = funcBlock.addArgument(operand.getType(), operand.getLoc());
             for (auto &op : funcBlock.getOperations()) {
