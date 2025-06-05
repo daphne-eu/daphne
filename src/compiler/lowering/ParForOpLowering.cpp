@@ -7,6 +7,7 @@
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
+#include <mlir/Transforms/RegionUtils.h>
 
 using namespace mlir;
 
@@ -29,22 +30,46 @@ class ParForOpLoweringPattern : public RewritePattern {
         std::string funcName = "parfor_body_" + std::to_string(idx++);
         Location loc = op->getLoc();
 
+        // capture ssa from outer region used in parfor body
+        llvm::SetVector<mlir::Value> captured;
+        SmallVector<Type> argTypes;
+        mlir::Region &bodyRegion = parForOp.getBodyStmt();
+        mlir::Region &parentRegion = *bodyRegion.getParentRegion();
+        for (auto &block : bodyRegion) {
+            for (auto &op : block) {
+                for (auto operand : op.getOperands()) {
+                    if (!bodyRegion.isAncestor(operand.getParentRegion())) {
+                        parForOp.getArgsMutable().append(operand);
+                        argTypes.push_back(operand.getType());
+                    }
+                }
+            }
+        }
+        llvm::errs() << "forOperands captured size: " << parForOp.getArgs().size() << "\n";
+
         // Save insertion point and move to module start
         auto ip = rewriter.saveInsertionPoint();
         rewriter.setInsertionPointToStart(module.getBody());
 
         // Create new function type (void())
-        auto funcType = rewriter.getFunctionType({}, {});
+        auto funcType = rewriter.getFunctionType(argTypes, {});
         auto funcOp = rewriter.create<func::FuncOp>(loc, funcName, funcType);
-        
+
         // Move loop body into new function
         auto &funcBlock = funcOp.getBody().emplaceBlock();
-        for (auto arg : parForOp.getBodyStmt().front().getArguments()) {
-            funcBlock.addArgument(arg.getType(), arg.getLoc());
-        }
 
         // Move operations into the function
         funcBlock.getOperations().splice(funcBlock.end(), parForOp.getBodyStmt().front().getOperations());
+        for (auto operand : parForOp.getArgs()) {
+            auto funcArg = funcBlock.addArgument(operand.getType(), operand.getLoc());
+            for (auto &op : funcBlock.getOperations()) {
+                for (OpOperand &use : op.getOpOperands()) {
+                    if (use.get() == operand) {
+                        use.set(funcArg);
+                    }
+                }
+            }
+        }
 
         // add block terminator for validity of parfor op
         rewriter.setInsertionPointToStart(&parForOp.getBodyStmt().front());
@@ -55,7 +80,7 @@ class ParForOpLoweringPattern : public RewritePattern {
         // rewriter.create<func::ReturnOp>(loc);
         // Restore insertion point
         rewriter.restoreInsertionPoint(ip);
-        
+
         // Create function pointer and assign it to parfor's func attribute
         auto symbolRef = SymbolRefAttr::get(rewriter.getContext(), funcOp.getName());
         parForOp.setFuncNameAttr(symbolRef);
@@ -72,9 +97,10 @@ struct ParForLoweringPass : public PassWrapper<ParForLoweringPass, OperationPass
         patterns.add<ParForOpLoweringPattern>(&getContext());
 
         ConversionTarget target(getContext());
-       
+
         target.addLegalDialect<func::FuncDialect, daphne::DaphneDialect>();
-        target.addDynamicallyLegalOp<daphne::ParForOp>([](daphne::ParForOp op) { return op.getFuncName().has_value(); });
+        target.addDynamicallyLegalOp<daphne::ParForOp>(
+            [](daphne::ParForOp op) { return op.getFuncName().has_value(); });
 
         if (failed(applyPartialConversion(getOperation(), target, std::move(patterns)))) {
             signalPassFailure();

@@ -33,7 +33,6 @@
 #include <limits>
 #include <memory>
 #include <mlir/Dialect/SCF/IR/SCF.h>
-#include <mlir/Transforms/RegionUtils.h>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -742,18 +741,7 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
 
     
-    // (D) : that produce crash - front of region is not initialized.
-    // mlir::Region &targetRegion = parforOp.getRegion();
-    // mlir::Block &targetBlock = targetRegion.front();
-    // targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
-
-    // TODO : do we have to substitute the IV (here) ? (D)- see above
-    // - leave it out -> would require not needing ph i.e. can we create the block earlier ?
-    // - move it -> bring it closer to the addArgument that sets IV i.e. is that even possible ?
-    // Substitute the induction variable, now that we know it.
-    // ph.replaceAllUsesWith(parforOp->getBlock()->getArguments()[0]);
     size_t i = 0;
-
     auto regionIterArgs = bodyBlock.getArguments().drop_front(1); // only one induction variable as of now
     for (auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
