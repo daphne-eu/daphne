@@ -3183,6 +3183,10 @@
                 {
                     "type": "void *",
                     "name": "func"
+                },
+                {
+                    "type": "const int64_t",
+                    "name": "axis"
                 }
             ]
         },

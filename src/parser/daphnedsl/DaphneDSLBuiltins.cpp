@@ -1299,14 +1299,29 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     // ****************************************************************************
 
     if (func == "map") {
-        checkNumArgsExact(loc, func, numArgs, 2);
+        checkNumArgsBetween(loc, func, numArgs, 2, 3);
+
         mlir::Value source = args[0];
 
         auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>();
         mlir::Attribute attr = co.getValue();
 
-        return static_cast<mlir::Value>(
-            builder.create<MapOp>(loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>()));
+        switch (numArgs) {
+            case 2: { // axis is not given, so it defaults to -1
+                mlir::Value minusOne = builder.create<ConstantOp>(loc, int64_t(-1));
+                return static_cast<mlir::Value>(
+                    builder.create<MapOp>(loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>(), minusOne));
+            }
+            case 3: { // axis is given
+                int64_t axis =
+                    CompilerUtils::constantOrThrow<int64_t>(args[2], "third argument of map must be a constant");
+                if (axis == 0 || axis == 1)
+                    return static_cast<mlir::Value>(
+                        builder.create<MapOp>(loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>(), args[2]));
+                else
+                    throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid axis for aggregation.");
+            }
+        }
     }
 
     // ****************************************************************************

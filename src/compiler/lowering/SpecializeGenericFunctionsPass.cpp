@@ -362,7 +362,6 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
         });
 
         // Specialize all functions called by MapOp
-        // TODO(#520)
         function.walk([&](daphne::MapOp mapOp) {
             auto calledFunction = functions[mapOp.getFunc().str()];
             if (isFunctionTemplate(calledFunction)) {
@@ -370,6 +369,12 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                 // mapped on
                 mlir::Type opTy = mapOp.getArg().getType();
                 auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
+                int64_t axis =
+                    CompilerUtils::constantOrThrow<int64_t>(mapOp.getAxis(), "map axis must be a constant.");
+                if (axis == 0) // row-wise map
+                    inpMatrixTy.withShape(inpMatrixTy.getNumRows(), 1); // TODO(#520) case ncols != 1
+                else if (axis == 1) // column-wise map
+                    inpMatrixTy.withShape(1, inpMatrixTy.getNumCols());
                 func::FuncOp specializedFunc =
                     createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction, mapOp.getLoc());
                 mapOp.setFuncAttr(specializedFunc.getSymNameAttr());
@@ -397,7 +402,7 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                     resMatrixTy.getNumRows() != inpMatrixTy.getNumRows() || resMatrixTy.getElementType() != funcResTy) {
                     mapOp.getResult().setType(inpMatrixTy.withElementType(funcResTy));
                     inferTypesInFunction(function);
-                }
+                } // TODO(#520) do not always call
 
                 specializeCallsInFunction(specializedFunc);
                 called.insert(specializedFunc);

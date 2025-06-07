@@ -1918,10 +1918,9 @@ def Daphne_DistributedPipelineOp : Daphne_Op<"distributedPipeline", [AttrSizedOp
 // ****************************************************************************
 // Higher-order operations
 // ****************************************************************************
-// TODO(#520)
 def Daphne_MapOp : Daphne_Op<"map", [ShapeFromArg]> {
     let summary = "Applies a user defined function to elements of a matrix.";
-    let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func);
+    let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func, SI64:$axis);
     let results = (outs MatrixOrU:$res);
 }
 
