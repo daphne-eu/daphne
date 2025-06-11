@@ -17,6 +17,7 @@
 #include "ir/daphneir/Daphne.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Support/LogicalResult.h"
+#include "spdlog/spdlog.h"
 #include <compiler/utils/CompilerUtils.h>
 
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
@@ -253,6 +254,7 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
     mlir::Value rhs = op.getRhs();
     // This will check for the fill operation on the left hand side to push down the arithmetic inside
     // of it
+    // AMLS_TODO: rhsOp as well
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
     if (lhsFill) {
         auto fillValue = lhsFill.getArg();
@@ -264,6 +266,28 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
             mlir::daphne::FillOp newFill =
                 rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
             rewriter.replaceOp(op, {newFill});
+            return mlir::success();
+        }
+    }
+    // This will check for the rand operation on the left hand side to push down the arithmetic inside
+    // of it
+    // AMLS_TODO: rhsOp as well
+    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (lhsRand) {
+        spdlog::warn("inside of rand");
+        auto max = lhsRand.getMax();
+        auto min = lhsRand.getMin();
+        auto height = lhsRand.getNumRows();
+        auto width = lhsRand.getNumCols();
+        auto sparsity = lhsRand.getSparsity();
+        auto seed = lhsRand.getSeed();
+        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+        if (rhsIsSca) {
+            mlir::daphne::EwAddOp newMax = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), max, rhs);
+            mlir::daphne::EwAddOp newMin = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), min, rhs);
+            mlir::daphne::RandMatrixOp newRand = rewriter.create<mlir::daphne::RandMatrixOp>(
+                op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+            rewriter.replaceOp(op, {newRand});
             return mlir::success();
         }
     }
@@ -378,7 +402,7 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
         if (rhsIsSca) {
             mlir::daphne::EwMulOp newMul = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), fillValue, rhs);
             mlir::daphne::FillOp newFill =
-                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMul , width, height);
+                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMul, width, height);
             rewriter.replaceOp(op, {newFill});
             return mlir::success();
         }

@@ -157,7 +157,7 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix", [
 def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
     TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">,
     NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    SparsityFromIthScalar<4>, CastArgsToResTypeRandMatrixOp
+    SparsityFromIthScalar<4>, CastArgsToResTypeRandMatrixOp, Pure
 ]> {
     let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
     let results = (outs MatrixOrU:$res);
