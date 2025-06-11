@@ -1,0 +1,4 @@
+// This is a comment
+method test() {
+    return "Hello";
+}

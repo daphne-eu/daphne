@@ -1,0 +1,19 @@
+{
+  "name": "Daphne",
+  "scopeName": "source.daphne",
+  "fileTypes": ["daphne"],
+  "patterns": [
+    {
+      "name": "keyword.control.daphne",
+      "match": "\\b(method|return)\\b"
+    },
+    {
+      "name": "comment.line.double-slash.daphne",
+      "match": "//.*$"
+    },
+    {
+      "name": "string.quoted.double.daphne",
+      "match": "\".*?\""
+   }
+  ]
+}
