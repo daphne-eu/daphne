@@ -17,6 +17,7 @@
 #include "ir/daphneir/Daphne.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Support/LogicalResult.h"
+#include "spdlog/spdlog.h"
 #include <compiler/utils/CompilerUtils.h>
 
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
@@ -235,6 +236,8 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
  * and (2) `a + X` by `X + a` (`a` scalar, `X` matrix/frame).
  *
+ * AMLS_TODO: expand docs
+ *
  * (1) is important, since we use the `+`-operator for both addition and
  * string concatenation in DaphneDSL, while the types of the operands might be
  * known only after type inference.
@@ -249,6 +252,45 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
+    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // of it
+    // AMLS_TODO: rhsOp as well
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    if (lhsFill) {
+        auto fillValue = lhsFill.getArg();
+        auto height = lhsFill.getNumRows();
+        auto width = lhsFill.getNumCols();
+        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+        if (rhsIsSca) {
+            mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, rhs);
+            mlir::daphne::FillOp newFill =
+                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
+            rewriter.replaceOp(op, {newFill});
+            return mlir::success();
+        }
+    }
+    // This will check for the rand operation on the left hand side to push down the arithmetic inside
+    // of it
+    // AMLS_TODO: rhsOp as well
+    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (lhsRand) {
+        spdlog::warn("inside of rand");
+        auto max = lhsRand.getMax();
+        auto min = lhsRand.getMin();
+        auto height = lhsRand.getNumRows();
+        auto width = lhsRand.getNumCols();
+        auto sparsity = lhsRand.getSparsity();
+        auto seed = lhsRand.getSeed();
+        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+        if (rhsIsSca) {
+            mlir::daphne::EwAddOp newMax = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), max, rhs);
+            mlir::daphne::EwAddOp newMin = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), min, rhs);
+            mlir::daphne::RandMatrixOp newRand = rewriter.create<mlir::daphne::RandMatrixOp>(
+                op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+            rewriter.replaceOp(op, {newRand});
+            return mlir::success();
+        }
+    }
 
     const bool lhsIsStr = llvm::isa<mlir::daphne::StringType>(lhs.getType());
     const bool rhsIsStr = llvm::isa<mlir::daphne::StringType>(rhs.getType());
@@ -305,6 +347,22 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
 mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
+    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // of it
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    if (lhsFill) {
+        auto fillValue = lhsFill.getArg();
+        auto height = lhsFill.getNumRows();
+        auto width = lhsFill.getNumCols();
+        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+        if (rhsIsSca) {
+            mlir::daphne::EwSubOp newSub = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), fillValue, rhs);
+            mlir::daphne::FillOp newFill =
+                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newSub, width, height);
+            rewriter.replaceOp(op, {newFill});
+            return mlir::success();
+        }
+    }
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     if (lhsIsSca && !rhsIsSca) {
@@ -333,6 +391,23 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
 mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
+    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // of it
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    if (lhsFill) {
+        auto fillValue = lhsFill.getArg();
+        auto height = lhsFill.getNumRows();
+        auto width = lhsFill.getNumCols();
+        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+        if (rhsIsSca) {
+            mlir::daphne::EwMulOp newMul = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), fillValue, rhs);
+            mlir::daphne::FillOp newFill =
+                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMul, width, height);
+            rewriter.replaceOp(op, {newFill});
+            return mlir::success();
+        }
+    }
+
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     if (lhsIsSca && !rhsIsSca) {
@@ -358,6 +433,22 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
 mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
+    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // of it
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    if (lhsFill) {
+        auto fillValue = lhsFill.getArg();
+        auto height = lhsFill.getNumRows();
+        auto width = lhsFill.getNumCols();
+        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+        if (rhsIsSca) {
+            mlir::daphne::EwDivOp newDiv = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), fillValue, rhs);
+            mlir::daphne::FillOp newFill =
+                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newDiv, width, height);
+            rewriter.replaceOp(op, {newFill});
+            return mlir::success();
+        }
+    }
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool rhsIsFP = llvm::isa<mlir::FloatType>(CompilerUtils::getValueType(rhs.getType()));
