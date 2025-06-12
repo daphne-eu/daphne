@@ -507,10 +507,81 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         }
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, llvmFuncOp);
         std::stringstream callee;
-        callee << "_parfor__int64_t__int64_t__int64_t__void";
-        auto kId = rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel("parfor_body_0", op)));
-        std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), fnPtr, kId, adaptor.getCtx()};
+
+        callee << "_parfor__int64_t__int64_t__int64_t";
+
+        // determine operandType for inputs
+        const size_t numRes = llvmFuncOp->getNumResults();
+        mlir::Type operandType;
+        if (numRes > 0) {
+            auto m32type = rewriter.getF32Type();
+            auto m64type = rewriter.getF64Type();
+            auto msi64type = rewriter.getIntegerType(64, true);
+
+            auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
+            if (res_elem_type == m64type)
+                operandType = daphne::MatrixType::get(getContext(), m64type);
+            else if (res_elem_type == m32type)
+                operandType = daphne::MatrixType::get(getContext(), m32type);
+            else if (res_elem_type == msi64type)
+                operandType = daphne::MatrixType::get(getContext(), msi64type);
+            else {
+                std::string str;
+                llvm::raw_string_ostream output(str);
+                op->getResult(0).getType().print(output);
+                throw ErrorHandler::compilerError(op, "LowerToLLVMPass",
+                                                  "Unsupported result type for parfor op: " + str);
+            }
+        } else {
+            // dummy matrix for no-results i.e. do not check res_elem_type
+            auto m32type = rewriter.getF32Type();
+            operandType = daphne::MatrixType::get(getContext(), m32type);
+        }
+
+        // extend callee for : numInputs and isScalar
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, false, true);
+        callee << "_variadic__size_t";
+        callee << "__bool";
+
+        // finalize parfor call
+        callee << "__void";
+
+        // TODO : is const 1 right now, because I'm unsure, is it the func that is the body of parfor ? what is it in
+        // vectorized pipeline ?
+        auto numDataOperands = 0; // TODO : ??
+        auto attrNumInputs = rewriter.getI64IntegerAttr(numDataOperands);
+        std::vector<mlir::Value> func_ptrs;
+        func_ptrs.push_back(fnPtr);
+
+        auto size =
+            rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(func_ptrs.size()));
+        auto scalars = rewriter.create<daphne::CreateVariadicPackOp>(
+            loc, daphne::VariadicPackType::get(rewriter.getContext(), rewriter.getI1Type()), attrNumInputs);
+        auto inputs = rewriter.create<daphne::CreateVariadicPackOp>(
+            loc, daphne::VariadicPackType::get(rewriter.getContext(), operandType), attrNumInputs);
+
+        // Populate the variadic packs for isScalar and inputs.
+        // TODO : as of now pbviously does nothing because numDataOperands is 0
+        for (size_t k = 0; k < numDataOperands; k++) {
+            auto attrK = rewriter.getI64IntegerAttr(k);
+            rewriter.create<daphne::StoreVariadicPackOp>(
+                loc, scalars,
+                rewriter.create<daphne::ConstantOp>(
+                    loc,
+                    // We assume this input to be a scalar if its type
+                    // has not been converted to a pointer type.
+                    !llvm::isa<LLVM::LLVMPointerType>(adaptor.getOperands()[k].getType())),
+                attrK);
+            rewriter.create<daphne::StoreVariadicPackOp>(loc, inputs, adaptor.getOperands()[k], attrK);
+        }
+
+        // create kernel op
+        auto kId = rewriter.create<mlir::arith::ConstantOp>(
+            loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel("parfor_body_0", op)));
+        std::vector<Value> kernelOperands{
+            adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), inputs, size, scalars, fnPtr, kId, adaptor.getCtx()};
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, op->getResultTypes());
+
         rewriter.replaceOp(op, kernel.getResults());
         return success();
     }
