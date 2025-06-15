@@ -16,9 +16,9 @@ limitations under the License.
 
 # Imports
 
-How to import functions from other Daphne scripts
+DaphneDSL supports importing functions from other DaphneDSL scripts.
 
-Example usage:
+*Example:*
 
 ```cpp
 import "bar.daphne";
@@ -30,7 +30,7 @@ print(utils.x);
 
 ---
 
-`UserConfig.json` now has a new field `daphnedsl_import_paths`, which maps e.g., library names to a list of paths, see example:
+`UserConfig.json` has a field `daphnedsl_import_paths`, which maps, e.g., library names to a list of paths, see example:
 
 ```json
     "daphnedsl_import_paths": 
@@ -40,11 +40,11 @@ print(utils.x);
     }
 ```
 
-NOTE: to use a user config, the json file path needs to be passed as CLI arg to the DAPHNE binary `daphne --config=<filename>`
+**Note:** To use a custom configuration, the JSON file path needs to be passed as a command-line argument to the DAPHNE binary `bin/daphne --config=<filename>`
 
-NOTE: `default_dirs` can hold many paths and it will look for the **one** specified file in each, whereas any other library names have a list consisting of **one** directory,  from which **all** files will be imported (can be easily extended to multiple directories).
+**Note:** The parameter `default_dirs` can hold many paths and it will look for the **one** specified file in each, whereas any other library names have a list consisting of **one** directory,  from which **all** files will be imported (can be easily extended to multiple directories).
 
-Example:
+*Example:*
 
 ```cpp
 import "a.daphne";
@@ -62,9 +62,9 @@ Paths from `UserConfig` get to `DaphneDSLVisitor` from `daphne.cpp` via `DaphneU
 ---
 
 Variable name collision resolution:
-Whenever we stumble upon equal prefixes (e.g., files with the same name in different directories), a parent directory of the file where conflict is detected is prepended before prefix.
+Whenever we stumble upon equal prefixes (e.g., files with the same name in different directories), a parent directory of the file where the conflict is detected is prepended before the prefix.
 
-Example:
+*Example:*
 
 ```cpp
 import "somedir/a.daphne";
@@ -74,9 +74,9 @@ print(a.x);
 print(otherdir.a.x);
 ```
 
-NOTE: the parent directory may be prepended even though you never specified it (e.g., the import script is in the same directory as the original script).
+**Note:** The parent directory may be prepended even though you never specified it (e.g., the import script is in the same directory as the original script).
 
-Example:
+*Example:*
 
 ```cpp
 import "somedir/a.daphne";
@@ -97,7 +97,7 @@ print(algorithms.x);
 print(algorithms.kmeans1.someVar);
 ```
 
-Even though both prefixes will begin with `algorithms.`, the entire library content's prefix is extended with filenames. It is up to user to not confuse yourself.
+Even though both prefixes will begin with `algorithms.`, the entire library content's prefix is extended with filenames. It is up to the user to not confuse yourself.
 
 ---
 

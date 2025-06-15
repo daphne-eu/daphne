@@ -27,16 +27,16 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 **Provide DAPHNE:**
 
 - `libdaphnelib.so` and `libAllKernels.so` must be present
-  - Building the project with `./build.sh --target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
-  - OR use the `lib/` dir of a release
+    - Building the project with `./build.sh --target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
+    - OR use the `lib/` dir of a release
 - `LD_LIBRARY_PATH` must be set (e.g., executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
 - Set the environment variable `DAPHNELIB_DIR_PATH` to the path were the libraries (`*.so` files) are placed, e.g., `path/to/daphne/lib/`
 
 ## Installation
 
 - There are two options to install the Python package `daphne` (DaphneLib)
-  - Via github url: `pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python`
-  - OR clone the DAPHNE repository and install from source files: `pip install daphne/src/api/python`
+    - Via GitHub url: `pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python`
+    - OR clone the DAPHNE repository and install from source files: `pip install daphne/src/api/python`
 - *Recommendation:* Use a virtual environment
 
     ```shell
@@ -83,7 +83,7 @@ Here, we generate some random data in numpy and import it to DAPHNE **(3)**.
 Based on DAPHNE matrices/frames/scalars (and Python scalars), complex expressions can be defined **(4)** using Python operators (such as `-` and `/` above) and methods on the DAPHNE matrices/frames/scalars (such as `mean()` and `stddev()` above).
 The results of these expressions again represent DAPHNE matrices/frames/scalars.
 
-Up until here, no acutal computations are performed.
+Up until here, no actual computations are performed.
 Instead, an internal DAG (directed acyclic graph) representation of the computation is built.
 When calling `compute()` on the result **(5)**, the DAG is automatically optimized and executed by DAPHNE.
 This principle is known as *lazy evaluation*.
@@ -231,7 +231,7 @@ X.sqrt()
 X.cbind(Y)
 ```
 
-## Data Exchange with other Python Libraries
+## Data Exchange with Other Python Libraries
 
 DaphneLib supports efficient data exchange with other well-known Python libraries, in both directions.
 The data transfer from other Python libraries to DaphneLib can be triggered through the `from_...()` methods of the `DaphneContext` (e.g., `from_numpy()`).

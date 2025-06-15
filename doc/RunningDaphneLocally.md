@@ -16,13 +16,11 @@ limitations under the License.
 
 # Running DAPHNE Locally
 
-Running DAPHNE in a local environment.
-
 This document explains how to run DAPHNE on a local machine.
 For more details on running DAPHNE in a distributed setup, please see the documentation on the [distributed runtime](/doc/DistributedRuntime.md) and [distributed deployment](/doc/Deploy.md).
 
 Before DAPHNE can be executed, the system must be built using `./build.sh` (for more details see [Getting Started](/doc/GettingStarted.md)).
-The main executable of the DAPHNE system is `bin/daphne`.
+The main executable of DAPHNE is `bin/daphne`.
 The general scheme of an invocation of DAPHNE looks as follows:
 
 ```bash
@@ -95,7 +93,7 @@ If `daphne` terminates normally, one of the following status codes is returned:
 
 ### `Parser error: ...`/`Pass error: ...`/`Execution error: ...`
 
-One of the three types of errors mentioned above occured.
+One of the three types of errors mentioned above occurred.
 In many (but not yet all) cases, there will be an error message indicating what went wrong.
 
 *Examples:*
