@@ -16,7 +16,7 @@ limitations under the License.
 
 # Configuration - Getting Information from the User
 
-The behavior of the DAPHNE system can be influenced by the user by means of a cascading configuration mechanism.
+The behavior of DAPHNE can be influenced by the user by means of a cascading configuration mechanism.
 There is a set of options that can be passed from the user to the system.
 These options are collected in the `DaphneUserConfig` ([src/api/cli/DaphneUserConfig.h](/src/api/cli/DaphneUserConfig.h)).
 The cascade consists of the following steps:
@@ -34,7 +34,7 @@ The `DaphneUserConfig` is available to all parts of the code, including:
 Hence, information provided by the user can be used to influence both, the compiler and the runtime.
 *The use of environment variables to pass information into the system is discouraged.*
 
-## How to extend the configuration?
+## How to Extend the Configuration?
 
 If you need to add additional information from the user, you must take roughly the following steps:
 
