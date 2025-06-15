@@ -367,7 +367,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1435,7 +1435,7 @@
           <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
-      Example:
+      Example
     </span>
   </a>
   
@@ -1459,7 +1459,7 @@
           <li class="md-nav__item">
   <a href="#limitations" class="md-nav__link">
     <span class="md-ellipsis">
-      Limitations:
+      Limitations
     </span>
   </a>
   
@@ -1532,34 +1532,32 @@
 
 
 <h1 id="hdfs-usage">HDFS Usage</h1>
-<p>About employing HDFS as a distributed file system.</p>
-<p>This document shows how a DAPHNE user can execute DAPHNE scripts using HDFS as a file system,
+<p>This document shows how a DAPHNE user can execute DaphneDSL scripts using HDFS as a file system,
 which is optimized for performance on big data through distributed computing.
-This document assumes that DAPHNE was build with the <code>--hdfs</code> options, if this is not the case please rebuild DAPHNE with the <code>--hdfs</code> option
-<code>./build.sh --hdfs</code></p>
-<p>The DAPHNE build script uses <a href="https://github.com/apache/hawq/archive/refs/tags/rel/v3.0.0.0.tar.gz">HAWQ (libhdfs3)</a>.</p>
+This document assumes that DAPHNE was built with the <code>--hdfs</code> option, i.e., by <code>./build.sh --hdfs</code>.</p>
+<p>DAPHNE uses <a href="https://github.com/apache/hawq/archive/refs/tags/rel/v3.0.0.0.tar.gz">HAWQ (libhdfs3)</a>.</p>
 <h2 id="configuring-daphne-for-hdfs">Configuring DAPHNE for HDFS</h2>
-<p>In order for DAPHNE to utilize the HDFS file system certain command line arguments need to be passed
-(or included in the config file).</p>
+<p>In order for DAPHNE to utilize the HDFS file system, certain command line arguments need to be passed
+(or included in the configuration file).</p>
 <ul>
-<li><code>--enable-hdfs</code>: A flag to enable hdfs.</li>
-<li><code>--hdfs-address=&lt;IP:PORT&gt;</code>: The IP and port HDFS listens to.</li>
-<li><code>--hdfs-username=&lt;username&gt;</code>: The username used to connect to HDFS.</li>
+<li><code>--enable-hdfs</code>: the flag to enable hdfs</li>
+<li><code>--hdfs-address=&lt;IP:PORT&gt;</code>: the IP and port HDFS listens to</li>
+<li><code>--hdfs-username=&lt;username&gt;</code>: the username used to connect to HDFS</li>
 </ul>
 <h2 id="reading-from-hdfs">Reading from HDFS</h2>
-<p>In order to read a file from the HDFS some pre processing must be done. Assuming the
+<p>In order to read a file from HDFS, some preprocessing must be done. Assuming the
 file is named <code>FILE_NAME</code>, a user needs to:</p>
 <ol>
-<li>Upload the file into HDFS. DAPHNE expects the file to be located inside a directory with some specific naming conventions.
-   The path can by any path under HDFS, however the file must be named with the following convention:</li>
-</ol>
+<li>
+<p>Upload the file into HDFS. DAPHNE expects the file to be located inside a directory with some specific naming conventions.
+    The path can be any path under HDFS, however the file must be named with the following convention:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>/path/to/hdfs/file/FILE_NAME.FILE_TYPE/FILE_NAME.FILE_TYPE_segment_1
 </code></pre></div>
 <p><code>FILE_TYPE</code> is either <code>.csv</code> or <code>.dbdf</code> (DAPHNE binary data format) followed by <code>.hdfs</code>, e.g. <code>myfile.csv.hdfs</code>.</p>
-<p>The suffix <code>_segment_1</code> is necessary, since we support multiple writers at once (see more below), the writers need to write into different files (different segments).
-In this case where the user pre-uploads the file, it needs to be in the same format, but just one segment.</p>
-<p>Each segment must also have it's own .meta file within the HDFS. This is a JSON
-file containg information about the size of the segment as well as the type.
+<p>The suffix <code>_segment_1</code> is necessary, since we support multiple writers at once (see below), the writers need to write into different files (different segments).
+When the user pre-uploads the file, it needs to be in the same format, but just one segment.</p>
+<p>Each segment must also have its own <code>.meta</code> file in HDFS. This is a JSON
+file containing information about the size of the segment as well as the type.
 For example <code>myfile.csv.hdfs_segment_1.meta</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nt">&quot;numCols&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
@@ -1567,12 +1565,12 @@ For example <code>myfile.csv.hdfs_segment_1.meta</code>:</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">&quot;valueType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;f64&quot;</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">}</span>
 </code></pre></div>
-<ol>
-<li>We also need to create a .meta file containing information about the file, within the local file system (from where DAPHNE is invoked).
-    Similar to any other file which will be read by DAPHNE, we need to create a .meta file, which is in JSON format, containing information about where the
-    file is, information about the rows/cols etc. The file should be named: <code>FILE_NAME.FILE_TYPE.meta</code>, e.g.
-    <code>myfile.csv.hdfs.meta</code>. The meta file should contain all the regular information any DAPHNE meta file contains, but in addition it also contains information about whether this is an HDFS file and where it is located within HDFS:</li>
-</ol>
+</li>
+<li>
+<p>We also need to create a <code>.meta</code> file containing information about the file, within the local file system (from where DAPHNE is invoked).
+    Similar to any other file which will be read by DAPHNE, we need to create a <code>.meta</code> file, which is in JSON format, containing information about where the
+    file is, information about the rows/columns etc. The file should be named <code>FILE_NAME.FILE_TYPE.meta</code>, e.g.,
+    <code>myfile.csv.hdfs.meta</code>. The meta file should contain all the regular information any DAPHNE meta file contains, but in addition, it also contains information about whether this is an HDFS file and where it is located within HDFS:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="nt">&quot;hdfs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">        </span><span class="nt">&quot;HDFSFilename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/hdfs/file/FILE_NAME.FILE_TYPE&quot;</span><span class="p">,</span>
@@ -1583,11 +1581,13 @@ For example <code>myfile.csv.hdfs_segment_1.meta</code>:</p>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">&quot;valueType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;f64&quot;</span>
 <a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="example">Example:</h3>
+</li>
+</ol>
+<h3 id="example">Example</h3>
 <p>Let's say we have a dataset called <code>training_data.csv</code> which we want to upload to HDFS and use it with DAPHNE.</p>
 <ol>
-<li>Upload file under path <code>datasets</code> and create the segment .meta file. HDFS should look like this:</li>
-</ol>
+<li>
+<p>Upload file under path <code>datasets</code> and create the segment <code>.meta</code> file. HDFS should look like this:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>hdfs<span class="w"> </span>dfs<span class="w"> </span>-ls<span class="w"> </span>/
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>/datasets/training_data.csv.hdfs/training_data.csv.hdfs_segment_1
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>/datasets/training_data.csv.hdfs/training_data.csv.hdfs_segment_1.meta
@@ -1595,36 +1595,40 @@ For example <code>myfile.csv.hdfs_segment_1.meta</code>:</p>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>$<span class="w"> </span>hdfs<span class="w"> </span>dfs<span class="w"> </span>-cat<span class="w"> </span>/datasets/training_data.csv.hdfs/training_data.csv.hdfs_segment_1.meta
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="o">{</span><span class="s2">&quot;numCols&quot;</span>:10,<span class="s2">&quot;numRows&quot;</span>:10,<span class="s2">&quot;valueType&quot;</span>:<span class="s2">&quot;f64&quot;</span><span class="o">}</span>
 </code></pre></div>
-<ol>
-<li>Create the local file .meta file:</li>
-</ol>
+</li>
+<li>
+<p>Create the local file <code>.meta</code> file:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>cat<span class="w"> </span>./training_data.csv.hdfs.meta
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">{</span><span class="s2">&quot;hdfs&quot;</span>:<span class="o">{</span><span class="s2">&quot;HDFSFilename&quot;</span>:<span class="s2">&quot;/datasets/training_data.csv.hdfs&quot;</span>,<span class="s2">&quot;isHDFS&quot;</span>:true<span class="o">}</span>,<span class="s2">&quot;numCols&quot;</span>:10,<span class="s2">&quot;numRows&quot;</span>:10,<span class="s2">&quot;valueType&quot;</span>:<span class="s2">&quot;f64&quot;</span><span class="o">}</span>
 </code></pre></div>
-<ol>
-<li>DAPHNE script:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>X = readMatrix(&quot;training_data.csv.hdfs&quot;);
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>print(X);
+</li>
+<li>
+<p>DAPHNE script:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">readMatrix</span><span class="p">(</span><span class="s">&quot;training_data.csv.hdfs&quot;</span><span class="p">);</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nf">print</span><span class="p">(</span><span class="n">X</span><span class="p">);</span>
 </code></pre></div>
-<ol>
-<li>Run DAPHNE</li>
-</ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./bin/daphne --enable-hdfs --hdfs-ip=&lt;IP:PORT&gt; --hdfs-username=ubuntu code.daph
+</li>
+<li>
+<p>Run DAPHNE</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./bin/daphne<span class="w"> </span>--enable-hdfs<span class="w"> </span>--hdfs-ip<span class="o">=</span>&lt;IP:PORT&gt;<span class="w"> </span>--hdfs-username<span class="o">=</span>ubuntu<span class="w"> </span>code.daph
 </code></pre></div>
+</li>
+</ol>
 <h2 id="writing-to-hdfs">Writing to HDFS</h2>
-<p>In order to write to HDFS we just need to use the <code>writeMatrix</code> function like we would for any other file type and specify the hdfs suffix. For example:</p>
+<p>In order to write to HDFS we just need to use DaphneDSL's <code>writeMatrix()</code> built-in function like we would for any other file type and specify the <code>.hdfs</code> suffix. For example:</p>
 <ol>
-<li>Code</li>
-</ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>X = rand(10, 10, 0.0, 1.0, 1.0, 1);
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>writeMatrix(X, &quot;randomSet.csv.hdfs&quot;);
+<li>
+<p>Code</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rand</span><span class="p">(</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">0.0</span><span class="p">,</span><span class="w"> </span><span class="m">1.0</span><span class="p">,</span><span class="w"> </span><span class="m">1.0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">);</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nf">writeMatrix</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;randomSet.csv.hdfs&quot;</span><span class="p">);</span>
 </code></pre></div>
-<ol>
-<li>Call daphne</li>
-</ol>
+</li>
+<li>
+<p>Call <code>daphne</code></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./bin/daphne<span class="w"> </span>--enable-hdfs<span class="w"> </span>--hdfs-ip<span class="o">=</span>&lt;IP:PORT&gt;<span class="w"> </span>--hdfs-username<span class="o">=</span>ubuntu<span class="w"> </span>code.daph
 </code></pre></div>
+</li>
+</ol>
 <p>This will create the following files inside HDFS:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>$<span class="w"> </span>hdfs<span class="w"> </span>dfs<span class="w"> </span>-ls<span class="w"> </span>/
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>/randomSet.csv.hdfs/randomSet.csv.hdfs_segment_1
@@ -1633,7 +1637,7 @@ For example <code>myfile.csv.hdfs_segment_1.meta</code>:</p>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>$<span class="w"> </span>hdfs<span class="w"> </span>dfs<span class="w"> </span>-cat<span class="w"> </span>/randomSet.csv.hdfs/randomSet.csv.hdfs_segment_1.meta
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="o">{</span><span class="s2">&quot;numCols&quot;</span>:10,<span class="s2">&quot;numRows&quot;</span>:10,<span class="s2">&quot;valueType&quot;</span>:<span class="s2">&quot;f64&quot;</span><span class="o">}</span>
 </code></pre></div>
-<p>And also the .meta file within the local file system named <code>randomSet.csv.hdfs.meta</code>:</p>
+<p>And also the <code>.meta</code> file within the local file system named <code>randomSet.csv.hdfs.meta</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="nt">&quot;hdfs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">        </span><span class="nt">&quot;HDFSFilename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/randomSet.csv.hdfs&quot;</span><span class="p">,</span>
@@ -1644,8 +1648,8 @@ For example <code>myfile.csv.hdfs_segment_1.meta</code>:</p>
 <a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="nt">&quot;valueType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;f64&quot;</span>
 <a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="limitations">Limitations:</h3>
-<p>For now writing to a specific directory, through DAPHNE, within HDFS is not supported. DAPHNE will always try to write under the root HDFS directory <code>/&lt;name&gt;.&lt;type&gt;.hdfs</code>.</p>
+<h3 id="limitations">Limitations</h3>
+<p>For now, writing to a specific directory, through DAPHNE, within HDFS is not supported. DAPHNE will always try to write under the root HDFS directory <code>/&lt;name&gt;.&lt;type&gt;.hdfs</code>.</p>
 <h2 id="distributed-runtime">Distributed Runtime</h2>
 <p>Both read and write operations are supported by the distributed runtime.</p>
 <h3 id="read">Read</h3>
@@ -1654,33 +1658,37 @@ appropriate naming conventions. Users can then run DAPHNE using the
 <a href="../DistributedRuntime/">distributed runtime</a> and depending on the generated pipeline, DAPHNE's distributed workers will read their
 corresponding part of the data speeding up IO significantly. For example:</p>
 <ol>
-<li>DAPHNE script:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>X = readMatrix(&quot;training_data.csv.hdfs&quot;);
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>print(X+X);
+<li>
+<p>DAPHNE script:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">readMatrix</span><span class="p">(</span><span class="s">&quot;training_data.csv.hdfs&quot;</span><span class="p">);</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nf">print</span><span class="p">(</span><span class="n">X</span><span class="o">+</span><span class="n">X</span><span class="p">);</span>
 </code></pre></div>
-<ol>
-<li>Run DAPHNE</li>
-</ol>
+</li>
+<li>
+<p>Run DAPHNE</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">DISTRIBUTED_WORKERS</span><span class="o">=</span>worker-1:&lt;PORT&gt;:worker-2:&lt;PORT&gt;
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>$<span class="w"> </span>./bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>--dist_backend<span class="o">=</span>sync-gRPC<span class="w"> </span>--enable-hdfs<span class="w"> </span>--hdfs-ip<span class="o">=</span>&lt;IP:PORT&gt;<span class="w"> </span>--hdfs-username<span class="o">=</span>ubuntu<span class="w"> </span>code.daph
 </code></pre></div>
+</li>
+</ol>
 <h3 id="write">Write</h3>
 <p>Similar to read, nothing really changes, users just need to call DAPHNE using the distributed runtime flags. Notice that since we have multiple workers/writers, more than
-one segements are generated inside HDFS:</p>
+one segments are generated inside HDFS:</p>
 <ol>
-<li>Code</li>
-</ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>X = rand(10, 10, 0.0, 1.0, 1.0, 1);
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>writeMatrix(X, &quot;randomSet.csv.hdfs&quot;);
+<li>
+<p>Code</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rand</span><span class="p">(</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">0.0</span><span class="p">,</span><span class="w"> </span><span class="m">1.0</span><span class="p">,</span><span class="w"> </span><span class="m">1.0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">);</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nf">writeMatrix</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;randomSet.csv.hdfs&quot;</span><span class="p">);</span>
 </code></pre></div>
-<ol>
-<li>Call daphne</li>
-</ol>
+</li>
+<li>
+<p>Call <code>daphne</code></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">DISTRIBUTED_WORKERS</span><span class="o">=</span>worker-1:&lt;PORT&gt;:worker-2:&lt;PORT&gt;
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>$<span class="w"> </span>./bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>--dist_backend<span class="o">=</span>sync-gRPC<span class="w"> </span>--enable-hdfs<span class="w"> </span>--hdfs-ip<span class="o">=</span>&lt;IP:PORT&gt;<span class="w"> </span>--hdfs-username<span class="o">=</span>ubuntu<span class="w"> </span>code.daph
 </code></pre></div>
-<p>Assuming 2 distributed workers:</p>
+</li>
+</ol>
+<p>Assuming two distributed workers:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>$<span class="w"> </span>hdfs<span class="w"> </span>dfs<span class="w"> </span>-ls<span class="w"> </span>/
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>/randomSet.csv.hdfs/randomSet.csv.hdfs_segment_1<span class="w">        </span><span class="c1"># First part of the matrix</span>
 <a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>/randomSet.csv.hdfs/randomSet.csv.hdfs_segment_1.meta
@@ -1692,13 +1700,13 @@ one segements are generated inside HDFS:</p>
 <a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>$<span class="w"> </span>hdfs<span class="w"> </span>dfs<span class="w"> </span>-cat<span class="w"> </span>/randomSet.csv.hdfs/randomSet.csv.hdfs_segment_2.meta
 <a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="o">{</span><span class="s2">&quot;numCols&quot;</span>:10,<span class="s2">&quot;numRows&quot;</span>:5,<span class="s2">&quot;valueType&quot;</span>:<span class="s2">&quot;f64&quot;</span><span class="o">}</span>
 </code></pre></div>
-<p>And also the .meta file within the local file system named <code>randomSet.csv.hdfs.meta</code>.</p>
+<p>And also the <code>.meta</code> file within the local file system named <code>randomSet.csv.hdfs.meta</code>.</p>
 <h3 id="notes">Notes</h3>
 <p>It does not matter how many segments are generated or exist. DAPHNE is designed to read
 the segments according to the current state (distributed or not and how many distributed
 workers are being used).</p>
-<p>For example if we use 4 distributed workers to write a matrix,
-DAPHNE will generate 4 different segments. DAPHNE can later read the same matrix either in
+<p>For example if we use four distributed workers to write a matrix,
+DAPHNE will generate four different segments. DAPHNE can later read the same matrix either in
 local execution (no distributed runtime) or using a different number of workers, not depending on the amount of segments generated earlier.</p>
 
 

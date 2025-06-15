@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -840,9 +840,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#build-the-daphne-prototype" class="md-nav__link">
+  <a href="#build-daphne" class="md-nav__link">
     <span class="md-ellipsis">
-      Build the Daphne prototype
+      Build DAPHNE
     </span>
   </a>
   
@@ -860,16 +860,16 @@
         <li class="md-nav__item">
   <a href="#start-distributed-workers" class="md-nav__link">
     <span class="md-ellipsis">
-      Start distributed workers
+      Start Distributed Workers
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#set-up-environmental-variables" class="md-nav__link">
+  <a href="#set-up-environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Set up environmental variables
+      Set up Environment Variables
     </span>
   </a>
   
@@ -878,7 +878,7 @@
         <li class="md-nav__item">
   <a href="#run-daphne-using-the-distributed-runtime" class="md-nav__link">
     <span class="md-ellipsis">
-      Run DAPHNE using the distributed runtime
+      Run DAPHNE Using the Distributed Runtime
     </span>
   </a>
   
@@ -896,16 +896,7 @@
         <li class="md-nav__item">
   <a href="#current-limitations" class="md-nav__link">
     <span class="md-ellipsis">
-      Current limitations
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      What Next?
+      Current Limitations
     </span>
   </a>
   
@@ -1575,9 +1566,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#build-the-daphne-prototype" class="md-nav__link">
+  <a href="#build-daphne" class="md-nav__link">
     <span class="md-ellipsis">
-      Build the Daphne prototype
+      Build DAPHNE
     </span>
   </a>
   
@@ -1595,16 +1586,16 @@
         <li class="md-nav__item">
   <a href="#start-distributed-workers" class="md-nav__link">
     <span class="md-ellipsis">
-      Start distributed workers
+      Start Distributed Workers
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#set-up-environmental-variables" class="md-nav__link">
+  <a href="#set-up-environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Set up environmental variables
+      Set up Environment Variables
     </span>
   </a>
   
@@ -1613,7 +1604,7 @@
         <li class="md-nav__item">
   <a href="#run-daphne-using-the-distributed-runtime" class="md-nav__link">
     <span class="md-ellipsis">
-      Run DAPHNE using the distributed runtime
+      Run DAPHNE Using the Distributed Runtime
     </span>
   </a>
   
@@ -1631,16 +1622,7 @@
         <li class="md-nav__item">
   <a href="#current-limitations" class="md-nav__link">
     <span class="md-ellipsis">
-      Current limitations
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      What Next?
+      Current Limitations
     </span>
   </a>
   
@@ -1666,72 +1648,64 @@
 
 
 <h1 id="distributed-runtime">Distributed Runtime</h1>
-<p>Running DAPHNE on the Distributed Runtime</p>
 <h2 id="background">Background</h2>
-<p>Daphne supports execution in a distributed fashion. Utilizing the Daphne Distributed Runtime does not require any changes to the DaphneDSL script.
+<p>DAPHNE supports execution in a distributed fashion. Utilizing the DAPHNE distributed runtime does not require any changes to the DaphneDSL script.
 Similar to the local vectorized engine (<a href="https://daphne-eu.eu/wp-content/uploads/2022/08/D2.2-Refined-System-Architecture.pdf">here, section 4</a>), the compiler automatically fuses operations and creates pipelines for the distributed runtime, which then uses multiple distributed nodes (workers) that work on their local data, while a main node, the coordinator, is responsible for transferring the data and code to be executed.
-As mentioned above, changes at DaphneDSL code are not needed, however the user is required to start the workers, either manually or using an HPC tool as SLURM (scripts that start the workers locally or remotely, natively or not, can be found <a href="https://github.com/daphne-eu/daphne/tree/main/deploy">here</a>).</p>
+As mentioned above, changes to the DaphneDSL code are not needed, however the user is required to start the workers, either manually or using an HPC tool such as Slurm (see the documentation on <a href="https://github.com/daphne-eu/daphne/tree/main/deploy">deployment</a> for scripts that start the workers locally or remotely, natively or not).</p>
 <h2 id="scope">Scope</h2>
 <p>This document focuses on:</p>
 <ul>
 <li>how to start distributed workers</li>
-<li>executing Daphne scripts on the distributed runtime</li>
+<li>executing DaphneDSL scripts on the distributed runtime</li>
 <li>DAPHNE's distributed runtime has two different backends. This page explains how things work with the <strong>gRPC backend</strong>.
 A brief introduction to the other backend using <strong>OpenMPI</strong> can be viewed in <a href="../MPI-Usage/">this document</a>.</li>
 </ul>
-<h2 id="build-the-daphne-prototype">Build the Daphne prototype</h2>
-<p>First you need to build the Daphne prototype. This doc assumes that you already built Daphne and can run it locally. If you need help building or running Daphne see <a href="/daphne/GettingStarted">here</a>.</p>
+<h2 id="build-daphne">Build DAPHNE</h2>
+<p>First you need to build DAPHNE. This document assumes that you have already built DAPHNE and can run it locally. If you need help building or running DAPHNE see the guidelines for <a href="/daphne/GettingStarted">getting started</a>.</p>
 <h2 id="building-the-distributed-worker">Building the Distributed Worker</h2>
-<p>The Daphne distributed worker is a different executable which can be build using the build-script and providing the <code>--target</code> argument:</p>
+<p>The DAPHNE distributed worker is a different executable which can be built using the build script by providing the <code>--target</code> argument:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./build.sh<span class="w"> </span>--target<span class="w"> </span>DistributedWorker
 </code></pre></div>
-<h2 id="start-distributed-workers">Start distributed workers</h2>
-<p>Before executing Daphne on the distributed runtime, worker nodes must first be up and running. You can start a distributed worker within the Daphne prototype directory as follows:</p>
+<h2 id="start-distributed-workers">Start Distributed Workers</h2>
+<p>Before executing DAPHNE on the distributed runtime, worker nodes must first be up and running. You can start a distributed worker within the DAPHNE directory as follows:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># IP:PORT is the IP and PORT the worker server will be listening too</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./bin/DistributedWorker<span class="w"> </span>IP:PORT<span class="w"> </span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>bin/DistributedWorker<span class="w"> </span>IP:PORT<span class="w"> </span>
 </code></pre></div>
-<p>There are <a href="https://github.com/daphne-eu/daphne/tree/main/deploy">scripts</a> that automate this task and can help running multiple workers at once locally or even utilizing tools (like SLURM) in HPC environments.</p>
+<p>There are <a href="https://github.com/daphne-eu/daphne/tree/main/deploy">scripts</a> that automate this task and can help running multiple workers at once locally or even utilizing tools (like Slurm) in HPC environments.</p>
 <p>Each worker can be left running and reused for multiple scripts and pipeline executions (however, for now they might run into memory issues, see <strong>Limitations</strong> section below).</p>
 <p>Each worker can be terminated by sending a <code>SIGINT</code> (Ctrl+C) or by using the scripts mentioned above.</p>
-<h2 id="set-up-environmental-variables">Set up environmental variables</h2>
-<p>After setting up the workers, before we run Daphne we need to specify which IPs
-and ports the workers are listening too. For now we use an environmental variable called
-<code>DISTRIBUTED_WORKERS</code> where we list IPs and ports of the workers separated by a comma.</p>
+<h2 id="set-up-environment-variables">Set up Environment Variables</h2>
+<p>After setting up the workers, before we run DAPHNE we need to specify which IPs
+and ports the workers listen to. For now, we use an environment variable called
+<code>DISTRIBUTED_WORKERS</code> where we list IPs and ports of the workers separated by comma.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Example for 2 workers.</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># Worker1 listens to localhost:5000</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Worker2 listens to localhost:5001</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DISTRIBUTED_WORKERS</span><span class="o">=</span>localhost:5000,localhost:5001
 </code></pre></div>
-<h2 id="run-daphne-using-the-distributed-runtime">Run DAPHNE using the distributed runtime</h2>
-<p>Now that we have all workers up and running and the environmental variable is set we can run Daphne. We enable the distributed runtime by specifying the flag argument <code>--distributed</code>.</p>
-<p><strong>(*)</strong> Note that we execute Daphne from the same bash shell we've set up the environmental variable  <code>DISTRIBUTED_WORKERS</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>./example.script
+<h2 id="run-daphne-using-the-distributed-runtime">Run DAPHNE Using the Distributed Runtime</h2>
+<p>Now that we have all workers up and running and the environment variable is set, we can run DAPHNE. We enable the distributed runtime by specifying the flag <code>--distributed</code>.</p>
+<p><strong>(*)</strong> Note that we execute DAPHNE from the same bash shell we've set up the environment variable  <code>DISTRIBUTED_WORKERS</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>./example.script
 </code></pre></div>
-<p>For now only asynchronous-gRPC is implemented as a distributed backend and selection is hardcoded <a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h#L73">here</a>.</p>
+<p>For now, only asynchronous gRPC is implemented as a distributed backend and the backend selection is hardcoded in <code>/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h</code>.</p>
 <h2 id="example">Example</h2>
-<p>On one terminal with start up a Distributed Worker:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$./bin/DistributedWorker<span class="w"> </span>localhost:5000
+<p>On one terminal we start up a distributed worker:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>bin/DistributedWorker<span class="w"> </span>localhost:5000
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Started<span class="w"> </span>Distributed<span class="w"> </span>Worker<span class="w"> </span>on<span class="w"> </span><span class="sb">`</span>localhost:5000<span class="sb">`</span>
 </code></pre></div>
-<p>On another terminal we set the environment variable and execute script <a href="https://github.com/daphne-eu/daphne/tree/main/scripts/examples/distributed.daph"><code>distributed.daph</code></a>:</p>
+<p>On another terminal we set the environment variable and execute the script <a href="https://github.com/daphne-eu/daphne/tree/main/scripts/examples/distributed.daph"><code>distributed.daph</code></a>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">DISTRIBUTED_WORKERS</span><span class="o">=</span>localhost:5000
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>$<span class="w"> </span>./bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>./scripts/example/distributed.daph
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>$<span class="w"> </span>bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>./scripts/example/distributed.daph
 </code></pre></div>
-<h2 id="current-limitations">Current limitations</h2>
-<p>Distributed Runtime is still under development and currently there are various limitations. Most of these limitations will be fixed in the future.</p>
+<h2 id="current-limitations">Current Limitations</h2>
+<p>The distributed runtime is still under development and currently there are various limitations. Most of these limitations will be fixed in the future.</p>
 <ul>
-<li>Distributed runtime for now heavily depends on the vectorized engine of Daphne and how pipelines are
+<li>Distributed runtime for now heavily depends on the vectorized engine and how pipelines are
 created and multiple operations are fused together (more <a href="https://daphne-eu.eu/wp-content/uploads/2022/08/D2.2-Refined-System-Architecture.pdf">here - section 4</a>). This causes some limitations related to pipeline creation (e.g. <a href="https://github.com/daphne-eu/daphne/tree/main/issues/397">not supporting pipelines with different result outputs</a> or pipelines with no outputs).</li>
-<li>For now distributed runtime only supports <code>DenseMatrix</code> types and value types <code>double</code> - <code>DenseMatrix&lt;double&gt;</code> (issue <a href="https://github.com/daphne-eu/daphne/tree/main/issues/194">#194</a>).</li>
-<li>A Daphne pipeline input might exist multiple times in the input array. For now this is not supported. In the future similar pipelines will simply omit multiple pipeline inputs and each one will be provided only once.</li>
+<li>For now, the distributed runtime only supports the <code>DenseMatrix</code> data type and the <code>double</code> value type, i.e., <code>DenseMatrix&lt;double&gt;</code> (issue <a href="https://github.com/daphne-eu/daphne/tree/main/issues/194">#194</a>).</li>
+<li>A DAPHNE pipeline input might exist multiple times in the input array. For now, this is not supported. In the future, similar pipelines will simply omit multiple pipeline inputs and each one will be provided only once.</li>
 <li>Garbage collection at worker (node) level is not implemented yet. This means that after some time the workers can fill up their memory completely, requiring a restart.</li>
-</ul>
-<h2 id="what-next">What Next?</h2>
-<p>You might want to have a look at</p>
-<ul>
-<li>the <a href="/daphne/development/ExtendingDistributedRuntime">distributed runtime development guideline</a></li>
-<li>the <a href="https://github.com/daphne-eu/daphne/tree/main/CONTRIBUTING.md">contribution guidelines</a></li>
-<li>the <a href="https://github.com/daphne-eu/daphne/issues?q=is%3Aopen+is%3Aissue+label%3ADistributed">open distributed related issues</a></li>
 </ul>
 
 

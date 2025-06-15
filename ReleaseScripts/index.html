@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1522,42 +1522,48 @@
 
 
 <h1 id="release-scripts">Release Scripts</h1>
-<p>How to use the release scripts to create binary artifacts</p>
 <p>This is a quick write-up of how the scripts to create a binary release artifact are meant to be used.</p>
-<p>The release.sh script will call pack.sh which will call build.sh and test.sh. Only if testing completes successfully, the artifact, a gzipped tar archive (format open for discussion) is created. The command after <code>--githash</code> fetches the git hash of the current commit. The script checks out this git hash and restores the current commit after successful completion. This is a bit of a shortcoming as you have to issue a manual <code>git checkout -</code> if the script fails and terminates early.</p>
+<p>The <code>release.sh</code> script calls <code>pack.sh</code> which calls <code>build.sh</code> and <code>test.sh</code>. Only if testing completes successfully, the artifact, a gzipped tar archive (format open for discussion) is created. The command after <code>--githash</code> fetches the git hash of the current commit. The script checks out this git hash and restores the current commit after successful completion. This is a bit of a shortcoming as you have to issue a manual <code>git checkout -</code> if the script fails and terminates early.</p>
 <h2 id="signing">Signing</h2>
 <p>The release manager will have to sign the artifacts to verify that the provided software has been created by that person.
 To create an appropriate GPG key, <a href="../GPG-signing-keys/">these instructions</a> can be adapted to our needs. The
-keys of Daphne release managers will be provided in <a href="https://github.com/daphne-eu/daphne/tree/main/KEYS.txt">this file</a>. Ideally, future release managers sign each others keys. Key signing is a form of showing
+keys of DAPHNE release managers will be provided in <a href="https://github.com/daphne-eu/daphne/tree/main/KEYS.txt">KEYS.txt</a>. Ideally, future release managers sign each other's keys. Key signing is a form of showing
 that the one key owner trusts the other.</p>
 <h2 id="the-procedure-preliminary-for-v01">The Procedure (Preliminary for v0.1)</h2>
 <ol>
-<li>Get into a bash shell and change to your working copy (aka daphne root) directory.</li>
-<li><strong>Create the artifacts (plain Daphne):</strong> <code>./release.sh --version 0.1 --githash `git rev-parse HEAD`</code></li>
-<li><strong>Create additional artifacts with extra features compiled in:</strong><br /> <code>./release.sh --version 0.1 --githash `git rev-parse HEAD` --feature cuda</code>
-<br />Note that this adds additional constraints on the binaries (e.g., if CUDA support is compiled in, the executable will fail to load on a system without the CUDA SDK properly installed)_</li>
-<li><strong>Copy the artifacts</strong> to a machine where you have your top secret signing key installed (can be skipped if this is the build machine):<br />
-   <code>rsync -vuPah &lt;hostname&gt;:path/to/daphne/artifacts .</code></li>
 <li>
-<p><strong>Signing and checksumming:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>artifacts
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~/path/to/daphne/release.sh<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.1<span class="w"> </span>--artifact<span class="w"> </span>./daphne-0.1-bin.tgz<span class="w"> </span>--gpgkey<span class="w"> </span>&lt;GPG_KEY_ID&gt;<span class="w"> </span>--githash<span class="w"> </span><span class="sb">`</span>cat<span class="w"> </span>daphne-0.1-bin.githash<span class="sb">`</span><span class="w"> </span>
+<p>Get into a bash shell and change to your working copy (aka DAPHNE root) directory.</p>
+</li>
+<li>
+<p><strong>Create the artifacts (plain DAPHNE):</strong> <code>./release.sh --version 0.1 --githash `git rev-parse HEAD`</code></p>
+</li>
+<li>
+<p><strong>Create additional artifacts with extra features compiled in:</strong> <code>./release.sh --version 0.1 --githash `git rev-parse HEAD` --feature cuda</code></p>
+<p>Note that this adds additional constraints on the binaries (e.g., if CUDA support is compiled in, the executable will fail to load on a system without the CUDA SDK properly installed).</p>
+</li>
+<li>
+<p><strong>Copy the artifacts</strong> to a machine where you have your secret signing key installed (can be skipped if this is the build machine):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>rsync<span class="w"> </span>-vuPah<span class="w"> </span>&lt;hostname&gt;:path/to/daphne/artifacts<span class="w"> </span>.
 </code></pre></div>
 </li>
 <li>
-<p>repeat for other feature artifacts</p>
+<p><strong>Signing and checksumming:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>artifacts
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>~/path/to/daphne/release.sh<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.1<span class="w"> </span>--artifact<span class="w"> </span>./daphne-0.1-bin.tgz<span class="w"> </span>--gpgkey<span class="w"> </span>&lt;GPG_KEY_ID&gt;<span class="w"> </span>--githash<span class="w"> </span><span class="sb">`</span>cat<span class="w"> </span>daphne-0.1-bin.githash<span class="sb">`</span><span class="w"> </span>
+</code></pre></div>
+<p>Repeat for other feature artifacts</p>
 </li>
 <li>
-<p><strong>Tag &amp; push</strong> The previous signing command will provide you with two more git commands to tag the commit that the artfiacts were made from and to push these tags to github.
+<p><strong>Tag &amp; push</strong> The previous signing command will provide you with two more git commands to tag the commit that the artifacts were made from and to push these tags to GitHub.
     This should look something like this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>-u<span class="w"> </span>B28F8F4D<span class="w"> </span><span class="m">0</span>.1<span class="w"> </span>312b2b50b4e60b3c5157c3365ec38383d35e28d8
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>push<span class="w"> </span>git@github.com:corepointer/daphne.git<span class="w"> </span>--tags
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>-u<span class="w"> </span>B28F8F4D<span class="w"> </span><span class="m">0</span>.1<span class="w"> </span>312b2b50b4e60b3c5157c3365ec38383d35e28d8
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>git<span class="w"> </span>push<span class="w"> </span>git@github.com:corepointer/daphne.git<span class="w"> </span>--tags
 </code></pre></div>
 </li>
 <li>
 <p><strong>Upload &amp; release</strong>:</p>
 <ul>
-<li>Click the "create new release" link on the front page of the Daphne github repository (right column under "Releases").</li>
+<li>Click the "create new release" link on the front page of the DAPHNE GitHub repository (right column under "Releases").</li>
 <li>Select the tag for the release, create a title, add release notes (highlights of this release, list of contributors, maybe a detailed change log at the end)</li>
 <li>Upload the artifacts: All the <code>&lt;filename&gt;.{tgz,tgz.asc,tgz.sha512sum}</code> files before either saving as draft for further polishing or finally release the new version.</li>
 </ul>

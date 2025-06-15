@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -801,7 +801,7 @@
         <li class="md-nav__item">
   <a href="#currently-supported-json-fields" class="md-nav__link">
     <span class="md-ellipsis">
-      Currently supported JSON fields
+      Currently Supported JSON Fields
     </span>
   </a>
   
@@ -1568,7 +1568,7 @@
         <li class="md-nav__item">
   <a href="#currently-supported-json-fields" class="md-nav__link">
     <span class="md-ellipsis">
-      Currently supported JSON fields
+      Currently Supported JSON Fields
     </span>
   </a>
   
@@ -1684,15 +1684,14 @@
 
 
 <h1 id="read-and-write-data">Read and Write Data</h1>
-<p>Reading and writing (meta) data in Daphne.</p>
 <p>When loading data with <code>read()</code> in a DaphneDSL script, the system expects a file with the same file name in the same
 directory as the data file with an additional extension <code>.meta</code>. This file contains a description of meta data stored
 in JSON format.</p>
 <p>There are two slightly varying ways of specifying meta data depending on whether there is a schema for the columns (e.g.,
-a data frame - the corresponding C++ type is the Frame class) or not (this data can currently (as of version 0.1) be
+a data frame - the corresponding C++ type is the <code>Frame</code> class) or not (this data can currently be
 loaded as <code>DenseMatrix&lt;VT&gt;</code> or <code>CSRMatrix&lt;VT&gt;</code> where <code>VT</code> is the value type template parameter).</p>
 <p>If data is written from a DaphneDSL script via <code>write()</code>, the meta data file will be written to the corresponding <code>filename.meta</code>.</p>
-<h2 id="currently-supported-json-fields">Currently supported JSON fields</h2>
+<h2 id="currently-supported-json-fields">Currently Supported JSON Fields</h2>
 <table>
 <thead>
 <tr>
@@ -1705,12 +1704,12 @@ loaded as <code>DenseMatrix&lt;VT&gt;</code> or <code>CSRMatrix&lt;VT&gt;</code>
 <tr>
 <td>numRows</td>
 <td>Integer</td>
-<td># number of rows</td>
+<td>number of rows</td>
 </tr>
 <tr>
 <td>numCols</td>
 <td>Integer</td>
-<td># number of columns</td>
+<td>number of columns</td>
 </tr>
 <tr>
 <td>valueType</td>
@@ -1720,7 +1719,7 @@ loaded as <code>DenseMatrix&lt;VT&gt;</code> or <code>CSRMatrix&lt;VT&gt;</code>
 <tr>
 <td>numNonZeros</td>
 <td>Integer</td>
-<td># number of non-zeros (optional)</td>
+<td>number of non-zeros (optional)</td>
 </tr>
 <tr>
 <td>schema</td>
@@ -1735,7 +1734,7 @@ loaded as <code>DenseMatrix&lt;VT&gt;</code> or <code>CSRMatrix&lt;VT&gt;</code>
 </tbody>
 </table>
 <h2 id="matrix-example">Matrix Example</h2>
-<p>The example below describes a 2 by 4 dense matrix of double precision values.</p>
+<p>The example below describes a <em>2x4</em> matrix of double-precision values.</p>
 <h3 id="matrix-csv">Matrix CSV</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>-0.1,-0.2,0.1,0.2
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>3.14,5.41,6.22216,5
@@ -1749,7 +1748,7 @@ loaded as <code>DenseMatrix&lt;VT&gt;</code> or <code>CSRMatrix&lt;VT&gt;</code>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="data-frame-example">Data Frame Example</h2>
-<p>The example below describes a 2 by 2 Frame with signed integers in the first columns named foo and double precision 
+<p>The example below describes a <em>2x2</em> frame with signed integers in the first column named foo and double-precision 
 values in the second column named bar.</p>
 <h3 id="data-frame-csv">Data Frame CSV</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>1,0.5

@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -940,19 +940,19 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#system-requirments" class="md-nav__link">
+  <a href="#system-requirements" class="md-nav__link">
     <span class="md-ellipsis">
-      System requirments
+      System Requirements
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="System requirments">
+    <nav class="md-nav" aria-label="System Requirements">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#precompiled-fpga-kernels" class="md-nav__link">
+  <a href="#pre-compiled-fpga-kernels" class="md-nav__link">
     <span class="md-ellipsis">
-      Precompiled FPGA Kernels
+      Pre-compiled FPGA Kernels
     </span>
   </a>
   
@@ -1491,19 +1491,19 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#system-requirments" class="md-nav__link">
+  <a href="#system-requirements" class="md-nav__link">
     <span class="md-ellipsis">
-      System requirments
+      System Requirements
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="System requirments">
+    <nav class="md-nav" aria-label="System Requirements">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#precompiled-fpga-kernels" class="md-nav__link">
+  <a href="#pre-compiled-fpga-kernels" class="md-nav__link">
     <span class="md-ellipsis">
-      Precompiled FPGA Kernels
+      Pre-compiled FPGA Kernels
     </span>
   </a>
   
@@ -1534,32 +1534,35 @@
 
 
 <h1 id="fpga-configuration">FPGA Configuration</h1>
-<p>FPGA configuration for usage in DAPHNE</p>
-<h2 id="system-requirments">System requirments</h2>
-<p>Daphne build script for FPGA kernels support requires additional QUARTUSDIR system variable definition.
-Example command is presented in fpga-build-env.sh or in the following command:</p>
-<p><code>export QUARTUSDIR=/opt/intel/intelFPGA_pro/21.4</code></p>
-<p>To build the Daphne with the FPGA support <code>-fpgaopencl</code> flag has to be used:</p>
-<p><code>./build.sh --fpgaopenc</code></p>
-<p>To run developed or precompiled, included in Daphne repository FPGA OpenCL kernels an installedand configured  FPGA device is required.
-Our example kernels have been tested using <a href="https://www.intel.com/content/www/us/en/products/sku/193921/intel-fpga-pac-d5005/specifications.html">Intel(R) PAC D5005 card</a></p>
-<p>DAPHNE contains some example linear algebra kernels developed using <a href="https://github.com/IntelLabs/t2sp/blob/master/README.md">T2SP framework</a>.
-Example precompiled FPGA kernels can be usedon  DAPHNE DSL description level.
-To prepare the system for the precompiled FPGA kernels some FPGA and OpenCL system variables are required.
-The easiest way to set up required varables is to use the init_opencl.sh script from installed Intel(R) Quartus sowtware or from the
+<h2 id="system-requirements">System Requirements</h2>
+<p>Using DAPHNE's build script with FPGA kernels support requires the additional <code>QUARTUSDIR</code> environment variable to be defined.
+An example command is presented in <code>fpga-build-env.sh</code> or in the following command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">QUARTUSDIR</span><span class="o">=</span>/opt/intel/intelFPGA_pro/21.4
+</code></pre></div>
+<p>To build DAPHNE with FPGA kernels support, the flag <code>--fpgaopencl</code> has to be used:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./build.sh<span class="w"> </span>--fpgaopencl
+</code></pre></div>
+<p>To run the pre-compiled FPGA OpenCL kernels included in the DAPHNE repository, an installed and configured FPGA device is required.
+Our example kernels have been tested using an <a href="https://www.intel.com/content/www/us/en/products/sku/193921/intel-fpga-pac-d5005/specifications.html">Intel(R) PAC D5005 card</a>.</p>
+<p>DAPHNE contains some example linear algebra kernels developed using the <a href="https://github.com/IntelLabs/t2sp/blob/master/README.md">T2SP framework</a>.
+The example pre-compiled FPGA kernels can be used at DaphneDSL level.
+To prepare the system for the pre-compiled FPGA kernels, some FPGA and OpenCL environment variables are required.
+The easiest way to set up the required variables is to use the <code>init_opencl.sh</code> script from installed Intel(R) Quartus software or from the
 Intel(R) OpenCL RTE or Intel(R) OpenCL SDK packages.</p>
-<p>Example script usage:
-<code>source /opt/intel/intelFPGA_pro/21.4/hld/init_opencl.sh</code></p>
-<p>For additional details please look into the <a href="https://www.intel.com/content/www/us/en/docs/programmable/683550/18-1/standard-edition-getting-started-guide.html">Intel guide</a>
-or <a href="https://www.intel.com/content/www/us/en/software/programmable/sdk-for-opencl/overview.html">SDK for openCL</a>.</p>
-<h3 id="precompiled-fpga-kernels">Precompiled FPGA Kernels</h3>
-<p>To use a precompiled FPGA kernel a FPGA image is required (*.aocx). FPGA device has to programmed with particular image which contains required kernel implementation.
-Example FPGA programming command using example FPGA image:</p>
-<p><code>aocl program acl0 src/runtime/local/kernels/FPGAOPENCL/bitstreams/sgemm.aocx</code></p>
-<p>Additionally the BITSTREAM variable has to be defind in the system.
-Please look into the following example:</p>
-<p><code>export BITSTREAM=src/runtime/local/kernels/FPGAOPENCL/bitstreams/sgemm.aocx</code></p>
-<p>When another FPGA image contains implementation for another required computational kernel then FPGA device has to be reprogrammed and BITSTREAM variable value has to be changed.</p>
+<p>Example script usage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">source</span><span class="w"> </span>/opt/intel/intelFPGA_pro/21.4/hld/init_opencl.sh
+</code></pre></div>
+<p>For additional details, see the <a href="https://www.intel.com/content/www/us/en/docs/programmable/683550/18-1/standard-edition-getting-started-guide.html">Intel guide</a>
+or the <a href="https://www.intel.com/content/www/us/en/software/programmable/sdk-for-opencl/overview.html">SDK for OpenCL</a>.</p>
+<h3 id="pre-compiled-fpga-kernels">Pre-compiled FPGA Kernels</h3>
+<p>To use a pre-compiled FPGA kernel, an FPGA image is required (<code>*.aocx</code>). The FPGA device has to be programmed with a particular image which contains the required kernel implementation.
+An example FPGA programming command using example FPGA image:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>aocl<span class="w"> </span>program<span class="w"> </span>acl0<span class="w"> </span>src/runtime/local/kernels/FPGAOPENCL/bitstreams/sgemm.aocx
+</code></pre></div>
+<p>Additionally, the <code>BITSTREAM</code> environment variable has to be defind in the system as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BITSTREAM</span><span class="o">=</span>src/runtime/local/kernels/FPGAOPENCL/bitstreams/sgemm.aocx
+</code></pre></div>
+<p>When another FPGA image contains an implementation for another required computational kernel, then the FPGA device has to be reprogrammed and the <code>BITSTREAM</code> environment variable has to be changed.</p>
 
 
 

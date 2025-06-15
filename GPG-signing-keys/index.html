@@ -367,7 +367,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1404,23 +1404,8 @@
   
   
   
+    
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#providing-information-about-gpg-signing-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      Providing information about GPG signing keys
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -1439,24 +1424,26 @@
   
 
 
-  <h1>GPG signing keys</h1>
-
-<h2 id="providing-information-about-gpg-signing-keys">Providing information about GPG signing keys</h2>
+<h1 id="providing-information-about-gpg-signing-keys">Providing Information about GPG Signing Keys</h1>
 <p>In general see the <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification#gpg-commit-signature-verification">GitHub documentation</a> about generating and maintaining your GPG keys for signing commits and releases. There are also tons of how-tos and tutorials out there about GPG and its best practices (which might change over time).</p>
-<p>Here are a few pointers how to deal with your GPG keys in the context of DAPHNE. <br/>Keys need to be:
-1. entered in your GitHub profile (<a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification#gpg-commit-signature-verification">see GitHub documentation</a>).
-2. kept up to date (remove and add again in GitHub after prolonging the expiry date).
-3. kept up to date in the <code>KEYS.txt</code> file in the DAPHNE repo root directory.
-4. updated on third party key servers you might have used.</p>
+<p>Here are a few pointers how to deal with your GPG keys in the context of DAPHNE. Keys need to be:</p>
+<ol>
+<li>entered in your GitHub profile (<a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification#gpg-commit-signature-verification">see GitHub documentation</a>).</li>
+<li>kept up to date (remove and add again in GitHub after prolonging the expiry date).</li>
+<li>kept up to date in the <code>KEYS.txt</code> file in the DAPHNE repo root directory.</li>
+<li>updated on third party key servers you might have used.</li>
+</ol>
 <p>Keyserver recommendation: As of February 2024 we recommend keyserver.ubuntu.com, keys.openpgp.org and keys.mailvelope.com. The latter two are recommended as they perform email verification. </p>
 <ul>
-<li>To export your key information to <code>KEYS.txt</code> use these two commands (replace <code>&lt;your-email&gt;</code> with the email address associated with your GPG key:</li>
-</ul>
+<li>
+<p>To export your key information to <code>KEYS.txt</code> use these two commands (replace <code>&lt;your-email&gt;</code> with the email address associated with your GPG key:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>gpg<span class="w"> </span>--keyid-format<span class="o">=</span>0xshort<span class="w"> </span>--list-key<span class="w"> </span>--with-fingerprint<span class="w"> </span>&lt;your-email&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>-a<span class="w"> </span>KEYS.txt
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>gpg<span class="w"> </span>--armor<span class="w"> </span>--export<span class="w"> </span>&lt;your-email&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>-a<span class="w"> </span>KEYS.txt
 </code></pre></div>
-<ul>
-<li>If you are updating your key information in <code>KEYS.txt</code>, open that file with a text editor to remove the old key after appending the new one.</li>
+</li>
+<li>
+<p>If you are updating your key information in <code>KEYS.txt</code>, open that file with a text editor to remove the old key after appending the new one.</p>
+</li>
 </ul>
 
 

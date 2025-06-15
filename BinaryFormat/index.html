@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1216,17 +1216,17 @@
         <li class="md-nav__item">
   <a href="#block-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Block types
+      Block Types
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Block types">
+    <nav class="md-nav" aria-label="Block Types">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#empty-block" class="md-nav__link">
     <span class="md-ellipsis">
-      Empty block
+      Empty Block
     </span>
   </a>
   
@@ -1235,7 +1235,7 @@
           <li class="md-nav__item">
   <a href="#dense-block" class="md-nav__link">
     <span class="md-ellipsis">
-      Dense block
+      Dense Block
     </span>
   </a>
   
@@ -1244,7 +1244,7 @@
           <li class="md-nav__item">
   <a href="#sparse-block-compressed-sparse-row-csr" class="md-nav__link">
     <span class="md-ellipsis">
-      Sparse block (compressed sparse row, CSR)
+      Sparse Block (Compressed Sparse Row, CSR)
     </span>
   </a>
   
@@ -1253,7 +1253,7 @@
           <li class="md-nav__item">
   <a href="#ultra-sparse-block-coordinate-coo" class="md-nav__link">
     <span class="md-ellipsis">
-      Ultra-sparse block (coordinate, COO)
+      Ultra-Sparse Block (Coordinate, COO)
     </span>
   </a>
   
@@ -1262,7 +1262,7 @@
           <li class="md-nav__item">
   <a href="#blocks-with-a-single-column" class="md-nav__link">
     <span class="md-ellipsis">
-      Blocks with a single column
+      Blocks with a Single Column
     </span>
   </a>
   
@@ -1271,7 +1271,7 @@
           <li class="md-nav__item">
   <a href="#blocks-with-more-than-one-column" class="md-nav__link">
     <span class="md-ellipsis">
-      Blocks with more than one column
+      Blocks with More than One Column
     </span>
   </a>
   
@@ -1622,17 +1622,17 @@
         <li class="md-nav__item">
   <a href="#block-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Block types
+      Block Types
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Block types">
+    <nav class="md-nav" aria-label="Block Types">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#empty-block" class="md-nav__link">
     <span class="md-ellipsis">
-      Empty block
+      Empty Block
     </span>
   </a>
   
@@ -1641,7 +1641,7 @@
           <li class="md-nav__item">
   <a href="#dense-block" class="md-nav__link">
     <span class="md-ellipsis">
-      Dense block
+      Dense Block
     </span>
   </a>
   
@@ -1650,7 +1650,7 @@
           <li class="md-nav__item">
   <a href="#sparse-block-compressed-sparse-row-csr" class="md-nav__link">
     <span class="md-ellipsis">
-      Sparse block (compressed sparse row, CSR)
+      Sparse Block (Compressed Sparse Row, CSR)
     </span>
   </a>
   
@@ -1659,7 +1659,7 @@
           <li class="md-nav__item">
   <a href="#ultra-sparse-block-coordinate-coo" class="md-nav__link">
     <span class="md-ellipsis">
-      Ultra-sparse block (coordinate, COO)
+      Ultra-Sparse Block (Coordinate, COO)
     </span>
   </a>
   
@@ -1668,7 +1668,7 @@
           <li class="md-nav__item">
   <a href="#blocks-with-a-single-column" class="md-nav__link">
     <span class="md-ellipsis">
-      Blocks with a single column
+      Blocks with a Single Column
     </span>
   </a>
   
@@ -1677,7 +1677,7 @@
           <li class="md-nav__item">
   <a href="#blocks-with-more-than-one-column" class="md-nav__link">
     <span class="md-ellipsis">
-      Blocks with more than one column
+      Blocks with More than One Column
     </span>
   </a>
   
@@ -1709,7 +1709,7 @@
 
 <h1 id="binary-data-format">Binary Data Format</h1>
 <p>DAPHNE defines its own binary representation for the serialization of in-memory data objects (matrices/frames).
-This representation is intended to be used by default whenever we need to transfer or persistently store these in-memory objects, e.g., for</p>
+This representation is intended to be used by default whenever we need to transfer or persistently store these in-memory objects, e.g., for:</p>
 <ul>
 <li>the data transfer in the distributed runtime</li>
 <li>a custom binary file format</li>
@@ -1720,7 +1720,7 @@ At the moment, we focus on the case of a single block per data object.</p>
 <p><strong>Endianess:</strong> For now, we assume <em>little endian</em>.</p>
 <p><strong>Images:</strong> In the images below, all addresses and sizes are specified in bytes (<code>[B]</code>).</p>
 <h2 id="binary-representation-of-a-whole-data-object">Binary Representation of a Whole Data Object</h2>
-<p>The binary representation of a data object (matrix/frame) starts with a header containing general and data type-specific information.
+<p>The binary representation of a data object (matrix/frame) starts with a header containing general and data-type-specific information.
 The data object is partitioned into rectangular blocks (in the extreme case, this can mean a single block).
 All blocks are represented individually (see binary representation of a single block below) and stored along with their position in the data object.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>+--------+------+
@@ -1817,7 +1817,7 @@ All blocks are represented individually (see binary representation of a single b
 </tr>
 </tbody>
 </table>
-<p>Depending on the data type, there are more information in the header:</p>
+<p>Depending on the data type, there is more information in the header:</p>
 <p><em>For <code>DenseMatrix</code> and <code>CSRMatrix</code></em>:</p>
 <ul>
 <li>value type <code>vt</code> (uint8)</li>
@@ -1842,9 +1842,11 @@ All blocks are represented individually (see binary representation of a single b
 <h3 id="body">Body</h3>
 <p>The body consists of a sequence of:</p>
 <ul>
-<li>a pair of</li>
+<li>a pair of<ul>
 <li>row index <code>rx</code> (uint64)</li>
 <li>column index <code>cx</code> (uint64)</li>
+</ul>
+</li>
 <li>a binary block representation</li>
 </ul>
 <p>For the special case of a single block, this looks as follows:</p>
@@ -1858,7 +1860,7 @@ All blocks are represented individually (see binary representation of a single b
 <h2 id="binary-representation-of-a-single-block">Binary Representation of a Single Block</h2>
 <p>A single data block is a rectangular partition of a data object.
 In the extreme case, a single block can span the entire data object in both dimensions (one block per data object).</p>
-<p>General block header</p>
+<p>General block header:</p>
 <ul>
 <li>number of rows <code>#r</code> (uint32)</li>
 <li>number of columns <code>#c</code> (uint32)</li>
@@ -1871,7 +1873,7 @@ In the extreme case, a single block can span the entire data object in both dime
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        +----+----+----+--------------------------+
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>size[B]    4    4    1               *
 </code></pre></div>
-<h2 id="block-types">Block types</h2>
+<h2 id="block-types">Block Types</h2>
 <p>We define different block types to allow for a space-efficient representation depending on the data.
 When serializing a data object, the block types are not required to match the in-memory representation (e.g., the blocks of a <code>DenseMatrix</code> could use the <em>sparse</em> binary representation).
 Moreover, different blocks may be represented as different block types (e.g., some blocks might use the <em>dense</em> binary representation and others the <em>sparse</em> one).
@@ -1905,7 +1907,7 @@ We currently support the following block types:</p>
 <p>Most block types store their value type as part of the block type-specific information.
 Note that the value type used for the binary representation is not required to match the value type of the in-memory object (e.g., <code>DenseMatrix&lt;uint64_t&gt;</code> may be represented as a <em>dense</em> block with value type <code>uint8_t</code>, if the value range permits).
 Furthermore, each block may be represented using its individual value type.</p>
-<h3 id="empty-block">Empty block</h3>
+<h3 id="empty-block">Empty Block</h3>
 <p>This block type is used to represent blocks that contain only zeros of the respective value type very space-efficiently.</p>
 <p>Block type-specific information: <em>none</em></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>addr[B]  0  3 4  7 8 8
@@ -1914,7 +1916,7 @@ Furthermore, each block may be represented using its individual value type.</p>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        +----+----+---+
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>size[B]    4    4   1
 </code></pre></div>
-<h3 id="dense-block">Dense block</h3>
+<h3 id="dense-block">Dense Block</h3>
 <p>Block type-specific information:</p>
 <ul>
 <li>value type <code>vt</code> (uint8)</li>
@@ -1927,16 +1929,18 @@ Furthermore, each block may be represented using its individual value type.</p>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        +----+----+---+----+---------+---------+     +---------------+
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>size[B]    4    4   1    1      S         S                  S
 </code></pre></div>
-<h3 id="sparse-block-compressed-sparse-row-csr">Sparse block (compressed sparse row, CSR)</h3>
+<h3 id="sparse-block-compressed-sparse-row-csr">Sparse Block (Compressed Sparse Row, CSR)</h3>
 <p>Block type-specific information:</p>
 <ul>
 <li>value type <code>vt</code>  (uint8)</li>
 <li>number of non-zeros in the block <code>#nzb</code> (uint64)</li>
-<li>for each row</li>
+<li>for each row<ul>
 <li>number of non-zeros in the row <code>#nzr</code> (uint32)</li>
 <li>for each non-zero in the row<ul>
 <li>column index <code>cx</code> (uint32)</li>
 <li>value <code>v</code> (value type <code>vt</code>)</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -1965,17 +1969,19 @@ Furthermore, each block may be represented using its individual value type.</p>
 <a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>                                 +----------+----------------+
 <a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>                                       4             S
 </code></pre></div>
-<h3 id="ultra-sparse-block-coordinate-coo">Ultra-sparse block (coordinate, COO)</h3>
+<h3 id="ultra-sparse-block-coordinate-coo">Ultra-Sparse Block (Coordinate, COO)</h3>
 <p>Ultra-sparse blocks contain almost no non-zeros, so we want to keep the overhead of the meta data low.
 Thus, we distinguish blocks with a single column (where we don't need to store the column index) and blocks with more than one column.</p>
-<h3 id="blocks-with-a-single-column">Blocks with a single column</h3>
+<h3 id="blocks-with-a-single-column">Blocks with a Single Column</h3>
 <p>Block type-specific information:</p>
 <ul>
 <li>value type <code>vt</code> (uint8)</li>
 <li>number of non-zeros in the block <code>#nzb</code> (uint32)</li>
-<li>for each non-zero</li>
+<li>for each non-zero<ul>
 <li>row index <code>rx</code> (uint32)</li>
 <li>value <code>v</code> (value type <code>vt</code>)</li>
+</ul>
+</li>
 </ul>
 <p>Below, <code>S</code> denotes the size (in bytes) of a single value of type <code>vt</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>addr[B]  0  3 4  7 8 8 9  9 10  13 14                         14+#nzb*(4+S)
@@ -1992,15 +1998,17 @@ Thus, we distinguish blocks with a single column (where we don't need to store t
 <a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>                                         +-------+-------------+
 <a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>                                             4          S
 </code></pre></div>
-<h3 id="blocks-with-more-than-one-column">Blocks with more than one column</h3>
+<h3 id="blocks-with-more-than-one-column">Blocks with More than One Column</h3>
 <p>Block type-specific information:</p>
 <ul>
 <li>value type <code>vt</code> (uint8)</li>
 <li>number of non-zeros in the block <code>#nzb</code> (uint32)</li>
-<li>for each non-zero</li>
+<li>for each non-zero<ul>
 <li>row index <code>rx</code> (uint32)</li>
 <li>column index <code>cx</code> (uint32)</li>
 <li>value <code>v</code> (value type <code>vt</code>)</li>
+</ul>
+</li>
 </ul>
 <p>Below, <code>S</code> denotes the size (in bytes) of a single value of type <code>vt</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>addr[B]  0  3 4  7 8 8 9  9 10  13 14                         14+#nzb*(8+S)

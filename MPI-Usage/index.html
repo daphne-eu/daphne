@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -974,7 +974,7 @@
         <li class="md-nav__item">
   <a href="#when-daphne-is-installed-with-containers-eg-singularity" class="md-nav__link">
     <span class="md-ellipsis">
-      When DAPHNE is Installed with Containers (e.g. singularity)
+      When DAPHNE is Installed with Containers (e.g. Singularity)
     </span>
   </a>
   
@@ -1496,7 +1496,7 @@
         <li class="md-nav__item">
   <a href="#when-daphne-is-installed-with-containers-eg-singularity" class="md-nav__link">
     <span class="md-ellipsis">
-      When DAPHNE is Installed with Containers (e.g. singularity)
+      When DAPHNE is Installed with Containers (e.g. Singularity)
     </span>
   </a>
   
@@ -1523,44 +1523,42 @@
 
 <h1 id="mpi-usage">MPI Usage</h1>
 <p>About employing MPI as a distributed runtime backend.</p>
-<p>The DAPHNE runtime system is designed with the goal of supporting various distributed runtime that relies on various technologies, e.g. MPI and RPC.</p>
-<p>This document shows how a DAPHNE user can execute DAPHNE scripts on a distributed computing environment with the MPI backend implementation of the DAPHNE runtime system.
-This document assumes that the DAPHNE was build with the <code>--mpi</code> options, if this is not the case please rebuild DAPHNE with the <code>--mpi</code> option
-<code>./build.sh --mpi</code></p>
-<p>The DAPHNE build script uses <a href="https://www.open-mpi.org/">Open MPI</a>.
-The DAPHNE build script does not configure the Open MPI installation with the SLURM support option.
-For users who want to add the SLURM, please visit the <a href="https://www.open-mpi.org/">Open MPI</a> documentation (adding <code>--with-slurm</code> to the build command of the Open MPI libbrary) and edit the DAPHNE build script.
-Also, users who wants to use other MPI implementations e.g., Intel MPI may edit the corresponding part in the DAPHNE build script.</p>
+<p>The DAPHNE runtime is designed with the goal of supporting various distributed backends that rely on various technologies, e.g. MPI and RPC.</p>
+<p>This document shows how a DAPHNE user can execute DaphneDSL scripts on a distributed computing environment with the MPI backend of the DAPHNE runtime.
+This document assumes that DAPHNE was built with the <code>--mpi</code> option, i.e., by <code>./build.sh --mpi</code>.</p>
+<p>DAPHNE's build script uses <a href="https://www.open-mpi.org/">Open MPI</a>.
+It does not configure the Open MPI installation with the Slurm support option.
+For users who want to add Slurm, please visit the <a href="https://www.open-mpi.org/">Open MPI</a> documentation (adding <code>--with-slurm</code> to the build command of the Open MPI library) and edit the DAPHNE build script.
+Also, users who want to use other MPI implementations, e.g., Intel MPI may edit the corresponding part in the DAPHNE build script.</p>
 <h2 id="when-daphne-is-installed-natively-wo-container">When DAPHNE is Installed Natively (w/o Container)</h2>
 <ol>
 <li>
-<p>Ensure that your system knows about the installed MPI<br />
-    -- The <code>PATH</code> and <code>LD_LIBRARY_PATH</code>environment variable has to be updated as follows  </p>
+<p>Ensure that your system knows about the installed MPI: The <code>PATH</code> and <code>LD_LIBRARY_PATH</code>environment variables have to be updated as follows:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:&lt;DAPHNE_INSTALLATION&gt;/thirdparty/installed/bin/
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$LD_LIBRARY_PATH</span>:&lt;DAPHNE_INSTALLATION&gt;//thirdparty/installed/lib/<span class="w"> </span>
 </code></pre></div>
-<p>Please do not forget to replace <code>&lt;DAPHNE_INSTALLATION&gt;</code> with the actual path</p>
+<p>Please do not forget to replace <code>&lt;DAPHNE_INSTALLATION&gt;</code> with the actual path.</p>
 </li>
 <li>
-<p>Run basic example @ <code>/examples/matrix_addition_for_mpi.daph</code> as follows</p>
+<p>Run the basic example <code>scripts/examples/matrix_addition_for_mpi.daph</code> as follows:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">10</span><span class="w"> </span>./bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>--dist_backend<span class="o">=</span>MPI<span class="w"> </span>scripts/examples/matrix_addition_for_mpi.daph
 </code></pre></div>
 </li>
 </ol>
 <p>The command above executes 10 processes <strong>locally</strong> on one machine.</p>
-<p>In order to run on <strong>a distributed system</strong>, you need to provide the machine names or the machinefile which contains the machine names.
-For instance assuming that <code>my_hostfile</code> is a text file that contains machine names</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">10</span><span class="w"> </span>--hostfile<span class="w"> </span>my_hostfile<span class="w">  </span>./bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>--dist_backend<span class="o">=</span>MPI<span class="w"> </span>scripts/examples/matrix_addition_for_mpi.daph
+<p>In order to run on <strong>a distributed system</strong>, you need to provide the machine names or the file which contains the machine names.
+For instance, assuming that <code>my_hostfile</code> is a text file that contains machine names, execute the following command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">10</span><span class="w"> </span>--hostfile<span class="w"> </span>my_hostfile<span class="w"> </span>./bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>--dist_backend<span class="o">=</span>MPI<span class="w"> </span>scripts/examples/matrix_addition_for_mpi.daph
 </code></pre></div>
-<p>The command above starts 10 processes distributed on following the hosts in the my_hostfile.
-For more options, please check the <a href="https://www.open-mpi.org/faq/?category=running#mpirun-hostfile">Open MPI documentation</a>.</p>
-<p>From a DAPHNE runtime point of view, the <code>--distributed</code> option tells the DAPHNE runtime system to utilize the distributed backend, while the <code>--dist_backend=MPI</code>
-indicate the type of the backend implementation.</p>
-<h2 id="when-daphne-is-installed-with-containers-eg-singularity">When DAPHNE is Installed with Containers (e.g. singularity)</h2>
-<p>The main difference is that the mpirun command is called at the level of the container as follows</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">10</span><span class="w"> </span>singularity<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>&lt;singularity-image&gt;<span class="w"> </span>daphne/bin/daphne<span class="w"> </span>--distributed<span class="w">   </span>--dist_backend<span class="o">=</span>MPI<span class="w"> </span>--vec<span class="w"> </span>--num-threads<span class="o">=</span><span class="m">2</span><span class="w"> </span>daphne/scripts/examples/matrix_addition_for_mpi.daph
+<p>The command above starts 10 processes distributed on the hosts specified in the file <code>my_hostfile</code>.
+For more options, please see the <a href="https://www.open-mpi.org/faq/?category=running#mpirun-hostfile">Open MPI documentation</a>.</p>
+<p>From a DAPHNE runtime point of view, the <code>--distributed</code> option tells the DAPHNE runtime to utilize the distributed backend, while the option <code>--dist_backend=MPI</code>
+indicates the type of the backend implementation.</p>
+<h2 id="when-daphne-is-installed-with-containers-eg-singularity">When DAPHNE is Installed with Containers (e.g. Singularity)</h2>
+<p>The main difference is that the <code>mpirun</code> command is called at the level of the container as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">10</span><span class="w"> </span>singularity<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>&lt;singularity-image&gt;<span class="w"> </span>daphne/bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>--dist_backend<span class="o">=</span>MPI<span class="w"> </span>--vec<span class="w"> </span>--num-threads<span class="o">=</span><span class="m">2</span><span class="w"> </span>daphne/scripts/examples/matrix_addition_for_mpi.daph
 </code></pre></div>
-<p>Please do not forget to replace <code>&lt;singularity-image&gt;</code> with the actual singularity image.</p>
+<p>Please do not forget to replace <code>&lt;singularity-image&gt;</code> with the actual Singularity image.</p>
 
 
 

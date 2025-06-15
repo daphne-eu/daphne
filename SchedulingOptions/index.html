@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1606,20 +1606,20 @@
 
 
 <h1 id="daphne-scheduling">DAPHNE Scheduling</h1>
-<p>This document describes the use of the pipeline and task scheduling mechanisms currently supported in the DAPHNE system.</p>
+<p>This document describes the use of the pipeline and task scheduling mechanisms currently supported in DAPHNE.</p>
 <h2 id="scheduling-decisions">Scheduling Decisions</h2>
-<p>The DAPHNE system considers four types of scheduling decisions: work partitioning, assignment, ordering and timing.</p>
+<p>DAPHNE considers four types of scheduling decisions: work partitioning, assignment, ordering, and timing.</p>
 <ul>
 <li>Work partitioning refers to the partitioning of the work into units of work (or tasks) according to a certain granularity (fine or coarse, equal or variable).</li>
 <li>Work assignment refers to mapping (or placing) the units of work (or tasks) onto individual units of execution (processes or threads).</li>
 <li>Work ordering refers to the order in which the tasks are executed. We rely on the vectorized execution engine, therefore, tasks within a vectorized pipeline have no dependencies and can be executed in any order.</li>
 <li>Work timing refers to the times at which the units of work are set to begin execution on the assigned units of execution.</li>
 </ul>
-<p><strong>Work Partitioning</strong>: The the DAPHNE prototype supports twelve partitioning schemes: Static (STATIC), Self-scheduling (SS), Guided self-scheduling (GSS), Trapezoid self-scheduling (TSS), Trapezoid Factoring self-scheduling (TFSS), Fixed-increase self-scheduling (FISS), Variable-increase self-scheduling (VISS), Performance loop-based self-scheduling (PLS), Modified version of Static (MSTATIC), Modified version of fixed size chunk self-scheduling (MFSC), and Probabilistic self-scheduling (PSS). The granularity of the tasks generated and scheduled by the DAPHNE system follows one of these partitioning schemes (See Section 4.1.1.1 in Deliverable 5.1 [D5.1].</p>
-<p><strong>Work Assignment</strong>: The current snapshot of the DAPHNE prototype supports two main assignment mechanisms: Single centralized work queue and Multiple work queues.  When work assignment relies on a centralized work queue (CENTRALIZED), workers follow the self-scheduling principle, i.e., whenever a worker is free and idle, it obtains a task from a central queue. When work assignment relies on multiple work queues, workers follow the work-stealing principle, i.e., whenever workers are free, idle, and have no tasks in their queues, they steal tasks from the work queue of each other. Work queues can be per worker (PERCPU) or per group of workers (PERGROUP).  In work-stealing, workers need to apply a victim selection mechanism to find a queue and steal work from it. The currently supported victim selection mechanisms are SEQ (steal from the next adjacent worker), SEQPRI (Steal from the next adjacent worker, but prioritize same NUMA domain), RANDOM (Steal from a random worker), RANDOMPRI (Steal from a random worker, but prioritize same NUMA domain).</p>
+<p><strong>Work Partitioning</strong>: DAPHNE supports twelve partitioning schemes: Static (STATIC), Self-scheduling (SS), Guided self-scheduling (GSS), Trapezoid self-scheduling (TSS), Trapezoid Factoring self-scheduling (TFSS), Fixed-increase self-scheduling (FISS), Variable-increase self-scheduling (VISS), Performance loop-based self-scheduling (PLS), Modified version of Static (MSTATIC), Modified version of fixed size chunk self-scheduling (MFSC), and Probabilistic self-scheduling (PSS). The granularity of the tasks generated and scheduled by DAPHNE follows one of these partitioning schemes (see Section 4.1.1.1 in <a href="https://daphne-eu.eu/wp-content/uploads/2021/11/Deliverable-5.1-fin.pdf">Deliverable 5.1</a>).</p>
+<p><strong>Work Assignment</strong>: Currently, DAPHNE supports two main assignment mechanisms: <em>single centralized work queue</em> and <em>multiple work queues</em>. When work assignment relies on a centralized work queue (CENTRALIZED), workers follow the self-scheduling principle, i.e., whenever a worker is free and idle, it obtains a task from a central queue. When work assignment relies on multiple work queues, workers follow the work-stealing principle, i.e., whenever workers are free, idle, and have no tasks in their queues, they steal tasks from the work queue of each other. Work queues can be per worker (PERCPU) or per group of workers (PERGROUP).  In work-stealing, workers need to apply a victim selection mechanism to find a queue and steal work from it. The currently supported victim selection mechanisms are SEQ (steal from the next adjacent worker), SEQPRI (steal from the next adjacent worker, but prioritize the same NUMA domain), RANDOM (steal from a random worker), RANDOMPRI (steal from a random worker, but prioritize the same NUMA domain).</p>
 <h2 id="scheduling-options">Scheduling Options</h2>
-<p>To list all possible execution options of the DAPHNE system, one needs to execute the following</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>./bin/daphne<span class="w"> </span>--help
+<p>To list all possible execution options of DAPHNE, one needs to execute the following:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>bin/daphne<span class="w"> </span>--help
 </code></pre></div>
 <p>The output of this command shows all DAPHNE compilation and execution parameters including the scheduling options that are currently support. The output below shows only the scheduling options that we will cover in this document.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>&gt;<span class="w"> </span>This<span class="w"> </span>program<span class="w"> </span>compiles<span class="w"> </span>and<span class="w"> </span>executes<span class="w"> </span>a<span class="w"> </span>DaphneDSL<span class="w"> </span>script.
@@ -1651,7 +1651,7 @@
 <a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">  </span>--debug-mt<span class="w">            </span>-<span class="w"> </span>Prints<span class="w"> </span>debug<span class="w"> </span>information<span class="w"> </span>about<span class="w"> </span>the<span class="w"> </span>Multithreading<span class="w"> </span>Wrapper
 <a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">  </span>--grain-size<span class="o">=</span>&lt;int&gt;<span class="w">    </span>-<span class="w"> </span>Define<span class="w"> </span>the<span class="w"> </span>minimum<span class="w"> </span>grain<span class="w"> </span>size<span class="w"> </span>of<span class="w"> </span>a<span class="w"> </span>task<span class="w"> </span><span class="o">(</span>default<span class="w"> </span>is<span class="w"> </span><span class="m">1</span><span class="o">)</span>
 <a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">  </span>--hyperthreading<span class="w">      </span>-<span class="w"> </span>Utilize<span class="w"> </span>multiple<span class="w"> </span>logical<span class="w"> </span>CPUs<span class="w"> </span>located<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>same<span class="w"> </span>physical<span class="w"> </span>CPU
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">  </span>--num-threads<span class="o">=</span>&lt;int&gt;<span class="w">   </span>-<span class="w"> </span>Define<span class="w"> </span>the<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>CPU<span class="w"> </span>threads<span class="w"> </span>used<span class="w"> </span>by<span class="w"> </span>the<span class="w"> </span>vectorized<span class="w"> </span>execution<span class="w"> </span>engine<span class="w"> </span><span class="o">(</span>default<span class="w"> </span>is<span class="w"> </span>equal<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>physcial<span class="w"> </span>cores<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>target<span class="w"> </span>node<span class="w"> </span>that<span class="w"> </span>executes<span class="w"> </span>the<span class="w"> </span>code<span class="o">)</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">  </span>--num-threads<span class="o">=</span>&lt;int&gt;<span class="w">   </span>-<span class="w"> </span>Define<span class="w"> </span>the<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>CPU<span class="w"> </span>threads<span class="w"> </span>used<span class="w"> </span>by<span class="w"> </span>the<span class="w"> </span>vectorized<span class="w"> </span>execution<span class="w"> </span>engine<span class="w"> </span><span class="o">(</span>default<span class="w"> </span>is<span class="w"> </span>equal<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>physical<span class="w"> </span>cores<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>target<span class="w"> </span>node<span class="w"> </span>that<span class="w"> </span>executes<span class="w"> </span>the<span class="w"> </span>code<span class="o">)</span>
 <a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">  </span>--pin-workers<span class="w">         </span>-<span class="w"> </span>Pin<span class="w"> </span>workers<span class="w"> </span>to<span class="w"> </span>CPU<span class="w"> </span>cores
 <a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">  </span>--pre-partition<span class="w">       </span>-<span class="w"> </span>Partition<span class="w"> </span>rows<span class="w"> </span>into<span class="w"> </span>the<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>queues<span class="w"> </span>before<span class="w"> </span>applying<span class="w"> </span>scheduling<span class="w"> </span>technique
 <a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">  </span>--vec<span class="w">                 </span>-<span class="w"> </span>Enable<span class="w"> </span>vectorized<span class="w"> </span>execution<span class="w"> </span>engine
@@ -1682,35 +1682,35 @@
 <a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a><span class="w">  </span>daphne<span class="w"> </span>--vec<span class="w"> </span>--args<span class="w"> </span><span class="nv">x</span><span class="o">=</span><span class="m">1</span>,y<span class="o">=</span><span class="m">2</span>.2,z<span class="o">=</span><span class="s2">&quot;foo&quot;</span><span class="w"> </span>example.daphne
 </code></pre></div>
 <p><strong><em>NOTE:</em></strong>
-the DAPHNE system relies on the vectorized (tile) execution engine to support parallelism at the node level. The vectorized execution engine takes decision concerning work partition and assignment during applications’ execution. Therefore, one needs always to use the option --vec with any of the scheduling options that we present in this document.</p>
+DAPHNE relies on its vectorized execution engine to support parallelism at the node level. The vectorized execution engine makes decisions concerning work partitioning and assignment during the execution of a DaphneDSL script. Therefore, one always needs to use the option <code>--vec</code> with any of the scheduling options that we present in this document.</p>
 <h3 id="multithreading-options">Multithreading Options</h3>
 <ul>
 <li>
-<p><strong>Number of threads</strong>: A DAPHNE user can control the total number of threads spawn by the DAPHNE runtime system use the following parameter <strong>--num-threads</strong>. This parameter should be non-zero positive value. Illegal integer values will be ignored by the system and the default value will be used.  The default value of --num-threads is equal to the total number of physical cores of the host machine. The option can be used as below, e.g., the DAPHNE system spawns only 4 threads.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--num-threads<span class="o">=</span><span class="m">4</span><span class="w"> </span>some_daphne_script.daphne
+<p><strong>Number of threads</strong>: A DAPHNE user can control the total number of threads spawned by the DAPHNE runtime using the parameter <strong><code>--num-threads</code></strong>. This parameter should be a non-zero positive value. Illegal integer values will be ignored by the system and the default value will be used. The default value of <code>--num-threads</code> is equal to the total number of physical cores of the host machine. The option can be used as below, e.g., DAPHNE spawns only 4 threads.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--num-threads<span class="o">=</span><span class="m">4</span><span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
 </li>
 <li>
-<p><strong>Thread Pinning</strong>: A DAPHNE user can decide if the DAPHNE system pins its threads to the physical cores. Currently, the DAPHNE system supports one simple pining strategy, namely, round-robin strategy.  By default, the DAPHNE system does not pin its threads. The option <strong>--pin-workers</strong> can be used to activate thread pinning as follows</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--pin-threads<span class="w"> </span>some_daphne_script.daphne
+<p><strong>Thread Pinning</strong>: A DAPHNE user can decide if DAPHNE pins its threads to the physical cores. Currently, DAPHNE supports one simple pinning strategy: round-robin. By default, DAPHNE does not pin its threads. The option <strong><code>--pin-workers</code></strong> can be used to activate thread pinning as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--pin-threads<span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
 </li>
 <li>
-<p><strong>Hyperthreading</strong>: if a host machine supports hyperthreading, a DAPHNE user can decide to use logical cores, i.e., if the –num-threads is not specified, the DAPHNE system sets the total number of threads to the count of the physical cores. However, when the user specify the following parameter <strong>--hyperthreading</strong>, the DAPHNE system sets the number of threads to the count of the logical cores.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--hyperthreading<span class="w"> </span>some_daphne_script.daphne
+<p><strong>Hyperthreading</strong>: If a host machine supports hyperthreading, a DAPHNE user can decide to use logical cores, i.e., if <code>--num-threads</code> is not specified, DAPHNE sets the total number of threads to the number of the physical cores. However, when the user specifies the parameter <strong><code>--hyperthreading</code></strong>, DAPHNE sets the number of threads to the number of the logical cores.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--hyperthreading<span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
 </li>
 </ul>
 <h3 id="work-partitioning-options">Work Partitioning Options</h3>
 <ul>
 <li>
-<p><strong>Partition Scheme</strong>: A DAPHNE user selects the partition scheme by passing the name of the partition scheme as an argument to the DAPHNE system. If the user does not specify a partition scheme, the default partition scheme (STATIC) will be used. As an example, the following command uses GSS as a partition scheme.</p>
+<p><strong>Partition Scheme</strong>: A DAPHNE user selects the partition scheme by passing the name of the partition scheme as an argument to DAPHNE. If the user does not specify a partition scheme, the default partition scheme (STATIC) will be used. As an example, the following command uses GSS as a partition scheme.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--GSS<span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
 </li>
 <li>
-<p><strong>Task granularity</strong>: The DAPHNE user can exploit the <strong>--grain-size</strong> parameter to set the minimum size of the tasks generated by the DAPHNE system. This parameter should be non-zero positive value. Illegal integer values will be ignored by the system and the default value will be used.  The default value of <strong>--grain-size</strong> is 1, i.e., the data associated with a task represents 1 row of the input matrix.
-As an example, the following command uses SS as a partition scheme with minimum task size of 100</p>
+<p><strong>Task granularity</strong>: The DAPHNE user can exploit the <strong><code>--grain-size</code></strong> parameter to set the minimum size of the tasks generated by DAPHNE. This parameter should be a non-zero positive value. Illegal integer values will be ignored by the system and the default value will be used.  The default value of <strong><code>--grain-size</code></strong> is 1, i.e., the data associated with a task represents 1 row of the input matrix.
+As an example, the following command uses SS as a partition scheme with minimum task size of 100:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--SS<span class="w"> </span>--grain-size<span class="o">=</span><span class="m">100</span><span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
 </li>
@@ -1718,39 +1718,38 @@ As an example, the following command uses SS as a partition scheme with minimum 
 <h3 id="work-assignment-options">Work Assignment Options</h3>
 <ul>
 <li>
-<p><strong>Single centralized work queue</strong>: By default, the DAPHNE system uses a single centralized work queue. However, the user may explicitly use the following parameter <strong>--CENTRALIZED</strong> to ensure the use of single centralized work queue.</p>
+<p><strong>Single centralized work queue</strong>: By default, DAPHNE uses a single centralized work queue. However, the user may explicitly use the parameter <strong><code>--CENTRALIZED</code></strong> to ensure the use of a single centralized work queue.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--GSS<span class="w"> </span>--CENTRALIZED<span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
 </li>
 <li>
-<p><strong>Multiple work queues</strong>: a DAPHNE user can exploit the use of multiple work queues by passing one of the following parameters <strong>--PERCPU</strong> or <strong>--PERGROUP</strong>. The two parameters cannot be used together, and if <strong>--CENTRALIZED</strong> is used with any of them, --CENTRALIZED will be ignored by the system.</p>
-</li>
-<li>
-<p>parameter <strong>--PERGROUP</strong> ensures that the DAPHNE system creates a number of groups equals to the number of NUMA domains on the target host machine. The DAPHNE system assigns equal number of workers (threads) to each of the groups. Workers within the same group share one work queue. The <strong>–-PERGROUP</strong> can be used as follows</p>
+<p><strong>Multiple work queues</strong>: A DAPHNE user can exploit the use of multiple work queues by passing any one of the parameters <strong><code>--PERCPU</code></strong> or <strong><code>--PERGROUP</code></strong>. The two parameters cannot be used together, and if <strong><code>--CENTRALIZED</code></strong> is used with any of them, <code>--CENTRALIZED</code> will be ignored by the system.</p>
+<ul>
+<li>The parameter <strong><code>--PERGROUP</code></strong> ensures that DAPHNE creates a number of groups equal to the number of NUMA domains on the target host machine. DAPHNE assigns an equal number of workers (threads) to each of the groups. Workers within the same group share one work queue. The parameter <code>--PERGROUP</code> can be used as follows:</li>
+</ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--PERGROUP<span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
-</li>
-<li>
-<p>The parameter <strong>--PERCPU</strong> ensures that the DAPHNE system creates a number of queues equal to the total number of workers (threads), i.e., each worker is assigned to a single work queue. The parameter <strong>--PERCPU</strong> can be used as follows</p>
+<ul>
+<li>The parameter <strong><code>--PERCPU</code></strong> ensures that DAPHNE creates a number of queues equal to the total number of workers (threads), i.e., each worker is assigned to a single work queue. The parameter <code>--PERCPU</code> can be used as follows:</li>
+</ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--PERCPU<span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
 </li>
 <li>
-<p><strong>Victim Selection</strong>: A DAPHNE user can choose a victim selection strategy by passing one of the following parameters --SEQ, --SEQPRI, --RANDOM, and --RANDOMPRI. These parameters activate different victim selection strategies as follows</p>
+<p><strong>Victim Selection</strong>: A DAPHNE user can choose a victim selection strategy by passing one of the following parameters <code>--SEQ</code>, <code>--SEQPRI</code>, <code>--RANDOM</code>, and <code>--RANDOMPRI</code>. These parameters activate different victim selection strategies as follows:</p>
 <ul>
-<li><strong>--SEQ</strong> activates a sequential victim selection strategy, i.e., the ith worker steals form the (i+1)th  worker. The last worker steals from the first worker.</li>
-<li><strong>--SEQPRI</strong> is similar to --SEQ except that --SEQPRI priorities workers assigned to the same NUMA domain. When the host machine has one NUMA domain,</li>
-<li>--SEQ and --SEQPRI have no difference.</li>
-<li><strong>--RANDOM</strong> activates a random victim selection strategy, i.e., the ith worker steals form a randomly chosen worker.</li>
-<li><strong>--RANDOMPRI</strong> is similar to --RANDOM except that --RANDOM priorities workers assigned to the same NUMA domain. When the host machine has one NUMA domain, --RANDOMPRI and --RANDOMPRI have no difference.</li>
+<li><strong><code>--SEQ</code></strong> activates a sequential victim selection strategy, i.e., the <em>i</em>-th worker steals form the <em>(i+1)</em>-th  worker. The last worker steals from the first worker.</li>
+<li><strong><code>--SEQPRI</code></strong> is similar to <code>--SEQ</code> except that <code>--SEQPRI</code> prioritizes workers assigned to the same NUMA domain. When the host machine has one NUMA domain <code>--SEQ</code> and <code>--SEQPRI</code> have no difference.</li>
+<li><strong><code>--RANDOM</code></strong> activates a random victim selection strategy, i.e., the <em>i</em>-th worker steals form a randomly chosen worker.</li>
+<li><strong><code>--RANDOMPRI</code></strong> is similar to <code>--RANDOM</code> except that <code>--RANDOMPRI</code> prioritizes workers assigned to the same NUMA domain. When the host machine has one NUMA domain, <code>--RANDOM</code> and <code>--RANDOMPRI</code> have no difference.</li>
 </ul>
-</li>
-</ul>
-<p><strong><em>NOTE:</em></strong><br />
-When the user does not choose one of these parameters, the DAPHNE system considers --SEQ as a default victim selection strategy.</p>
-<p>As an example, the following command uses --SEQPRI as a victim selection strategy.</p>
+<p><strong>NOTE:</strong>
+When the user does not choose one of these parameters, DAPHNE considers <code>--SEQ</code> as a default victim selection strategy.</p>
+<p>As an example, the following command uses <code>--SEQPRI</code> as a victim selection strategy.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>./bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--PERGROUP<span class="w"> </span>--SEQPRI<span class="w"> </span>some_daphne_script.daphne
 </code></pre></div>
+</li>
+</ul>
 <h2 id="references">References</h2>
 <p><a href="https://daphne-eu.eu/wp-content/uploads/2021/11/Deliverable-4.1-fin.pdf">D4.1</a> DAPHNE: D4.1 DSL Runtime Design, 11/2021</p>
 <p><a href="https://daphne-eu.eu/wp-content/uploads/2021/11/Deliverable-5.1-fin.pdf">D5.1</a> DAPHNE: D5.1 Scheduler Design for Pipelines and Tasks, 11/2021</p>

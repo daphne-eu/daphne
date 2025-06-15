@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1512,15 +1512,15 @@ each block. In turn, the kernels call the PAPI-HL API start and stop functions.<
 <h2 id="known-issues-todo">Known Issues / TODO</h2>
 <ul>
 <li>For scripts with multiple blocks (e.g. UDFs), the compiler will generate
-  profiling passes for each block separately instead of a single script-wide
-  profiling pass.</li>
-<li>The profiling kernels should be exposed at the DSL / IR level, so that users
-  can instrument / profile specific parts of their script. This will also need
-  compiler cooperation, to make sure that the profiled bock is not rearranged /
-  fused with other operations.</li>
+    profiling passes for each block separately instead of a single script-wide
+    profiling pass.</li>
+<li>The profiling kernels should be exposed at the DSL/IR level, so that users
+    can instrument/profile specific parts of their script. This will also need
+    compiler cooperation, to make sure that the profiled bock is not rearranged/
+    fused with other operations.</li>
 <li>To aid with the development and regression tracking of the runtime, the
-  profiling kernels could also be extended to support profiling specific
-  kernels or parts of kernels.</li>
+    profiling kernels could also be extended to support profiling specific
+    kernels or parts of kernels.</li>
 </ul>
 
 

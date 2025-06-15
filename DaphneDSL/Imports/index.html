@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1448,8 +1448,8 @@
 
 
 <h1 id="imports">Imports</h1>
-<p>How to import functions from other Daphne scripts</p>
-<p>Example usage:</p>
+<p>DaphneDSL supports importing functions from other DaphneDSL scripts.</p>
+<p><em>Example:</em></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;bar.daphne&quot;</span><span class="p">;</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;foo.daphne&quot;</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="s">&quot;utils&quot;</span><span class="p">;</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -1457,16 +1457,16 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">print</span><span class="p">(</span><span class="n">utils</span><span class="p">.</span><span class="n">x</span><span class="p">);</span>
 </code></pre></div>
 <hr />
-<p><code>UserConfig.json</code> now has a new field <code>daphnedsl_import_paths</code>, which maps e.g., library names to a list of paths, see example:</p>
+<p><code>UserConfig.json</code> has a field <code>daphnedsl_import_paths</code>, which maps, e.g., library names to a list of paths, see example:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="w">    </span><span class="nt">&quot;daphnedsl_import_paths&quot;</span><span class="p">:</span><span class="w"> </span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="p">{</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">        </span><span class="nt">&quot;default_dirs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;test/api/cli/import/sandbox&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;some/other/path&quot;</span><span class="p">],</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">        </span><span class="nt">&quot;algorithms&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;test/api/cli/import/sandbox/algos&quot;</span><span class="p">]</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="p">}</span>
 </code></pre></div>
-<p>NOTE: to use a user config, the json file path needs to be passed as CLI arg to the DAPHNE binary <code>daphne --config=&lt;filename&gt;</code></p>
-<p>NOTE: <code>default_dirs</code> can hold many paths and it will look for the <strong>one</strong> specified file in each, whereas any other library names have a list consisting of <strong>one</strong> directory,  from which <strong>all</strong> files will be imported (can be easily extended to multiple directories).</p>
-<p>Example:</p>
+<p><strong>Note:</strong> To use a custom configuration, the JSON file path needs to be passed as a command-line argument to the DAPHNE binary <code>bin/daphne --config=&lt;filename&gt;</code></p>
+<p><strong>Note:</strong> The parameter <code>default_dirs</code> can hold many paths and it will look for the <strong>one</strong> specified file in each, whereas any other library names have a list consisting of <strong>one</strong> directory,  from which <strong>all</strong> files will be imported (can be easily extended to multiple directories).</p>
+<p><em>Example:</em></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;a.daphne&quot;</span><span class="p">;</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;algorithms&quot;</span><span class="p">;</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -1478,16 +1478,16 @@ The second import goes to <code>algorithms</code> directory from <code>UserConfi
 <p>Paths from <code>UserConfig</code> get to <code>DaphneDSLVisitor</code> from <code>daphne.cpp</code> via <code>DaphneUserConfig</code>.</p>
 <hr />
 <p>Variable name collision resolution:
-Whenever we stumble upon equal prefixes (e.g., files with the same name in different directories), a parent directory of the file where conflict is detected is prepended before prefix.</p>
-<p>Example:</p>
+Whenever we stumble upon equal prefixes (e.g., files with the same name in different directories), a parent directory of the file where the conflict is detected is prepended before the prefix.</p>
+<p><em>Example:</em></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;somedir/a.daphne&quot;</span><span class="p">;</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;otherdir/a.daphne&quot;</span><span class="p">;</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">print</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">x</span><span class="p">);</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">print</span><span class="p">(</span><span class="n">otherdir</span><span class="p">.</span><span class="n">a</span><span class="p">.</span><span class="n">x</span><span class="p">);</span>
 </code></pre></div>
-<p>NOTE: the parent directory may be prepended even though you never specified it (e.g., the import script is in the same directory as the original script).</p>
-<p>Example:</p>
+<p><strong>Note:</strong> The parent directory may be prepended even though you never specified it (e.g., the import script is in the same directory as the original script).</p>
+<p><em>Example:</em></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;somedir/a.daphne&quot;</span><span class="p">;</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">import</span><span class="w"> </span><span class="s">&quot;a.daphne&quot;</span><span class="p">;</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
@@ -1502,7 +1502,7 @@ Currently, the following example is allowed:</p>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">print</span><span class="p">(</span><span class="n">algorithms</span><span class="p">.</span><span class="n">x</span><span class="p">);</span>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">print</span><span class="p">(</span><span class="n">algorithms</span><span class="p">.</span><span class="n">kmeans1</span><span class="p">.</span><span class="n">someVar</span><span class="p">);</span>
 </code></pre></div>
-<p>Even though both prefixes will begin with <code>algorithms.</code>, the entire library content's prefix is extended with filenames. It is up to user to not confuse yourself.</p>
+<p>Even though both prefixes will begin with <code>algorithms.</code>, the entire library content's prefix is extended with filenames. It is up to the user to not confuse yourself.</p>
 <hr />
 <p>Cascade imports:
 Any variables/functions imported into the script we are currently importing will be discarded.

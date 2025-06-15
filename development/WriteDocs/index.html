@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1366,9 +1366,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#toolstack" class="md-nav__link">
+  <a href="#tool-stack" class="md-nav__link">
     <span class="md-ellipsis">
-      Toolstack
+      Tool Stack
     </span>
   </a>
   
@@ -1542,9 +1542,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#toolstack" class="md-nav__link">
+  <a href="#tool-stack" class="md-nav__link">
     <span class="md-ellipsis">
-      Toolstack
+      Tool Stack
     </span>
   </a>
   
@@ -1571,30 +1571,30 @@
 
 <h1 id="writing-documentation">Writing Documentation</h1>
 <p>At the moment the collection of markdown files in the <code>doc</code> directory is rendered to HTML and deployed via GitHub Pages.</p>
-<p>If you insert a new markdown file, you have to add it into the html docs tree in <a href="https://github.com/daphne-eu/daphne/tree/main/mkdocs.yml">mkdocs.yml</a> at a suitable position under the <code>nav</code> section.</p>
+<p>If you insert a new markdown file, you have to add it into the HTML docs tree in <a href="https://github.com/daphne-eu/daphne/tree/main/mkdocs.yml">mkdocs.yml</a> at a suitable position under the <code>nav</code> section.</p>
 <h2 id="markdown-guideline">Markdown Guideline</h2>
-<p>Please write clean markdown code to ensure a proper parsing by the tools used to render HTML. It is very recommended to use an IDE like <em>VS Code</em>. Code offers the feature to directly render markdown pages while you work on them. The extension <a href="https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint">markdownlint</a> directly highlights syntax violations / problems.</p>
+<p>Please write clean markdown code to ensure a proper parsing by the tools used to render HTML. It is very recommended to use an IDE like <em>VS Code</em>. Code offers the feature to directly render markdown pages while you work on them. The extension <a href="https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint">markdownlint</a> directly highlights syntax violations/problems.</p>
 <h3 id="links">Links</h3>
 <ul>
 <li>With <code>[&lt;link-name&gt;](&lt;link-url/path&gt;)</code> you can link to other files in the repo</li>
-<li>Write links to other markdown files or source code files/directories so that they work locally / in the github repository</li>
+<li>Write links to other markdown files or source code files/directories so that they work locally / in the GitHub repository</li>
 <li>Do not use relative links like <code>../BuildingDaphne.md</code></li>
 <li>Always use absolute paths relative to the repo root like <code>/doc/development/BuildingDaphne.md</code></li>
 <li>The Links/URLs will be altered in order to work on the rendered HTML page as well</li>
-<li>Reference to issues with <code>[&lt;description&gt;](https://github.com/daphne-eu/daphne/tree/main/issues/123)</code>. This won't work on github itself but will be rendered in the html page then</li>
+<li>Refer to issues with <code>[&lt;description&gt;](https://github.com/daphne-eu/daphne/tree/main/issues/123)</code>. This won't work on GitHub itself but will be rendered in the HTML page then</li>
 </ul>
 <h3 id="additional-syntax">Additional Syntax</h3>
 <p>While some markdown renderers are much more relaxed and render as wished, some points have to be considered so that mkdocs renders correctly as well.</p>
 <ul>
 <li>4 spaces indentation for nested lists (ordered/unordered) and code blocks within lists to ensure proper rendering for HTML</li>
-<li>Using &lt;&gt;: To use angle brackets use <code>&lt;\&gt;</code> notation outside an codeblock<ul>
+<li>Using &lt;&gt;: To use angle brackets use <code>&lt;\&gt;</code> notation outside a code block<ul>
 <li>Example: <code>&lt;nicer dicer\&gt;</code> renders to &lt;nicer dicer&gt;</li>
 </ul>
 </li>
 </ul>
-<h2 id="toolstack">Toolstack</h2>
+<h2 id="tool-stack">Tool Stack</h2>
 <ul>
-<li><a href="https://www.mkdocs.org/">MkDocs</a> to build html from markdown files</li>
+<li><a href="https://www.mkdocs.org/">MkDocs</a> to build HTML from markdown files</li>
 <li><a href="https://squidfunk.github.io/mkdocs-material/">Material for MkDocs</a> as HTML theme</li>
 </ul>
 

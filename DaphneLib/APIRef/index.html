@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1690,7 +1690,7 @@
 A general introduction to <a href="/daphne/DaphneLib/Overview">DaphneLib (DAPHNE's Python API)</a> can be found in a separate document.
 DaphneLib offers numerous methods for <em>obtaining DAPHNE matrices and frames</em> as well as for <em>building complex computations</em> based on them, including complex control flow with if-then-else, loops, and user-defined functions.
 Ultimately, DaphneLib will support all <a href="/daphne/DaphneDSL/Builtins">DaphneDSL built-in functions</a> on matrices and frames.
-Futhermore, <strong>we also plan to create a library of higher-level primitives</strong> allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.</p>
+Furthermore, <strong>we also plan to create a library of higher-level primitives</strong> allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.</p>
 <p>At the moment, the documentation is still rather incomplete.
 However, as the methods largely map to DaphneDSL built-in functions, you can find some more information in the <a href="/daphne/DaphneDSL/Builtins">List of DaphneDSL built-in functions</a>, for the time being.</p>
 <h2 id="obtaining-daphne-matrices-and-frames">Obtaining DAPHNE Matrices and Frames</h2>
@@ -1915,7 +1915,7 @@ In the following, we describe only the latter.</p>
 </ul>
 <h2 id="building-complex-control-structures">Building Complex Control Structures</h2>
 <p>Complex control structures like if-then-else, for-loops, while-loops and do-while-loops can be built using methods of the <code>DaphneContext</code>.
-These control structures can be used to manipulate matrices, frames, and scalars, and are lazily evaluated. Futhermore, user-defined functions can be created to build reusable code which can then be again lazily evaluated.
+These control structures can be used to manipulate matrices, frames, and scalars, and are lazily evaluated. Furthermore, user-defined functions can be created to build reusable code which can then be again lazily evaluated.
 User-defined functions can manipulate matrices, frames, and scalars, too.</p>
 <h3 id="daphnecontext-api-reference_2"><code>DaphneContext</code> API Reference</h3>
 <p><strong>If-then-else</strong></p>
@@ -1960,8 +1960,8 @@ User-defined functions can manipulate matrices, frames, and scalars, too.</p>
 <li><strong><code>@function</code></strong>, <strong><code>function</code></strong><code>(callback)</code><ul>
 <li>callback: Callable<ul>
 <li>This function requires adding typing hints in case the arguments are supposed to be handled as <code>Scalar</code> or <code>Frame</code>, all arguments without hints are handled as <code>Matrix</code> objects.
-  Hinting <code>Matrix</code> is optional.
-  Wrong or missing typing hints can trigger errors before and during computing (lazy evaluation).</li>
+    Hinting <code>Matrix</code> is optional.
+    Wrong or missing typing hints can trigger errors before and during computing (lazy evaluation).</li>
 </ul>
 </li>
 <li>returns: Tuple[VALID_COMPUTED_TYPES]  <em>(length equals the return values of callback)</em></li>

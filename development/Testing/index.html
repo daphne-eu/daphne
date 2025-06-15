@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1438,7 +1438,7 @@
           <li class="md-nav__item">
   <a href="#tests-fail-in-the-ci-workflow-even-though-they-pass-in-your-local-development-environment" class="md-nav__link">
     <span class="md-ellipsis">
-      Tests Fail in the CI Workflow (even though they pass in your local development environment)
+      Tests Fail in the CI Workflow (Even Though They Pass in Your Local Development Environment)
     </span>
   </a>
   
@@ -1714,7 +1714,7 @@
           <li class="md-nav__item">
   <a href="#tests-fail-in-the-ci-workflow-even-though-they-pass-in-your-local-development-environment" class="md-nav__link">
     <span class="md-ellipsis">
-      Tests Fail in the CI Workflow (even though they pass in your local development environment)
+      Tests Fail in the CI Workflow (Even Though They Pass in Your Local Development Environment)
     </span>
   </a>
   
@@ -1892,7 +1892,7 @@ Each test case has a <em>name</em> and one or multiple <em>tags</em> (think of g
 </li>
 </ul>
 <h4 id="daphne-specific-flags">DAPHNE-specific Flags</h4>
-<p>The test script has several flags that control how the DAPHNE system and the test executable are built through the build script <code>build.sh</code>.</p>
+<p>The test script has several flags that control how DAPHNE and the test executable are built through the build script <code>build.sh</code>.</p>
 <ul>
 <li><code>--cuda</code>, <code>--fpgaopencl</code>, and <code>--mpi</code> switch on the respective feature of DAPHNE.</li>
 <li><code>--no-papi</code> switch off the respective feature of DAPHNE.</li>
@@ -1911,7 +1911,7 @@ Further information can be found there.</p>
 <li>Use <a href="/daphne/development/Logging">DAPHNE's logger</a> or custom print-outs to generate more debug output.</li>
 <li>Use a debugger.</li>
 </ul>
-<h4 id="tests-fail-in-the-ci-workflow-even-though-they-pass-in-your-local-development-environment">Tests Fail in the CI Workflow (even though they pass in your local development environment)</h4>
+<h4 id="tests-fail-in-the-ci-workflow-even-though-they-pass-in-your-local-development-environment">Tests Fail in the CI Workflow (Even Though They Pass in Your Local Development Environment)</h4>
 <p>Unfortunately, this can happen.
 <strong>Possible reasons</strong> include:</p>
 <ul>
@@ -2029,7 +2029,7 @@ In the following, we list just the most important ones, see the mentioned file f
 <ul>
 <li>The <code>.cpp</code>-files of the DaphneDSL script-level test cases often define macros like <code>MAKE_TEST_CASE</code> and <code>MAKE_FAILURE_TEST_CASE</code>. These wrap the test case creation such that we can easily create families of similar test cases.</li>
 <li>Many of the script-level test cases have no highly descriptive names as that would be cumbersome. Instead, they are typically numbered. In that context, several of the utility functions mentioned above have a variant suffixed with <code>Simple</code> (e.g., <code>compareDaphneToRefSimple()</code>), which assumes a certain naming scheme of the test cases.</li>
-<li>Please put a comment line at the top of each DaphneDSL/DaphneLib script used in a script-level test case that briefly explains what is being tested. Note that the purpose of the test is otherwise not always obvious. Putting a comment helps to keep the test case up-to-date when the DAPHNE system changes.</li>
+<li>Please put a comment line at the top of each DaphneDSL/DaphneLib script used in a script-level test case that briefly explains what is being tested. Note that the purpose of the test is otherwise not always obvious. Putting a comment helps to keep the test case up-to-date when DAPHNE changes.</li>
 <li>When using hand-written reference text files (e.g., with <code>compareDaphneToRef()</code>), note that there usually needs to be a newline at the end of the text file, as the DAPHNE output typically also ends with a newline. Otherwise, the test case fails even though the actual and expected outputs look quite similar at first glance.</li>
 </ul>
 <h3 id="writing-unit-test-cases">Writing Unit Test Cases</h3>

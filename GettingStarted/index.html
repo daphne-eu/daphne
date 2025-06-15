@@ -378,7 +378,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -639,9 +639,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#building-the-daphne-system" class="md-nav__link">
+  <a href="#building-daphne" class="md-nav__link">
     <span class="md-ellipsis">
-      Building the DAPHNE system
+      Building DAPHNE
     </span>
   </a>
   
@@ -650,7 +650,7 @@
           <li class="md-nav__item">
   <a href="#setting-up-the-environment" class="md-nav__link">
     <span class="md-ellipsis">
-      Setting up the environment
+      Setting up the Environment
     </span>
   </a>
   
@@ -1912,9 +1912,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#building-the-daphne-system" class="md-nav__link">
+  <a href="#building-daphne" class="md-nav__link">
     <span class="md-ellipsis">
-      Building the DAPHNE system
+      Building DAPHNE
     </span>
   </a>
   
@@ -1923,7 +1923,7 @@
           <li class="md-nav__item">
   <a href="#setting-up-the-environment" class="md-nav__link">
     <span class="md-ellipsis">
-      Setting up the environment
+      Setting up the Environment
     </span>
   </a>
   
@@ -2201,7 +2201,7 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 <tr>
 <td>jq</td>
 <td></td>
-<td>json commandline processor used in docker image generation scripts.</td>
+<td>JSON command-line processor used in docker image generation scripts.</td>
 </tr>
 <tr>
 <td>libpfm4-dev</td>
@@ -2308,13 +2308,15 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 <h4 id="hardware">Hardware</h4>
 <ul>
 <li>about 7.5 GB of free disk space to build from source (mostly due to dependencies)</li>
-<li>Optional:</li>
+<li>Optional:<ul>
 <li>NVidia GPU for CUDA ops (tested on Pascal and newer architectures); 8GB for CUDA SDK</li>
 <li>Intel GPU for OneAPI ops (tested on Coffeelake graphics); 23 GB for OneAPI</li>
 <li>Intel FPGA for FPGAOPENCL ops (tested on PAC D5005 accelerator); 23 GB for OneAPI</li>
 </ul>
+</li>
+</ul>
 <h3 id="obtaining-the-source-code">Obtaining the Source Code</h3>
-<p>The DAPHNE system is based on MLIR, which is a part of the LLVM monorepo.
+<p>DAPHNE is based on MLIR, which is a part of the LLVM monorepo.
 The LLVM monorepo is included in this repository as a submodule.
 Thus, clone this repository as follows to also clone the submodule:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>git<span class="w"> </span>clone<span class="w"> </span>--recursive<span class="w"> </span>https://github.com/daphne-eu/daphne.git
@@ -2330,7 +2332,7 @@ Thus, please pull as follows:</p>
 <a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="c1"># or use this little convenience script</span>
 <a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>./pull.sh
 </code></pre></div>
-<h3 id="building-the-daphne-system">Building the DAPHNE system</h3>
+<h3 id="building-daphne">Building DAPHNE</h3>
 <p>Simply build the system using the build-script without any arguments:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>./build.sh
 </code></pre></div>
@@ -2348,7 +2350,7 @@ require cleanup. To only remove build output use the following two commands:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>./build.sh<span class="w"> </span>--cleanAll
 </code></pre></div>
 <p>See <a href="/daphne/development/BuildingDaphne">this page</a> for more information.</p>
-<h3 id="setting-up-the-environment">Setting up the environment</h3>
+<h3 id="setting-up-the-environment">Setting up the Environment</h3>
 <p>As DAPHNE uses shared libraries, these need to be found by the operating system's loader to link them at runtime.
 Since most DAPHNE setups will not end up in one of the standard directories (e.g., <code>/usr/local/lib</code>), environment variables
 are a convenient way to set everything up without interfering with system installations (where you might not even have
@@ -2371,7 +2373,7 @@ variables (unless you have reason to customize your setup - then it is assumed t
 </code></pre></div>
 <p>... and execute it as follows: <code>bin/daphne scripts/examples/hello-world.daph</code> (This command works if <code>daphne</code> is run
 after building from source. Omit <code>bin/</code> in the path to the DAPHNE binary if executed from the binary distribution).</p>
-<p>Optionally flags like <code>--cuda</code> can be added after the daphne command and before the script file to activate support
+<p>Optionally flags like <code>--cuda</code> can be added after the <code>daphne</code> command and before the script file to activate support
 for accelerated ops (see <a href="#software">software requirements</a> above and <a href="../development/BuildingDaphne/">build instructions</a>).
 For further flags that can be set at runtime to activate additional functionality, run <code>daphne --help</code>.</p>
 <h3 id="building-and-running-with-containers">Building and Running with Containers</h3>
@@ -2401,7 +2403,7 @@ For documentation about using containers in conjunction with our cluster deploym
 <li><code>bin</code>: after compilation, generated binaries will be placed here (e.g., daphne)</li>
 <li><code>build</code>: temporary build output</li>
 <li><a href="https://github.com/daphne-eu/daphne/tree/main/containers"><code>containers</code>:</a> scripts and configuration files to get/build/run with Docker or Singularity containers</li>
-<li><a href="https://github.com/daphne-eu/daphne/tree/main/deploy"><code>deploy</code>:</a> shell scripts to ease deployment in SLURM clusters</li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/deploy"><code>deploy</code>:</a> shell scripts to ease deployment in Slurm clusters</li>
 <li><a href="https://github.com/daphne-eu/daphne/tree/main/doc"><code>doc</code>:</a> documentation written in markdown (e.g., what you are reading at the moment)</li>
 <li><code>lib</code>: after compilation, generated library files will be placed here (e.g., libAllKernels.so, libCUDAKernels.so, ...)</li>
 <li><a href="https://github.com/daphne-eu/daphne/tree/main/scripts"><code>scripts</code>:</a> a collection of algorithms and examples written in DAPHNE's own domain specific language (<a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL</a>)</li>

@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1105,7 +1105,7 @@
         <li class="md-nav__item">
   <a href="#what-does-the-build-script-do-simplified" class="md-nav__link">
     <span class="md-ellipsis">
-      What does the build script do? (simplified)
+      What Does the Build Script Do? (Simplified)
     </span>
   </a>
   
@@ -1114,7 +1114,7 @@
         <li class="md-nav__item">
   <a href="#how-long-does-a-build-take" class="md-nav__link">
     <span class="md-ellipsis">
-      How long does a build take?
+      How Long Does a Build Take?
     </span>
   </a>
   
@@ -1123,11 +1123,11 @@
         <li class="md-nav__item">
   <a href="#usage-of-the-build-script" class="md-nav__link">
     <span class="md-ellipsis">
-      Usage of the build script
+      Usage of the Build Script
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Usage of the build script">
+    <nav class="md-nav" aria-label="Usage of the Build Script">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1191,9 +1191,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#overview-over-the-build-script" class="md-nav__link">
+  <a href="#overview-of-the-build-script" class="md-nav__link">
     <span class="md-ellipsis">
-      Overview over the build script
+      Overview of the Build Script
     </span>
   </a>
   
@@ -1202,7 +1202,7 @@
           <li class="md-nav__item">
   <a href="#adding-a-dependency" class="md-nav__link">
     <span class="md-ellipsis">
-      Adding a dependency
+      Adding a Dependency
     </span>
   </a>
   
@@ -1580,7 +1580,7 @@
         <li class="md-nav__item">
   <a href="#what-does-the-build-script-do-simplified" class="md-nav__link">
     <span class="md-ellipsis">
-      What does the build script do? (simplified)
+      What Does the Build Script Do? (Simplified)
     </span>
   </a>
   
@@ -1589,7 +1589,7 @@
         <li class="md-nav__item">
   <a href="#how-long-does-a-build-take" class="md-nav__link">
     <span class="md-ellipsis">
-      How long does a build take?
+      How Long Does a Build Take?
     </span>
   </a>
   
@@ -1598,11 +1598,11 @@
         <li class="md-nav__item">
   <a href="#usage-of-the-build-script" class="md-nav__link">
     <span class="md-ellipsis">
-      Usage of the build script
+      Usage of the Build Script
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Usage of the build script">
+    <nav class="md-nav" aria-label="Usage of the Build Script">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1666,9 +1666,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#overview-over-the-build-script" class="md-nav__link">
+  <a href="#overview-of-the-build-script" class="md-nav__link">
     <span class="md-ellipsis">
-      Overview over the build script
+      Overview of the Build Script
     </span>
   </a>
   
@@ -1677,7 +1677,7 @@
           <li class="md-nav__item">
   <a href="#adding-a-dependency" class="md-nav__link">
     <span class="md-ellipsis">
-      Adding a dependency
+      Adding a Dependency
     </span>
   </a>
   
@@ -1710,13 +1710,13 @@
 <h1 id="building-daphne">Building DAPHNE</h1>
 <p>The DAPHNE project provides a full-fledged build script. After cloning, it does everything from dependency setup to
 generation of the executable.</p>
-<h2 id="what-does-the-build-script-do-simplified">What does the build script do? (simplified)</h2>
+<h2 id="what-does-the-build-script-do-simplified">What Does the Build Script Do? (Simplified)</h2>
 <ul>
 <li>Download &amp; build all code dependencies</li>
-<li>Build Daphne</li>
+<li>Build DAPHNE</li>
 <li>Clean Project</li>
 </ul>
-<h2 id="how-long-does-a-build-take">How long does a build take?</h2>
+<h2 id="how-long-does-a-build-take">How Long Does a Build Take?</h2>
 <p>The first run will take a while, due to long compilation times of the dependencies (~1 hour on a 16 vcore desktop, ~10 minutes on a 128 vcore cluster node). But they only have to be compiled once (except updates).
 Following builds only take a few seconds/minutes.</p>
 <p>Contents:</p>
@@ -1725,13 +1725,13 @@ Following builds only take a few seconds/minutes.</p>
 <li><a href="#extension">Extension of the build script</a></li>
 </ul>
 <hr />
-<h2 id="usage-of-the-build-script">Usage of the build script</h2>
+<h2 id="usage-of-the-build-script">Usage of the Build Script</h2>
 <p>This section shows the possibilities of the build script.</p>
 <h3 id="build">Build</h3>
-<p>The default command to build the default target <strong>daphne</strong>.</p>
+<p>The default command to build the default target <strong><code>daphne</code></strong>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./build.sh
 </code></pre></div>
-<p>Print the cli build help page. This also shows all the following options.</p>
+<p>Print the CLI build help page. This also shows all the following options.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./build.sh<span class="w"> </span>--help
 </code></pre></div>
 <p>Build a specific <strong>target</strong>.</p>
@@ -1741,29 +1741,29 @@ Following builds only take a few seconds/minutes.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./build.sh<span class="w"> </span>--target<span class="w"> </span><span class="s2">&quot;run_tests&quot;</span>
 </code></pre></div>
 <h3 id="clean">Clean</h3>
-<p>Clean all build directories, i.e., the daphne build dir <code>&lt;project_root&gt;/build</code> and the build output in
-<code>&lt;project_root&gt;/bin</code> and <code>&lt;project_root&gt;/lib</code></p>
+<p>Clean all build directories, i.e., the DAPHNE build dir <code>&lt;project_root&gt;/build</code> and the build output in
+<code>&lt;project_root&gt;/bin</code> and <code>&lt;project_root&gt;/lib</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./build.sh<span class="w"> </span>--clean
 </code></pre></div>
-<p>Clean all downloads and extracted archive directories, i.e., <code>&lt;thirdparty_dir&gt;</code>/download-cache, <code>&lt;thirdparty_dir&gt;</code>/sources
-and <code>&lt;thirdparty_dir&gt;</code>/*.download.success files:</p>
+<p>Clean all downloads and extracted archive directories, i.e., <code>&lt;thirdparty_dir&gt;/download-cache</code>, <code>&lt;thirdparty_dir&gt;/sources</code>
+and <code>&lt;thirdparty_dir&gt;/*.download.success</code> files:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./build.sh<span class="w"> </span>--cleanCache
 </code></pre></div>
-<p>Clean third party build output, i.e., <code>&lt;thirdparty_dir&gt;/installed</code>, <code>&lt;thirdparty_dir&gt;/build</code> and
-<code>&lt;thirdparty_dir&gt;</code>/*.install.success files:</p>
+<p>Clean third-party build output, i.e., <code>&lt;thirdparty_dir&gt;/installed</code>, <code>&lt;thirdparty_dir&gt;/build</code> and
+<code>&lt;thirdparty_dir&gt;/*.install.success</code> files:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./build.sh<span class="w"> </span>--cleanDeps
 </code></pre></div>
-<p>Clean everything (DAPHNE build output and third party directory)</p>
+<p>Clean everything (DAPHNE build output and third-party directory):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./build.sh<span class="w"> </span>--cleanAll
 </code></pre></div>
 <h3 id="minimize-compile-times-of-dependencies">Minimize Compile Times of Dependencies</h3>
-<p>The most time-consuming part of getting DAPHNE compiled is building the third party dependencies.
+<p>The most time-consuming part of getting DAPHNE compiled is building the third-party dependencies.
 To avoid this, one can either use a prebuilt container image (in combination with some parameters to the build script
-see below) or at least build the dependencies once and subsequently point to the directory where the third party
-dependencies get installed. The bulid script must be invoked with the following two parameters to achieve this:</p>
+see below) or at least build the dependencies once and subsequently point to the directory where the third-party
+dependencies get installed. The build script must be invoked with the following two parameters to achieve this:</p>
 <p><code>./build.sh --no-deps --installPrefix path/to/installed/deps</code></p>
 <p>If you have built DAPHNE and <strong>change the installPrefix directory</strong>, it is required to clean up and build again:
-<code>./build.sh --clean</code></p>
+<code>./build.sh --clean</code>.</p>
 <h3 id="options">Options</h3>
 <p>All possible options for the build script:</p>
 <table>
@@ -1780,7 +1780,7 @@ dependencies get installed. The bulid script must be invoked with the following 
 </tr>
 <tr>
 <td>--installPrefix &lt;path&gt;</td>
-<td>Install third party dependencies in <code>&lt;path&gt;</code> (default: <code>&lt;project_root&gt;/thirdparty/installed</code>)</td>
+<td>Install third-party dependencies in <code>&lt;path&gt;</code> (default: <code>&lt;project_root&gt;/thirdparty/installed</code>)</td>
 </tr>
 <tr>
 <td>--clean</td>
@@ -1788,15 +1788,15 @@ dependencies get installed. The bulid script must be invoked with the following 
 </tr>
 <tr>
 <td>--cleanCache</td>
-<td>Clean downloaded and extracted third party artifacts</td>
+<td>Clean downloaded and extracted third-party artifacts</td>
 </tr>
 <tr>
 <td>--cleanDeps</td>
-<td>Clean third party dependency build output and installed files</td>
+<td>Clean third-party dependency build output and installed files</td>
 </tr>
 <tr>
 <td>--cleanAll</td>
-<td>Clean DAPHNE build output and reset the third party directory to the state in the git repo</td>
+<td>Clean DAPHNE build output and reset the third-party directory to the state in the git repo</td>
 </tr>
 <tr>
 <td>--target &lt;target&gt;</td>
@@ -1808,19 +1808,19 @@ dependencies get installed. The bulid script must be invoked with the following 
 </tr>
 <tr>
 <td>--no-deps</td>
-<td>Avoid building third party dependencies</td>
+<td>Avoid building third-party dependencies</td>
 </tr>
 <tr>
 <td>-y, --yes</td>
 <td>Accept prompt (e.g., when executing the clean command)</td>
 </tr>
 <tr>
-<td>--cuda</td>
-<td>Compile with support for GPU operations using the CUDA SDK</td>
+<td>--debug</td>
+<td>Compile the <code>daphne</code> binary with debug symbols</td>
 </tr>
 <tr>
-<td>--debug</td>
-<td>Compile the daphne binary with debug symbols</td>
+<td>--cuda</td>
+<td>Compile with support for GPU operations using the CUDA SDK</td>
 </tr>
 <tr>
 <td>--oneapi</td>
@@ -1840,42 +1840,56 @@ dependencies get installed. The bulid script must be invoked with the following 
 <h2 id="building-on-wsl">Building on WSL</h2>
 <p>When using Windows Subsystems for Linux (WSL), the default memory limit for WSL is 50% of the total memory of the underlying Windows host. This can lead to build fails due to SIGKILL for DAPHNE builds. <a href="https://learn.microsoft.com/en-us/windows/wsl/wsl-config">Advanced settings configuration in WSL</a> describes how the memory limit can be configured.</p>
 <h2 id="extension">Extension</h2>
-<h3 id="overview-over-the-build-script">Overview over the build script</h3>
+<h3 id="overview-of-the-build-script">Overview of the Build Script</h3>
 <p>The build script is divided into sections, visualized by</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1">#******************************************************************************</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1"># #1 Section name</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1">#******************************************************************************</span>
 </code></pre></div>
 <p>Each section should only contain functionality related to the section name.</p>
-<p>The following list contains a rough overview over the sections and the concrete functions or functionality done here.</p>
+<p>The following list contains a rough overview of the sections and the concrete functions or functionality done here.</p>
 <ol>
-<li>Help message</li>
+<li>Help message<ol>
 <li><strong>printHelp()</strong> // prints help message</li>
-<li>Build message helper</li>
+</ol>
+</li>
+<li>Build message helper<ol>
 <li><strong>daphne_msg(</strong> &lt;message&gt; <strong>)</strong> // prints a status message in DAPHNE style</li>
 <li><strong>printableTimestamp(</strong> &lt;timestamp&gt; <strong>)</strong> // converts a unix epoch timestamp into a human readable string (e.g., 5min 20s 100ms)</li>
 <li><strong>printLogo()</strong> // prints a DAPHNE logo to the console</li>
-<li>Clean build directories</li>
+</ol>
+</li>
+<li>Clean build directories<ol>
 <li><strong>clean(</strong> &lt;array ref dirs&gt; &lt;array ref files&gt; <strong>)</strong> // removes all given directories (1. parameter) and all given files (2. parameter) from disk</li>
-<li><strong>cleanBuildDirs()</strong> // cleans build dirs (daphne and dependency build dirs)</li>
-<li><strong>cleanAll()</strong> // cleans daphne build dir and wipes all dependencies from disk (resetting the third party directory)</li>
-<li><strong>cleanDeps()</strong> // removes third party build output</li>
-<li><strong>cleanCache()</strong> // removes downloaded third party artifacts (but leaving git submodules (only LLVM/MLIR at the time of writing)</li>
-<li>Create / Check Indicator-files</li>
+<li><strong>cleanBuildDirs()</strong> // cleans build dirs (DAPHNE and dependency build dirs)</li>
+<li><strong>cleanAll()</strong> // cleans DAPHNE build dir and wipes all dependencies from disk (resetting the third-party directory)</li>
+<li><strong>cleanDeps()</strong> // removes third-party build output</li>
+<li><strong>cleanCache()</strong> // removes downloaded third-party artifacts (but leaving git submodules (only LLVM/MLIR at the time of writing)</li>
+</ol>
+</li>
+<li>Create / Check Indicator-files<ol>
 <li><strong>dependency_install_success(</strong> &lt;dep&gt; <strong>)</strong> // used after successful build of a dependency; creates related indicator file</li>
 <li>dependency_download_success(&lt;dep&gt;) // used after successful download of a dependency; creates related indicator file</li>
 <li><strong>is_dependency_installed(</strong> &lt;dep&gt; <strong>)</strong> // checks if dependency is already installed/built successfully</li>
 <li><strong>is_dependency_downloaded(</strong> &lt;dep&gt; <strong>)</strong> // checks if dependency is already downloaded successfully</li>
-<li>Versions of third party dependencies</li>
+</ol>
+</li>
+<li>Versions of third-party dependencies<ol>
 <li>Versions of the software dependencies are configured here</li>
-<li>Set some prefixes, paths and dirs</li>
+</ol>
+</li>
+<li>Set some prefixes, paths and dirs<ol>
 <li>Definition of project related paths</li>
 <li>Configuration of path prefixes. For example all build directories are prefixed with <code>buildPrefix</code>. If fast storage
-      is available on the system, build directories could be redirected with this central configuration.</li>
-<li>Parse arguments</li>
+    is available on the system, build directories could be redirected with this central configuration.</li>
+</ol>
+</li>
+<li>Parse arguments<ol>
 <li>Parsing</li>
 <li>Updating git submodules</li>
-<li>Download and install third-party dependencies if requested (default is yes, omit with --no-deps))</li>
+</ol>
+</li>
+<li>Download and install third-party dependencies if requested (default is yes, omit with --no-deps))<ol>
 <li>Antlr</li>
 <li>catch2</li>
 <li>OpenBLAS</li>
@@ -1885,21 +1899,27 @@ dependencies get installed. The bulid script must be invoked with the following 
 <li>gRPC</li>
 <li>Arrow / Parquet</li>
 <li>MLIR</li>
-<li>Build DAPHNE target</li>
-<li>Compilation of the DAPHNE-target ('daphne' is default)</li>
 </ol>
-<h3 id="adding-a-dependency">Adding a dependency</h3>
+</li>
+<li>Build DAPHNE target<ol>
+<li>Compilation of the DAPHNE-target (<code>daphne</code> is the default)</li>
+</ol>
+</li>
+</ol>
+<h3 id="adding-a-dependency">Adding a Dependency</h3>
 <ol>
 <li>If the dependency is fixed to a specific version, add it to the dependency versions section (section 5).</li>
 <li>Create a new segment in section 8 for the new dependency.</li>
-<li>Define needed dependency variables:</li>
-<li>Directory Name (which is used by the script to locate the dependency in different stages)</li>
+<li>Define needed dependency variables:<ol>
+<li>Directory name (which is used by the script to locate the dependency in different stages)</li>
 <li>Create an internal version variable in form of an array with two entries. Those are used for internal versioning and updating of the dependency without rebuilding each time.<ol>
-<li>First: Name and version of the dependency as a string of the form <code>&lt;dep_name&gt;_v${dep_version}</code> (This one is updated, if a new version of the dependency is choosen.)</li>
-<li>Second: Thirdparty Version of the dependency as a string of the form <code>v1</code> (This one is incremented each time by hand, if something changes on the path system of the dependency or DAPHNE itself. This way already existing projects are updated automatically, if something changes.)</li>
+<li>First: Name and version of the dependency as a string of the form <code>&lt;dep_name&gt;_v${dep_version}</code> (This one is updated, if a new version of the dependency is chosen.)</li>
+<li>Second: Third-party Version of the dependency as a string of the form <code>v1</code> (This one is incremented each time by hand, if something changes on the path system of the dependency or DAPHNE itself. This way already existing projects are updated automatically, if something changes.)</li>
 </ol>
 </li>
-<li>Optionals: Dep-specific paths, Dep-specific files, etc.</li>
+<li>Optional: Dep-specific paths, Dep-specific files, etc.</li>
+</ol>
+</li>
 <li>
 <p>Download the dependency, encased by:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># in segment 5</span>
@@ -1919,7 +1939,7 @@ dependencies get installed. The bulid script must be invoked with the following 
 <a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">    </span>dependency_download_success<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="p">&lt;dep&gt;_version_internal[@]</span><span class="si">}</span><span class="s2">&quot;</span>
 <a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="k">fi</span>
 </code></pre></div>
-<p><strong>Hint:</strong> It is recommended to use the paths defined in section 6 for dependency downloads and installations. There are predefined paths like 'cacheDir', 'sourcePrefix', 'buildPrefix' and 'installPrefix'. Take a look at other dependencies to see how to use them.
+<p><strong>Hint:</strong> It is recommended to use the paths defined in section 6 for dependency downloads and installations. There are predefined paths like <code>cacheDir</code>, <code>sourcePrefix</code>, <code>buildPrefix</code> and <code>installPrefix</code>. Take a look at other dependencies to see how to use them.
 1. Install the dependency (if necessary), encased by:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">if</span><span class="w"> </span>!<span class="w"> </span>is_dependency_installed<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="p">&lt;dep&gt;_version_internal[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
@@ -1931,10 +1951,10 @@ dependencies get installed. The bulid script must be invoked with the following 
 </li>
 <li>
 <p>Define a flag for the build script if your dependency is optional or poses unnecessary
-   overhead for users (e.g., CUDA is optional as the CUDA SDK is a considerably sized package that only owners of Nvidia hardware would want to install).</p>
+    overhead for users (e.g., CUDA is optional as the CUDA SDK is a considerably-sized package that only owners of Nvidia hardware would want to install).</p>
+<p>See section 7 about argument parsing. Quick guide: define a variable and its default value and add an item to the argument handling loop.</p>
 </li>
 </ol>
-<p>See section 7 about argument parsing. Quick guide: define a variable and its default value and add an item to the argument handling loop.</p>
 
 
 

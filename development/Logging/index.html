@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1560,15 +1560,15 @@
 <h1 id="logging">Logging</h1>
 <h2 id="general">General</h2>
 <p>To write out messages of any kind from DAPHNE internals we use the <a href="https://github.com/gabime/spdlog/">spdlog</a> library.
-E.g., not from a user's print() statement but when <code>std::cout &lt;&lt; "my value: " &lt;&lt; value &lt;&lt; std::endl;</code> is needed. With
-spdlog, the previous std::cout example would read like this: <code>spdlog::info("my value: {}", value);</code>. The only
+E.g., not from a user's <code>print()</code> statement but when <code>std::cout &lt;&lt; "my value: " &lt;&lt; value &lt;&lt; std::endl;</code> is needed. With
+spdlog, the previous <code>std::cout</code> example would read like this: <code>spdlog::info("my value: {}", value);</code>. The only
 difference being that we now need to choose a log level (which is arbitrarily chosen to be <em>info</em> in this case).</p>
 <h2 id="usage">Usage</h2>
 <ol>
 <li>Before using the logging functionality, the loggers need to be created and registered. Due to the nature of how
-singletons work in C++, this has to be done once per binary (e.g., daphne, run_tests, libAllKernels.so, libCUDAKernels.so, etc).
-For the mentioned binaries this has already been taken care of (either somewhere near the main program entrypoint or
-via context creation in case of the libs). All setup is handled by the class DaphneLogger (with some extras in ConfigParser).</li>
+singletons work in C++, this has to be done once per binary (e.g., <code>daphne</code>, <code>run_tests</code>, <code>libAllKernels.so</code>, <code>libCUDAKernels.so</code>, etc).
+For the mentioned binaries this has already been taken care of (either somewhere near the main program entry point or
+via context creation in case of the libs). All setup is handled by the class <code>DaphneLogger</code> (with some extras in <code>ConfigParser</code>).</li>
 <li>
 <p>Log messages can be submitted in two forms:</p>
 <ul>
@@ -1585,23 +1585,23 @@ See the matrix multiplication kernel in <code>src/runtime/local/kernels/MatMult.
 <p>We can have several loggers, which can be configured differently. For example, to control how messages are logged
 in the CUDA compiler pass <code>MarkCUDAOpsPass</code>, a logger named "compiler::cuda" is used. Additionally, avoiding the use of
 <code>spdlog::get()</code> is demonstrated there. For each used logger, an entry
-in <code>fallback_loggers</code> (see DaphneLogger.cpp) must exist to prevent crashing when using an unconfigured logger.</p>
+in <code>fallback_loggers</code> (see <code>DaphneLogger.cpp</code>) must exist to prevent crashing when using an unconfigured logger.</p>
 </li>
-<li>To configure log levels, formatting and output options, the DaphneUserConfig and ConfigParser have been extended.
+<li>To configure log levels, formatting and output options, the <code>DaphneUserConfig</code> and <code>ConfigParser</code> have been extended.
 See an example of this in the <code>UserConfig.json</code> in the root directory of the DAPHNE code base.</li>
 <li>At the moment, the output options of our logging infrastructure are a bit limited (initial version). A logger currently
-always emits messages to the console's std-out and optionally to a file if a file name is given in the config.</li>
+always emits messages to the console's <code>stdout</code> and optionally to a file if a file name is given in the configuration.</li>
 <li>The format of log messages can be customized. See the examples in <code>UserConfig.json</code> and the
 <a href="https://github.com/gabime/spdlog/">spdlog documentation</a>.</li>
-<li>If a logger is called while running unit tests (run_tests executable), make sure to <code>#include &lt;run_tests.h&gt;</code> and
+<li>If a logger is called while running unit tests (<code>run_tests</code> executable), make sure to <code>#include &lt;run_tests.h&gt;</code> and
 call <code>auto dctx = setupContextAndLogger();</code> somewhere before calling the kernel to be tested.</li>
 <li>Logging can be set to only work from a certain log level and above. This mechanism also serves as a global toggle.
 To set the log level limit, set <code>{ "log-level-limit": "OFF" },</code>. In this example, taken from <code>UserConfig.json</code>,
 all logging is switched off, regardless of configuration.</li>
 </ol>
 <h2 id="log-levels">Log Levels</h2>
-<p>These are the available log levels (taken from <code>&lt;spdlog/common.h&gt;</code>). Since it's an enum, their numeric value
-start from 0 for TRACE to 6 for OFF.</p>
+<p>These are the available log levels (taken from <code>&lt;spdlog/common.h&gt;</code>). Since it's an enum, their numeric values
+start from <code>0</code> for <code>TRACE</code> to <code>6</code> for <code>OFF</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">namespace</span><span class="w"> </span><span class="nn">level</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">enum</span><span class="w"> </span><span class="nc">level_enum</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">int</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">{</span>

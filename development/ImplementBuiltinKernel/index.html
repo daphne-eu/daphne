@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1626,7 +1626,7 @@
 <h1 id="implementing-a-built-in-kernel-for-a-daphneir-operation">Implementing a Built-in Kernel for a DaphneIR Operation</h1>
 <h2 id="background">Background</h2>
 <p>(Almost) every DaphneIR operation will be backed by a kernel (= physical operator) at run-time.
-Extensibility w.r.t. kernels is one on the core goals of the DAPHNE system.
+Extensibility w.r.t. kernels is one on the core goals of DAPHNE.
 It shall be easy for a user to add a custom kernel.
 However, the system will offer a full set of built-in kernels so that all DaphneIR operations can be used out-of-the-box.</p>
 <h2 id="scope">Scope</h2>
@@ -1650,19 +1650,25 @@ Depending on the amount of code, the separation into multiple header files is al
 At least, we should rather not mix kernels of different DaphneIR operations in one header file.</p>
 <p><strong>Interfaces:</strong></p>
 <p>Technically, a kernel is a C++ function taking one or more data objects (matrices, frames) and/or scalars as input and returning one or more data objects and/or scalars as output.
-As a central idea, (almost) all DaphneIR operations should be able to process (almost) all kinds of Daphne data structures, whereby these could have any Daphne value type.
+As a central idea, (almost) all DaphneIR operations should be able to process (almost) all kinds of DAPHNE data structures, whereby these could have any DAPHNE value type.
 For example, elementwise binary operations (<code>+</code>, <code>*</code>, ...) should be applicable to <code>DenseMatrix</code> of <code>double</code>, <code>uint32_t</code>, etc. as well as to <code>CSRMatrix</code> of <code>double</code>, <code>uint32_t</code>, etc. and so on.
 This type flexibility motivates the use of C++ template metaprogramming.</p>
 <p>Thus, a kernel is a template function with:</p>
 <ul>
-<li><em>template parameters</em></li>
+<li><em>template parameters</em><ul>
 <li>one for the type of each input/output data object (and scalar, if necessary)</li>
-<li><em>inputs</em></li>
+</ul>
+</li>
+<li><em>inputs</em><ul>
 <li>of type <code>const DT *</code> for data objects (whereby <code>DT</code> is a particular C++ type such as <code>DenseMatrix&lt;double&gt;</code>)</li>
 <li>of type <code>VT</code> for scalars of some value type <code>VT</code></li>
-<li><em>outputs</em></li>
+</ul>
+</li>
+<li><em>outputs</em><ul>
 <li>as a return value, in case of a single scalar</li>
 <li>as a parameter of type <code>DT *&amp;</code> in case of data objects (all output parameters <em>before</em> all input parameters)</li>
+</ul>
+</li>
 </ul>
 <p>The reason for passing output data objects as parameters is that this mechanism could be used for efficient update-in-place operations.</p>
 <p>The declaration of a kernel function could look as follows:</p>
@@ -1743,19 +1749,21 @@ C++ templates offer many ways to express such (partial) specializations, some ex
 <p>As stated above, the <code>apply</code>-function contain the actual implementation of the kernel.
 Of course, that depends on what the kernel is supposed to do, but there some recurring actions.</p>
 <ul>
-<li><em>Obtaining an output data object</em></li>
-</ul>
+<li>
+<p><em>Obtaining an output data object</em></p>
 <p>Data objects like matrices and frames cannot be obtained using the <code>new</code>-operator, but must be obtained from the <code>DataObjectFactory</code>, e.g., as follows:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DataObjectFactory</span><span class="o">::</span><span class="n">create</span><span class="o">&lt;</span><span class="n">CSRMatrix</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
 </code></pre></div>
 <p>Internally, this <code>create</code>-function calls a private constructor of the specified data type implementation; so please have a look at these.
 - <em>Accessing the input and output data objects</em></p>
 <p>For efficiency reasons, accessing the data in way specific to the data type implementation is preferred to generic access method of the super-classes.
-  That is, if possible, rather use <code>getValues()</code> (for <code>DenseMatrix</code>) or <code>getValues()</code>/<code>colColIdxs()</code>/<code>getRowOffsets()</code> (for <code>CSRMatrix</code>) rather than <code>get()</code>/<code>set()</code>/<code>append()</code> from the super-class <code>Matrix</code>.
-  The reason is that these generic access methods can incur a lot of unnecessary effort, depending on the data type implementation.
-  However, in the end it is always a trade-off between performance and code complexity.
-  For kernels that are rarely used or typically used on small data objects, a simple but inefficient implementation might be okay.
-  Nevertheless, since the DAPHNE system should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.</p>
+That is, if possible, rather use <code>getValues()</code> (for <code>DenseMatrix</code>) or <code>getValues()</code>/<code>colColIdxs()</code>/<code>getRowOffsets()</code> (for <code>CSRMatrix</code>) rather than <code>get()</code>/<code>set()</code>/<code>append()</code> from the super-class <code>Matrix</code>.
+The reason is that these generic access methods can incur a lot of unnecessary effort, depending on the data type implementation.
+However, in the end it is always a trade-off between performance and code complexity.
+For kernels that are rarely used or typically used on small data objects, a simple but inefficient implementation might be okay.
+Nevertheless, since DAPHNE should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.</p>
+</li>
+</ul>
 <h3 id="concrete-examples">Concrete Examples</h3>
 <p>For concrete examples, please have a look at existing kernel implementations in <a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/local/kernels">src/runtime/local/kernels</a>.
 For instance, the following kernels represent some interesting cases:</p>
@@ -1769,15 +1777,15 @@ For instance, the following kernels represent some interesting cases:</p>
 <p>Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.
 Please have a look at test cases for existing kernel implementations in <a href="https://github.com/daphne-eu/daphne/tree/main/test/runtime/local/kernels">test/runtime/local/kernels</a> (surely, these could still be improved).</p>
 <h3 id="error-handling">Error Handling</h3>
-<p>It is recommended to exceptions such as <code>throw std::runtime_error</code> in a kernel
+<p>It is recommended to throw exceptions such as <code>throw std::runtime_error</code> in a kernel
 in case the code runs into an unresolvable issue. We catch these exceptions in
 our surrounding code to the kernel and provide, whenever possible, additional
 information about the source of the error in the DaphneDSL script.</p>
 <h3 id="experimental-kernels">Experimental Kernels</h3>
 <p>As an alternative to implementing a new kernel that is directly integrated into
-DAPHNE, one can also work on kernel implementations using the <a href="doc/Extensions.md">kernel catalog</a>.
-These should reside in <a href="src/runtime/local/kernels/experimental/op/">experimental/op/</a> where <code>op</code> is
-the mnemonic of the DaphneIR operation that the kernel is implementing.</p>
+DAPHNE, one can also work on kernel implementations using the <a href="/daphne/Extensions">kernel catalog</a>.
+These should reside in <a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/local/kernels/experimental/op/">experimental/op/</a> where <code>op</code> is
+the mnemonic of the DaphneIR operation that the kernel implements.</p>
 <p>Experimental kernels are not directly integrated into DAPHNE and are neither
 compiled nor executed by default. They can be used to test new ideas and
 provide an easier way of prototyping kernel implementations. One can easily
@@ -1789,7 +1797,7 @@ free to introduce new dependencies that are handled by the accompanying
 <code>Makefile</code> or build script. Testing and dependency management will have to be
 resolved before the experimental kernel is integrated into DAPHNE as a built-in
 kernel.</p>
-<p>Check out <a href="doc/Extensions.md">Extensions.md</a> for more information on how to
+<p>Check out <a href="/daphne/Extensions">Extensions.md</a> for more information on how to
 implement experimental kernels.</p>
 
 

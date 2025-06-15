@@ -373,7 +373,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -837,11 +837,11 @@
         <li class="md-nav__item">
   <a href="#data-exchange-with-other-python-libraries" class="md-nav__link">
     <span class="md-ellipsis">
-      Data Exchange with other Python Libraries
+      Data Exchange with Other Python Libraries
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Data Exchange with other Python Libraries">
+    <nav class="md-nav" aria-label="Data Exchange with Other Python Libraries">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1762,11 +1762,11 @@
         <li class="md-nav__item">
   <a href="#data-exchange-with-other-python-libraries" class="md-nav__link">
     <span class="md-ellipsis">
-      Data Exchange with other Python Libraries
+      Data Exchange with Other Python Libraries
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Data Exchange with other Python Libraries">
+    <nav class="md-nav" aria-label="Data Exchange with Other Python Libraries">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1855,17 +1855,21 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 <h2 id="prerequisites">Prerequisites</h2>
 <p><strong>Provide DAPHNE:</strong></p>
 <ul>
-<li><code>libdaphnelib.so</code> and <code>libAllKernels.so</code> must be present</li>
+<li><code>libdaphnelib.so</code> and <code>libAllKernels.so</code> must be present<ul>
 <li>Building the project with <code>./build.sh --target daphnelib</code> achieves this (this creates a <code>lib</code> dir in the <code>daphne</code> project root)</li>
 <li>OR use the <code>lib/</code> dir of a release</li>
+</ul>
+</li>
 <li><code>LD_LIBRARY_PATH</code> must be set (e.g., executed from <code>daphne/</code>: <code>export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH</code>)</li>
 <li>Set the environment variable <code>DAPHNELIB_DIR_PATH</code> to the path were the libraries (<code>*.so</code> files) are placed, e.g., <code>path/to/daphne/lib/</code></li>
 </ul>
 <h2 id="installation">Installation</h2>
 <ul>
-<li>There are two options to install the Python package <code>daphne</code> (DaphneLib)</li>
-<li>Via github url: <code>pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python</code></li>
+<li>There are two options to install the Python package <code>daphne</code> (DaphneLib)<ul>
+<li>Via GitHub url: <code>pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python</code></li>
 <li>OR clone the DAPHNE repository and install from source files: <code>pip install daphne/src/api/python</code></li>
+</ul>
+</li>
 <li>
 <p><em>Recommendation:</em> Use a virtual environment</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>my_venv
@@ -1905,7 +1909,7 @@ The <code>DaphneContext</code> offers means to obtain DAPHNE matrices and frames
 Here, we generate some random data in numpy and import it to DAPHNE <strong>(3)</strong>.</p>
 <p>Based on DAPHNE matrices/frames/scalars (and Python scalars), complex expressions can be defined <strong>(4)</strong> using Python operators (such as <code>-</code> and <code>/</code> above) and methods on the DAPHNE matrices/frames/scalars (such as <code>mean()</code> and <code>stddev()</code> above).
 The results of these expressions again represent DAPHNE matrices/frames/scalars.</p>
-<p>Up until here, no acutal computations are performed.
+<p>Up until here, no actual computations are performed.
 Instead, an internal DAG (directed acyclic graph) representation of the computation is built.
 When calling <code>compute()</code> on the result <strong>(5)</strong>, the DAG is automatically optimized and executed by DAPHNE.
 This principle is known as <em>lazy evaluation</em>.
@@ -2079,7 +2083,7 @@ A comprehensive list can be found in the <a href="/daphne/DaphneLib/APIRef#build
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">X</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">X</span><span class="o">.</span><span class="n">cbind</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="data-exchange-with-other-python-libraries">Data Exchange with other Python Libraries</h2>
+<h2 id="data-exchange-with-other-python-libraries">Data Exchange with Other Python Libraries</h2>
 <p>DaphneLib supports efficient data exchange with other well-known Python libraries, in both directions.
 The data transfer from other Python libraries to DaphneLib can be triggered through the <code>from_...()</code> methods of the <code>DaphneContext</code> (e.g., <code>from_numpy()</code>).
 A comprehensive list of these methods can be found in the <a href="/daphne/DaphneLib/APIRef#daphnecontext">DaphneLib API reference</a>.

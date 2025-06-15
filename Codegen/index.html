@@ -16,7 +16,7 @@
     
     
       
-        <title>Code Generation with MLIR - DAPHNE</title>
+        <title>Codegen - DAPHNE</title>
       
     
     
@@ -105,7 +105,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Code Generation with MLIR
+              Codegen
             
           </span>
         </div>
@@ -367,7 +367,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    Index
     
   </span>
   
@@ -1487,36 +1487,36 @@
 <p>This document describes the process of directly generating code with the MLIR
 framework.</p>
 <h2 id="motivation">Motivation</h2>
-<p>DAPHNE provides a kernel for (almost) every DaphneIR operation which reside in
-<code>src/runtime/local/kernels/</code>. These are precompiled as a shared library and
-linked during compile-time. Even though these kernels can be highly optimized
+<p>DAPHNE provides a kernel for (almost) every DaphneIR operation. The kernels reside in
+<code>src/runtime/local/kernels/</code>. These are pre-compiled as a shared library during the DAPHNE build and
+linked at DaphneDSL compile-time. Even though these kernels can be highly optimized
 and thus achieve great runtime characteristics, they may not provide a desired
 level of extensibility for custom value types. They may also be lacking
 information only available at compile-time that could enable further
 optimizations. Additionally, through the process of progressively lowering the
 input IR, the code generation pipeline may enable more optimization
 possibilities such as operator or loop fusion.</p>
-<p>As an alternative way to implement our operators we provide the code generation
+<p>As an alternative way to implement our operators, we provide the code generation
 pipeline which progressively lowers the DaphneIR available after parsing the
 DaphneDSL script to operations in either the same dialect or operations from
 other dialects. With that, we can optionally replace certain kernels by
 generating code directly, and also perform a hybrid compilation approach where
 we mix kernel calls with code generation in order to exploit advantages of
-both, precompiled kernel libraries and code generation. Code generation passes
+both, pre-compiled kernel libraries and code generation. Code generation passes
 are found in <code>src/compiler/lowering/</code>.</p>
 <h2 id="guidelines">Guidelines</h2>
 <p>Currently, the code generation pipeline is enabled with the CLI flag
 <code>--mlir-codegen</code>. This adds the following passes that perform transformations and
 lowerings:</p>
 <ul>
-<li><a href="src/compiler/lowering/DaphneOptPass.cpp">DenseMatrixOptPass</a></li>
-<li><a href="src/compiler/lowering/MatMulOpLowering.cpp">MatMulOpLoweringPass</a></li>
-<li><a href="src/compiler/lowering/AggAllOpLowering.cpp">AggAllLoweringPass</a></li>
-<li><a href="src/compiler/lowering/MapOpLowering.cpp">MapOpLoweringPass</a></li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/compiler/lowering/DaphneOptPass.cpp">DenseMatrixOptPass</a></li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/compiler/lowering/MatMulOpLowering.cpp">MatMulOpLoweringPass</a></li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/compiler/lowering/AggAllOpLowering.cpp">AggAllLoweringPass</a></li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/compiler/lowering/MapOpLowering.cpp">MapOpLoweringPass</a></li>
 <li>InlinerPass</li>
-<li><a href="src/compiler/lowering/EwOpsLowering.cpp">LowerEwOpPass</a></li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/compiler/lowering/EwOpsLowering.cpp">LowerEwOpPass</a></li>
 <li>ConvertMathToLLVMPass</li>
-<li><a href="src/compiler/lowering/ModOpLowering.cpp">ModOpLoweringPass</a></li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/compiler/lowering/ModOpLowering.cpp">ModOpLoweringPass</a></li>
 <li>Canonicalizer</li>
 <li>CSE</li>
 <li>LoopFusion</li>
@@ -1545,7 +1545,7 @@ multiple passes) on the IR. <code>daphne-opt</code> provides all the functionali
 debug information.</p>
 <h4 id="testing">Testing</h4>
 <p>To test the generated code, there currently are two different approaches.</p>
-<p>End-to-end tests can be found under <code>test/api/cli/codegen/</code> and are part of the
+<p>Script-level tests can be found under <code>test/api/cli/codegen/</code> and are part of the
 existing Catch2 test-suite with the its own tag, <code>TAG_CODEGEN</code>.</p>
 <p>Additionally, there are tests that check the generated IR by running the
 <code>llvm-lit</code>, <code>daphne-opt</code>, and <code>FileCheck</code> utilities. These tests reside under
