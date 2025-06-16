@@ -546,22 +546,21 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // finalize parfor call
         callee << "__void";
 
-        // TODO : is const 1 right now, because I'm unsure, is it the func that is the body of parfor ? what is it in
-        // vectorized pipeline ?
-        auto numDataOperands = 0; // TODO : ??
+        // data operands refers to the number of non-local variables i.e.
+        // arguments to the function that represents the loop body
+        auto numDataOperands = op.getArgs().size();
         auto attrNumInputs = rewriter.getI64IntegerAttr(numDataOperands);
-        std::vector<mlir::Value> func_ptrs;
-        func_ptrs.push_back(fnPtr);
 
         auto size =
-            rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(func_ptrs.size()));
+            rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(numDataOperands));
         auto scalars = rewriter.create<daphne::CreateVariadicPackOp>(
             loc, daphne::VariadicPackType::get(rewriter.getContext(), rewriter.getI1Type()), attrNumInputs);
         auto inputs = rewriter.create<daphne::CreateVariadicPackOp>(
             loc, daphne::VariadicPackType::get(rewriter.getContext(), operandType), attrNumInputs);
 
         // Populate the variadic packs for isScalar and inputs.
-        // TODO : as of now pbviously does nothing because numDataOperands is 0
+        // In the flattened operands structure, args are found in the first
+        // numDataOperands places
         for (size_t k = 0; k < numDataOperands; k++) {
             auto attrK = rewriter.getI64IntegerAttr(k);
             rewriter.create<daphne::StoreVariadicPackOp>(

@@ -82,12 +82,12 @@ def Daphne_ParForOp : Daphne_Op<"parfor"> {
     }];
     
     let arguments = (ins
+        Variadic<AnyType>:$args,
         AnyInteger:$from,
         AnyInteger:$to,
         AnyInteger:$step,
         Optional<DaphneContext>:$ctx,
-        OptionalAttr<FlatSymbolRefAttr>:$funcName,
-        Variadic<AnyType>:$args
+        OptionalAttr<FlatSymbolRefAttr>:$funcName
         // todo: add additional parameter?
     );
     let regions = (region SizedRegion<1>:$bodyStmt);
