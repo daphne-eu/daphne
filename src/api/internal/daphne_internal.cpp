@@ -26,7 +26,7 @@
 #include <api/daphnelib/DaphneLibResult.h>
 #include <api/internal/daphne_internal.h>
 #include <parser/catalog/KernelCatalogParser.h>
-#include "runtime/local/io/FileIOCatalogParser.h"
+#include <runtime/local/io/FileIOCatalogParser.h>
 #include <parser/config/ConfigParser.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
@@ -275,6 +275,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     static opt<string> kernelExt("kernel-ext", cat(daphneOptions),
                                  desc("Additional kernel extension to register "
                                       "(path to a kernel catalog JSON file)."));
+    static opt<std::string> FileIOExt("FileIO-ext",cat(daphneOptions),
+                                        desc("Load an additional FileIO extention JSON file" 
+                                            "path to a FileIO extention JSON file"));
 
     enum ExplainArgs {
         kernels,
@@ -566,6 +569,21 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor executor(selectMatrixRepr, user_config);
     mlir::MLIRContext *mctx = executor.getContext();
+
+    // ************************************************************************
+    // Populate FileIO extension catalog
+    // ************************************************************************
+    FileIOCatalogParser fileIOParser;
+    try {
+        if (!FileIOExt.empty()) {
+            fileIOParser.parseFileIOCatalog(FileIOExt); 
+            std::cerr << "[info] Loaded FileIO catalog from " << FileIOExt << "\n";
+        }
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Error parsing FileIO catalog: " << e.what() << "\n";
+        return 1;
+    }
 
     // ************************************************************************
     // Populate kernel extension catalog
