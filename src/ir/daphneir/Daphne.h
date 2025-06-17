@@ -69,9 +69,10 @@
 #include <ir/daphneir/DaphneOpsEnums.h.inc>
 #include <ir/daphneir/DaphneVectorizableOpInterface.h>
 
-// Enum classes used by inference interfaces must be declared before including these interfaces.
+// Custom C++ types used to represent the data properties of DAPHNE data objects (e.g., matrices, frames) must be
+// declared before including the data property inference interfaces.
+#include <ir/daphneir/DataPropertyTypes.h>
 namespace mlir::daphne {
-enum class BoolOrUnknown { Unknown = -1, False = 0, True = 1 };
 std::string boolOrUnknownToString(BoolOrUnknown rep);
 BoolOrUnknown stringToBoolOrUnknown(const std::string &str);
 } // namespace mlir::daphne

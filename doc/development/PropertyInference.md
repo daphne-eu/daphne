@@ -225,9 +225,9 @@ Furthermore, the [MLIR documentation](https://mlir.llvm.org/docs/) provides more
 
 New data properties can be added to DAPHNE's abstract data types (matrix, frame, etc.).
 Before adding a new data property called `${prop}`, think about (a) which DAPHNE data type you want to add the data property to (e.g., matrix or frame), and (b) of what C++ type the new data property shall be (e.g., `ssize_t`, `double`, `mlir::Type`, some custom C++ enum class, or some custom C++ class).
-If the new data property shall have a small set of discrete values, add a new C++ enum class in namespace `mlir::daphne` in `src/ir/Daphne.h` (or use one of the existing enum classes there) and use this enum class as the C++ type of the new data property.
+If the new data property shall be of a custom C++ type, add this new type to `src/ir/DataPropertyTypes.h` (or use one of the existing types there). In particular, if the new property shall have a small set of discrete values, you can use an enum class as the C++ type of the new data property.
 In the following, we assume the new data property is of C++ type `${pt}` and we want to add it to the DAPHNE data type `${dt}`.
-The following steps are required (commit da35f1eb197c5e993167d6c2862d98a513b40852 is an example for adding a new data property):
+The following steps are required (commit da35f1eb197c5e993167d6c2862d98a513b40852 is an example for adding a new data property; however, note that some details of adding a new data property have evolved since this commit):
 
 1. Add a new [parameter](https://mlir.llvm.org/docs/DefiningDialects/AttributesAndTypes/#parameters) `${prop}` to the custom MLIR type `${dt}` in `src/ir/daphneir/DaphneTypes.td`.
 1. Adapt `mlir::daphne::detail::${dt}TypeStorage` (see `src/ir/daphneir/DaphneDialect.cpp`) by adding the new data property.

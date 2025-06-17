@@ -92,7 +92,7 @@ def Matrix : Daphne_Type<"Matrix"> {
             return get(getContext(), getElementType(), getNumRows(), getNumCols(), getSparsity(), rep, getSymmetric());
         }
 
-        ::mlir::daphne::MatrixType withSymmetric(::mlir::daphne::BoolOrUnknown symmetric) {
+        ::mlir::daphne::MatrixType withSymmetric(BoolOrUnknown symmetric) {
             return get(getContext(), getElementType(), getNumRows(), getNumCols(), getSparsity(), getRepresentation(), symmetric);
         }
 
@@ -129,7 +129,7 @@ def Matrix : Daphne_Type<"Matrix"> {
                 && getRepresentation() != other.getRepresentation())
                 return false;
 
-            if (other.getSymmetric() != ::mlir::daphne::BoolOrUnknown::Unknown
+            if (other.getSymmetric() != BoolOrUnknown::Unknown
                 && getSymmetric() != other.getSymmetric())
                 return false;
 

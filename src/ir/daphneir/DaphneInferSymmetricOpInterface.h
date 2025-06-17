@@ -44,7 +44,7 @@ namespace mlir::daphne {
  * @param op The operation for whose results' this data property shall be inferred.
  * @return
  */
-std::vector<mlir::daphne::BoolOrUnknown> tryInferSymmetric(mlir::Operation *op);
+std::vector<BoolOrUnknown> tryInferSymmetric(mlir::Operation *op);
 } // namespace mlir::daphne
 
 #endif // SRC_IR_DAPHNEIR_DAPHNEINFERSYMMETRICOPINTERFACE_H

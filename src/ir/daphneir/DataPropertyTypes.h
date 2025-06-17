@@ -14,22 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef SRC_IR_DAPHNEIR_DAPHNEINFERSYMMETRICOPINTERFACE_TD
-#define SRC_IR_DAPHNEIR_DAPHNEINFERSYMMETRICOPINTERFACE_TD
+#pragma once
 
-include "mlir/IR/OpBase.td"
+/*
+ * This header contains custom C++ types used to represent the data properties of DAPHNE data objects (e.g., matrices
+ * and frames). These types are used in both, the IR/compiler and the runtime.
+ */
 
-def InferSymmetricOpInterface : OpInterface<"InferSymmetric"> {
-    let description = [{
-        Interface to infer whether the data object(s) returned by an operation are symmetric.
-    }];
-
-    let methods = [
-        InterfaceMethod<
-                "Infer whether the output data object(s) are symmetric.",
-                "std::vector<BoolOrUnknown>", "inferSymmetric", (ins)
-        >
-    ];
-}
-
-#endif // SRC_IR_DAPHNEIR_DAPHNEINFERSYMMETRICOPINTERFACE_TD
+enum class BoolOrUnknown { Unknown = -1, False = 0, True = 1 };

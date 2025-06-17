@@ -335,11 +335,11 @@ std::string mlir::daphne::boolOrUnknownToString(BoolOrUnknown b) {
     case BoolOrUnknown::True:
         return "true";
     default:
-        throw std::runtime_error("unknown mlir::daphne::BoolOrUnknown " + std::to_string(static_cast<int>(b)));
+        throw std::runtime_error("unknown BoolOrUnknown " + std::to_string(static_cast<int>(b)));
     }
 }
 
-mlir::daphne::BoolOrUnknown mlir::daphne::stringToBoolOrUnknown(const std::string &str) {
+BoolOrUnknown mlir::daphne::stringToBoolOrUnknown(const std::string &str) {
     if (str == "?")
         return BoolOrUnknown::Unknown;
     else if (str == "false")

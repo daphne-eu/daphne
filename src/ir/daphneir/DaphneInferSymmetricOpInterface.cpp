@@ -30,7 +30,7 @@ using namespace mlir::OpTrait;
 // Inference interface implementations
 // ****************************************************************************
 
-std::vector<mlir::daphne::BoolOrUnknown> daphne::FillOp::inferSymmetric() {
+std::vector<BoolOrUnknown> daphne::FillOp::inferSymmetric() {
     // The result of FillOp is symmetric iff it is square.
     std::pair numRows = CompilerUtils::isConstant<ssize_t>(getNumRows());
     std::pair numCols = CompilerUtils::isConstant<ssize_t>(getNumCols());
@@ -40,7 +40,7 @@ std::vector<mlir::daphne::BoolOrUnknown> daphne::FillOp::inferSymmetric() {
         return {BoolOrUnknown::Unknown};
 }
 
-std::vector<mlir::daphne::BoolOrUnknown> daphne::TransposeOp::inferSymmetric() {
+std::vector<BoolOrUnknown> daphne::TransposeOp::inferSymmetric() {
     // TransposeOp retains the symmetry of its argument.
     if (auto mt = getArg().getType().dyn_cast<daphne::MatrixType>())
         return {mt.getSymmetric()};
@@ -51,7 +51,7 @@ std::vector<mlir::daphne::BoolOrUnknown> daphne::TransposeOp::inferSymmetric() {
 // Inference function
 // ****************************************************************************
 
-std::vector<daphne::BoolOrUnknown> daphne::tryInferSymmetric(Operation *op) {
+std::vector<BoolOrUnknown> daphne::tryInferSymmetric(Operation *op) {
     if (auto inferSymmetricOp = llvm::dyn_cast<daphne::InferSymmetric>(op))
         // If the operation implements the inference interface, we apply that.
         return inferSymmetricOp.inferSymmetric();
@@ -60,7 +60,7 @@ std::vector<daphne::BoolOrUnknown> daphne::tryInferSymmetric(Operation *op) {
         // and has zero or more than one results, we return unknown.
         std::vector<BoolOrUnknown> symmetrics;
         for (size_t i = 0; i < op->getNumResults(); i++)
-            symmetrics.push_back(daphne::BoolOrUnknown::Unknown);
+            symmetrics.push_back(BoolOrUnknown::Unknown);
         return symmetrics;
     }
 }

@@ -73,13 +73,13 @@ Type getTypeWithCommonInfo(Type t1, Type t2) {
         const ssize_t sp2 = mat2.getSparsity();
         const daphne::MatrixRepresentation repr1 = mat1.getRepresentation();
         const daphne::MatrixRepresentation repr2 = mat2.getRepresentation();
-        const daphne::BoolOrUnknown sym1 = mat1.getSymmetric();
-        const daphne::BoolOrUnknown sym2 = mat2.getSymmetric();
+        const BoolOrUnknown sym1 = mat1.getSymmetric();
+        const BoolOrUnknown sym2 = mat2.getSymmetric();
         return daphne::MatrixType::get(ctx, (vt1 == vt2) ? vt1 : u, (nr1 == nr2) ? nr1 : -1, (nc1 == nc2) ? nc1 : -1,
                                        // TODO Maybe do approximate comparison of floating-point values.
                                        (sp1 == sp2) ? sp1 : -1,
                                        (repr1 == repr2) ? repr1 : daphne::MatrixRepresentation::Default,
-                                       (sym1 == sym2) ? sym1 : daphne::BoolOrUnknown::Unknown);
+                                       (sym1 == sym2) ? sym1 : BoolOrUnknown::Unknown);
     } else if (frm1 && frm2) { // both types are frames
         const std::vector<Type> cts1 = frm1.getColumnTypes();
         const std::vector<Type> cts2 = frm2.getColumnTypes();
@@ -254,7 +254,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
             }
             if (cfg.symmetricInference && returnsUnknownSymmetric(op)) {
                 // Try to infer the symmetry of all results of this operation.
-                std::vector<daphne::BoolOrUnknown> symmetrics = daphne::tryInferSymmetric(op);
+                std::vector<BoolOrUnknown> symmetrics = daphne::tryInferSymmetric(op);
                 const size_t numRes = op->getNumResults();
                 if (symmetrics.size() != numRes)
                     throw ErrorHandler::compilerError(
@@ -264,7 +264,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                             " results");
                 // Set the inferred values on all results of this operation.
                 for (size_t i = 0; i < numRes; i++) {
-                    const daphne::BoolOrUnknown symmetric = symmetrics[i];
+                    const BoolOrUnknown symmetric = symmetrics[i];
                     if (llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i])) {
                         Value rv = op->getResult(i);
                         const Type rt = rv.getType();
@@ -549,7 +549,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
     static bool returnsUnknownSymmetric(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type rt) {
             if (auto mt = rt.dyn_cast<daphne::MatrixType>())
-                return mt.getSymmetric() == daphne::BoolOrUnknown::Unknown;
+                return mt.getSymmetric() == BoolOrUnknown::Unknown;
             return false;
         });
     }
