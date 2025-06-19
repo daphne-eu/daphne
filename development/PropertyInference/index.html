@@ -1707,6 +1707,7 @@ The fact that DAPHNE supports a certain data property does not mean that the dat
 <li><em>value type:</em> the common type of all matrix elements</li>
 <li><em>shape (number of rows, number of columns):</em> the logical size of the matrix</li>
 <li><em>sparsity:</em> the number of non-zero elements divided by the total number of elements</li>
+<li><em>symmetry:</em> whether the <em>(n x n)</em> matrix <em>X</em> is symmetric, i.e., for any <em>0 ≤ i, j ≤ n: X[i, j] = X[j, i]</em></li>
 <li><em>physical representation:</em> the way the matrix is stored in memory (e.g., dense or sparse)</li>
 </ul>
 </li>
@@ -1727,7 +1728,8 @@ The fact that DAPHNE supports a certain data property does not mean that the dat
 </li>
 </ul>
 <h2 id="representation-of-data-properties">Representation of Data Properties</h2>
-<p><strong>Data properties are represented in the DaphneIR</strong> and, thus, <em>available at compile-time</em>.
+<p><strong>Data properties are represented in the DaphneIR and in the DAPHNE runtime.</strong>
+Thus, the information on data properties is available at compile-time and at run-time.
 The rationale for a compile-time representation (as opposed to a pure run-time representation) is twofold:</p>
 <ul>
 <li>Some ways of inferring data properties require a global view on the program.
@@ -1735,7 +1737,7 @@ The rationale for a compile-time representation (as opposed to a pure run-time r
     For instance, the result of <code>t(X) @ X</code> is a symmetric matrix for any matrix <code>X</code>, but that cannot easily be derived from looking at the individual ops.</li>
 <li>Some ways of exploiting data properties for optimizations need to take place at compile-time, because they apply global optimizations to the IR (e.g., simplification rewrites, operator ordering, code generation, and operator fusion).</li>
 </ul>
-<p><strong>Data properties are stored as <a href="https://mlir.llvm.org/docs/DefiningDialects/AttributesAndTypes/#parameters">parameters</a> of custom MLIR types</strong> (see <code>src/ir/daphneir/DaphneTypes.td</code>) (e.g., <code>Matrix</code>/<code>mlir::daphne::MatrixType</code> and <code>Frame</code>/<code>mlir::daphne::FrameType</code>).</p>
+<p><strong>In DaphneIR, data properties are stored as <a href="https://mlir.llvm.org/docs/DefiningDialects/AttributesAndTypes/#parameters">parameters</a> of custom MLIR types</strong> (see <code>src/ir/daphneir/DaphneTypes.td</code>) (e.g., <code>Matrix</code>/<code>mlir::daphne::MatrixType</code> and <code>Frame</code>/<code>mlir::daphne::FrameType</code>).</p>
 <p>There would have been some alternative approaches to using MLIR type parameters.
 Those alternatives would not necessarily be impossible to use for the purpose of representing data properties.
 However, we decided against them.
@@ -1758,6 +1760,10 @@ We considered the following alternatives:</p>
     This functions sets all data properties to <em>unknown</em> except the value type(s).
     After invoking this utility function, type comparisons will only consider the data/value type, so the comparison result should be as expected.</li>
 </ul>
+<p><strong>In the DAPHNE runtime, data properties are stored as member variables of DAPHNE data objects.</strong>
+More precisely, the data properties are stored at the level of the data type superclasses <code>Matrix</code> and <code>Frame</code> (see <code>src/runtime/local/datastructures/Matrix.h</code> and <code>src/runtime/local/datastructures/Frame.h</code>).
+The rationale for not storing data properties at the level of individual data type subclasses (such as <code>DenseMatrix</code> and <code>CSRMatrix</code>) is that data properties describe the logical data.
+While certain data properties may make certain physical representations more suitable, the data properties and the physical representation of a data object can be viewed independently of each other.</p>
 <p><strong>Each data property can have an <em>unknown value</em>.</strong>
 After DaphneDSL parsing, most (almost all) data properties are unknown in the initial DaphneIR representation.
 Through data property inference, some/many data properties can become known at compile-time, but not necessarily all.
@@ -1771,9 +1777,11 @@ By the end of the DAPHNE compiler (more precisely, by <code>RewriteToCallKernelO
 <ul>
 <li>Complex object-valued data properties (e.g., the array of column labels of a frame): typically <code>nullptr</code></li>
 </ul>
-<p><strong>Currently, information about data properties is primarily available at compile-time.</strong>
-The information is not passed to runtime kernels yet, but we plan to make the information available to the runtime soon.</p>
-<p>Nevertheless, some fundamental data properties are also available at run-time, because they are part of the fundamental meta data of the runtime data structures:</p>
+<p><strong>The compile-time information on the data properties is also available to the runtime.</strong></p>
+<ul>
+<li>
+<p>On the one hand, some <em>fundamental data properties</em> are anyway available at run-time, because they are part of the fundamental meta data of the runtime data structures:
+    </p>
 <ul>
 <li><strong>Matrix</strong><ul>
 <li>value type (usually as a template parameter of a kernel)</li>
@@ -1786,7 +1794,25 @@ The information is not passed to runtime kernels yet, but we plan to make the in
 </ul>
 </li>
 </ul>
-<p>These data properties may not be known at compile-time (except for the value type of a matrix), but they are always known at run-time.</p>
+<p>Even in case these data properties are not known at compile-time for a particular intermediate result, they are <em>always</em> known at run-time <em>at no extra cost</em>.</p>
+</li>
+<li>
+<p>On the other hand, there are some <em>additional data properties</em>, whose analysis would incur non-negligible extra effort at run-time:</p>
+<ul>
+<li><strong>Matrix</strong><ul>
+<li>sparsity</li>
+<li>symmetry</li>
+</ul>
+</li>
+</ul>
+<p>So far, these properties are not analyzed at run-time due to the implied extra cost.
+Instead, the compile-time information on these properties is transferred to the runtime data objects.
+To this end, there is a dedicated compiler pass, <code>TransferDataPropertiesPass</code> (see <code>src/compiler/inference/TransferDataPropertiesPass.cpp</code>), which inserts a <code>TransferPropertiesOp</code> (see <code>src/ir/daphneir/DaphneOps.td</code>) for every matrix-valued op result.
+The op gets a matrix as well as the scalar values of the data properties mentioned above as its arguments.
+The compiler pass extracts the values of the data properties (which may be unknown) from the MLIR types and wraps them in <code>ConstantOp</code>s, which become the arguments of the <code>TransferPropertiesOp</code>.
+Like most DaphneIR operations, <code>TransferPropertiesOp</code> gets lowered to a kernel call; the corresponding <code>transferProperties</code>-kernel can be found in <code>src/runtime/local/kernels/TransferProperties.h</code>.</p>
+</li>
+</ul>
 <h2 id="data-property-inference">Data Property Inference</h2>
 <p>At compile-time, DAPHNE tries to find out the data properties of intermediate results in the IR.
 This process is called <em>property inference</em> (synonyms: <em>property propagation</em>, <em>property estimation</em>).
@@ -1882,9 +1908,10 @@ Furthermore, the <a href="https://mlir.llvm.org/docs/">MLIR documentation</a> pr
 <h3 id="adding-a-new-data-property">Adding a New Data Property</h3>
 <p>New data properties can be added to DAPHNE's abstract data types (matrix, frame, etc.).
 Before adding a new data property called <code>${prop}</code>, think about (a) which DAPHNE data type you want to add the data property to (e.g., matrix or frame), and (b) of what C++ type the new data property shall be (e.g., <code>ssize_t</code>, <code>double</code>, <code>mlir::Type</code>, some custom C++ enum class, or some custom C++ class).
-If the new data property shall have a small set of discrete values, add a new C++ enum class in namespace <code>mlir::daphne</code> in <code>src/ir/Daphne.h</code> (or use one of the existing enum classes there) and use this enum class as the C++ type of the new data property.
+If the new data property shall be of a custom C++ type, add this new type to <code>src/ir/DataPropertyTypes.h</code> (or use one of the existing types there). In particular, if the new property shall have a small set of discrete values, you can use an enum class as the C++ type of the new data property.
 In the following, we assume the new data property is of C++ type <code>${pt}</code> and we want to add it to the DAPHNE data type <code>${dt}</code>.
-The following steps are required (commit da35f1eb197c5e993167d6c2862d98a513b40852 is an example for adding a new data property):</p>
+The following steps are required (commit da35f1eb197c5e993167d6c2862d98a513b40852 is an example for adding a new data property; however, note that some details of adding a new data property have evolved since this commit):</p>
+<p><em>Support for <code>${prop}</code> in the DAPHNE compiler:</em></p>
 <ol>
 <li>Add a new <a href="https://mlir.llvm.org/docs/DefiningDialects/AttributesAndTypes/#parameters">parameter</a> <code>${prop}</code> to the custom MLIR type <code>${dt}</code> in <code>src/ir/daphneir/DaphneTypes.td</code>.</li>
 <li>Adapt <code>mlir::daphne::detail::${dt}TypeStorage</code> (see <code>src/ir/daphneir/DaphneDialect.cpp</code>) by adding the new data property.
@@ -1919,6 +1946,20 @@ The following steps are required (commit da35f1eb197c5e993167d6c2862d98a513b4085
     In that context, you will most likely want to add a new helper function <code>returnsUnknown${prop}()</code> for the new data property akin to the existing ones.</li>
 </ul>
 </li>
+</ol>
+<p><em>Support for <code>${prop}</code> in the DAPHNE runtime:</em></p>
+<ol>
+<li>Add a member variable for <code>${prop}</code> in the runtime class corresponding to <code>${dt}</code> (e.g., in <code>src/runtime/local/datastructures/Matrix.h</code> or <code>src/runtime/local/datastructures/Frame.h</code>).
+    This member variable should be of the C++ type <code>${pt}</code>.
+    Ensure that the constructor of the class initializes the new member variable to the unknown value of <code>${prop}</code>.</li>
+<li>Add a new argument for <code>${prop}</code> to the definition of the DaphneIR op <code>TransferPropertiesOp</code> in <code>src/ir/daphneir/DaphneOps.td</code>.
+    Update the corresponding kernel <code>transferProperties</code> (<code>src/runtime/local/kernels/TransferProperties.h</code>) accordingly by adding a new argument for <code>${prop}</code> to the kernel; the kernel should set the new member variable on the argument to the provided value.
+    Reflect the additional kernel argument in <code>src/runtime/local/kernels/kernels.json</code>.</li>
+<li>Update <code>TransferDataPropertiesPass</code> (<code>src/compiler/inference/TransferDataPropertiesPass.cpp</code>) by extracting the value of <code>${prop}</code> from the MLIR type and passing it as an argument to the <code>TransferPropertiesOp</code> created by this pass.</li>
+</ol>
+<p><em>Documentation:</em></p>
+<ol>
+<li>Update the documentation on data properties (this document, <code>doc/development/PropertyInference.md</code>) by mentioning <code>${prop}</code> in the list of supported data properties at the top of the page.</li>
 </ol>
 <h3 id="making-a-new-op-support-inference-for-an-existing-data-property">Making a New Op Support Inference for an Existing Data Property</h3>
 <p>To enable the op <code>${op}</code> to infer the data property <code>${prop}</code> for its result(s), we can either add the respective inference interface or an existing related inference trait to the TableGen record of the op <code>${op}</code> in <code>src/ir/daphneir/DaphneOps.td</code>.</p>
