@@ -273,4 +273,8 @@ def SparsityExploitationPass: Pass<"lower-sparse-exploit", "::mlir::func::FuncOp
     let constructor = "mlir::daphne::createSparsityExploitationPass()";
 }
 
+def TransferDataPropertiesPass: Pass<"transfer-data-props", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createTransferDataPropertiesPass()";
+}
+
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

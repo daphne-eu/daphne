@@ -2017,7 +2017,7 @@ def Daphne_RemoveOp : Daphne_Op<"remove", [
 }
 
 // ****************************************************************************
-// Property Recording
+// Handling of data properties
 // ****************************************************************************
 
 def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
@@ -2025,6 +2025,13 @@ def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
     let results = (outs);
 
     let summary = "Records the data properties of the given matrix.";
+}
+
+def Daphne_TransferPropertiesOp : Daphne_Op<"transferProperties"> {
+    let summary = "Transfers compile-time information on data properties to the runtime data objects";
+
+    let arguments = (ins MatrixOrU:$arg, F64:$sparsity, SI64:$symmetric);
+    let results = (outs);
 }
 
 // ****************************************************************************

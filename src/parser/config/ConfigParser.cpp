@@ -96,6 +96,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.explain_property_inference = jf.at(DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SELECT_MATRIX_REPR))
         config.explain_select_matrix_repr = jf.at(DaphneConfigJsonParams::EXPLAIN_SELECT_MATRIX_REPR).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_TRANSFER_DATA_PROPS))
+        config.explain_transfer_data_props = jf.at(DaphneConfigJsonParams::EXPLAIN_TRANSFER_DATA_PROPS).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SQL))
         config.explain_sql = jf.at(DaphneConfigJsonParams::EXPLAIN_SQL).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PHY_OP_SELECTION))

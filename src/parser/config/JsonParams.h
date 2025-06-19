@@ -50,6 +50,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_PARSING_SIMPLIFIED = "explain_parsing_simplified";
     inline static const std::string EXPLAIN_PROPERTY_INFERENCE = "explain_property_inference";
     inline static const std::string EXPLAIN_SELECT_MATRIX_REPR = "explain_select_matrix_repr";
+    inline static const std::string EXPLAIN_TRANSFER_DATA_PROPS = "explain_transfer_data_props";
     inline static const std::string EXPLAIN_SQL = "explain_sql";
     inline static const std::string EXPLAIN_PHY_OP_SELECTION = "explain_phy_op_selection";
     inline static const std::string EXPLAIN_TYPE_ADAPTATION = "explain_type_adaptation";
@@ -101,6 +102,7 @@ struct DaphneConfigJsonParams {
                                                      EXPLAIN_PARSING_SIMPLIFIED,
                                                      EXPLAIN_PROPERTY_INFERENCE,
                                                      EXPLAIN_SELECT_MATRIX_REPR,
+                                                     EXPLAIN_TRANSFER_DATA_PROPS,
                                                      EXPLAIN_SQL,
                                                      EXPLAIN_PHY_OP_SELECTION,
                                                      EXPLAIN_TYPE_ADAPTATION,

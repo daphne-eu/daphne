@@ -71,6 +71,7 @@ struct DaphneUserConfig {
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
     bool explain_select_matrix_repr = false;
+    bool explain_transfer_data_props = false;
     bool explain_sql = false;
     bool explain_phy_op_selection = false;
     bool explain_type_adaptation = false;

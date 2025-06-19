@@ -148,6 +148,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
 
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createTransferDataPropertiesPass());
+    if (userConfig_.explain_transfer_data_props)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR afters transferring data properties:"));
+
     if (userConfig_.use_phy_op_selection) {
         pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());
         pm.addPass(mlir::createCSEPass());

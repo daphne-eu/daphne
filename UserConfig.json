@@ -22,6 +22,7 @@
     "explain_property_inference": false,
     "explain_sql": false,
     "explain_select_matrix_repr": false,
+    "explain_transfer_data_props": false,
     "explain_type_adaptation": false,
     "explain_vectorized": false,
     "explain_obj_ref_mgnt": false,
