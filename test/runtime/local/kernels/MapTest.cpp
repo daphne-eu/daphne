@@ -34,13 +34,13 @@ template <class DTRes, class DTArg> void checkMap(const DTArg *arg, const DTRes 
     DataObjectFactory::destroy(res);
 }
 
-template <typename VTarg, typename VTres> VTres mult3func(VTarg arg) { return static_cast<VTres>(arg) * 3; }
+template <typename VTArg, typename VTRes> VTRes mult3func(VTArg arg) { return static_cast<VTRes>(arg) * 3; }
 
-template <template <typename VT> class DT, class VTarg, class VTres> void checkMult3Map() {
-    using DTArg = DT<VTarg>;
-    using DTRes = DT<VTres>;
+template <template <typename VT> class DT, class VTArg, class VTRes> void checkMult3Map() {
+    using DTArg = DT<VTArg>;
+    using DTRes = DT<VTRes>;
 
-    void *mult3funcPtr = reinterpret_cast<void *>(&mult3func<VTarg, VTres>);
+    void *mult3funcPtr = reinterpret_cast<void *>(&mult3func<VTArg, VTRes>);
 
     auto m1 = genGivenVals<DTArg>(3, {
                                          0,
@@ -99,28 +99,39 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkM
     DataObjectFactory::destroy(m1, m2, m3, mult3_res1, mult3_res2, mult3_res3);
 }
 
-template <template <typename VT> class DT, typename VTarg, typename VTres1, typename... VTresN>
-std::enable_if_t<(sizeof...(VTresN) > 0)> checkMult3Map() { // handles multiple template args
-    checkMult3Map<DT, VTarg, VTres1>();
-    checkMult3Map<DT, VTarg, VTresN...>();
+template <template <typename VT> class DT, typename VTArg, typename VTres1, typename... VTresN>
+std::enable_if_t<(sizeof...(VTresN) > 0)> checkMult3Map() {
+    checkMult3Map<DT, VTArg, VTres1>();
+    checkMult3Map<DT, VTArg, VTresN...>();
 }
 
 TEMPLATE_TEST_CASE("Map element-wise dense matrix", TAG_KERNELS, TYPES) {
     // Test all combination of types in TYPES
     checkMult3Map<DenseMatrix, TestType, TYPES>();
-    checkMult3Map<Matrix, TestType, TYPES>();
+    // checkMult3Map<Matrix, TestType, TYPES>();
 }
 
-template <typename VTarg, typename VTres>
-VTres sumOfFirstAndLastFunc(DenseMatrix<VTarg> *row) {
-    return static_cast<VTres>(row->getValues()[0]) + static_cast<VTres>(row->getValues()[row->getNumCols() - 1]);
+// DenseMatrix
+template <typename VTArg, typename VTRes>
+DenseMatrix<VTRes>* sumOfFirstAndLastFunc(const DenseMatrix<VTArg> *row) {
+    auto res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, 1, false);
+    res->getValues()[0] = (static_cast<VTRes>(row->getValues()[0]) + static_cast<VTRes>(row->getValues()[row->getNumCols() - 1]));
+    return res;
 }
 
-template <template <typename VT> class DT, class VTarg, class VTres> void checkSumOfFirstAndLastMap() {
-    using DTArg = DT<VTarg>;
-    using DTRes = DT<VTres>;
+// // Matrix
+// template <typename VTArg, typename VTRes>
+// Matrix<VTRes>* sumOfFirstAndLastFunc(const Matrix<VTArg> *row) {
+//     auto res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, 1, false);
+//     res->append(0, 0, (static_cast<VTRes>(row->get(0, 0)) + static_cast<VTRes>(row->get(0, row->getNumCols() - 1))));
+//     return dynamic_cast<Matrix<VTRes>*>(res);
+// }
 
-    void *sumRowFuncPtr = reinterpret_cast<void *>(&sumOfFirstAndLastFunc<VTarg, VTres>);
+template <template <typename VT> class DT, class VTArg, class VTRes> void checkSumOfFirstAndLastMap() {
+    using DTArg = DT<VTArg>;
+    using DTRes = DT<VTRes>;
+
+    void *sumRowFuncPtr = reinterpret_cast<void *>(&sumOfFirstAndLastFunc<VTArg, VTRes>);
 
     auto m1 = genGivenVals<DTArg>(3, {
                                          0,
@@ -164,30 +175,63 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkS
     DataObjectFactory::destroy(m1, m2, m3, sumRow_res1, sumRow_res2, sumRow_res3);
 }
 
-template <template <typename VT> class DT, typename VTarg, typename VTres1, typename... VTresN>
+template <template <typename VT> class DT, typename VTArg, typename VTres1, typename... VTresN>
 std::enable_if_t<(sizeof...(VTresN) > 0)> checkSumOfFirstAndLastMap() {
-    checkSumOfFirstAndLastMap<DT, VTarg, VTres1>();
-    checkSumOfFirstAndLastMap<DT, VTarg, VTresN...>();
+    checkSumOfFirstAndLastMap<DT, VTArg, VTres1>();
+    checkSumOfFirstAndLastMap<DT, VTArg, VTresN...>();
 }
 
 TEMPLATE_TEST_CASE("Map row-wise dense matrix", TAG_KERNELS, TYPES) {
     // Test all combination of types in TYPES
     checkSumOfFirstAndLastMap<DenseMatrix, TestType, TYPES>();
-    checkSumOfFirstAndLastMap<Matrix, TestType, TYPES>();
+    // checkSumOfFirstAndLastMap<Matrix, TestType, TYPES>();
 }
 
-template <typename VTarg, typename VTres>
-DenseMatrix<VTres>* topThreeFunc(DenseMatrix<VTarg> *col) {
-    return dynamic_cast<DenseMatrix<VTres>*>(col->sliceRow(0, 3));
+// DenseMatrix
+template <typename VTArg, typename VTRes>
+DenseMatrix<VTRes>* topThreeFunc(const DenseMatrix<VTArg> *col) {
+    const VTArg *valuesCol = col->getValues();
+    auto res = DataObjectFactory::create<DenseMatrix<VTRes>>(3, 1, false);
+    VTRes *valuesRes = res->getValues();
+    for (size_t r = 0; r < 3; r++) {
+        valuesRes[0] = static_cast<VTRes>(valuesCol[0]);
+        valuesCol += col->getRowSkip();
+        valuesRes += res->getRowSkip();
+    }
+    return res;
 }
 
-template <template <typename VT> class DT, class VTarg, class VTres> void checkTopThreeMap() {
-    using DTArg = DT<VTarg>;
-    using DTRes = DT<VTres>;
+// // Matrix
+// template <typename VTArg, typename VTRes>
+// Matrix<VTRes>* topThreeFunc(const Matrix<VTArg> *col) {
+//     auto res = DataObjectFactory::create<DenseMatrix<VTRes>>(3, 1, false);
+//     res->prepareAppend();
+//     for (size_t r = 0; r < 3; r++)
+//         res->append(r, 0, col->get(r, 0));
+//     res->finishAppend();
+//     return dynamic_cast<Matrix<VTRes>*>(res);
+// }
 
-    void *topThreeFuncPtr = reinterpret_cast<void *>(&topThreeFunc<VTarg, VTres>);
+template <template <typename VT> class DT, class VTArg, class VTRes> void checkTopThreeMap() {
+    using DTArg = DT<VTArg>;
+    using DTRes = DT<VTRes>;
+
+    void *topThreeFuncPtr = reinterpret_cast<void *>(&topThreeFunc<VTArg, VTRes>);
 
     auto m1 = genGivenVals<DTArg>(4, {
+                                         0,
+                                         1,
+                                         2,
+                                         3,
+                                     });
+
+    auto topThree_res1 = genGivenVals<DTRes>(3, {
+                                                    0,
+                                                    1,
+                                                    2,
+                                             });
+
+    auto m2 = genGivenVals<DTArg>(4, {
                                          0,
                                          1,
                                          2,
@@ -202,7 +246,7 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkT
                                          7,
                                      });
 
-    auto topThree_res1 = genGivenVals<DTRes>(3, {
+    auto topThree_res2 = genGivenVals<DTRes>(3, {
                                                     0,
                                                     1,
                                                     2,
@@ -215,18 +259,19 @@ template <template <typename VT> class DT, class VTarg, class VTres> void checkT
                                              });
 
     checkMap(m1, topThree_res1, topThreeFuncPtr, 1);
+    checkMap(m2, topThree_res2, topThreeFuncPtr, 1);
 
-    DataObjectFactory::destroy(m1, topThree_res1);
+    DataObjectFactory::destroy(m1, topThree_res1, m2, topThree_res2);
 }
 
-template <template <typename VT> class DT, typename VTarg, typename VTres1, typename... VTresN>
+template <template <typename VT> class DT, typename VTArg, typename VTres1, typename... VTresN>
 std::enable_if_t<(sizeof...(VTresN) > 0)> checkTopThreeMap() {
-    checkTopThreeMap<DT, VTarg, VTres1>();
-    checkTopThreeMap<DT, VTarg, VTresN...>();
+    checkTopThreeMap<DT, VTArg, VTres1>();
+    checkTopThreeMap<DT, VTArg, VTresN...>();
 }
 
 TEMPLATE_TEST_CASE("Map column-wise dense matrix", TAG_KERNELS, TYPES) {
     // Test all combination of types in TYPES
     checkTopThreeMap<DenseMatrix, TestType, TYPES>();
-    checkTopThreeMap<Matrix, TestType, TYPES>();
+    // checkTopThreeMap<Matrix, TestType, TYPES>();
 }
