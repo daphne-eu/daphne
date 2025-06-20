@@ -119,7 +119,7 @@ def Daphne_ConvertCSRMatrixToRowOffsetsMemRef : Daphne_Op<"convertCSRMatrixToRow
 
 def Daphne_FillOp : Daphne_Op<"fill", [
     DataTypeMat, ValueTypeFromFirstArg,
-    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport,
+    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport, Pure,
     DeclareOpInterfaceMethods<InferSymmetricOpInterface>
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
@@ -157,7 +157,7 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix", [
 def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
     TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">,
     NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    SparsityFromIthScalar<4>, CastArgsToResTypeRandMatrixOp
+    SparsityFromIthScalar<4>, CastArgsToResTypeRandMatrixOp, Pure
 ]> {
     let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
     let results = (outs MatrixOrU:$res);
