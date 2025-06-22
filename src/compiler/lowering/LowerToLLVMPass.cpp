@@ -498,87 +498,118 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                                   ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
         auto module = op->getParentOfType<ModuleOp>();
-        module.dump();
-        Operation *bodyFuncOpRaw = SymbolTable::lookupSymbolIn(module, op.getFuncName().value());
-        auto llvmFuncOp = dyn_cast_or_null<LLVM::LLVMFuncOp>(bodyFuncOpRaw);
-        if (!llvmFuncOp) {
-            op->emitError("Expected LLVM::LLVMFuncOp, but got: ") << bodyFuncOpRaw->getName();
-            return failure();
+        auto ip = rewriter.saveInsertionPoint();
+
+        rewriter.setInsertionPointToStart(module.getBody());
+        // create function for parfor body
+        auto funcName = op.getFuncName().value();
+        auto opBodyArgs = op.getBodyStmt().front().getArguments();
+        auto i64Type = typeConverter->convertType(rewriter.getIntegerType(64, true));
+        auto llvmI8Type = typeConverter->convertType(rewriter.getIntegerType(8));
+        auto voidPtrType = LLVM::LLVMPointerType::get(llvmI8Type);
+        auto voidPtrPtrType = LLVM::LLVMPointerType::get(voidPtrType);
+
+        // (i64, void**) -> (void*)
+        auto funcType =
+            LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {i64Type, voidPtrPtrType});
+        auto llvmFuncOp = rewriter.create<LLVM::LLVMFuncOp>(rewriter.getUnknownLoc(), funcName, funcType);
+
+        mlir::Block &funcBlock = *llvmFuncOp.addEntryBlock();
+
+        funcBlock.getOperations().splice(funcBlock.end(), op.getBodyStmt().front().getOperations());
+
+        rewriter.setInsertionPointToStart(&funcBlock);
+        // replace usages of outer scope ssa's by the function argument
+        auto funcInArg = llvmFuncOp.getArgument(1);
+        auto args = op.getArgs();
+        unsigned index = 0;
+        for (auto [i, blockArg] : llvm::enumerate(opBodyArgs)) {
+            // Skip loop induction variables or any others that aren't mapped from outer SSA
+            if(i == 0) continue;
+            if (index >= args.size()) break;
+
+            auto loc = llvmFuncOp.getLoc();
+
+            // Get void* pointer from funcInArg[index]
+            auto indexVal = rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(index));
+            auto gep = rewriter.create<LLVM::GEPOp>(loc, voidPtrType, voidPtrPtrType, funcInArg, ValueRange{indexVal});
+            auto loadedVoidPtr = rewriter.create<LLVM::LoadOp>(loc, voidPtrType, gep);
+
+            // Bitcast to original pointer type
+            auto targetType = typeConverter->convertType(args[index].getType());
+            if (!targetType) {
+                llvm::errs() << "Failed to convert outer SSA type\n";
+                ++index;
+                continue;
+            }
+            auto ptrTy = targetType;
+            if(!targetType.isa<LLVM::LLVMPointerType>()) {
+                ptrTy = LLVM::LLVMPointerType::get(ptrTy); 
+                auto bitcasted = rewriter.create<LLVM::BitcastOp>(loc,ptrTy, loadedVoidPtr);
+                auto loadedVal = rewriter.create<LLVM::LoadOp>(loc, targetType, bitcasted);
+                blockArg.replaceAllUsesWith(loadedVal.getResult());
+            } else {
+                auto bitcasted = rewriter.create<LLVM::BitcastOp>(loc,targetType, loadedVoidPtr);
+                blockArg.replaceAllUsesWith(bitcasted.getResult());
+            }
+                      
+            ++index;
+        }
+        rewriter.restoreInsertionPoint(ip);
+       
+        unsigned numArgs = args.size();
+        auto arraySizeConst = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(numArgs));
+        auto elementSize = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(8));
+        auto totalSize = rewriter.create<LLVM::MulOp>(loc, i64Type, arraySizeConst, elementSize);
+        auto arrayBaseVoidPtr = rewriter.create<LLVM::AllocaOp>(loc, voidPtrType, arraySizeConst, 8);
+
+        index = 0;
+        auto one = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(1));
+        for (Value operand : args) {
+            // Bitcast each operand to void*
+            auto operandType = operand.getType();
+            auto llvmOperandType = typeConverter->convertType(operandType);
+
+            // Ensure operand is converted to an LLVM-compatible type
+           if (!LLVM::isCompatibleType(operandType)) {
+                auto converted = typeConverter->materializeTargetConversion(
+                    rewriter, loc, llvmOperandType, operand);
+                if (!converted)
+                    llvm::report_fatal_error("Cannot convert operand to LLVM type");
+                operand = converted;
+            }
+            
+            Value operandAsPtr;
+            if (llvmOperandType.isa<LLVM::LLVMPointerType>()) {
+                // Already a pointer, cast to void*
+                operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, operand);
+            } else {
+                // Allocate space for the value and store it
+                auto alloca = rewriter.create<LLVM::AllocaOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), one, 8);
+                rewriter.create<LLVM::StoreOp>(loc, operand, alloca);
+                operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, alloca);
+
+                auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
+                auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), arrayBaseVoidPtr, ValueRange{gepIndex});
+                rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
+            }
+         
+            ++index;
         }
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, llvmFuncOp);
         std::stringstream callee;
 
         callee << "_parfor__int64_t__int64_t__int64_t";
 
-        // determine operandType for inputs
-        const size_t numRes = llvmFuncOp->getNumResults();
-        mlir::Type operandType;
-        if (numRes > 0) {
-            auto m32type = rewriter.getF32Type();
-            auto m64type = rewriter.getF64Type();
-            auto msi64type = rewriter.getIntegerType(64, true);
-
-            auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
-            if (res_elem_type == m64type)
-                operandType = daphne::MatrixType::get(getContext(), m64type);
-            else if (res_elem_type == m32type)
-                operandType = daphne::MatrixType::get(getContext(), m32type);
-            else if (res_elem_type == msi64type)
-                operandType = daphne::MatrixType::get(getContext(), msi64type);
-            else {
-                std::string str;
-                llvm::raw_string_ostream output(str);
-                op->getResult(0).getType().print(output);
-                throw ErrorHandler::compilerError(op, "LowerToLLVMPass",
-                                                  "Unsupported result type for parfor op: " + str);
-            }
-        } else {
-            // dummy matrix for no-results i.e. do not check res_elem_type
-            auto m32type = rewriter.getF32Type();
-            operandType = daphne::MatrixType::get(getContext(), m32type);
-        }
-
-        // extend callee for : numInputs and isScalar
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, false, true);
-        callee << "_variadic__size_t";
-        callee << "__bool";
-
+        // extend callee for
+        callee << "__void";
         // finalize parfor call
         callee << "__void";
 
-        // data operands refers to the number of non-local variables i.e.
-        // arguments to the function that represents the loop body
-        auto numDataOperands = op.getArgs().size();
-        auto attrNumInputs = rewriter.getI64IntegerAttr(numDataOperands);
-
-        auto size =
-            rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(numDataOperands));
-        auto scalars = rewriter.create<daphne::CreateVariadicPackOp>(
-            loc, daphne::VariadicPackType::get(rewriter.getContext(), rewriter.getI1Type()), attrNumInputs);
-        auto inputs = rewriter.create<daphne::CreateVariadicPackOp>(
-            loc, daphne::VariadicPackType::get(rewriter.getContext(), operandType), attrNumInputs);
-
-        // Populate the variadic packs for isScalar and inputs.
-        // In the flattened operands structure, args are found in the first
-        // numDataOperands places
-        for (size_t k = 0; k < numDataOperands; k++) {
-            auto attrK = rewriter.getI64IntegerAttr(k);
-            rewriter.create<daphne::StoreVariadicPackOp>(
-                loc, scalars,
-                rewriter.create<daphne::ConstantOp>(
-                    loc,
-                    // We assume this input to be a scalar if its type
-                    // has not been converted to a pointer type.
-                    !llvm::isa<LLVM::LLVMPointerType>(adaptor.getOperands()[k].getType())),
-                attrK);
-            rewriter.create<daphne::StoreVariadicPackOp>(loc, inputs, adaptor.getOperands()[k], attrK);
-        }
-
         // create kernel op
         auto kId = rewriter.create<mlir::arith::ConstantOp>(
-            loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel("parfor_body_0", op)));
-        std::vector<Value> kernelOperands{
-            adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), inputs, size, scalars, fnPtr, kId, adaptor.getCtx()};
+            loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(funcName.str(), op)));
+        std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, kId, adaptor.getCtx()};
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, op->getResultTypes());
 
         rewriter.replaceOp(op, kernel.getResults());

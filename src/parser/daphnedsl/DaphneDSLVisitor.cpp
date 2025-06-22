@@ -27,6 +27,7 @@
 #include "mlir/IR/BuiltinAttributes.h"
 #include "DaphneDSLGrammarLexer.h"
 #include "DaphneDSLGrammarParser.h"
+#include "mlir/Transforms/RegionUtils.h"
 #include "antlr4-runtime.h"
 
 #include "llvm/ADT/SetVector.h"
@@ -723,15 +724,27 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
         resVals.push_back(it->second.value);
         forOperands.push_back(symbolTable.get(it->first).value);
     }
+    for (mlir::Operation &op : bodyBlock) {
+        for (mlir::Value operand : op.getOperands()) {
+            // Check if operand is defined in the same block
+            if (auto *defOp = operand.getDefiningOp()) {
+                if (defOp->getBlock() != &bodyBlock) {
+                    forOperands.push_back(operand);
+                }
+            }
+            // Or it's a block argument from a parent region
+            else if (auto blockArg = operand.dyn_cast<mlir::BlockArgument>()) {
+                if (blockArg.getOwner() != &bodyBlock) {
+                    forOperands.push_back(operand);
+                }
+            }
+        }
+    }
+
     // block terminator for parfor 
     builder.create<mlir::daphne::ReturnOp>(loc, resVals);
 
     builder.restoreInsertionPoint(ip);
-
-    // add arguments for the body to it (induction variable and non local variables)
-    bodyBlock.addArgument(builder.getIndexType(), loc); // TODO : correct for IV ?
-    for (mlir::Value v : forOperands)
-        bodyBlock.addArgument(v.getType(), v.getLoc());
 
     // Create the actual ParForOp.
     auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, forOperands, from, to, step, mlir::Value(),  nullptr);
@@ -739,9 +752,22 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     // into the actual body of the ParForOp.
     mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();
     targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
+    targetBlock.addArgument(builder.getIndexType(), loc);
+    for (mlir::Value v : forOperands)
+        targetBlock.addArgument(v.getType(), v.getLoc());
 
-    
+    size_t baseIdx = 1;
     size_t i = 0;
+    for (mlir::Value captured : forOperands) {
+        mlir::BlockArgument arg = targetBlock.getArgument(baseIdx + i);
+        captured.replaceUsesWithIf(arg, [&](mlir::OpOperand &operand) {
+            auto parentRegion = operand.getOwner()->getBlock()->getParent();
+            return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
+        });
+        i++;
+    }
+
+    i = 0;
     auto regionIterArgs = bodyBlock.getArguments().drop_front(1); // only one induction variable as of now
     for (auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the

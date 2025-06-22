@@ -92,7 +92,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
 
      
-    pm.addPass(mlir::daphne::createParForOpLoweringPass());    
     pm.addPass(mlir::daphne::createPrintIRPass("IR after parfor lowering:"));
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
@@ -175,7 +174,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createProfilingPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
-
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createParForOpLoweringPass());    
 #ifdef USE_CUDA
     if (userConfig_.use_cuda)
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));

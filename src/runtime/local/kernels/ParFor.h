@@ -26,12 +26,12 @@
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-void parfor(int64_t from, int64_t to, int64_t step, Structure **inputs, size_t numInputs, bool *isScalar, void *func,
-            DCTX(ctx)) {
-    auto body = reinterpret_cast<void (*)(int64_t, Structure **, DCTX(ctx))>(func);
+void parfor(int64_t from, int64_t to, int64_t step, void *inputs, void *func, DCTX(ctx)) {
+    auto body = reinterpret_cast<void (*)(int64_t, void **)>(func);
+    auto args = reinterpret_cast<void**>(inputs);
     for (int64_t i = from; i <= to; i += step) {
-        printf("[parforLoop] Iteration i = %ld\n", i);
-        body(i, inputs, ctx);
+        //printf("[parforLoop] Iteration i = %ld\n", i);
+        body(i, args);
     }
 }
 

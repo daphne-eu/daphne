@@ -3592,16 +3592,8 @@
                     "name": "step"
                 },
                 {
-                    "type": "Structure **",
+                    "type": "void *",
                     "name": "inputs"
-                },
-                {
-                    "type": "size_t",
-                    "name": "numInputs"
-                },
-                {
-                    "type": "bool *",
-                    "name": "isScalar"
                 },
                 {
                     "type" : "void *",

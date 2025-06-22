@@ -304,7 +304,7 @@ class KernelReplacement : public RewritePattern {
                 lookupArgTys.push_back(adaptType(opArgTys[i], generalizeInputTypes));
                 kernelArgs.push_back(op->getOperand(i));
             }
-
+        
         if (auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
             // GroupOp carries the aggregation functions to apply as an
             // attribute. Since attributes do not automatically become
@@ -481,6 +481,8 @@ class KernelReplacement : public RewritePattern {
             kernelFuncName = chosenKI.kernelFuncName;
         }
 
+
+
         // *****************************************************************************
         // Add kernel id and DAPHNE context as arguments
         // *****************************************************************************
@@ -498,7 +500,26 @@ class KernelReplacement : public RewritePattern {
         // Inject the current DaphneContext as the last input parameter to
         // all kernel calls, unless it's a CreateDaphneContextOp.
         if (!llvm::isa<daphne::CreateDaphneContextOp>(op))
-            kernelArgs.push_back(dctx);
+        {
+            mlir::Region *region = op->getParentRegion();
+            auto ctx = dctx;
+            while (region) {
+                mlir::Operation *parentOp = region->getParentOp();
+                if (auto parFor = llvm::dyn_cast_or_null<daphne::ParForOp>(parentOp)) {
+                    mlir::Block &entryBlock = parFor.getRegion().front();
+
+                    // assume dctx is the last argument
+                    mlir::BlockArgument maybeDctxArg = entryBlock.getArguments().back();
+                    if (maybeDctxArg.getType() == dctx.getType()) {
+                        ctx = maybeDctxArg;
+                    }
+                    // If not found, we fallback
+                    break;
+                }
+                region = parentOp ? parentOp->getParentRegion() : nullptr;
+            }
+            kernelArgs.push_back(ctx);
+        }
 
         // *****************************************************************************
         // Create the CallKernelOp
@@ -633,11 +654,15 @@ void RewriteToCallKernelOpPass::runOnOperation() {
                       daphne::GenericCallOp, daphne::MapOp, daphne::ParForOp>();
     target.addDynamicallyLegalOp<daphne::CastOp>(
         [](daphne::CastOp op) { return op.isTrivialCast() || op.isRemovePropertyCast(); });
+    
+
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = CompilerUtils::getDaphneContext(func);
     func->walk([&](daphne::VectorizedPipelineOp vpo) { vpo.getCtxMutable().assign(dctx); });
-    func->walk([&](daphne::ParForOp vpo) { vpo.getCtxMutable().assign(dctx); });
+    func->walk([&](daphne::ParForOp vpo) { // todo: can be probably removed 
+        vpo.getCtxMutable().assign(dctx); 
+    });
     
     // Apply conversion to CallKernelOps.
     patterns.insert<KernelReplacement, DistributedPipelineKernelReplacement>(&getContext(), dctx, userConfig,
