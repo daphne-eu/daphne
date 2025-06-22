@@ -2020,6 +2020,15 @@ def Daphne_ReplaceElementInListOp : Daphne_Op<"replaceElementInList", [
     let results = (outs ListOrU:$resList, MatrixOrU:$oldElem);
 }
 
+def Daphne_GetElementInListOp : Daphne_Op<"getElementInList", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "Returns the element at the specified index from the given list";
+    
+    let arguments = (ins ListOrU:$argList, Size:$idx);
+    let results = (outs MatrixOrU:$elem);
+}
+
 // ****************************************************************************
 // Old operations
 // ****************************************************************************

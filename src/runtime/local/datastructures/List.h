@@ -148,7 +148,7 @@ template <typename DataType> class List : public Structure {
      * @param element The new element to insert.
      * @return The old element that was replaced.
      */
-    const DataType* replace(size_t idx, const DataType* element) {
+    const DataType *replace(size_t idx, const DataType* element) {
         if (idx >= elements.size())
             throw std::runtime_error("trying to replace element at position " + std::to_string(idx) +
                                     " in a list with " + std::to_string(elements.size()) + " elements");
@@ -168,7 +168,7 @@ template <typename DataType> class List : public Structure {
      * @param idx The position of the element to return.
      * @return The element at the given position.
      */
-    const DataType *get(size_t idx) const {
+    const DataType *getElementInList(size_t idx) const {
         if (idx >= elements.size())
             throw std::runtime_error("trying to access element at position " + std::to_string(idx) +
                                     " from a list with " + std::to_string(elements.size()) + " elements");

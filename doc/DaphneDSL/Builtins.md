@@ -707,3 +707,6 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 
     Replaces the element at position `idx` (counting starts at zero) from the given list `lst` with the given element `elm`.
     Returns (1) the result as a new list (the argument list stays unchanged), and (2) the old element.
+- **`getElementInList`**`(lst:list, idx:size)`
+
+    Returns the element at position `idx` (counting starts at zero) from the given list `lst`.
