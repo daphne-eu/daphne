@@ -521,11 +521,17 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         rewriter.setInsertionPointToStart(&funcBlock);
         // replace usages of outer scope ssa's by the function argument
         auto funcInArg = llvmFuncOp.getArgument(1);
+        auto ivArg = llvmFuncOp.getArgument(0);
+        
         auto args = op.getArgs();
         unsigned index = 0;
         for (auto [i, blockArg] : llvm::enumerate(opBodyArgs)) {
-            // Skip loop induction variables or any others that aren't mapped from outer SSA
-            if(i == 0) continue;
+            // handle loop induction variables
+            if(i == 0){
+                // replace induction variable with the function argument
+                blockArg.replaceAllUsesWith(ivArg);
+                continue;   
+            }
             if (index >= args.size()) break;
 
             auto loc = llvmFuncOp.getLoc();
@@ -583,6 +589,9 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             if (llvmOperandType.isa<LLVM::LLVMPointerType>()) {
                 // Already a pointer, cast to void*
                 operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, operand);
+                auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
+                auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), arrayBaseVoidPtr, ValueRange{gepIndex});
+                rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
             } else {
                 // Allocate space for the value and store it
                 auto alloca = rewriter.create<LLVM::AllocaOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), one, 8);

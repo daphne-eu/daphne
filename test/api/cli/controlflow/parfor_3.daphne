@@ -1,2 +1,2 @@
-parfor(i in 1:1)
+parfor(i in 1:5)
     print(i);

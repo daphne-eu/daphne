@@ -710,10 +710,12 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     mlir::Block bodyBlock;
     builder.setInsertionPointToEnd(&bodyBlock);
     symbolTable.pushScope();
-
+    auto ivName = ctx->var->getText();
+    auto ivPH = bodyBlock.addArgument(builder.getIndexType(), loc);
+    symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(ivPH, false));
     // Parse the loop's body.
     visit(ctx->bodyStmt);
-
+    bodyBlock.dump();
     // TODO : popScope also exactly returns the dependency candidates
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the ParForOp.
@@ -752,10 +754,12 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     // into the actual body of the ParForOp.
     mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();
     targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
-    targetBlock.addArgument(builder.getIndexType(), loc);
+    auto iv = targetBlock.addArgument(builder.getIndexType(), loc);
     for (mlir::Value v : forOperands)
         targetBlock.addArgument(v.getType(), v.getLoc());
 
+    ivPH.replaceAllUsesWith(iv);
+    symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(iv, false));
     size_t baseIdx = 1;
     size_t i = 0;
     for (mlir::Value captured : forOperands) {
