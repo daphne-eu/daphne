@@ -715,7 +715,7 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(ivPH, false));
     // Parse the loop's body.
     visit(ctx->bodyStmt);
-    bodyBlock.dump();
+    
     // TODO : popScope also exactly returns the dependency candidates
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the ParForOp.
