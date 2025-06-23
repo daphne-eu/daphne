@@ -29,6 +29,8 @@
 void parfor(int64_t from, int64_t to, int64_t step, void *inputs, void *func, DCTX(ctx)) {
     auto body = reinterpret_cast<void (*)(int64_t, void **)>(func);
     auto args = reinterpret_cast<void**>(inputs);
+
+    //printf("[parforLoop] first argument - %d\n",  *reinterpret_cast<int64_t*>(args)[0]);
     for (int64_t i = from; i <= to; i += step) {
         //printf("[parforLoop] Iteration i = %ld\n", i);
         body(i, args);

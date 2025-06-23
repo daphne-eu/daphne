@@ -500,26 +500,30 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto module = op->getParentOfType<ModuleOp>();
         auto ip = rewriter.saveInsertionPoint();
 
+        // *****************************************************************************
+        // Extraction of parfor op body region to an function. 
+        // Outer scope SSA values and induction variable are passed as function arguments 
+        // and replaced respectively in the body.
+        // *****************************************************************************
         rewriter.setInsertionPointToStart(module.getBody());
-        // create function for parfor body
+        
         auto funcName = op.getFuncName().value();
         auto opBodyArgs = op.getBodyStmt().front().getArguments();
+        
         auto i64Type = typeConverter->convertType(rewriter.getIntegerType(64, true));
         auto llvmI8Type = typeConverter->convertType(rewriter.getIntegerType(8));
         auto voidPtrType = LLVM::LLVMPointerType::get(llvmI8Type);
         auto voidPtrPtrType = LLVM::LLVMPointerType::get(voidPtrType);
-
+        
         // (i64, void**) -> (void*)
-        auto funcType =
-            LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {i64Type, voidPtrPtrType});
+        auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {i64Type, voidPtrPtrType});
         auto llvmFuncOp = rewriter.create<LLVM::LLVMFuncOp>(rewriter.getUnknownLoc(), funcName, funcType);
-
         mlir::Block &funcBlock = *llvmFuncOp.addEntryBlock();
-
         funcBlock.getOperations().splice(funcBlock.end(), op.getBodyStmt().front().getOperations());
 
         rewriter.setInsertionPointToStart(&funcBlock);
-        // replace usages of outer scope ssa's by the function argument
+        auto locFunc = llvmFuncOp.getLoc();
+        
         auto funcInArg = llvmFuncOp.getArgument(1);
         auto ivArg = llvmFuncOp.getArgument(0);
         
@@ -532,47 +536,49 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                 blockArg.replaceAllUsesWith(ivArg);
                 continue;   
             }
-            if (index >= args.size()) break;
+            // number of arguments must be exactly the same as number of operands stored in args
+            if (index >= args.size()) 
+                llvm::report_fatal_error("ParForOp has more block arguments than operands, which is not defined behavior");
 
-            auto loc = llvmFuncOp.getLoc();
-
-            // Get void* pointer from funcInArg[index]
-            auto indexVal = rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(index));
-            auto gep = rewriter.create<LLVM::GEPOp>(loc, voidPtrType, voidPtrPtrType, funcInArg, ValueRange{indexVal});
-            auto loadedVoidPtr = rewriter.create<LLVM::LoadOp>(loc, voidPtrType, gep);
-
-            // Bitcast to original pointer type
+            
+            // convert type to llvm type 
             auto targetType = typeConverter->convertType(args[index].getType());
-            if (!targetType) {
-                llvm::errs() << "Failed to convert outer SSA type\n";
-                ++index;
-                continue;
-            }
-            auto ptrTy = targetType;
+            if (!targetType) 
+                llvm::report_fatal_error("Cannot convert operand to LLVM type");
+
+            // Get T* pointer from funcInArg[index]
+            auto indexVal = rewriter.create<LLVM::ConstantOp>(locFunc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(index));
+            auto gep = rewriter.create<LLVM::GEPOp>(locFunc, voidPtrPtrType, voidPtrPtrType, funcInArg, ValueRange{indexVal});
+            auto rawPtr = rewriter.create<LLVM::LoadOp>(locFunc, voidPtrType, gep);
+
+
+            // if the target type is already a pointer, we can directly load it 
+            // otherwise we need first to load the pointer of value and then load the value from that pointer
+            auto convType = targetType;
+            if (!convType.isa<LLVM::LLVMPointerType>())
+                convType = LLVM::LLVMPointerType::get(convType);
+
+            auto bitcasted = rewriter.create<LLVM::BitcastOp>(locFunc, convType, rawPtr);
+            
+            mlir::Value loaded = bitcasted;
             if(!targetType.isa<LLVM::LLVMPointerType>()) {
-                ptrTy = LLVM::LLVMPointerType::get(ptrTy); 
-                auto bitcasted = rewriter.create<LLVM::BitcastOp>(loc,ptrTy, loadedVoidPtr);
-                auto loadedVal = rewriter.create<LLVM::LoadOp>(loc, targetType, bitcasted);
-                blockArg.replaceAllUsesWith(loadedVal.getResult());
-            } else {
-                auto bitcasted = rewriter.create<LLVM::BitcastOp>(loc,targetType, loadedVoidPtr);
-                blockArg.replaceAllUsesWith(bitcasted.getResult());
+                loaded = rewriter.create<LLVM::LoadOp>(locFunc, targetType, loaded);  
             }
+            blockArg.replaceAllUsesWith(loaded);
                       
             ++index;
         }
+        // *****************************************************************************
+        // Create a void** array containg all outer scope operands of parfor op 
+        // *****************************************************************************
         rewriter.restoreInsertionPoint(ip);
-       
         unsigned numArgs = args.size();
         auto arraySizeConst = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(numArgs));
-        auto elementSize = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(8));
-        auto totalSize = rewriter.create<LLVM::MulOp>(loc, i64Type, arraySizeConst, elementSize);
         auto arrayBaseVoidPtr = rewriter.create<LLVM::AllocaOp>(loc, voidPtrType, arraySizeConst, 8);
 
         index = 0;
         auto one = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(1));
         for (Value operand : args) {
-            // Bitcast each operand to void*
             auto operandType = operand.getType();
             auto llvmOperandType = typeConverter->convertType(operandType);
 
@@ -586,42 +592,39 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             }
             
             Value operandAsPtr;
+            auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
             if (llvmOperandType.isa<LLVM::LLVMPointerType>()) {
                 // Already a pointer, cast to void*
                 operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, operand);
-                auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
-                auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), arrayBaseVoidPtr, ValueRange{gepIndex});
-                rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
+                // TODO: fix handling of pointer types - 
+                //auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
+                //auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, voidPtrType, arrayBaseVoidPtr, ValueRange{gepIndex});
+                //rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
             } else {
-                // Allocate space for the value and store it
+                // Allocate space for the value pointer and store it array 
                 auto alloca = rewriter.create<LLVM::AllocaOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), one, 8);
                 rewriter.create<LLVM::StoreOp>(loc, operand, alloca);
                 operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, alloca);
-
-                auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
                 auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), arrayBaseVoidPtr, ValueRange{gepIndex});
                 rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
             }
          
             ++index;
         }
+        // *****************************************************************************
+        // Create a kernel call to the parfor loop body function
+        // *****************************************************************************
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, llvmFuncOp);
         std::stringstream callee;
 
-        callee << "_parfor__int64_t__int64_t__int64_t";
-
-        // extend callee for
-        callee << "__void";
-        // finalize parfor call
-        callee << "__void";
-
-        // create kernel op
-        auto kId = rewriter.create<mlir::arith::ConstantOp>(
-            loc, rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(funcName.str(), op)));
+        callee << "_parfor__int64_t__int64_t__int64_t__void__void";
+        auto kIdVal = rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(funcName.str(), op)); 
+        auto kId = rewriter.create<mlir::arith::ConstantOp>(loc, kIdVal);
         std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, kId, adaptor.getCtx()};
+        
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, op->getResultTypes());
-
         rewriter.replaceOp(op, kernel.getResults());
+        
         return success();
     }
 };
