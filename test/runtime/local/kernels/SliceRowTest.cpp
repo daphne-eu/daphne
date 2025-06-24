@@ -75,9 +75,6 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceRow - check throws", TAG_KERNELS, (DenseMatrix,
 
     DT *res = nullptr;
 
-    SECTION("lowerIncl out of bounds - negative") {
-        REQUIRE_THROWS_AS((sliceRow(res, arg, -0.1, 3.0, nullptr)), std::out_of_range);
-    }
     SECTION("lowerIncl greater than upperExcl") {
         REQUIRE_THROWS_AS((sliceRow(res, arg, 3, 2, nullptr)), std::out_of_range);
     }

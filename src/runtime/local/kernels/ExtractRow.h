@@ -108,8 +108,10 @@ template <typename VTSel> struct ExtractRow<Frame, Frame, VTSel> {
         }
         // Actual filtering.
         for (size_t r = 0; r < numRowsSel; r++) {
-            const size_t pos = valuesSel[r];
-            if (valuesSel[r] < 0 || numRowsArg <= pos) {
+            VTSel pos = valuesSel[r];
+            if(pos < 0)
+                pos += numRowsArg;
+            if (static_cast<size_t>(pos) < 0 || static_cast<size_t>(pos) >= numRowsArg) {
                 std::ostringstream errMsg;
                 errMsg << "invalid argument '" << valuesSel[r]
                        << "' passed to ExtractRow: "
@@ -121,7 +123,7 @@ template <typename VTSel> struct ExtractRow<Frame, Frame, VTSel> {
                 if (schema[c] == ValueTypeCode::STR) {
                     // Handle std::string column
                     *reinterpret_cast<std::string *>(resCols[c]) =
-                        *reinterpret_cast<const std::string *>(argCols[c] + pos * elementSizes[c]);
+                        *reinterpret_cast<const std::string *>(argCols[c] + static_cast<size_t>(pos) * elementSizes[c]);
                     resCols[c] += elementSizes[c];
                 } else {
                     // We always copy in units of 8 bytes (uint64_t). If the
@@ -132,7 +134,7 @@ template <typename VTSel> struct ExtractRow<Frame, Frame, VTSel> {
                     // TODO Don't multiply by elementSize, but left-shift by
                     // ld(elementSize).
                     *reinterpret_cast<uint64_t *>(resCols[c]) =
-                        *reinterpret_cast<const uint64_t *>(argCols[c] + pos * elementSizes[c]);
+                        *reinterpret_cast<const uint64_t *>(argCols[c] + static_cast<size_t>(pos) * elementSizes[c]);
                     resCols[c] += elementSizes[c];
                 }
             }
@@ -182,7 +184,9 @@ template <typename VT, typename VTSel> struct ExtractRow<DenseMatrix<VT>, DenseM
         VT *allUpdatedValues = res->getValues();
         const VTSel *valuesSel = sel->getValues();
         for (size_t r = 0; r < numRowsSel; r++) {
-            const VTSel valSelectedRow = valuesSel[r]; // only one column
+            VTSel valSelectedRow = valuesSel[r]; // only one column
+            if(valSelectedRow < 0)
+                valSelectedRow += numRowsArg;
             // TODO For performance reasons, we might skip such checks or make
             // them optional somehow, but it is okay for now.
             if (std::isnan(valSelectedRow)) {
@@ -193,7 +197,7 @@ template <typename VT, typename VTSel> struct ExtractRow<DenseMatrix<VT>, DenseM
                 throw std::runtime_error(errMsg.str());
             } else if (valSelectedRow < 0 || numRowsArg <= static_cast<const size_t>(valSelectedRow)) {
                 std::ostringstream errMsg;
-                errMsg << "invalid argument '" << valSelectedRow
+                errMsg << "invalid argument '" << valuesSel[r]
                        << "' passed to ExtractRow: out of bounds for "
                           "matrix with row boundaries '[0, "
                        << numRowsArg << ")'";
@@ -241,7 +245,9 @@ template <typename VT, typename VTSel> struct ExtractRow<Matrix<VT>, Matrix<VT>,
         // Main Logic
         res->prepareAppend();
         for (size_t r = 0; r < numRowsSel; ++r) {
-            const VTSel valSelectedRow = sel->get(r, 0); // only one column
+            VTSel valSelectedRow = sel->get(r, 0); // only one column
+            if(valSelectedRow < 0)
+                valSelectedRow += numRowsArg;
 
             if (std::isnan(valSelectedRow)) {
                 std::ostringstream errMsg;
@@ -251,7 +257,7 @@ template <typename VT, typename VTSel> struct ExtractRow<Matrix<VT>, Matrix<VT>,
                 throw std::runtime_error(errMsg.str());
             } else if (valSelectedRow < 0 || numRowsArg <= static_cast<const size_t>(valSelectedRow)) {
                 std::ostringstream errMsg;
-                errMsg << "invalid argument '" << valSelectedRow
+                errMsg << "invalid argument '" << sel->get(r, 0)
                        << "' passed to ExtractRow: out of bounds for "
                           "matrix with row boundaries '[0, "
                        << numRowsArg << ")'";
