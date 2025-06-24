@@ -16,11 +16,9 @@
 using namespace mlir;
 
 class ParForOpLoweringPattern : public RewritePattern {
-
-    Value dctx;
   
 public:
-    ParForOpLoweringPattern(MLIRContext *context, Value dctx) : RewritePattern("daphne.parfor", 1, context), dctx(dctx) {}
+    ParForOpLoweringPattern(MLIRContext *context) : RewritePattern("daphne.parfor", 1, context) {}
 
     LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
         if (!isa<daphne::ParForOp>(op))
