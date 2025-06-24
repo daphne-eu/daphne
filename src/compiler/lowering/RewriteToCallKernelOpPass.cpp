@@ -501,8 +501,13 @@ class KernelReplacement : public RewritePattern {
         // all kernel calls, unless it's a CreateDaphneContextOp.
         if (!llvm::isa<daphne::CreateDaphneContextOp>(op))
         {
-            mlir::Region *region = op->getParentRegion();
+            // If the kernel op is inside of some parfor loop, 
+            // context argument of kernel call is provided by block argument of parfor loop body.
+            // We traverse region hierarchy to find the parent parfor loop.
+            // NOTE: this is needed because the region of a parfor loop is IsolatedFromAbove, 
+            //       i.e. CallKernelOp can't access outer scope variables.
             auto ctx = dctx;
+            mlir::Region *region = op->getParentRegion();
             while (region) {
                 mlir::Operation *parentOp = region->getParentOp();
                 if (auto parFor = llvm::dyn_cast_or_null<daphne::ParForOp>(parentOp)) {
@@ -660,8 +665,17 @@ void RewriteToCallKernelOpPass::runOnOperation() {
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = CompilerUtils::getDaphneContext(func);
     func->walk([&](daphne::VectorizedPipelineOp vpo) { vpo.getCtxMutable().assign(dctx); });
-    func->walk([&](daphne::ParForOp vpo) { // todo: can be probably removed 
-        vpo.getCtxMutable().assign(dctx); 
+    func->walk([&](daphne::ParForOp parForOp) {
+        // Parfor may have dependencies to daphne context.
+        // Since the block of this op is IsolatedFromAbove, we need to add daphne context as block argument 
+        // and replace usages of context pointer with block argument respectivly. 
+        // The context pointer becomes just a part of parfor body function arguments.   
+        parForOp.getCtxMutable().assign(dctx); 
+        mlir::Block &entryBlock = parForOp.getRegion().front();
+        mlir::Value dctxArg = entryBlock.addArgument(dctx.getType(), dctx.getLoc());
+        auto args = llvm::SmallVector<Value>(parForOp.getArgs());
+        args.push_back(dctx);
+        parForOp.getArgsMutable().assign(args);
     });
     
     // Apply conversion to CallKernelOps.

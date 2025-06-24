@@ -28,21 +28,12 @@ public:
 
         auto parForOp = cast<daphne::ParForOp>(op);
         rewriter.startRootUpdate(parForOp);
-        // Parfor may have dependencies to daphne context.
-        // Since the block of this op is IsolatedFromAbove, we need to add daphne context as block argument 
-        // and replace usages of context pointer with block argument respectivly. 
-        // The context pointer becomes just a part of parfor body function arguments.   
-        mlir::Block &entryBlock = parForOp.getRegion().front();
-        mlir::Value dctxArg = entryBlock.addArgument(dctx.getType(), dctx.getLoc());
-       auto args = llvm::SmallVector<Value>(parForOp.getArgs());
-        args.push_back(dctx);
-        parForOp.getArgsMutable().assign(args);
-        //parForOp.getArgsMutable().assign(dctx);
-        static int idx = 0;
-        std::string funcName = "parfor_body_" + std::to_string(idx++);
+        
         Location loc = op->getLoc();
 
-        // Create function pointer and assign it to parfor's func attribute
+        // todo: move and remove  
+        static int idx = 0;
+        std::string funcName = "parfor_body_" + std::to_string(idx++);
         auto symbolRef = SymbolRefAttr::get(rewriter.getContext(), funcName);
         parForOp.setFuncNameAttr(symbolRef);
         rewriter.finalizeRootUpdate(parForOp);
@@ -56,8 +47,7 @@ struct ParForLoweringPass : public PassWrapper<ParForLoweringPass, OperationPass
     void runOnOperation() final {
         func::FuncOp func = getOperation();
         RewritePatternSet patterns(&getContext());
-        auto dctx = CompilerUtils::getDaphneContext(func);
-        patterns.add<ParForOpLoweringPattern>(&getContext(), dctx);
+        patterns.add<ParForOpLoweringPattern>(&getContext());
 
         ConversionTarget target(getContext());
 
