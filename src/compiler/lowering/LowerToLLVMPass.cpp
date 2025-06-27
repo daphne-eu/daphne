@@ -515,7 +515,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto voidPtrType = LLVM::LLVMPointerType::get(llvmI8Type);
         auto voidPtrPtrType = LLVM::LLVMPointerType::get(voidPtrType);
         
-        // (i64, void**) -> (void*)
+        // (i64, void**) -> (void)
         auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {i64Type, voidPtrPtrType});
         auto llvmFuncOp = rewriter.create<LLVM::LLVMFuncOp>(rewriter.getUnknownLoc(), funcName, funcType);
         mlir::Block &funcBlock = *llvmFuncOp.addEntryBlock();
@@ -574,7 +574,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         rewriter.restoreInsertionPoint(ip);
         unsigned numArgs = args.size();
         auto arraySizeConst = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(numArgs));
-        auto arrayBaseVoidPtr = rewriter.create<LLVM::AllocaOp>(loc, voidPtrType, arraySizeConst, 8);
+        auto arrayBaseVoidPtr = rewriter.create<LLVM::AllocaOp>(loc, voidPtrPtrType, arraySizeConst, 8);
 
         index = 0;
         auto one = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(1));
@@ -592,22 +592,19 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             }
             
             Value operandAsPtr;
-            auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
+           
             if (llvmOperandType.isa<LLVM::LLVMPointerType>()) {
                 // Already a pointer, cast to void*
                 operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, operand);
-                // TODO: fix handling of pointer types - 
-                //auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
-                //auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, voidPtrType, arrayBaseVoidPtr, ValueRange{gepIndex});
-                //rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
             } else {
                 // Allocate space for the value pointer and store it array 
                 auto alloca = rewriter.create<LLVM::AllocaOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), one, 8);
                 rewriter.create<LLVM::StoreOp>(loc, operand, alloca);
                 operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, alloca);
-                auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), arrayBaseVoidPtr, ValueRange{gepIndex});
-                rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
             }
+            auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
+            auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, voidPtrPtrType, arrayBaseVoidPtr, ValueRange{gepIndex});
+            rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
          
             ++index;
         }
