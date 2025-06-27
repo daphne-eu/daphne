@@ -744,7 +744,7 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     }
 
     // block terminator for parfor 
-    builder.create<mlir::daphne::ReturnOp>(loc, resVals);
+    builder.create<mlir::daphne::ReturnOp>(loc);
 
     builder.restoreInsertionPoint(ip);
 
