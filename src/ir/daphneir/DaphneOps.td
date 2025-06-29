@@ -78,18 +78,15 @@ def Daphne_ParForOp : Daphne_Op<"parfor"> {
     // todo: add description for features 
     let description = [{
         Represents a parallel loop construct that can execute iterations in parallel.
-
     }];
-    
     let arguments = (ins
         Variadic<AnyType>:$args,
         AnyInteger:$from,
         AnyInteger:$to,
         AnyInteger:$step,
-        Optional<DaphneContext>:$ctx,
-        OptionalAttr<FlatSymbolRefAttr>:$funcName
-        // todo: add additional parameter?
+        Optional<DaphneContext>:$ctx
     );
+    let results = (outs AnyTypeOf<[AnyScalar, MatrixOrFrame, Unknown]>:$res);
     let regions = (region SizedRegion<1>:$bodyStmt);
     let traits = [AttrSizedOperandSegments, IsolatedFromAbove];
 }

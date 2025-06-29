@@ -722,13 +722,17 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
     std::vector<mlir::Value> resVals = {};
     std::vector<mlir::Value> forOperands = {};
+
     for (auto it = ow.begin(); it != ow.end(); it++) {
         resVals.push_back(it->second.value);
         forOperands.push_back(symbolTable.get(it->first).value);
     }
     for (mlir::Operation &op : bodyBlock) {
         for (mlir::Value operand : op.getOperands()) {
-            // Check if operand is defined in the same block
+            if(std::find(forOperands.begin(), forOperands.end(), operand) != forOperands.end()) {
+                continue;
+            }
+            // Check if operand is't defined in the block 
             if (auto *defOp = operand.getDefiningOp()) {
                 if (defOp->getBlock() != &bodyBlock) {
                     forOperands.push_back(operand);
@@ -742,19 +746,19 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
             }
         }
     }
-
     // block terminator for parfor 
-    builder.create<mlir::daphne::ReturnOp>(loc);
+    auto returnOp = builder.create<mlir::daphne::ReturnOp>(loc, resVals);
 
     builder.restoreInsertionPoint(ip);
 
     // Create the actual ParForOp.
-    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, forOperands, from, to, step, mlir::Value(),  nullptr);
+    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, mlir::ValueRange(resVals).getTypes(), forOperands, from, to, step, mlir::Value());
     // Moving the operations in the block created above
     // into the actual body of the ParForOp.
     mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();
     targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
     auto iv = targetBlock.addArgument(builder.getIndexType(), loc);
+   
     for (mlir::Value v : forOperands)
         targetBlock.addArgument(v.getType(), v.getLoc());
 

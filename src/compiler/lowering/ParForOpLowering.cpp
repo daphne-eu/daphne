@@ -26,16 +26,13 @@ public:
 
         auto parForOp = cast<daphne::ParForOp>(op);
         rewriter.startRootUpdate(parForOp);
-        
+        // ********************************************************************
+        // Loop dependency analysis: 1. Determinate dependency candidates 
+        // ********************************************************************
         Location loc = op->getLoc();
-
-        // todo: move and remove  
-        static int idx = 0;
-        std::string funcName = "parfor_body_" + std::to_string(idx++);
-        auto symbolRef = SymbolRefAttr::get(rewriter.getContext(), funcName);
-        parForOp.setFuncNameAttr(symbolRef);
+        //auto candidates = parForOp.getOutputs();
+        
         rewriter.finalizeRootUpdate(parForOp);
-
         return success();
     }
 };
@@ -49,9 +46,7 @@ struct ParForLoweringPass : public PassWrapper<ParForLoweringPass, OperationPass
 
         ConversionTarget target(getContext());
 
-        target.addLegalDialect<func::FuncDialect, daphne::DaphneDialect, memref::MemRefDialect, arith::ArithDialect>();
-        target.addDynamicallyLegalOp<daphne::ParForOp>(
-            [](daphne::ParForOp op) { return op.getFuncName().has_value(); });
+        target.addLegalDialect<daphne::DaphneDialect>();
 
         if (failed(applyPartialConversion(getOperation(), target, std::move(patterns)))) {
             signalPassFailure();

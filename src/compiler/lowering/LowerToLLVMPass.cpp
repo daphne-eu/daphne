@@ -176,7 +176,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
         // --------------------------------------------------------------------
         // Results
         // --------------------------------------------------------------------
-
+      
         const size_t numRes = resultTypes.size();
         if (hasVarRes) { // combine all results into one variadic result
             // TODO Support individual result types, at least if they are all
@@ -194,14 +194,15 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
             // array of that type.
             args.push_back(
                 LLVM::LLVMPointerType::get(typeConverter->isLegal(t0) ? t0 : typeConverter->convertType(t0)));
-        } else // typical case
+            
+            } else // typical case
             for (auto type : resultTypes) {
                 if (typeConverter->isLegal(type)) {
                     args.push_back(type);
                 } else if (failed(typeConverter->convertType(type, args)))
                     emitError(loc) << "Couldn't convert result type `" << type << "`\n";
             }
-
+    
         // --------------------------------------------------------------------
         // Operands
         // --------------------------------------------------------------------
@@ -210,18 +211,16 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
             // Create a parameter for passing the number of results in the
             // single variadic result.
             args.push_back(typeConverter->isLegal(indexType) ? indexType : typeConverter->convertType(indexType));
-
         for (auto type : operandTypes) {
             if (typeConverter->isLegal(type)) {
                 args.push_back(type);
             } else if (failed(typeConverter->convertType(type, args)))
                 emitError(loc) << "Couldn't convert operand type `" << type << "`\n";
         }
-
         // --------------------------------------------------------------------
         // Create final LLVM types
         // --------------------------------------------------------------------
-
+       
         std::vector<Type> argsLLVM;
         for (size_t i = 0; i < args.size(); i++) {
             Type type = args[i];
@@ -235,7 +234,6 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
 
             argsLLVM.push_back(type);
         }
-
         return argsLLVM;
     }
 
@@ -275,14 +273,11 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
         auto inputOutputTypes =
             getLLVMInputOutputTypes(loc, rewriter.getContext(), typeConverter, op.getResultTypes(),
                                     ValueRange(adaptor.getOperands()).getTypes(), hasVarRes, rewriter.getIndexType());
-
         // create function protoype and get `FlatSymbolRefAttr` to it
         auto kernelRef = getOrInsertFunctionAttr(rewriter, module, op.getCalleeAttr().getValue(),
                                                  getKernelFuncSignature(rewriter.getContext(), inputOutputTypes));
-
         auto kernelOperands = allocOutputReferences(loc, rewriter, adaptor.getOperands(), inputOutputTypes,
                                                     op->getNumResults(), hasVarRes, op);
-
         // call function
         // The kernel call has an empty list of return types, because our
         // kernel(-wrapper)s generally return via parameters.
@@ -503,20 +498,31 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // *****************************************************************************
         // Extraction of parfor op body region to an function. 
         // Outer scope SSA values and induction variable are passed as function arguments 
-        // and replaced respectively in the body.
+        // and replaced respectively in the body of created function.
         // *****************************************************************************
         rewriter.setInsertionPointToStart(module.getBody());
-        
-        auto funcName = op.getFuncName().value();
+        static int idx = 0;
+        std::string funcName = "parfor_body_" + std::to_string(idx++);
         auto opBodyArgs = op.getBodyStmt().front().getArguments();
+
+       
         
         auto i64Type = typeConverter->convertType(rewriter.getIntegerType(64, true));
         auto llvmI8Type = typeConverter->convertType(rewriter.getIntegerType(8));
-        auto voidPtrType = LLVM::LLVMPointerType::get(llvmI8Type);
-        auto voidPtrPtrType = LLVM::LLVMPointerType::get(voidPtrType);
-        
-        // (i64, void**) -> (void)
-        auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {i64Type, voidPtrPtrType});
+        //auto voidPtrType = LLVM::LLVMPointerType::get(llvmI8Type);
+        //auto voidPtrPtrType = LLVM::LLVMPointerType::get(voidPtrType);
+        auto i1Ty = IntegerType::get(getContext(), 1);
+        auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
+        auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
+
+        // (ptr<ptr<i8>>, ptr<ptr<i8>>, i64, ptr<i1>) -> (void)
+        auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {
+            /*output=*/ptrPtrI1Ty,
+            /*input=*/ptrPtrI1Ty,
+            /*induction variable=*/i64Type
+            /*daphne context=ptrI1Ty*/
+        });
+
         auto llvmFuncOp = rewriter.create<LLVM::LLVMFuncOp>(rewriter.getUnknownLoc(), funcName, funcType);
         mlir::Block &funcBlock = *llvmFuncOp.addEntryBlock();
         funcBlock.getOperations().splice(funcBlock.end(), op.getBodyStmt().front().getOperations());
@@ -524,8 +530,10 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         rewriter.setInsertionPointToStart(&funcBlock);
         auto locFunc = llvmFuncOp.getLoc();
         
+        auto funcOutArg = llvmFuncOp.getArgument(0);
         auto funcInArg = llvmFuncOp.getArgument(1);
-        auto ivArg = llvmFuncOp.getArgument(0);
+        auto ivArg = llvmFuncOp.getArgument(2);
+        //auto dctxArg = llvmFuncOp.getArgument(3);
         
         auto args = op.getArgs();
         unsigned index = 0;
@@ -535,12 +543,16 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                 // replace induction variable with the function argument
                 blockArg.replaceAllUsesWith(ivArg);
                 continue;   
-            }
+            } /*else if(i == args.size()) {
+                // replace daphne context with the function argument
+                blockArg.replaceAllUsesWith(dctxArg);
+                continue;
+            }*/
+
             // number of arguments must be exactly the same as number of operands stored in args
             if (index >= args.size()) 
                 llvm::report_fatal_error("ParForOp has more block arguments than operands, which is not defined behavior");
 
-            
             // convert type to llvm type 
             auto targetType = typeConverter->convertType(args[index].getType());
             if (!targetType) 
@@ -548,8 +560,8 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
 
             // Get T* pointer from funcInArg[index]
             auto indexVal = rewriter.create<LLVM::ConstantOp>(locFunc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(index));
-            auto gep = rewriter.create<LLVM::GEPOp>(locFunc, voidPtrPtrType, voidPtrPtrType, funcInArg, ValueRange{indexVal});
-            auto rawPtr = rewriter.create<LLVM::LoadOp>(locFunc, voidPtrType, gep);
+            auto gep = rewriter.create<LLVM::GEPOp>(locFunc, ptrPtrI1Ty, ptrPtrI1Ty, funcInArg, ValueRange{indexVal});
+            auto rawPtr = rewriter.create<LLVM::LoadOp>(locFunc, ptrI1Ty, gep);
 
 
             // if the target type is already a pointer, we can directly load it 
@@ -568,13 +580,43 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                       
             ++index;
         }
+        // ********************************************************************
+        // Store results in output array as CallKernelOp prescribes. 
+        // ********************************************************************
+        
+        auto returnOp = funcBlock.getTerminator();
+        if (!returnOp || !llvm::isa<daphne::ReturnOp>(returnOp)) 
+            llvm::report_fatal_error("Cannot determinate terminator of parfor body region, expected daphne::ReturnOp");
+        rewriter.setInsertionPoint(returnOp);
+        auto numRes = returnOp->getNumOperands();
+        for (auto i = 0u; i < numRes; ++i) {
+            auto retVal = returnOp->getOperand(i);
+            auto loc = returnOp->getLoc(); 
+            auto addrIdx = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i));
+            auto gep = rewriter.create<LLVM::GEPOp>(loc, ptrPtrI1Ty, funcOutArg, ArrayRef<Value>({addrIdx}));
+           
+
+            auto llvmTy = typeConverter->convertType(retVal.getType());
+            Value retValConverted = typeConverter->materializeTargetConversion(rewriter, loc, llvmTy, retVal);
+
+            rewriter.create<LLVM::StoreOp>(loc, retValConverted, gep);
+        }
+        // Replace the old ReturnOp with operands by a new ReturnOp without
+        // operands.
+        rewriter.replaceOpWithNewOp<daphne::ReturnOp>(returnOp);
+
         // *****************************************************************************
-        // Create a void** array containg all outer scope operands of parfor op 
+        // Create a ptr<ptr<i1>> array containg all outer scope operands of parfor op
+        // which is passed to the function created above as funcInArg and funcOutArg. 
         // *****************************************************************************
+        
+        // TODO: alloca must probably be added on top of function (see comment about Alloca on top of the current file )
+        // TODO: alternative - the same logic can be probably achieved by store variadic pack, 
+        // but this will also affect the dereference logic above.
         rewriter.restoreInsertionPoint(ip);
         unsigned numArgs = args.size();
         auto arraySizeConst = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(numArgs));
-        auto arrayBaseVoidPtr = rewriter.create<LLVM::AllocaOp>(loc, voidPtrPtrType, arraySizeConst, 8);
+        auto arrayBaseVoidPtr = rewriter.create<LLVM::AllocaOp>(loc, ptrPtrI1Ty, arraySizeConst, 0);
 
         index = 0;
         auto one = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(1));
@@ -594,34 +636,44 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             Value operandAsPtr;
            
             if (llvmOperandType.isa<LLVM::LLVMPointerType>()) {
-                // Already a pointer, cast to void*
-                operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, operand);
+                // Already a pointer, cast to ptr<i1>
+                operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, ptrI1Ty, operand);
             } else {
                 // Allocate space for the value pointer and store it array 
-                auto alloca = rewriter.create<LLVM::AllocaOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), one, 8);
+                auto alloca = rewriter.create<LLVM::AllocaOp>(loc, LLVM::LLVMPointerType::get(llvmOperandType), one, 0);
                 rewriter.create<LLVM::StoreOp>(loc, operand, alloca);
-                operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, voidPtrType, alloca);
+                operandAsPtr = rewriter.create<LLVM::BitcastOp>(loc, ptrI1Ty, alloca);
             }
             auto gepIndex = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(index));
-            auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, voidPtrPtrType, arrayBaseVoidPtr, ValueRange{gepIndex});
+            auto gepPtr = rewriter.create<LLVM::GEPOp>(loc, ptrPtrI1Ty, arrayBaseVoidPtr, ValueRange{gepIndex});
             rewriter.create<LLVM::StoreOp>(loc, operandAsPtr, gepPtr);
          
             ++index;
         }
+
         // *****************************************************************************
         // Create a kernel call to the parfor loop body function
         // *****************************************************************************
+      
+        // TODO: we need probably to check if all individuall values of result array have the same type  
+        // but this is also done by CallKernelOp.  
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, llvmFuncOp);
         std::stringstream callee;
-
-        callee << "_parfor__int64_t__int64_t__int64_t__void__void";
-        auto kIdVal = rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(funcName.str(), op)); 
+        auto resultTypes = op->getResultTypes();
+        if(numRes > 0) {
+            callee << "_parfor__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0], false) << "_variadic__size_t";
+            callee << "__int64_t__int64_t__int64_t__void__void";
+        } else { // TODO: do we need to consider the case with no output? 
+           llvm::report_fatal_error("void return of daphne::ParForOp is not supported yet");
+        }
+        auto kIdVal = rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(funcName, op)); 
         auto kId = rewriter.create<mlir::arith::ConstantOp>(loc, kIdVal);
         std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, kId, adaptor.getCtx()};
         
-        auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, op->getResultTypes());
+        auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, resultTypes);
+        kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true)); // todo: must be optional 
         rewriter.replaceOp(op, kernel.getResults());
-        
+
         return success();
     }
 };

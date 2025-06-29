@@ -19,6 +19,9 @@
 #include <cstdio>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Structure.h>
+#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_PARFOR_H
 #define SRC_RUNTIME_LOCAL_KERNELS_PARFOR_H
@@ -26,15 +29,23 @@
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-void parfor(int64_t from, int64_t to, int64_t step, void *inputs, void *func, DCTX(ctx)) {
-    auto body = reinterpret_cast<void (*)(int64_t, void **)>(func);
-    auto args = reinterpret_cast<void**>(inputs);
+template <class DTRes> void parfor(DTRes **outputs, size_t numOutputs, int64_t from, int64_t to, int64_t step, void *inputs, void *func, DCTX(ctx)) {
+    
+    auto body = reinterpret_cast<void (*)(void**, void **, int64_t)>(func);
+    auto ins = reinterpret_cast<void**>(inputs);
+    
+    auto ** outputs2 = new DTRes *[numOutputs];
+    for (size_t i = 0; i < numOutputs; ++i)
+        outputs2[i] = outputs[i];    
+    
+    auto outs = reinterpret_cast<void**>(outputs2); 
 
-    //printf("[parforLoop] first argument - %d\n",  *reinterpret_cast<int64_t*>(args)[0]);
     for (int64_t i = from; i <= to; i += step) {
-        //printf("[parforLoop] Iteration i = %ld\n", i);
-        body(i, args);
+        printf("[parforLoop] Iteration i = %ld\n", i);
+        body(outs, ins, i);
     }
+
+    delete[] outputs2; // Clean up the allocated memory for outputs2
 }
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_PARFOR_H

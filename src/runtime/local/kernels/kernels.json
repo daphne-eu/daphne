@@ -3577,8 +3577,21 @@
             "header": "ParFor.h",
             "opName": "parfor",
             "returnType": "void",
-            "templateParams": [],
+            "templateParams": [
+                   {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
             "runtimeParams": [
+                {
+                    "type": "DTRes **",
+                    "name": "outputs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numOutputs"
+                },
                 {
                     "type": "int64_t",
                     "name": "from"
@@ -3601,7 +3614,11 @@
                 }
             ]
         },
-        "instantiations": [[]]
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"]]
+        ]
     },
     {
         "kernelTemplate": {
