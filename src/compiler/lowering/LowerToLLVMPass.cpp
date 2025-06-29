@@ -580,6 +580,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                       
             ++index;
         }
+
         // ********************************************************************
         // Store results in output array as CallKernelOp prescribes. 
         // ********************************************************************

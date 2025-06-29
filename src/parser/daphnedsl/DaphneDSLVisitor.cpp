@@ -732,7 +732,7 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
             if(std::find(forOperands.begin(), forOperands.end(), operand) != forOperands.end()) {
                 continue;
             }
-            // Check if operand is't defined in the block 
+            // Check if operand is not defined in the block 
             if (auto *defOp = operand.getDefiningOp()) {
                 if (defOp->getBlock() != &bodyBlock) {
                     forOperands.push_back(operand);
@@ -764,35 +764,33 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
 
     ivPH.replaceAllUsesWith(iv);
     symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(iv, false));
-    size_t baseIdx = 1;
-    size_t i = 0;
-    for (mlir::Value captured : forOperands) {
-        mlir::BlockArgument arg = targetBlock.getArgument(baseIdx + i);
-        captured.replaceUsesWithIf(arg, [&](mlir::OpOperand &operand) {
-            auto parentRegion = operand.getOwner()->getBlock()->getParent();
-            return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
-        });
-        i++;
-    }
 
-    i = 0;
-    auto regionIterArgs = bodyBlock.getArguments().drop_front(1); // only one induction variable as of now
+    //size_t baseIdx = 1;
+    size_t i = 0;
     for (auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
         // corresponding block arguments.
+        if(i >= forOperands.size()) continue; 
 
-        forOperands[i].replaceUsesWithIf(regionIterArgs[i], [&](mlir::OpOperand &operand) {
+        auto operand = forOperands[i];
+        mlir::BlockArgument arg = targetBlock.getArgument(i + 1);
+        
+        operand.replaceUsesWithIf(arg, [&](mlir::OpOperand &operand) {
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
         });
-
-        // TODO : are regionIterArgs actually the result ? will we need the result field in the OP in the future i.e. is
-        // this workaround valid ?
+        llvm::errs() << "there am i";
         // Rewire the results of the ForOp to their variable names.
-        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(regionIterArgs[i], false));
+        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(parforOp.getResults()[i], false));
 
         i++;
     }
+    /*for(auto [i, resVal] : llvm::enumerate(resVals)) {
+        resVal.replaceUsesWithIf(parforOp.getResults()[i], [&](mlir::OpOperand &operand) {
+                auto parent = operand.getOwner()->getBlock()->getParent();
+                return parent != nullptr && !parforOp.getRegion().isAncestor(parent);
+        });
+    }*/
     return nullptr;
 }
 

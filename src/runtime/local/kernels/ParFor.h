@@ -34,18 +34,18 @@ template <class DTRes> void parfor(DTRes **outputs, size_t numOutputs, int64_t f
     auto body = reinterpret_cast<void (*)(void**, void **, int64_t)>(func);
     auto ins = reinterpret_cast<void**>(inputs);
     
-    auto ** outputs2 = new DTRes *[numOutputs];
-    for (size_t i = 0; i < numOutputs; ++i)
-        outputs2[i] = outputs[i];    
+    //auto ** outputs2 = new DTRes *[numOutputs];
+    //for (size_t i = 0; i < numOutputs; ++i)
+    //   outputs2[i] = outputs[i];    
     
-    auto outs = reinterpret_cast<void**>(outputs2); 
+    auto outs = reinterpret_cast<void**>(outputs); 
 
     for (int64_t i = from; i <= to; i += step) {
         printf("[parforLoop] Iteration i = %ld\n", i);
         body(outs, ins, i);
     }
 
-    delete[] outputs2; // Clean up the allocated memory for outputs2
+    //delete[] outputs2; // Clean up the allocated memory for outputs2
 }
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_PARFOR_H

@@ -56,7 +56,6 @@ struct ManageObjRefsPass : public PassWrapper<ManageObjRefsPass, OperationPass<f
 
 void processMemRefInterop(OpBuilder builder, Value v) {
     Operation *lastUseOp = findLastUseOfSSAValue(v);
-
     builder.setInsertionPointAfter(lastUseOp);
     builder.create<daphne::DecRefOp>(v.getLoc(), v.getDefiningOp()->getOperand(0));
 }
@@ -227,7 +226,7 @@ void processBlock(OpBuilder builder, Block *b) {
                 incRefArgs(op, builder);
         }
         // Loops and function calls.
-        else if (llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp>(op))
+        else if (llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp, daphne::ParForOp>(op))
             incRefArgs(op, builder);
         // YieldOp of IfOp.
         else if (llvm::isa<scf::YieldOp>(op) && llvm::isa<scf::IfOp>(op.getParentOp())) {
