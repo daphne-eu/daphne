@@ -29,13 +29,19 @@
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-template <class DTRes> void parfor(DTRes **outputs, size_t numOutputs, int64_t from, int64_t to, int64_t step, void *inputs, void *func, DCTX(ctx)) {
-    
-    auto body = reinterpret_cast<void (*)(void**, void **, int64_t, DCTX(ctx))>(func);
-    auto ins = reinterpret_cast<void**>(inputs);
-    auto outs = reinterpret_cast<void**>(outputs); 
+template <class DTRes>
+void parfor(DTRes **outputs, size_t numOutputs, int64_t from, int64_t to, int64_t step, void *inputs, void *func,
+            DCTX(ctx)) {
 
-    for (int64_t i = from; i <= to; i += step) {
+    auto body = reinterpret_cast<void (*)(void **, void **, int64_t, DCTX(ctx))>(func);
+    auto ins = reinterpret_cast<void **>(inputs);
+    auto outs = reinterpret_cast<void **>(outputs);
+
+    std::function<bool(int, int)> cmp = [](int64_t x, int64_t y) { return x <= y; };
+    if (step < 0)
+        cmp = [](int64_t x, int64_t y) { return x >= y; };
+
+    for (int64_t i = from; cmp(i, to); i += step) {
         printf("[parforLoop] Iteration i = %ld\n", i);
         body(outs, ins, i, ctx);
     }

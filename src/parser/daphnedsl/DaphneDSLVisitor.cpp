@@ -701,8 +701,12 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     // Parse from, to, and step.
     mlir::Value from = utils.castIf(t, valueOrErrorOnVisit(ctx->from));
     mlir::Value to = utils.castIf(t, valueOrErrorOnVisit(ctx->to));
-    // TODO : for simplicity step is left constant for now
-    mlir::Value step = builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, 1));
+    mlir::Value step;
+    if (ctx->step) {
+        step = utils.castIf(t, valueOrErrorOnVisit(ctx->step));
+    } else {
+        step = builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, 1));
+    }
 
     auto ip = builder.saveInsertionPoint();
 
