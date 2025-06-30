@@ -584,7 +584,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // ********************************************************************
         // Store results in output array as CallKernelOp prescribes. 
         // ********************************************************************
-        
+        llvm::errs() << "rewire return operation \n";
         auto returnOp = funcBlock.getTerminator();
         if (!returnOp || !llvm::isa<daphne::ReturnOp>(returnOp)) 
             llvm::report_fatal_error("Cannot determinate terminator of parfor body region, expected daphne::ReturnOp");
@@ -610,7 +610,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // Create a ptr<ptr<i1>> array containg all outer scope operands of parfor op
         // which is passed to the function created above as funcInArg and funcOutArg. 
         // *****************************************************************************
-        
+         llvm::errs() << "creating input array \n "; 
         // TODO: alloca must probably be added on top of function (see comment about Alloca on top of the current file )
         // TODO: alternative - the same logic can be probably achieved by store variadic pack, 
         // but this will also affect the dereference logic above.
@@ -655,26 +655,31 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // *****************************************************************************
         // Create a kernel call to the parfor loop body function
         // *****************************************************************************
-      
+        llvm::errs() << "creating kernel call \n "; 
         // TODO: we need probably to check if all individuall values of result array have the same type  
         // but this is also done by CallKernelOp.  
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, llvmFuncOp);
         std::stringstream callee;
+        auto kIdVal = rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(funcName, op)); 
+        auto kId = rewriter.create<mlir::arith::ConstantOp>(loc, kIdVal);
+        
+        std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, kId, adaptor.getCtx()};
+        
         auto resultTypes = op->getResultTypes();
         if(numRes > 0) {
             callee << "_parfor__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0], false) << "_variadic__size_t";
             callee << "__int64_t__int64_t__int64_t__void__void";
-        } else { // TODO: do we need to consider the case with no output? 
-           llvm::report_fatal_error("void return of daphne::ParForOp is not supported yet");
+        } else { // no results, so we need to add null ptr as output and 0 as number of results values as kernel operands
+            callee << "_parfor__void_variadic__size_t__int64_t__int64_t__int64_t__void__void";
+            kernelOperands.insert(kernelOperands.begin(), rewriter.create<LLVM::NullOp>(loc, ptrPtrI1Ty));
+            kernelOperands.insert(kernelOperands.begin() + 1, rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(0)));
         }
-        auto kIdVal = rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(funcName, op)); 
-        auto kId = rewriter.create<mlir::arith::ConstantOp>(loc, kIdVal);
-        std::vector<Value> kernelOperands{adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, kId, adaptor.getCtx()};
-        
+     
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, resultTypes);
-        kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true)); // todo: must be optional 
+        if(numRes > 0) 
+            kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
         rewriter.replaceOp(op, kernel.getResults());
-
+        module.dump();
         return success();
     }
 };

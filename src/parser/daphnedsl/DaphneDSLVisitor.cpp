@@ -710,13 +710,14 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     mlir::Block bodyBlock;
     builder.setInsertionPointToEnd(&bodyBlock);
     symbolTable.pushScope();
+    // dummy induction variable for block parsing 
     auto ivName = ctx->var->getText();
     auto ivPH = bodyBlock.addArgument(builder.getIndexType(), loc);
     symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(ivPH, false));
     // Parse the loop's body.
     visit(ctx->bodyStmt);
     
-    // TODO : popScope also exactly returns the dependency candidates
+    // popScope also returns the dependency candidates (writes to non-local variables).
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the ParForOp.
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
@@ -765,22 +766,18 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     ivPH.replaceAllUsesWith(iv);
     symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(iv, false));
 
-    size_t i = 0;
     // Replace usages of the variables updated in the loop's body by the
     // corresponding block arguments.
-    for (auto op : forOperands) {
-        op.replaceUsesWithIf(targetBlock.getArgument(i + 1), [&](mlir::OpOperand &operand) {
+    for (auto [idx, op] : llvm::enumerate(forOperands)) {
+        op.replaceUsesWithIf(targetBlock.getArgument(idx + 1), [&](mlir::OpOperand &operand) {
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
         });
-        i++;
     }
-    // Replace references to results.
-    i = 0;
-    for (auto it = ow.begin(); it != ow.end(); it++) {
-        // Rewire the results of the ForOp to their variable names.
+    size_t i = 0;
+    // Rewire the results of the ParForOp to their variable names.
+    for (auto it = ow.begin(); it != ow.end(); it++, i++) {
         symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(parforOp.getResults()[i], false));
-        i++;
     }
     return nullptr;
 }
