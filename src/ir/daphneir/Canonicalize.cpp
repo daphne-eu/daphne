@@ -307,6 +307,71 @@ mlir::daphne::RandMatrixOp pushDownRandomIntoEwAdd(mlir::daphne::RandMatrixOp ra
     return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
                                                        newMax, sparsity, seed);
 }
+mlir::daphne::RandMatrixOp pushDownRandomIntoEwSub(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwSubOp op,
+                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwSubOp newMax = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), max, scalar);
+    mlir::daphne::EwSubOp newMin = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), min, scalar);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
+mlir::daphne::RandMatrixOp pushDownRandomIntoEwMul(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwMulOp op,
+                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwMulOp newMax = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), max, scalar);
+    mlir::daphne::EwMulOp newMin = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), min, scalar);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
+mlir::daphne::RandMatrixOp pushDownRandomIntoEwDiv(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwDivOp op,
+                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwDivOp newMax = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), max, scalar);
+    mlir::daphne::EwDivOp newMin = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), min, scalar);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
+mlir::daphne::RandMatrixOp pushDownRandomIntoEwPow(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwPowOp op,
+                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwPowOp newMax = rewriter.create<mlir::daphne::EwPowOp>(op.getLoc(), max, scalar);
+    mlir::daphne::EwPowOp newMin = rewriter.create<mlir::daphne::EwPowOp>(op.getLoc(), min, scalar);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
+mlir::daphne::RandMatrixOp pushDownRandomIntoEwLog(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwLogOp op,
+                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwLogOp newMax = rewriter.create<mlir::daphne::EwLogOp>(op.getLoc(), max, scalar);
+    mlir::daphne::EwLogOp newMin = rewriter.create<mlir::daphne::EwLogOp>(op.getLoc(), min, scalar);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
 
 /**
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
@@ -431,6 +496,20 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
         rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
+    // This will check for the rand operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (lhsRand && rhsIsSca) {
+        auto newRand = pushDownRandomIntoEwSub(lhsRand, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+    if (rhsRand && lhsIsSca) {
+        auto newRand = pushDownRandomIntoEwSub(rhsRand, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
 
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwAddOp>(
@@ -475,6 +554,21 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
         return mlir::success();
     }
 
+    // This will check for the rand operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (lhsRand && rhsIsSca) {
+        auto newRand = pushDownRandomIntoEwMul(lhsRand, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+    if (rhsRand && lhsIsSca) {
+        auto newRand = pushDownRandomIntoEwMul(rhsRand, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(op, op.getResult().getType(), rhs, lhs);
         return mlir::success();
@@ -512,6 +606,21 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
     if (rhsFill && lhsIsSca) {
         auto newFill = pushDownFillIntoEwDiv(rhsFill, op, lhs, rewriter);
         rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+
+    // This will check for the rand operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (lhsRand && rhsIsSca) {
+        auto newRand = pushDownRandomIntoEwDiv(lhsRand, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+    if (rhsRand && lhsIsSca) {
+        auto newRand = pushDownRandomIntoEwDiv(rhsRand, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
         return mlir::success();
     }
 
@@ -592,6 +701,20 @@ mlir::LogicalResult mlir::daphne::EwPowOp::canonicalize(mlir::daphne::EwPowOp op
     if (rhsFill && lhsIsSca) {
         auto newFill = pushDownFillIntoEwPow(rhsFill, op, lhs, rewriter);
         rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+    // This will check for the rand operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (lhsRand && rhsIsSca) {
+        auto newRand = pushDownRandomIntoEwPow(lhsRand, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+    if (rhsRand && lhsIsSca) {
+        auto newRand = pushDownRandomIntoEwPow(rhsRand, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
         return mlir::success();
     }
     return mlir::failure();
