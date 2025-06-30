@@ -518,7 +518,6 @@ class KernelReplacement : public RewritePattern {
                     if (maybeDctxArg.getType() == dctx.getType()) {
                         ctx = maybeDctxArg;
                     }
-                    // If not found, we fallback
                     break;
                 }
                 region = parentOp ? parentOp->getParentRegion() : nullptr;
@@ -672,10 +671,7 @@ void RewriteToCallKernelOpPass::runOnOperation() {
         // The context pointer becomes just a part of parfor body function arguments.   
         parForOp.getCtxMutable().assign(dctx); 
         mlir::Block &entryBlock = parForOp.getRegion().front();
-        mlir::Value dctxArg = entryBlock.addArgument(dctx.getType(), dctx.getLoc());
-        //auto args = llvm::SmallVector<Value>(parForOp.getArgs());
-        //args.push_back(dctx);
-        //parForOp.getArgsMutable().assign(args);
+        entryBlock.addArgument(dctx.getType(), dctx.getLoc());
     });
     
     // Apply conversion to CallKernelOps.
