@@ -673,9 +673,9 @@ void RewriteToCallKernelOpPass::runOnOperation() {
         parForOp.getCtxMutable().assign(dctx); 
         mlir::Block &entryBlock = parForOp.getRegion().front();
         mlir::Value dctxArg = entryBlock.addArgument(dctx.getType(), dctx.getLoc());
-        auto args = llvm::SmallVector<Value>(parForOp.getArgs());
-        args.push_back(dctx);
-        parForOp.getArgsMutable().assign(args);
+        //auto args = llvm::SmallVector<Value>(parForOp.getArgs());
+        //args.push_back(dctx);
+        //parForOp.getArgsMutable().assign(args);
     });
     
     // Apply conversion to CallKernelOps.

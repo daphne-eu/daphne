@@ -505,12 +505,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         std::string funcName = "parfor_body_" + std::to_string(idx++);
         auto opBodyArgs = op.getBodyStmt().front().getArguments();
 
-       
-        
         auto i64Type = typeConverter->convertType(rewriter.getIntegerType(64, true));
-        auto llvmI8Type = typeConverter->convertType(rewriter.getIntegerType(8));
-        //auto voidPtrType = LLVM::LLVMPointerType::get(llvmI8Type);
-        //auto voidPtrPtrType = LLVM::LLVMPointerType::get(voidPtrType);
         auto i1Ty = IntegerType::get(getContext(), 1);
         auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
         auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
@@ -519,8 +514,8 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {
             /*output=*/ptrPtrI1Ty,
             /*input=*/ptrPtrI1Ty,
-            /*induction variable=*/i64Type
-            /*daphne context=ptrI1Ty*/
+            /*induction variable=*/i64Type,
+            /*daphne context=*/ptrI1Ty
         });
 
         auto llvmFuncOp = rewriter.create<LLVM::LLVMFuncOp>(rewriter.getUnknownLoc(), funcName, funcType);
@@ -533,22 +528,19 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto funcOutArg = llvmFuncOp.getArgument(0);
         auto funcInArg = llvmFuncOp.getArgument(1);
         auto ivArg = llvmFuncOp.getArgument(2);
-        //auto dctxArg = llvmFuncOp.getArgument(3);
+        auto dctxArg = llvmFuncOp.getArgument(3);
         
+        // handle loop induction variable 
+        opBodyArgs[0].replaceAllUsesWith(ivArg);
+        // handle daphne context 
+        opBodyArgs[opBodyArgs.size() - 1].replaceAllUsesWith(dctxArg);
+        // remove induction variable and daphne context
+        opBodyArgs = opBodyArgs.drop_front(1).drop_back(1);
+        
+        // handle other arguments 
         auto args = op.getArgs();
         unsigned index = 0;
         for (auto [i, blockArg] : llvm::enumerate(opBodyArgs)) {
-            // handle loop induction variables
-            if(i == 0){
-                // replace induction variable with the function argument
-                blockArg.replaceAllUsesWith(ivArg);
-                continue;   
-            } /*else if(i == args.size()) {
-                // replace daphne context with the function argument
-                blockArg.replaceAllUsesWith(dctxArg);
-                continue;
-            }*/
-
             // number of arguments must be exactly the same as number of operands stored in args
             if (index >= args.size()) 
                 llvm::report_fatal_error("ParForOp has more block arguments than operands, which is not defined behavior");
@@ -584,7 +576,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // ********************************************************************
         // Store results in output array as CallKernelOp prescribes. 
         // ********************************************************************
-        llvm::errs() << "rewire return operation \n";
         auto returnOp = funcBlock.getTerminator();
         if (!returnOp || !llvm::isa<daphne::ReturnOp>(returnOp)) 
             llvm::report_fatal_error("Cannot determinate terminator of parfor body region, expected daphne::ReturnOp");
@@ -609,8 +600,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // *****************************************************************************
         // Create a ptr<ptr<i1>> array containg all outer scope operands of parfor op
         // which is passed to the function created above as funcInArg and funcOutArg. 
-        // *****************************************************************************
-         llvm::errs() << "creating input array \n "; 
+        // ***************************************************************************** 
         // TODO: alloca must probably be added on top of function (see comment about Alloca on top of the current file )
         // TODO: alternative - the same logic can be probably achieved by store variadic pack, 
         // but this will also affect the dereference logic above.
@@ -655,7 +645,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // *****************************************************************************
         // Create a kernel call to the parfor loop body function
         // *****************************************************************************
-        llvm::errs() << "creating kernel call \n "; 
         // TODO: we need probably to check if all individuall values of result array have the same type  
         // but this is also done by CallKernelOp.  
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, llvmFuncOp);
@@ -679,7 +668,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         if(numRes > 0) 
             kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
         rewriter.replaceOp(op, kernel.getResults());
-        module.dump();
         return success();
     }
 };

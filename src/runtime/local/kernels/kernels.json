@@ -3617,7 +3617,8 @@
         "instantiations": [
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "float"]],
-            [["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"]],
+            ["void"]
         ]
     },
     {
