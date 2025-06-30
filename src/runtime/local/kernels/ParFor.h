@@ -17,11 +17,11 @@
 #pragma once
 
 #include <cstdio>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/Structure.h>
+#include <omp.h>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Structure.h>
 
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_PARFOR_H
 #define SRC_RUNTIME_LOCAL_KERNELS_PARFOR_H
@@ -37,13 +37,18 @@ void parfor(DTRes **outputs, size_t numOutputs, int64_t from, int64_t to, int64_
     auto ins = reinterpret_cast<void **>(inputs);
     auto outs = reinterpret_cast<void **>(outputs);
 
-    std::function<bool(int, int)> cmp = [](int64_t x, int64_t y) { return x <= y; };
-    if (step < 0)
-        cmp = [](int64_t x, int64_t y) { return x >= y; };
-
-    for (int64_t i = from; cmp(i, to); i += step) {
-        printf("[parforLoop] Iteration i = %ld\n", i);
-        body(outs, ins, i, ctx);
+    if (step > 0) {
+        // #pragma omp parallel for
+        for (int64_t i = from; i <= to; i += step) {
+            printf("[parforLoop] Iteration i = %ld\n", i);
+            body(outs, ins, i, ctx);
+        }
+    } else {
+        // #pragma omp parallel for
+        for (int64_t i = from; i >= to; i += step) {
+            printf("[parforLoop] Iteration i = %ld\n", i);
+            body(outs, ins, i, ctx);
+        }
     }
 }
 
