@@ -765,32 +765,23 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     ivPH.replaceAllUsesWith(iv);
     symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(iv, false));
 
-    //size_t baseIdx = 1;
     size_t i = 0;
-    for (auto it = ow.begin(); it != ow.end(); it++) {
-        // Replace usages of the variables updated in the loop's body by the
-        // corresponding block arguments.
-        if(i >= forOperands.size()) continue; 
-
-        auto operand = forOperands[i];
-        mlir::BlockArgument arg = targetBlock.getArgument(i + 1);
-        
-        operand.replaceUsesWithIf(arg, [&](mlir::OpOperand &operand) {
+    // Replace usages of the variables updated in the loop's body by the
+    // corresponding block arguments.
+    for (auto op : forOperands) {
+        op.replaceUsesWithIf(targetBlock.getArgument(i + 1), [&](mlir::OpOperand &operand) {
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
         });
-        llvm::errs() << "there am i";
-        // Rewire the results of the ForOp to their variable names.
-        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(parforOp.getResults()[i], false));
-
         i++;
     }
-    /*for(auto [i, resVal] : llvm::enumerate(resVals)) {
-        resVal.replaceUsesWithIf(parforOp.getResults()[i], [&](mlir::OpOperand &operand) {
-                auto parent = operand.getOwner()->getBlock()->getParent();
-                return parent != nullptr && !parforOp.getRegion().isAncestor(parent);
-        });
-    }*/
+    // Replace references to results.
+    i = 0;
+    for (auto it = ow.begin(); it != ow.end(); it++) {
+        // Rewire the results of the ForOp to their variable names.
+        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(parforOp.getResults()[i], false));
+        i++;
+    }
     return nullptr;
 }
 
