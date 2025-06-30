@@ -163,7 +163,7 @@ void processValue(OpBuilder builder, Value v) {
         } else
             builder.setInsertionPointToStart(pb);
     }
-
+    
     // Finally create the DecRefOp.
     builder.create<daphne::DecRefOp>(v.getLoc(), v);
 }
@@ -209,6 +209,15 @@ void incRefArgs(Operation &op, OpBuilder &b) {
  * @param b
  */
 void processBlock(OpBuilder builder, Block *b) {
+    // TODO : ask Phillip if this workaround is ok. 
+    // Alternatively, we could insert IncRefOp on top of the block, 
+    // so that after the extraction of the ParForOp body into the function the reference counter still remains correct.
+    
+    // If the block is part of a ParForOp,
+    // we don't decrease the reference counter to prevent data objects be garbage collected after the first iteration.
+    if(llvm::isa<daphne::ParForOp>(b->getParentOp())) {
+        return; 
+    }
     // Make sure that the reference counters of block arguments are decreased.
     for (BlockArgument &arg : b->getArguments())
         processValue(builder, arg);
@@ -226,7 +235,7 @@ void processBlock(OpBuilder builder, Block *b) {
                 incRefArgs(op, builder);
         }
         // Loops and function calls.
-        else if (llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp, daphne::ParForOp>(op))
+        else if (llvm::isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp>(op))
             incRefArgs(op, builder);
         // YieldOp of IfOp.
         else if (llvm::isa<scf::YieldOp>(op) && llvm::isa<scf::IfOp>(op.getParentOp())) {
@@ -237,7 +246,7 @@ void processBlock(OpBuilder builder, Block *b) {
             for (Value arg : op.getOperands())
                 if (arg.getParentBlock() != op.getBlock())
                     incRefIfObj(arg, builder);
-        }
+        } 
         // Terminators.
         else if (op.hasTrait<OpTrait::IsTerminator>()) {
             // By default, we do not decrease the reference counter of a
