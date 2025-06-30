@@ -12,11 +12,14 @@
 #include "mlir/Pass/Pass.h"
 #include <mlir/Transforms/RegionUtils.h>
 #include "compiler/utils/CompilerUtils.h"
+#include <mlir/Dialect/SCF/IR/SCF.h>
 
 using namespace mlir;
 
+// TODO: plz rename me 
+// TODO: Probably RewritePattern is not a good fit here, but idk 
 class ParForOpLoweringPattern : public RewritePattern {
-  
+
 public:
     ParForOpLoweringPattern(MLIRContext *context) : RewritePattern("daphne.parfor", 1, context) {}
 
@@ -25,15 +28,65 @@ public:
             return failure();
 
         auto parForOp = cast<daphne::ParForOp>(op);
-        rewriter.startRootUpdate(parForOp);
-        // ********************************************************************
-        // Loop dependency analysis: 1. Determinate dependency candidates 
-        // ********************************************************************
         Location loc = op->getLoc();
-        //auto candidates = parForOp.getOutputs();
         
-        rewriter.finalizeRootUpdate(parForOp);
+        auto candidates = parForOp.getResults();
+        for(auto c : candidates) {
+            // always true if scalar
+            if (!c.getType().isa<mlir::ShapedType>() || c.getType().isa<daphne::UnknownType>())
+                throw ErrorHandler::compilerError(
+                    c.getDefiningOp(), "ParForOpLoweringPattern",
+                    "Boom !!! dependency analysis for ParForOp failed. ");                    
+            
+            // always true if complex object mutated completely, in instance matrix multiplication. 
+            if(c.getType().isa<daphne::MatrixType>()) 
+                throw ErrorHandler::compilerError(
+                    c.getDefiningOp(), "ParForOpLoweringPattern",
+                    "Boom !!! dependency analysis for ParForOp failed.");
+            // TODO: add other checks based only on type of candidate. 
+            
+            checkCandidateAgainstBlock(&parForOp.getBodyStmt().getBlocks().front(), c);
+        }
         return success();
+    }
+
+private:
+    /**
+     * @brief Checks if the given candidates are valid for the block. 
+     * Recursively checks all blocks of ParForOp. 
+     */
+    void checkCandidateAgainstBlock(Block *b, mlir::OpResult candidate) const {
+        for(Operation &op : b->getOperations()) {
+            // if operand is nested go into it 
+            // otherwise check the if there is dependency
+            if(auto ifOp = dyn_cast<mlir::scf::IfOp>(op)) {
+                for(auto &thenBlock : ifOp.getThenRegion().getBlocks()) {
+                    checkCandidateAgainstBlock(&thenBlock, candidate);
+                }
+                for(auto &elseBlock : ifOp.getElseRegion().getBlocks()) {
+                    checkCandidateAgainstBlock(&elseBlock, candidate);
+                }
+            } else if(auto whileOp = dyn_cast<mlir::scf::WhileOp>(op)) {
+                for(auto &bodyBlock : whileOp.getBefore().getBlocks()) {
+                    checkCandidateAgainstBlock(&bodyBlock, candidate);
+                }
+                for(auto &bodyBlock : whileOp.getAfter().getBlocks()) {
+                    checkCandidateAgainstBlock(&bodyBlock, candidate);
+                }
+            } else if(auto forOp = dyn_cast<mlir::scf::ForOp>(op)) {
+                for(auto &bodyBlock : forOp.getLoopBody()) {
+                    checkCandidateAgainstBlock(&bodyBlock, candidate);
+                }
+            } else if (auto parForOp = dyn_cast<daphne::ParForOp>(op)) {
+                for(auto &bodyBlock : parForOp.getBodyStmt().getBlocks()) {
+                    checkCandidateAgainstBlock(&bodyBlock, candidate);
+                }
+            } else {
+                // TODO: check candidate against operation for inter-iterational dependencies
+                // 1) check output dependency GCD/Banjee or other method 
+                // 2) check true/anti dependencies 
+            }
+        }
     }
 };
 
