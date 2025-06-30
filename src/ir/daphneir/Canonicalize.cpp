@@ -265,6 +265,34 @@ mlir::daphne::FillOp pushDownFillIntoEwDiv(mlir::daphne::FillOp fillOp, mlir::da
     mlir::daphne::EwDivOp newDiv = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), fillValue, scalar);
     return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newDiv, width, height);
 }
+mlir::daphne::FillOp pushDownFillIntoEwPow(mlir::daphne::FillOp fillOp, mlir::daphne::EwPowOp op, mlir::Value scalar,
+                                           mlir::PatternRewriter &rewriter) {
+    auto fillValue = fillOp.getArg();
+    auto height = fillOp.getNumRows();
+    auto width = fillOp.getNumCols();
+    mlir::daphne::EwPowOp newPow = rewriter.create<mlir::daphne::EwPowOp>(op.getLoc(), fillValue, scalar);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newPow, width, height);
+}
+mlir::daphne::FillOp pushDownFillIntoEwMod(mlir::daphne::FillOp fillOp, mlir::daphne::EwModOp op, mlir::Value scalar,
+                                           mlir::PatternRewriter &rewriter) {
+    auto fillValue = fillOp.getArg();
+    auto height = fillOp.getNumRows();
+    auto width = fillOp.getNumCols();
+    mlir::daphne::EwModOp newMod = rewriter.create<mlir::daphne::EwModOp>(op.getLoc(), fillValue, scalar);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMod, width, height);
+}
+mlir::daphne::FillOp pushDownFillIntoEwLog(mlir::daphne::FillOp fillOp, mlir::daphne::EwLogOp op, mlir::Value scalar,
+                                           mlir::PatternRewriter &rewriter) {
+    auto fillValue = fillOp.getArg();
+    auto height = fillOp.getNumRows();
+    auto width = fillOp.getNumCols();
+    // AMLS_TODO: this can lead to error:
+    // no kernel for operation `fill` available for the required input types `(si64, index, index)` and output types
+    // `(!daphne.Matrix<?x?xf64>)
+
+    mlir::daphne::EwLogOp newLog = rewriter.create<mlir::daphne::EwLogOp>(op.getLoc(), fillValue, scalar);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newLog, width, height);
+}
 
 mlir::daphne::RandMatrixOp pushDownRandomIntoEwAdd(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwAddOp op,
                                                    mlir::Value scalar, mlir::PatternRewriter &rewriter) {
@@ -496,6 +524,74 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
                                                    rhs,
                                                    rewriter.create<mlir::daphne::ConstantOp>(op->getLoc(), double(-1))),
             lhs);
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+/**
+ *
+ */
+mlir::LogicalResult mlir::daphne::EwLogOp::canonicalize(mlir::daphne::EwLogOp op, PatternRewriter &rewriter) {
+    // AMLS_TODO: reactivate
+    // mlir::Value lhs = op.getLhs();
+    // mlir::Value rhs = op.getRhs();
+    // // This will check for the fill operation to push down the arithmetic inside
+    // // of it
+    // // Since the rhs is the base, the FillOp can only appear legally in lhs
+    // mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    // const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+    // if (lhsFill && rhsIsSca) {
+    //     auto newFill = pushDownFillIntoEwLog(lhsFill, op, rhs, rewriter);
+    //     rewriter.replaceOp(op, {newFill});
+    //     return mlir::success();
+    // }
+    return mlir::failure();
+}
+/**
+ *
+ */
+mlir::LogicalResult mlir::daphne::EwModOp::canonicalize(mlir::daphne::EwModOp op, PatternRewriter &rewriter) {
+    mlir::Value lhs = op.getLhs();
+    mlir::Value rhs = op.getRhs();
+    // This will check for the fill operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    if (lhsFill && rhsIsSca) {
+        auto newFill = pushDownFillIntoEwMod(lhsFill, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+    if (rhsFill && lhsIsSca) {
+        auto newFill = pushDownFillIntoEwMod(rhsFill, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
+ *
+ */
+mlir::LogicalResult mlir::daphne::EwPowOp::canonicalize(mlir::daphne::EwPowOp op, PatternRewriter &rewriter) {
+    mlir::Value lhs = op.getLhs();
+    mlir::Value rhs = op.getRhs();
+    // This will check for the fill operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    if (lhsFill && rhsIsSca) {
+        auto newFill = pushDownFillIntoEwPow(lhsFill, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+    if (rhsFill && lhsIsSca) {
+        auto newFill = pushDownFillIntoEwPow(rhsFill, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
     return mlir::failure();
