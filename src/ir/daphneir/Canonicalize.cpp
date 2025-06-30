@@ -232,11 +232,57 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
     return mlir::failure();
 }
 
+mlir::daphne::FillOp pushDownFillIntoEwAdd(mlir::daphne::FillOp fillOp, mlir::daphne::EwAddOp op, mlir::Value scalar,
+                                           mlir::PatternRewriter &rewriter) {
+    auto fillValue = fillOp.getArg();
+    auto height = fillOp.getNumRows();
+    auto width = fillOp.getNumCols();
+    mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, scalar);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
+}
+
+mlir::daphne::FillOp pushDownFillIntoEwSub(mlir::daphne::FillOp fillOp, mlir::daphne::EwSubOp op, mlir::Value scalar,
+                                           mlir::PatternRewriter &rewriter) {
+    auto fillValue = fillOp.getArg();
+    auto height = fillOp.getNumRows();
+    auto width = fillOp.getNumCols();
+    mlir::daphne::EwSubOp newSub = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), fillValue, scalar);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newSub, width, height);
+}
+mlir::daphne::FillOp pushDownFillIntoEwMul(mlir::daphne::FillOp fillOp, mlir::daphne::EwMulOp op, mlir::Value scalar,
+                                           mlir::PatternRewriter &rewriter) {
+    auto fillValue = fillOp.getArg();
+    auto height = fillOp.getNumRows();
+    auto width = fillOp.getNumCols();
+    mlir::daphne::EwMulOp newMul = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), fillValue, scalar);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMul, width, height);
+}
+mlir::daphne::FillOp pushDownFillIntoEwDiv(mlir::daphne::FillOp fillOp, mlir::daphne::EwDivOp op, mlir::Value scalar,
+                                           mlir::PatternRewriter &rewriter) {
+    auto fillValue = fillOp.getArg();
+    auto height = fillOp.getNumRows();
+    auto width = fillOp.getNumCols();
+    mlir::daphne::EwDivOp newDiv = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), fillValue, scalar);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newDiv, width, height);
+}
+
+mlir::daphne::RandMatrixOp pushDownRandomIntoEwAdd(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwAddOp op,
+                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwAddOp newMax = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), max, scalar);
+    mlir::daphne::EwAddOp newMin = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), min, scalar);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
+
 /**
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
  * and (2) `a + X` by `X + a` (`a` scalar, `X` matrix/frame).
- *
- * AMLS_TODO: expand docs
  *
  * (1) is important, since we use the `+`-operator for both addition and
  * string concatenation in DaphneDSL, while the types of the operands might be
@@ -252,44 +298,36 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // This will check for the fill operation to push down the arithmetic inside
     // of it
-    // AMLS_TODO: rhsOp as well
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    if (lhsFill) {
-        auto fillValue = lhsFill.getArg();
-        auto height = lhsFill.getNumRows();
-        auto width = lhsFill.getNumCols();
-        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-        if (rhsIsSca) {
-            mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, rhs);
-            mlir::daphne::FillOp newFill =
-                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
-            rewriter.replaceOp(op, {newFill});
-            return mlir::success();
-        }
+    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    if (lhsFill && rhsIsSca) {
+        mlir::daphne::FillOp newFill = pushDownFillIntoEwAdd(lhsFill, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
     }
-    // This will check for the rand operation on the left hand side to push down the arithmetic inside
+    if (rhsFill && lhsIsSca) {
+        mlir::daphne::FillOp newFill = pushDownFillIntoEwAdd(rhsFill, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+
+    // This will check for the rand operation to push down the arithmetic inside
     // of it
-    // AMLS_TODO: rhsOp as well
     mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (lhsRand) {
-        spdlog::warn("inside of rand");
-        auto max = lhsRand.getMax();
-        auto min = lhsRand.getMin();
-        auto height = lhsRand.getNumRows();
-        auto width = lhsRand.getNumCols();
-        auto sparsity = lhsRand.getSparsity();
-        auto seed = lhsRand.getSeed();
-        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-        if (rhsIsSca) {
-            mlir::daphne::EwAddOp newMax = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), max, rhs);
-            mlir::daphne::EwAddOp newMin = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), min, rhs);
-            mlir::daphne::RandMatrixOp newRand = rewriter.create<mlir::daphne::RandMatrixOp>(
-                op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
-            rewriter.replaceOp(op, {newRand});
-            return mlir::success();
-        }
+    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (lhsRand && rhsIsSca) {
+        auto newRand = pushDownRandomIntoEwAdd(lhsRand, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+    if (rhsRand && lhsIsSca) {
+        auto newRand = pushDownRandomIntoEwAdd(rhsRand, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
     }
 
     const bool lhsIsStr = llvm::isa<mlir::daphne::StringType>(lhs.getType());
@@ -347,24 +385,25 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
 mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation on the left hand side to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    if (lhsFill) {
-        auto fillValue = lhsFill.getArg();
-        auto height = lhsFill.getNumRows();
-        auto width = lhsFill.getNumCols();
-        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-        if (rhsIsSca) {
-            mlir::daphne::EwSubOp newSub = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), fillValue, rhs);
-            mlir::daphne::FillOp newFill =
-                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newSub, width, height);
-            rewriter.replaceOp(op, {newFill});
-            return mlir::success();
-        }
-    }
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+
+    // This will check for the fill operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
+
+    if (lhsFill && rhsIsSca) {
+        auto newFill = pushDownFillIntoEwSub(lhsFill, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+    if (rhsFill && lhsIsSca) {
+        auto newFill = pushDownFillIntoEwSub(rhsFill, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwAddOp>(
             op, op.getResult().getType(),
@@ -391,25 +430,23 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
 mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // This will check for the fill operation to push down the arithmetic inside
     // of it
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    if (lhsFill) {
-        auto fillValue = lhsFill.getArg();
-        auto height = lhsFill.getNumRows();
-        auto width = lhsFill.getNumCols();
-        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-        if (rhsIsSca) {
-            mlir::daphne::EwMulOp newMul = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), fillValue, rhs);
-            mlir::daphne::FillOp newFill =
-                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMul, width, height);
-            rewriter.replaceOp(op, {newFill});
-            return mlir::success();
-        }
+    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    if (lhsFill && rhsIsSca) {
+        auto newFill = pushDownFillIntoEwMul(lhsFill, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+    if (rhsFill && lhsIsSca) {
+        auto newFill = pushDownFillIntoEwMul(rhsFill, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
     }
 
-    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
-    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(op, op.getResult().getType(), rhs, lhs);
         return mlir::success();
@@ -433,24 +470,23 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
 mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation on the left hand side to push down the arithmetic inside
+    // This will check for the fill operation to push down the arithmetic inside
     // of it
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    if (lhsFill) {
-        auto fillValue = lhsFill.getArg();
-        auto height = lhsFill.getNumRows();
-        auto width = lhsFill.getNumCols();
-        const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-        if (rhsIsSca) {
-            mlir::daphne::EwDivOp newDiv = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), fillValue, rhs);
-            mlir::daphne::FillOp newFill =
-                rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newDiv, width, height);
-            rewriter.replaceOp(op, {newFill});
-            return mlir::success();
-        }
-    }
-    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
+    if (lhsFill && rhsIsSca) {
+        auto newFill = pushDownFillIntoEwDiv(lhsFill, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+    if (rhsFill && lhsIsSca) {
+        auto newFill = pushDownFillIntoEwDiv(rhsFill, op, lhs, rewriter);
+        rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+
     const bool rhsIsFP = llvm::isa<mlir::FloatType>(CompilerUtils::getValueType(rhs.getType()));
     if (lhsIsSca && !rhsIsSca && rhsIsFP) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(
@@ -697,10 +733,10 @@ mlir::LogicalResult mlir::daphne::EwMinusOp::canonicalize(mlir::daphne::EwMinusO
 mlir::LogicalResult mlir::daphne::ConvertBitmapToPosListOp::canonicalize(mlir::daphne::ConvertBitmapToPosListOp bmplcOp,
                                                                          PatternRewriter &rewriter) {
     if (auto plbmcOp = bmplcOp.getArg().getDefiningOp<mlir::daphne::ConvertPosListToBitmapOp>()) {
-        // The ConvertPosListToBitmapOp has a second argument for the number of rows (bitmap size). No matter what this
-        // size is, we always get back the original position list. The only exception would be if the bitmap size is
-        // less than the greatest position in the original position list (information loss or error during conversion
-        // from position list to bitmap). However, this case is not relevant to us at the moment.
+        // The ConvertPosListToBitmapOp has a second argument for the number of rows (bitmap size). No matter what
+        // this size is, we always get back the original position list. The only exception would be if the bitmap
+        // size is less than the greatest position in the original position list (information loss or error during
+        // conversion from position list to bitmap). However, this case is not relevant to us at the moment.
         rewriter.replaceOp(bmplcOp, plbmcOp.getArg());
         return mlir::success();
     }
@@ -717,8 +753,8 @@ mlir::LogicalResult mlir::daphne::ExtractColOp::canonicalize(mlir::daphne::Extra
     if (auto srcFrmTy = src.getType().dyn_cast<mlir::daphne::FrameType>()) {
         if (sel.getType().isa<mlir::daphne::StringType>()) {
             if (srcFrmTy.getNumCols() == 1) {
-                // Eliminate the extraction of a single column (by its label) from a frame with a single column which
-                // has exactly that label.
+                // Eliminate the extraction of a single column (by its label) from a frame with a single column
+                // which has exactly that label.
 
                 if (std::vector<std::string> *labels = srcFrmTy.getLabels()) {
                     std::pair<bool, std::string> selConst = CompilerUtils::isConstant<std::string>(sel);
@@ -728,22 +764,24 @@ mlir::LogicalResult mlir::daphne::ExtractColOp::canonicalize(mlir::daphne::Extra
                     }
                 }
             } else if (auto cfOp = src.getDefiningOp<mlir::daphne::CreateFrameOp>()) {
-                // Replace the extraction of a single column (by its label) from the result of a CreateFrameOp, by the
-                // respective input column of the CreateFrameOp. This simplification rewrite can help us avoid the
-                // unnecessary creation of frames when we are interested only in certain columns later on. It can lead
-                // to the elimination of the operations creating later unused input columns of the CreateFrameOp.
+                // Replace the extraction of a single column (by its label) from the result of a CreateFrameOp, by
+                // the respective input column of the CreateFrameOp. This simplification rewrite can help us avoid
+                // the unnecessary creation of frames when we are interested only in certain columns later on. It
+                // can lead to the elimination of the operations creating later unused input columns of the
+                // CreateFrameOp.
 
-                // CreateFrameOp always has an even number of arguments. The first half are the columns and the second
-                // half are the labels.
+                // CreateFrameOp always has an even number of arguments. The first half are the columns and the
+                // second half are the labels.
                 const size_t cfNumCols = cfOp->getNumOperands() / 2;
                 // Search for the column with the specified label.
                 for (size_t i = 0; i < cfNumCols; i++) {
                     Value label = cfOp->getOperand(cfNumCols + i);
                     if (label == sel) {
-                        // We need to insert an additional cast of the CreateFrameOp's input column to the result type
-                        // of the ExtractColOp, because usually, the arguments to CreateFrameOp are single-column
-                        // *matrices*, while the result of ExtractColOp on a frame is a single-column *frame*. Such
-                        // additional casts will often be eliminated through the canonicalization of CastOp later.
+                        // We need to insert an additional cast of the CreateFrameOp's input column to the result
+                        // type of the ExtractColOp, because usually, the arguments to CreateFrameOp are
+                        // single-column *matrices*, while the result of ExtractColOp on a frame is a single-column
+                        // *frame*. Such additional casts will often be eliminated through the canonicalization of
+                        // CastOp later.
                         Type resTy = ecOp.getResult().getType();
                         if (auto resFrmTy = resTy.dyn_cast<mlir::daphne::FrameType>()) {
                             // Reset the labels to unknown, because TODO
@@ -753,11 +791,11 @@ mlir::LogicalResult mlir::daphne::ExtractColOp::canonicalize(mlir::daphne::Extra
                                                .getResult();
                             // If the result of the ExtractColOp is a (single-column) frame (typically the case), we
                             // must make sure that it gets the right column label after the rewrite. The label is an
-                            // argument to the CreateFrameOp and might not be known as a compile-time constant at the
-                            // point in time when this rewrite happens (the label could be the result of a complex
-                            // string expression, which is resolved later during compile-time through constant folding
-                            // or only at run-time). Thus, we additionally insert a SetColLabelsOp which reuses exactly
-                            // the same input as the CreateFrameOp for the label.
+                            // argument to the CreateFrameOp and might not be known as a compile-time constant at
+                            // the point in time when this rewrite happens (the label could be the result of a
+                            // complex string expression, which is resolved later during compile-time through
+                            // constant folding or only at run-time). Thus, we additionally insert a SetColLabelsOp
+                            // which reuses exactly the same input as the CreateFrameOp for the label.
                             Value labeled =
                                 rewriter.create<mlir::daphne::SetColLabelsOp>(ecOp.getLoc(), resTy, casted, label)
                                     .getResult();
@@ -803,10 +841,10 @@ mlir::LogicalResult mlir::daphne::ExtractColOp::canonicalize(mlir::daphne::Extra
 /**
  * @brief Simplifies various patterns of ops that end with a CastOp.
  *
- * Simple examples include the elimination of trivial casts (casting from A to A) and the simplification of chains of
- * casts (e.g., casting from A to B to C becomes casting from A to C, in case there is no information loss). Besides
- * that, there are patterns that by-pass ops that create the input of a CastOp and patterns that by-pass the CastOp
- * itself.
+ * Simple examples include the elimination of trivial casts (casting from A to A) and the simplification of chains
+ * of casts (e.g., casting from A to B to C becomes casting from A to C, in case there is no information loss).
+ * Besides that, there are patterns that by-pass ops that create the input of a CastOp and patterns that by-pass the
+ * CastOp itself.
  */
 mlir::LogicalResult mlir::daphne::CastOp::canonicalize(mlir::daphne::CastOp cOp, PatternRewriter &rewriter) {
     // TODO Maybe skip property casts, or separate them, combine multiple property casts.
@@ -827,9 +865,9 @@ mlir::LogicalResult mlir::daphne::CastOp::canonicalize(mlir::daphne::CastOp cOp,
         }
     }
 
-    // Bypass operations manipulating frame column labels in case their result is casted to a data type that does not
-    // support column labels (matrix/column). This is sound, since the column label information from the frame would be
-    // gone after the cast anyway.
+    // Bypass operations manipulating frame column labels in case their result is casted to a data type that does
+    // not support column labels (matrix/column). This is sound, since the column label information from the frame
+    // would be gone after the cast anyway.
     if (cOp.getArg().getType().isa<mlir::daphne::FrameType>() &&
         cOp.getRes().getType().isa<mlir::daphne::MatrixType, mlir::daphne::ColumnType>()) {
         if (auto sclOp = cOp.getArg().getDefiningOp<mlir::daphne::SetColLabelsOp>()) {
