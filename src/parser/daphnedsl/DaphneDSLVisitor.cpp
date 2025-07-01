@@ -768,7 +768,6 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
         targetBlock.addArgument(v.getType(), v.getLoc());
 
     ivPH.replaceAllUsesWith(iv);
-    symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(iv, false));
 
     // Replace usages of the variables updated in the loop's body by the
     // corresponding block arguments.
