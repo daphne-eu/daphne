@@ -418,14 +418,8 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
     // This will check for the rand operation to push down the arithmetic inside
     // of it
     mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
     if (lhsRand && rhsIsSca) {
         auto newRand = pushDownRandomIntoEwAdd(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-    if (rhsRand && lhsIsSca) {
-        auto newRand = pushDownRandomIntoEwAdd(rhsRand, op, lhs, rewriter);
         rewriter.replaceOp(op, {newRand});
         return mlir::success();
     }
@@ -506,14 +500,8 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
     // This will check for the rand operation to push down the arithmetic inside
     // of it
     mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
     if (lhsRand && rhsIsSca) {
         auto newRand = pushDownRandomIntoEwSub(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-    if (rhsRand && lhsIsSca) {
-        auto newRand = pushDownRandomIntoEwSub(rhsRand, op, lhs, rewriter);
         rewriter.replaceOp(op, {newRand});
         return mlir::success();
     }
@@ -547,16 +535,10 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
     // This will check for the fill operation to push down the arithmetic inside
     // of it
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     if (lhsFill && rhsIsSca) {
         auto newFill = pushDownFillIntoEwMul(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-    if (rhsFill && lhsIsSca) {
-        auto newFill = pushDownFillIntoEwMul(rhsFill, op, lhs, rewriter);
         rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
@@ -567,11 +549,6 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
     mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
     if (lhsRand && rhsIsSca) {
         auto newRand = pushDownRandomIntoEwMul(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-    if (rhsRand && lhsIsSca) {
-        auto newRand = pushDownRandomIntoEwMul(rhsRand, op, lhs, rewriter);
         rewriter.replaceOp(op, {newRand});
         return mlir::success();
     }
@@ -602,7 +579,6 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
     // This will check for the fill operation to push down the arithmetic inside
     // of it
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     if (lhsFill && rhsIsSca) {
@@ -610,23 +586,12 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
         rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
-    if (rhsFill && lhsIsSca) {
-        auto newFill = pushDownFillIntoEwDiv(rhsFill, op, lhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
 
     // This will check for the rand operation to push down the arithmetic inside
     // of it
     mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
     if (lhsRand && rhsIsSca) {
         auto newRand = pushDownRandomIntoEwDiv(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-    if (rhsRand && lhsIsSca) {
-        auto newRand = pushDownRandomIntoEwDiv(rhsRand, op, lhs, rewriter);
         rewriter.replaceOp(op, {newRand});
         return mlir::success();
     }
@@ -682,16 +647,9 @@ mlir::LogicalResult mlir::daphne::EwModOp::canonicalize(mlir::daphne::EwModOp op
     // This will check for the fill operation to push down the arithmetic inside
     // of it
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     if (lhsFill && rhsIsSca) {
         auto newFill = pushDownFillIntoEwMod(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-    if (rhsFill && lhsIsSca) {
-        auto newFill = pushDownFillIntoEwMod(rhsFill, op, lhs, rewriter);
         rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
