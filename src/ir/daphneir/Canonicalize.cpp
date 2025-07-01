@@ -238,7 +238,7 @@ mlir::daphne::FillOp pushDownFillIntoEwAdd(mlir::daphne::FillOp fillOp, mlir::da
     auto height = fillOp.getNumRows();
     auto width = fillOp.getNumCols();
     mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, width, height);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, height, width);
 }
 
 mlir::daphne::FillOp pushDownFillIntoEwSub(mlir::daphne::FillOp fillOp, mlir::daphne::EwSubOp op, mlir::Value scalar,
@@ -247,7 +247,7 @@ mlir::daphne::FillOp pushDownFillIntoEwSub(mlir::daphne::FillOp fillOp, mlir::da
     auto height = fillOp.getNumRows();
     auto width = fillOp.getNumCols();
     mlir::daphne::EwSubOp newSub = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newSub, width, height);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newSub, height, width);
 }
 
 mlir::daphne::FillOp pushDownFillIntoEwMul(mlir::daphne::FillOp fillOp, mlir::daphne::EwMulOp op, mlir::Value scalar,
@@ -256,7 +256,7 @@ mlir::daphne::FillOp pushDownFillIntoEwMul(mlir::daphne::FillOp fillOp, mlir::da
     auto height = fillOp.getNumRows();
     auto width = fillOp.getNumCols();
     mlir::daphne::EwMulOp newMul = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMul, width, height);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMul, height, width);
 }
 
 mlir::daphne::FillOp pushDownFillIntoEwDiv(mlir::daphne::FillOp fillOp, mlir::daphne::EwDivOp op, mlir::Value scalar,
@@ -265,7 +265,7 @@ mlir::daphne::FillOp pushDownFillIntoEwDiv(mlir::daphne::FillOp fillOp, mlir::da
     auto height = fillOp.getNumRows();
     auto width = fillOp.getNumCols();
     mlir::daphne::EwDivOp newDiv = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newDiv, width, height);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newDiv, height, width);
 }
 
 mlir::daphne::FillOp pushDownFillIntoEwPow(mlir::daphne::FillOp fillOp, mlir::daphne::EwPowOp op, mlir::Value scalar,
@@ -274,7 +274,7 @@ mlir::daphne::FillOp pushDownFillIntoEwPow(mlir::daphne::FillOp fillOp, mlir::da
     auto height = fillOp.getNumRows();
     auto width = fillOp.getNumCols();
     mlir::daphne::EwPowOp newPow = rewriter.create<mlir::daphne::EwPowOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newPow, width, height);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newPow, height, width);
 }
 // AMLS_TODO: push down naming needs to be other way around
 mlir::daphne::FillOp pushDownFillIntoEwMod(mlir::daphne::FillOp fillOp, mlir::daphne::EwModOp op, mlir::Value scalar,
@@ -283,7 +283,7 @@ mlir::daphne::FillOp pushDownFillIntoEwMod(mlir::daphne::FillOp fillOp, mlir::da
     auto height = fillOp.getNumRows();
     auto width = fillOp.getNumCols();
     mlir::daphne::EwModOp newMod = rewriter.create<mlir::daphne::EwModOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMod, width, height);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMod, height, width);
 }
 
 mlir::daphne::FillOp pushDownFillIntoEwLog(mlir::daphne::FillOp fillOp, mlir::daphne::EwLogOp op, mlir::Value scalar,
@@ -298,7 +298,7 @@ mlir::daphne::FillOp pushDownFillIntoEwLog(mlir::daphne::FillOp fillOp, mlir::da
     // Problem with Log function?
 
     mlir::daphne::EwLogOp newLog = rewriter.create<mlir::daphne::EwLogOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newLog, width, height);
+    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newLog, height, width);
 }
 
 mlir::daphne::RandMatrixOp pushDownRandomIntoEwAdd(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwAddOp op,
