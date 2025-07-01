@@ -34,3 +34,8 @@ const std::string dirPath = "test/api/cli/operations/";
 
 MAKE_TEST_CASE("pushdownFillEwAdd", 2)
 MAKE_TEST_CASE("pushdownFillEwSub", 2)
+MAKE_TEST_CASE("pushdownFillEwMul", 2)
+MAKE_TEST_CASE("pushdownFillEwDiv", 2)
+MAKE_TEST_CASE("pushdownFillEwPow", 2)
+MAKE_TEST_CASE("pushdownFillEwMod", 2)
+MAKE_TEST_CASE("pushdownFillEwLog", 2)
