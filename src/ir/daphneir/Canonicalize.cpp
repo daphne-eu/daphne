@@ -291,11 +291,6 @@ mlir::daphne::FillOp pushDownFillIntoEwLog(mlir::daphne::FillOp fillOp, mlir::da
     auto fillValue = fillOp.getArg();
     auto height = fillOp.getNumRows();
     auto width = fillOp.getNumCols();
-    // AMLS_TODO: this can lead to error if the log resolves cleanly
-    // e.g. 8 with base 2
-    // no kernel for operation `fill` available for the required input types `(si64, index, index)` and output types
-    // `(!daphne.Matrix<?x?xf64>)
-    // Problem with Log function?
 
     mlir::daphne::EwLogOp newLog = rewriter.create<mlir::daphne::EwLogOp>(op.getLoc(), fillValue, scalar);
     return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newLog, height, width);
@@ -613,7 +608,6 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwLogOp::canonicalize(mlir::daphne::EwLogOp op, PatternRewriter &rewriter) {
-    // AMLS_TODO: reactivate
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
     // This will check for the fill operation to push down the arithmetic inside
