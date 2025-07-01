@@ -32,6 +32,10 @@ const std::string dirPath = "test/api/cli/operations/";
         }                                                                                                              \
     }
 
+// These tests simply ensure that basic functionality stays
+// functional after pushdown optimizations are performed.
+// Check the dedicated "pushdown_arithmetics" testcase for more in depth testing
+// of the canonicalizations.
 MAKE_TEST_CASE("pushdownFillEwAdd", 2)
 MAKE_TEST_CASE("pushdownFillEwSub", 2)
 MAKE_TEST_CASE("pushdownFillEwMul", 2)
@@ -39,3 +43,9 @@ MAKE_TEST_CASE("pushdownFillEwDiv", 2)
 MAKE_TEST_CASE("pushdownFillEwPow", 2)
 MAKE_TEST_CASE("pushdownFillEwMod", 2)
 MAKE_TEST_CASE("pushdownFillEwLog", 2)
+MAKE_TEST_CASE("pushdownRandEwAdd", 1)
+MAKE_TEST_CASE("pushdownRandEwSub", 1)
+MAKE_TEST_CASE("pushdownRandEwMul", 1)
+MAKE_TEST_CASE("pushdownRandEwDiv", 1)
+MAKE_TEST_CASE("pushdownRandEwPow", 1)
+MAKE_TEST_CASE("pushdownRandEwLog", 1)
