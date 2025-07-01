@@ -292,7 +292,8 @@ mlir::daphne::FillOp pushDownFillIntoEwLog(mlir::daphne::FillOp fillOp, mlir::da
     auto height = fillOp.getNumRows();
     auto width = fillOp.getNumCols();
 
-    mlir::daphne::EwLogOp newLog = rewriter.create<mlir::daphne::EwLogOp>(op.getLoc(), fillValue, scalar);
+    mlir::daphne::EwLogOp newLog = rewriter.create<mlir::daphne::EwLogOp>(
+        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue, scalar);
     return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newLog, height, width);
 }
 
@@ -541,7 +542,6 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
     // This will check for the rand operation to push down the arithmetic inside
     // of it
     mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
     if (lhsRand && rhsIsSca) {
         auto newRand = pushDownRandomIntoEwMul(lhsRand, op, rhs, rewriter);
         rewriter.replaceOp(op, {newRand});
