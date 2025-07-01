@@ -1,0 +1,4 @@
+b = log(rand(2,2,2,8,1.0,-1), 2);
+print(max(b,3));
+print(min(b,1));
+

@@ -1,0 +1,4 @@
+b = rand(2,2,0,3,1.0,-1) + 2;
+print(max(b,5));
+print(min(b,2));
+
