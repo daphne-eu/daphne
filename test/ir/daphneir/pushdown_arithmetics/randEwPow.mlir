@@ -8,6 +8,7 @@ module {
     %3 = "daphne.constant"() {value = 3 : si64} : () -> si64
     %4 = "daphne.constant"() {value = 1.000000e+00 : f64} : () -> f64
     %5 = "daphne.constant"() {value = 1 : si64} : () -> si64
+    // CHECK: daphne.ewPow
     %6 = "daphne.ewMinus"(%5) : (si64) -> si64
     %7 = "daphne.cast"(%0) : (si64) -> index
     %8 = "daphne.cast"(%1) : (si64) -> index

@@ -2,6 +2,7 @@
 
 module {
   func.func @main() {
+    // CHECK-NOT: daphne.ewMul
     %0 = "daphne.constant"() {value = 3 : si64} : () -> si64
     %1 = "daphne.constant"() {value = 3 : si64} : () -> si64
     %2 = "daphne.constant"() {value = 0 : si64} : () -> si64
@@ -15,8 +16,6 @@ module {
     // CHECK-NOT: daphne.randMatrix
     %9 = "daphne.randMatrix"(%7, %8, %2, %3, %4, %6) : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<?x?xsi64>
     %10 = "daphne.constant"() {value = 2 : si64} : () -> si64
-    // CHECK-NOT: daphne.ewMul
-    // CHECK-NOT: daphne.ewMul
     %11 = "daphne.ewMul"(%9, %10) : (!daphne.Matrix<?x?xsi64>, si64) -> !daphne.Matrix<?x?xsi64>
     %12 = "daphne.constant"() {value = true} : () -> i1
     %13 = "daphne.constant"() {value = false} : () -> i1

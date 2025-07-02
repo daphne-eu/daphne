@@ -11,6 +11,7 @@ module {
     %6 = "daphne.ewMinus"(%5) : (si64) -> si64
     %7 = "daphne.cast"(%0) : (si64) -> index
     %8 = "daphne.cast"(%1) : (si64) -> index
+    // CHECK: daphne.ewLog
     // CHECK: daphne.randMatrix
     // CHECK-NOT: daphne.randMatrix
     %9 = "daphne.randMatrix"(%7, %8, %2, %3, %4, %6) : (index, index, si64, si64, f64, si64) -> !daphne.Matrix<?x?xsi64>
