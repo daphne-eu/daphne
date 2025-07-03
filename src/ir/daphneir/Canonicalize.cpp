@@ -427,6 +427,54 @@ mlir::daphne::RandMatrixOp pushDownRandomIntoEwLog(mlir::daphne::RandMatrixOp ra
                                                        newMax, sparsity, seed);
 }
 
+mlir::daphne::RandMatrixOp pushDownRandIntoEwExp(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwExpOp op,
+                                                 mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwExpOp newMax =
+        rewriter.create<mlir::daphne::EwExpOp>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
+    mlir::daphne::EwExpOp newMin =
+        rewriter.create<mlir::daphne::EwExpOp>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
+
+mlir::daphne::RandMatrixOp pushDownRandIntoEwLn(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwLnOp op,
+                                                mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwLnOp newMax =
+        rewriter.create<mlir::daphne::EwLnOp>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
+    mlir::daphne::EwLnOp newMin =
+        rewriter.create<mlir::daphne::EwLnOp>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
+
+mlir::daphne::RandMatrixOp pushDownRandIntoEwSqrt(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwSqrtOp op,
+                                                  mlir::PatternRewriter &rewriter) {
+    auto max = randOp.getMax();
+    auto min = randOp.getMin();
+    auto height = randOp.getNumRows();
+    auto width = randOp.getNumCols();
+    auto sparsity = randOp.getSparsity();
+    auto seed = randOp.getSeed();
+    mlir::daphne::EwSqrtOp newMax = rewriter.create<mlir::daphne::EwSqrtOp>(
+        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
+    mlir::daphne::EwSqrtOp newMin = rewriter.create<mlir::daphne::EwSqrtOp>(
+        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
+    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
+                                                       newMax, sparsity, seed);
+}
+
 /**
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
  * and (2) `a + X` by `X + a` (`a` scalar, `X` matrix/frame).
@@ -714,6 +762,13 @@ mlir::LogicalResult mlir::daphne::EwAbsOp::canonicalize(mlir::daphne::EwAbsOp op
         rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
+
+    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (rand) {
+        // TODO: make sure both operands to rand are positive already
+        rewriter.replaceOp(op, {rand});
+        return mlir::success();
+    }
     return mlir::failure();
 }
 
@@ -746,6 +801,12 @@ mlir::LogicalResult mlir::daphne::EwExpOp::canonicalize(mlir::daphne::EwExpOp op
         rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
+    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (rand) {
+        auto newRand = pushDownRandIntoEwExp(rand, op, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
     return mlir::failure();
 }
 
@@ -762,6 +823,12 @@ mlir::LogicalResult mlir::daphne::EwLnOp::canonicalize(mlir::daphne::EwLnOp op, 
         rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
+    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (rand) {
+        auto newRand = pushDownRandIntoEwLn(rand, op, rewriter);
+        rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
     return mlir::failure();
 }
 
@@ -776,6 +843,12 @@ mlir::LogicalResult mlir::daphne::EwSqrtOp::canonicalize(mlir::daphne::EwSqrtOp 
     if (fill) {
         auto newFill = pushDownFillIntoEwSqrt(fill, op, rewriter);
         rewriter.replaceOp(op, {newFill});
+        return mlir::success();
+    }
+    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    if (rand) {
+        auto newRand = pushDownRandIntoEwSqrt(rand, op, rewriter);
+        rewriter.replaceOp(op, {newRand});
         return mlir::success();
     }
     return mlir::failure();

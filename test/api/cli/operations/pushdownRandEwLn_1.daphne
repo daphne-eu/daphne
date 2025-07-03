@@ -1,0 +1,4 @@
+randIntermediate = rand(2,2,1,10,1.0,7);
+result = ln(randIntermediate);
+
+print(result);
