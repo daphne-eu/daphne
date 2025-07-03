@@ -27,6 +27,7 @@
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APSInt.h>
 #include <llvm/ADT/BitVector.h>
+#include <llvm/ADT/TypeSwitch.h>
 
 #include <ir/daphneir/DaphneOpsDialect.cpp.inc>
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>

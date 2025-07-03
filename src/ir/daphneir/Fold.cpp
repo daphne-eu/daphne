@@ -147,17 +147,16 @@ mlir::Attribute constFoldBinaryOp(mlir::Location loc, mlir::Type resultType, llv
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor) {
-    if (!adaptor.getOperands().empty())
+mlir::OpFoldResult mlir::daphne::ConstantOp::fold(ArrayRef<Attribute> operands) {
+    if (!operands.empty())
         throw ErrorHandler::compilerError(this->getLoc(), "CanonicalizerPass (mlir::daphne::ConstantOp::fold)",
-                                          "constant has no operands but " +
-                                              std::to_string(adaptor.getOperands().size()) + " were given");
+                                          "constant has no operands but " + std::to_string(operands.size()) +
+                                              " were given");
 
     return getValue();
 }
 
-mlir::OpFoldResult mlir::daphne::CastOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
 
     if (isTrivialCast()) {
         if (operands[0])
@@ -175,8 +174,7 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwAddOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwAddOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a + b; };
     // TODO: we could check overflows
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a + b; };
@@ -187,8 +185,7 @@ mlir::OpFoldResult mlir::daphne::EwAddOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwSubOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwSubOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a - b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a - b; };
     if (auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
@@ -198,8 +195,7 @@ mlir::OpFoldResult mlir::daphne::EwSubOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwMulOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwMulOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a * b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a * b; };
     if (auto res = constFoldBinaryOp<FloatAttr>(getLoc(), getType(), operands, floatOp))
@@ -209,8 +205,7 @@ mlir::OpFoldResult mlir::daphne::EwMulOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwDivOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwDivOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a / b; };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if (b == 0) {
@@ -239,8 +234,7 @@ mlir::OpFoldResult mlir::daphne::EwDivOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwMinusOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwMinusOp::fold(ArrayRef<Attribute> operands) {
     auto intOp = [](const llvm::APInt &a) { return -a; };
     auto floatOp = [](const llvm::APFloat &a) { return -a; };
 
@@ -252,8 +246,7 @@ mlir::OpFoldResult mlir::daphne::EwMinusOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwPowOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwPowOp::fold(ArrayRef<Attribute> operands) {
     // TODO: EwPowOp integer constant folding
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
         return std::pow(a.convertToDouble(), b.convertToDouble());
@@ -263,8 +256,7 @@ mlir::OpFoldResult mlir::daphne::EwPowOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwModOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwModOp::fold(ArrayRef<Attribute> operands) {
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if (b == 0) {
             throw ErrorHandler::compilerError(this->getLoc(), "CanonicalizerPass (mlir::daphne::EwModOp::fold)",
@@ -289,8 +281,7 @@ mlir::OpFoldResult mlir::daphne::EwModOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwLogOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwLogOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
         // Compute the element-wise logarithm of a to the base b
         // Equivalent to log_b(a)
@@ -301,8 +292,7 @@ mlir::OpFoldResult mlir::daphne::EwLogOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwMinOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwMinOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return llvm::minimum(a, b); };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if (a.slt(b))
@@ -328,8 +318,7 @@ mlir::OpFoldResult mlir::daphne::EwMinOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwMaxOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwMaxOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return llvm::maximum(a, b); };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if (a.sgt(b))
@@ -355,8 +344,7 @@ mlir::OpFoldResult mlir::daphne::EwMaxOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwAndOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwAndOp::fold(ArrayRef<Attribute> operands) {
     auto boolOp = [](const bool &a, const bool &b) { return a && b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) && (b != 0); };
     if (auto res = constFoldBinaryOp<BoolAttr>(getLoc(), getType(), operands, boolOp))
@@ -367,10 +355,9 @@ mlir::OpFoldResult mlir::daphne::EwAndOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwBitwiseAndOp::fold(FoldAdaptor adaptor) { return {}; }
+mlir::OpFoldResult mlir::daphne::EwBitwiseAndOp::fold(ArrayRef<Attribute> operands) { return {}; }
 
-mlir::OpFoldResult mlir::daphne::EwOrOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwOrOp::fold(ArrayRef<Attribute> operands) {
     auto boolOp = [](const bool &a, const bool &b) { return a || b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) || (b != 0); };
     if (auto res = constFoldBinaryOp<BoolAttr>(getLoc(), getType(), operands, boolOp))
@@ -381,8 +368,7 @@ mlir::OpFoldResult mlir::daphne::EwOrOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwXorOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwXorOp::fold(ArrayRef<Attribute> operands) {
     auto boolOp = [](const bool &a, const bool &b) { return a ^ b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) ^ (b != 0); };
     if (auto res = constFoldBinaryOp<BoolAttr>(getLoc(), getType(), operands, boolOp))
@@ -393,8 +379,7 @@ mlir::OpFoldResult mlir::daphne::EwXorOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(ArrayRef<Attribute> operands) {
 
     if (operands.size() != 2)
         throw ErrorHandler::compilerError(this->getLoc(), "CanonicalizerPass (mlir::daphne::EwConcatOp::fold)",
@@ -414,8 +399,7 @@ mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwEqOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwEqOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
     auto strOp = [](const llvm::StringRef &a, const llvm::StringRef &b) { return a == b; };
@@ -430,8 +414,7 @@ mlir::OpFoldResult mlir::daphne::EwEqOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwNeqOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwNeqOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a != b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a != b; };
     // TODO: fix bool return
@@ -442,8 +425,7 @@ mlir::OpFoldResult mlir::daphne::EwNeqOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwLtOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwLtOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a < b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.slt(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ult(b); };
@@ -460,8 +442,7 @@ mlir::OpFoldResult mlir::daphne::EwLtOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwLeOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwLeOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a <= b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sle(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ule(b); };
@@ -478,8 +459,7 @@ mlir::OpFoldResult mlir::daphne::EwLeOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwGtOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwGtOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a > b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sgt(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ugt(b); };
@@ -496,8 +476,7 @@ mlir::OpFoldResult mlir::daphne::EwGtOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwGeOp::fold(FoldAdaptor adaptor) {
-    ArrayRef<Attribute> operands = adaptor.getOperands();
+mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a >= b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sge(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.uge(b); };
