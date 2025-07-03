@@ -658,24 +658,55 @@ void RewriteToCallKernelOpPass::runOnOperation() {
                       daphne::GenericCallOp, daphne::MapOp, daphne::ParForOp>();
     target.addDynamicallyLegalOp<daphne::CastOp>(
         [](daphne::CastOp op) { return op.isTrivialCast() || op.isRemovePropertyCast(); });
-    
-
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.
-    mlir::Value dctx = CompilerUtils::getDaphneContext(func);
-    func->walk([&](daphne::VectorizedPipelineOp vpo) { vpo.getCtxMutable().assign(dctx); });
-    func->walk([&](daphne::ParForOp parForOp) {
+    mlir::Value dctxCreate = CompilerUtils::getDaphneContext(func);
+    func->walk([&](daphne::VectorizedPipelineOp vpo) { vpo.getCtxMutable().assign(dctxCreate); });
+    func->walk<mlir::WalkOrder::PreOrder>([&](daphne::ParForOp parForOp) {
         // Parfor may have dependencies to daphne context.
-        // Since the block of this op is IsolatedFromAbove, we need to add daphne context as block argument 
-        // and replace usages of context pointer with block argument respectivly. 
-        // The context pointer becomes just a part of parfor body function arguments.   
-        parForOp.getCtxMutable().assign(dctx); 
+        // Since the block of this op is IsolatedFromAbove, we need to add daphne context as block argument
+        // and replace usages of context pointer with block argument respectivly.
+        // The context pointer becomes just a part of parfor body function arguments.
+        //
+        // Since getDaphneContext always returns where the daphne context was
+        // created in the given function, anything within a parfor that requires
+        // context must get it from the parfor, not the function.
+        // For CallKernelOps this is handled in the corresponding rewriter in
+        // the KernelReplacement class.
+        // Here we handle nested parfors (requires preorder).
+
+        // find the closest parent that is a parfor or func
+        // (or any "isolated from above", for that matter)
+        // and retrieve the daphne context accordingly
+        auto dctx = dctxCreate;
+        auto parentOp = parForOp->getParentOp();
+        while (parentOp != func) {
+            // early return if we found a parfor before reaching the (gurranteed) func op
+            if (auto parentParFor = llvm::dyn_cast_or_null<daphne::ParForOp>(parentOp)) {
+                auto &entryBlock = parentParFor.getRegion().front();
+
+                // assume dctx is the last argument
+                mlir::BlockArgument maybeDctxArg = entryBlock.getArguments().back();
+                if (maybeDctxArg.getType() == dctx.getType()) {
+                    dctx = maybeDctxArg;
+                } else {
+                    throw ErrorHandler::compilerError(
+                        parentParFor, "RewriteToCallKernelOpPass",
+                        "expected the last arg of a ParFor entry block to be the daphne context.");
+                }
+
+                break;
+            }
+        }
+
+        parForOp.getCtxMutable().assign(dctx);
+
         mlir::Block &entryBlock = parForOp.getRegion().front();
         entryBlock.addArgument(dctx.getType(), dctx.getLoc());
     });
-    
+
     // Apply conversion to CallKernelOps.
-    patterns.insert<KernelReplacement, DistributedPipelineKernelReplacement>(&getContext(), dctx, userConfig,
+    patterns.insert<KernelReplacement, DistributedPipelineKernelReplacement>(&getContext(), dctxCreate, userConfig,
                                                                              usedLibPaths);
     if (failed(applyPartialConversion(func, target, std::move(patterns))))
         signalPassFailure();
