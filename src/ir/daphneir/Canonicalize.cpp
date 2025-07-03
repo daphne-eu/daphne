@@ -17,7 +17,6 @@
 #include "ir/daphneir/Daphne.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Support/LogicalResult.h"
-#include "spdlog/spdlog.h"
 #include <compiler/utils/CompilerUtils.h>
 
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
@@ -765,9 +764,8 @@ mlir::LogicalResult mlir::daphne::EwAbsOp::canonicalize(mlir::daphne::EwAbsOp op
 
     mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
     if (rand) {
-        // TODO: make sure both operands to rand are positive already
-        rewriter.replaceOp(op, {rand});
-        return mlir::success();
+        // AMLS_TODO: make sure both operands to rand are positive already. Or
+        // ignore this case
     }
     return mlir::failure();
 }
