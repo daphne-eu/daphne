@@ -102,7 +102,7 @@ DataTypeCode getDataTypeCode(mlir::Type t) {
         return DataTypeCode::MATRIX;
     if (llvm::isa<mlir::daphne::ColumnType>(t))
         return DataTypeCode::COLUMN;
-    if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+    if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
         return getDataTypeCode(lt.getElementType());
     if (CompilerUtils::isScaType(t))
         return DataTypeCode::SCALAR;

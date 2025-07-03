@@ -45,7 +45,7 @@ struct TransferDataPropertiesPass : public PassWrapper<TransferDataPropertiesPas
             Location loc = op.getLoc();
             for (Value v : op.getResults()) {
                 Type t = v.getType();
-                if (auto mt = t.dyn_cast<daphne::MatrixType>()) {
+                if (auto mt = mlir::dyn_cast<daphne::MatrixType>(t)) {
                     auto coSparsity = builder.create<daphne::ConstantOp>(loc, mt.getSparsity());
                     auto coSymmetric = builder.create<daphne::ConstantOp>(loc, static_cast<int64_t>(mt.getSymmetric()));
                     builder.create<daphne::TransferPropertiesOp>(loc, v, coSparsity, coSymmetric);

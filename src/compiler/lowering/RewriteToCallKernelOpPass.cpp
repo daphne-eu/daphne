@@ -46,6 +46,7 @@
 #include <vector>
 
 using namespace mlir;
+using namespace mlir::affine;
 
 namespace {
 class KernelReplacement : public RewritePattern {
@@ -127,18 +128,18 @@ class KernelReplacement : public RewritePattern {
 
     mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
         MLIRContext *mctx = t.getContext();
-        if (generalizeToStructure && t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ColumnType,
-                                           mlir::daphne::ListType>())
+        if (generalizeToStructure && llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType,
+                                               mlir::daphne::ColumnType, mlir::daphne::ListType>(t))
             return mlir::daphne::StructureType::get(mctx);
-        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+        if (auto mt = llvm::dyn_cast<mlir::daphne::MatrixType>(t))
             return mt.withSameElementTypeAndRepr();
-        if (t.isa<mlir::daphne::FrameType>())
+        if (llvm::isa<mlir::daphne::FrameType>(t))
             return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
-        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+        if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
             return ct.withSameValueType();
-        if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+        if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
             return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
-        if (auto mrt = t.dyn_cast<mlir::MemRefType>()) {
+        if (auto mrt = llvm::dyn_cast<mlir::MemRefType>(t)) {
             // Remove any specific dimension information ({0}), but retain the rank and element type.
             int64_t mrtRank = mrt.getRank();
             if (mrtRank == 1) {
@@ -323,7 +324,7 @@ class KernelReplacement : public RewritePattern {
                     rewriter.create<daphne::ConstantOp>(
                         loc, t,
                         rewriter.getIntegerAttr(
-                            t, static_cast<uint32_t>(aggFunc.dyn_cast<daphne::GroupEnumAttr>().getValue()))),
+                            t, static_cast<uint32_t>(llvm::dyn_cast<daphne::GroupEnumAttr>(aggFunc).getValue()))),
                     rewriter.getI64IntegerAttr(k++));
             kernelArgs.push_back(cvpOp);
             kernelArgs.push_back(
@@ -353,7 +354,7 @@ class KernelReplacement : public RewritePattern {
                         loc, t,
                         rewriter.getIntegerAttr(
                             t, static_cast<uint32_t>(
-                                   compareOperation.dyn_cast<daphne::CompareOperationAttr>().getValue()))),
+                                   llvm::dyn_cast<daphne::CompareOperationAttr>(compareOperation).getValue()))),
                     rewriter.getI64IntegerAttr(k++));
             // add created variadic pack and size of this pack as
             // new operands / parameters of the ThetaJoin-Kernel call
@@ -580,7 +581,7 @@ class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::
             rewriter.create<daphne::StoreVariadicPackOp>(
                 loc, cvpSplits,
                 rewriter.create<daphne::ConstantOp>(
-                    loc, static_cast<int64_t>(op.getSplits()[i].dyn_cast<daphne::VectorSplitAttr>().getValue())),
+                    loc, static_cast<int64_t>(llvm::dyn_cast<daphne::VectorSplitAttr>(op.getSplits()[i]).getValue())),
                 rewriter.getI64IntegerAttr(i));
         // Variadic pack for combines.
         auto cvpCombines =
@@ -589,7 +590,8 @@ class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::
             rewriter.create<daphne::StoreVariadicPackOp>(
                 loc, cvpCombines,
                 rewriter.create<daphne::ConstantOp>(
-                    loc, static_cast<int64_t>(op.getCombines()[i].dyn_cast<daphne::VectorCombineAttr>().getValue())),
+                    loc,
+                    static_cast<int64_t>(llvm::dyn_cast<daphne::VectorCombineAttr>(op.getCombines()[i]).getValue())),
                 rewriter.getI64IntegerAttr(i));
 
         // Create CallKernelOp.
@@ -623,7 +625,7 @@ void RewriteToCallKernelOpPass::runOnOperation() {
     // Specification of (il)legal dialects/operations. All DaphneIR operations
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
-    target.addLegalDialect<mlir::AffineDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect,
+    target.addLegalDialect<mlir::affine::AffineDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect,
                            mlir::linalg::LinalgDialect, mlir::arith::ArithDialect, mlir::BuiltinDialect>();
 
     target.addLegalOp<ModuleOp, func::FuncOp, func::CallOp, func::ReturnOp>();

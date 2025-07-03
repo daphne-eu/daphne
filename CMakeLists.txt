@@ -86,6 +86,8 @@ find_package(Threads REQUIRED)
 
 set(BLA_VENDOR OpenBLAS)
 set(BLA_STATIC OFF)
+# Prefer the OpenBLAS from thirdparty
+set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/thirdparty/installed;${CMAKE_PREFIX_PATH}")
 find_package(BLAS REQUIRED)
 
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs

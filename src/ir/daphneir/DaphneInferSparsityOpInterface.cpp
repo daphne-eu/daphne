@@ -40,7 +40,7 @@ using namespace mlir::OpTrait;
 
 double getSparsityOrUnknownFromType(Value v) {
     Type t = v.getType();
-    if (auto mt = t.dyn_cast<daphne::MatrixType>()) // matrix
+    if (auto mt = llvm::dyn_cast<daphne::MatrixType>(t)) // matrix
         return mt.getSparsity();
     if (CompilerUtils::isObjType(t) || CompilerUtils::isScaType(t)) // other data type (e.g., frame) or value type
         // TODO: read scalar value (if 0 -> sparsity 0.0)
@@ -100,7 +100,7 @@ std::vector<double> daphne::MatrixConstantOp::inferSparsity() {
 }
 
 std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
-    auto argTy = getArg().getType().dyn_cast<daphne::MatrixType>();
+    auto argTy = llvm::dyn_cast<daphne::MatrixType>(getArg().getType());
     auto k = argTy.getNumRows();
     auto sparsity = argTy.getSparsity();
 
@@ -112,8 +112,8 @@ std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
 }
 
 std::vector<double> daphne::MatMulOp::inferSparsity() {
-    auto lhsTy = getLhs().getType().dyn_cast<daphne::MatrixType>();
-    auto rhsTy = getRhs().getType().dyn_cast<daphne::MatrixType>();
+    auto lhsTy = llvm::dyn_cast<daphne::MatrixType>(getLhs().getType());
+    auto rhsTy = llvm::dyn_cast<daphne::MatrixType>(getRhs().getType());
     if (lhsTy.getSparsity() == -1.0 || rhsTy.getSparsity() == -1.0) {
         return {-1.0};
     }
@@ -129,7 +129,7 @@ std::vector<double> daphne::MatMulOp::inferSparsity() {
 }
 
 std::vector<double> daphne::TriOp::inferSparsity() {
-    auto argTy = getArg().getType().dyn_cast<daphne::MatrixType>();
+    auto argTy = llvm::dyn_cast<daphne::MatrixType>(getArg().getType());
     if (argTy.getSparsity() == -1.0) {
         return {-1.0};
     }

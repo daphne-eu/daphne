@@ -42,7 +42,7 @@ std::vector<BoolOrUnknown> daphne::FillOp::inferSymmetric() {
 
 std::vector<BoolOrUnknown> daphne::TransposeOp::inferSymmetric() {
     // TransposeOp retains the symmetry of its argument.
-    if (auto mt = getArg().getType().dyn_cast<daphne::MatrixType>())
+    if (auto mt = llvm::dyn_cast<daphne::MatrixType>(getArg().getType()))
         return {mt.getSymmetric()};
     return {BoolOrUnknown::Unknown};
 }

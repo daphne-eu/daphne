@@ -183,7 +183,7 @@ mlir::Value SQLVisitor::matrixToFrame(mlir::Value matrix, std::string newColumnN
         std::vector<mlir::Value> cols;
         std::vector<mlir::Value> labels;
 
-        colTypes.push_back(matrix.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
+        colTypes.push_back(llvm::dyn_cast<mlir::daphne::MatrixType>(matrix.getType()).getElementType());
         cols.push_back(matrix);
         labels.push_back(createStringConstant(newColumnName));
 
@@ -202,9 +202,9 @@ mlir::Value SQLVisitor::addMatrixToCurrentFrame(mlir::Value matrix, std::string 
 
         // ADD new Frame to currentFrame
         std::vector<mlir::Type> currentFrame_colTypes;
-        for (mlir::Type t : currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+        for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(currentFrame.getType()).getColumnTypes())
             currentFrame_colTypes.push_back(t);
-        for (mlir::Type t : add.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+        for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(add.getType()).getColumnTypes())
             currentFrame_colTypes.push_back(t);
         mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), currentFrame_colTypes);
 
@@ -292,8 +292,11 @@ mlir::Attribute SQLVisitor::getCompareEnum(const std::string &op) {
 }
 
 std::string SQLVisitor::getEnumLabelExt(const std::string &func) {
-    return mlir::daphne::stringifyGroupEnum(getGroupEnum(func).dyn_cast<mlir::daphne::GroupEnumAttr>().getValue())
-        .str();
+    auto groupEnum = getGroupEnum(func);
+    if (auto groupEnumAttr = llvm::dyn_cast<mlir::daphne::GroupEnumAttr>(groupEnum)) {
+        return mlir::daphne::stringifyGroupEnum(groupEnumAttr.getValue()).str();
+    }
+    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor", "Expected GroupEnumAttr");
 }
 
 mlir::Value SQLVisitor::extractColumnFromFrame(mlir::Value frame, mlir::Value columnName) {
@@ -381,9 +384,9 @@ antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext *ctx) {
         }
         try {
             std::vector<mlir::Type> colTypes;
-            for (mlir::Type t : res.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+            for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(res.getType()).getColumnTypes())
                 colTypes.push_back(t);
-            for (mlir::Type t : add.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+            for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(add.getType()).getColumnTypes())
                 colTypes.push_back(t);
             mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
 
@@ -498,10 +501,10 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprCont
         mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
         std::vector<mlir::Type> colTypes;
-        for (mlir::Type t : lhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes()) {
+        for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(lhs.getType()).getColumnTypes()) {
             colTypes.push_back(t);
         }
-        for (mlir::Type t : rhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes()) {
+        for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(rhs.getType()).getColumnTypes()) {
             colTypes.push_back(t);
         }
         mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
@@ -525,9 +528,9 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(SQLGrammarParser::InnerJoinContext *ctx
     mlir::Value tojoin = valueOrErrorOnVisit(ctx->var);
 
     std::vector<mlir::Type> colTypes;
-    for (mlir::Type t : currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+    for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(currentFrame.getType()).getColumnTypes())
         colTypes.push_back(t);
-    for (mlir::Type t : tojoin.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+    for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(tojoin.getType()).getColumnTypes())
         colTypes.push_back(t);
     mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
 
@@ -649,8 +652,9 @@ antlrcpp::Any SQLVisitor::visitOrderByClause(SQLGrammarParser::OrderByClauseCont
         asc.push_back(utils.castBoolIf(boolean));
     }
     mlir::Value returnFrame = static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, false));
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::OrderOp>(
-        loc, currentFrame.getType().dyn_cast<mlir::daphne::FrameType>(), currentFrame, columnIdxs, asc, returnFrame));
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::OrderOp>(loc, llvm::dyn_cast<mlir::daphne::FrameType>(currentFrame.getType()),
+                                              currentFrame, columnIdxs, asc, returnFrame));
 }
 
 antlrcpp::Any SQLVisitor::visitOrderInformation(SQLGrammarParser::OrderInformationContext *ctx) {
@@ -726,9 +730,9 @@ antlrcpp::Any SQLVisitor::visitStarExpr(SQLGrammarParser::StarExprContext *ctx) 
             mlir::Value addFrame = extractColumnFromFrame(currentFrame, groupColname);
 
             std::vector<mlir::Type> colTypes;
-            for (mlir::Type t : resultFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+            for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(resultFrame.getType()).getColumnTypes())
                 colTypes.push_back(t);
-            for (mlir::Type t : addFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+            for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(addFrame.getType()).getColumnTypes())
                 colTypes.push_back(t);
             mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
             resultFrame = static_cast<mlir::Value>(
@@ -778,7 +782,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(SQLGrammarParser::GroupAggExprContex
 
         mlir::Value col = valueOrErrorOnVisit(ctx->var);
 
-        mlir::Type resTypeCol = col.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
+        mlir::Type resTypeCol = llvm::dyn_cast<mlir::daphne::MatrixType>(col.getType()).getElementType();
 
         std::string func = toLower(ctx->func->getText());
 
@@ -1052,7 +1056,7 @@ antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceCo
         mlir::Value prefixSSA = static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, prefix));
 
         res = static_cast<mlir::Value>(builder.create<mlir::daphne::SetColLabelsPrefixOp>(
-            loc, res.getType().dyn_cast<mlir::daphne::FrameType>().withSameColumnTypes(), res, prefixSSA));
+            loc, llvm::dyn_cast<mlir::daphne::FrameType>(res.getType()).withSameColumnTypes(), res, prefixSSA));
         return res;
     } catch (std::runtime_error &) {
         throw ErrorHandler::rethrowError("SQLVisitor (visitTableReference)",

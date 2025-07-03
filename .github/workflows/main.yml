@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: daphneeu/github-action:latest
+    container: daphneeu/github-action:2025-11-15
     env:
       # fix usage of tput in build script:
       TERM: dumb
