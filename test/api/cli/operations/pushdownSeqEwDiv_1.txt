@@ -1,0 +1,4 @@
+DenseMatrix(3x1, double)
+0.5
+1.5
+2.5

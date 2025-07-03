@@ -1,0 +1,3 @@
+result = mod(fill(33,2,2),5);
+
+print(result);
