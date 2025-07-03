@@ -70,7 +70,7 @@ def Matrix : Daphne_Type<"Matrix", "matrix"> {
         // Creates a MatrixType from mere element type information, with all
         // other parameters reset.
         TypeBuilder<(ins "::mlir::Type":$elementType), [{
-            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Default, BoolOrUnknown::Unknown);
+            return Base::get($_ctxt, elementType, -1, -1, -1.0, ::mlir::daphne::MatrixRepresentation::Default, ::mlir::daphne::BoolOrUnknown::Unknown);
         }]>,
     ];
 
@@ -107,7 +107,7 @@ def Matrix : Daphne_Type<"Matrix", "matrix"> {
         }
 
         ::mlir::daphne::MatrixType withSameElementTypeAndRepr() {
-            return get(getContext(), getElementType(), -1, -1, -1.0, getRepresentation(), BoolOrUnknown::Unknown);
+            return get(getContext(), getElementType(), -1, -1, -1.0, getRepresentation(), ::mlir::daphne::BoolOrUnknown::Unknown);
         }
 
         /**
@@ -132,7 +132,7 @@ def Matrix : Daphne_Type<"Matrix", "matrix"> {
                 && getRepresentation() != other.getRepresentation())
                 return false;
 
-            if (other.getSymmetric() != BoolOrUnknown::Unknown
+            if (other.getSymmetric() != ::mlir::daphne::BoolOrUnknown::Unknown
                 && getSymmetric() != other.getSymmetric())
                 return false;
 
@@ -279,7 +279,7 @@ def Column : Daphne_Type<"Column", "column"> {
         bool isSpecializationOf(::mlir::daphne::ColumnType other) {
             auto valueType = getValueType();
             auto otherValueType = other.getValueType();
-            if(!otherValueType.isa<mlir::daphne::UnknownType>() && valueType != otherValueType)
+            if(!llvm::isa<mlir::daphne::UnknownType>(otherValueType) && valueType != otherValueType)
                 return false;
 
             if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())

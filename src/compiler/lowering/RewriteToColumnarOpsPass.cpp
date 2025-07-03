@@ -485,8 +485,8 @@ void RewriteToColumnarOpsPass::runOnOperation() {
             if (auto plbmcOp = arg.getDefiningOp<daphne::ConvertPosListToBitmapOp>()) {
                 // In case the inputs have already been rewritten.
                 if (auto cOp = plbmcOp.getArg().getDefiningOp<daphne::CastOp>()) {
-                    bool isArgColTy = cOp.getArg().llvm::isa<daphne::ColumnType>(getType());
-                    bool isResMatTy = cOp.getRes().llvm::isa<daphne::MatrixType>(getType());
+                    bool isArgColTy = llvm::isa<daphne::ColumnType>(cOp.getArg().getType());
+                    bool isResMatTy = llvm::isa<daphne::MatrixType>(cOp.getRes().getType());
                     if (isArgColTy && isResMatTy) {
                         if (auto defOp = cOp.getArg().getDefiningOp()) {
                             // TODO We could define a trait for these ops.

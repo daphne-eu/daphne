@@ -91,8 +91,8 @@ class SelectMatrixRepresentationsPass
                 const size_t numIndVars = forOp.getNumInductionVars();
                 // Transfer the ForOp's operand types to the block arguments
                 // and results to fulfill constraints on the ForOp.
-                for (size_t i = 0; i < forOp.getNumIterOperands(); i++) {
-                    Type t = forOp.getIterOperands()[i].getType();
+                for (size_t i = 0; i < forOp.getInitArgs().size(); i++) {
+                    Type t = forOp.getInitArgs()[i].getType();
                     block.getArgument(i + numIndVars).setType(t);
                     forOp.getResult(i).setType(t);
                 }
@@ -106,7 +106,7 @@ class SelectMatrixRepresentationsPass
                 // verification, but here, we want to throw a readable error
                 // message.
                 Operation *yieldOp = block.getTerminator();
-                for (size_t i = 0; i < forOp.getNumIterOperands(); i++) {
+                for (size_t i = 0; i < forOp.getInitArgs().size(); i++) {
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
                     if (yieldedTy != resultTy)

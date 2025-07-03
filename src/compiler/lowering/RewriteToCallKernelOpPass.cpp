@@ -46,6 +46,7 @@
 #include <vector>
 
 using namespace mlir;
+using namespace mlir::affine;
 
 namespace {
 class KernelReplacement : public RewritePattern {
@@ -624,7 +625,7 @@ void RewriteToCallKernelOpPass::runOnOperation() {
     // Specification of (il)legal dialects/operations. All DaphneIR operations
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
-    target.addLegalDialect<mlir::AffineDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect,
+    target.addLegalDialect<mlir::affine::AffineDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect,
                            mlir::linalg::LinalgDialect, mlir::arith::ArithDialect, mlir::BuiltinDialect>();
 
     target.addLegalOp<ModuleOp, func::FuncOp, func::CallOp, func::ReturnOp>();

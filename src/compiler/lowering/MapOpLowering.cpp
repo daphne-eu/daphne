@@ -31,6 +31,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
+using namespace mlir::affine;
 
 class InlineMapOpLowering : public mlir::OpConversionPattern<mlir::daphne::MapOp> {
   public:
@@ -53,7 +54,7 @@ class InlineMapOpLowering : public mlir::OpConversionPattern<mlir::daphne::MapOp
 
         SmallVector<Value, 4> loopIvs;
 
-        auto outerLoop = rewriter.create<AffineForOp>(loc, 0, lhsMatrixType.getNumRows(), 1);
+        auto outerLoop = rewriter.create<mlir::affine::AffineForOp>(loc, 0, lhsMatrixType.getNumRows(), 1);
         for (Operation &nested : *outerLoop.getBody()) {
             rewriter.eraseOp(&nested);
         }
@@ -61,7 +62,7 @@ class InlineMapOpLowering : public mlir::OpConversionPattern<mlir::daphne::MapOp
 
         // outer loop body
         rewriter.setInsertionPointToStart(outerLoop.getBody());
-        auto innerLoop = rewriter.create<AffineForOp>(loc, 0, lhsMatrixType.getNumCols(), 1);
+        auto innerLoop = rewriter.create<mlir::affine::AffineForOp>(loc, 0, lhsMatrixType.getNumCols(), 1);
         for (Operation &nested : *innerLoop.getBody()) {
             rewriter.eraseOp(&nested);
         }
@@ -95,7 +96,7 @@ struct MapOpLoweringPass : public mlir::PassWrapper<MapOpLoweringPass, mlir::Ope
     explicit MapOpLoweringPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect,
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::affine::AffineDialect, mlir::memref::MemRefDialect,
                         mlir::daphne::DaphneDialect, mlir::func::FuncDialect>();
     }
     void runOnOperation() final;
@@ -116,8 +117,8 @@ void MapOpLoweringPass::runOnOperation() {
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
     mlir::LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
 
-    target.addLegalDialect<mlir::AffineDialect, arith::ArithDialect, memref::MemRefDialect, mlir::daphne::DaphneDialect,
-                           mlir::func::FuncDialect>();
+    target.addLegalDialect<mlir::affine::AffineDialect, arith::ArithDialect, memref::MemRefDialect,
+                           mlir::daphne::DaphneDialect, mlir::func::FuncDialect>();
 
     target.addIllegalOp<mlir::daphne::MapOp>();
 

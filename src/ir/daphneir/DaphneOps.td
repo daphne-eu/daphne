@@ -1696,7 +1696,7 @@ def Daphne_DistributedCollectOp : Daphne_Op<"distributedCollect", [Pure]> {
 
     let builders = [
         OpBuilder<(ins "Value":$value), [{
-            build($_builder, $_state, value.getType().cast<HandleType>().getDataType(), value);
+            build($_builder, $_state, llvm::cast<HandleType>(value.getType()).getDataType(), value);
         }]>,
     ];
 }

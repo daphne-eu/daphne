@@ -401,8 +401,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
 
                 // Transfer the ForOp's operand types to the block arguments
                 // and results to fulfill constraints on the ForOp.
-                for (size_t i = 0; i < forOp.getNumIterOperands(); i++) {
-                    Type t = forOp.getIterOpOperands()[i].get().getType();
+                for (size_t i = 0; i < forOp.getInitArgs().size(); i++) {
+                    Type t = forOp.getInitArgs()[i].getType();
                     block.getArgument(i + numIndVars).setType(t);
                     forOp.getResult(i).setType(t);
                 }
@@ -418,7 +418,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 // If any interesting properties were changed inside the loop
                 // body, we set them to unknown to make the type comparison
                 // pass.
-                for (size_t i = 0; i < forOp.getNumIterOperands(); i++) {
+                for (size_t i = 0; i < forOp.getInitArgs().size(); i++) {
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
                     if (yieldedTy != resultTy) {
@@ -516,7 +516,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 return false;
             }
             if (auto ct = mlir::dyn_cast<daphne::ColumnType>(resType))
-                return ct.llvm::isa<daphne::UnknownType>(getValueType());
+                return llvm::isa<daphne::UnknownType>(ct.getValueType());
             return false;
         });
     }

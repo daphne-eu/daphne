@@ -676,9 +676,9 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     for (auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
         // corresponding block arguments.
-        forOperands[i].replaceUsesWithIf(forOp.getRegionIterArgs()[i], [&](mlir::OpOperand &operand) {
+        forOperands[i].replaceUsesWithIf(forOp.getRegionIterArgs()[i], [&](mlir::OpOperand &operand) -> bool {
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
-            return parentRegion != nullptr && forOp.getLoopBody().isAncestor(parentRegion);
+            return parentRegion != nullptr && forOp.getBody()->isAncestor(parentRegion);
         });
 
         // Rewire the results of the ForOp to their variable names.
@@ -1542,12 +1542,13 @@ DaphneDSLVisitor::visitColMajorFrameLiteralExpr(DaphneDSLGrammarParser::ColMajor
 
         if (label.getType() != utils.strType)
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "labels for frame literals must be strings");
-        if (!(mat.getType().template isa<mlir::daphne::MatrixType>()))
+        if (!llvm::isa<mlir::daphne::MatrixType>(mat.getType()))
             throw ErrorHandler::compilerError(loc, "DSLVisitor", "columns for frame literals must be matrices");
 
         parsedLabels.emplace_back(label);
         columnMatrices.emplace_back(mat);
-        llvm::dyn_cast<mlir::daphne::MatrixType>(columnMatElemType.emplace_back(mat.getType()).getElementType());
+        auto matrixType = llvm::dyn_cast<mlir::daphne::MatrixType>(mat.getType());
+        columnMatElemType.emplace_back(matrixType.getElementType());
     }
 
     mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), columnMatElemType);

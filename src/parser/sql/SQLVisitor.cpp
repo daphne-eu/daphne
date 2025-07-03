@@ -182,7 +182,7 @@ mlir::Value SQLVisitor::matrixToFrame(mlir::Value matrix, std::string newColumnN
         std::vector<mlir::Value> cols;
         std::vector<mlir::Value> labels;
 
-        llvm::dyn_cast<mlir::daphne::MatrixType>(colTypes.push_back(matrix.getType()).getElementType());
+        colTypes.push_back(llvm::dyn_cast<mlir::daphne::MatrixType>(matrix.getType()).getElementType());
         cols.push_back(matrix);
         labels.push_back(createStringConstant(newColumnName));
 
@@ -291,7 +291,11 @@ mlir::Attribute SQLVisitor::getCompareEnum(const std::string &op) {
 }
 
 std::string SQLVisitor::getEnumLabelExt(const std::string &func) {
-    return llvm::dyn_cast<mlir::daphne::GroupEnumAttr>(stringifyGroupEnum(getGroupEnum(func)).getValue()).str();
+    auto groupEnum = getGroupEnum(func);
+    if (auto groupEnumAttr = llvm::dyn_cast<mlir::daphne::GroupEnumAttr>(groupEnum)) {
+        return mlir::daphne::stringifyGroupEnum(groupEnumAttr.getValue()).str();
+    }
+    throw ErrorHandler::compilerError(queryLoc, "SQLVisitor", "Expected GroupEnumAttr");
 }
 
 mlir::Value SQLVisitor::extractColumnFromFrame(mlir::Value frame, mlir::Value columnName) {

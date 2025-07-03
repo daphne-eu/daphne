@@ -43,11 +43,11 @@ void affineFillMemRef(mlir::Value value, mlir::ConversionPatternRewriter &rewrit
 mlir::Value convertMemRefToDenseMatrix(mlir::Location, mlir::ConversionPatternRewriter &, mlir::Value memRef,
                                        mlir::Type);
 
-llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
-                                                       mlir::ValueRange inputs, mlir::Location loc);
+std::optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
+                                                      mlir::ValueRange inputs, mlir::Location loc);
 
-llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
-                                                     mlir::Location loc);
+std::optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
+                                                    mlir::Location loc);
 
 mlir::Type convertFloat(mlir::FloatType floatType);
 

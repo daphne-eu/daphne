@@ -337,9 +337,9 @@ void VectorizeComputationsPass::runOnOperation() {
 
         for (size_t i = 0u; i < operands.size(); ++i) {
             auto argTy = operands[i].getType();
-            switch (vSplitAttrs[i].cast<daphne::VectorSplitAttr>().getValue()) {
+            switch (llvm::cast<daphne::VectorSplitAttr>(vSplitAttrs[i]).getValue()) {
             case daphne::VectorSplit::ROWS: {
-                auto matTy = argTy.cast<daphne::MatrixType>();
+                auto matTy = llvm::cast<daphne::MatrixType>(argTy);
                 // only remove row information
                 argTy = matTy.withShape(-1, matTy.getNumCols());
                 break;

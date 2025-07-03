@@ -388,8 +388,8 @@ struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::Dist
         mlir::daphne::ReadOp readOp = op.getMat().getDefiningOp<mlir::daphne::ReadOp>();
         if (!readOp || !readOp.getOperation()->hasOneUse())
             return mlir::failure();
-        rewriter.replaceOp(op, {rewriter.create<mlir::daphne::DistributedReadOp>(readOp.getLoc(), op.getType(),
-                                                                                 readOp.getFileName())});
+        rewriter.replaceOp(
+            op, rewriter.create<mlir::daphne::DistributedReadOp>(readOp.getLoc(), op.getType(), readOp.getFileName()));
         // TODO Instead of erasing the ReadOp here, the compiler should
         // generally remove unused SSA values. Then, we might even drop the
         // hasOneUse requirement above.

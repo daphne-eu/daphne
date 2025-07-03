@@ -80,7 +80,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
     LogicalResult matchAndRewrite(UnaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
         Location loc = op->getLoc();
-        daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
+        daphne::MatrixType matrixType = llvm::dyn_cast<daphne::MatrixType>(adaptor.getArg().getType());
 
         // Scalar values are handled separately. Otherwise assume input is DenseMatrix.
         if (!matrixType) {
@@ -210,7 +210,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         Location loc = op->getLoc();
         Value lhs = adaptor.getLhs();
 
-        auto lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto lhsMatrixType = llvm::dyn_cast<daphne::MatrixType>(lhs.getType());
         ssize_t lhsRows = lhsMatrixType.getNumRows();
         ssize_t lhsCols = lhsMatrixType.getNumCols();
 
@@ -243,8 +243,8 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         Value lhs = adaptor.getLhs();
         Value rhs = adaptor.getRhs();
 
-        auto lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
-        auto rhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto lhsMatrixType = llvm::dyn_cast<daphne::MatrixType>(lhs.getType());
+        auto rhsMatrixType = llvm::dyn_cast<daphne::MatrixType>(rhs.getType());
 
         // Match Scalar-Scalar and Matrix-Scalar broadcasting (assuming scalar values are always switched to
         // rhs). Broadcasting where either Matrix is a singleton or vector needs to be handled separately below.
@@ -437,10 +437,10 @@ using DivOpLowering =
 
 // Binary Comparison
 // Min/Max
-using MaxOpLowering =
-    BinaryOpLowering<daphne::EwMinOp, binaryWithConversionFunc<arith::MinSIOp, arith::MinUIOp, arith::MinFOp>>;
-using MinOpLowering =
-    BinaryOpLowering<daphne::EwMaxOp, binaryWithConversionFunc<arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp>>;
+// using MaxOpLowering =
+//     BinaryOpLowering<daphne::EwMinOp, binaryWithConversionFunc<arith::MinSIOp, arith::MinUIOp, arith::MinFOp>>;
+// using MinOpLowering =
+//     BinaryOpLowering<daphne::EwMaxOp, binaryWithConversionFunc<arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp>>;
 
 // Logical
 // using AndOpLowering =
@@ -465,9 +465,9 @@ struct EwOpLoweringPass : public mlir::PassWrapper<EwOpLoweringPass, mlir::Opera
     explicit EwOpLoweringPass() = default;
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry
-            .insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect,
-                    daphne::DaphneDialect, mlir::math::MathDialect, mlir::arith::ArithDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::affine::AffineDialect, memref::MemRefDialect,
+                        mlir::linalg::LinalgDialect, daphne::DaphneDialect, mlir::math::MathDialect,
+                        mlir::arith::ArithDialect>();
     }
     void runOnOperation() final;
 
@@ -503,10 +503,10 @@ void populateLowerEwOpConversionPatterns(mlir::LLVMTypeConverter &typeConverter,
         AddOpLowering,
         SubOpLowering,
         MulOpLowering,
-        DivOpLowering,
+        DivOpLowering
         // PowOpLowering,
-        MinOpLowering,
-        MaxOpLowering
+        // MinOpLowering,
+        // MaxOpLowering
         // , AndOpLowering,
         // OrOpLowering
         >(typeConverter, patterns.getContext());
@@ -522,11 +522,11 @@ void EwOpLoweringPass::runOnOperation() {
     typeConverter.addConversion(convertInteger);
     typeConverter.addConversion(convertFloat);
     typeConverter.addConversion([](Type type) { return type; });
-    typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
+    // typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
-    target.addLegalDialect<mlir::arith::ArithDialect, memref::MemRefDialect, mlir::AffineDialect,
+    target.addLegalDialect<mlir::arith::ArithDialect, memref::MemRefDialect, mlir::affine::AffineDialect,
                            mlir::LLVM::LLVMDialect, daphne::DaphneDialect, mlir::BuiltinDialect,
                            mlir::math::MathDialect, mlir::linalg::LinalgDialect>();
 
