@@ -1,0 +1,4 @@
+fillIntermediate = fill(9,3,3);
+result = sqrt(fillIntermediate);
+
+print(result);
