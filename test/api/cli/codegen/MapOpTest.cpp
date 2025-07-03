@@ -33,22 +33,3 @@ TEST_CASE("mapOp", TAG_CODEGEN) {
     compareDaphneToStr(result, dirPath + "map.daphne");
     compareDaphneToStr(result, dirPath + "map.daphne", "--mlir-codegen", "--no-obj-ref-mgnt");
 }
-
-TEST_CASE("mapOp col", TAG_CODEGEN) {
-    std::string result = "DenseMatrix(3x4, double)\n"
-                         "1.1 0.0 5.5 -2.2\n"
-                         "1.1 0.0 5.5 -2.2\n"
-                         "1.1 0.0 5.5 -2.2\n";
-
-    compareDaphneToStr(result, dirPath + "map_col.daphne");
-    compareDaphneToStr(result, dirPath + "map_col.daphne", "--mlir-codegen", "--no-obj-ref-mgnt");
-}
-
-TEST_CASE("mapOp row", TAG_CODEGEN) {
-    std::string result = "DenseMatrix(2x1, double)\n"
-                         "4.1\n"
-                         "4.3\n";
-
-    compareDaphneToStr(result, dirPath + "map_row.daphne");
-    compareDaphneToStr(result, dirPath + "map_row.daphne", "--mlir-codegen", "--no-obj-ref-mgnt");
-}

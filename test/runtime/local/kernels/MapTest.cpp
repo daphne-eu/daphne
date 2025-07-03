@@ -119,7 +119,12 @@ DenseMatrix<VTRes>* sumOfFirstAndLastFunc(const DenseMatrix<VTArg> *row) {
     return res;
 }
 
-// // Matrix
+// template <typename VTArg, typename VTRes>
+// VTRes sumOfFirstAndLastFunc(const DenseMatrix<VTArg> *row) {
+//     return (static_cast<VTRes>(row->getValues()[0]) + static_cast<VTRes>(row->getValues()[row->getNumCols() - 1]));
+// }
+
+// Matrix
 // template <typename VTArg, typename VTRes>
 // Matrix<VTRes>* sumOfFirstAndLastFunc(const Matrix<VTArg> *row) {
 //     auto res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, 1, false);
@@ -131,7 +136,7 @@ template <template <typename VT> class DT, class VTArg, class VTRes> void checkS
     using DTArg = DT<VTArg>;
     using DTRes = DT<VTRes>;
 
-    void *sumRowFuncPtr = reinterpret_cast<void *>(&sumOfFirstAndLastFunc<VTArg, VTRes>);
+    void *sumRowFuncPtr = reinterpret_cast<void *>((DT<VTRes>* (*)(const DT<VTArg>*))&sumOfFirstAndLastFunc<VTArg, VTRes>);
 
     auto m1 = genGivenVals<DTArg>(3, {
                                          0,
@@ -201,22 +206,22 @@ DenseMatrix<VTRes>* topThreeFunc(const DenseMatrix<VTArg> *col) {
     return res;
 }
 
-// // Matrix
-// template <typename VTArg, typename VTRes>
-// Matrix<VTRes>* topThreeFunc(const Matrix<VTArg> *col) {
-//     auto res = DataObjectFactory::create<DenseMatrix<VTRes>>(3, 1, false);
-//     res->prepareAppend();
-//     for (size_t r = 0; r < 3; r++)
-//         res->append(r, 0, col->get(r, 0));
-//     res->finishAppend();
-//     return dynamic_cast<Matrix<VTRes>*>(res);
-// }
+// Matrix
+template <typename VTArg, typename VTRes>
+Matrix<VTRes>* topThreeFunc(const Matrix<VTArg> *col) {
+    auto res = DataObjectFactory::create<DenseMatrix<VTRes>>(3, 1, false);
+    res->prepareAppend();
+    for (size_t r = 0; r < 3; r++)
+        res->append(r, 0, col->get(r, 0));
+    res->finishAppend();
+    return dynamic_cast<Matrix<VTRes>*>(res);
+}
 
 template <template <typename VT> class DT, class VTArg, class VTRes> void checkTopThreeMap() {
     using DTArg = DT<VTArg>;
     using DTRes = DT<VTRes>;
 
-    void *topThreeFuncPtr = reinterpret_cast<void *>(&topThreeFunc<VTArg, VTRes>);
+    void *topThreeFuncPtr = reinterpret_cast<void *>((DT<VTRes>* (*)(const DT<VTArg>*))&topThreeFunc<VTArg, VTRes>);
 
     auto m1 = genGivenVals<DTArg>(4, {
                                          0,

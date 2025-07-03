@@ -65,6 +65,7 @@ template <typename VTRes, typename VTArg> struct Map<DenseMatrix<VTRes>, DenseMa
 
         auto udfElem = reinterpret_cast<VTRes (*)(VTArg)>(func);
         auto udfMat = reinterpret_cast<DenseMatrix<VTRes>* (*)(DenseMatrix<VTArg>*)>(func);
+         // TODO(#520) udfMatElem
 
         if (axis == 1) { // column-wise
             size_t resNumRows = 1;
@@ -134,7 +135,7 @@ template <typename VTRes, typename VTArg> struct Map<Matrix<VTRes>, Matrix<VTArg
         //     size_t resNumRows = 1;
         //     // Extract each column, apply udf and set result row-wise
         //     for (size_t c = 0; c < numCols; c++) {
-        //         Matrix<VTArg> *currentCol = DataObjectFactory::create<DenseMatrix<VTArg>>(arg, 0, numRows, c, c + 1);
+        //         Matrix<VTArg> *currentCol = DataObjectFactory::create<DenseMatrix<VTArg>>(dynamic_cast<const DenseMatrix<VTArg>*>(arg), 0, numRows, c, c + 1); // TODO(#520) how to extract row/col?
         //         const Matrix<VTRes> *resCol = udfMat(currentCol);
         //         if (c == 0) {
         //             // Set result matrix size in first iteration
@@ -150,7 +151,7 @@ template <typename VTRes, typename VTArg> struct Map<Matrix<VTRes>, Matrix<VTArg
         //     for (size_t r = 0; r < numRows; r++) {
         //         if (axis == 0) {
         //             // Extract each row, apply udf and set result column-wise
-        //             Matrix<VTArg> *currentRow = DataObjectFactory::create<DenseMatrix<VTArg>>(arg, r, r + 1, 0, numCols);
+        //             Matrix<VTArg> *currentRow = DataObjectFactory::create<DenseMatrix<VTArg>>(dynamic_cast<const DenseMatrix<VTArg>*>(arg), r, r + 1, 0, numCols);
         //             const Matrix<VTRes> *resRow = udfMat(currentRow);
         //             if (r == 0) {
         //                 // Set result matrix size in first iteration
