@@ -31,13 +31,13 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
 
     for (size_t i = 0; i < currentSize; i++) {
         const auto &input = op.getInputs()[i];
-        const auto &split = vSplitsAttrs[i].cast<daphne::VectorSplitAttr>().getValue();
+        const auto &split = llvm::cast<daphne::VectorSplitAttr>(vSplitsAttrs[i]).getValue();
 
         if (inputMap.count(input) == 0) {
             inputMap[input] = i;
         } else {
             size_t j = inputMap[input];
-            if (op.getSplits()[j].cast<daphne::VectorSplitAttr>().getValue() == split) {
+            if (llvm::cast<daphne::VectorSplitAttr>(op.getSplits()[j]).getValue() == split) {
                 op.getBody().getArgument(i).replaceAllUsesWith(op.getBody().getArgument(j));
                 op.getBody().eraseArgument(i);
                 op.getInputsMutable().erase(i);
@@ -121,7 +121,7 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(mlir::daphne::MatMulOp 
     //   sparse kernels.
     // ToDo: bring user config here for sparsity threshold or properly use
     // MatrixRepresentation
-    if (auto t = rhs.getType().dyn_cast<mlir::daphne::MatrixType>()) {
+    if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(rhs.getType())) {
         auto sparsity = t.getSparsity();
         if (sparsity < 0.25)
             return mlir::failure();
@@ -154,9 +154,9 @@ mlir::LogicalResult mlir::daphne::NumRowsOp::canonicalize(mlir::daphne::NumRowsO
     ssize_t numRows = -1;
 
     mlir::Type inTy = op.getArg().getType();
-    if (auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
+    if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(inTy))
         numRows = t.getNumRows();
-    else if (auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
+    else if (auto t = llvm::dyn_cast<mlir::daphne::FrameType>(inTy))
         numRows = t.getNumRows();
 
     if (numRows != -1) {
@@ -175,9 +175,9 @@ mlir::LogicalResult mlir::daphne::NumColsOp::canonicalize(mlir::daphne::NumColsO
     ssize_t numCols = -1;
 
     mlir::Type inTy = op.getArg().getType();
-    if (auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
+    if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(inTy))
         numCols = t.getNumCols();
-    else if (auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
+    else if (auto t = llvm::dyn_cast<mlir::daphne::FrameType>(inTy))
         numCols = t.getNumCols();
 
     if (numCols != -1) {
@@ -197,10 +197,10 @@ mlir::LogicalResult mlir::daphne::NumCellsOp::canonicalize(mlir::daphne::NumCell
     ssize_t numCols = -1;
 
     mlir::Type inTy = op.getArg().getType();
-    if (auto t = inTy.dyn_cast<mlir::daphne::MatrixType>()) {
+    if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(inTy)) {
         numRows = t.getNumRows();
         numCols = t.getNumCols();
-    } else if (auto t = inTy.dyn_cast<mlir::daphne::FrameType>()) {
+    } else if (auto t = llvm::dyn_cast<mlir::daphne::FrameType>(inTy)) {
         numRows = t.getNumRows();
         numCols = t.getNumCols();
     }
@@ -221,7 +221,7 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
     double sparsity = -1.0;
 
     mlir::Type inTy = op.getArg().getType();
-    if (auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
+    if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(inTy))
         sparsity = t.getSparsity();
 
     if (sparsity != -1) {
@@ -257,8 +257,8 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
         if (!lhsIsStr) {
             const bool lhsIsSca = !llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>(lhs.getType());
             if (!lhsIsSca) {
-                const bool lhsIsMatStr =
-                    llvm::isa<mlir::daphne::StringType>(lhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+                const bool lhsIsMatStr = llvm::isa<mlir::daphne::StringType>(
+                    llvm::dyn_cast<daphne::MatrixType>(lhs.getType()).getElementType());
                 if (lhsIsMatStr) {
                     rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, op.getResult().getType(), lhs, rhs);
                     return mlir::success();
@@ -278,9 +278,9 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
             return mlir::success();
         } else if (!lhsIsSca && !rhsIsSca) {
             const bool lhsIsMatStr =
-                llvm::isa<mlir::daphne::StringType>(lhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+                llvm::isa<mlir::daphne::StringType>(llvm::dyn_cast<daphne::MatrixType>(lhs.getType()).getElementType());
             const bool rhsIsMatStr =
-                llvm::isa<mlir::daphne::StringType>(rhs.getType().dyn_cast<daphne::MatrixType>().getElementType());
+                llvm::isa<mlir::daphne::StringType>(llvm::dyn_cast<daphne::MatrixType>(rhs.getType()).getElementType());
             if (lhsIsMatStr && rhsIsMatStr) {
                 rewriter.replaceOpWithNewOp<mlir::daphne::EwConcatOp>(op, op.getResult().getType(), lhs, rhs);
                 return mlir::success();
@@ -425,10 +425,10 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op, 
 
         // Get rid of frame column labels, since they interfere with the type
         // comparison (see #485).
-        if (auto thenFrmTy = thenVal.getType().dyn_cast<daphne::FrameType>())
+        if (auto thenFrmTy = llvm::dyn_cast<daphne::FrameType>(thenVal.getType()))
             if (thenFrmTy.getLabels() != nullptr)
                 thenVal = rewriter.create<mlir::daphne::CastOp>(loc, thenFrmTy.withLabels(nullptr), thenVal);
-        if (auto elseFrmTy = elseVal.getType().dyn_cast<daphne::FrameType>())
+        if (auto elseFrmTy = llvm::dyn_cast<daphne::FrameType>(elseVal.getType()))
             if (elseFrmTy.getLabels() != nullptr)
                 elseVal = rewriter.create<mlir::daphne::CastOp>(loc, elseFrmTy.withLabels(nullptr), elseVal);
 
@@ -525,7 +525,7 @@ mlir::LogicalResult mlir::daphne::ConvertMemRefToDenseMatrix::canonicalize(mlir:
  */
 mlir::LogicalResult mlir::daphne::EwFloorOp::canonicalize(mlir::daphne::EwFloorOp op, mlir::PatternRewriter &rewriter) {
     mlir::Value operand = op.getOperand();
-    auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
+    auto matrix = llvm::dyn_cast<mlir::daphne::MatrixType>(operand.getType());
     mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
 
     if (llvm::isa<mlir::IntegerType>(elemType)) {
@@ -545,7 +545,7 @@ mlir::LogicalResult mlir::daphne::EwFloorOp::canonicalize(mlir::daphne::EwFloorO
  */
 mlir::LogicalResult mlir::daphne::EwCeilOp::canonicalize(mlir::daphne::EwCeilOp op, mlir::PatternRewriter &rewriter) {
     mlir::Value operand = op.getOperand();
-    auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
+    auto matrix = llvm::dyn_cast<mlir::daphne::MatrixType>(operand.getType());
     mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
 
     if (llvm::isa<mlir::IntegerType>(elemType)) {
@@ -565,7 +565,7 @@ mlir::LogicalResult mlir::daphne::EwCeilOp::canonicalize(mlir::daphne::EwCeilOp 
  */
 mlir::LogicalResult mlir::daphne::EwRoundOp::canonicalize(mlir::daphne::EwRoundOp op, mlir::PatternRewriter &rewriter) {
     mlir::Value operand = op.getOperand();
-    auto matrix = operand.getType().dyn_cast<mlir::daphne::MatrixType>();
+    auto matrix = llvm::dyn_cast<mlir::daphne::MatrixType>(operand.getType());
     mlir::Type elemType = matrix ? matrix.getElementType() : operand.getType();
 
     if (llvm::isa<mlir::IntegerType>(elemType)) {
@@ -623,8 +623,8 @@ mlir::LogicalResult mlir::daphne::ExtractColOp::canonicalize(mlir::daphne::Extra
                                                              PatternRewriter &rewriter) {
     Value src = ecOp.getSource();
     Value sel = ecOp.getSelectedCols();
-    if (auto srcFrmTy = src.getType().dyn_cast<mlir::daphne::FrameType>()) {
-        if (sel.getType().isa<mlir::daphne::StringType>()) {
+    if (auto srcFrmTy = llvm::dyn_cast<mlir::daphne::FrameType>(src.getType())) {
+        if (llvm::isa<mlir::daphne::StringType>(sel.getType())) {
             if (srcFrmTy.getNumCols() == 1) {
                 // Eliminate the extraction of a single column (by its label) from a frame with a single column which
                 // has exactly that label.
@@ -654,7 +654,7 @@ mlir::LogicalResult mlir::daphne::ExtractColOp::canonicalize(mlir::daphne::Extra
                         // *matrices*, while the result of ExtractColOp on a frame is a single-column *frame*. Such
                         // additional casts will often be eliminated through the canonicalization of CastOp later.
                         Type resTy = ecOp.getResult().getType();
-                        if (auto resFrmTy = resTy.dyn_cast<mlir::daphne::FrameType>()) {
+                        if (auto resFrmTy = llvm::dyn_cast<mlir::daphne::FrameType>(resTy)) {
                             // Reset the labels to unknown, because TODO
                             Value casted = rewriter
                                                .create<mlir::daphne::CastOp>(
@@ -682,7 +682,7 @@ mlir::LogicalResult mlir::daphne::ExtractColOp::canonicalize(mlir::daphne::Extra
                 std::pair<bool, std::string> selConst = CompilerUtils::isConstant<std::string>(sel);
                 if (selConst.first) {
                     auto tryOneArg = [&](Value arg) {
-                        if (auto argFrmTy = arg.getType().dyn_cast<mlir::daphne::FrameType>())
+                        if (auto argFrmTy = llvm::dyn_cast<mlir::daphne::FrameType>(arg.getType()))
                             if (argFrmTy.getLabels() != nullptr)
                                 for (std::string label : *(argFrmTy.getLabels()))
                                     if (label == selConst.second) {
@@ -739,8 +739,8 @@ mlir::LogicalResult mlir::daphne::CastOp::canonicalize(mlir::daphne::CastOp cOp,
     // Bypass operations manipulating frame column labels in case their result is casted to a data type that does not
     // support column labels (matrix/column). This is sound, since the column label information from the frame would be
     // gone after the cast anyway.
-    if (cOp.getArg().getType().isa<mlir::daphne::FrameType>() &&
-        cOp.getRes().getType().isa<mlir::daphne::MatrixType, mlir::daphne::ColumnType>()) {
+    if (llvm::isa<mlir::daphne::FrameType>(cOp.getArg().getType()) &&
+        llvm::isa<mlir::daphne::MatrixType, mlir::daphne::ColumnType>(cOp.getRes().getType())) {
         if (auto sclOp = cOp.getArg().getDefiningOp<mlir::daphne::SetColLabelsOp>()) {
             rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(cOp, cOp.getRes().getType(), sclOp.getArg());
             return mlir::success();
@@ -755,7 +755,8 @@ mlir::LogicalResult mlir::daphne::CastOp::canonicalize(mlir::daphne::CastOp cOp,
     // CreateFrameOp's input matrix. In such cases, the result of the CastOp is simply the argument of the
     // CreateFrameOp.
     // TODO check if the matrix has a single column, otherwise, we would bypass the check in createframe
-    if (cOp.getArg().getType().isa<mlir::daphne::FrameType>() && cOp.getRes().getType().isa<mlir::daphne::MatrixType>())
+    if (llvm::isa<mlir::daphne::FrameType>(cOp.getArg().getType()) &&
+        llvm::isa<mlir::daphne::MatrixType>(cOp.getRes().getType()))
         if (auto cfOp = cOp.getArg().getDefiningOp<mlir::daphne::CreateFrameOp>())
             if (cfOp.getCols().size() == 1 && cfOp.getCols()[0].getType() == cOp.getRes().getType()) {
                 rewriter.replaceOp(cOp, cfOp.getCols()[0]);
@@ -770,7 +771,7 @@ mlir::LogicalResult mlir::daphne::CastOp::canonicalize(mlir::daphne::CastOp cOp,
  */
 mlir::LogicalResult mlir::daphne::SetColLabelsOp::canonicalize(mlir::daphne::SetColLabelsOp sclOp,
                                                                PatternRewriter &rewriter) {
-    if (auto argFrmTy = sclOp.getArg().getType().dyn_cast<mlir::daphne::FrameType>()) { // if the arg is a frame
+    if (auto argFrmTy = llvm::dyn_cast<mlir::daphne::FrameType>(sclOp.getArg().getType())) { // if the arg is a frame
         if (std::vector<std::string> *argLabels = argFrmTy.getLabels()) {               // if the arg's labels are known
             // Compare the arg's labels with the new labels.
             mlir::ValueRange newLabels = sclOp.getLabels();

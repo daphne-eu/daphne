@@ -251,7 +251,7 @@ void AggAllLoweringPass::runOnOperation() {
 
     target.addDynamicallyLegalOp<daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>([](Operation *op) {
         Type operand = op->getOperand(0).getType();
-        auto matType = operand.dyn_cast<daphne::MatrixType>();
+        auto matType = llvm::dyn_cast<daphne::MatrixType>(operand);
         if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
             return false;
         }

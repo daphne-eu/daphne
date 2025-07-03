@@ -44,7 +44,7 @@ namespace {
  */
 bool isUntypedFunction(func::FuncOp op) {
     return llvm::any_of(op.getFunctionType().getInputs(), [&](Type ty) {
-        auto matTy = ty.dyn_cast<daphne::MatrixType>();
+        auto matTy = llvm::dyn_cast<daphne::MatrixType>(ty);
         return llvm::isa<daphne::UnknownType>(ty) ||
                (matTy && (llvm::isa<daphne::UnknownType>(matTy.getElementType())));
     });
@@ -64,7 +64,7 @@ bool isUntypedFunction(func::FuncOp op) {
  */
 bool isFunctionTemplate(func::FuncOp op) {
     return llvm::any_of(op.getFunctionType().getInputs(), [&](Type ty) {
-        auto matTy = ty.dyn_cast<daphne::MatrixType>();
+        auto matTy = llvm::dyn_cast<daphne::MatrixType>(ty);
         return llvm::isa<daphne::UnknownType>(ty) ||
                (matTy && (llvm::isa<daphne::UnknownType>(matTy.getElementType()) ||
                           (matTy.getNumRows() == -1 && matTy.getNumCols() == -1 && matTy.getSparsity() == -1)));
@@ -112,8 +112,8 @@ std::vector<Type> getSpecializedFuncArgTypes(FunctionType functionType, TypeRang
         auto funcInTy = std::get<0>(it.value());
         auto specializedTy = std::get<1>(it.value());
         if (funcInTy != specializedTy) {
-            auto funcMatTy = funcInTy.dyn_cast<daphne::MatrixType>();
-            auto specializedMatTy = specializedTy.dyn_cast<daphne::MatrixType>();
+            auto funcMatTy = llvm::dyn_cast<daphne::MatrixType>(funcInTy);
+            auto specializedMatTy = llvm::dyn_cast<daphne::MatrixType>(specializedTy);
             bool isMatchingUnknownMatrix = funcMatTy && specializedMatTy && funcMatTy.getElementType() == unknownTy;
             bool isMatchingUnknownPropertiesMatrix =
                 funcMatTy && specializedMatTy && funcMatTy.getElementType() == specializedMatTy.getElementType() &&
@@ -368,7 +368,7 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                 // Get the element type of the matrix the function should be
                 // mapped on
                 mlir::Type opTy = mapOp.getArg().getType();
-                auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
+                auto inpMatrixTy = llvm::dyn_cast<daphne::MatrixType>(opTy);
                 func::FuncOp specializedFunc =
                     createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction, mapOp.getLoc());
                 mapOp.setFuncAttr(specializedFunc.getSymNameAttr());
@@ -386,7 +386,7 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                 // Get current mapOp result matrix type and fix it if needed.
                 // If we fixed something we rerun inference of the whole
                 // function
-                daphne::MatrixType resMatrixTy = mapOp.getType().dyn_cast<daphne::MatrixType>();
+                daphne::MatrixType resMatrixTy = llvm::dyn_cast<daphne::MatrixType>(mapOp.getType());
                 mlir::Type funcResTy = specializedFunc.getFunctionType().getResult(0);
 
                 // The matrix that results from the mapOp has the same dimension

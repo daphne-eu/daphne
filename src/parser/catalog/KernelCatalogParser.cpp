@@ -74,7 +74,7 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
         typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(ct), ct);
 
         // MemRef type.
-        if (!st.isa<mlir::daphne::StringType>()) {
+        if (!llvm::isa<mlir::daphne::StringType>(st)) {
             // DAPHNE's StringType is not supported as the element type of a
             // MemRef. The dimensions of the MemRef are irrelevant here.
             mlir::Type mrt = mlir::MemRefType::get({0, 0}, st);

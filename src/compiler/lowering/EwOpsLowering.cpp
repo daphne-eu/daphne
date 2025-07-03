@@ -540,7 +540,7 @@ void EwOpLoweringPass::runOnOperation() {
         if (llvm::isa<IntegerType>(operand) || llvm::isa<FloatType>(operand)) {
             return false;
         }
-        auto matType = operand.dyn_cast<daphne::MatrixType>();
+        auto matType = llvm::dyn_cast<daphne::MatrixType>(operand);
         if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
             return false;
         }
@@ -554,8 +554,8 @@ void EwOpLoweringPass::runOnOperation() {
             [](Operation *op) {
                 Type lhs = op->getOperand(0).getType();
                 Type rhs = op->getOperand(1).getType();
-                auto lhsMatType = lhs.dyn_cast<daphne::MatrixType>();
-                auto rhsMatType = rhs.dyn_cast<daphne::MatrixType>();
+                auto lhsMatType = llvm::dyn_cast<daphne::MatrixType>(lhs);
+                auto rhsMatType = llvm::dyn_cast<daphne::MatrixType>(rhs);
                 // Rhs is scalar and lhs is scalar or dense matrix (rhs is broadcasted)
                 if ((llvm::isa<IntegerType>(rhs) || llvm::isa<FloatType>(rhs)) &&
                     ((llvm::isa<IntegerType>(lhs) || llvm::isa<FloatType>(lhs)) ||

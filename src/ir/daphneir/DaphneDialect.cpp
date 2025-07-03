@@ -38,7 +38,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
-#include "mlir/IR/FunctionImplementation.h"
+// #include "mlir/IR/FunctionImplementation.h" // Removed in newer LLVM
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Operation.h"
@@ -243,9 +243,9 @@ std::string unknownStrIf(ssize_t val) { return (val == -1) ? "?" : std::to_strin
 std::string unknownStrIf(double val) { return (val == -1.0) ? "?" : std::to_string(val); }
 
 void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPrinter &os) const {
-    if (type.isa<mlir::daphne::StructureType>())
+    if (llvm::isa<mlir::daphne::StructureType>(type))
         os << "Structure";
-    else if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+    else if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(type)) {
         os << "Matrix<" << unknownStrIf(t.getNumRows()) << 'x' << unknownStrIf(t.getNumCols()) << 'x'
            << t.getElementType();
         auto sparsity = t.getSparsity();
@@ -262,7 +262,7 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPri
             os << ":symmetric[" << boolOrUnknownToString(symmetric) << ']';
         }
         os << '>';
-    } else if (auto t = type.dyn_cast<mlir::daphne::FrameType>()) {
+    } else if (auto t = llvm::dyn_cast<mlir::daphne::FrameType>(type)) {
         os << "Frame<" << unknownStrIf(t.getNumRows()) << "x[" << unknownStrIf(t.getNumCols()) << ": ";
         // Column types.
         std::vector<mlir::Type> cts = t.getColumnTypes();
@@ -285,25 +285,25 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPri
         } else
             os << '?';
         os << '>';
-    } else if (auto t = type.dyn_cast<mlir::daphne::ColumnType>()) {
+    } else if (auto t = llvm::dyn_cast<mlir::daphne::ColumnType>(type)) {
         os << "Column<" << unknownStrIf(t.getNumRows()) << "x" << t.getValueType() << '>';
-    } else if (auto t = type.dyn_cast<mlir::daphne::ListType>()) {
+    } else if (auto t = llvm::dyn_cast<mlir::daphne::ListType>(type)) {
         os << "List<" << t.getElementType() << '>';
-    } else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
+    } else if (auto handle = llvm::dyn_cast<mlir::daphne::HandleType>(type)) {
         os << "Handle<" << handle.getDataType() << ">";
-    } else if (isa<mlir::daphne::StringType>(type))
+    } else if (llvm::isa<mlir::daphne::StringType>(type))
         os << "String";
-    else if (auto t = type.dyn_cast<mlir::daphne::VariadicPackType>())
+    else if (auto t = llvm::dyn_cast<mlir::daphne::VariadicPackType>(type))
         os << "VariadicPack<" << t.getContainedType() << '>';
-    else if (isa<mlir::daphne::DaphneContextType>(type))
+    else if (llvm::isa<mlir::daphne::DaphneContextType>(type))
         os << "DaphneContext";
-    else if (isa<mlir::daphne::FileType>(type))
+    else if (llvm::isa<mlir::daphne::FileType>(type))
         os << "File";
-    else if (isa<mlir::daphne::DescriptorType>(type))
+    else if (llvm::isa<mlir::daphne::DescriptorType>(type))
         os << "Descriptor";
-    else if (isa<mlir::daphne::TargetType>(type))
+    else if (llvm::isa<mlir::daphne::TargetType>(type))
         os << "Target";
-    else if (isa<mlir::daphne::UnknownType>(type))
+    else if (llvm::isa<mlir::daphne::UnknownType>(type))
         os << "Unknown";
 }
 

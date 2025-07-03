@@ -399,7 +399,7 @@ void VectorizeComputationsPass::runOnOperation() {
         }
         bodyBlock->walk([](Operation *op) {
             for (auto resVal : op->getResults()) {
-                if (auto ty = resVal.getType().dyn_cast<daphne::MatrixType>()) {
+                if (auto ty = llvm::dyn_cast<daphne::MatrixType>(resVal.getType())) {
                     resVal.setType(ty.withShape(-1, -1));
                 }
             }

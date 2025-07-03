@@ -106,7 +106,7 @@ class EwModOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwModOp> 
 
     mlir::LogicalResult matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
                                         mlir::ConversionPatternRewriter &rewriter) const override {
-        mlir::daphne::MatrixType lhsTensor = adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType lhsTensor = llvm::dyn_cast<mlir::daphne::MatrixType>(adaptor.getLhs().getType());
         auto lhsRows = lhsTensor.getNumRows();
         auto lhsCols = lhsTensor.getNumCols();
 

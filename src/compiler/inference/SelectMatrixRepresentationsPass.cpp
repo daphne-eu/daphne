@@ -39,7 +39,7 @@ class SelectMatrixRepresentationsPass
             if (!isScfOp) {
                 // Set the matrix representation for all result types
                 for (auto res : op->getResults()) {
-                    if (auto matTy = res.getType().dyn_cast<daphne::MatrixType>()) {
+                    if (auto matTy = mlir::dyn_cast<daphne::MatrixType>(res.getType())) {
                         const double sparsity = matTy.getSparsity();
                         if (sparsity < cfg.sparsity_threshold) {
                             res.setType(matTy.withRepresentation(daphne::MatrixRepresentation::Sparse));
@@ -164,7 +164,7 @@ class SelectMatrixRepresentationsPass
 
     static bool returnsKnownProperties(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type rt) {
-            if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+            if (auto mt = mlir::dyn_cast<daphne::MatrixType>(rt))
                 return mt.getSparsity() != -1.0;
             return false;
         });

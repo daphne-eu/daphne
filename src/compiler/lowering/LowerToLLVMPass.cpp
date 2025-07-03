@@ -19,7 +19,7 @@
 #include "ir/daphneir/Passes.h"
 #include <util/ErrorHandler.h>
 
-#include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
+#include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
 
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
@@ -94,7 +94,7 @@ class ConstantOpLowering : public OpConversionPattern<daphne::ConstantOp> {
     LogicalResult matchAndRewrite(daphne::ConstantOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
         Location loc = op->getLoc();
-        if (auto strAttr = op.getValue().dyn_cast<StringAttr>()) {
+        if (auto strAttr = llvm::dyn_cast<StringAttr>(op.getValue())) {
             StringRef sr = strAttr.getValue();
 #if 1
             // MLIR does not have direct support for strings. Thus, if this is
@@ -152,7 +152,7 @@ class ConstantOpLowering : public OpConversionPattern<daphne::ConstantOp> {
             // NOTE: this fixes printing due to an error in the LLVMDialect, but
             // is the wrong behaviour.
             //  Use this for debugging only
-            if (auto iTy = op.getType().dyn_cast<IntegerType>()) {
+            if (auto iTy = llvm::dyn_cast<IntegerType>(op.getType())) {
                 auto ty = IntegerType::get(getContext(), iTy.getWidth());
                 rewriter.replaceOpWithNewOp<arith::ConstantOp>(
                     op.getOperation(), ty, IntegerAttr::get(ty, op.getValue().cast<IntegerAttr>().getValue()));
@@ -183,9 +183,9 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
             // mapped to the superclass Structure (see #397).
             // Check if all results have the same type.
             Type t0 = resultTypes[0];
-            Type mt0 = t0.dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
+            Type mt0 = llvm::dyn_cast<daphne::MatrixType>(t0).withSameElementTypeAndRepr();
             for (size_t i = 1; i < numRes; i++)
-                if (mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr()) {
+                if (mt0 != llvm::dyn_cast<daphne::MatrixType>(resultTypes[i]).withSameElementTypeAndRepr()) {
                     throw ErrorHandler::compilerError(loc, "LowerToLLVMPass",
                                                       "all results of a CallKernelOp must have the same "
                                                       "type to combine them into a single variadic result");
@@ -266,7 +266,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
         // create an array with the number of results, fill it with nullptrs,
         // and pass that to the kernel (variadic results).
         const bool hasVarRes = op->hasAttr(ATTR_HASVARIADICRESULTS)
-                                   ? op->getAttr(ATTR_HASVARIADICRESULTS).dyn_cast<BoolAttr>().getValue()
+                                   ? op->llvm::dyn_cast<BoolAttr>(getAttr(ATTR_HASVARIADICRESULTS)).getValue()
                                    : false;
 
         auto module = op->getParentOfType<ModuleOp>();
@@ -358,7 +358,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
             // element with a null pointer (required by the kernels). Otherwise
             // (i.e. when it represents a scalar), initialization is not
             // required.
-            Type elType = inputOutputTypes[0].dyn_cast<LLVM::LLVMPointerType>().getElementType();
+            Type elType = llvm::dyn_cast<LLVM::LLVMPointerType>(inputOutputTypes[0]).getElementType();
             if (llvm::isa<LLVM::LLVMPointerType>(elType)) {
                 for (size_t i = 0; i < numRes; i++) {
                     std::vector<Value> indices = {
@@ -398,7 +398,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
                 // allocated element with a null pointer (required by the
                 // kernels). Otherwise (i.e. when it represents a scalar),
                 // initialization is not required.
-                Type elType = inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType();
+                Type elType = llvm::dyn_cast<LLVM::LLVMPointerType>(inputOutputTypes[i]).getElementType();
                 if (llvm::isa<LLVM::LLVMPointerType>(elType)) {
                     rewriter.create<LLVM::StoreOp>(loc, rewriter.create<LLVM::NullOp>(loc, elType), allocaOp);
                 }
@@ -436,7 +436,7 @@ class CreateVariadicPackOpLowering : public OpConversionPattern<daphne::CreateVa
         Block &fb = op.getOperation()->getParentOfType<LLVM::LLVMFuncOp>().getBody().front();
         rewriter.setInsertionPointToStart(&fb);
 
-        Type contType = op.getRes().getType().dyn_cast<daphne::VariadicPackType>().getContainedType();
+        Type contType = llvm::dyn_cast<daphne::VariadicPackType>(op.getRes().getType()).getContainedType();
         Type convType = typeConverter->convertType(contType);
         rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
             op.getOperation(), LLVM::LLVMPointerType::get(convType),
@@ -709,9 +709,9 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         if (numRes > 0) {
             // TODO Support individual types for all outputs (see #397).
             // Check if all results have the same type.
-            Type mt0 = resultTypes[0].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
+            Type mt0 = llvm::dyn_cast<daphne::MatrixType>(resultTypes[0]).withSameElementTypeAndRepr();
             for (size_t i = 1; i < numRes; i++) {
-                if (mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr()) {
+                if (mt0 != llvm::dyn_cast<daphne::MatrixType>(resultTypes[i]).withSameElementTypeAndRepr()) {
                     throw ErrorHandler::compilerError(op, "LowerToLLVMPass",
                                                       "encountered a vectorized pipelines with different "
                                                       "result types, but at the moment we require all "
@@ -730,7 +730,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
             auto m64type = rewriter.getF64Type();
             auto msi64type = rewriter.getIntegerType(64, true);
 
-            auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
+            auto res_elem_type = op->llvm::dyn_cast<mlir::daphne::MatrixType>(getResult(0).getType()).getElementType();
             if (res_elem_type == m64type)
                 operandType = daphne::MatrixType::get(getContext(), m64type);
             else if (res_elem_type == m32type)

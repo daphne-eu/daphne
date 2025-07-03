@@ -40,7 +40,8 @@ class InlineMapOpLowering : public mlir::OpConversionPattern<mlir::daphne::MapOp
                                         mlir::ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
 
-        mlir::daphne::MatrixType lhsMatrixType = op->getOperandTypes().front().dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType lhsMatrixType =
+            llvm::dyn_cast<mlir::daphne::MatrixType>(op->getOperandTypes().front());
         auto matrixElementType = lhsMatrixType.getElementType();
         auto lhsMemRefType =
             mlir::MemRefType::get({lhsMatrixType.getNumRows(), lhsMatrixType.getNumCols()}, matrixElementType);

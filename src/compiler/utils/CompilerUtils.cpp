@@ -28,12 +28,12 @@ template <>
 std::pair<bool, std::string> CompilerUtils::isConstantHelper<std::string, mlir::StringAttr>(
     mlir::Value v, const std::function<std::string(const mlir::StringAttr &)> &func) {
     if (auto co = v.getDefiningOp<mlir::daphne::ConstantOp>()) {
-        if (auto attr = co.getValue().dyn_cast<mlir::StringAttr>()) {
+        if (auto attr = llvm::dyn_cast<mlir::StringAttr>(co.getValue())) {
             return std::make_pair(true, func(attr));
         }
     }
     if (auto co = v.getDefiningOp<mlir::arith::ConstantOp>()) {
-        if (auto attr = co.getValue().dyn_cast<mlir::StringAttr>()) {
+        if (auto attr = llvm::dyn_cast<mlir::StringAttr>(co.getValue())) {
             return std::make_pair(true, func(attr));
         }
     }

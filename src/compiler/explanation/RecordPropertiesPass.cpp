@@ -52,13 +52,14 @@ class RecordPropertiesPass : public PassWrapper<RecordPropertiesPass, OperationP
         auto recordResults = [&](Operation *op) {
             SmallVector<Attribute, 4> valueIDs;
             for (Value result : op->getResults())
-                if (result.getType().isa<daphne::MatrixType>()) {
-                    uint32_t id = generateUniqueID();
-                    valueIDs.push_back(builder.getUI32IntegerAttr(id));
-                    builder.setInsertionPointAfter(op);
-                    auto idConstant = builder.create<daphne::ConstantOp>(op->getLoc(), id);
-                    builder.create<daphne::RecordPropertiesOp>(op->getLoc(), result, idConstant);
-                }
+                if llvm
+                    ::isa<daphne::MatrixType>((result.getType())) {
+                        uint32_t id = generateUniqueID();
+                        valueIDs.push_back(builder.getUI32IntegerAttr(id));
+                        builder.setInsertionPointAfter(op);
+                        auto idConstant = builder.create<daphne::ConstantOp>(op->getLoc(), id);
+                        builder.create<daphne::RecordPropertiesOp>(op->getLoc(), result, idConstant);
+                    }
 
             if (!valueIDs.empty())
                 op->setAttr("daphne.value_ids", builder.getArrayAttr(valueIDs));

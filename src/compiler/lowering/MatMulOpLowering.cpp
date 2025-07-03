@@ -184,7 +184,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         if (rhsShape[COL] % options.getVecSize(matrixElementType.getIntOrFloatBitWidth()) != 0) {
             return false;
         }
-        if (!matrixElementType.isa<FloatType>()) {
+        if (!llvm::isa<FloatType>(matrixElementType)) {
             return false;
         }
         return true;
@@ -304,8 +304,8 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     LogicalResult matchAndRewrite(daphne::MatMulOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
-        mlir::daphne::MatrixType lhsMatrixType = adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-        mlir::daphne::MatrixType rhsMatrixType = adaptor.getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType lhsMatrixType = llvm::dyn_cast<mlir::daphne::MatrixType>(adaptor.getLhs().getType());
+        mlir::daphne::MatrixType rhsMatrixType = llvm::dyn_cast<mlir::daphne::MatrixType>(adaptor.getRhs().getType());
 
         auto lhsRows = lhsMatrixType.getNumRows();
         auto lhsCols = lhsMatrixType.getNumCols();

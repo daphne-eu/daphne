@@ -53,7 +53,7 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
                 rewriter.replaceOpWithNewOp<daphne::SyrkOp>(op, op.getResult().getType(), rhs);
                 return success();
             }
-            auto rhsMatTy = rhs.getType().dyn_cast<daphne::MatrixType>();
+            auto rhsMatTy = llvm::dyn_cast<daphne::MatrixType>(rhs.getType());
             if ((!rhsTransposed && rhsMatTy.getNumCols() == 1) || (rhsTransposed && rhsMatTy.getNumRows() == 1)) {
                 // `t(M) @ v` -> `gemv(M, v)`
                 rewriter.replaceOpWithNewOp<daphne::GemvOp>(op, op.getResult().getType(), to.getArg(), rhs);
@@ -92,7 +92,7 @@ void PhyOperatorSelectionPass::runOnOperation() {
         auto to = op.getLhs().getDefiningOp<daphne::TransposeOp>();
         bool rhsTransposed =
             CompilerUtils::constantOrThrow<bool>(op.getTransb(), "MatMulOp.getTransb() is expected to be a constant");
-        auto rhsMatTy = op.getRhs().getType().dyn_cast<daphne::MatrixType>();
+        auto rhsMatTy = llvm::dyn_cast<daphne::MatrixType>(op.getRhs().getType());
         return !(to &&
                  (
                      // `t(M) @ M` -> `syrk(M)`

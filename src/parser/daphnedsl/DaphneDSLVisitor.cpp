@@ -766,8 +766,8 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
 }
 
 bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type paramTy) const {
-    auto argMatTy = argTy.dyn_cast<mlir::daphne::MatrixType>();
-    auto paramMatTy = paramTy.dyn_cast<mlir::daphne::MatrixType>();
+    auto argMatTy = llvm::dyn_cast<mlir::daphne::MatrixType>(argTy);
+    auto paramMatTy = llvm::dyn_cast<mlir::daphne::MatrixType>(paramTy);
 
     // TODO This is rather a workaround than a thorough solution, since
     // unknown argument types do not really allow to check compatibility.
@@ -903,7 +903,7 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
     auto argVal = valueOrErrorOnVisit(ctx->expr(0));
     args.push_back(argVal);
 
-    auto argMatTy = argVal.getType().dyn_cast<mlir::daphne::MatrixType>();
+    auto argMatTy = llvm::dyn_cast<mlir::daphne::MatrixType>(argVal.getType());
     if (!argMatTy)
         throw ErrorHandler::compilerError(loc, "DSLVisitor",
                                           "built-in function 'map' expects argument of type matrix as its "
@@ -1015,9 +1015,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                     // TODO Instead of using the value type of the first frame
                     // column as the value type of the matrix, we should better
                     // use the most general of all column types.
-                    vt = vt.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
+                    vt = llvm::dyn_cast<mlir::daphne::FrameType>(vt).getColumnTypes()[0];
                 if (llvm::isa<mlir::daphne::MatrixType>(vt))
-                    vt = vt.dyn_cast<mlir::daphne::MatrixType>().getElementType();
+                    vt = llvm::dyn_cast<mlir::daphne::MatrixType>(vt).getElementType();
             }
             resType = utils.matrixOf(vt);
         } else if (dtStr == "frame") {
@@ -1037,12 +1037,12 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                 // reuse it for matrix/frame/scalar.
                 mlir::Type argType = valueOrErrorOnVisit(ctx->expr()).getType();
                 if (llvm::isa<mlir::daphne::MatrixType>(argType))
-                    colTypes = {argType.dyn_cast<mlir::daphne::MatrixType>().getElementType()};
+                    colTypes = {llvm::dyn_cast<mlir::daphne::MatrixType>(argType).getElementType()};
                 else if (llvm::isa<mlir::daphne::FrameType>(argType))
                     // TODO Instead of using the value type of the first frame
                     // column as the value type of the matrix, we should better
                     // use the most general of all column types.
-                    colTypes = {argType.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0]};
+                    colTypes = {llvm::dyn_cast<mlir::daphne::FrameType>(argType).getColumnTypes()[0]};
                 else
                     colTypes = {argType};
             }
@@ -1055,12 +1055,12 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                 // reuse it for matrix/frame/scalar.
                 mlir::Type argType = valueOrErrorOnVisit(ctx->expr()).getType();
                 if (llvm::isa<mlir::daphne::MatrixType>(argType))
-                    resType = argType.dyn_cast<mlir::daphne::MatrixType>().getElementType();
+                    resType = llvm::dyn_cast<mlir::daphne::MatrixType>(argType).getElementType();
                 else if (llvm::isa<mlir::daphne::FrameType>(argType))
                     // TODO Instead of using the value type of the first frame
                     // column as the value type of the matrix, we should better
                     // use the most general of all column types.
-                    resType = argType.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
+                    resType = llvm::dyn_cast<mlir::daphne::FrameType>(argType).getColumnTypes()[0];
                 else
                     resType = argType;
             }
@@ -1077,7 +1077,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                                               "casting to a frame with particular column types is not "
                                               "supported yet");
             // size_t numCols =
-            // argTy.dyn_cast<mlir::daphne::FrameType>().getColumnTypes().size();
+            // llvm::dyn_cast<mlir::daphne::FrameType>(argTy).getColumnTypes().size();
             // std::vector<mlir::Type> colTypes(numCols, vt);
             // resType = mlir::daphne::FrameType::get(builder.getContext(),
             // colTypes);
@@ -1338,12 +1338,12 @@ mlir::Value DaphneDSLVisitor::buildColMatrixFromValues(mlir::Location loc, const
         mlir::Type currentType = valueTypes[i];
 
         if constexpr (std::is_same<VT, std::string>::value) {
-            if (currentType.isa<mlir::daphne::StringType>())
+            if (llvm::isa<mlir::daphne::StringType>(currentType))
                 fillRes(i, CompilerUtils::isConstant<std::string>(currentValue));
             else
                 throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
         } else {
-            if (mlir::IntegerType valueIntType = currentType.dyn_cast<mlir::IntegerType>()) {
+            if (mlir::IntegerType valueIntType = llvm::dyn_cast<mlir::IntegerType>(currentType)) {
                 if (currentType.isSignedInteger()) {
                     switch (valueIntType.getWidth()) {
                     case 64:
@@ -1467,7 +1467,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     mlir::Type valueType = mostGeneralVt(valueTypes);
     mlir::Value colMatrix;
 
-    if (mlir::IntegerType valueIntType = valueType.dyn_cast<mlir::IntegerType>()) {
+    if (mlir::IntegerType valueIntType = llvm::dyn_cast<mlir::IntegerType>(valueType)) {
         if (valueType.isSignedInteger()) {
             switch (valueIntType.getWidth()) {
             case 64:
@@ -1504,7 +1504,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
         colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<double>(loc, values, valueTypes, valueType);
     else if (valueType.isF32())
         colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<float>(loc, values, valueTypes, valueType);
-    else if (valueType.isa<mlir::daphne::StringType>())
+    else if (llvm::isa<mlir::daphne::StringType>(valueType))
         colMatrix = DaphneDSLVisitor::buildColMatrixFromValues<std::string>(loc, values, valueTypes, valueType);
     else {
         throw ErrorHandler::compilerError(loc, "DSLVisitor", "matrix literal of invalid value type");
@@ -1547,7 +1547,7 @@ DaphneDSLVisitor::visitColMajorFrameLiteralExpr(DaphneDSLGrammarParser::ColMajor
 
         parsedLabels.emplace_back(label);
         columnMatrices.emplace_back(mat);
-        columnMatElemType.emplace_back(mat.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
+        llvm::dyn_cast<mlir::daphne::MatrixType>(columnMatElemType.emplace_back(mat.getType()).getElementType());
     }
 
     mlir::Type frameColTypes = mlir::daphne::FrameType::get(builder.getContext(), columnMatElemType);
@@ -1610,7 +1610,7 @@ DaphneDSLVisitor::visitRowMajorFrameLiteralExpr(DaphneDSLGrammarParser::RowMajor
     for (size_t i = 0; i < cols; ++i) {
         colTypes.emplace_back(mostGeneralVt(valueTypesVec[i]));
 
-        if (mlir::IntegerType valueIntType = colTypes[i].dyn_cast<mlir::IntegerType>()) {
+        if (mlir::IntegerType valueIntType = llvm::dyn_cast<mlir::IntegerType>(colTypes[i])) {
             if (colTypes[i].isSignedInteger()) {
                 switch (valueIntType.getWidth()) {
                 case 64:

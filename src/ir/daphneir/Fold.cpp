@@ -20,10 +20,10 @@
 #include <util/ErrorHandler.h>
 
 mlir::Attribute performCast(mlir::Attribute attr, mlir::Type targetType, mlir::Location loc) {
-    if (auto intAttr = attr.dyn_cast<mlir::IntegerAttr>()) {
+    if (auto intAttr = llvm::dyn_cast<mlir::IntegerAttr>(attr)) {
         auto apInt = intAttr.getValue();
 
-        if (auto outTy = targetType.dyn_cast<mlir::IntegerType>()) {
+        if (auto outTy = llvm::dyn_cast<mlir::IntegerType>(targetType)) {
             // Extend or truncate the integer value based on the target type
             if (outTy.isUnsignedInteger()) {
                 apInt = apInt.zextOrTrunc(outTy.getWidth());
@@ -34,7 +34,7 @@ mlir::Attribute performCast(mlir::Attribute attr, mlir::Type targetType, mlir::L
             return mlir::IntegerAttr::getChecked(loc, outTy, apInt);
         }
 
-        if (auto outTy = targetType.dyn_cast<mlir::IndexType>()) {
+        if (auto outTy = llvm::dyn_cast<mlir::IndexType>(targetType)) {
             return mlir::IntegerAttr::getChecked(loc, outTy, apInt);
         }
 
@@ -55,7 +55,7 @@ mlir::Attribute performCast(mlir::Attribute attr, mlir::Type targetType, mlir::L
                 return mlir::FloatAttr::get(targetType, llvm::APIntOps::RoundAPIntToFloat(apInt));
             }
         }
-    } else if (auto floatAttr = attr.dyn_cast<mlir::FloatAttr>()) {
+    } else if (auto floatAttr = llvm::dyn_cast<mlir::FloatAttr>(attr)) {
         auto val = floatAttr.getValueAsDouble();
 
         if (targetType.isF64()) {
@@ -87,7 +87,7 @@ mlir::Attribute constFoldUnaryOp(mlir::Location loc, mlir::Type resultType, llvm
         return {};
 
     if (llvm::isa<AttrElementT>(operands[0])) {
-        auto operand = operands[0].cast<AttrElementT>();
+        auto operand = mlir::cast<AttrElementT>(operands[0]);
 
         return AttrElementT::get(resultType, calculate(operand.getValue()));
     }
@@ -109,8 +109,8 @@ mlir::Attribute constFoldBinaryOp(mlir::Location loc, mlir::Type resultType, llv
         return {};
 
     if (llvm::isa<ArgAttrElementT>(operands[0]) && llvm::isa<ArgAttrElementT>(operands[1])) {
-        auto lhs = operands[0].cast<ArgAttrElementT>();
-        auto rhs = operands[1].cast<ArgAttrElementT>();
+        auto lhs = mlir::cast<ArgAttrElementT>(operands[0]);
+        auto rhs = mlir::cast<ArgAttrElementT>(operands[1]);
 
         // We need dedicated cases, as the parameters of ResAttrElementT::get()
         // depend on ResAttrElementT.
@@ -118,17 +118,17 @@ mlir::Attribute constFoldBinaryOp(mlir::Location loc, mlir::Type resultType, llv
                       std::is_same<ResAttrElementT, mlir::FloatAttr>::value) {
             mlir::Type l = lhs.getType();
             mlir::Type r = rhs.getType();
-            if ((l.dyn_cast<mlir::IntegerType>() || l.dyn_cast<mlir::FloatType>()) &&
-                (r.dyn_cast<mlir::IntegerType>() || r.dyn_cast<mlir::FloatType>())) {
+            if ((llvm::dyn_cast<mlir::IntegerType>(l) || llvm::dyn_cast<mlir::FloatType>(l)) &&
+                (llvm::dyn_cast<mlir::IntegerType>(r) || llvm::dyn_cast<mlir::FloatType>(r))) {
                 auto lhsBitWidth = lhs.getType().getIntOrFloatBitWidth();
                 auto rhsBitWidth = rhs.getType().getIntOrFloatBitWidth();
 
                 if (lhsBitWidth < rhsBitWidth) {
                     mlir::Attribute promotedLhs = performCast(lhs, rhs.getType(), loc);
-                    lhs = promotedLhs.cast<ArgAttrElementT>();
+                    lhs = mlir::cast<ArgAttrElementT>(promotedLhs);
                 } else if (rhsBitWidth < lhsBitWidth) {
                     mlir::Attribute promotedRhs = performCast(rhs, lhs.getType(), loc);
-                    rhs = promotedRhs.cast<ArgAttrElementT>();
+                    rhs = mlir::cast<ArgAttrElementT>(promotedRhs);
                 }
             }
             return ResAttrElementT::get(resultType, calculate(lhs.getValue(), rhs.getValue()));
@@ -138,7 +138,7 @@ mlir::Attribute constFoldBinaryOp(mlir::Location loc, mlir::Type resultType, llv
                                                   "expected boolean result type");
             return ResAttrElementT::get(lhs.getContext(), calculate(lhs.getValue(), rhs.getValue()));
         } else if constexpr (std::is_same<ResAttrElementT, mlir::StringAttr>::value) {
-            if (!resultType.isa<mlir::daphne::StringType>())
+            if (!llvm::isa<mlir::daphne::StringType>(resultType))
                 throw ErrorHandler::compilerError(loc, "CanonicalizerPass (constFoldBinaryOp)",
                                                   "expected string result type");
             return ResAttrElementT::get(calculate(lhs.getValue(), rhs.getValue()), resultType);
@@ -390,8 +390,8 @@ mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(ArrayRef<Attribute> operands) 
         return {};
 
     if (llvm::isa<StringAttr>(operands[0]) && isa<StringAttr>(operands[1])) {
-        auto lhs = operands[0].cast<StringAttr>();
-        auto rhs = operands[1].cast<StringAttr>();
+        auto lhs = mlir::cast<StringAttr>(operands[0]);
+        auto rhs = mlir::cast<StringAttr>(operands[1]);
 
         auto concated = lhs.getValue().str() + rhs.getValue().str();
         return StringAttr::get(concated, getType());
