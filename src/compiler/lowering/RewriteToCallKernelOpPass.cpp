@@ -517,7 +517,12 @@ class KernelReplacement : public RewritePattern {
                     mlir::BlockArgument maybeDctxArg = entryBlock.getArguments().back();
                     if (maybeDctxArg.getType() == dctx.getType()) {
                         ctx = maybeDctxArg;
+                    } else {
+                        throw ErrorHandler::compilerError(
+                            parFor, "RewriteToCallKernelOpPass",
+                            "expected the last arg of a ParFor entry block to be the daphne context.");
                     }
+
                     break;
                 }
                 region = parentOp ? parentOp->getParentRegion() : nullptr;
