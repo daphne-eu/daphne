@@ -1,0 +1,4 @@
+randIntermediate = rand(2,2,-4,9,1.0,7);
+result = sqrt(randIntermediate);
+
+print(randIntermediate);

@@ -1,7 +1,6 @@
 // RUN: daphne-opt --canonicalize --inline %s | FileCheck %s
 
 module {
-    module {
   func.func @main() {
     %0 = "daphne.constant"() {value = 3 : index} : () -> index
     %1 = "daphne.constant"() {value = -3 : si64} : () -> si64
@@ -16,7 +15,3 @@ module {
     "daphne.return"() : () -> ()
   }
 }
-
-}
-
-
