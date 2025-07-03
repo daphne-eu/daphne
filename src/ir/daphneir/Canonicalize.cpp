@@ -474,6 +474,52 @@ mlir::daphne::RandMatrixOp pushDownRandIntoEwSqrt(mlir::daphne::RandMatrixOp ran
                                                        newMax, sparsity, seed);
 }
 
+mlir::daphne::SeqOp pushDownSeqIntoEwAdd(mlir::daphne::SeqOp seqOp, mlir::daphne::EwAddOp op, mlir::Value scalar,
+                                         mlir::PatternRewriter &rewriter) {
+    auto from = seqOp.getFrom();
+    auto to = seqOp.getTo();
+    auto inc = seqOp.getInc();
+
+    mlir::daphne::EwAddOp newFrom = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), from, scalar);
+    mlir::daphne::EwAddOp newTo = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), to, scalar);
+    return rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
+}
+
+mlir::daphne::SeqOp pushDownSeqIntoEwSub(mlir::daphne::SeqOp seqOp, mlir::daphne::EwSubOp op, mlir::Value scalar,
+                                         mlir::PatternRewriter &rewriter) {
+    auto from = seqOp.getFrom();
+    auto to = seqOp.getTo();
+    auto inc = seqOp.getInc();
+
+    mlir::daphne::EwSubOp newFrom = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), from, scalar);
+    mlir::daphne::EwSubOp newTo = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), to, scalar);
+    return rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
+}
+
+mlir::daphne::SeqOp pushDownSeqIntoEwMul(mlir::daphne::SeqOp seqOp, mlir::daphne::EwMulOp op, mlir::Value scalar,
+                                         mlir::PatternRewriter &rewriter) {
+    auto from = seqOp.getFrom();
+    auto to = seqOp.getTo();
+    auto inc = seqOp.getInc();
+
+    mlir::daphne::EwMulOp newFrom = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), from, scalar);
+    mlir::daphne::EwMulOp newTo = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), to, scalar);
+    mlir::daphne::EwMulOp newInc = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), inc, scalar);
+    return rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, newInc);
+}
+
+mlir::daphne::SeqOp pushDownSeqIntoEwDiv(mlir::daphne::SeqOp seqOp, mlir::daphne::EwDivOp op, mlir::Value scalar,
+                                         mlir::PatternRewriter &rewriter) {
+    auto from = seqOp.getFrom();
+    auto to = seqOp.getTo();
+    auto inc = seqOp.getInc();
+
+    mlir::daphne::EwDivOp newFrom = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), from, scalar);
+    mlir::daphne::EwDivOp newTo = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), to, scalar);
+    mlir::daphne::EwDivOp newInc = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), inc, scalar);
+    return rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, newInc);
+}
+
 /**
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
  * and (2) `a + X` by `X + a` (`a` scalar, `X` matrix/frame).
@@ -515,6 +561,15 @@ mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op
     if (lhsRand && rhsIsSca) {
         auto newRand = pushDownRandomIntoEwAdd(lhsRand, op, rhs, rewriter);
         rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+
+    // This will check for the seq operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
+    if (lhsSeq && rhsIsSca) {
+        auto newSeq = pushDownSeqIntoEwAdd(lhsSeq, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newSeq});
         return mlir::success();
     }
 
@@ -579,24 +634,28 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
     // This will check for the fill operation to push down the arithmetic inside
     // of it
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
 
     if (lhsFill && rhsIsSca) {
         auto newFill = pushDownFillIntoEwSub(lhsFill, op, rhs, rewriter);
         rewriter.replaceOp(op, {newFill});
         return mlir::success();
     }
-    if (rhsFill && lhsIsSca) {
-        auto newFill = pushDownFillIntoEwSub(rhsFill, op, lhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
+
     // This will check for the rand operation to push down the arithmetic inside
     // of it
     mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
     if (lhsRand && rhsIsSca) {
         auto newRand = pushDownRandomIntoEwSub(lhsRand, op, rhs, rewriter);
         rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+
+    // This will check for the seq operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
+    if (lhsSeq && rhsIsSca) {
+        auto newSeq = pushDownSeqIntoEwSub(lhsSeq, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newSeq});
         return mlir::success();
     }
 
@@ -646,6 +705,15 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
         return mlir::success();
     }
 
+    // This will check for the seq operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
+    if (lhsSeq && rhsIsSca) {
+        auto newSeq = pushDownSeqIntoEwMul(lhsSeq, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newSeq});
+        return mlir::success();
+    }
+
     if (lhsIsSca && !rhsIsSca) {
         rewriter.replaceOpWithNewOp<mlir::daphne::EwMulOp>(op, op.getResult().getType(), rhs, lhs);
         return mlir::success();
@@ -686,6 +754,15 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
     if (lhsRand && rhsIsSca) {
         auto newRand = pushDownRandomIntoEwDiv(lhsRand, op, rhs, rewriter);
         rewriter.replaceOp(op, {newRand});
+        return mlir::success();
+    }
+
+    // This will check for the seq operation to push down the arithmetic inside
+    // of it
+    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
+    if (lhsSeq && rhsIsSca) {
+        auto newSeq = pushDownSeqIntoEwDiv(lhsSeq, op, rhs, rewriter);
+        rewriter.replaceOp(op, {newSeq});
         return mlir::success();
     }
 

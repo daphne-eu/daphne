@@ -175,7 +175,8 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
     DataTypeMat, ValueTypeFromArgs,
     OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>,
     CompletelyDense,
-    CastArgsToResType
+    CastArgsToResType,
+    Pure
 ]> {
     let arguments = (ins NumScalar:$from, NumScalar:$to, NumScalar:$inc);
     let results = (outs MatrixOf<[NumScalar]>);
