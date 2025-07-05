@@ -47,6 +47,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Transforms/Passes.h"
 #include "llvm/Support/TargetSelect.h"
 
@@ -262,6 +263,7 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
         }
 
     registerLLVMDialectTranslation(context_);
+    mlir::registerBuiltinDialectTranslation(context_);
     // module.dump();
     mlir::ExecutionEngineOptions options;
     options.llvmModuleBuilder = nullptr;
