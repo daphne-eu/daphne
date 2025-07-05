@@ -103,7 +103,7 @@ class ConstantOpLowering : public OpConversionPattern<daphne::ConstantOp> {
             // characters of the string constant to that array one by one. The
             // SSA value of the constant is replaced by a pointer to i8
             // pointing to the allocated buffer.
-            Type i8PtrType = LLVM::LLVMPointerType::get(rewriter.getContext());
+            Type ptrType = LLVM::LLVMPointerType::get(rewriter.getContext());
             const size_t numChars = sr.size() + 1; // +1 for trailing '\0'
             const std::string str = sr.str();
             const char *chars = str.c_str();
@@ -121,7 +121,7 @@ class ConstantOpLowering : public OpConversionPattern<daphne::ConstantOp> {
             rewriter.setInsertionPointToStart(&fb);
 
             auto allocaOp = rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
-                op.getOperation(), i8PtrType,
+                op.getOperation(), ptrType, rewriter.getI8Type(),
                 rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(numChars)), 1);
 
             // Go back to the original insertion point.
@@ -131,7 +131,7 @@ class ConstantOpLowering : public OpConversionPattern<daphne::ConstantOp> {
                 std::vector<Value> indices = {rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))};
                 rewriter.create<LLVM::StoreOp>(
                     loc, rewriter.create<arith::ConstantOp>(loc, rewriter.getI8IntegerAttr(chars[i])),
-                    rewriter.create<LLVM::GEPOp>(op->getLoc(), i8PtrType, allocaOp, indices));
+                    rewriter.create<LLVM::GEPOp>(op->getLoc(), ptrType, rewriter.getI8Type(), allocaOp, indices));
             }
 #else
             // Alternatively, we could create a global string, which would
@@ -147,7 +147,7 @@ class ConstantOpLowering : public OpConversionPattern<daphne::ConstantOp> {
             // mlir::arith::ConstantOp. Note that this is a different op than
             // mlir::daphne::ConstantOp!
 #if 1
-            rewriter.replaceOpWithNewOp<arith::ConstantOp>(op.getOperation(), op.getValue());
+            rewriter.replaceOpWithNewOp<arith::ConstantOp>(op.getOperation(), llvm::cast<TypedAttr>(op.getValue()));
 #else
             // NOTE: this fixes printing due to an error in the LLVMDialect, but
             // is the wrong behaviour.
@@ -288,28 +288,33 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
         TypeRange ts;
         rewriter.create<func::CallOp>(loc, kernelRef, ts, kernelOperands);
         rewriter.replaceOp(op,
-                           dereferenceOutputs(loc, rewriter, module, op->getNumResults(), hasVarRes, kernelOperands));
+                           dereferenceOutputs(loc, rewriter, module, op->getNumResults(), hasVarRes, kernelOperands, inputOutputTypes));
         return success();
     }
 
   private:
     static std::vector<Value> dereferenceOutputs(Location &loc, PatternRewriter &rewriter, ModuleOp &module,
-                                                 size_t numResults, bool hasVarRes, std::vector<Value> kernelOperands) {
+                                                 size_t numResults, bool hasVarRes, std::vector<Value> kernelOperands, 
+                                                 std::vector<Type> inputOutputTypes) {
         // transformed results
         std::vector<Value> results;
 
         if (hasVarRes) { // combine all results into one variadic result
             for (size_t i = 0; i < numResults; i++) {
                 std::vector<Value> indices = {rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))};
-                results.push_back(rewriter.create<LLVM::LoadOp>(
-                    loc, rewriter.create<LLVM::GEPOp>(loc, kernelOperands[0].getType(), kernelOperands[0], indices)));
+                auto ptrType = LLVM::LLVMPointerType::get(rewriter.getContext());
+                auto gepAddr = rewriter.create<LLVM::GEPOp>(loc, kernelOperands[0].getType(), ptrType, kernelOperands[0], indices);
+                results.push_back(rewriter.create<LLVM::LoadOp>(loc, ptrType, gepAddr));
             }
         } else // typical case
             for (size_t i = 0; i < numResults; i++) {
                 // dereference output
                 auto value = kernelOperands[i];
                 // load element (dereference)
-                auto resultVal = rewriter.create<LLVM::LoadOp>(loc, value);
+                // The result type should match the converted type from inputOutputTypes
+                // For typical case, inputOutputTypes[i] contains the converted result type
+                auto resultType = inputOutputTypes[i];
+                auto resultVal = rewriter.create<LLVM::LoadOp>(loc, resultType, value);
 
                 results.push_back(resultVal);
             }
@@ -364,7 +369,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
                         rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))};
                     rewriter.create<LLVM::StoreOp>(
                         loc, rewriter.create<LLVM::ZeroOp>(loc, elType),
-                        rewriter.create<LLVM::GEPOp>(loc, inputOutputTypes[0], allocaOp, indices));
+                        rewriter.create<LLVM::GEPOp>(loc, inputOutputTypes[0], elType, allocaOp, indices));
                 }
             }
         } else { // typical case
@@ -435,10 +440,16 @@ class CreateVariadicPackOpLowering : public OpConversionPattern<daphne::CreateVa
         Block &fb = op.getOperation()->getParentOfType<LLVM::LLVMFuncOp>().getBody().front();
         rewriter.setInsertionPointToStart(&fb);
 
+        // rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
+        //     op.getOperation(), LLVM::LLVMPointerType::get(op->getContext()),
+        //     rewriter.create<arith::ConstantOp>(op->getLoc(), op.getNumElementsAttr()), 1);
+
         Type contType = llvm::dyn_cast<daphne::VariadicPackType>(op.getRes().getType()).getContainedType();
-        rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
-            op.getOperation(), LLVM::LLVMPointerType::get(op->getContext()),
-            rewriter.create<arith::ConstantOp>(op->getLoc(), op.getNumElementsAttr()), 1);
+        Type convType = typeConverter->convertType(contType);
+
+        auto ptrType = LLVM::LLVMPointerType::get(op->getContext());
+        Value one = rewriter.create<LLVM::ConstantOp>(op->getLoc(), rewriter.getI64Type(), rewriter.getIndexAttr(1));
+        rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(op.getOperation(), ptrType, convType, one);
         return success();
     }
 };
@@ -459,7 +470,9 @@ class StoreVariadicPackOpLowering : public OpConversionPattern<daphne::StoreVari
         mlir::Value item = adaptor.getOperands()[1];
         auto elementType = llvm::cast<LLVM::LLVMPointerType>(pack.getType());
         std::vector<Value> indices = {rewriter.create<arith::ConstantOp>(loc, op.getPosAttr())};
-        auto addr = rewriter.create<LLVM::GEPOp>(loc, pack.getType(), pack, indices);
+        // Since pack is a pointer and elementType is extracted from pack.getType(), 
+        // we need to determine what the pack points to. For variadic packs, it's typically a pointer type.
+        auto addr = rewriter.create<LLVM::GEPOp>(loc, pack.getType(), elementType, pack, indices);
         Type itemType = item.getType();
         if (itemType != elementType) {
             if (llvm::isa<LLVM::LLVMPointerType>(elementType)) {
@@ -579,9 +592,9 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
 
             for (auto i = 0u; i < numDataOperands; ++i) {
                 auto addr = rewriter.create<LLVM::GEPOp>(
-                    loc, ptrPtrI1Ty, inputsArg,
+                    loc, ptrPtrI1Ty, ptrI1Ty, inputsArg,
                     ArrayRef<Value>({rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))}));
-                Value val = rewriter.create<LLVM::LoadOp>(loc, addr);
+                Value val = rewriter.create<LLVM::LoadOp>(loc, ptrI1Ty, addr);
                 auto expTy = typeConverter->convertType(op.getInputs().getType()[i]);
                 if (expTy != val.getType()) {
                     // casting for scalars
@@ -607,9 +620,9 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
                 // TODO: check how the GEPOp works exactly, and if this can be
                 // written better
                 auto addr1 = rewriter.create<LLVM::GEPOp>(
-                    op->getLoc(), pppI1Ty, returnRef,
+                    op->getLoc(), pppI1Ty, ptrPtrI1Ty, returnRef,
                     ArrayRef<Value>({rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))}));
-                auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
+                auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), ptrPtrI1Ty, addr1);
                 Value retValConverted = typeConverter->materializeTargetConversion(
                     rewriter, oldReturn->getLoc(), typeConverter->convertType(retVal.getType()), {retVal});
                 rewriter.create<LLVM::StoreOp>(loc, retValConverted, addr2);
@@ -659,9 +672,9 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
 
                 for (auto i = 0u; i < numDataOperands; ++i) {
                     auto addr = rewriter.create<LLVM::GEPOp>(
-                        loc, ptrPtrI1Ty, inputsArg,
+                        loc, ptrPtrI1Ty, ptrI1Ty, inputsArg,
                         ArrayRef<Value>({rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))}));
-                    Value val = rewriter.create<LLVM::LoadOp>(loc, addr);
+                    Value val = rewriter.create<LLVM::LoadOp>(loc, ptrI1Ty, addr);
                     auto expTy = typeConverter->convertType(op.getInputs().getType()[i]);
                     if (expTy != val.getType()) {
                         val = rewriter.create<LLVM::PtrToIntOp>(
@@ -728,7 +741,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
             auto m64type = rewriter.getF64Type();
             auto msi64type = rewriter.getIntegerType(64, true);
 
-            auto res_elem_type = op->llvm::dyn_cast<mlir::daphne::MatrixType>(getResult(0).getType()).getElementType();
+            auto res_elem_type = llvm::dyn_cast<mlir::daphne::MatrixType>(op->getResult(0).getType()).getElementType();
             if (res_elem_type == m64type)
                 operandType = daphne::MatrixType::get(getContext(), m64type);
             else if (res_elem_type == m32type)
@@ -801,7 +814,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         callee << "__int64_t";
         std::vector<Value> splitConsts;
         for (auto split : op.getSplits()) {
-            splitConsts.push_back(rewriter.create<arith::ConstantOp>(loc, split));
+            splitConsts.push_back(rewriter.create<arith::ConstantOp>(loc, llvm::cast<mlir::TypedAttr>(split)));
         }
         newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), splitConsts, ipFuncStart));
 
@@ -809,7 +822,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         callee << "__int64_t";
         std::vector<Value> combineConsts;
         for (auto combine : op.getCombines()) {
-            combineConsts.push_back(rewriter.create<arith::ConstantOp>(loc, combine));
+            combineConsts.push_back(rewriter.create<arith::ConstantOp>(loc, llvm::cast<mlir::TypedAttr>(combine)));
         }
         newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), combineConsts, ipFuncStart));
 
@@ -853,9 +866,10 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         OpBuilder::InsertPoint ipHere = rewriter.saveInsertionPoint();
         rewriter.restoreInsertionPoint(ipFuncStart);
 
-        auto valuePtrTy = LLVM::LLVMPointerType::get(valueTy);
+        auto valuePtrTy = LLVM::LLVMPointerType::get(rewriter.getContext());
         auto array = rewriter.create<LLVM::AllocaOp>(
-            loc, valuePtrTy, Value(rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(values.size()))));
+            loc, valuePtrTy, valueTy,
+            rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(values.size())));
         ipFuncStart = rewriter.saveInsertionPoint();
 
         // Go back to the original insertion point.
@@ -863,7 +877,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
 
         for (auto i = 0u; i < values.size(); ++i) {
             Value cstI = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i));
-            auto addr = rewriter.create<LLVM::GEPOp>(loc, valuePtrTy, array, ArrayRef<Value>({cstI}));
+            auto addr = rewriter.create<LLVM::GEPOp>(loc, valuePtrTy, valueTy, array, ArrayRef<Value>({cstI}));
             auto val = values[i];
             if (val.getType() != valueTy) {
                 val = rewriter.create<LLVM::BitcastOp>(loc, valueTy, val);
@@ -905,29 +919,17 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     LowerToLLVMOptions llvmOptions(&getContext());
     // llvmOptions.useBarePtrCallConv = true;
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
-    typeConverter.addConversion(
-        [&](daphne::MatrixType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
-    typeConverter.addConversion(
-        [&](daphne::FrameType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
-    typeConverter.addConversion(
-        [&](daphne::ListType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
-    typeConverter.addConversion(
-        [&](daphne::ColumnType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
-    typeConverter.addConversion(
-        [&](daphne::StringType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 8)); });
-    typeConverter.addConversion([&](daphne::VariadicPackType t) {
-        return LLVM::LLVMPointerType::get(typeConverter.convertType(t.getContainedType()));
-    });
-    typeConverter.addConversion(
-        [&](daphne::DaphneContextType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
-    typeConverter.addConversion(
-        [&](daphne::HandleType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
-    typeConverter.addConversion(
-        [&](daphne::FileType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
-    typeConverter.addConversion(
-        [&](daphne::DescriptorType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
-    typeConverter.addConversion(
-        [&](daphne::TargetType t) { return LLVM::LLVMPointerType::get(IntegerType::get(t.getContext(), 1)); });
+    typeConverter.addConversion([&](daphne::MatrixType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::FrameType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::ListType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::ColumnType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::StringType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::VariadicPackType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::DaphneContextType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::HandleType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::FileType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::DescriptorType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
+    typeConverter.addConversion([&](daphne::TargetType t) { return LLVM::LLVMPointerType::get(t.getContext()); });
 
     LLVMConversionTarget target(getContext());
 
