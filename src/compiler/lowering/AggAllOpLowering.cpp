@@ -81,7 +81,7 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
 
     LogicalResult matchAndRewrite(AggOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
-        daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
+        daphne::MatrixType matrixType = llvm::dyn_cast<daphne::MatrixType>(adaptor.getArg().getType());
         if (!matrixType) {
             return failure();
         }
@@ -204,8 +204,8 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
 // ****************************************************************************
 
 using SumAllOpLowering = AggAllOpLowering<daphne::AllAggSumOp, arith::AddIOp, arith::AddIOp, arith::AddFOp>;
-using MinAllOpLowering = AggAllOpLowering<daphne::AllAggMinOp, arith::MinSIOp, arith::MinUIOp, arith::MinFOp>;
-using MaxAllOpLowering = AggAllOpLowering<daphne::AllAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp>;
+// using MinAllOpLowering = AggAllOpLowering<daphne::AllAggMinOp, arith::MinSIOp, arith::MinUIOp, arith::MinFOp>;
+// using MaxAllOpLowering = AggAllOpLowering<daphne::AllAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp>;
 
 namespace {
 /**
@@ -242,11 +242,11 @@ void AggAllLoweringPass::runOnOperation() {
     typeConverter.addConversion(convertInteger);
     typeConverter.addConversion(convertFloat);
     typeConverter.addConversion([](Type type) { return type; });
-    typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
+    // typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
-    target.addLegalDialect<AffineDialect, arith::ArithDialect, BuiltinDialect, daphne::DaphneDialect,
+    target.addLegalDialect<affine::AffineDialect, arith::ArithDialect, BuiltinDialect, daphne::DaphneDialect,
                            linalg::LinalgDialect, LLVM::LLVMDialect, memref::MemRefDialect>();
 
     target.addDynamicallyLegalOp<daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>([](Operation *op) {
@@ -258,7 +258,7 @@ void AggAllLoweringPass::runOnOperation() {
         return true;
     });
 
-    patterns.insert<SumAllOpLowering, MinAllOpLowering, MaxAllOpLowering>(typeConverter, &getContext());
+    patterns.insert<SumAllOpLowering>(typeConverter, &getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();

@@ -149,7 +149,7 @@ class MatrixOf<list<Type> allowedTypes> : AnyTypeOf<[
         ContainerType<
                 AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
                 Matrix.predicate,
-                "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()",
+                "mlir::dyn_cast<::mlir::daphne::MatrixType>($_self).getElementType()",
                 "matrix"
         >,
         Unknown

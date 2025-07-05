@@ -43,10 +43,10 @@ void affineFillMemRef(mlir::Value value, mlir::ConversionPatternRewriter &rewrit
 mlir::Value convertMemRefToDenseMatrix(mlir::Location, mlir::ConversionPatternRewriter &, mlir::Value memRef,
                                        mlir::Type);
 
-std::optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
+mlir::Value materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
                                                       mlir::ValueRange inputs, mlir::Location loc);
 
-std::optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
+mlir::Value materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
                                                     mlir::Location loc);
 
 mlir::Type convertFloat(mlir::FloatType floatType);
@@ -57,3 +57,7 @@ mlir::Operation *findLastUseOfSSAValue(mlir::Value &v);
 
 mlir::Value convertToSignlessInt(mlir::OpBuilder &rewriter, mlir::Location loc, mlir::TypeConverter *typeConverter,
                                  mlir::Value origVal, mlir::Type targetType);
+
+mlir::Value convertToSignlessInt(mlir::OpBuilder &rewriter, mlir::Location loc,
+                                 const mlir::TypeConverter *const typeConverter, mlir::Value origVal,
+                                 mlir::Type targetType);

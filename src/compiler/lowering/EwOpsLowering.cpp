@@ -51,7 +51,7 @@ using namespace mlir;
 // Rewriter Templates (Elemwise Unary, Elemwise Binary)
 // ****************************************************************************
 
-using unaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value arg);
+using unaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value arg);
 
 /**
  * @brief template for lowering elemwise unary functions.
@@ -121,7 +121,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
     }
 };
 
-using binaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs);
+using binaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value lhs, Value rhs);
 
 /**
  * @brief template for lowering elemwise binary functions.
@@ -320,14 +320,14 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 // ----------------------------------------------------------------------------
 
 template <typename IOp, typename FOp>
-Value unaryNoConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value arg) {
+Value unaryNoConversionFunc(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value arg) {
     Value res = llvm::isa<mlir::IntegerType>(arg.getType()) ? rewriter.create<IOp>(loc, arg).getResult()
                                                             : rewriter.create<FOp>(loc, arg).getResult();
     return res;
 }
 
 template <typename IOp, typename FOp>
-Value unaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value arg) {
+Value unaryWithConversionFunc(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value arg) {
     Type resType = arg.getType();
     Value res = arg;
     if (llvm::isa<mlir::IntegerType>(resType)) {
@@ -341,7 +341,7 @@ Value unaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *
 }
 
 template <typename IOp, typename FOp>
-Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) {
+Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value lhs, Value rhs) {
     Type resType = lhs.getType();
     Value res{};
     if (llvm::isa<mlir::IntegerType>(resType)) {
@@ -356,7 +356,7 @@ Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter 
 }
 
 template <typename SIOp, typename UIOp, typename FOp>
-Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) {
+Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value lhs, Value rhs) {
     Type resType = lhs.getType();
     Value res{};
     if (llvm::isa<IntegerType>(resType)) {
@@ -376,7 +376,7 @@ Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter 
 // ----------------------------------------------------------------------------
 
 // powOp has different specializations for certain combinations of value types
-Value ewPowOpComputeRes(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) {
+Value ewPowOpComputeRes(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value lhs, Value rhs) {
     Value resValue;
     Type rhsMatrixElementType = rhs.getType();
     Type resMatrixElementType = lhs.getType();

@@ -78,7 +78,7 @@ def MapOpLoweringPass: Pass<"lower-map", "::mlir::func::FuncOp"> {
 
 def MatMulOpLoweringPass: Pass<"lower-mm", "::mlir::ModuleOp"> {
   let summary = "Lower the MatMulOp acting on Daphne matrices to an affine loop structure.";
-  let dependentDialects = ["vector::VectorDialect", "mlir::LLVM::LLVMDialect", "mlir::AffineDialect",
+  let dependentDialects = ["vector::VectorDialect", "mlir::LLVM::LLVMDialect", "mlir::affine::AffineDialect",
                             "mlir::memref::MemRefDialect"];
   let constructor = "mlir::daphne::createMatMulOpLoweringPass()";
   let description = [{

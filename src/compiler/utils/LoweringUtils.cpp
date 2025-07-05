@@ -94,24 +94,24 @@ mlir::Type convertInteger(mlir::IntegerType intType) {
     return mlir::IntegerType::get(intType.getContext(), intType.getIntOrFloatBitWidth());
 }
 
-std::optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
+mlir::Value materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
                                                       mlir::ValueRange inputs, mlir::Location loc) {
     mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
     mlir::Type toType = getElementTypeOrSelf(type);
 
     if ((!fromType.isSignedInteger() && !fromType.isUnsignedInteger()) || !toType.isSignlessInteger())
-        return std::nullopt;
+        return mlir::Value();
     // Use unrealized conversion casts to do signful->signless conversions.
     return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])->getResult(0);
 }
 
-std::optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
+mlir::Value materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
                                                     mlir::Location loc) {
     mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
     mlir::Type toType = getElementTypeOrSelf(type);
 
     if (!fromType.isSignlessInteger() || (!toType.isSignedInteger() && !toType.isUnsignedInteger()))
-        return std::nullopt;
+        return mlir::Value();
     // Use unrealized conversion casts to do signless->signful conversions.
     return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])->getResult(0);
 }
@@ -130,6 +130,13 @@ mlir::Operation *findLastUseOfSSAValue(mlir::Value &v) {
     }
 
     return lastUseOp;
+}
+
+mlir::Value convertToSignlessInt(mlir::OpBuilder &rewriter, mlir::Location loc,
+                                 const mlir::TypeConverter *const typeConverter, mlir::Value origVal,
+                                 mlir::Type targetType) {
+    return typeConverter->materializeTargetConversion(
+        rewriter, loc, rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal);
 }
 
 mlir::Value convertToSignlessInt(mlir::OpBuilder &rewriter, mlir::Location loc, mlir::TypeConverter *typeConverter,
