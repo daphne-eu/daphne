@@ -122,7 +122,7 @@ class ConstantOpLowering : public OpConversionPattern<daphne::ConstantOp> {
 
             auto allocaOp = rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
                 op.getOperation(), ptrType, rewriter.getI8Type(),
-                rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(numChars)), 1);
+                rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(numChars)));
 
             // Go back to the original insertion point.
             rewriter.restoreInsertionPoint(ipHere);
@@ -348,7 +348,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
             ipHere = rewriter.saveInsertionPoint();
             rewriter.restoreInsertionPoint(ipFuncStart);
             auto allocaOp = rewriter.create<LLVM::AllocaOp>(
-                loc, inputOutputTypes[0],
+                loc, LLVM::LLVMPointerType::get(rewriter.getContext()), inputOutputTypes[0],
                 rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(numRes)).getResult());
             ipFuncStart = rewriter.saveInsertionPoint();
 
@@ -390,7 +390,8 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
                 // comment on AllocaOp above).
                 ipHere = rewriter.saveInsertionPoint();
                 rewriter.restoreInsertionPoint(ipFuncStart);
-                auto allocaOp = rewriter.create<LLVM::AllocaOp>(loc, inputOutputTypes[i], cst1);
+                auto allocaOp = rewriter.create<LLVM::AllocaOp>(loc, LLVM::LLVMPointerType::get(rewriter.getContext()),
+                                                                inputOutputTypes[i], cst1);
                 ipFuncStart = rewriter.saveInsertionPoint();
                 kernelOperands.push_back(allocaOp);
 
@@ -694,9 +695,9 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
                     // TODO: check how the GEPOp works exactly, and if this can
                     // be written better
                     auto addr1 = rewriter.create<LLVM::GEPOp>(
-                        op->getLoc(), pppI1Ty, returnRef,
+                        op->getLoc(), pppI1Ty, ptrPtrI1Ty, returnRef,
                         ArrayRef<Value>({rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))}));
-                    auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
+                    auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), ptrPtrI1Ty, addr1);
                     Value retValConverted = typeConverter->materializeTargetConversion(
                         rewriter, oldReturn->getLoc(), typeConverter->convertType(retVal.getType()), {retVal});
                     rewriter.create<LLVM::StoreOp>(loc, retValConverted, addr2);

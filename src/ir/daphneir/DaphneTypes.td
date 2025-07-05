@@ -25,16 +25,15 @@ include "mlir/IR/EnumAttr.td"
 // ****************************************************************************
 
 // The base for all DaphneIR-specific types.
-class Daphne_Type<string name, string typeMnemonic = ""> : TypeDef<Daphne_Dialect, name> {
-    let mnemonic = typeMnemonic;
-    let hasCustomAssemblyFormat = 1;
+class Daphne_Type<string name> : TypeDef<Daphne_Dialect, name> {
+    let typeName = name;
 }
 
 // ****************************************************************************
 // Unknown type
 // ****************************************************************************
 
-def Unknown : Daphne_Type<"Unknown", "unknown"> {
+def Unknown : Daphne_Type<"Unknown"> {
     let summary = "placeholder for an unknown type";
     let description = [{
         This type is meant to be used in situations when a type is not (yet)
@@ -48,13 +47,13 @@ def Unknown : Daphne_Type<"Unknown", "unknown"> {
 // Data types
 // ****************************************************************************
 
-def Structure : Daphne_Type<"Structure", "structure"> {
+def Structure : Daphne_Type<"Structure"> {
     // Don't use this in TableGen!
     let summary = "structure";
 }
 
 // A matrix type.
-def Matrix : Daphne_Type<"Matrix", "matrix"> {
+def Matrix : Daphne_Type<"Matrix"> {
     let summary = "matrix";
 
     // TODO Maybe we should rename "element type" to "value type" everywhere.
@@ -155,7 +154,7 @@ class MatrixOf<list<Type> allowedTypes> : AnyTypeOf<[
         Unknown
 ]>;
 
-def Frame : Daphne_Type<"Frame", "frame"> {
+def Frame : Daphne_Type<"Frame"> {
     let summary = "frame";
 
     let parameters = (ins
@@ -237,7 +236,7 @@ def MatrixOrFrame : AnyTypeOf<[Matrix, Frame, Unknown]>;
 def MatrixOrU : AnyTypeOf<[Matrix, Unknown]>;
 def FrameOrU : AnyTypeOf<[Frame, Unknown]>;
 
-def Column : Daphne_Type<"Column", "column"> {
+def Column : Daphne_Type<"Column"> {
     let summary = "column";
 
     let parameters = (ins "::mlir::Type":$valueType, "ssize_t":$numRows);
@@ -305,7 +304,7 @@ class ColumnOf<list<Type> allowedTypes> : AnyTypeOf<[
         Unknown
 ]>;
 
-def List : Daphne_Type<"List", "list"> {
+def List : Daphne_Type<"List"> {
     let summary = "list";
 
     let parameters = (ins
@@ -319,7 +318,7 @@ def ListOrU : AnyTypeOf<[List, Unknown]>;
 // Distributed types
 // ****************************************************************************
 
-def Handle : Daphne_Type<"Handle", "handle"> {
+def Handle : Daphne_Type<"Handle"> {
     let summary = "handle to distributed data";
 
     let parameters = (ins "::mlir::Type":$dataType);
@@ -331,7 +330,7 @@ def Handle : Daphne_Type<"Handle", "handle"> {
 // ****************************************************************************
 
 // A character string type.
-def StrScalar : Daphne_Type<"String", "string"> {
+def StrScalar : Daphne_Type<"String"> {
     let summary = "string";
 }
 def MatrixOrFrameOrString : AnyTypeOf<[Matrix, Frame, StrScalar, Unknown]>;
@@ -350,15 +349,15 @@ def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;
 // IO types
 // ****************************************************************************
 
-def File : Daphne_Type<"File", "file"> {
+def File : Daphne_Type<"File"> {
     let summary = "An open file.";
 }
 
-def Descriptor : Daphne_Type<"Descriptor", "descriptor"> {
+def Descriptor : Daphne_Type<"Descriptor"> {
     let summary = "An open file on a device.";
 }
 
-def Target : Daphne_Type<"Target", "target"> {
+def Target : Daphne_Type<"Target"> {
     let summary = "An open device.";
 }
 
@@ -376,7 +375,7 @@ def Seed : TypeAlias<SI64, "seed">;
 // TODO Remove SI64 again, it was only added temporarily to make things work.
 def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, Unknown]>;
 
-def VariadicPack : Daphne_Type<"VariadicPack", "variadicpack"> {
+def VariadicPack : Daphne_Type<"VariadicPack"> {
     let summary = "pack of variadic operands";
     let description = [{
         This type is used to represent a variadic operand of an operation as a
@@ -388,7 +387,7 @@ def VariadicPack : Daphne_Type<"VariadicPack", "variadicpack"> {
     let parameters = (ins "::mlir::Type":$containedType);
 }
 
-def DaphneContext : Daphne_Type<"DaphneContext", "daphnecontext"> {
+def DaphneContext : Daphne_Type<"DaphneContext"> {
     let summary = "daphne context";
     let description = [{
         This type represents all kinds of run-time context information in one
