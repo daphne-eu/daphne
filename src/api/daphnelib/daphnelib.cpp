@@ -32,8 +32,8 @@ extern "C" DaphneLibResult getResult() { return daphneLibRes; }
  * dir.
  */
 extern "C" int daphne(const char *libDirPath, const char *scriptPath) {
-    const char *argv[] = {"daphne", "--libdir", libDirPath, scriptPath};
-    int argc = 4;
+    const char *argv[] = {"daphne", "--libdir", libDirPath, "--select-matrix-repr", scriptPath};
+    int argc = 5;
 
     return mainInternal(argc, argv, &daphneLibRes);
 }
