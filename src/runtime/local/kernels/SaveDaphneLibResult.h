@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_SAVEDAPHNELIBRESULT_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
@@ -61,6 +62,72 @@ template <typename VT> struct SaveDaphneLibResult<DenseMatrix<VT>> {
         daphneLibRes->cols = arg->getNumCols();
         daphneLibRes->rows = arg->getNumRows();
         daphneLibRes->vtc = (int64_t)ValueTypeUtils::codeFor<VT>;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct SaveDaphneLibResult<CSRMatrix<VT>> {
+    static void apply(const CSRMatrix<VT> *arg, DCTX(ctx)) {
+
+        const_cast<CSRMatrix<VT> *>(arg)->increaseRefCounter();
+
+        DaphneLibResult *daphneLibRes = ctx->getUserConfig().result_struct;
+        if (!daphneLibRes)
+            throw std::runtime_error("saveDaphneLibRes(): daphneLibRes is nullptr");
+
+        // Result is a sparse matrix
+        daphneLibRes->isSparse = true;
+
+        const size_t rows = arg->getNumRows();
+        const size_t cols = arg->getNumCols();
+        daphneLibRes->rows = rows;
+        daphneLibRes->cols = cols;
+        daphneLibRes->vtc = (int64_t)ValueTypeUtils::codeFor<VT>;
+
+        // original raw pointers
+        auto origVals = arg->getValuesSharedPtr().get();
+        auto origCols = arg->getColIdxsSharedPtr().get();
+        auto origOffsets = arg->getRowOffsetsSharedPtr().get();
+
+        // first pass: count *actual* non-zeros
+        size_t actualNNZ = 0;
+        for (size_t r = 0; r < rows; r++) {
+            auto start = origOffsets[r];
+            auto end = origOffsets[r + 1];
+            for (size_t i = start; i < end; i++)
+                if (origVals[i] != VT(0))
+                    actualNNZ++;
+        }
+
+        // allocate new tight buffers
+        VT *cleanVals = new VT[actualNNZ];
+        size_t *cleanCols = new size_t[actualNNZ];
+        size_t *cleanOffs = new size_t[rows + 1];
+
+        // second pass: copy only non-zeros
+        size_t p = 0;
+        cleanOffs[0] = 0;
+        for (size_t r = 0; r < rows; r++) {
+            auto start = origOffsets[r];
+            auto end = origOffsets[r + 1];
+            for (size_t i = start; i < end; i++) {
+                VT v = origVals[i];
+                if (v != VT(0)) {
+                    cleanVals[p] = v;
+                    cleanCols[p] = origCols[i];
+                    p++;
+                }
+            }
+            cleanOffs[r + 1] = p;
+        }
+
+        // hand them off in the result struct
+        daphneLibRes->data = static_cast<void *>(cleanVals);
+        daphneLibRes->col_related = static_cast<void *>(cleanCols);
+        daphneLibRes->row_related = static_cast<void *>(cleanOffs);
     }
 };
 

@@ -20,15 +20,25 @@ from daphne.utils.consts import PROTOTYPE_PATH, DAPHNELIB_FILENAME
 # Python representation of the struct DaphneLibResult.
 class DaphneLibResult(ctypes.Structure):
     _fields_ = [
-        # For matrices.
-        ("address", ctypes.c_void_p),
+        # For matrices
         ("rows", ctypes.c_int64),
         ("cols", ctypes.c_int64),
         ("vtc", ctypes.c_int64),
+        ("isSparse", ctypes.c_bool),
+
+        # For dense matrices
+        ("address", ctypes.c_void_p),
+
+        # For sparse matrices
+        ("data", ctypes.c_void_p),
+        ("row_related",ctypes.c_void_p),
+        ("col_related",ctypes.c_void_p),
+
         # For frames.
         ("vtcs", ctypes.POINTER(ctypes.c_int64)),
         ("labels", ctypes.POINTER(ctypes.c_char_p)),
         ("columns", ctypes.POINTER(ctypes.c_void_p)),
+
         # To pass error messages to Python code.
         ("error_message", ctypes.c_char_p)
     ]
