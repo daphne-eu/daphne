@@ -21,10 +21,19 @@
 
 struct DaphneLibResult {
     // For matrices.
-    void *address;
     int64_t rows;
     int64_t cols;
     int64_t vtc;
+    bool isSparse;
+
+    // For DenseMatrix
+    void *address;
+
+    // For Sparse Matrix
+    void *data;
+    void *row_related;
+    void *col_related;
+
     // For frames.
     int64_t *vtcs;
     char **labels;
