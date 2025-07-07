@@ -27,16 +27,16 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 **Provide DAPHNE:**
 
 - `libdaphnelib.so` and `libAllKernels.so` must be present
-  - Building the project with `./build.sh --target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
-  - OR use the `lib/` dir of a release
+    - Building the project with `./build.sh --target daphnelib` achieves this (this creates a `lib` dir in the `daphne` project root)
+    - OR use the `lib/` dir of a release
 - `LD_LIBRARY_PATH` must be set (e.g., executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
 - Set the environment variable `DAPHNELIB_DIR_PATH` to the path were the libraries (`*.so` files) are placed, e.g., `path/to/daphne/lib/`
 
 ## Installation
 
 - There are two options to install the Python package `daphne` (DaphneLib)
-  - Via github url: `pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python`
-  - OR clone the DAPHNE repository and install from source files: `pip install daphne/src/api/python`
+    - Via GitHub url: `pip install git+https://github.com/daphne-eu/daphne.git@main#subdirectory=src/api/python`
+    - OR clone the DAPHNE repository and install from source files: `pip install daphne/src/api/python`
 - *Recommendation:* Use a virtual environment
 
     ```shell
@@ -83,7 +83,7 @@ Here, we generate some random data in numpy and import it to DAPHNE **(3)**.
 Based on DAPHNE matrices/frames/scalars (and Python scalars), complex expressions can be defined **(4)** using Python operators (such as `-` and `/` above) and methods on the DAPHNE matrices/frames/scalars (such as `mean()` and `stddev()` above).
 The results of these expressions again represent DAPHNE matrices/frames/scalars.
 
-Up until here, no acutal computations are performed.
+Up until here, no actual computations are performed.
 Instead, an internal DAG (directed acyclic graph) representation of the computation is built.
 When calling `compute()` on the result **(5)**, the DAG is automatically optimized and executed by DAPHNE.
 This principle is known as *lazy evaluation*.
@@ -231,7 +231,7 @@ X.sqrt()
 X.cbind(Y)
 ```
 
-## Data Exchange with other Python Libraries
+## Data Exchange with Other Python Libraries
 
 DaphneLib supports efficient data exchange with other well-known Python libraries, in both directions.
 The data transfer from other Python libraries to DaphneLib can be triggered through the `from_...()` methods of the `DaphneContext` (e.g., `from_numpy()`).
@@ -239,12 +239,64 @@ A comprehensive list of these methods can be found in the [DaphneLib API referen
 The data transfer from DaphneLib back to Python happens during the call to `compute()`.
 If the result of the computation in DAPHNE is a matrix, `compute()` returns a `numpy.ndarray` (or optionally a `tensorflow.Tensor` or `torch.Tensor`); if the result is a frame, it returns a `pandas.DataFrame`; and if the result is a scalar, it returns a plain Python scalar.
 
-So far, DaphneLib can exchange data with numpy, pandas, TensorFlow, and PyTorch.
+So far, DaphneLib can exchange data with numpy, pandas, TensorFlow, PyTorch, and plain Python lists.
 By default, the data transfer is via shared memory (and in many cases zero-copy).
 Numpy and pandas are *required* dependencies for DaphneLib, so they should anyway be installed.
 TensorFlow and PyTorch are *optional* for DaphneLib; if these libraries are not installed, DaphneLib cannot exchange data with them, but all remaining features still work.
 In case you run DAPHNE inside the [`daphne-dev` container](/doc/GettingStarted.md), please note that TensorFlow and PyTorch are *not* included in the `daphne-dev` container due to their large footprint.
 Please follow the [instructions](/doc/development/InstallPythonLibsInContainer.md) on installing Python libraries in the `daphne-dev` container if you need them.
+
+### Data Exchange with Plain Python Lists
+
+*Example:*
+
+```python
+from daphne.context.daphne_context import DaphneContext
+
+dc = DaphneContext()
+
+# Create a python list.
+a = [10, 20, 30, 40, 50, 60]
+
+# Transfer data to DaphneLib (lazily evaluated).
+X = dc.from_python(a)
+
+print("How DAPHNE sees the data:")
+X.print().compute()
+
+# Add 100 to each value in X.
+X = X + 100.0
+
+# Compute in DAPHNE, transfer result back to Python.
+print("\nResult of adding 100 to each value, back in Python:")
+print(X.compute())
+```
+
+*Run by:*
+```shell
+python3 scripts/examples/daphnelib/data-exchange-python.py
+```
+
+*Output:*
+```text
+How DAPHNE sees the data:
+DenseMatrix(6x1, int64_t)
+10
+20
+30
+40
+50
+60
+
+Result of adding 100 to each value, back in Python:
+[[110.]
+ [120.]
+ [130.]
+ [140.]
+ [150.]
+ [160.]]
+```
+
 
 ### Data Exchange with numpy
 

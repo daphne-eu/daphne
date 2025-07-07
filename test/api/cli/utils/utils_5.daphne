@@ -1,0 +1,8 @@
+// Test if "large" amounts of data can be captured from DAPHNE's stdout and stderr by our test utilities, especially by function runProgram().
+// These scripts may work totally fine when executed on the command line, but can reveal problems with runProgram().
+
+// Print 100,000 bytes to stdout and 100,000 bytes to stderr. This amount is greater than the typical pipe capacity of 16 pages (i.e., 65,536 bytes).
+for (i in 1:10000) {
+    print("123456789", true, false); # 1-9 plus \n -> 10 bytes
+    print("123456789", true, true);  # 1-9 plus \n -> 10 bytes
+}

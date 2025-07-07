@@ -1,0 +1,2 @@
+m = ["apple", "banana", "cherry", "fig"](2, 2);
+print(m);

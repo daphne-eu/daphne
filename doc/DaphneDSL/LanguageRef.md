@@ -106,7 +106,7 @@ Simple expressions constitute the basis of all expressions, and DaphneDSL offers
 
 Literals represent hard-coded values and can be of various data and value types:
 
-##### Scalar literals
+##### Scalar Literals
 
 **Integer literals** are specified in decimal digits.
 By default, they have the type `si64`, but if the optional suffix `u` is appended, the type is `ui64`.
@@ -142,7 +142,7 @@ Special characters must be escaped using a backslash:
 "This is \"hello.daphne\"."
 ```
 
-##### Matrix literals
+##### Matrix Literals
 
 A matrix literal consists of a comma-separated list of elements enclosed in square brackets,
 optionally followed by parentheses with a comma separated pair of dimensions (number of rows and/or columns).
@@ -160,7 +160,7 @@ Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can also
 [1, 2, 3, sum([4, 5])](2, 2)    # matrix<si64> with shape (2 x 2)
 ```
 
-##### Frame literals
+##### Frame Literals
 
 Frame literals can be defined using either columns or rows and are enclosed in curly brackets.
 
@@ -200,7 +200,7 @@ Variables are referenced by their name.
 x
 ```
 
-#### Script arguments
+#### Script Arguments
 
 Script arguments are named *literals* that can be passed to a DaphneDSL script.
 They are referenced by a dollar sign `$` followed by the argument's name.
@@ -281,7 +281,7 @@ The result is always a data object of the same data type as the input (even *1 x
 
 The rows and columns to extract can be specified independently in any of the following ways:
 
-##### Omit indexing
+##### Omit Indexing
 
 Omitting the specification of rows/columns means extracting all rows/columns.
 
@@ -291,51 +291,51 @@ Omitting the specification of rows/columns means extracting all rows/columns.
 X[, ] # same as X (all rows and columns)
 ```
 
-##### Indexing by position
+##### Indexing by Position
 
 This is supported for addressing rows and columns in matrices and frames.
 
 - *Single row/column position:*
-  Extracts only the specified row/column.
+    Extracts only the specified row/column.
 
-  *Examples:*
+    *Examples:*
 
-  ```r
-  X[2, 3] # extracts the cell in row 2, column 3 as a 1 x 1 matrix
-  ```
+    ```r
+    X[2, 3] # extracts the cell in row 2, column 3 as a 1 x 1 matrix
+    ```
 
 - *Row/column range:*
-  Extracts all rows/columns between a lower bound (inclusive) and an upper bound (exclusive).
-  The lower and upper bounds can be omitted independently of each other.
-  In that case, they are replaced by zero and the number of rows/columns, respectively.
-  
-  *Examples:*
+    Extracts all rows/columns between a lower bound (inclusive) and an upper bound (exclusive).
+    The lower and upper bounds can be omitted independently of each other.
+    In that case, they are replaced by zero and the number of rows/columns, respectively.
 
-  ```r
-  X[2:5, 3] # extracts rows 2, 3, 4 of column 3
-  X[2, 3:]  # extracts row 2 of all columns from column 3 onward
-  X[:5, 3]  # extracts rows 0, 1, 2, 3, 4 of column 3
-  X[:, 3]   # extracts all rows of column 3, same as X[, 3]
-  ```
+    *Examples:*
+
+    ```r
+    X[2:5, 3] # extracts rows 2, 3, 4 of column 3
+    X[2, 3:]  # extracts row 2 of all columns from column 3 onward
+    X[:5, 3]  # extracts rows 0, 1, 2, 3, 4 of column 3
+    X[:, 3]   # extracts all rows of column 3, same as X[, 3]
+    ```
 
 - *Arbitrary sequence of row/column positions:*
-  Expects a sequence of row/column positions *as a column (n x 1) matrix*.
-  There are no restrictions on these positions, except that they must be in bounds.
-  In particular, they do *not* need to be contiguous, sorted, or unique.
+    Expects a sequence of row/column positions *as a column (n x 1) matrix*.
+    There are no restrictions on these positions, except that they must be in bounds.
+    In particular, they do *not* need to be contiguous, sorted, or unique.
 
-  *Examples:*
+    *Examples:*
 
-  ```r
-  X[ [5, 1, 3], ] # extracts rows 5, 1, and 3
-  X[, [2, 2, 2] ] # extracts column 2 three times
-  ```
+    ```r
+    X[ [5, 1, 3], ] # extracts rows 5, 1, and 3
+    X[, [2, 2, 2] ] # extracts column 2 three times
+    ```
 
-  Note that, when using matrix literals to specify the positions, a space must be left between the opening/closing bracket `[`/`]` of the indexing and that of the matrix literal, in order to avoid confusion with the indexing by bit vector.
+    Note that, when using matrix literals to specify the positions, a space must be left between the opening/closing bracket `[`/`]` of the indexing and that of the matrix literal, in order to avoid confusion with the indexing by bit vector.
 
 A few remarks on positions:
 
 - Counting starts at zero.
-  For instance, a 5 x 3 matrix has row positions 0, 1, 2, 3, and 4, and column positions 0, 1, and 2.
+    For instance, a 5 x 3 matrix has row positions 0, 1, 2, 3, and 4, and column positions 0, 1, and 2.
 - They must be non-negative.
 - They can be provided as integers or floating-point numbers (the latter are rounded down to integers).
 - They can be given as literals or as any expression evaluating to a suitable value.
@@ -348,21 +348,21 @@ X[1.9, ]              # same as X[1, ]
 X[i, (j + 2*sum(Y)):] # expressions
 ```
 
-##### Indexing by label
+##### Indexing by Label
 
 So far, this is only supported for addressing columns of frames.
 
 - *Single column label:*
-  Extracts only the column with the given label.
+    Extracts only the column with the given label.
 
-  *Examples:*
+    *Examples:*
 
-  ```r
-  X[, "revenue"]        # extracts the column labeled "revenue"
-  X[100:200, "revenue"] # extracts rows 100 through 199 of the column labeled "revenue"
-  ```
+    ```r
+    X[, "revenue"]        # extracts the column labeled "revenue"
+    X[100:200, "revenue"] # extracts rows 100 through 199 of the column labeled "revenue"
+    ```
 
-##### Indexing by bit vector
+##### Indexing by Bit Vector
 
 This is not supported for addressing columns of frames yet.
 
@@ -415,7 +415,7 @@ as.ui8(x) # casts x to the same data type as x, but with value type ui8
 
 Note that casting to frames does not support changing the value/column type yet, i.e., expressions like `as.frame<f64, si32, f32>(x)` and `as.f64(x)` (on a frame `x`) do not work yet.
 
-#### Function calls
+#### Function Calls
 
 Function calls can address [*built-in* functions](/doc/DaphneDSL/Builtins.md) as well as [*user-defined* functions](#user-defined-functions-udfs), but the syntax is the same in both cases:
 The name of the function followed by a comma-separated list of positional parameters in parentheses.
@@ -428,7 +428,7 @@ t(myMatrix);
 seq(0, 10, 2);
 ```
 
-#### Conditional expression
+#### Conditional Expression
 
 DaphneDSL supports the conditional expression with the general syntax:
 
@@ -439,15 +439,15 @@ condition ? then-value : else-value
 The condition can be either a scalar or a matrix.
 
 - *Condition is a scalar:*
-  If the condition is `true` (when casted to boolean), then the result is the `then-value`.
-  Otherwise, the result is the `else-value`.
-  The `then-value` and the `else-value` must have the same type.
+    If the condition is `true` (when casted to boolean), then the result is the `then-value`.
+    Otherwise, the result is the `else-value`.
+    The `then-value` and the `else-value` must have the same type.
 - *Condition is a matrix (elementwise application):*
-  In this case, the condition matrix can be of any value type, but must only contain 0 or 1 values of that type (for all other values, the behavior is unspecified).
-  The `then-value` and `else-value` must be matrices of the same shape as the condition and must have the same value type as each other.
-  The `?:`-operator is applied in an elementwise fashion, i.e., individually for each triple of corresponding elements in condition/`then-value`/`else-value`.
-  The `then-value` and `else-value` may also be scalars, in which case they are treated like matrices with a constant value.
-  The result is a matrix of the same shape as the condition and the same value type as the `then-value`/`else-value`.
+    In this case, the condition matrix can be of any value type, but must only contain 0 or 1 values of that type (for all other values, the behavior is unspecified).
+    The `then-value` and `else-value` must be matrices of the same shape as the condition and must have the same value type as each other.
+    The `?:`-operator is applied in an elementwise fashion, i.e., individually for each triple of corresponding elements in condition/`then-value`/`else-value`.
+    The `then-value` and `else-value` may also be scalars, in which case they are treated like matrices with a constant value.
+    The result is a matrix of the same shape as the condition and the same value type as the `then-value`/`else-value`.
 
 *Examples:*
 
@@ -461,7 +461,7 @@ The condition can be either a scalar or a matrix.
 At the highest level, a DaphneDSL script is a sequence of statements.
 Statements comprise assignments, various forms of control flow, and declarations of user-defined functions.
 
-### Expression statement
+### Expression Statement
 
 Every expression followed by a semicolon `;` can be used as a statement.
 This is useful for expressions (especially function calls) which do not return a value.
@@ -476,7 +476,7 @@ doSomething();  # possible return values are ignored, but the execution
                 # of the user-defined function could have side effects
 ```
 
-### Assignment statement
+### Assignment Statement
 
 The return value(s) of an expression can be assigned to one (or more) variable(s).
 
@@ -545,13 +545,13 @@ B[..., ...] = ...; # copy-on-write: changes B, but no effect on A
 A[..., ...] = ...; # copy-on-write: changes A, but no effect on B
 ```
 
-### Control Flow statements
+### Control Flow Statements
 
 DaphneDSL supports block statements, conditional branching, and various kinds of loops.
 These control flow constructs can be nested arbitrarily.
 Besides that, the [`stop()` built-in function](/doc/DaphneDSL/Builtins.md) can be used to terminate the DaphneDSL script execution.
 
-#### Block statement
+#### Block Statement
 
 A block statement allows to view an enclosed sequence of statements like a single statement.
 This is very useful in combination with the control flow statements described below.
@@ -582,7 +582,7 @@ print(x);     # prints 2
 print(y);     # error
 ```
 
-#### If-then-else
+#### If-Then-Else
 
 The syntax of an if-then-else statement is as follows:
 
@@ -767,7 +767,7 @@ def fib(n: si64) -> si64 {
     return fib(n - 1) + fib(n - 2);
 }
 ```
-```
+```csharp
 def nextTwo(a: si64) -> si64, si64 {
     return a + 1, a + 2;
 }
@@ -784,7 +784,7 @@ x = 2 * fib(5) + 123;
 y, z = nextTwo(123);
 ```
 
-### Typed and Untyped Functions (experimental)
+### Typed and Untyped Functions (Experimental)
 
 DaphneDSL supports both typed and untyped functions.
 
@@ -795,7 +795,7 @@ A typed function is compiled exactly once and specialized to the specified param
 In contrast to that, the definition of an *untyped function* leaves the data and value type, or just the value type, of one or more parameters and/or return values unspecified.
 At call sites, a value of any type, or any value type, can be passed to an untyped parameter.
 As a consequence, an untyped function is compiled and specialized on demand according to the types at a call site.
-Consistently, the types of untyped return values are infered from the parameter types and operations.
+Consistently, the types of untyped return values are inferred from the parameter types and operations.
 
 ## Compiler Hints
 

@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-df = createFrame([1, 2, 3], [-1.1, -2.2, -3.3], "abc", "def");
+df = createFrame([1, 2, 3], [-1.1, -2.2, -3.3], ["red", "green", "blue"], "abc", "def", "ghi");
 print(df);

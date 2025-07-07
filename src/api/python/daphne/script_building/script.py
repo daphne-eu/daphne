@@ -90,9 +90,12 @@ class DaphneDSLScript:
 
     def execute(self):
         temp_out_path = os.path.join(TMP_PATH, "tmpdaphne.daphne")
-        temp_out_file = open(temp_out_path, "w")
-        temp_out_file.writelines(self.daphnedsl_script)
-        temp_out_file.close()
+        with open(temp_out_path, "w") as temp_out_file:
+            temp_out_file.writelines(self.daphnedsl_script)
+
+        # Check if the file exists
+        if not os.path.exists(temp_out_path):
+            raise RuntimeError(f"file '{temp_out_path}' does not exist")
         
         #os.environ['OPENBLAS_NUM_THREADS'] = '1'
         res = DaphneLib.daphne(ctypes.c_char_p(str.encode(PROTOTYPE_PATH)), ctypes.c_char_p(str.encode(temp_out_path)))

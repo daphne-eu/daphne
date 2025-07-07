@@ -13,24 +13,26 @@
 # limitations under the License.
 
 if(NOT TARGET spdlog)
-	# Stand-alone build
-	find_package(spdlog REQUIRED)
+    # Stand-alone build
+    find_package(spdlog REQUIRED)
 endif()
 
 add_library(Util
-		DaphneLogger.h
-		DaphneLogger.cpp
+        DaphneLogger.h
+        DaphneLogger.cpp
         ErrorHandler.h
         ErrorHandler.cpp
         KernelDispatchMapping.h
         KernelDispatchMapping.cpp
         MurmurHash3.cpp
-		preprocessor_defs.h
+        preprocessor_defs.h
+        PropertyLogger.h
+        PropertyLogger.cpp
         Statistics.h
         Statistics.cpp
-		StringRefCount.h
-		StringRefCount.cpp
-        )
+        StringRefCount.h
+        StringRefCount.cpp
+)
 
 target_link_libraries(Util PRIVATE spdlog::spdlog fmt::fmt)
 

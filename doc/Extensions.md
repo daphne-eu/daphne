@@ -40,11 +40,11 @@ All files shown below can be found in `/scripts/examples/extensions/myKernels/`.
 A kernel extension consists at least of the following:
 
 - A *C++ source file*, which includes some essential DAPHNE headers and defines one or multiple kernel functions.
-  The kernel functions have to follow a certain interface **(*)** and have `extern "C"` linkage.
-  Within the kernel functions, extension developers have a lot of freedom.
-  Nevertheless, we also plan to provide some best practices and helpers to make extension development more productive.
+    The kernel functions have to follow a certain interface **(*)** and have `extern "C"` linkage.
+    Within the kernel functions, extension developers have a lot of freedom.
+    Nevertheless, we also plan to provide some best practices and helpers to make extension development more productive.
 - A *kernel catalog JSON file*, which provides some essential information on the kernels provided in the extension, such that DAPHNE knows how to use them.
-  This information includes: the mnemonic of the DaphneIR operation **(*)**, the name of the kernel function, the list of result/argument types, the backend (e.g. CPU or a specific hardware accelerator), and the path to the shared library of the extension (relative to this JSON file).
+    This information includes: the mnemonic of the DaphneIR operation **(*)**, the name of the kernel function, the list of result/argument types, the backend (e.g. CPU or a specific hardware accelerator), and the path to the shared library of the extension (relative to this JSON file).
 - To build the extension, it is recommendable (but not required) to include a Makefile or similar as well.
 
 **(*)** *We will add a concrete list of DaphneIR operations for which custom kernels can be added later.

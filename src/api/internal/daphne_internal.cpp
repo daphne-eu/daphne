@@ -31,6 +31,7 @@
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include <util/DaphneLogger.h>
 #include <util/KernelDispatchMapping.h>
+#include <util/PropertyLogger.h>
 #include <util/Statistics.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
@@ -286,6 +287,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         parsing_simplified,
         property_inference,
         select_matrix_repr,
+        transfer_data_props,
         sql,
         phy_op_selection,
         type_adaptation,
@@ -309,6 +311,8 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
             clEnumVal(select_matrix_repr, "Show DaphneIR after selecting "
                                           "physical matrix representations"),
+            clEnumVal(transfer_data_props, "Show DaphneIR after inserting ops for transferring compile-time "
+                                           "information on data properties to the runtime"),
             clEnumVal(phy_op_selection, "Show DaphneIR after selecting physical operators"),
             clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
@@ -334,11 +338,26 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
 
     static opt<bool> enableStatistics("statistics", cat(daphneOptions), desc("Enables runtime statistics output."));
 
+    static opt<bool> enablePropertyRecording(
+        "enable-property-recording", cat(daphneOptions),
+        desc("Record data properties of all matrix-typed intermediate results at run-time and save them in the JSON "
+             "file specified by --properties-file-path"));
+
+    static opt<bool> enablePropertyInsert(
+        "enable-property-insert", cat(daphneOptions),
+        desc("Load data properties previously recorded by --enable-property-recording from the JSON file specified by "
+             "--properties-file-path and insert them into the IR for further optimization based on the true data "
+             "properties"));
+
+    static opt<std::string> propertiesFilePath(
+        "properties-file-path", cat(daphneOptions),
+        llvm::cl::desc("The path to the JSON file used by --enable-property-recording and --enable-property-insert"),
+        llvm::cl::init("properties.json"));
+
     static opt<bool> enableProfiling("enable-profiling", cat(daphneOptions), desc("Enable profiling support"));
     static opt<bool> timing("timing", cat(daphneOptions),
-                            desc("Enable timing of high-level steps (start-up, "
-                                 "parsing, compilation, execution) and print "
-                                 "the times to stderr in JSON format"));
+                            desc("Enable timing of high-level steps (start-up, parsing, compilation, execution) and "
+                                 "print the times to stderr in JSON format"));
 
     // Positional arguments ---------------------------------------------------
 
@@ -478,6 +497,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         case select_matrix_repr:
             user_config.explain_select_matrix_repr = true;
             break;
+        case transfer_data_props:
+            user_config.explain_transfer_data_props = true;
+            break;
         case sql:
             user_config.explain_sql = true;
             break;
@@ -507,6 +529,13 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             break;
         }
     }
+
+    user_config.enable_property_recording = enablePropertyRecording;
+    user_config.enable_property_insert = enablePropertyInsert;
+    user_config.properties_file_path = propertiesFilePath.getValue();
+    if (user_config.enable_property_recording && user_config.enable_property_insert)
+        throw std::runtime_error("--enable-property-recording and --enable-property-insert are mutually exclusive, "
+                                 "specify at most one of them");
 
     user_config.enable_statistics = enableStatistics;
 
@@ -716,6 +745,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
 
     if (user_config.enable_statistics)
         Statistics::instance().dumpStatistics(KernelDispatchMapping::instance());
+
+    if (user_config.enable_property_recording)
+        PropertyLogger::instance().savePropertiesAsJson(user_config.properties_file_path);
 
     // explicitly destroying the moduleOp here due to valgrind complaining about
     // a memory leak otherwise.

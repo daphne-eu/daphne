@@ -96,6 +96,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.explain_property_inference = jf.at(DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SELECT_MATRIX_REPR))
         config.explain_select_matrix_repr = jf.at(DaphneConfigJsonParams::EXPLAIN_SELECT_MATRIX_REPR).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_TRANSFER_DATA_PROPS))
+        config.explain_transfer_data_props = jf.at(DaphneConfigJsonParams::EXPLAIN_TRANSFER_DATA_PROPS).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SQL))
         config.explain_sql = jf.at(DaphneConfigJsonParams::EXPLAIN_SQL).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PHY_OP_SELECTION))
@@ -117,6 +119,12 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC))
         config.explain_mlir_codegen_mlir_specific =
             jf.at(DaphneConfigJsonParams::EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::ENABLE_PROPERTY_RECORDING))
+        config.enable_property_recording = jf.at(DaphneConfigJsonParams::ENABLE_PROPERTY_RECORDING).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::ENABLE_PROPERTY_INSERT))
+        config.enable_property_insert = jf.at(DaphneConfigJsonParams::ENABLE_PROPERTY_INSERT).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::PROPERTIES_FILE_PATH))
+        config.properties_file_path = jf.at(DaphneConfigJsonParams::PROPERTIES_FILE_PATH).get<std::string>();
     if (keyExists(jf, DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME)) {
         config.taskPartitioningScheme =
             jf.at(DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME).get<SelfSchedulingScheme>();

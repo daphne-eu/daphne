@@ -1,0 +1,26 @@
+{
+    "1": {
+        "sparsity": 0.8
+    },
+    "2": {
+        "sparsity": 0.8
+    },
+    "3": {
+        "sparsity": 0.8
+    },
+    "4": {
+        "sparsity": 1.0
+    },
+    "5": {
+        "sparsity": 0.8
+    },
+    "6": {
+        "sparsity": 1.0
+    },
+    "7": {
+        "sparsity": 1.0
+    },
+    "8": {
+        "sparsity": 1.0
+    }
+}

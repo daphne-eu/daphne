@@ -318,3 +318,19 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
     // exactly one result (which is the case for most DaphneIR ops).
     return resTy;
 }
+
+/**
+ * @brief Utility for trying a parametric trait for all values of the parameter
+ * from 0 to some upper bound.
+ */
+template <size_t upper, template <size_t> class tryParametricTrait> struct tryParamTraitUntil {
+    static void apply(typename tryParametricTrait<0>::T &prop, mlir::Operation *op) {
+        tryParametricTrait<upper>::apply(prop, op);
+        tryParamTraitUntil<upper - 1, tryParametricTrait>::apply(prop, op);
+    }
+};
+template <template <size_t> class tryParametricTrait> struct tryParamTraitUntil<0, tryParametricTrait> {
+    static void apply(typename tryParametricTrait<0>::T &prop, mlir::Operation *op) {
+        tryParametricTrait<0>::apply(prop, op);
+    }
+};

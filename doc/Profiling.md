@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Profiling DAPHNE using PAPI
+# Profiling DAPHNE Using PAPI
 
-You can profile your DAPHNE script by using the ```--enable-profiling``` CLI
+You can profile your DaphneDSL script by using the `--enable-profiling` CLI
 switch.
 Note that profiling is only available if DAPHNE was built *without* the `--no-papi` flag.
 
@@ -26,17 +26,17 @@ profiling library, specifically the
 
 When run with profiling enabled, the DAPHNE compiler will generate code that
 automatically starts and stops profiling (via PAPI) at the start and end of the
-DAPHNE script.
+DaphneDSL script.
 
 You can configure which events to profile via the `PAPI_EVENTS`
-environmental variable, e.g.:
+environment variable, e.g.:
 
 ```bash
-$ PAPI_EVENTS="perf::CYCLES,perf::INSTRUCTIONS,perf::CACHE-REFERENCES,perf::CACHE MISSES,perf::BRANCHES,perf::BRANCH-MI SSES" PAPI_REPORT=1 ./daphne --enable-profiling script.daph
+$ PAPI_EVENTS="perf::CYCLES,perf::INSTRUCTIONS,perf::CACHE-REFERENCES,perf::CACHE MISSES,perf::BRANCHES,perf::BRANCH-MI SSES" PAPI_REPORT=1 bin/daphne --enable-profiling script.daph
 ```
 
 For more details about the supported events as well as other PAPI-HL configuration
-options you can check the
+options you can read the
 [PAPI HL API documentation](https://github.com/icl-utk-edu/papi/wiki/PAPI-HL#overview-of-environment-variables).
 You can also get a list of the supported events on your machine via the
 `papi_native_avail` PAPI utility (included in the `papi-tools` package

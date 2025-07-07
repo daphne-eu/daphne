@@ -19,7 +19,7 @@ limitations under the License.
 ## Background
 
 (Almost) every DaphneIR operation will be backed by a kernel (= physical operator) at run-time.
-Extensibility w.r.t. kernels is one on the core goals of the DAPHNE system.
+Extensibility w.r.t. kernels is one on the core goals of DAPHNE.
 It shall be easy for a user to add a custom kernel.
 However, the system will offer a full set of built-in kernels so that all DaphneIR operations can be used out-of-the-box.
 
@@ -51,20 +51,20 @@ At least, we should rather not mix kernels of different DaphneIR operations in o
 **Interfaces:**
 
 Technically, a kernel is a C++ function taking one or more data objects (matrices, frames) and/or scalars as input and returning one or more data objects and/or scalars as output.
-As a central idea, (almost) all DaphneIR operations should be able to process (almost) all kinds of Daphne data structures, whereby these could have any Daphne value type.
+As a central idea, (almost) all DaphneIR operations should be able to process (almost) all kinds of DAPHNE data structures, whereby these could have any DAPHNE value type.
 For example, elementwise binary operations (`+`, `*`, ...) should be applicable to `DenseMatrix` of `double`, `uint32_t`, etc. as well as to `CSRMatrix` of `double`, `uint32_t`, etc. and so on.
 This type flexibility motivates the use of C++ template metaprogramming.
 
 Thus, a kernel is a template function with:
 
 - *template parameters*
-  - one for the type of each input/output data object (and scalar, if necessary)
+    - one for the type of each input/output data object (and scalar, if necessary)
 - *inputs*
-  - of type `const DT *` for data objects (whereby `DT` is a particular C++ type such as `DenseMatrix<double>`)
-  - of type `VT` for scalars of some value type `VT`
+    - of type `const DT *` for data objects (whereby `DT` is a particular C++ type such as `DenseMatrix<double>`)
+    - of type `VT` for scalars of some value type `VT`
 - *outputs*
-  - as a return value, in case of a single scalar
-  - as a parameter of type `DT *&` in case of data objects (all output parameters *before* all input parameters)
+    - as a return value, in case of a single scalar
+    - as a parameter of type `DT *&` in case of data objects (all output parameters *before* all input parameters)
 
 The reason for passing output data objects as parameters is that this mechanism could be used for efficient update-in-place operations.
 
@@ -155,21 +155,21 @@ Of course, that depends on what the kernel is supposed to do, but there some rec
 
 - *Obtaining an output data object*
 
-  Data objects like matrices and frames cannot be obtained using the `new`-operator, but must be obtained from the `DataObjectFactory`, e.g., as follows:
+    Data objects like matrices and frames cannot be obtained using the `new`-operator, but must be obtained from the `DataObjectFactory`, e.g., as follows:
 
-  ```cpp
-  auto res = DataObjectFactory::create<CSRMatrix<double>>(3, 4, 6, false);
-  ```
+    ```cpp
+    auto res = DataObjectFactory::create<CSRMatrix<double>>(3, 4, 6, false);
+    ```
 
-  Internally, this `create`-function calls a private constructor of the specified data type implementation; so please have a look at these.
+    Internally, this `create`-function calls a private constructor of the specified data type implementation; so please have a look at these.
 - *Accessing the input and output data objects*
 
-  For efficiency reasons, accessing the data in way specific to the data type implementation is preferred to generic access method of the super-classes.
-  That is, if possible, rather use `getValues()` (for `DenseMatrix`) or `getValues()`/`colColIdxs()`/`getRowOffsets()` (for `CSRMatrix`) rather than `get()`/`set()`/`append()` from the super-class `Matrix`.
-  The reason is that these generic access methods can incur a lot of unnecessary effort, depending on the data type implementation.
-  However, in the end it is always a trade-off between performance and code complexity.
-  For kernels that are rarely used or typically used on small data objects, a simple but inefficient implementation might be okay.
-  Nevertheless, since the DAPHNE system should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.
+    For efficiency reasons, accessing the data in way specific to the data type implementation is preferred to generic access method of the super-classes.
+    That is, if possible, rather use `getValues()` (for `DenseMatrix`) or `getValues()`/`colColIdxs()`/`getRowOffsets()` (for `CSRMatrix`) rather than `get()`/`set()`/`append()` from the super-class `Matrix`.
+    The reason is that these generic access methods can incur a lot of unnecessary effort, depending on the data type implementation.
+    However, in the end it is always a trade-off between performance and code complexity.
+    For kernels that are rarely used or typically used on small data objects, a simple but inefficient implementation might be okay.
+    Nevertheless, since DAPHNE should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.
 
 ### Concrete Examples
 
@@ -189,7 +189,7 @@ Please have a look at test cases for existing kernel implementations in [test/ru
 
 ### Error Handling
 
-It is recommended to exceptions such as `throw std::runtime_error` in a kernel
+It is recommended to throw exceptions such as `throw std::runtime_error` in a kernel
 in case the code runs into an unresolvable issue. We catch these exceptions in
 our surrounding code to the kernel and provide, whenever possible, additional
 information about the source of the error in the DaphneDSL script.
@@ -198,9 +198,9 @@ information about the source of the error in the DaphneDSL script.
 ### Experimental Kernels
 
 As an alternative to implementing a new kernel that is directly integrated into
-DAPHNE, one can also work on kernel implementations using the [kernel catalog](doc/Extensions.md).
-These should reside in [experimental/op/](src/runtime/local/kernels/experimental/op/) where `op` is
-the mnemonic of the DaphneIR operation that the kernel is implementing.
+DAPHNE, one can also work on kernel implementations using the [kernel catalog](/doc/Extensions.md).
+These should reside in [experimental/op/](/src/runtime/local/kernels/experimental/op/) where `op` is
+the mnemonic of the DaphneIR operation that the kernel implements.
 
 Experimental kernels are not directly integrated into DAPHNE and are neither
 compiled nor executed by default. They can be used to test new ideas and
@@ -215,5 +215,5 @@ free to introduce new dependencies that are handled by the accompanying
 resolved before the experimental kernel is integrated into DAPHNE as a built-in
 kernel.
 
-Check out [Extensions.md](doc/Extensions.md) for more information on how to
+Check out [Extensions.md](/doc/Extensions.md) for more information on how to
 implement experimental kernels.

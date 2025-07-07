@@ -48,13 +48,13 @@ class Matrix(OperationNode):
                 local_data: np.array = None, brackets:bool = False, left_brackets: bool = False, copy: bool = False,
                 consumer_list: List['OperationNode'] = None)->'Matrix':
         self.__copy = copy
-        is_python_local_data = False
         if local_data is not None:
-           
             self._np_array = local_data
             is_python_local_data = True
         else:
             self._np_array = None
+            is_python_local_data = False
+
         super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets, left_brackets, consumer_list)
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
@@ -66,7 +66,15 @@ class Matrix(OperationNode):
         
         if self._is_numpy() and self.operation == "readMatrix":
             with open(TMP_PATH+"/"+var_name+".csv", "wb") as f:
-                np.savetxt(f, self._np_array, delimiter=",")
+                if self._np_array.dtype in [np.float32, np.float64]:
+                    fmt = "%.18e"
+                elif self._np_array.dtype in [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]:
+                    fmt = "%i"
+                elif self._np_array.dtype.kind in {'U', 'S', 'O'}:
+                    fmt = "%s"
+                else:
+                    raise RuntimeError("unsupport numpy dtype")
+                np.savetxt(f, self._np_array, delimiter=",", fmt=fmt)
             with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
                 json.dump(
                     {
@@ -79,24 +87,28 @@ class Matrix(OperationNode):
         return code_line
 
     def getDType(self, d_type):
-        if d_type == np.dtype('f4'):
+        if d_type == np.dtype('float32'):
             return "f32"
-        elif d_type == np.dtype('f8'):
+        elif d_type == np.dtype('float64'):
             return "f64"
-        elif d_type == np.dtype('si2'):
-            return "si8"
-        elif d_type == np.dtype('si4'):
+        elif d_type == np.dtype('int16'):
+            return "si16"
+        elif d_type == np.dtype('int32'):
             return "si32"
-        elif d_type == np.dtype('si8'):
+        elif d_type == np.dtype('int64'):
             return "si64"
-        elif d_type == np.dtype('ui2'):
+        elif d_type == np.dtype('uint8'):
             return "ui8"
-        elif d_type == np.dtype('ui4'):
-            return "ui8"
-        elif d_type == np.dtype('ui8'):
-            return "ui8"
+        elif d_type == np.dtype('uint16'):
+            return "ui16"
+        elif d_type == np.dtype('uint32'):
+            return "ui32"
+        elif d_type == np.dtype('uint64'):
+            return "ui64"
+        elif d_type.kind in {'U', 'S', 'O'}:
+            return "str"
         else:
-            print("Error")
+            raise RuntimeError("unsupported numpy dtype")
 
     def _is_numpy(self) -> bool:
         return self._np_array is not None

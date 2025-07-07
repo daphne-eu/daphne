@@ -1,0 +1,2 @@
+m = ["apple", "banana", "cherry"];
+print(m);

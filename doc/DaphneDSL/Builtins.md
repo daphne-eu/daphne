@@ -30,7 +30,7 @@ We use the following notation (deviating from the DaphneDSL function syntax):
 - `...` stands for an arbitrary repetition of the previous parameter (including zero).
 - `/` means alternative options, e.g., `matrix/frame` means the parameter could be a matrix or a frame
 
-## List of categories
+## List of Categories
 
 DaphneDSL's built-in functions can be categorized as follows:
 
@@ -51,7 +51,7 @@ DaphneDSL's built-in functions can be categorized as follows:
 - Measurements
 - List operations
 
-## Data generation
+## Data Generation
 
 - **`fill`**`(value:scalar, numRows:size, numCols:size)`
 
@@ -86,7 +86,7 @@ DaphneDSL's built-in functions can be categorized as follows:
     Note that `from` may be greater than `to`, and `inc` may be negative.
     The scalar `inc` is an optional argument and defaults to `1`.
 
-## Matrix/frame meta data
+## Matrix/Frame Meta Data
 
 The following built-in functions allow to find out meta data of matrices and frames.
 
@@ -119,7 +119,7 @@ The following built-in functions allow to find out meta data of matrices and fra
     Returns `true` if and only if the given *(n x n)* matrix is symmetric, i.e., for any *i in {0, 1, ..., n-1}* and *j in {0, 1, ..., n-1}*, the value at position *(i, j)* is the same as the value at position *(j, i)*.
     The given matrix must be a square matrix.
 
-## Elementwise unary
+## Elementwise Unary
 
 The following built-in functions all follow the same scheme:
 
@@ -127,7 +127,7 @@ The following built-in functions all follow the same scheme:
   
     Applies the respective unary function (see table below) to the given scalar `arg` or to each element of the given matrix `arg`.
 
-### Arithmetic/general math
+### Arithmetic/General Math
 
 | function | meaning |
 | ----- | ----- |
@@ -167,7 +167,7 @@ The following built-in functions all follow the same scheme:
 | ----- | ----- |
 | **`isNan`** | `1` if argument is NaN, `0` otherwise |
 
-## Elementwise binary
+## Elementwise Binary
 
 DaphneDSL supports various elementwise binary operations.
 Some of those can be used through *operators in infix notation*, e.g., `+`; and some through *built-in functions*, e.g., `log()`.
@@ -192,7 +192,7 @@ The built-in functions all follow the same scheme:
 | **`log`** | | logarithm (logarithm of `lhs` to the base of `rhs`) |
 | **`mod`** | **`%`** | modulo |
 
-### Min/max
+### Min/Max
 
 | function | operator | meaning |
 | ----- | ----- | ----- |
@@ -223,23 +223,24 @@ The built-in functions all follow the same scheme:
 | | **`>`** | greater than |
 | | **`>=`** | greater or equal |
 
-## Outer binary (generalized outer product)
+## Outer Binary (Generalized Outer Product)
 
 The following built-in functions all follow the same scheme:
 
 - ***`outerBinaryFunc`***`(lhs:matrix, rhs:matrix)`
   
-  The argument `lhs` is expected to be a column *(m x 1)* matrix, and the argument `rhs` is expected to be a row *(1 x n)* matrix.
-  The result is a *(m x n)* matrix, whereby the element at position *(i, j)* is calculated by applying the respective binary function (see the table below) to the *i*-th element in `lhs` and the *j*-th element in `rhs`.
-  Schematically, this looks as follows (where `∘` is some binary operation):
-  ```
-         |    b0    b1 ...    bn rhs
-      ---+----------------------
-  lhs a0 | a0∘b0 a0∘b1 ... a0∘bn res
-      a1 | a1∘b0 a1∘b1 ... a1∘bn
-      .. | ..... .....     .....
-      am | am∘b0 am∘b1 ... am∘bn
-  ```
+    The argument `lhs` is expected to be a column *(m x 1)* matrix, and the argument `rhs` is expected to be a row *(1 x n)* matrix.
+    The result is a *(m x n)* matrix, whereby the element at position *(i, j)* is calculated by applying the respective binary function (see the table below) to the *i*-th element in `lhs` and the *j*-th element in `rhs`.
+    Schematically, this looks as follows (where `∘` is some binary operation):
+
+    ```text
+           |    b0    b1 ...    bn rhs
+        ---+----------------------
+    lhs a0 | a0∘b0 a0∘b1 ... a0∘bn res
+        a1 | a1∘b0 a1∘b1 ... a1∘bn
+        .. | ..... .....     .....
+        am | am∘b0 am∘b1 ... am∘bn
+    ```
   
 ### Arithmetic
 
@@ -253,7 +254,7 @@ The following built-in functions all follow the same scheme:
 | **`outerLog`** | logarithm (logarithm of `lhs` to the base of `rhs`) |
 | **`outerMod`** | modulo |
 
-### Min/max
+### Min/Max
 
 | function | meaning |
 | ----- | ----- |
@@ -285,9 +286,9 @@ The following built-in functions all follow the same scheme:
 | **`outerGt`** | greater than |
 | **`outerGe`** | greater or equal |
 
-## Aggregation and statistical
+## Aggregation and Statistical
 
-### Full/row/column aggregation
+### Full/Row/Column Aggregation
 
 The following built-in functions all follow the same scheme:
 
@@ -314,7 +315,7 @@ The following built-in functions all follow the same scheme:
 | `idxMin` | argmin (the index of the minimum value, only for row/column-wise aggregation) |
 | `idxMax` | argmax (the index of the maximum value, only for row/column-wise aggregation) |
 
-### Cumulative aggregation
+### Cumulative Aggregation
 
 The following built-in functions all follow the same scheme:
 
@@ -363,7 +364,7 @@ The following built-in functions all follow the same scheme:
     The provided number of columns and sort orders must match.
     The parameter `returnIndexes` determines whether to return the sorted data (`false`) or a column-matrix of positions representing the permutation applied by the sorting (`true`).
 
-## Matrix decomposition & co
+## Matrix Decomposition & Co
 
 - **`eigen`**`(arg:matrix)`
 
@@ -372,7 +373,7 @@ The following built-in functions all follow the same scheme:
 
 We plan to support additional matrix decompositions like **`lu`**, **`qr`**, and **`svd`** in the future.
 
-## Deep neural network
+## Deep Neural Network
 
 Note that most of these operations only have a CUDNN-based kernel for GPU execution at the moment.
 
@@ -402,7 +403,7 @@ Note that most of these operations only have a CUDNN-based kernel for GPU execut
 
 - **`softmax`**`(inputData:matrix)`
 
-## Other matrix operations
+## Other Matrix Operations
 
 - **`diagVector`**`(arg:matrix)`
 
@@ -443,7 +444,7 @@ Note that most of these operations only have a CUDNN-based kernel for GPU execut
     The weight also determines the value type of the result.
 
     Moreover, optionally, the result shape in terms of the number of rows and columns can be specified.
-    If omited, it defaults to the smallest numbers required to accommodate all given `y`/`x`-coordinates, as expressed above.
+    If omitted, it defaults to the smallest numbers required to accommodate all given `y`/`x`-coordinates, as expressed above.
     If specified, the result can be either cropped or padded with zeros to the desired shape.
     If a value less than zero is provided as the number of rows/columns, the respective dimension will also be determined from the input data.
 
@@ -457,14 +458,14 @@ Note that most of these operations only have a CUDNN-based kernel for GPU execut
 
     Calcuates `t(A) @ x` for the given *(n x m)* matrix `A` and *(n x 1)* column-matrix `x`.
 
-## Extended relational algebra
+## Extended Relational Algebra
 
 DaphneDSL supports relational algebra on frames in two ways:
 On the one hand, entire SQL queries can be executed over previously registered *views*.
 This aspect is described in detail in a [separate tutorial](/doc/tutorial/sqlTutorial.md).
 On the other hand, built-in functions for individual operations of extended relational algebra can be used on frames in DaphneDSL.
 
-### Entire SQL query
+### Entire SQL Query
 
 - **`registerView`**`(viewName:str, arg:frame)`
 
@@ -491,7 +492,7 @@ We will support set operations such as **`intersect`**, **`merge`**, and **`exce
   Returns the tuples in `lhs`, which are not in `rhs` (in set or bag semantics, tbd).
 -->
 
-### Cartesian product and joins
+### Cartesian Product and Joins
 
 - **`cartesian`**`(lhs:frame, rhs:frame)`
 
@@ -520,7 +521,7 @@ We will support set operations such as **`intersect`**, **`merge`**, and **`exce
   
 We will support more variants of joins, including (left/right) outer joins, theta joins, anti-joins, etc.
 
-### Grouping and aggregation
+### Grouping and Aggregation
 
 - **`groupSum`**`(arg:frame, grpColNames:str[, grpColNames, ...], sumColName:str)`
 
@@ -528,7 +529,7 @@ We will support more variants of joins, including (left/right) outer joins, thet
 
     *This built-in function is currently limited in terms of functionality (aggregation only on a single column, sum as the only aggregation function). It will be extended in the future. Meanwhile, consider using DAPHNE's `sql()` built-in function for more comprehensive grouping and aggregation support.*
 
-### Frame label manipulation
+### Frame Label Manipulation
 
 - **`setColLabels`**`(arg:frame, labels:str, ...)`
 
@@ -539,7 +540,7 @@ We will support more variants of joins, including (left/right) outer joins, thet
 
     Prepends the given `prefix` to the labels of all columns in `arg`.
 
-## Conversions and casts
+## Conversions and Casts
 
 Note that DaphneDSL offers casts in form of the `as.()`-expression.
 See the [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md) for details.
@@ -549,7 +550,7 @@ See the [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md) for detail
     Performs a `min`/`max` quantization of the values in `arg`.
     The result matrix is of value type `ui8`.
 
-## Input/output
+## Input/Output
 
 DAPHNE supports local file I/O for various file formats.
 The format is determined by the specified file name extension.
@@ -591,7 +592,7 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 
     Terminates the DaphneDSL script execution with the given optional message.
 
-## Data preprocessing
+## Data Preprocessing
 
 - **`oneHot`**`(arg:matrix, info:matrix<si64>)`
 
@@ -624,7 +625,7 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 
     Example:
 
-    ```
+    ```r
     data = [10, 5, 20, 5, 20];
     codes, dict = recode(data, false);
     print(codes);
@@ -633,7 +634,7 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
     print(decoded);
     ```
 
-    ```
+    ```text
     DenseMatrix(5x1, int64_t)
     0
     1
@@ -661,13 +662,13 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 
     Example:
 
-    ```
+    ```r
     print(bin(t([10, 20, 30, 40, 50, 60, 70]), 3));
     print(bin(t([10, 20, 30, 40, 50, 60, 70]), 3, 10, 70));
     print(bin(t([5.0, 20.0, nan, 40.0, inf, 60.0, 100.0]), 3, 10.0, 70.0));
     ```
 
-    ```
+    ```text
     DenseMatrix(1x7, int64_t)
     0 0 0 1 1 2 2
     DenseMatrix(1x7, int64_t)
@@ -680,9 +681,9 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 
 - **`now`**`()`
 
-    Returns the current time since the epoch in nano seconds.
+    Returns the current time since the epoch in nanoseconds.
 
-## List operations
+## List Operations
 
 - **`createList`**`(elm:matrix, ...)`
 

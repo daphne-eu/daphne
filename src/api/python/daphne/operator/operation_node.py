@@ -95,7 +95,7 @@ class OperationNode(DAGNode):
         current_index = self._unnamed_input_nodes.index(current_node)
         self._unnamed_input_nodes[current_index] = new_node
 
-    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False):
+    def compute(self, type="shared memory", verbose=False, asTensorFlow=False, asPyTorch=False, shape=None, useIndexColumn=False) -> Union[np.array, pd.DataFrame, 'tf.Tensor', 'torch.Tensor', float]:
         """
         Compute function for processing the Daphne Object or operation node and returning the results.
         The function builds a DaphneDSL script from the node and its context, executes it, and processes the results
@@ -224,7 +224,16 @@ class OperationNode(DAGNode):
                     result = sp.csr_matrix((data, indices, indptr), shape=(daphneLibResult.rows, daphneLibResult.cols))
                 self.clear_tmp() 
             elif self._output_type == OutputType.MATRIX and type=="files":
-                arr = np.genfromtxt(result, delimiter=',')
+                # Ensure string data is handled correctly
+                arr = np.genfromtxt(result, delimiter=',', dtype=None, encoding='utf-8')
+                meta_file_name = result + ".meta"
+                if os.path.exists(meta_file_name):
+                    with open(meta_file_name, "r") as meta_file:
+                        meta_data = json.load(meta_file)
+                        if meta_data.get("valueType") == "str":
+                            arr = arr.astype(str)
+                else:
+                    print(f"metadata file not found: {meta_file_name}")
                 self.clear_tmp()
                 return arr
             elif self._output_type == OutputType.SCALAR:

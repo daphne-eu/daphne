@@ -71,6 +71,7 @@ struct DaphneUserConfig {
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
     bool explain_select_matrix_repr = false;
+    bool explain_transfer_data_props = false;
     bool explain_sql = false;
     bool explain_phy_op_selection = false;
     bool explain_type_adaptation = false;
@@ -80,6 +81,9 @@ struct DaphneUserConfig {
     bool explain_mlir_codegen_sparsity_exploiting_op_fusion = false;
     bool explain_mlir_codegen_daphneir_to_mlir = false;
     bool explain_mlir_codegen_mlir_specific = false;
+    bool enable_property_recording = false;
+    bool enable_property_insert = false;
+    std::string properties_file_path = "properties.json";
     bool enable_statistics = false;
 
     bool force_cuda = false;

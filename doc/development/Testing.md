@@ -117,7 +117,7 @@ See the [catch2 documentation](https://github.com/catchorg/Catch2/blob/devel/doc
 
 #### DAPHNE-specific Flags
 
-The test script has several flags that control how the DAPHNE system and the test executable are built through the build script `build.sh`.
+The test script has several flags that control how DAPHNE and the test executable are built through the build script `build.sh`.
 
 - `--cuda`, `--fpgaopencl`, and `--mpi` switch on the respective feature of DAPHNE.
 - `--no-papi` switch off the respective feature of DAPHNE.
@@ -140,7 +140,7 @@ Some suggestions in the context of DAPHNE:
 - Use [DAPHNE's logger](/doc/development/Logging.md) or custom print-outs to generate more debug output.
 - Use a debugger.
 
-#### Tests Fail in the CI Workflow (even though they pass in your local development environment)
+#### Tests Fail in the CI Workflow (Even Though They Pass in Your Local Development Environment)
 
 Unfortunately, this can happen.
 **Possible reasons** include:
@@ -265,7 +265,7 @@ In the following, we list just the most important ones, see the mentioned file f
 
 - The `.cpp`-files of the DaphneDSL script-level test cases often define macros like `MAKE_TEST_CASE` and `MAKE_FAILURE_TEST_CASE`. These wrap the test case creation such that we can easily create families of similar test cases.
 - Many of the script-level test cases have no highly descriptive names as that would be cumbersome. Instead, they are typically numbered. In that context, several of the utility functions mentioned above have a variant suffixed with `Simple` (e.g., `compareDaphneToRefSimple()`), which assumes a certain naming scheme of the test cases.
-- Please put a comment line at the top of each DaphneDSL/DaphneLib script used in a script-level test case that briefly explains what is being tested. Note that the purpose of the test is otherwise not always obvious. Putting a comment helps to keep the test case up-to-date when the DAPHNE system changes.
+- Please put a comment line at the top of each DaphneDSL/DaphneLib script used in a script-level test case that briefly explains what is being tested. Note that the purpose of the test is otherwise not always obvious. Putting a comment helps to keep the test case up-to-date when DAPHNE changes.
 - When using hand-written reference text files (e.g., with `compareDaphneToRef()`), note that there usually needs to be a newline at the end of the text file, as the DAPHNE output typically also ends with a newline. Otherwise, the test case fails even though the actual and expected outputs look quite similar at first glance.
 
 ### Writing Unit Test Cases
