@@ -441,16 +441,12 @@ class CreateVariadicPackOpLowering : public OpConversionPattern<daphne::CreateVa
         Block &fb = op.getOperation()->getParentOfType<LLVM::LLVMFuncOp>().getBody().front();
         rewriter.setInsertionPointToStart(&fb);
 
-        // rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
-        //     op.getOperation(), LLVM::LLVMPointerType::get(op->getContext()),
-        //     rewriter.create<arith::ConstantOp>(op->getLoc(), op.getNumElementsAttr()), 1);
-
         Type contType = llvm::dyn_cast<daphne::VariadicPackType>(op.getRes().getType()).getContainedType();
         Type convType = typeConverter->convertType(contType);
 
         auto ptrType = LLVM::LLVMPointerType::get(op->getContext());
-        Value one = rewriter.create<LLVM::ConstantOp>(op->getLoc(), rewriter.getI64Type(), rewriter.getIndexAttr(1));
-        rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(op.getOperation(), ptrType, convType, one);
+        Value numElements = rewriter.create<arith::ConstantOp>(op->getLoc(), op.getNumElementsAttr());
+        rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(op.getOperation(), ptrType, convType, numElements);
         return success();
     }
 };
@@ -469,14 +465,19 @@ class StoreVariadicPackOpLowering : public OpConversionPattern<daphne::StoreVari
         mlir::Location loc = op->getLoc();
         mlir::Value pack = adaptor.getOperands()[0];
         mlir::Value item = adaptor.getOperands()[1];
-        auto elementType = llvm::cast<LLVM::LLVMPointerType>(pack.getType());
+
+        auto origPackType = llvm::dyn_cast<daphne::VariadicPackType>(op.getPack().getType());
+        auto origElementType = origPackType.getContainedType();
+        auto convertedElementType = typeConverter->convertType(origElementType);
+
         std::vector<Value> indices = {rewriter.create<arith::ConstantOp>(loc, op.getPosAttr())};
-        // Since pack is a pointer and elementType is extracted from pack.getType(), 
-        // we need to determine what the pack points to. For variadic packs, it's typically a pointer type.
-        auto addr = rewriter.create<LLVM::GEPOp>(loc, pack.getType(), elementType, pack, indices);
-        Type itemType = item.getType();
-        if (itemType != elementType) {
-            if (llvm::isa<LLVM::LLVMPointerType>(elementType)) {
+
+        // For opaque pointers, GEPOp needs: result type (pointer), source element type, base pointer, indices
+        auto addr = rewriter.create<LLVM::GEPOp>(loc, pack.getType(), convertedElementType, pack, indices);
+
+        auto itemType = item.getType();
+        if (itemType != convertedElementType) {
+            if (llvm::isa<LLVM::LLVMPointerType>(convertedElementType)) {
                 if (itemType.isSignedInteger())
                     item = rewriter.create<LLVM::SExtOp>(loc, rewriter.getI64Type(), item);
                 else if (itemType.isUnsignedInteger() || itemType.isSignlessInteger())
@@ -487,7 +488,7 @@ class StoreVariadicPackOpLowering : public OpConversionPattern<daphne::StoreVari
                 } else {
                     throw ErrorHandler::compilerError(loc, "LowerToLLVMPass", "itemType is an unsupported type");
                 }
-                item = rewriter.create<LLVM::IntToPtrOp>(loc, elementType, item);
+                item = rewriter.create<LLVM::IntToPtrOp>(loc, convertedElementType, item);
             } else {
                 throw ErrorHandler::compilerError(loc, "LowerToLLVMPass",
                                                   "casting to a non-pointer type in "
@@ -948,11 +949,11 @@ void DaphneLowerToLLVMPass::runOnOperation() {
 
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
-    patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering>(typeConverter, &getContext());
+    patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering, StoreVariadicPackOpLowering>(typeConverter,
+                                                                                                     &getContext());
     patterns.insert<VectorizedPipelineOpLowering>(typeConverter, &getContext(), cfg);
 
-    patterns.insert<ConstantOpLowering, ReturnOpLowering, StoreVariadicPackOpLowering, GenericCallOpLowering,
-                    MapOpLowering>(&getContext());
+    patterns.insert<ConstantOpLowering, ReturnOpLowering, GenericCallOpLowering, MapOpLowering>(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.
