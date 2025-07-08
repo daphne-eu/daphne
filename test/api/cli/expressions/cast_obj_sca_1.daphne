@@ -3,6 +3,20 @@
 //matrix->scalar
 m0 = [2.5];
 print(as.scalar(m0));
+cond = m0[0,0];
+if (cond)
+{
+    m0 = [3.5];
+}
+print(as.scalar(m0));
+m_int = [2];
+print(as.scalar(m_int));
+cond = m_int[0,0];
+if (cond)
+{
+    m_int = [3];
+}
+print(as.scalar(m_int));
 
 //frame->scalar
 f0 = createFrame([3]);

@@ -908,6 +908,16 @@
             ]
         },
         "instantiations": [
+            ["bool", ["DenseMatrix", "double"]],
+            ["bool", ["DenseMatrix", "float"]],
+            ["bool", ["DenseMatrix", "int64_t"]],
+            ["bool", ["DenseMatrix", "int32_t"]],
+            ["bool", ["DenseMatrix", "int8_t"]],
+            ["bool", ["DenseMatrix", "uint64_t"]],
+            ["bool", ["DenseMatrix", "uint32_t"]],
+            ["bool", ["DenseMatrix", "uint8_t"]],
+            ["bool", ["DenseMatrix", "size_t"]],
+
             ["double", ["DenseMatrix", "double"]],
             ["double", ["DenseMatrix", "float"]],
             ["double", ["DenseMatrix", "int64_t"]],

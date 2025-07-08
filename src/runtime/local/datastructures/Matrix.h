@@ -32,9 +32,9 @@ template <typename ValueType> class Matrix : public Structure {
 
   protected:
     Matrix(size_t numRows, size_t numCols)
-        : Structure(numRows, numCols), sparsity(-1), symmetric(BoolOrUnknown::Unknown) {
-              // nothing to do
-          };
+        : Structure(numRows, numCols), sparsity(-1), symmetric(BoolOrUnknown::Unknown){
+                                                         // nothing to do
+                                                     };
 
   public:
     /**
@@ -56,7 +56,7 @@ template <typename ValueType> class Matrix : public Structure {
      */
     BoolOrUnknown symmetric;
 
-    virtual ~Matrix() {
+    virtual ~Matrix(){
         // nothing to do
     };
 
