@@ -134,6 +134,13 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)
         checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
     }
 
+    SECTION("out of bounds - negative") {
+        VT lowerIncl = -5;
+        VT upperExcl = -3;
+
+        checkInsertRowThrow(arg, ins, lowerIncl, upperExcl);
+    }
+
     SECTION("out of bounds - too high") {
         VT lowerIncl = 3;
         VT upperExcl = 5;
@@ -178,6 +185,13 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow - string specific", TAG_KERNELS, (DATA_TYP
                                        VT("c"), VT("d"), VT("e"), VT("f")});
 
         checkInsertRow(arg, ins, lowerIncl, upperExcl, exp);
+    }
+
+    SECTION("out of bounds - negative") {
+        size_t lowerIncl = -5;
+        size_t upperExcl = -3;
+
+        checkInsertRowThrow(arg, ins, lowerIncl, upperExcl);
     }
 
     SECTION("out of bounds - too high") {

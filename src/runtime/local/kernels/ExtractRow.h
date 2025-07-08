@@ -109,7 +109,7 @@ template <typename VTSel> struct ExtractRow<Frame, Frame, VTSel> {
         // Actual filtering.
         for (size_t r = 0; r < numRowsSel; r++) {
             VTSel pos = valuesSel[r];
-            if(pos < 0)
+            if (pos < 0)
                 pos += numRowsArg;
             if (static_cast<size_t>(pos) < 0 || static_cast<size_t>(pos) >= numRowsArg) {
                 std::ostringstream errMsg;
@@ -185,7 +185,7 @@ template <typename VT, typename VTSel> struct ExtractRow<DenseMatrix<VT>, DenseM
         const VTSel *valuesSel = sel->getValues();
         for (size_t r = 0; r < numRowsSel; r++) {
             VTSel valSelectedRow = valuesSel[r]; // only one column
-            if(valSelectedRow < 0)
+            if (valSelectedRow < 0)
                 valSelectedRow += numRowsArg;
             // TODO For performance reasons, we might skip such checks or make
             // them optional somehow, but it is okay for now.
@@ -246,7 +246,7 @@ template <typename VT, typename VTSel> struct ExtractRow<Matrix<VT>, Matrix<VT>,
         res->prepareAppend();
         for (size_t r = 0; r < numRowsSel; ++r) {
             VTSel valSelectedRow = sel->get(r, 0); // only one column
-            if(valSelectedRow < 0)
+            if (valSelectedRow < 0)
                 valSelectedRow += numRowsArg;
 
             if (std::isnan(valSelectedRow)) {

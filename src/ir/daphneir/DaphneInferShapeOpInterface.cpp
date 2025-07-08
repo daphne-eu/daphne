@@ -436,8 +436,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
             loInPos += srcNumRows;
             if (upExPos <= 0)
                 upExPos += srcNumRows;
-        }
-        else if (upExPos < 0)
+        } else if (upExPos < 0)
             upExPos += srcNumRows;
 
         if (loInPos < 0 || loInPos >= srcNumRows)
@@ -496,8 +495,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
             loInPos += srcNumCols;
             if (upExPos <= 0)
                 upExPos += srcNumCols;
-        }
-        else if (upExPos < 0)
+        } else if (upExPos < 0)
             upExPos += srcNumCols;
 
         if (loInPos < 0 || loInPos >= srcNumCols)

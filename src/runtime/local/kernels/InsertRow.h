@@ -70,9 +70,8 @@ void validateArgsInsertRow(size_t rowLowerIncl_Pos, VTSel rowLowerIncl, size_t r
     if (numRowsIns != rowUpperExcl_Pos - rowLowerIncl_Pos) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << rowLowerIncl << ", " << rowUpperExcl
-               << "' passed to InsertRow: the number of addressed rows in arg '"
-               << rowUpperExcl_Pos - rowLowerIncl_Pos << "' and the number of rows in ins '" << numRowsIns
-               << "' must match";
+               << "' passed to InsertRow: the number of addressed rows in arg '" << rowUpperExcl_Pos - rowLowerIncl_Pos
+               << "' and the number of rows in ins '" << numRowsIns << "' must match";
         throw std::out_of_range(errMsg.str());
     }
 
@@ -104,12 +103,14 @@ template <typename VT, typename VTSel> struct InsertRow<DenseMatrix<VT>, DenseMa
         // Resolve negative indices here only
         size_t rowLowerIncl_Pos = static_cast<size_t>(rowLowerIncl);
         size_t rowUpperExcl_Pos = static_cast<size_t>(rowUpperExcl);
-        if constexpr(std::is_signed<VTSel>::value) {
+        if constexpr (std::is_signed<VTSel>::value) {
             if (rowLowerIncl < 0)
-                rowLowerIncl_Pos = static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowLowerIncl));
+                rowLowerIncl_Pos = 
+                    static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowLowerIncl));
             if (rowUpperExcl < 0)
-                rowUpperExcl_Pos = static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowUpperExcl));
-            if(rowLowerIncl < 0 && rowUpperExcl == 0)
+                rowUpperExcl_Pos = 
+                    static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowUpperExcl));
+            if (rowLowerIncl < 0 && rowUpperExcl == 0)
                 rowUpperExcl_Pos = rowLowerIncl_Pos + 1;
         }
 
@@ -158,12 +159,14 @@ template <typename VT, typename VTSel> struct InsertRow<Matrix<VT>, Matrix<VT>, 
 
         size_t rowLowerIncl_Pos = static_cast<size_t>(rowLowerIncl);
         size_t rowUpperExcl_Pos = static_cast<size_t>(rowUpperExcl);
-        if constexpr(std::is_signed<VTSel>::value) {
+        if constexpr (std::is_signed<VTSel>::value) {
             if (rowLowerIncl < 0)
-                rowLowerIncl_Pos = static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowLowerIncl));
+                rowLowerIncl_Pos = 
+                    static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowLowerIncl));
             if (rowUpperExcl < 0)
-                rowUpperExcl_Pos = static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowUpperExcl));
-            if(rowLowerIncl < 0 && rowUpperExcl == 0)
+                rowUpperExcl_Pos = 
+                    static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowUpperExcl));
+            if (rowLowerIncl < 0 && rowUpperExcl == 0)
                 rowUpperExcl_Pos = rowLowerIncl_Pos + 1;
         }
 

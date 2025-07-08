@@ -53,11 +53,11 @@ void sliceRow(DTRes *&res, const DTArg *arg, const VTSel lowerIncl, const VTSel 
 // ****************************************************************************
 
 template <typename VTSel> void validateArgsSliceRow(VTSel lowerIncl, VTSel upperExcl, size_t numRowsArg) {
-    if (lowerIncl < 0 || upperExcl < lowerIncl || numRowsArg < static_cast<size_t>(upperExcl) ||
-        static_cast<size_t>(lowerIncl) > numRowsArg) {
+    if (lowerIncl < 0 || static_cast<size_t>(lowerIncl) >= numRowsArg || upperExcl < lowerIncl ||
+        numRowsArg < static_cast<size_t>(upperExcl)) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << lowerIncl << ", " << upperExcl
-               << "' passed to SliceRow: " << "it must hold 0 <= lowerIncl <= upperExcl <= #rows "
+               << "' passed to SliceRow: " << "it must hold 0 <= lowerIncl < #rows and lowerIncl <= upperExcl <= #rows "
                << "where #rows of arg is '" << numRowsArg << "'";
         throw std::out_of_range(errMsg.str());
     }
@@ -72,15 +72,14 @@ template <typename VTSel> void validateArgsSliceRow(VTSel lowerIncl, VTSel upper
 // ----------------------------------------------------------------------------
 
 template <typename VTArg, typename VTSel> struct SliceRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
-    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg, VTSel lowerIncl,
-                      VTSel upperExcl, DCTX(ctx)) {
+    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg, VTSel lowerIncl, VTSel upperExcl, 
+                      DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
-        if(lowerIncl < 0) {
+        if (lowerIncl < 0) {
             lowerIncl += numRowsArg;
-            if(upperExcl <= 0)
+            if (upperExcl <= 0)
                 upperExcl += numRowsArg;
-        }
-        else if(upperExcl < 0)
+        } else if (upperExcl < 0)
             upperExcl += numRowsArg;
         validateArgsSliceRow(lowerIncl, upperExcl, numRowsArg);
         res = arg->sliceRow(lowerIncl, upperExcl);
@@ -94,12 +93,11 @@ template <typename VTArg, typename VTSel> struct SliceRow<DenseMatrix<VTArg>, De
 template <typename VTSel> struct SliceRow<Frame, Frame, VTSel> {
     static void apply(Frame *&res, const Frame *arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
-        if(lowerIncl < 0) {
+        if (lowerIncl < 0) {
             lowerIncl += numRowsArg;
-            if(upperExcl <= 0)
+            if (upperExcl <= 0)
                 upperExcl += numRowsArg;
-        }
-        else if(upperExcl < 0)
+        } else if (upperExcl < 0)
             upperExcl += numRowsArg;
         validateArgsSliceRow(lowerIncl, upperExcl, numRowsArg);
         res = arg->sliceRow(lowerIncl, upperExcl);
@@ -111,15 +109,13 @@ template <typename VTSel> struct SliceRow<Frame, Frame, VTSel> {
 // ----------------------------------------------------------------------------
 
 template <typename VTArg, typename VTSel> struct SliceRow<Matrix<VTArg>, Matrix<VTArg>, VTSel> {
-    static void apply(Matrix<VTArg> *&res, const Matrix<VTArg> *arg, VTSel lowerIncl, VTSel upperExcl,
-                      DCTX(ctx)) {
+    static void apply(Matrix<VTArg> *&res, const Matrix<VTArg> *arg, VTSel lowerIncl, VTSel upperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
-        if(lowerIncl < 0) {
+        if (lowerIncl < 0) {
             lowerIncl += numRowsArg;
-            if(upperExcl <= 0)
+            if (upperExcl <= 0)
                 upperExcl += numRowsArg;
-        }
-        else if(upperExcl < 0)
+        } else if (upperExcl < 0)
             upperExcl += numRowsArg;
 
         const size_t numColsArg = arg->getNumCols();

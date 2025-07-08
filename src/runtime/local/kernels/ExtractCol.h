@@ -96,15 +96,13 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numColsRes; c++) {
                 VTSel VTcolIdx = VTcolIdxs[c];
-                if(VTcolIdx < 0)
+                if (VTcolIdx < 0)
                     VTcolIdx += numColsArg;
                 const size_t colIdx = static_cast<const size_t>(VTcolIdx);
                 if (VTcolIdx < 0 || numColsArg <= colIdx) {
                     std::ostringstream errMsg;
-                    errMsg << "invalid argument '" << VTcolIdxs[c]
-                           << "' passed to ExtractCol: out of bounds "
-                           << "for dense matrix with column boundaries '[0, "
-                           << numColsArg << ")'";
+                    errMsg << "invalid argument '" << VTcolIdxs[c] << "' passed to ExtractCol: out of bounds "
+                           << "for dense matrix with column boundaries '[0, " << numColsArg << ")'";
                     throw std::out_of_range(errMsg.str());
                 }
 
@@ -157,15 +155,13 @@ template <typename VTSel> struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
         auto colIdxs = std::make_unique<size_t[]>(numColsRes);
         for (size_t c = 0; c < numColsRes; c++) {
             int64_t VTcolIdx = VTvaluesSel[c];
-            if(VTcolIdx < 0)
+            if (VTcolIdx < 0)
                 VTcolIdx += numColsArg;
 
             if (VTcolIdx < 0 || static_cast<size_t>(VTcolIdx) >= numColsArg) {
                 std::ostringstream errMsg;
-                errMsg << "invalid argument '" << VTvaluesSel[c]
-                       << "' passed to ExtractCol: ouf of bounds "
-                          "for frame with column boundaries '[0, "
-                       << numColsArg << ")'";
+                errMsg << "invalid argument '" << VTvaluesSel[c] << "' passed to ExtractCol: out of bounds "
+                          "for frame with column boundaries '[0, " << numColsArg << ")'";
                 throw std::out_of_range(errMsg.str());
             }
             colIdxs[c] = static_cast<size_t>(VTcolIdx);
@@ -193,14 +189,13 @@ template <typename VTArg, typename VTSel> struct ExtractCol<Matrix<VTArg>, Matri
         for (size_t r = 0; r < numRowsRes; ++r) {
             for (size_t c = 0; c < numColsRes; ++c) {
                 VTSel VTcolIdx = sel->get(c, 0);
-                if(VTcolIdx < 0)
+                if (VTcolIdx < 0)
                     VTcolIdx += numColsArg;
                 const size_t colIdx = static_cast<const size_t>(VTcolIdx);
                 if (VTcolIdx < 0 || numColsArg <= colIdx) {
                     std::ostringstream errMsg;
                     errMsg << "invalid argument '" << sel->get(c, 0)
-                           << "' passed to ExtractCol: out of bounds "
-                              "for dense matrix with column boundaries '[0, "
+                           << "' passed to ExtractCol: out of bounds for dense matrix with column boundaries '[0, "
                            << numColsArg << ")'";
                     throw std::out_of_range(errMsg.str());
                 }

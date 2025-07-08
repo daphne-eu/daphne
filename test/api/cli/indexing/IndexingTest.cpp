@@ -43,9 +43,9 @@ const std::string dirPath = "test/api/cli/indexing/";
     }
 
 MAKE_SUCCESS_TEST_CASE("right_indexing", 8)
-MAKE_FAILURE_TEST_CASE("right_indexing", 10)
+MAKE_FAILURE_TEST_CASE("right_indexing", 12)
 
 // TODO Add a test case for multi-assignments (`X[...], Y[...] = ...`).
 MAKE_SUCCESS_TEST_CASE("left_indexing", 6)
 MAKE_SUCCESS_TEST_CASE("left_indexing_cow", 8)
-MAKE_FAILURE_TEST_CASE("left_indexing", 7)
+MAKE_FAILURE_TEST_CASE("left_indexing", 9)
